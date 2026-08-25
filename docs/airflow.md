@@ -1,10 +1,11 @@
 # Deploy and operate with Airflow
 
-Airflow runs the repository's six notebook jobs as the
-`rekep_market_pipeline` DAG. This page covers a local first run and the
+Airflow runs the repository's six publishing notebooks as the
+`rekep_market_pipeline` DAG and the catalog-wide maintenance notebook as
+`rekep_iceberg_maintenance`. This page covers a local first run and the
 additional requirements for a distributed deployment.
 
-The DAG uses the Airflow 3 `airflow.sdk` API and
+The DAGs use the Airflow 3 `airflow.sdk` API and
 `PapermillOperator(log_output=True)`. Use Airflow 3.x and
 `apache-airflow-providers-papermill>=3.13,<4` with Python 3.12 or newer.
 Airflow itself runs on Linux or another POSIX system; on Windows, use WSL2 or
@@ -23,6 +24,8 @@ Linux containers.
 flowchart TD
     PM[parse_messages] --> RM{route_messages}
     RM -->|read > 0| PF[parse_fix]
+    PF --> XM[(fix.misc)]
+    PF --> XU[(fix.unknown)]
     PF --> RF{route_fix}
     RF -->|instrument_versions > 0| FI[flatten_instruments]
     RF -->|routed.market > 0| PK[parse_market]
@@ -31,19 +34,15 @@ flowchart TD
     RK -->|flatten.executions > 0| FE[flatten_executions]
 ```
 
-| DAG setting | Shipped value |
-| --- | --- |
-| DAG ID | `rekep_market_pipeline` |
-| Schedule | `@hourly` in UTC |
-| First interval | `[2026-01-01T00:00:00Z, 2026-01-01T01:00:00Z)` |
-| Catch-up | enabled |
-| Concurrent DAG runs | one |
-| Runtime parameter | `branch`, default `root` |
+| DAG | Schedule | Catch-up | Concurrent runs | Runtime parameter |
+| --- | --- | --- | --- | --- |
+| `rekep_market_pipeline` | hourly in UTC | enabled from 2026-01-01 | one | `branch` (`root`), `books` (`true`) |
+| `rekep_iceberg_maintenance` | 02:30 UTC daily | disabled | one | `branch`, default `root` |
 
 For every scheduled run, Airflow replaces the YAML `start` and `end` values
 with its half-open data interval. The DAG's `branch` parameter replaces the
-YAML branch in every notebook. All other job settings continue to come from
-the checked-in YAML files.
+YAML branch in every notebook, and `books` selects the parse-market path. All
+other job settings continue to come from the checked-in YAML files.
 
 Each notebook records a `result` scrap with non-negative counts. A route task
 reads that result and skips downstream work whose input count is zero. Routes
@@ -56,7 +55,9 @@ The default input directory, `data/capture`, is not included in the
 repository. Before the first run, edit
 `tasks/parse_messages/parse_messages.yml` so `source` points to an existing
 worker-visible directory or object-store prefix. Adjust `pattern`, `timezone`,
-header rules, and static values for that capture.
+header rules, payload filters, and `fix_dictionary` for that capture. Set the
+same `fix_dictionary` in `tasks/parse_fix/parse_fix.yml`; the first stage reads
+MsgType metadata and the second performs full transcription.
 
 The active catalog configuration in every task YAML is deliberately local:
 
@@ -72,7 +73,8 @@ The DAG resolves those relative paths beneath `REKEP_ROOT`. This is useful for
 a single-host test, but the checkout must be writable and the catalog cannot
 coordinate distributed workers.
 
-For production, replace the catalog block consistently in all six YAML files.
+For production, replace the catalog block consistently in all seven YAML files,
+including `tasks/optimize_iceberg/optimize_iceberg.yml`.
 The shipped Glue/S3 example is:
 
 ```yaml
@@ -114,7 +116,8 @@ Keep the table wiring aligned across the documents:
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |
 
-`tasks/parse_market/parse_market.yml` selects the market path:
+`tasks/parse_market/parse_market.yml` sets the scheduled default market path;
+the DAG's boolean `books` parameter can override it per run:
 
 - `books: true` writes Books, then routes Orders and Executions to their
   independent flatteners.
@@ -261,6 +264,7 @@ intentional:
 ```bash
 airflow dags next-execution --table --num-executions 5 rekep_market_pipeline
 airflow dags unpause rekep_market_pipeline
+airflow dags unpause rekep_iceberg_maintenance
 ```
 
 Pause it without cancelling an already-running task:
@@ -269,18 +273,49 @@ Pause it without cancelling an already-running task:
 airflow dags pause rekep_market_pipeline
 ```
 
-Scheduled runs use `branch=root`. In the UI, **Trigger** presents the `branch`
-field. The equivalent CLI command is:
+Scheduled runs use `branch=root` and `books=true`. In the UI, **Trigger**
+presents both fields. This direct-mode CLI run bypasses Book construction:
 
 ```bash
 airflow dags trigger \
-  --conf '{"branch":"root"}' \
+  --conf '{"branch":"root","books":false}' \
   rekep_market_pipeline
 ```
 
 A trigger submitted while the DAG is paused remains queued. Manual-run data
 intervals are inferred by Airflow's timetable and trigger path; use a backfill
 when an exact historical sequence is required.
+
+## Run Iceberg maintenance
+
+The maintenance DAG visits every table in every nested namespace and runs the
+same bounded routine as `IcebergDataset.optimize`: compact eligible data files,
+expire eligible snapshots, then sweep unreachable data and metadata files. It
+does not need a source interval and has catch-up disabled.
+
+The checked-in policy in `tasks/optimize_iceberg/optimize_iceberg.yml` retains
+at least 24 snapshots and every snapshot from the last seven days. Files are
+deleted only when no retained snapshot or ref reaches them and they have been
+orphaned for at least three days. Current table rows remain; time travel to an
+expired snapshot does not. Manifest and manifest-list Avro files are shared, so
+the sweep keeps one whenever any retained snapshot still references it.
+
+Inspect and adjust that retention before unpausing the DAG. Schedule it for a
+quiet warehouse period; the shipped 02:30 UTC time avoids the top-of-hour start
+of the publishing DAG. The orphan grace protects new uncommitted files, and a
+catalog conflict fails the run rather than silently overwriting another commit.
+Airflow retries the notebook twice at ten-minute intervals.
+
+Run one maintenance pass manually with:
+
+```bash
+airflow dags trigger \
+  --conf '{"branch":"root"}' \
+  rekep_iceberg_maintenance
+```
+
+The executed notebook's `result` scrap reports table count plus rewritten,
+expired, deleted-file, and reclaimed-byte totals, with a per-table breakdown.
 
 ## Backfill historical hours
 

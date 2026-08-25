@@ -19,16 +19,9 @@ from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
-    IS_TAG as _IS_TAG,
-)
-from rekep.fix.columns import (
-    KWARG_PARTS,
-    KWARGS,
     NAMESPACE_COLUMNS,
     QUOTE_GROUP_COUNTS,
     QUOTE_GROUP_STRUCTURE,
-    TAG,
-    FixKwarg,
     named_columns,
 )
 from rekep.fix.columns import TYPES as FLAT_TYPES
@@ -54,6 +47,8 @@ from rekep.fix.message import (
 from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
+from rekep.kwargs import IS_TAG as _IS_TAG
+from rekep.kwargs import KWARG_PARTS, KWARGS, TAG, Kwarg
 
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
@@ -608,10 +603,10 @@ class FixCodec(Convertible):
         the line wrote in front of a name goes to `comp` when it is a group
         entry and to `namespace` when it is not. Telling those apart needs no
         dictionary either -- an entry of a repeating group is what carries a
-        subscript, which is what `FixKwarg.structure_arrow` matches, and everything else in
+        subscript, which is what `Kwarg.structure_arrow` matches, and everything else in
         front of a name is a vendor's own prefix.
         """
-        return FixKwarg.structure_arrow(keys, values)
+        return Kwarg.structure_arrow(keys, values)
 
     def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.

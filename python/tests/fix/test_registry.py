@@ -24,6 +24,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
+from rekep.enums import EventType
 from rekep.fields import Field
 from rekep.fix import FixRegistry
 from rekep.fix.entries import newest_rank
@@ -687,6 +688,30 @@ def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
         "QuoteEntryID": 299,
     }
     assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
+
+
+def test_the_builtin_registry_classifies_msg_types_before_transcription() -> None:
+    registry = FixRegistry.from_builtin()
+    classified = registry.msg_type_event_types()
+
+    assert {key: classified[key] for key in ("D", "F", "G")} == {
+        "D": EventType.ORDER,
+        "F": EventType.ORDER,
+        "G": EventType.ORDER,
+    }
+    assert {classified[key] for key in ("8", "AE")} == {EventType.EXECUTION}
+    assert classified["9"] is EventType.ORDER
+    assert {classified[key] for key in ("W", "X")} == {EventType.BOOK}
+    assert {classified[key] for key in ("AG", "AH", "AI", "AJ", "R", "S", "Z", "a", "b", "i")} == {
+        EventType.QUOTE
+    }
+    assert classified["d"] is EventType.INSTRUMENT
+    assert classified["0"] is EventType.MISC, "known operational FIX traffic"
+    assert "U1" not in classified, "a registry-unknown private type stays UNKNOWN"
+
+    metadata = json.loads(registry.scalar("MsgType").fix["event_types"])
+    assert metadata["D"] == int(EventType.ORDER)
+    assert registry.msg_type_event_types() is classified
 
 
 def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> None:

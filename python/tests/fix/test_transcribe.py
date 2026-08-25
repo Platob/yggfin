@@ -28,8 +28,6 @@ from rekep.fix.columns import (
     COLUMNS,
     COMMON,
     FLAT,
-    KWARG_PARTS,
-    KWARGS,
     NAMESPACE_COLUMNS,
     QUOTE,
     SESSION,
@@ -45,6 +43,7 @@ from rekep.fix.transcribe import (
     _version_from_evidence,
     _version_key,
 )
+from rekep.kwargs import KWARG_PARTS, KWARGS
 
 SOH = "\x01"
 

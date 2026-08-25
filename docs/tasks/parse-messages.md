@@ -1,8 +1,9 @@
 # Parse messages
 
 `tasks/parse_messages/parse_messages.ipynb` streams text files through
-`TextFile` or `TextFiles` and writes `logs.messages`. It reads the log record,
-not the protocol inside it.
+`TextFile` or `TextFiles` and writes `logs.messages`. It reads only the
+registry's MsgType event metadata; field and protocol interpretation stay in
+`parse_fix`.
 
 Each `Message` row contains:
 
@@ -10,20 +11,29 @@ Each `Message` row contains:
 - `source_url` and the 1-based physical `source_rownum`;
 - `thread_name` and `plugin_code` from the configured header;
 - the unsplit payload in `message`;
-- ordered `kwargs` parsed from key/value syntax, with repeated keys retained;
+- the protocol syntax in `protocol_code`, without field interpretation;
+- residual ordered `kwargs` parsed from key/value syntax, with repeated keys retained;
+- the unambiguous `MsgType` spelling and the registry-mapped `etype`;
 - `hash`, the stable identity of that source row.
 
-Registry names, protocol versions, event categories, components and typed
-values do not belong to this stage. Numeric keys remain the numbers the line
-wrote, named keys retain their spelling, and values remain text. `parse_fix`
-owns the first protocol interpretation.
+Registry names, protocol versions, components and typed values do not belong
+to this stage. Numeric keys remain the numbers the line wrote, named keys
+retain their spelling after a leading `#` syntax marker is removed, and values
+remain text. MsgType metadata decides the
+event kind and identifies technical MsgTypes; registry plugin metadata also
+identifies technical sources such as Jolokia. Their raw log rows remain
+auditable in `logs.messages`, but their argument bodies skip tokenization and
+`parse_fix` excludes them before FIX translation. `parse_fix` owns dictionary
+interpretation.
 
 ## Why the table is retained
 
-`logs.messages` is the protocol-neutral source for later parsers. A dictionary,
-field rule or protocol rule can change without reopening compressed logs or
-listing the source object-store prefix again. Re-running a protocol parser
-uses the retained `kwargs`; it does not split `message` again.
+`logs.messages` is the protocol-neutral source for later parsers. A field or
+protocol rule can change without reopening compressed logs or listing the
+source object-store prefix again. Re-running a protocol parser uses the
+retained `kwargs`; it does not split `message` again. A change to MsgType
+`event_types` is different because it changes stored `Message.etype`, so it
+requires rebuilding this table.
 
 The row identity includes its source location and row number, so identical
 payloads in two captures remain two source records. The table is sorted by
@@ -37,11 +47,45 @@ collected in memory. Plain remote captures stream directly, and local captures
 are never copied. Callers that explicitly request a persistent spill get its
 deterministic, remote-size-validated cache behavior instead.
 
+Keep a directly opened `TextFile` in a `with` block. Exhausting its Arrow
+reader releases the temporary spill; when a caller stops early, closing the
+owning `TextFile` performs that release immediately.
+
+Physical lines are scanned through a fixed-size native buffer. A long line or
+folded continuation grows one mutable record buffer instead of recopying its
+entire prefix on every compressed read; row and byte bounds limit the other
+records held beside it.
+
 ## Configuration
 
-The adjacent `parse_messages.yml` selects the source, filename pattern, header
-regex, timezone, static columns, catalog, branch and batch sizes. Its
-`exclude_plugins` list removes exact, case-sensitive `plugin_code` values before
-message identities are built; an empty list keeps every plugin. It contains no
-FIX dictionary or protocol rules. Those parameters live beside
-`parse_fix.ipynb`, where they are used.
+The adjacent `parse_messages.yml` selects the source, FIX dictionary, filename
+pattern, header regex, timezone, protocol rules, catalog, branch and batch
+sizes. Keep custom `protocols` aligned with `parse_fix.yml`; this stage stores
+the classification that projected FIX conversion consumes.
+Null uses the shipped default rules in both stages.
+`include_regexes` admits a payload when any Arrow RE2 pattern matches;
+`exclude_regexes` then removes a payload when any pattern matches. Empty lists
+keep every payload. Matching sees the complete folded message and happens
+together with the `[start, end)` recording-time filter before kwargs and
+message identities are parsed.
+
+`duration_ns` closes a non-empty batch when its recording-time window changes.
+With `start`, windows begin exactly there; otherwise the first retained `unix`
+is truncated to the duration. A busy window can still produce multiple
+`batch_row_size` batches, and `batch_byte_size` also closes a batch containing
+unusually large diagnostics. Gaps do not produce empty batches. Input must be
+ordered by these windows.
+
+Only payloads with a discriminator, a FIX BeginString, or at least two
+pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic key/value
+splitter. A piped bridge without MsgType keeps its arguments and is `MISC`; an
+ordinary long log message with an incidental `A=1` skips the allocation.
+
+Message contract version 4 adds `protocol_code`; version 3 added `MsgType` and
+the early `etype`. Rebuild an existing `logs.messages` table after upgrading;
+version 2 rows have neither value for the `parse_fix` pushdown to select, and
+`parse_fix` refuses that older physical schema rather than reporting an empty
+successful run.
+Tables created from the former task-level `static_values` declaration also
+need those required columns removed or a fresh table before the narrower task
+contract can write them.

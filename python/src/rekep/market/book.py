@@ -7,6 +7,7 @@ import copy
 import dataclasses
 import functools
 import heapq
+import itertools
 import math
 from collections import deque
 from collections.abc import Iterable, Iterator
@@ -25,11 +26,12 @@ from rekep.enums import (
 from rekep.fields import Field, scalar
 from rekep.market.event import DAY, HOUR, SYMBOL_CODE, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, frame, hash_bytes
 from rekep.market.instrument import Instrument
 from rekep.market.orders import CLIENT_ORDER_CODE, Execution, Order, _quantity_transition
 
 if TYPE_CHECKING:
+    from rekep.fix.registry import FixRegistry
     from rekep.text.fixmsg import FixMsg
 
 _ARROW_DISPATCH = MappingProxyType(
@@ -148,6 +150,8 @@ class Book(MarketEvent):
 
     __bid_order_hashes: tuple[int, ...] = ()
     __ask_order_hashes: tuple[int, ...] = ()
+    __bid_order_frame: bytes | None = None
+    __ask_order_frame: bytes | None = None
 
     def __post_init__(self) -> None:
         """Normalize collection and depth invariants once at construction."""
@@ -175,10 +179,40 @@ class Book(MarketEvent):
         ask = self.__ask_order_hashes
         return self.unix, self.instrument_xhash, len(bid), *bid, len(ask), *ask
 
-    def _remember_alive_hashes(self, bid: Iterable[int], ask: Iterable[int]) -> None:
+    def _remember_alive_hashes(
+        self,
+        bid: Iterable[int],
+        ask: Iterable[int],
+        *,
+        bid_frame: bytes | None = None,
+        ask_frame: bytes | None = None,
+    ) -> None:
         """Retain ordered live Order hashes as private Book identity inputs."""
         self.__bid_order_hashes = tuple(bid)
         self.__ask_order_hashes = tuple(ask)
+        self.__bid_order_frame = bid_frame
+        self.__ask_order_frame = ask_frame
+
+    def _version_hash(self) -> int:
+        """Hash the live sides from their cached byte-exact identity frames."""
+        bid = self.__bid_order_hashes
+        ask = self.__ask_order_hashes
+        bid_frame = self.__bid_order_frame
+        if bid_frame is None:
+            bid_frame = self.__bid_order_frame = frame(bid) if bid else b""
+        ask_frame = self.__ask_order_frame
+        if ask_frame is None:
+            ask_frame = self.__ask_order_frame = frame(ask) if ask else b""
+        return hash_bytes(
+            b"".join(
+                (
+                    frame((type(self).__name__, self.unix, self.instrument_xhash, len(bid))),
+                    bid_frame,
+                    frame((len(ask),)),
+                    ask_frame,
+                )
+            )
+        )
 
     def complete_from(self, previous: MarketEvent) -> None:
         """Complete the book without carrying an earlier delta's relations."""
@@ -231,7 +265,7 @@ class Book(MarketEvent):
         self._materialize_life_code()
         if self.linked_events:
             self._drop_self_link()
-        self.hash = self.hash_of(*self.version_parts())
+        self.hash = self._version_hash()
         return self
 
     @classmethod
@@ -245,6 +279,27 @@ class Book(MarketEvent):
     ) -> Iterator[Self]:
         """Fold translated events directly, for protocol adapters and tests."""
         return iter(BookIterator.from_events(events, **declared))
+
+    @classmethod
+    def into_arrow_reader(
+        cls, events: Iterable[Self], batch_row_size: int = 65_536
+    ) -> pyarrow.RecordBatchReader:
+        """Serialize books in bounded, column-built Arrow batches."""
+        if batch_row_size <= 0:
+            raise ValueError("batch_row_size must be positive")
+        schema = cls.into_field().into_arrow_schema()
+
+        def batches() -> Iterator[pyarrow.RecordBatch]:
+            held: list[Self] = []
+            for event in events:
+                held.append(event)
+                if len(held) >= batch_row_size:
+                    yield _book_arrow_batch(held, schema)
+                    held.clear()
+            if held:
+                yield _book_arrow_batch(held, schema)
+
+        return pyarrow.RecordBatchReader.from_batches(schema, batches())
 
     def into_deltas(self) -> Iterator[Order]:
         """Order state transitions carried by this book delta."""
@@ -437,6 +492,38 @@ def _derived(batch: Any, levels: str, into: tuple[str, str, str]) -> dict[str, A
     }
 
 
+_BOOK_STRUCT_LISTS = frozenset(
+    {"bid_levels", "ask_levels", "deltas", "executions", "bid_alive", "ask_alive"}
+)
+
+
+def _book_arrow_batch(books: list[Book], schema: pyarrow.Schema) -> pyarrow.RecordBatch:
+    """Build one Book batch by columns, including its nested struct lists."""
+    columns = []
+    for declared in schema:
+        values = [getattr(book, declared.name) for book in books]
+        if declared.name in _BOOK_STRUCT_LISTS:
+            columns.append(_struct_list_arrow(values, declared.type))
+        else:
+            columns.append(pyarrow.array(values, type=declared.type))
+    return pyarrow.RecordBatch.from_arrays(columns, schema=schema)
+
+
+def _struct_list_arrow(rows: list[list[Any]], declared: pyarrow.DataType) -> pyarrow.Array:
+    """Build one non-null list-of-struct column without row documents."""
+    offsets = [0, *itertools.accumulate(len(row) for row in rows)]
+    values = list(itertools.chain.from_iterable(rows))
+    struct = declared.value_type
+    children = [
+        pyarrow.array([getattr(value, member.name) for value in values], type=member.type)
+        for member in struct
+    ]
+    flattened = pyarrow.StructArray.from_arrays(children, fields=list(struct))
+    return pyarrow.ListArray.from_arrays(
+        pyarrow.array(offsets, type=pyarrow.int32()), flattened, type=declared
+    )
+
+
 # -- folding a book out of one instrument's events ---------------------------
 
 
@@ -448,18 +535,22 @@ class _LevelState:
     qty: float = 0.0
     members: dict[int, None] = dataclasses.field(default_factory=dict)
 
-    #: This level's members in resting order, or None when something about
-    #: them moved since it was last read. A book is emitted far more often
-    #: than any one level changes -- an active instrument emits one per event
-    #: and an event touches one price -- so the sort is paid per change and
-    #: not per book, which is what turned reading the live state into a walk
-    #: of every live order with a sort inside it.
-    resting: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
+    #: Members in descending resting quantity. Inserts and revisions keep this
+    #: ordered, so a busy shared price never re-sorts all its orders per event.
+    resting: list[int] = dataclasses.field(default_factory=list, repr=False)
+
+    #: Stable tie order for equal quantities; replacing a member earns a new one.
+    priority: dict[int, int] = dataclasses.field(default_factory=dict, repr=False)
+    next_priority: int = dataclasses.field(default=0, repr=False)
 
     #: Those members' content hashes, in the same order. Cached beside the
     #: order for the same reason and cleared with it: a book is identified by
     #: this and by nothing else about the orders standing behind it.
     hashes: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
+
+    #: The same hashes in their byte-exact identity frames. Joining the
+    #: unchanged levels avoids reframing a whole side when one price moves.
+    frame: bytes | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclasses.dataclass
@@ -505,6 +596,10 @@ class _Side:
         default_factory=dict, init=False, repr=False
     )
     _next_deadline_token: int = dataclasses.field(default=0, init=False, repr=False)
+    _order_hashes_cache: tuple[int, ...] | None = dataclasses.field(
+        default=None, init=False, repr=False
+    )
+    _order_frame_cache: bytes | None = dataclasses.field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         """Cache direction and index any supplied live orders."""
@@ -603,9 +698,9 @@ class _Side:
         live order, which is what a `min()` across the book used to cost.
         """
         level = self.best_level
-        if level is None:
+        if level is None or not level.resting:
             return None
-        return max((self.orders[x] for x in level.members), key=_resting, default=None)
+        return self.orders[level.resting[0]]
 
     @property
     def sorted_orders(self) -> list[Order]:
@@ -627,6 +722,9 @@ class _Side:
         else about the orders standing behind it. Per level and cached, so an
         instrument with a hundred live levels pays for the one an event moved.
         """
+        cached = self._order_hashes_cache
+        if cached is not None:
+            return cached
         found: list[int] = []
         orders = self.orders
         for level in self.alive:
@@ -634,21 +732,64 @@ class _Side:
             if hashes is None:
                 hashes = level.hashes = tuple(orders[x].hash for x in self._resting_members(level))
             found.extend(hashes)
-        return tuple(found)
+        cached = self._order_hashes_cache = tuple(found)
+        return cached
 
-    def _resting_members(self, level: _LevelState) -> tuple[int, ...]:
-        """One level's members by descending resting quantity, computed once."""
-        settled = level.resting
-        if settled is not None:
-            return settled
-        members = level.members
-        if len(members) < 2:
-            settled = tuple(members)
-        else:
-            orders = self.orders
-            settled = tuple(sorted(members, key=lambda x: _resting(orders[x]), reverse=True))
-        level.resting = settled
-        return settled
+    def order_identity(self) -> tuple[tuple[int, ...], bytes]:
+        """Ordered live hashes and their cached v1 frames."""
+        hashes = self.order_hashes()
+        encoded = self._order_frame_cache
+        if encoded is None:
+            frames = []
+            for level in self.alive:
+                level_hashes = level.hashes
+                if level_hashes is None:
+                    level_hashes = level.hashes = tuple(
+                        self.orders[x].hash for x in self._resting_members(level)
+                    )
+                level_frame = level.frame
+                if level_frame is None:
+                    level_frame = level.frame = frame(level_hashes) if level_hashes else b""
+                frames.append(level_frame)
+            encoded = self._order_frame_cache = b"".join(frames)
+        return hashes, encoded
+
+    @staticmethod
+    def _resting_members(level: _LevelState) -> list[int]:
+        """One level's incrementally ordered members."""
+        return level.resting
+
+    def _place(self, level: _LevelState, xhash: int, quantity: float) -> None:
+        """Insert or revise one member in stable descending quantity order."""
+        try:
+            level.resting.remove(xhash)
+        except ValueError:
+            pass
+        priority = level.priority.get(xhash)
+        if priority is None:
+            level.next_priority += 1
+            priority = level.priority[xhash] = level.next_priority
+        candidate = (-quantity, priority)
+        low, high = 0, len(level.resting)
+        while low < high:
+            middle = (low + high) // 2
+            current = level.resting[middle]
+            key = (-_resting(self.orders[current]), level.priority[current])
+            if key < candidate:
+                low = middle + 1
+            else:
+                high = middle
+        level.resting.insert(low, xhash)
+        self._moved(level)
+
+    def _unplace(self, level: _LevelState, xhash: int) -> None:
+        """Remove one member from a level's resting order."""
+        try:
+            level.resting.remove(xhash)
+        except ValueError:
+            return
+        level.priority.pop(xhash, None)
+        self._moved(level)
 
     def _touch(self, px: float, level: _LevelState | None = None) -> None:
         """Record a price as changed, and forget what its members settled into."""
@@ -659,7 +800,9 @@ class _Side:
         """Forget one level's cached order and hashes, by price or by level."""
         level = self.levels.get(where) if isinstance(where, float) else where
         if level is not None:
-            level.resting = level.hashes = None
+            level.hashes = level.frame = None
+            self._order_hashes_cache = None
+            self._order_frame_cache = None
 
     def into_levels(self) -> list[Level]:
         """The live orders aggregated to price levels, best first."""
@@ -859,8 +1002,9 @@ class _Side:
             # deleting and bisecting the level itself.
             level.members.pop(settled.xhash, None)
             level.members[settled.xhash] = None
-            self._moved(level)
+            level.priority.pop(settled.xhash, None)
             self._remember(settled)
+            self._place(level, settled.xhash, after)
             return bool(moved), settled
         if standing is not None:
             self._leave(standing)
@@ -904,6 +1048,10 @@ class _Side:
                 level.members = {
                     working.xhash if xhash == old_xhash else xhash: None for xhash in level.members
                 }
+                at = level.resting.index(old_xhash)
+                level.resting[at] = working.xhash
+                level.priority[working.xhash] = level.priority.pop(old_xhash)
+                self._moved(level)
             self._rekey(old_xhash, working.xhash)
         self._remember(working)
         return requested
@@ -1011,6 +1159,7 @@ class _Side:
             self.alive.insert(at, level)
         level.qty += quantity
         level.members[order.xhash] = None
+        self._place(level, order.xhash, quantity)
         self._touch(px, level)
 
     def _leave(self, order: Order) -> None:
@@ -1026,6 +1175,7 @@ class _Side:
         quantity = _resting(order)
         level.qty -= quantity
         level.members.pop(order.xhash, None)
+        self._unplace(level, order.xhash)
         self._touch(order.px, level)
         if not level.members or level.qty <= 0:
             del self.levels[order.px]
@@ -1177,13 +1327,9 @@ class _Side:
         while traded > 0 and self.alive:
             top = self.keys[0]
             level = self.alive[0]
-            # A list, because reducing an order can empty the level and delete
-            # the dict this is walking. Sorted inside the level and nowhere
-            # else: the largest interest at one price is met first.
-            for xhash in sorted(
-                level.members,
-                key=lambda x: -_resting(self.orders[x]),
-            ):
+            # A tuple, because reducing an order can empty the level and edit
+            # the resting order this is walking.
+            for xhash in tuple(level.resting):
                 if traded <= 0:
                     break
                 resting = self.orders.get(xhash)
@@ -1211,6 +1357,8 @@ class _Side:
                 revised = copy.copy(order)
                 revised.qty = max(revised.qty - taken, 0.0)
                 self.orders[order.xhash] = revised
+                if level is not None:
+                    self._place(level, order.xhash, _resting(revised))
         return traded - taken
 
 
@@ -1294,6 +1442,9 @@ class BookIterator:
 
     logs: Iterable[FixMsg] = ()
     """Parsed logs sorted by event time, `MsgSeqNum`, and hash; read once."""
+
+    registry: FixRegistry | None = None
+    """FIX dictionary that owns dispatch and lifecycle value mappings."""
 
     snapshot_every: int = HOUR
     """Emit the book on every multiple of this; `0` emits only what changed."""
@@ -1419,7 +1570,7 @@ class BookIterator:
                     for instrument in log.into_instruments():
                         self._index_instrument(instrument)
                 continue
-            yield from log.into_market_events()
+            yield from log.into_market_events(registry=self.registry)
 
     def _order_output(self, books: int) -> None:
         """Keep checkpoint commits globally boundary-ordered across instruments."""
@@ -1914,7 +2065,14 @@ class BookIterator:
         taken.executions = []
         taken.bid_alive = state.bid.into_orders()
         taken.ask_alive = state.ask.into_orders()
-        taken._remember_alive_hashes(*_alive_hashes(taken.bid_alive, taken.ask_alive))
+        bid_hashes, bid_frame = state.bid.order_identity()
+        ask_hashes, ask_frame = state.ask.order_identity()
+        taken._remember_alive_hashes(
+            bid_hashes,
+            ask_hashes,
+            bid_frame=bid_frame,
+            ask_frame=ask_frame,
+        )
         alive = [*taken.bid_alive, *taken.ask_alive]
         taken.linked_events = list(
             dict.fromkeys((order.unix, order.xhash) for order in alive if order.xhash)
@@ -2038,7 +2196,14 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         deltas=list(state.deltas),
         executions=list(state.executions),
     )
-    book._remember_alive_hashes(state.bid.order_hashes(), state.ask.order_hashes())
+    bid_hashes, bid_frame = state.bid.order_identity()
+    ask_hashes, ask_frame = state.ask.order_identity()
+    book._remember_alive_hashes(
+        bid_hashes,
+        ask_hashes,
+        bid_frame=bid_frame,
+        ask_frame=ask_frame,
+    )
     book.attach_instrument(state.instrument)
     state.bid.cleared()
     state.ask.cleared()

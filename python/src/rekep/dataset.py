@@ -239,10 +239,12 @@ class Dataset(Convertible, abc.ABC):
         Creates the dataset if it is not there. `schema` is the shape to cast
         onto on the way in, defaulting to this dataset's own. `merge_by` is
         True to match on the primary key or a list of column names to match on
-        those; there is no keyless overwrite, because replacing rows means
-        knowing which rows -- `append_arrow_*` is the blind insert.
-        `commit_row_size` bounds how many rows one commit carries -- None
-        writes the whole stream as one.
+        those. A store may give false `merge_by` a bounded replacement meaning
+        -- Iceberg replaces the touched identity partitions -- otherwise an
+        overwrite needs keys; `append_arrow_*` is the blind insert.
+        `commit_row_size` bounds how many rows one commit carries. None uses
+        the store's default; a store with no configured default writes the
+        whole stream as one.
         """
 
     def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:

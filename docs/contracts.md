@@ -7,8 +7,8 @@ table](assets/compatibility-tree.svg)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 2 | Protocol-neutral source records with ordered raw arguments. |
-| `fixmsg.yaml` | 4 | Parsed FIX records, including typed canonical FIX fields. |
+| `message.yaml` | 3 | Source records with a promoted message discriminator and residual arguments. |
+| `fixmsg.yaml` | 5 | Parsed FIX records, including typed canonical FIX fields. |
 | `instrument.yaml` | 1 | Versioned and hourly instrument state. |
 | `book.yaml` | 1 | Book deltas, executions, and recovery state. |
 | `order.yaml` | 1 | Flattened auditable order events. |

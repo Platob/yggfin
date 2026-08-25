@@ -8,6 +8,7 @@ from functools import cached_property
 from typing import Any
 
 from rekep.convert import Convertible
+from rekep.fields import Field, StructField
 from rekep.require import require
 
 #: FileIO pyiceberg is pointed at unless the caller names another. Arrow is the
@@ -15,8 +16,8 @@ from rekep.require import require
 #: implementations everything else does -- one credential chain, one set of
 #: URI rules, and `pyarrow.fs` handles for anything that has to be listed or
 #: deleted during maintenance. Ours rather than pyiceberg's own, for the one
-#: parsing fix `rekep.iceberg.fileio` explains: Windows drive letters.
-PYARROW_FILE_IO = "rekep.iceberg.fileio.ArrowFileIO"
+#: parsing fix `rekep.arrow_file_io` explains: Windows drive letters.
+PYARROW_FILE_IO = "rekep.arrow_file_io.ArrowFileIO"
 
 
 @dataclasses.dataclass(eq=False)
@@ -39,7 +40,7 @@ class IcebergCatalog(Convertible):
         require("pyiceberg", "iceberg")
         from pyiceberg.catalog import load_catalog
 
-        from rekep.iceberg.fileio import inferred_properties
+        from rekep.arrow_file_io import inferred_properties
 
         properties = inferred_properties(self.properties)
         return load_catalog(self.name, **{"py-io-impl": PYARROW_FILE_IO, **properties})
@@ -143,6 +144,9 @@ class IcebergCatalog(Convertible):
     def dataset(self, name: str, **kwargs: Any) -> Any:
         """A dataset on this catalog: the way to read and write a table here.
 
+        `name` becomes the supplied field's outer name. Without a field, the
+        existing table is loaded once and its declaration is read back.
+
         Handed *this* catalog rather than left to build its own, the way
         `create_with_field` hands over the table it just made: loading a
         pyiceberg catalog builds a SQLAlchemy engine or asks a REST server for
@@ -150,9 +154,18 @@ class IcebergCatalog(Convertible):
         """
         from rekep.iceberg.dataset import IcebergDataset
 
-        built = IcebergDataset(name=name, catalog=self.name, properties=self.properties, **kwargs)
+        field = kwargs.pop("field", None)
+        table = None
+        if field is None:
+            table = self.load_table(name)
+            field = StructField.from_iceberg_schema(table.schema(), name, spec=table.spec())
+        else:
+            field = Field.from_(field).with_name(name)
+        built = IcebergDataset(field=field, catalog=self.name, properties=self.properties, **kwargs)
         built.__dict__["store"] = self
         built.__dict__["_owns_store"] = False
+        if table is not None:
+            built.__dict__["iceberg_table"] = table
         return built
 
     def datasets(self, namespace: str | None = None) -> Iterator[Any]:

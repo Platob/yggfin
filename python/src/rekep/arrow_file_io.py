@@ -77,9 +77,9 @@ class ContentCache:
             return self._entries.get(location)
 
     def put(self, location: str, data: bytes) -> None:
-        if len(data) > self.limit // 8:
-            return
         with self._lock:
+            if len(data) > self.limit // 8:
+                return
             self._bytes -= len(self._entries.pop(location, b""))
             self._entries[location] = data
             self._bytes += len(data)
@@ -87,6 +87,11 @@ class ContentCache:
             while self._bytes > self.limit and self._entries:
                 _, evicted = self._entries.popitem(last=False)
                 self._bytes -= len(evicted)
+
+    def accepts(self, size: int) -> bool:
+        """Whether one file fits the current per-entry budget."""
+        with self._lock:
+            return size <= self.limit // 8
 
     def evict(self, location: str) -> None:
         with self._lock:
@@ -124,10 +129,11 @@ CONTENT_CACHE = ContentCache()
 class CachedInputFile(InputFile):
     """An input file served from the cache, read through it on a miss.
 
-    `open` hands back a `pyarrow.BufferReader` over the cached bytes -- a real
-    seekable `NativeFile`, so avro and JSON readers cannot tell the store from
-    the memory. A hit also answers `exists` and `__len__` without the HEAD
-    they would otherwise cost.
+    `open` hands cacheable misses back as a `pyarrow.BufferReader` over cached
+    bytes -- a real seekable `NativeFile`, so avro and JSON readers cannot tell
+    the store from memory. Oversized misses keep the underlying stream. A hit
+    also answers `exists` and `__len__` without the HEAD they would otherwise
+    cost.
     """
 
     def __init__(self, inner: InputFile, cache: ContentCache) -> None:
@@ -147,6 +153,8 @@ class CachedInputFile(InputFile):
     def open(self, seekable: bool = True) -> InputStream:
         data = self._cache.get(self.location)
         if data is None:
+            if not self._cache.accepts(len(self._inner)):
+                return self._inner.open(seekable)
             with self._inner.open() as stream:
                 data = stream.read()
             self._cache.put(self.location, data)
@@ -341,6 +349,44 @@ class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
         if self._content_cache is None or not _immutable(location):
             return inner
         return CachedOutputFile(inner, self._content_cache)
+
+    def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
+        """Copy one local file to a location through this configured Arrow filesystem."""
+        source_path = os.path.abspath(os.fspath(source))
+        source_filesystem = pyarrow.fs.LocalFileSystem()
+        source_info = source_filesystem.get_file_info(source_path)
+        if source_info.type != pyarrow.fs.FileType.File:
+            raise FileNotFoundError(source_path)
+
+        output = self.new_output(target)
+        filesystem = getattr(output, "_filesystem", None)
+        path = getattr(output, "_path", None)
+        if not isinstance(filesystem, pyarrow.fs.FileSystem) or not isinstance(path, str):
+            raise TypeError(f"{type(output).__name__} does not expose an Arrow filesystem")
+        parent = path.rpartition("/")[0]
+        if parent and filesystem.type_name == "local":
+            filesystem.create_dir(parent, recursive=True)
+        try:
+            pyarrow.fs.copy_files(
+                source_path,
+                path,
+                source_filesystem=source_filesystem,
+                destination_filesystem=filesystem,
+                chunk_size=1 << 22,
+                use_threads=False,
+            )
+            copied = filesystem.get_file_info(path)
+            if copied.type != pyarrow.fs.FileType.File or copied.size != source_info.size:
+                raise OSError(
+                    f"copy to {target!r} wrote {copied.size} bytes; expected {source_info.size}"
+                )
+        except Exception:
+            try:
+                filesystem.delete_file(path)
+            except FileNotFoundError:
+                pass
+            raise
+        return target
 
     def delete(self, location: str | InputFile | OutputFile) -> None:
         # Evicted first, whether or not the store's delete then fails: a

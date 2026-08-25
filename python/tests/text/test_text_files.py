@@ -5,7 +5,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Message, TextFile, TextFiles
+from rekep import Dataset, Field, FixRegistry, Message, TextFile, TextFiles
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
 
@@ -197,6 +197,7 @@ def test_the_walk_is_lazy(capture: Path) -> None:
 def test_an_empty_set_reads_as_no_rows() -> None:
     files = TextFiles()
     assert files.exists is False
+    assert files.protocol_rules is None
     table = files.into_arrow_table()
     assert table.num_rows == 0
     assert table.schema.equals(Message.into_field().into_arrow_schema())
@@ -242,13 +243,19 @@ def test_a_supplied_filesystem_resolves_nothing_but_still_spells_a_local_root(
 
 
 def test_the_declaration_reaches_every_file(capture: Path) -> None:
+    msg_type_event_types = FixRegistry.from_builtin().msg_type_event_types()
     files = TextFiles.from_folder(
-        capture, pattern="*.txt", timezone="Europe/Paris", static_values={"bridge": "bridge-1"}
+        capture,
+        pattern="*.txt",
+        timezone="Europe/Paris",
+        static_values={"bridge": "bridge-1"},
+        msg_type_event_types=msg_type_event_types,
     )
     for log in files.into_files():
         assert isinstance(log, TextFile)
         assert log.timezone == "Europe/Paris"
         assert log.static_values == {"bridge": "bridge-1"}
+        assert log.msg_type_event_types is msg_type_event_types
         assert log.filesystem is files.filesystem
 
 
@@ -310,30 +317,73 @@ def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
     assert table.schema.equals(Message.into_field().into_arrow_schema())
 
 
-def test_plugin_exclusions_are_forwarded_to_every_file(tmp_path: Path) -> None:
+def test_message_regexes_are_forwarded_to_every_file(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text(
-        "2026-08-14 00:05:01.000 [t] [drop] (INFO) hidden-a\n"
-        "2026-08-14 00:05:02.000 [t] [keep] (INFO) kept-a\n"
+        "2026-08-14 00:05:01.000 [t] [plugin] (INFO) hidden-a\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) kept-a\n"
     )
     (tmp_path / "b.txt").write_text(
-        "2026-08-14 00:05:03.000 [t] [keep] (INFO) kept-b\n"
-        "2026-08-14 00:05:04.000 [t] [drop] (INFO) hidden-b\n"
+        "2026-08-14 00:05:03.000 [t] [plugin] (INFO) kept-b\n"
+        "2026-08-14 00:05:04.000 [t] [plugin] (INFO) hidden-b\n"
     )
 
     batches = list(
         TextFiles.from_folder(tmp_path).into_arrow_batches(
-            batch_row_size=2, exclude_plugins=("drop",)
+            batch_row_size=2, include_regexes=(r"kept",), exclude_regexes=(r"hidden",)
         )
     )
     assert [batch.num_rows for batch in batches] == [2]
     assert batches[0].column("message").to_pylist() == ["kept-a", "kept-b"]
     assert (
-        list(TextFiles.from_folder(tmp_path).into_arrow_batches(exclude_plugins=("drop", "keep")))
+        list(
+            TextFiles.from_folder(tmp_path).into_arrow_batches(
+                include_regexes=(r"kept",), exclude_regexes=(r"kept",)
+            )
+        )
         == []
     )
 
-    with pytest.raises(TypeError, match="sequence of plugin codes"):
-        list(TextFiles.from_folder(tmp_path).into_arrow_batches(exclude_plugins="drop"))
+    with pytest.raises(TypeError, match="include_regexes must be a sequence"):
+        TextFiles.from_folder(tmp_path).into_arrow_batches(  # type: ignore[arg-type]
+            include_regexes="kept"
+        )
+
+
+def test_duration_windows_are_shared_across_file_boundaries(tmp_path: Path) -> None:
+    (tmp_path / "a.txt").write_text("2026-08-14 00:05:01.100 [t] [plugin] (INFO) first-file\n")
+    (tmp_path / "b.txt").write_text(
+        "2026-08-14 00:05:01.900 [t] [plugin] (INFO) second-file\n"
+        "2026-08-14 00:05:01.950 [t] [plugin] (INFO) same-window\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) boundary\n"
+    )
+
+    batches = list(
+        TextFiles.from_folder(tmp_path).into_arrow_batches(
+            batch_row_size=2, duration_ns=1_000_000_000
+        )
+    )
+    assert [batch.column("message").to_pylist() for batch in batches] == [
+        ["first-file", "second-file"],
+        ["same-window"],
+        ["boundary"],
+    ]
+
+
+def test_time_bounds_are_forwarded_to_every_file(tmp_path: Path) -> None:
+    (tmp_path / "a.txt").write_text(
+        "2026-08-14 00:05:01.000 [t] [plugin] (INFO) before\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) start\n"
+    )
+    (tmp_path / "b.txt").write_text(
+        "2026-08-14 00:05:03.000 [t] [plugin] (INFO) inside\n"
+        "2026-08-14 00:05:04.000 [t] [plugin] (INFO) end\n"
+    )
+
+    table = TextFiles.from_folder(tmp_path).into_arrow_table(
+        start_unix=1_786_665_902_000_000_000,
+        end_unix=1_786_665_904_000_000_000,
+    )
+    assert table.column("message").to_pylist() == ["start", "inside"]
 
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
@@ -583,6 +633,42 @@ def test_close_is_idempotent(capture: Path) -> None:
     files.close()
     files.close()
     assert files.closed is True
+
+
+def test_close_releases_a_partially_consumed_arrow_reader(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "active.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.000 [t] [plugin] (INFO) first\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) second\n"
+    )
+    log = TextFile.from_path(path)
+    files = TextFiles.from_folder(tmp_path)
+    monkeypatch.setattr(files, "into_files", lambda: iter((log,)))
+    reader = files.into_arrow_reader(batch_row_size=1)
+
+    reader.read_next_batch()
+    assert not log.closed
+    reader.close()
+    files.close()
+
+    assert log.closed
+    assert "_arrow_batches" not in files.__dict__
+
+
+def test_an_unstarted_batch_stream_neither_registers_nor_outlives_its_owner(
+    capture: Path,
+) -> None:
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
+    batches = files.into_arrow_batches()
+    batches.close()
+    assert "_arrow_batches" not in files.__dict__
+
+    batches = files.into_arrow_batches()
+    files.close()
+    with pytest.raises(ValueError, match="closed file"):
+        next(batches)
 
 
 def test_use_after_close_raises(capture: Path) -> None:

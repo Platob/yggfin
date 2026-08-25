@@ -8,9 +8,11 @@ what their fields mean, and what counts as absent.
 ```mermaid
 flowchart LR
     H[header] --> T[TextFile / TextFiles]
+    D[fix_dictionary<br/><i>MsgType event_types</i>] --> T
     T --> M[(logs.messages<br/>Message)]
     N[null_values] --> C[FixCodec]
     P[protocols<br/><i>Rules</i>] --> C
+    P --> T
     F[fields<br/><i>FieldRules</i>] --> C
     M --> C
     C --> R[(fix.*<br/>FixMsg)]
@@ -64,18 +66,45 @@ else.
 
 ## Which event a payload represents
 
-`MessageRules` assigns an `EventType` by the first matching payload pattern.
-It is protocol-neutral and has no defaults. `FixMsg.into_message_rules()`
-returns a fresh copy of the standard FIX message rules; `parse_fix` uses those
-when `rules` is null.
+The FIX registry's `MsgType <35>` record owns the configurable
+`event_types` mapping. `parse_messages` loads that projection and applies an
+exact Arrow lookup; it does not maintain a second set of payload regexes.
 
-```yaml
-rules:
-  rules:
-    - pattern: '35=8(?:\D|$)'
-      patterns: [ExecutionReport]
-      etype: EXECUTION
-      label: a fill
+```json
+{
+  "name": "MsgType",
+  "tag": 35,
+  "event_types": {"8": "EXECUTION", "D": "ORDER", "W": "BOOK"},
+  "handlers": {"8": "execution_report", "D": "order", "W": "entries"},
+  "order_states": {"D": "PENDING_NEW"},
+  "technical_values": ["0", "1", "2", "3", "4", "5", "A"],
+  "technical_plugins": ["jolokia"]
+}
+```
+
+A row without a discriminator is `MISC`. A discriminator known by the
+registry but without a market mapping is also `MISC`; a private value absent
+from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
+these terminal values cannot enter `fix.market` accidentally.
+
+`handlers` is deliberately separate from `event_types`: classification can
+recognize a market family without claiming that the translator implements its
+shape. `technical_values` and `technical_plugins` keep operational traffic out
+of FIX output and let the message parser skip its argument body. These indexes
+are built once from the loaded registry and invalidated when that store changes.
+
+Lifecycle fields carry their configurable normalization beside their own value
+dictionary. `states` supplies the field's direct market meaning;
+`order_states` supplies the Order fallback used by `MsgType` or `ExecType`.
+Names such as `FILLED` and their persisted integer codes are both accepted.
+
+```json
+{
+  "name": "ExecType",
+  "tag": 150,
+  "states": {"F": "FILLED", "G": "REPLACED", "H": "CANCELLED"},
+  "order_states": {"0": "NEW", "1": "PARTIALLY_FILLED", "2": "FILLED"}
+}
 ```
 
 ## What a field's values mean
@@ -137,14 +166,21 @@ null_values: ["", "null", "<null>", "n/a"]
 | --- | --- | --- |
 | `header` | `TextFile.header_pattern` | `parse_messages` |
 | `timezone` | `TextFile.timezone` | `parse_messages` |
-| `protocols` | `FixCodec.rules` | `parse_fix` |
+| `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
+| `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
+| `batch_row_size`, `batch_byte_size` | `TextFile` parser bounds | `parse_messages` |
+| `protocols` | `Message.protocol_code`, then `FixCodec.rules` | both parse stages |
 | `null_values` | `FixCodec.null_values` | `parse_fix` |
-| `rules` | `MessageRules` (which `etype` a payload is) | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |
-| `fix_dictionary` | `FixRegistry.cache_dir` | `parse_fix` |
+| `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |
 
 `parse_messages` retains both the unsplit payload and its ordered generic
 arguments. A change to `fields`, protocol classification or the dictionary
 reruns `parse_fix` without reopening the source logs or tokenizing the payload
-again. Field boundaries are detected before protocol classification, so a
-separator change requires rebuilding `logs.messages`.
+again. Changing MsgType event metadata requires rebuilding `logs.messages`;
+changing field boundaries only reruns `parse_fix`.
+
+A custom `protocols` document must be identical in both task YAML files.
+`parse_messages` stores the selected protocol before the raw payload is
+projected away; `parse_fix` uses the same rule to interpret those stored
+arguments.

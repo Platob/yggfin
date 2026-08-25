@@ -23,6 +23,7 @@ from typing import Any, Self
 import pyarrow.fs
 
 from rekep.convert import Convertible
+from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
 from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, newest_rank
@@ -31,6 +32,7 @@ from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SpecComponent,
     SpecField,
+    SpecGroup,
     parse_components,
     parse_session,
     parse_spec,
@@ -227,6 +229,11 @@ class FixRegistry(Convertible):
         if self.cache_ttl < 0:
             raise ValueError(f"a FIX registry cache TTL cannot be negative: {self.cache_ttl}")
         self.__dict__["_installed"] = self.bootstrap()
+
+    @property
+    def revision(self) -> int:
+        """Generation of the in-memory views over this mutable store."""
+        return self.__dict__.get("_revision", 0)
 
     @classmethod
     @cache
@@ -482,6 +489,36 @@ class FixRegistry(Convertible):
         refreshed = self._stored_components(version)
         return refreshed if refreshed is not None else (stored or [])
 
+    def group_count_tags(self, version: str | None = None) -> frozenset[int]:
+        """Tags that open declared repeating groups in one or every FIX version."""
+        spelling = "*" if version is None else self._spelling(version)
+        cache = self.__dict__.setdefault("_group_count_tags", {})
+        found = cache.get(spelling)
+        if found is not None:
+            return found
+
+        if version is None:
+            found = frozenset(
+                tag for candidate in self.versions for tag in self.group_count_tags(candidate)
+            )
+            cache[spelling] = found
+            return found
+
+        counts: set[int] = set()
+
+        def visit(members: Sequence[Any]) -> None:
+            for member in members:
+                if isinstance(member, SpecGroup):
+                    if member.tag:
+                        counts.add(int(member.tag))
+                    visit(member.members)
+
+        for component in self.components(spelling):
+            visit(component.members)
+        found = frozenset(counts)
+        cache[spelling] = found
+        return found
+
     def components_available(self, version: str) -> bool:
         """Whether this store holds component declarations for `version` at all.
 
@@ -583,6 +620,97 @@ class FixRegistry(Convertible):
             where = version or "any version"
             raise KeyError(f"no FIX field {key!r} in {where}")
         return found[0]
+
+    def msg_type_event_types(self) -> Mapping[str, EventType]:
+        """Known MsgTypes to their configured market kind or MISC."""
+        return self._msg_type_event_types
+
+    @cached_property
+    def _msg_type_event_types(self) -> Mapping[str, EventType]:
+        """Registry-owned classification index, built once per store revision."""
+        entry = self.entry(35)
+        if entry is None:
+            return MappingProxyType({})
+        msg_types = dict.fromkeys((*entry.values, *entry.value_names, *entry.event_types))
+        return MappingProxyType({value: entry.event_type(value) for value in msg_types})
+
+    def msg_types(self, event_type: EventType | int) -> frozenset[str]:
+        """Configured MsgTypes belonging to one stored event kind."""
+        return self._msg_types.get(EventType(event_type), frozenset())
+
+    @cached_property
+    def _msg_types(self) -> Mapping[EventType, frozenset[str]]:
+        """Event-kind groups built once per store revision."""
+        grouped: dict[EventType, set[str]] = {}
+        for msg_type, event_type in self.msg_type_event_types().items():
+            grouped.setdefault(event_type, set()).add(msg_type)
+        return MappingProxyType(
+            {event_type: frozenset(values) for event_type, values in grouped.items()}
+        )
+
+    def msg_type_handlers(self) -> Mapping[str, str]:
+        """Supported MsgTypes to their configured market translation handler."""
+        return self._msg_type_handlers
+
+    @cached_property
+    def _msg_type_handlers(self) -> Mapping[str, str]:
+        """MsgType dispatch built once per store revision."""
+        entry = self.entry(35)
+        return MappingProxyType({}) if entry is None else MappingProxyType(dict(entry.handlers))
+
+    def state_values(self, field: int | str) -> Mapping[str, State]:
+        """Configured market states for one FIX field's wire values."""
+        entry = self.entry(field)
+        return MappingProxyType({}) if entry is None else self._state_values.get(entry.key, {})
+
+    @cached_property
+    def _state_values(self) -> Mapping[int | str, Mapping[str, State]]:
+        """Field-state maps built once per store revision."""
+        return MappingProxyType(
+            {
+                entry.key: MappingProxyType(dict(entry.states))
+                for entry in self._entries[0].values()
+                if entry.states
+            }
+        )
+
+    def order_state_values(self, field: int | str) -> Mapping[str, State]:
+        """Configured Order fallback states for one FIX field's wire values."""
+        entry = self.entry(field)
+        return (
+            MappingProxyType({}) if entry is None else self._order_state_values.get(entry.key, {})
+        )
+
+    @cached_property
+    def _order_state_values(self) -> Mapping[int | str, Mapping[str, State]]:
+        """Order-state fallback maps built once per store revision."""
+        return MappingProxyType(
+            {
+                entry.key: MappingProxyType(dict(entry.order_states))
+                for entry in self._entries[0].values()
+                if entry.order_states
+            }
+        )
+
+    def technical_msg_types(self) -> frozenset[str]:
+        """MsgTypes intentionally excluded from market parsing."""
+        return self._technical_msg_types
+
+    @cached_property
+    def _technical_msg_types(self) -> frozenset[str]:
+        """Technical MsgTypes built once per store revision."""
+        entry = self.entry(35)
+        return frozenset() if entry is None else frozenset(entry.technical_values)
+
+    def technical_plugin_codes(self) -> frozenset[str]:
+        """Plugin codes intentionally excluded from market parsing."""
+        return self._technical_plugin_codes
+
+    @cached_property
+    def _technical_plugin_codes(self) -> frozenset[str]:
+        """Technical plugins built once per store revision."""
+        entry = self.entry(35)
+        return frozenset() if entry is None else frozenset(entry.technical_plugins)
 
     def scalar(
         self,
@@ -1240,6 +1368,15 @@ class FixRegistry(Convertible):
         self._scalars.clear()
         self.__dict__.pop("_entries", None)
         self.__dict__.pop("_resolutions", None)
+        self.__dict__.pop("_msg_type_event_types", None)
+        self.__dict__.pop("_msg_types", None)
+        self.__dict__.pop("_msg_type_handlers", None)
+        self.__dict__.pop("_state_values", None)
+        self.__dict__.pop("_order_state_values", None)
+        self.__dict__.pop("_technical_msg_types", None)
+        self.__dict__.pop("_technical_plugin_codes", None)
+        self.__dict__.pop("_group_count_tags", None)
+        self.__dict__["_revision"] = self.revision + 1
 
     # -- the cache files and the wire -----------------------------------------
 

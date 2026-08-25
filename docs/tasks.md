@@ -7,7 +7,7 @@ YAML file points to its notebook and supplies parameters:
 name: parse_fix
 notebook: parse_fix.ipynb
 parameters:
-  source: data/capture
+  source: logs.messages
 ```
 
 `Task` only reads, writes, and resolves this configuration. A notebook runner
@@ -31,9 +31,11 @@ papermill.execute_notebook(
 ## Flow
 
 ```text
-Text files -> parse_messages -> logs.messages -> parse_fix -> fix.market
-                                                                  |
-                       +------------------------------------------+
+Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
+                                                   |        `-> fix.unknown
+                                                   `-> fix.market
+                                                          |
+                       +----------------------------------+
                        |
                        +-> flatten_instruments -> Instrument
                        `-> parse_market -+-> Book -+-> Order
@@ -41,11 +43,13 @@ Text files -> parse_messages -> logs.messages -> parse_fix -> fix.market
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` writes protocol-neutral `Message` rows and tokenizes generic
-key/value syntax once. `parse_fix` owns classification, dictionary resolution
-and routing from those ordered arguments. The retained message table lets a
-dictionary change rerun FIX resolution without reopening the source logs or
-splitting the payload again.
+`parse_messages` writes `Message` rows, tokenizes generic key/value syntax once,
+and assigns `MsgType` and `etype`. `parse_fix` pushes the market-event selection
+to Iceberg, then owns protocol and dictionary resolution from those ordered
+arguments. The retained message table lets field and protocol changes rerun
+FIX resolution without reopening source logs or splitting payloads again;
+MsgType event-metadata changes rebuild `logs.messages` because they change its
+stored `etype`.
 
 `parse_fix` resumes Instrument lifecycles from the prior completed Instrument
 table. The current run has no dependency cycle: both downstream notebooks read
@@ -57,9 +61,9 @@ Execution events carried by each FIX message. This path deliberately
 does not create snapshots, synthetic expiries, book validation changes, or a
 carrying `Book.hash` parent.
 
-The persisted products are protocol-neutral `Message` rows, categorized
-`FixMsg` tables, and `Instrument`, `Book`, `Order`, and `Execution`. Arrow
-readers carry each stream; Iceberg stores the boundaries.
+The persisted products are `Message`, `FixMsg`, `Instrument`, `Book`, `Order`,
+and `Execution` rows. Arrow readers carry each stream; Iceberg stores the
+boundaries.
 
 - [Parse messages](tasks/parse-messages.md)
 - [Parse FIX](tasks/parse-fix.md)

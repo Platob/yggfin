@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-import dataclasses
 import datetime
 import decimal
 import functools
 import re
-from collections.abc import Collection, Iterable, Iterator, Mapping
-from types import MappingProxyType
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from typing import Any
 
 import pyarrow
 import pyarrow.compute
 
-from rekep.convert import Convertible
 from rekep.fields.arrays import sequence
 
 #: The delimiter the standard writes between fields: ASCII 0x01, Start of
@@ -55,6 +52,14 @@ _NOT_A_TAG = r"(?:^|[^0-9])"
 #: from a document has to be able to spell it -- and because what follows the
 #: BeginString value is, by construction, the separator.
 BEGIN_STRING = rf"{_NOT_A_TAG}8=FIXT?"
+
+#: A top-level numeric MsgType token is enough to identify FIX even when a
+#: capture omitted BeginString. Separators are explicit so prose `35=D` stays
+#: prose; `#` is both the rendered marker and a delimiter in compact logs.
+WIRE_MSG_TYPE = (
+    r"(?s)(?:^|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
+    r"[ \t\r\n\f\x0b]*[A-Za-z0-9]+[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
+)
 
 #: `BEGIN_STRING` with the message after it captured: how a vectorised parse
 #: cuts the log's own prefix off a line. `(?s)`, or a message holding a
@@ -133,6 +138,11 @@ _BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
 #: field is not a bridge message, and one that says `35=UL` is one however few
 #: fields it happens to carry.
 BRIDGE_WIRE = rf"(?s){BEGIN_STRING}.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)"
+
+# A user-defined MsgType can wrap a rendered payload even when it is not the
+# built-in UL protocol. Scalar parsing must then admit both numeric and named
+# keys, exactly as the columnar message stage does.
+_USER_DEFINED_WIRE = r"(?s)(?:^|[^0-9])35=U[A-Za-z0-9]*(?:[^A-Za-z0-9]|$)"
 
 #: The scalar reading of the same rule: the first `#NAME=` that has another
 #: after it. A lookahead rather than a capture, because the scalar path wants
@@ -303,185 +313,112 @@ def detect_entry_separator(text: str, separator: str) -> str | None:
     return None
 
 
-@dataclasses.dataclass
-class FixPairs(Convertible):
-    """One FIX message: its fields in wire order, tags and values as text.
+def parse_pairs(
+    text: str | bytes,
+    separator: str | None = None,
+    *,
+    named: bool | None = None,
+    entry_separator: str | None = None,
+) -> list[tuple[str, str]]:
+    """Parse one ordered FIX payload without creating a second message model."""
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", "replace")
+    begin = _BEGIN.search(text)
+    if begin is not None:
+        text = text[begin.start() :]
+    if named is None:
+        named = begin is None or re.search(_USER_DEFINED_WIRE, text, re.IGNORECASE) is not None
+    if named and begin is None:
+        bridge = _BRIDGE.search(text)
+        if bridge is not None:
+            text = text[bridge.start() :]
+    separator = separator or detect_separator(text)
+    if named and entry_separator is None:
+        entry_separator = detect_entry_separator(text, separator)
+    pairs: list[tuple[str, str]] = []
+    for token in text.split(separator):
+        parsed = _parse_token(token, named)
+        if parsed is None:
+            continue
+        key, value = parsed
+        if entry_separator and "[" in key and entry_separator in value:
+            pairs.extend(_entry_members(key, value, entry_separator))
+        else:
+            pairs.append(parsed)
+        if _is_checksum(key):
+            break
+    return pairs
 
-    Order and repetition are the message -- a repeating group *is* tags
-    repeating -- so the fields are a sequence of pairs, never a mapping, and
-    `get`/`values` read over it. Values stay text: what a value *is* depends
-    on a dictionary (`FixRegistry`) and on the message, and decoding is a
-    cast against the field that knows (`rekep.fix.fields`).
-    """
 
-    @classmethod
-    @functools.cache
-    def into_redirects(cls) -> Mapping[Any, str]:
-        """Generic conversions plus direct text parsing."""
-        return MappingProxyType({**super().into_redirects(), str: "text"})
+def normalized_pairs(
+    pairs: Iterable[tuple[Any, Any]], names: Mapping[str, int | str] | None = None
+) -> list[tuple[str, str]]:
+    """Normalize ordered named or numbered fields to FIX text values."""
+    folded = _Names.of(names).keys
+    built: list[tuple[str, str]] = []
+    for key, value in pairs:
+        if value is None:
+            continue
+        resolved = _resolved_key(key, folded)
+        if resolved is not None:
+            built.append((resolved, render_fix_value(value)))
+    return built
 
-    pairs: list[tuple[str, str]] = dataclasses.field(default_factory=list)
 
-    # -- building -----------------------------------------------------------
-
-    @classmethod
-    def from_text(
-        cls,
-        text: str | bytes,
-        separator: str | None = None,
-        *,
-        named: bool | None = None,
-        entry_separator: str | None = None,
-    ) -> FixPairs:
-        """Parse one log line, however it spells its separators and its keys."""
-        if isinstance(text, bytes):
-            text = text.decode("utf-8", "replace")
-        begin = _BEGIN.search(text)
-        if begin is not None:
-            text = text[begin.start() :]
-        if named is None:
-            named = begin is None
-        if named and begin is None:
-            bridge = _BRIDGE.search(text)
-            if bridge is not None:
-                text = text[bridge.start() :]
-        separator = separator or detect_separator(text)
-        if named and entry_separator is None:
-            entry_separator = detect_entry_separator(text, separator)
-        pairs: list[tuple[str, str]] = []
-        for token in text.split(separator):
-            parsed = _parse_token(token, named)
-            if parsed is None:
-                continue
-            key, value = parsed
-            if entry_separator and "[" in key and entry_separator in value:
-                pairs.extend(_entry_members(key, value, entry_separator))
-            else:
-                pairs.append(parsed)
-            if _is_checksum(key):
+def group_pairs(
+    pairs: Sequence[tuple[str, str]],
+    count_tag: int | str,
+    members: Collection[int | str] | None = None,
+) -> list[list[tuple[str, str]]]:
+    """The ordered entries of the repeating group `count_tag` counts."""
+    wanted = str(count_tag)
+    allowed = {str(member) for member in members} if members is not None else None
+    start = next((i for i, (tag, _) in enumerate(pairs) if tag == wanted), None)
+    if start is None:
+        return []
+    try:
+        count = int(pairs[start][1])
+    except ValueError:
+        count = 0
+    after = pairs[start + 1 :]
+    if count <= 0 or not after:
+        return []
+    delimiter = after[0][0]
+    entries: list[list[tuple[str, str]]] = []
+    seen: set[str] = set()
+    for tag, value in after:
+        if tag == delimiter:
+            if len(entries) == count:
                 break
-        return cls(pairs=pairs)
+            entries.append([])
+            seen = set()
+        elif not entries or tag in seen or (allowed is not None and tag not in allowed):
+            break
+        seen.add(tag)
+        entries[-1].append((tag, value))
+    return entries
 
-    @classmethod
-    def from_pairs(
-        cls,
-        pairs: Iterable[tuple[Any, Any]],
-        names: Mapping[str, int | str] | None = None,
-    ) -> FixPairs:
-        """A message out of `(key, value)` pairs, where a key is a tag *or* a name."""
-        folded = _Names.of(names).keys
-        built: list[tuple[str, str]] = []
-        for key, value in pairs:
-            if value is None:
-                continue
-            resolved = _resolved_key(key, folded)
-            if resolved is not None:
-                built.append((resolved, _rendered(value)))
-        return cls(pairs=built)
 
-    # -- reading ------------------------------------------------------------
-
-    def get(self, tag: int | str, default: str | None = None) -> str | None:
-        """The first value of `tag`, or `default`.
-
-        One rule set, `FieldAccess` (fix/access.py): the exact key answers
-        first, and then the rendered spellings of the same field -- `Side`
-        also answers for `side`, `Side[0]` and `NoPartyIDs[0].Side`, because
-        the index and the group are *where* the field sits, not what it is.
-        """
-        found = self._access().reading(self.pairs, tag)
-        return found.raw if found else default
-
-    def values(self, tag: int | str) -> list[str]:
-        """Every value of `tag`, in wire order -- what a repeating tag is.
-
-        The same rules as `get`, so `values("PartyID")` collects one value per
-        printed group entry.
-        """
-        return [found.raw for found in self._access().readings(self.pairs, tag)]
-
-    @staticmethod
-    def _access() -> Any:
-        """The dictionary-less accessor: a bare wire model resolves by spelling.
-
-        Imported at the call because `fix.access` composes this module's own
-        key rules with the transcription's -- the one place the import runs
-        the other way.
-        """
-        from rekep.fix.access import FieldAccess
-
-        return FieldAccess.spelling_only()
-
-    def __len__(self) -> int:
-        return len(self.pairs)
-
-    def __iter__(self) -> Iterator[tuple[str, str]]:
-        return iter(self.pairs)
-
-    # -- repeating groups ---------------------------------------------------
-
-    def group(
-        self, count_tag: int | str, members: Collection[int | str] | None = None
-    ) -> list[list[tuple[str, str]]]:
-        """The entries of the repeating group `count_tag` counts."""
-        wanted = str(count_tag)
-        allowed = {str(member) for member in members} if members is not None else None
-        pairs = self.pairs
-        start = next((i for i, (tag, _) in enumerate(pairs) if tag == wanted), None)
-        if start is None:
-            return []
-        try:
-            count = int(pairs[start][1])
-        except ValueError:
-            count = 0
-        after = pairs[start + 1 :]
-        if count <= 0 or not after:
-            return []
-        delimiter = after[0][0]
-        entries: list[list[tuple[str, str]]] = []
-        seen: set[str] = set()
-        for tag, value in after:
-            if tag == delimiter:
-                if len(entries) == count:
-                    break
-                entries.append([])
-                seen = set()
-            elif not entries or tag in seen or (allowed is not None and tag not in allowed):
-                break
-            seen.add(tag)
-            entries[-1].append((tag, value))
-        return entries
-
-    def indexed_group(self, name: int | str) -> list[list[tuple[str, str]]]:
-        """The entries of a group a log rendered with indexes, in index order."""
-        wanted = str(name)
-        pattern = _indexed_pattern(wanted)
-        entries: dict[int, list[tuple[str, str]]] = {}
-        for key, value in self.pairs:
-            # An indexed key has a `[` in it, and a wire message has none in
-            # any of its keys -- so the reject is a substring test rather than
-            # a regex, and a feed of tag-spelled messages pays no regex at all
-            # for the groups it does not carry. Measured on market data, where
-            # six group lookups a message each fell through to here: 312,000
-            # of the 332,000 regex matches in a 4,000-line parse were this.
-            if "[" not in key:
-                continue
-            match = pattern.match(key)
-            if match is not None:
-                entries.setdefault(int(match[1]), []).append((match[2] or wanted, value))
-        return [entries[index] for index in sorted(entries)]
-
-    # -- converting ---------------------------------------------------------
-
-    def into_text(self, separator: str = SOH) -> str:
-        """The message back as one line, `tag=value` joined by `separator`.
-
-        Indexed keys render in their canonical spelling
-        (`NoPartyIDs[0].PartyID=x`), which `from_text` reads back to the same
-        pairs -- the round trip is exact even where the source spelled the
-        entry `NoPartyIDs[0]=PartyID=x`.
-        """
-        return separator.join(f"{tag}={value}" for tag, value in self.pairs)
+def indexed_group_pairs(
+    pairs: Iterable[tuple[str, str]], name: int | str
+) -> list[list[tuple[str, str]]]:
+    """Indexed rendered group entries in index order."""
+    wanted = str(name)
+    pattern = _indexed_pattern(wanted)
+    entries: dict[int, list[tuple[str, str]]] = {}
+    for key, value in pairs:
+        # An indexed key has a `[` in it, and a wire message has none in
+        # any of its keys -- so the reject is a substring test rather than
+        # a regex, and a feed of tag-spelled messages pays no regex at all
+        # for the groups it does not carry. Measured on market data, where
+        # six group lookups a message each fell through to here: 312,000
+        # of the 332,000 regex matches in a 4,000-line parse were this.
+        if "[" not in key:
+            continue
+        match = pattern.match(key)
+        if match is not None:
+            entries.setdefault(int(match[1]), []).append((match[2] or wanted, value))
+    return [entries[index] for index in sorted(entries)]
 
 
 # -- whole columns -----------------------------------------------------------
@@ -684,6 +621,16 @@ def parse_kwargs_array(
 
     entries = compute.list_flatten(kwargs)
     raw_keys = compute.struct_field(entries, "key")
+    if entries.type.get_field_index("namespace") >= 0:
+        lead = compute.coalesce(
+            compute.struct_field(entries, "namespace"),
+            compute.struct_field(entries, "comp"),
+        )
+        raw_keys = compute.if_else(
+            compute.is_valid(lead),
+            compute.binary_join_element_wise(compute.fill_null(lead, ""), raw_keys, "."),
+            raw_keys,
+        )
     raw_values = compute.fill_null(compute.struct_field(entries, "value"), "")
     if named:
         rendered = compute.binary_join_element_wise(raw_keys, "=", raw_values, "")
@@ -1206,7 +1153,7 @@ def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
     return f"{lead}{tag}{index or ''}"
 
 
-def _rendered(value: Any) -> str:
+def render_fix_value(value: Any) -> str:
     """One value as the wire spells it."""
     if isinstance(value, str):
         return value

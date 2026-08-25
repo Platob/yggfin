@@ -4,12 +4,13 @@
 unknown source data.
 
 ```python
-from rekep.fix import FixPairs, FixRegistry
+from rekep import FixMsg
+from rekep.fix import FixRegistry
 
-message = FixPairs.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
-message.get(35)  # 'D'
-message.get(55)  # 'IBM'
-message.pairs  # ordered entries
+message = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
+message.get(35).raw  # 'D'
+message.get(55).raw  # 'IBM'
+message.into_fix_pairs()  # ordered entries
 
 registry = FixRegistry(offline=True)
 registry.field("OrigClOrdID", "4.4")
@@ -370,6 +371,11 @@ with it. Readings that *disagree* are left where they were: two values under
 one key is a repeating group, or an enrichment that rewrote something, and
 picking between them would be a guess.
 
+One explicit hybrid is different: a user-defined wire wrapper (`35=U...`)
+with a named `MSGTYPE` declares its rendered payload authoritative. Named flat
+fields then replace numeric copies of the same registry identity; indexed
+group members remain repetitions.
+
 ## Reading a field
 
 `FieldAccess` (`rekep.fix.access`) is the one way in. A caller holds a field
@@ -387,7 +393,7 @@ from rekep.fix import FieldAccess, FixRegistry
 
 access = FieldAccess.of(FixRegistry.from_builtin())
 found = access.reading(row.kwargs, "OrderQty")
-found.raw    # '125', the text the line carried
+found.raw  # '125', the text the line carried
 found.value  # 125.0, what the dictionary makes of it
 ```
 
@@ -409,16 +415,19 @@ The rules are declared once and executed twice. `TagIndex` resolves whole
 columns in Arrow kernels and `TagIndex.resolve_key` reads the same index one
 key at a time, off the same value sets and the same pattern sources, so the
 scalar and the vectorized paths cannot answer differently for one input.
-`FixPairs.get` and `FixMsg.get` are both this accessor: the wire model
-reads through it with no dictionary, which resolves by spelling alone.
+`FixMsg.get` uses the same accessor for directly parsed wire text and for a
+persisted parsed row. Direct text starts as ordered spellings; registry-backed
+transcription then resolves those same entries without another parser model.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `FixMsg`. Residual `kwargs` keeps everything
-not promoted -- resolved or not, in wire order, with the tag, the name, and the
-container or namespace it sat in. A later market
-conversion rebuilds a `FixEvents` view from those typed columns and that one
-residual list instead of tokenizing the raw message again.
+Common fields are promoted once into `FixMsg`. Residual `kwargs` keeps
+everything not promoted -- resolved or not, in wire order, with the tag, the
+name, and the container or namespace it sat in. `FixMsg` exposes that one
+ordered projection directly to market translation. Typed components are
+restored as count-led groups and promoted copies already represented in
+`kwargs` are suppressed, so scalar and persisted rows have the same reading;
+the raw message is never tokenized again.
 
 ## Benchmark
 

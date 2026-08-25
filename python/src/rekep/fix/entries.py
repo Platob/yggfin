@@ -26,6 +26,7 @@ from typing import Any, Self
 import pyarrow
 
 from rekep.convert import Convertible
+from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecGroup, SpecMember
@@ -60,6 +61,12 @@ RECORD_KEYS: tuple[str, ...] = (
     "versions",
     "values",
     "value_names",
+    "event_types",
+    "handlers",
+    "states",
+    "order_states",
+    "technical_values",
+    "technical_plugins",
     "translations",
     "used_in",
     "components",
@@ -258,6 +265,18 @@ class FieldEntry(Convertible):
     #: spec, unioned across versions so a value only 4.2 ever had still parses.
     values: Mapping[str, str] = dataclasses.field(default_factory=dict)
     value_names: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    #: `{MsgType: EventType}` for classifying a message before transcription.
+    event_types: Mapping[str, EventType] = dataclasses.field(default_factory=dict)
+    #: `{MsgType: market handler}` for supported FIX-to-market translations.
+    handlers: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    #: `{wire value: State}` for this field's market lifecycle meaning.
+    states: Mapping[str, State] = dataclasses.field(default_factory=dict)
+    #: `{wire value: State}` when this field supplies an Order fallback.
+    order_states: Mapping[str, State] = dataclasses.field(default_factory=dict)
+    #: Values intentionally excluded from market parsing.
+    technical_values: tuple[str, ...] = ()
+    #: Plugin codes intentionally excluded from market parsing.
+    technical_plugins: tuple[str, ...] = ()
     #: `{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both reach
     #: `1`. Generated from `values` and `value_names`; a hand-written entry
     #: here survives a rebuild, because the generated map is the default and
@@ -284,7 +303,17 @@ class FieldEntry(Convertible):
             raise ValueError(f"namespaced FIX field {self.name!r} must not claim tag {self.tag}")
         if not self.versions:
             raise ValueError(f"FIX field {self.name!r} is declared for no version")
+        if (self.event_types or self.handlers) and self.tag != 35:
+            raise ValueError("FIX event types and handlers belong to MsgType <35>")
+        if (self.technical_values or self.technical_plugins) and self.tag != 35:
+            raise ValueError("technical message configuration belongs to MsgType <35>")
         object.__setattr__(self, "versions", canonical_versions(self.versions))
+        object.__setattr__(self, "event_types", _event_types(self.event_types))
+        object.__setattr__(self, "handlers", _strings(self.handlers))
+        object.__setattr__(self, "states", _states(self.states))
+        object.__setattr__(self, "order_states", _states(self.order_states))
+        object.__setattr__(self, "technical_values", _unique_strings(self.technical_values))
+        object.__setattr__(self, "technical_plugins", _unique_strings(self.technical_plugins))
         generated, _ = translations_of(self.values, self.value_names)
         object.__setattr__(self, "translations", {**generated, **dict(self.translations)})
 
@@ -338,6 +367,16 @@ class FieldEntry(Convertible):
         spelled = str(value)
         return self.values.get(spelled) or self.value_names.get(spelled)
 
+    def event_type(self, value: Any) -> EventType:
+        """The configured kind of one MsgType, MISC when known, else UNKNOWN."""
+        spelled = str(value) if value is not None else ""
+        configured = self.event_types.get(spelled)
+        if configured is not None:
+            return configured
+        if spelled in self.values or spelled in self.value_names:
+            return EventType.MISC
+        return EventType.UNKNOWN
+
     def into_field(self, version: str) -> Field | None:
         """This field as `version` declares it, or None when that version has none.
 
@@ -366,6 +405,12 @@ class FieldEntry(Convertible):
             built.fix["note"] = self.note
         for key, value in (
             ("value_names", dict(self.value_names)),
+            ("event_types", {key: int(value) for key, value in self.event_types.items()}),
+            ("handlers", dict(self.handlers)),
+            ("states", {key: int(value) for key, value in self.states.items()}),
+            ("order_states", {key: int(value) for key, value in self.order_states.items()}),
+            ("technical_values", list(self.technical_values)),
+            ("technical_plugins", list(self.technical_plugins)),
             ("used_in", list(self.used_in)),
             ("components", list(self.components)),
         ):
@@ -411,6 +456,12 @@ class FieldEntry(Convertible):
                 "versions": list(self.versions),
                 "values": dict(self.values),
                 "value_names": dict(self.value_names),
+                "event_types": {key: int(value) for key, value in self.event_types.items()},
+                "handlers": dict(self.handlers),
+                "states": {key: int(value) for key, value in self.states.items()},
+                "order_states": {key: int(value) for key, value in self.order_states.items()},
+                "technical_values": list(self.technical_values),
+                "technical_plugins": list(self.technical_plugins),
                 "translations": dict(self.translations),
                 "used_in": list(self.used_in),
                 "components": list(self.components),
@@ -434,6 +485,12 @@ class FieldEntry(Convertible):
             description=str(mapping.get("description") or ""),
             values=_strings(mapping.get("values")),
             value_names=_strings(mapping.get("value_names")),
+            event_types=_event_types(mapping.get("event_types")),
+            handlers=_strings(mapping.get("handlers")),
+            states=_states(mapping.get("states")),
+            order_states=_states(mapping.get("order_states")),
+            technical_values=_unique_strings(mapping.get("technical_values")),
+            technical_plugins=_unique_strings(mapping.get("technical_plugins")),
             translations=_strings(mapping.get("translations")),
             used_in=tuple(str(name) for name in mapping.get("used_in") or ()),
             components=tuple(str(name) for name in mapping.get("components") or ()),
@@ -456,9 +513,21 @@ class FieldEntry(Convertible):
         tag = latest.fix.get("tag")
         values: dict[str, str] = {}
         value_names: dict[str, str] = {}
+        event_types: dict[str, EventType] = {}
+        handlers: dict[str, str] = {}
+        states: dict[str, State] = {}
+        order_states: dict[str, State] = {}
+        technical_values: list[str] = []
+        technical_plugins: list[str] = []
         for member in members:
             values.update(_json_mapping(member.fix.get("values")))
             value_names.update(_json_mapping(member.fix.get("value_names")))
+            event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
+            handlers.update(_json_mapping(member.fix.get("handlers")))
+            states.update(_states(_json_any(member.fix.get("states"))))
+            order_states.update(_states(_json_any(member.fix.get("order_states"))))
+            technical_values.extend(_json_sequence(member.fix.get("technical_values")))
+            technical_plugins.extend(_json_sequence(member.fix.get("technical_plugins")))
         # Newest first, unlike the values: where a field is used is a list and
         # not a mapping, so the newest version's reading leads it rather than
         # correcting it key by key.
@@ -480,6 +549,12 @@ class FieldEntry(Convertible):
             description=latest.description,
             values=values,
             value_names=value_names,
+            event_types=event_types,
+            handlers=handlers,
+            states=states,
+            order_states=order_states,
+            technical_values=_unique_strings(technical_values),
+            technical_plugins=_unique_strings(technical_plugins),
             used_in=tuple(used_in),
             components=tuple(components),
             note=str(latest.fix.get("note") or ""),
@@ -701,6 +776,45 @@ def _strings(mapping: Any) -> dict[str, str]:
     if not isinstance(mapping, Mapping):
         return {}
     return {str(key): str(value) for key, value in mapping.items()}
+
+
+def _event_types(mapping: Any) -> dict[str, EventType]:
+    """One stored `{MsgType: EventType}` map, accepting enum names or codes."""
+    if not isinstance(mapping, Mapping):
+        return {}
+    found: dict[str, EventType] = {}
+    for key, value in mapping.items():
+        try:
+            parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
+            found[str(key)] = (
+                EventType[parsed.upper()] if isinstance(parsed, str) else EventType(parsed)
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"unknown EventType {value!r} for MsgType {key!r}") from error
+    return found
+
+
+def _states(mapping: Any) -> dict[str, State]:
+    """One stored `{wire value: State}` map, accepting enum names or codes."""
+    if not isinstance(mapping, Mapping):
+        return {}
+    found: dict[str, State] = {}
+    for key, value in mapping.items():
+        try:
+            parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
+            found[str(key)] = State[parsed.upper()] if isinstance(parsed, str) else State(parsed)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"unknown State {value!r} for value {key!r}") from error
+    return found
+
+
+def _unique_strings(values: Any) -> tuple[str, ...]:
+    """Configured spellings once each, in declaration order."""
+    if values is None:
+        return ()
+    if isinstance(values, str):
+        values = (values,)
+    return tuple(dict.fromkeys(str(value) for value in values))
 
 
 def _walk(

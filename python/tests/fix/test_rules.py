@@ -192,14 +192,23 @@ def test_no_rows_is_no_rows() -> None:
 
 
 def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
-    protocols = ["FIX", "UL", "MISC", NO_PROTOCOL, "SBE", None]
-    etypes = [EventType.ORDER, EventType.UNKNOWN, EventType.UNKNOWN, EventType.UNKNOWN, 0, None]
+    protocols = ["FIX", NO_PROTOCOL, "UL", "MISC", NO_PROTOCOL, "SBE", None]
+    etypes = [
+        EventType.ORDER,
+        EventType.MISC,
+        EventType.UNKNOWN,
+        EventType.UNKNOWN,
+        EventType.UNKNOWN,
+        0,
+        None,
+    ]
     scalar = [
         DEFAULT.category_of(protocol, etype)
         for protocol, etype in zip(protocols, etypes, strict=True)
     ]
     assert scalar == [
         MARKET_CATEGORY,
+        MISC_CATEGORY,
         MISC_CATEGORY,
         MISC_CATEGORY,
         UNKNOWN_CATEGORY,

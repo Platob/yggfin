@@ -18,13 +18,11 @@ import pyarrow.compute
 import pyarrow.fs
 
 from rekep.dataset import Dataset, arrow_chunks
-from rekep.enums import EventType
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import ArrowFileIO, resolve
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
-from rekep.text.kwargs import Kwarg
 from rekep.text.message import Message
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
@@ -34,6 +32,7 @@ from rekep.urls import Url
 #: spellings is one behavior, and a shape this reader admitted and `times` did
 #: not would be a stamp a window could not name.
 _TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
+
 
 #: Matches the fixed header every log row opens with, leaving the free-form
 #: payload to `message`::
@@ -99,6 +98,10 @@ PARENTS = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
 #: amortised over it.
 DEFAULT_BATCH_ROW_SIZE = 65_536
+
+# Raw header rows held before Arrow owns them. Row counts alone do not bound a
+# capture with multi-megabyte diagnostics, so batches also stop at 64 MiB.
+DEFAULT_BATCH_BYTE_SIZE = 1 << 26
 
 #: Bytes pulled from the stream per read. On an object store every read is one
 #: ranged HTTP request, so this is also the request granularity: too small
@@ -170,6 +173,20 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: zone is what makes `unix` a true instant -- see
     #: `_unix_nanos`.
     timezone: str | None = None
+
+    #: Registry-owned MsgType values to their stored event kinds. A payload
+    #: with no discriminator is MISC; a discriminator absent from this map is
+    #: UNKNOWN, so registry coverage remains observable.
+    msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
+
+    #: Registry-owned operational MsgTypes excluded from market parsing.
+    technical_msg_types: frozenset[str] = frozenset()
+
+    #: Registry-owned plugin codes excluded from market parsing.
+    technical_plugin_codes: frozenset[str] = frozenset()
+
+    #: Syntax-only protocol classifier; it never reads registry fields.
+    protocol_rules: Any | None = None
 
     #: Constant columns every parsed row carries, appended **after** the data
     #: columns in the order they are given here -- the bridge that wrote the
@@ -313,7 +330,11 @@ class TextFile(Dataset, io.BufferedIOBase):
         self,
         schema: Any = None,
         *,
-        exclude_plugins: Sequence[str] = (),
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
         **kwargs: Any,
     ) -> pyarrow.RecordBatchReader:
         """Parse the file, cast onto `schema` when one is asked for.
@@ -321,7 +342,14 @@ class TextFile(Dataset, io.BufferedIOBase):
         With none, the reader is the parser's own -- see `into_arrow_reader`
         for the parsing options, which are passed straight through.
         """
-        reader = self.into_arrow_reader(exclude_plugins=exclude_plugins, **kwargs)
+        reader = self.into_arrow_reader(
+            include_regexes=include_regexes,
+            exclude_regexes=exclude_regexes,
+            start_unix=start_unix,
+            end_unix=end_unix,
+            duration_ns=duration_ns,
+            **kwargs,
+        )
         target = self.target_field(schema)
         if target.arrow_schema.equals(reader.schema):
             return reader
@@ -405,16 +433,29 @@ class TextFile(Dataset, io.BufferedIOBase):
         *,
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
+        batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
         fold_continuations: bool = True,
-        exclude_plugins: Sequence[str] = (),
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
     ) -> pyarrow.RecordBatchReader:
-        """Stream the log as Arrow record batches, omitting exact plugin codes."""
+        """Stream filtered messages in row- or duration-bounded Arrow batches."""
         self._check_open()
         self._close_stream()
         return pyarrow.RecordBatchReader.from_batches(
             self.schema,
             self.into_arrow_batches(
-                batch_row_size, read_byte_size, fold_continuations, exclude_plugins
+                batch_row_size,
+                read_byte_size,
+                fold_continuations,
+                batch_byte_size=batch_byte_size,
+                include_regexes=include_regexes,
+                exclude_regexes=exclude_regexes,
+                start_unix=start_unix,
+                end_unix=end_unix,
+                duration_ns=duration_ns,
             ),
         )
 
@@ -427,56 +468,123 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
-        exclude_plugins: Sequence[str] = (),
+        *,
+        batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
     ) -> Iterator[pyarrow.RecordBatch]:
-        """Yield one record batch per `batch_row_size` parsed lines.
+        """Yield retained messages whenever the row or duration bound ends.
 
         The row loop is deliberately spartan -- profiling puts it, not Arrow,
         on the critical path. Groups come out in one `group(...)` call against
         indices resolved once, and land as one tuple append; everything
-        columnar happens once per batch in `_batch`. Plugin exclusions are
-        exact and case-sensitive.
+        columnar happens once per batch in `_batch`.
         """
-        excluded = frozenset(code.encode() for code in _exclude_plugin_codes(exclude_plugins))
+        self._check_open()
+        includes = _regexes("include_regexes", include_regexes)
+        excludes = _regexes("exclude_regexes", exclude_regexes)
+        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
+        _validate_window(start_unix, end_unix, duration_ns)
+        batches = self._filtered_batches(
+            batch_row_size,
+            read_byte_size,
+            batch_byte_size,
+            fold_continuations,
+            includes,
+            excludes,
+            start_unix,
+            end_unix,
+        )
+        if duration_ns is None:
+            return batches
+        return _windowed_batches(
+            batches,
+            batch_row_size,
+            batch_byte_size=batch_byte_size,
+            duration_ns=duration_ns,
+            start_unix=start_unix,
+        )
+
+    def _filtered_batches(
+        self,
+        batch_row_size: int,
+        read_byte_size: int,
+        batch_byte_size: int,
+        fold_continuations: bool,
+        include_regexes: Sequence[str],
+        exclude_regexes: Sequence[str],
+        start_unix: int | None,
+        end_unix: int | None,
+    ) -> Iterator[pyarrow.RecordBatch]:
+        """Parse bounded raw rows only after their payload and time survive."""
         groups = self.header_pattern.groupindex
         indices = tuple(
             groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
         )
-        rows: list[tuple[bytes, bytes | None, bytes | None, bytes | None]] = []
+        rows: list[tuple[bytes, bytes | None, bytes | None, bytes | bytearray | None]] = []
+        row_byte_sizes: list[int] = []
+        held_bytes = 0
         # Physical lines, not parsed rows: a folded continuation must not shift
         # the number every row after it reports.
         rownums: list[int] = []
         rownum = 0
         match_header = self.header_pattern.match
-        suppressed = False
 
         for line in self._iter_lines(read_byte_size):
             rownum += 1
             match = match_header(line)
             if match is None:
-                if fold_continuations and rows and not suppressed:
+                if fold_continuations and rows:
                     timestamp, thread, plugin, message = rows[-1]
-                    rows[-1] = (timestamp, thread, plugin, (message or b"") + b"\n" + line)
+                    if not isinstance(message, bytearray):
+                        message = bytearray(message or b"")
+                    message.extend(b"\n")
+                    message.extend(line)
+                    rows[-1] = (timestamp, thread, plugin, message)
+                    added = len(line) + 1
+                    row_byte_sizes[-1] += added
+                    held_bytes += added
                 continue
             found = match.group(*indices)
-            if (found[2] or b"") in excluded:
-                suppressed = True
-                continue
-            suppressed = False
             rows.append(found)
             rownums.append(rownum)
+            row_byte_sizes.append(len(line))
+            held_bytes += len(line)
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
             # complete puts it out of reach of the next line. A stack trace
             # that happens to land on the boundary would be dropped, silently,
             # at any batch size -- including the default one.
+            cut = 0
             if len(rows) > batch_row_size:
-                batch = self._batch(rows[:batch_row_size], rownums[:batch_row_size])
+                cut = batch_row_size
+            elif held_bytes > batch_byte_size and len(rows) > 1:
+                cut = len(rows) - 1
+            if cut:
+                batch = self._batch(
+                    rows[:cut],
+                    rownums[:cut],
+                    include_regexes,
+                    exclude_regexes,
+                    start_unix,
+                    end_unix,
+                )
                 if batch.num_rows:
                     yield batch
-                del rows[:batch_row_size], rownums[:batch_row_size]
+                held_bytes -= sum(row_byte_sizes[:cut])
+                del rows[:cut], rownums[:cut], row_byte_sizes[:cut]
         if rows:
-            batch = self._batch(rows, rownums)
+            batch = self._batch(
+                rows,
+                rownums,
+                include_regexes,
+                exclude_regexes,
+                start_unix,
+                end_unix,
+            )
             if batch.num_rows:
                 yield batch
 
@@ -484,6 +592,10 @@ class TextFile(Dataset, io.BufferedIOBase):
         self,
         rows: list[tuple],
         rownums: list[int],
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
     ) -> pyarrow.RecordBatch:
         """One batch of parsed headers and protocol-neutral payloads.
 
@@ -492,15 +604,37 @@ class TextFile(Dataset, io.BufferedIOBase):
         name instead of silently shifting every column after it into the wrong
         one.
         """
-        timestamps, threads, plugins, messages = zip(*rows, strict=True)
-        count = len(rows)
+        schema = self.schema
+        timestamps, threads, plugins, messages = (
+            pyarrow.array(values, type=pyarrow.binary()) for values in zip(*rows, strict=True)
+        )
+        rownums_array = pyarrow.array(rownums, type=pyarrow.int64())
+
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
-        message = pyarrow.compute.fill_null(_utf8(messages), "")
+        selected = _unix_mask(unix, start_unix, end_unix)
+        if selected is not None:
+            unix, threads, plugins, messages, rownums_array = (
+                pyarrow.compute.filter(values, selected)
+                for values in (unix, threads, plugins, messages, rownums_array)
+            )
+        if not len(unix):
+            return _empty_batch(schema)
+
+        messages = pyarrow.compute.fill_null(_utf8(messages), "")
+        selected = _message_mask(messages, include_regexes, exclude_regexes)
+        if selected is not None:
+            unix, threads, plugins, messages, rownums_array = (
+                pyarrow.compute.filter(values, selected)
+                for values in (unix, threads, plugins, messages, rownums_array)
+            )
+        count = len(unix)
+        if not count:
+            return _empty_batch(schema)
+
         columns: dict[str, Any] = {
             "unix": unix,
             "unix_partition": unix_partition_arrow(unix),
-            "etype": pyarrow.repeat(pyarrow.scalar(int(EventType.UNKNOWN), pyarrow.int32()), count),
             "cunix": unix,
             "runix": unix,
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
@@ -514,20 +648,24 @@ class TextFile(Dataset, io.BufferedIOBase):
             "mic": pyarrow.nulls(count, pyarrow.int32()),
             "reason": pyarrow.nulls(count, pyarrow.string()),
             "source_url": pyarrow.repeat(self.url, count),
-            "source_rownum": pyarrow.array(rownums, type=pyarrow.int64()),
+            "source_rownum": rownums_array,
             "thread_name": pyarrow.compute.fill_null(_utf8(threads), ""),
             "plugin_code": pyarrow.compute.fill_null(_utf8(plugins), ""),
-            "message": message,
-            "kwargs": Kwarg.parse_arrow(message),
+            "message": messages,
         }
+        columns.update(
+            self.into_row().parse_arrow(
+                messages,
+                self.msg_type_event_types,
+                columns["plugin_code"],
+                self.technical_msg_types,
+                self.technical_plugin_codes,
+                self.protocol_rules,
+            )
+        )
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
-        schema = self.schema
-        if not count:
-            return pyarrow.RecordBatch.from_arrays(
-                [pyarrow.nulls(0, field.type) for field in schema], schema=schema
-            )
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
@@ -546,21 +684,24 @@ class TextFile(Dataset, io.BufferedIOBase):
         return self.into_row().identified(columns, schema, count)
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
-        """Cut newline-delimited lines out of fixed-size reads.
+        """Stream newline-delimited lines through one bounded native buffer.
 
         One trailing carriage return is dropped per line, so a CRLF log parses
         identically to an LF one; a carriage return anywhere else is payload.
         """
-        tail = b""
+        buffered = io.BufferedReader(self, buffer_size=read_byte_size)
         try:
-            while chunk := self.read(read_byte_size):
-                lines = (tail + chunk).split(b"\n")
-                tail = lines.pop()
-                for line in lines:
-                    yield line.removesuffix(b"\r")
-            if tail:
-                yield tail.removesuffix(b"\r")
+            while line := buffered.readline():
+                yield line.removesuffix(b"\n").removesuffix(b"\r")
         finally:
+            # Detaching keeps the reusable TextFile open while discarding the
+            # line buffer; `_close_stream` owns the Arrow decoder underneath.
+            try:
+                buffered.detach()
+            except ValueError:
+                # A reader closed by its caller has already closed this
+                # wrapper and the underlying TextFile together.
+                pass
             # The decoder closes before the owning temporary ArrowFileIO, so
             # Windows can remove the raw compressed spill immediately.
             self._close_stream()
@@ -730,26 +871,220 @@ def _nbytes(size: int | None) -> int | None:
     return None if size is None or size < 0 else size
 
 
-def _exclude_plugin_codes(values: Sequence[str]) -> tuple[str, ...]:
-    """One unambiguous sequence of exact plugin codes."""
+def _regexes(name: str, values: Sequence[str]) -> tuple[str, ...]:
+    """A regex list rather than one string accidentally treated as characters."""
     if isinstance(values, str):
-        raise TypeError("exclude_plugins must be a sequence of plugin codes, not a string")
-    return tuple(values)
+        raise TypeError(f"{name} must be a sequence of regex strings, not one string")
+    patterns = tuple(values)
+    invalid = [type(pattern).__name__ for pattern in patterns if not isinstance(pattern, str)]
+    if invalid:
+        raise TypeError(f"{name} must contain only regex strings, got {invalid[0]}")
+    probe = pyarrow.array([""], type=pyarrow.string())
+    for pattern in patterns:
+        pyarrow.compute.match_substring_regex(probe, pattern)
+    return patterns
 
 
-def _utf8(values: Sequence[bytes | None]) -> pyarrow.Array:
+def _message_mask(
+    messages: pyarrow.Array,
+    include_regexes: Sequence[str],
+    exclude_regexes: Sequence[str],
+) -> pyarrow.Array | None:
+    """Rows admitted by any include and no exclude, matched by Arrow RE2."""
+
+    def matches(patterns: Sequence[str]) -> pyarrow.Array | None:
+        selected = None
+        for pattern in patterns:
+            found = pyarrow.compute.fill_null(
+                pyarrow.compute.match_substring_regex(messages, pattern), False
+            )
+            selected = found if selected is None else pyarrow.compute.or_(selected, found)
+        return selected
+
+    included = matches(include_regexes)
+    excluded = matches(exclude_regexes)
+    if excluded is None:
+        return included
+    allowed = pyarrow.compute.invert(excluded)
+    return allowed if included is None else pyarrow.compute.and_(included, allowed)
+
+
+def _unix_mask(
+    unix: pyarrow.Array, start_unix: int | None, end_unix: int | None
+) -> pyarrow.Array | None:
+    """The inclusive start and exclusive end of a recording-time interval."""
+    selected = None
+    if start_unix is not None:
+        selected = pyarrow.compute.greater_equal(unix, start_unix)
+    if end_unix is not None:
+        before = pyarrow.compute.less(unix, end_unix)
+        selected = before if selected is None else pyarrow.compute.and_(selected, before)
+    return selected
+
+
+_INT64_MIN = -(1 << 63)
+_INT64_MAX = (1 << 63) - 1
+
+
+def _validate_window(start_unix: int | None, end_unix: int | None, duration_ns: int | None) -> None:
+    """Refuse ambiguous time bounds before the source is consumed."""
+    for name, value in (("start_unix", start_unix), ("end_unix", end_unix)):
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
+            raise TypeError(f"{name} must be an integer number of nanoseconds or None")
+        if value is not None and not _INT64_MIN <= value <= _INT64_MAX:
+            raise ValueError(f"{name} must fit in a signed 64-bit integer")
+    if start_unix is not None and end_unix is not None and start_unix > end_unix:
+        raise ValueError("start_unix must be less than or equal to end_unix")
+    if duration_ns is not None and (
+        not isinstance(duration_ns, int)
+        or isinstance(duration_ns, bool)
+        or not 0 < duration_ns <= _INT64_MAX
+    ):
+        raise ValueError(
+            "duration_ns must be a positive integer number of nanoseconds that fits in int64"
+        )
+
+
+def _validate_read_sizes(
+    batch_row_size: int, read_byte_size: int, batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE
+) -> None:
+    """Keep every parser buffer bounded by positive explicit units."""
+    for name, value, unit in (
+        ("batch_row_size", batch_row_size, "rows"),
+        ("read_byte_size", read_byte_size, "bytes"),
+        ("batch_byte_size", batch_byte_size, "bytes"),
+    ):
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise ValueError(f"{name} must be a positive integer number of {unit}")
+
+
+def _windowed_batches(
+    batches: Iterator[pyarrow.RecordBatch],
+    batch_row_size: int,
+    *,
+    batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+    duration_ns: int | None,
+    start_unix: int | None,
+) -> Iterator[pyarrow.RecordBatch]:
+    """Coalesce short batches without crossing an event-time window."""
+    pending: list[pyarrow.RecordBatch] = []
+    rows = 0
+    held_bytes = 0
+    origin = start_unix
+    current_window: int | None = None
+    for batch in batches:
+        if not batch.num_rows:
+            continue
+        if duration_ns is None:
+            runs = ((None, batch),)
+        else:
+            if origin is None:
+                first = batch.column("unix")[0].as_py()
+                origin = first - first % duration_ns
+            runs = _window_runs(batch, duration_ns, origin)
+        for window, run in runs:
+            if duration_ns is not None:
+                if current_window is not None and window < current_window:
+                    raise ValueError(
+                        "a duration window recurs after a later window; order the source by unix"
+                    )
+                if current_window is not None and window != current_window and pending:
+                    yield _one(pending)
+                    pending, rows, held_bytes = [], 0, 0
+                current_window = window
+            if duration_ns is None:
+                if pending and held_bytes + run.nbytes > batch_byte_size:
+                    yield _one(pending)
+                    pending, rows, held_bytes = [], 0, 0
+                pending.append(run)
+                rows += run.num_rows
+                held_bytes += run.nbytes
+                if rows >= batch_row_size or held_bytes >= batch_byte_size:
+                    yield _one(pending)
+                    pending, rows, held_bytes = [], 0, 0
+                continue
+            while run.num_rows:
+                take = min(batch_row_size - rows, run.num_rows)
+                part = run.slice(0, take)
+                if pending and held_bytes + part.nbytes > batch_byte_size:
+                    yield _one(pending)
+                    pending, rows, held_bytes = [], 0, 0
+                    continue
+                pending.append(part)
+                rows += take
+                held_bytes += part.nbytes
+                run = run.slice(take)
+                if rows == batch_row_size or held_bytes >= batch_byte_size:
+                    yield _one(pending)
+                    pending, rows, held_bytes = [], 0, 0
+    if pending:
+        yield _one(pending)
+
+
+def _window_runs(
+    batch: pyarrow.RecordBatch, duration_ns: int, origin: int
+) -> Iterator[tuple[int, pyarrow.RecordBatch]]:
+    """Contiguous duration-window runs, located with Arrow kernels."""
+    unix = batch.column("unix")
+    bounds = pyarrow.compute.min_max(unix).as_py()
+    if bounds["min"] < origin:
+        raise ValueError("a unix value precedes the duration origin; order the source by unix")
+    if bounds["max"] - origin <= _INT64_MAX:
+        delta = pyarrow.compute.subtract(unix, pyarrow.scalar(origin, unix.type))
+        windows = pyarrow.compute.divide(delta, pyarrow.scalar(duration_ns, delta.type))
+    else:
+        # Two valid int64 instants can be farther apart than int64 can hold.
+        # Decimal256 keeps this rare path columnar without narrowing the delta.
+        wide_type = pyarrow.decimal256(38, 0)
+        delta = pyarrow.compute.subtract(unix.cast(wide_type), pyarrow.scalar(origin, wide_type))
+        quotient = pyarrow.compute.divide(delta, pyarrow.scalar(duration_ns, pyarrow.int64()))
+        windows = pyarrow.compute.round(quotient, ndigits=0, round_mode="down")
+    encoded = pyarrow.compute.run_end_encode(windows)
+    start = 0
+    for end, window in zip(encoded.run_ends, encoded.values, strict=True):
+        stop = end.as_py()
+        yield int(window.as_py()), batch.slice(start, stop - start)
+        start = stop
+
+
+def _one(batches: list[pyarrow.RecordBatch]) -> pyarrow.RecordBatch:
+    """The batches as one, handing a single batch over without a copy."""
+    if len(batches) == 1:
+        return batches[0]
+    first = batches[0]
+    return pyarrow.RecordBatch.from_arrays(
+        [
+            pyarrow.concat_arrays([batch.column(index) for batch in batches])
+            for index in range(first.num_columns)
+        ],
+        schema=first.schema,
+    )
+
+
+def _empty_batch(schema: pyarrow.Schema) -> pyarrow.RecordBatch:
+    """A schema-carrying batch with no rows."""
+    return pyarrow.RecordBatch.from_arrays(
+        [pyarrow.nulls(0, field.type) for field in schema], schema=schema
+    )
+
+
+def _utf8(values: Sequence[bytes | None] | pyarrow.Array) -> pyarrow.Array:
     """Cast raw bytes to a string array, falling back when the payload is dirty."""
-    array = pyarrow.array(values, type=pyarrow.binary())
+    array = values if isinstance(values, pyarrow.Array) else pyarrow.array(values)
+    array = array.cast(pyarrow.binary())
     try:
         return array.cast(pyarrow.string())
     except pyarrow.ArrowInvalid:
         return pyarrow.array(
-            [None if v is None else v.decode("utf-8", "replace") for v in values],
+            [
+                None if value is None else value.decode("utf-8", "replace")
+                for value in array.to_pylist()
+            ],
             type=pyarrow.string(),
         )
 
 
-def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
+def _local_micros(timestamps: Sequence[bytes] | pyarrow.Array) -> pyarrow.Array:
     """One batch of raw header timestamps to a naive `timestamp("us")` column.
 
     Sliced, never read a row at a time. A batch of one shape at one width --
@@ -758,7 +1093,8 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
     that actually mixes shapes or widths pays to be grouped.
     """
     compute = pyarrow.compute
-    raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
+    raw = timestamps if isinstance(timestamps, pyarrow.Array) else pyarrow.array(timestamps)
+    raw = raw.cast(pyarrow.string())
     if not len(raw):
         return raw.cast(pyarrow.timestamp("us"), safe=False)
     lengths = compute.utf8_length(raw)

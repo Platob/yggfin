@@ -27,7 +27,6 @@ from _bench import best_of, parser  # noqa: E402
 from rekep.fix import (  # noqa: E402
     SOH,
     FixCodec,
-    FixPairs,
     FixRegistry,
     Rules,
     parse_arrow_array,
@@ -45,6 +44,7 @@ from rekep.fix.message import (  # noqa: E402
     _column_style,
     _tag_numbers,
     _until_checksum,
+    parse_pairs,
 )
 from rekep.text import FixMsg, TextFile, TextFiles  # noqa: E402
 from rekep.text.text_file import (  # noqa: E402
@@ -572,11 +572,12 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
             with _peak_rss() as sampled:
                 started = time.perf_counter()
                 seen = 0
-                with TextFile.from_path(path) as log:
+                with TextFile.from_path(
+                    path,
+                    msg_type_event_types=codec.registry.msg_type_event_types(),
+                ) as log:
                     for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-                        parsed = FixMsg.from_message_arrow_batch(
-                            batch, codec, FixMsg.into_message_rules()
-                        )
+                        parsed = FixMsg.from_message_arrow_batch(batch, codec)
                         seen += parsed.num_rows
                 elapsed = time.perf_counter() - started
             assert seen == rows, f"{seen} rows parsed out of {rows}"
@@ -615,7 +616,7 @@ def _protocol_columns(
 def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     """Stage two: message -> pairs, four implementations over the same column.
 
-    The scalar parser is the reference and every other implementation is
+    The scalar tokenizer is the reference and every other implementation is
     asserted equal to it, pair for pair, before anything is timed -- so a row
     in this table is a row that gave the right answer.
 
@@ -629,12 +630,10 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     header = ("protocol", "implementation", "rows/s", "pairs/s", "peak RSS")
     print(f"    {header[0]:>9} {header[1]:>26} {header[2]:>12} {header[3]:>12} {header[4]:>10}")
     for name, column in columns.items():
-        reference = [
-            FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
-        ]
+        reference = [parse_pairs(line, CAPTURE_SEPARATOR) for line in column.to_pylist()]
         pairs = sum(len(one) for one in reference)
         candidates: list[tuple[str, object]] = [
-            ("FixPairs.from_text", lambda c=column: _scalar_pairs(c)),
+            ("parse_pairs", lambda c=column: _scalar_pairs(c)),
             ("parse_arrow_array", lambda c=column: parse_arrow_array(c, CAPTURE_SEPARATOR)),
             ("numpy over the buffers", lambda c=column: _numpy_pairs(c)),
             ("polars", lambda c=column: _polars_pairs(c)),
@@ -670,7 +669,7 @@ def _optional(name: str) -> object:
 
 
 def _scalar_pairs(column: pyarrow.Array) -> list[list[tuple[str, str]]]:
-    return [FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
+    return [parse_pairs(line, CAPTURE_SEPARATOR) for line in column.to_pylist()]
 
 
 def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:

@@ -17,12 +17,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import best_of, parser  # noqa: E402
 
+from rekep import FixMsg  # noqa: E402
 from rekep.fix import (  # noqa: E402
-    FixPairs,
     parse_arrow_array,
     tag_arrow_array,
 )
-from rekep.fix.message import _Names, _resolved_key  # noqa: E402
+from rekep.fix.message import _Names, _resolved_key, parse_pairs  # noqa: E402
 
 NOISE = "2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) sent "
 
@@ -109,7 +109,7 @@ def check(column: pyarrow.Array, **kwargs: object) -> None:
     """The vectorised answer *is* the scalar answer, asserted before timing."""
     maps = parse_arrow_array(column, **kwargs)
     for line, row in zip(column.to_pylist(), maps.to_pylist(), strict=True):
-        expected = FixPairs.from_text(line, kwargs.get("separator")).pairs
+        expected = parse_pairs(line, kwargs.get("separator"))
         assert row == expected, (line, row, expected)
 
 
@@ -141,7 +141,7 @@ def sweep_parsing(rows: int, repeat: int) -> None:
                 )
             ).as_py()
         )
-        scalar = best_of(lambda lines=lines: [FixPairs.from_text(line) for line in lines], repeat)
+        scalar = best_of(lambda lines=lines: [FixMsg.from_text(line) for line in lines], repeat)
         vector = best_of(
             lambda column=column, kwargs=kwargs: parse_arrow_array(column, **kwargs), repeat
         )
@@ -249,9 +249,10 @@ def sweep_pairs(rows: int, repeat: int) -> None:
     print(f"\nfrom_pairs, {rows:,} rows, best of {repeat}")
     pairs = named_pairs(rows)
     fields = sum(len(one) for one in pairs)
-    built = [FixPairs.from_pairs(one, NAMES) for one in pairs]
-    assert built[0].get(54) == "1" and built[0].get("VenueOwnField") == "kept"
-    seconds = best_of(lambda: [FixPairs.from_pairs(one, NAMES) for one in pairs], repeat)
+    built = [FixMsg.from_pairs(one, NAMES) for one in pairs]
+    assert built[0].get(54).raw == "1"
+    assert built[0].get("VenueOwnField").raw == "kept"
+    seconds = best_of(lambda: [FixMsg.from_pairs(one, NAMES) for one in pairs], repeat)
     print(f"{'from_pairs':>28} {rows / seconds:>14,.0f} rows/s {fields / seconds:>14,.0f} fields/s")
 
     # The key-resolution race, on the keys alone. `from_pairs` above pays for

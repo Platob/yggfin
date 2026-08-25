@@ -20,7 +20,9 @@ flowchart TD
     L[TextFile / TextFiles] --> PM[parse_messages]
     PM --> M[(logs.messages)]
     M --> PF[parse_fix]
-    PF --> FM[(fix.market<br/>fix.misc<br/>fix.unknown)]
+    PF --> FM[(fix.market)]
+    PF --> FX[(fix.misc)]
+    PF --> FU[(fix.unknown)]
     FM --> FI[flatten_instruments] --> I[(market.instruments)]
     FM --> PK[parse_market]
     PK -->|books: true| B[(market.books)]
@@ -68,13 +70,17 @@ pip install "rekep[all]"       # all package extras
 ```
 
 ```python
-from rekep import FixCodec, FixMsg, TextFiles
+from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
 
-source = TextFiles.from_folder("logs", pattern="*.log*")
+registry = FixRegistry(cache_dir="data/fix", offline=True)
+
+source = TextFiles.from_folder(
+    "logs",
+    pattern="*.log*",
+    msg_type_event_types=registry.msg_type_event_types(),
+)
 for messages in source.read_arrow_reader():
-    parsed = FixMsg.from_message_arrow_batch(
-        messages, FixCodec(), FixMsg.into_message_rules()
-    )
+    parsed = FixMsg.from_message_arrow_batch(messages, FixCodec(registry=registry))
 ```
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices

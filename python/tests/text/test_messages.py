@@ -20,6 +20,12 @@ SAMPLE_BYTES = SAMPLE.read_bytes()
 #: The dictionary this repository publishes, beside `python/`.
 DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
+
+def event_types(registry: FixRegistry | None = None):
+    """Registry mapping used by the protocol-neutral text boundary."""
+    return (registry or FixRegistry.from_builtin()).msg_type_event_types()
+
+
 #: Derived from the fixture, then pinned, so a regression in `HEADER_PATTERN`
 #: cannot move both sides of an assertion together.
 RECORDS = [line for line in SAMPLE_BYTES.split(b"\n") if HEADER_PATTERN.match(line)]
@@ -71,7 +77,6 @@ EXPECTED_WIRE_FIELDS = 15
 CARET_RAW_PAIRS = [
     (8, "FIX4"),
     (9, "61"),
-    (35, "0"),
     (34, "1093"),
     (49, "XPAR"),
     (56, "BUYSIDE"),
@@ -123,9 +128,13 @@ def codec() -> FixCodec:
 
 
 @pytest.fixture(scope="module")
-def raw_table() -> pyarrow.Table:
+def raw_table(codec: FixCodec) -> pyarrow.Table:
     """Protocol-neutral source rows read once for the module."""
-    with TextFile.from_path(SAMPLE) as log:
+    with TextFile.from_path(
+        SAMPLE,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=codec.rules,
+    ) as log:
         return log.read_arrow_table()
 
 
@@ -142,13 +151,14 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
     assert raw_table.num_rows == EXPECTED_RECORDS
     assert raw_table.schema.names == Message.into_field().names
     assert not {
-        "protocol_code",
         "protocol_version",
-        "MsgType",
         "Parties",
     } & set(raw_table.schema.names)
+    assert {"protocol_code", "MsgType"} <= set(raw_table.schema.names)
     assert _keys(raw_table.column("kwargs")[PIPED]) == [
-        token.split("=", 1)[0] for token in WIRE.strip("|").split("|")
+        token.split("=", 1)[0]
+        for token in WIRE.strip("|").split("|")
+        if token.split("=", 1)[0] != "35"
     ]
 
 
@@ -540,7 +550,11 @@ def test_the_capture_reparses_to_the_same_instants(
     """Written back out and read again under the same codec, column for column."""
     copy = tmp_path / "copy.txt"
     TextFile.from_path(copy).append_arrow(table)
-    with TextFile.from_path(copy) as again:
+    with TextFile.from_path(
+        copy,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=codec.rules,
+    ) as again:
         written = _parsed(again.read_arrow_table(), codec)
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
     assert written.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
@@ -564,20 +578,28 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
         ]
     ).into_yaml(path)
     own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path))
-    with TextFile.from_path(SAMPLE) as log:
+    with TextFile.from_path(
+        SAMPLE,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=own.rules,
+    ) as log:
         table = _parsed(log.read_arrow_table(), own)
     found = table.column("protocol_code").to_pylist()
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("kwargs")[PIPED].as_py() is None
-    assert _lifted(table, PIPED) == 0, "a line nothing reads has no flat layer either"
+    assert _lifted(table, PIPED) == 1, "only Message's promoted MsgType survives"
 
 
 def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) -> None:
     """An empty FIX rule set leaves every raw Message uninterpreted."""
     quiet = FixCodec(registry=codec.registry, rules=Rules(rules=[]))
-    with TextFile.from_path(SAMPLE) as log:
+    with TextFile.from_path(
+        SAMPLE,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=quiet.rules,
+    ) as log:
         table = _parsed(log.read_arrow_table(), quiet)
     assert table.column("protocol_code").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
     assert table.column("kwargs").to_pylist() == [None] * EXPECTED_RECORDS
@@ -585,7 +607,12 @@ def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) 
     assert table.column("Symbol").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("ISINCODE").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("code").to_pylist() == [""] * EXPECTED_RECORDS
-    assert all(table.column(name).null_count == EXPECTED_RECORDS for name in FLAT_NAMES)
+    assert table.column("MsgType").null_count < EXPECTED_RECORDS
+    assert all(
+        table.column(name).null_count == EXPECTED_RECORDS
+        for name in FLAT_NAMES
+        if name != "MsgType"
+    )
 
 
 def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
@@ -607,7 +634,8 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
 
     assert parsed.column("MsgSeqNum")[0].as_py() is None
     assert parsed.column("Parties")[0].as_py() is None
-    assert [tag for tag, _ in _tagged(parsed.column("kwargs")[0])] == [8, 35, 34, 55]
+    assert [tag for tag, _ in _tagged(parsed.column("kwargs")[0])] == [8, 34, 55]
+    assert parsed.column("MsgType").to_pylist() == ["D"]
 
 
 def test_quote_fields_are_typed_once_and_drive_log_correlation(
@@ -662,13 +690,16 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     tmp_path: Path,
 ) -> None:
     cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
-    with TextFile.from_path(SAMPLE) as log:
+    with TextFile.from_path(
+        SAMPLE,
+        msg_type_event_types=event_types(cold.registry),
+        protocol_rules=cold.rules,
+    ) as log:
         table = _parsed(log.read_arrow_table(), cold)
     assert table.num_rows == EXPECTED_RECORDS
     assert _tagged(table.column("kwargs")[PIPED]) == [
         (8, "FIX.4.2"),
         (9, "176"),
-        (35, "D"),
         (34, "1092"),
         (49, "BUYSIDE"),
         (56, "XPAR"),
@@ -682,7 +713,7 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
         (59, "0"),
         (10, "203"),
     ]
-    assert len(_keys(table.column("kwargs")[PIPED])) == EXPECTED_WIRE_FIELDS
+    assert len(_keys(table.column("kwargs")[PIPED])) == EXPECTED_WIRE_FIELDS - 1
     assert _tagged(table.column("kwargs")[BRIDGE]) == []
     assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert len(_keys(table.column("kwargs")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
@@ -697,7 +728,12 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     """`TextFiles` streams raw Message rows and FIX parses them at one boundary."""
     for name in ("app.1.txt", "app.2.txt"):
         (tmp_path / name).write_bytes(SAMPLE_BYTES)
-    files = TextFiles.from_folder(tmp_path, static_values={"bridge": "bridge-1"})
+    files = TextFiles.from_folder(
+        tmp_path,
+        static_values={"bridge": "bridge-1"},
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=codec.rules,
+    )
     table = _parsed(files.read_arrow_table(), codec)
     assert table.num_rows == EXPECTED_RECORDS * 2
     assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS * 2
@@ -821,7 +857,11 @@ def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pya
     path.write_text(
         "".join(f"2026-08-14 00:05:01.147 [t] [{plugin}] (INFO) {one}\n" for one in messages)
     )
-    with TextFile.from_path(path) as log:
+    with TextFile.from_path(
+        path,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=codec.rules,
+    ) as log:
         return _parsed(log.read_arrow_table(), codec)
 
 
@@ -833,16 +873,27 @@ def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow
 def _parsed(messages: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     """Convert raw Message batches through the public FixMsg boundary."""
     return pyarrow.Table.from_batches(
-        [
-            FixMsg.from_message_arrow_batch(batch, codec, FixMsg.into_message_rules())
-            for batch in messages.to_batches()
-        ]
+        [FixMsg.from_message_arrow_batch(batch, codec) for batch in messages.to_batches()]
     )
 
 
 def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
     """Build raw rows in memory and parse them only at the FixMsg boundary."""
     messages = Message.into_arrow_reader(Message(message=line) for line in lines).read_all()
+    parsed = Message.parse_arrow(
+        messages.column("message"),
+        event_types(codec.registry),
+        messages.column("plugin_code"),
+        protocol_rules=codec.rules,
+    )
+    messages = messages.set_column(
+        messages.schema.get_field_index("etype"), "etype", parsed["etype"]
+    )
+    messages = messages.set_column(
+        messages.schema.get_field_index("protocol_code"),
+        "protocol_code",
+        parsed["protocol_code"],
+    )
     return _parsed(messages, codec)
 
 
@@ -886,7 +937,11 @@ TRANSACTED_SOURCES = [
 def transacted(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
     path = tmp_path / "transacted.txt"
     path.write_text(TRANSACTED_LINES)
-    with TextFile.from_path(path) as log:
+    with TextFile.from_path(
+        path,
+        msg_type_event_types=event_types(codec.registry),
+        protocol_rules=codec.rules,
+    ) as log:
         return _parsed(log.read_arrow_table(), codec)
 
 
@@ -961,7 +1016,11 @@ def staged(tmp_path: Path) -> pyarrow.Table:
     """What `parse_messages` writes: raw Message rows."""
     path = tmp_path / "staged.txt"
     path.write_text(STAGED_LINES)
-    with TextFile.from_path(path) as log:
+    with TextFile.from_path(
+        path,
+        msg_type_event_types=event_types(),
+        protocol_rules=Rules.into_default(),
+    ) as log:
         return log.read_arrow_table()
 
 
@@ -990,11 +1049,13 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     expected = [line.split("(INFO) ", 1)[1] for line in STAGED_LINES.splitlines()]
     assert staged.column("message").to_pylist() == expected
     assert "kwargs" in staged.schema.names
-    assert not {"protocol_code", "MsgType", "Side", "Parties"} & set(staged.schema.names)
+    assert staged.column("MsgType").to_pylist() == ["D", "D", None, None]
+    assert not {"Side", "Parties"} & set(staged.schema.names)
+    assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
     assert [entry["value"] for entry in staged.column("kwargs")[0].as_py()[:3]] == [
         "FIX.4.4",
-        "D",
         "C1",
+        "1",
     ]
 
 
@@ -1030,19 +1091,15 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
 ) -> None:
     """One condition, one place: what `etype` the rules made of the line.
 
-    The second row is the interesting one. It resolves against the dictionary
-    perfectly well -- `#MSGTYPE=D` becomes tag 35 -- and still lands in
-    `misc`, because the event rules read the *raw text* and a bridge spelling
-    its type as a named key matches neither `35=D` nor `NewOrderSingle`. What
-    routes a row is what kind of event it is, not whether its fields resolved,
-    and those are different questions.
+    The second row is the interesting one: its named `#MSGTYPE=D` is promoted
+    before FIX transcription, so it takes the same market route as wire tag 35.
     """
     rules = Rules()
     categories = rules.into_arrow_category_array(
         resolved.column("protocol_code").combine_chunks(),
         resolved.column("etype").combine_chunks(),
     )
-    assert categories.to_pylist() == ["market", "misc", "misc", "unknown"]
+    assert categories.to_pylist() == ["market", "market", "misc", "misc"]
 
 
 def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:

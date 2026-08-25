@@ -7,6 +7,9 @@ import datetime
 import functools
 import itertools
 import json
+import os
+import tempfile
+import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from functools import cached_property
 from typing import Any
@@ -122,16 +125,6 @@ COMPACTION_MARK = "rekep.compaction"
 #: in the metadata references it, so a sweep has to know the name.
 HADOOP_POINTER = "version-hint.text"
 
-#: What `maybe_optimize` calls fragmented: this many manifests or snapshots on
-#: the branch, or this many files the compaction planner would rewrite. Loose
-#: on purpose -- `optimize` is cheap to run and expensive to need, and the
-#: signals cost no store round trips beyond what the write already cached --
-#: but not zero, because a table of two commits does not need a maintenance
-#: pass appended to every stream.
-AUTO_OPTIMIZE_MANIFESTS = 8
-AUTO_OPTIMIZE_SNAPSHOTS = 16
-AUTO_OPTIMIZE_FILES = 16
-
 #: Rows per parquet row group. Iceberg's default is a million, which makes
 #: nearly every file this package writes a single row group -- and a filter can
 #: only skip a *row group*, so one row group per file means a filter that got
@@ -152,6 +145,15 @@ COMMIT_PROPERTIES = {
     ROW_GROUP_LIMIT: str(128 * 1024),
 }
 
+#: Maintenance defaults safe to retrofit onto an existing table. Explicit
+#: retention settings still win; `optimize` only supplies absent declarations.
+MAINTENANCE_PROPERTIES = {
+    MERGE_MANIFESTS: "true",
+    MIN_MANIFESTS_TO_MERGE: "10",
+    PREVIOUS_VERSIONS: "20",
+    DELETE_OLD_METADATA: "true",
+}
+
 
 @dataclasses.dataclass(eq=False)
 class IcebergDataset(Dataset):
@@ -163,15 +165,12 @@ class IcebergDataset(Dataset):
         """Document kind registered with `Dataset`."""
         return "iceberg"
 
-    #: Table identifier, `namespace.name`.
-    name: str
+    #: The declared shape. Its name is the table identifier.
+    field: StructField
 
     #: Catalog name pyiceberg loads, with `properties` as its configuration.
     catalog: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
-
-    #: The declared shape. None means "whatever the table says".
-    field: StructField | None = None
 
     #: Branch reads and writes use unless a call names another. None, `root`,
     #: `main`, and `master` all mean the table's root state.
@@ -201,24 +200,30 @@ class IcebergDataset(Dataset):
     #: Iceberg's, and Iceberg's defaults are not tuned for a stream.
     optimize_commits: bool = True
 
-    #: Whether a write stream compacts once file fragmentation crosses the
-    #: automatic threshold. This rewrites data files but keeps snapshots and
-    #: orphan cleanup in the explicit maintenance path.
-    auto_compact: bool = True
-
-    #: Whether a write stream may run full maintenance after it fragments.
-    #: This supersedes `auto_compact` because `optimize` also expires snapshots
-    #: and sweeps orphans, decisions a writer must only make when asked.
-    auto_optimize: bool = False
-
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
     table_properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Normalize public root spellings once while keeping named refs exact."""
+        """Normalize the declaration and public root spellings once."""
+        field = self.field if isinstance(self.field, Field) else Field.from_(self.field)
+        if not isinstance(field, StructField):
+            raise TypeError("an Iceberg dataset field must be a struct")
+        if not field.name:
+            raise ValueError("an Iceberg dataset field must name its table")
+        self.field = field
         if self.branch in ROOT_BRANCHES:
             self.branch = None
+
+    @property
+    def name(self) -> str:
+        """Table identifier, owned by the field declaration."""
+        return self.field.name
+
+    @property
+    def namespace(self) -> str:
+        """The dotted namespace before the table name, when one is present."""
+        return self.name.rpartition(".")[0]
 
     # -- the table ----------------------------------------------------------
 
@@ -282,9 +287,9 @@ class IcebergDataset(Dataset):
         """
         if self.exists:
             return self
-        namespace = self.name.rpartition(".")[0]
-        if namespace:
-            self.store.create_namespace(namespace)
+        field = field.with_name(self.name)
+        if self.namespace:
+            self.store.create_namespace(self.namespace)
         schema = field.into_iceberg_schema()
         defaults = {**(COMMIT_PROPERTIES if self.optimize_commits else {}), **metrics_for(field)}
         table = self.iceberg_catalog.create_table(
@@ -298,6 +303,7 @@ class IcebergDataset(Dataset):
             sort_order=field.into_iceberg_sort_order(schema, self.sort_by),
             properties={**defaults, **self.table_properties, **kwargs.pop("properties", {})},
         )
+        self.field = field
         self.__dict__["iceberg_table"] = table
         return self
 
@@ -311,11 +317,6 @@ class IcebergDataset(Dataset):
         if "iceberg_table" in self.__dict__:
             return self.iceberg_table
         if not self.exists:
-            if self.field is None:
-                raise ValueError(
-                    f"{self.name!r} does not exist and this dataset declares no shape; "
-                    "give it `field=`, or create it with create_with(...)"
-                )
             self.create_with_field(self.field)
         return self.iceberg_table
 
@@ -331,13 +332,11 @@ class IcebergDataset(Dataset):
     def table_field(self) -> StructField:
         """The table's own shape: its schema, docs, keys and partitioning."""
         table = self.iceberg_table
-        return StructField.from_iceberg_schema(
-            table.schema(), self.name.rpartition(".")[2], spec=table.spec()
-        )
+        return StructField.from_iceberg_schema(table.schema(), self.name, spec=table.spec())
 
     def into_struct_field(self) -> StructField:
-        """The declared shape, or the table's own when nothing was declared."""
-        return self.field if self.field is not None else self.table_field
+        """The table's declared shape."""
+        return self.field
 
     def derived_columns(self) -> dict[str, tuple[str, ...]]:
         """Columns the declared shape says are a function of other columns.
@@ -347,7 +346,7 @@ class IcebergDataset(Dataset):
         back from a table says nothing here -- and saying nothing costs a merge
         pruning, never correctness.
         """
-        return self.field.derived_keys() if self.field is not None else {}
+        return self.field.derived_keys()
 
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
         """Add the columns `source` has and the table lacks; skip when there are none."""
@@ -361,10 +360,10 @@ class IcebergDataset(Dataset):
         with table.update_schema() as update:
             update.union_by_name(target.into_iceberg_schema())
         self.refresh()
-        if self.field is not None:
-            # The declared shape *is* what writes cast onto, so evolving the
-            # table without it would drop the new columns at the next write.
-            self.field = target
+        # The declared shape *is* what writes cast onto, so evolving the table
+        # without it would drop the new columns at the next write. Keep its
+        # outer name because that is also this dataset's table identifier.
+        self.field = target.with_name(self.name)
         return added
 
     # -- reading ------------------------------------------------------------
@@ -488,13 +487,6 @@ class IcebergDataset(Dataset):
         """Pin a scan to its validated ref, leaving an unwritten root unpinned."""
         return scan if self._branch_head(table, reference) is None else scan.use_ref(reference)
 
-    def _finish_write(self, branch: str | None) -> None:
-        """Run the maintenance policy once, after the whole input stream."""
-        if self.auto_optimize:
-            self.maybe_optimize(branch=branch)
-        elif self.auto_compact:
-            self.maybe_compact(branch=branch)
-
     def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
         """`{the scan's name: the target's name}` for every column it can fill."""
         current = {field.name: field.field_id for field in self.iceberg_table.schema().fields}
@@ -522,41 +514,165 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
-        """Replaces the rows whose keys match and inserts the rest, one commit per chunk."""
+        """Upsert keyed rows, or stage complete partitions for keyless input."""
         # An upsert or an unconditional append can put a key beyond an
         # insert-only writer's known maximum. Its cheap monotonic proof is no
         # longer complete after either operation.
         self.__dict__.pop("_insert_upper", None)
         table = self.get_or_create_table()
-        reader = self.target_field(schema).cast_arrow_reader(source)
         join = self.merge_columns(merge_by)
+        partitions = _partition_columns(table)
+        if partitions and not join:
+            self.overwrite_partition_arrow_reader(
+                source,
+                schema,
+                merge_by,
+                commit_row_size,
+                branch=branch,
+                properties=properties,
+            )
+            return
         if not join:
             raise ValueError(
                 f"merge_by={merge_by!r} names nothing to match on, and an overwrite "
                 "replaces the rows whose keys match -- pass True for the primary key "
                 "or the columns to match on, or use append_arrow_* to add rows blindly"
             )
+        reader = self.target_field(schema).cast_arrow_reader(source)
         reference = self._branch_name(branch)
         self._branch_head(table, reference)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
-        committed = False
         for chunk in arrow_chunks(reader, rows):
             chunk = self.sorted(chunk)
             if self.plan_merges:
-                changed = self.merge_arrow_table(
-                    chunk, join, branch=reference, properties=properties
-                )
-                committed = committed or any(changed)
+                self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
             else:
-                changed = self.iceberg_table.upsert(
+                self.iceberg_table.upsert(
                     chunk,
                     join_cols=join,
                     branch=reference,
                     snapshot_properties=properties or {},
                 )
-                committed = committed or bool(changed.rows_updated or changed.rows_inserted)
-        if committed:
-            self._finish_write(reference)
+
+    def overwrite_partition_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = True,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+    ) -> None:
+        """Stage and replace complete partition-contiguous Arrow runs."""
+        self.__dict__.pop("_insert_upper", None)
+        table = self.get_or_create_table()
+        join = self.merge_columns(merge_by)
+        if join:
+            self.overwrite_arrow_reader(
+                source,
+                schema,
+                merge_by,
+                commit_row_size,
+                branch=branch,
+                properties=properties,
+            )
+            return
+        partitions = _partition_columns(table)
+        if not partitions:
+            raise ValueError("partition overwrite needs a supported table partition spec")
+        source = _requiring_columns(source, [column.source for column in partitions])
+        reader = self.target_field(schema).cast_arrow_reader(source)
+        reference = self._branch_name(branch)
+        self._branch_head(table, reference)
+        rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        snapshot = properties or {}
+        file_rows = rows or DEFAULT_COMMIT_ROW_SIZE
+        pending: list[_StagedPartition] = []
+        pending_rows = 0
+
+        def commit(stager: _PartitionStager) -> None:
+            nonlocal pending, pending_rows
+            if not pending:
+                return
+            self._overwrite_partitions(table, pending, reference, snapshot, stager)
+            stager.release(pending)
+            pending, pending_rows = [], 0
+
+        with _PartitionStager(table, self.sort_columns(), file_rows) as stager:
+            for staged in _staged_partition_stream(reader, partitions, stager):
+                pending.append(staged)
+                pending_rows += staged.rows
+                if rows and pending_rows >= rows:
+                    commit(stager)
+            commit(stager)
+
+    def _overwrite_partitions(
+        self,
+        table: Any,
+        replacements: Sequence[_StagedPartition],
+        reference: str,
+        properties: Mapping[str, str],
+        stager: _PartitionStager,
+    ) -> None:
+        """Replace complete staged partitions without loading their Parquet bytes."""
+        paths: list[str] = []
+        for replacement in replacements:
+            paths.extend(replacement.paths)
+        if not paths:
+            return
+        transaction = table.transaction()
+        try:
+            identities = _identity_partitions(table)
+            if identities:
+                from pyiceberg.expressions import Or
+
+                predicate = None
+                for replacement in replacements:
+                    term = _partition_filter(replacement.partition, identities)
+                    predicate = term if predicate is None else Or(predicate, term)
+                transaction.delete(
+                    predicate,
+                    snapshot_properties=dict(properties),
+                    branch=reference,
+                )
+            else:
+                replaced = _partition_data_files(table, replacements, reference)
+                direct = any(replacement.data_files for replacement in replacements)
+                if direct and transaction.table_metadata.name_mapping() is None:
+                    from pyiceberg.table import TableProperties
+
+                    mapping = transaction.table_metadata.schema().name_mapping
+                    transaction.set_properties(
+                        **{TableProperties.DEFAULT_NAME_MAPPING: mapping.model_dump_json()}
+                    )
+                if replaced or direct:
+                    with transaction.update_snapshot(
+                        snapshot_properties=dict(properties), branch=reference
+                    ).overwrite() as overwrite:
+                        for data_file in replaced:
+                            overwrite.delete_data_file(data_file)
+                        for replacement in replacements:
+                            for data_file in replacement.data_files:
+                                overwrite.append_data_file(data_file)
+            if not any(replacement.data_files for replacement in replacements):
+                # Every path is minted for this staging attempt and uploaded
+                # once, so no legitimate table file can have the same name.
+                transaction.add_files(
+                    paths,
+                    snapshot_properties=dict(properties),
+                    check_duplicate_files=False,
+                    branch=reference,
+                )
+        except Exception:
+            # The catalog commit has not started, so these uploads are proven
+            # orphans and the stager can safely delete them on unwind.
+            raise
+        # A catalog commit failure can be an acknowledgement failure after the
+        # metadata landed. Protect its data files rather than risk deleting a
+        # committed snapshot; maintenance can later remove a genuine orphan.
+        stager.release(replacements)
+        transaction.commit_transaction()
 
     def merge_arrow_table(
         self,
@@ -567,47 +683,12 @@ class IcebergDataset(Dataset):
         properties: dict[str, str] | None = None,
     ) -> tuple[int, int]:
         """One chunk merged into the table: `(rows updated, rows inserted)`."""
-        from pyiceberg.io.pyarrow import _check_pyarrow_schema_compatible
-        from pyiceberg.table import upsert_util
-
         self.__dict__.pop("_insert_upper", None)
         join = self.merge_columns(merge_by)
         if not join:
             raise ValueError("merge_arrow_table needs columns to merge on")
-        if SOURCE_INDEX in join or TARGET_INDEX in join:
-            # pyiceberg's own message, because the joins here reach these names
-            # before its check does and would fail on the duplicate instead.
-            raise ValueError(
-                f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
-            )
-        chunk = normalised_keys(chunk, join)
-        if upsert_util.has_duplicate_rows(chunk, join):
-            raise ValueError(
-                "Duplicate rows found in source dataset based on the key columns. "
-                "No upsert executed"
-            )
         table = self.get_or_create_table()
-        # The check `Table.upsert` makes, on the configuration it reads it
-        # from: a chunk carrying a column the table does not have, or one at a
-        # precision Iceberg cannot store, is refused here exactly as it would
-        # be there. What it does *not* cover is a column the chunk leaves out,
-        # which it allows whenever the field is optional -- and a merge that
-        # allowed that would write nulls over whatever is stored.
-        _check_pyarrow_schema_compatible(
-            table.schema(),
-            provided_schema=chunk.schema,
-            format_version=table.format_version,
-            downcast_ns_timestamp_to_us=_downcasts_ns(),
-        )
-        # `schema().fields`, not `column_names`: the latter names nested members
-        # too (`book.key`), and a merge only ever writes whole top-level columns.
-        stored = [member.name for member in table.schema().fields]
-        missing = [name for name in stored if name not in chunk.column_names]
-        if missing:
-            raise ValueError(
-                f"chunk is missing {missing}, and a merge writes the row it matches: the stored "
-                "values would become nulls. Cast it onto the table's shape before merging"
-            )
+        chunk = _checked_merge_chunk(table, chunk, join)
         if chunk.num_rows == 0:
             # Nothing to match, and the schema was still worth checking: a scan
             # for it would read the table to discover that, and `_key_ranges`
@@ -729,16 +810,12 @@ class IcebergDataset(Dataset):
             for chunk in arrow_chunks(reader, rows):
                 table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
                 inserted += chunk.num_rows
-            if inserted:
-                self._finish_write(reference)
             return inserted
         inserted = 0
         for chunk in arrow_chunks(reader, rows):
             inserted += self.insert_arrow_table(
                 self.sorted(chunk), join, branch=reference, properties=properties
             )
-        if inserted:
-            self._finish_write(reference)
         return inserted
 
     def insert_arrow_table(
@@ -1292,7 +1369,7 @@ class IcebergDataset(Dataset):
         """Delete what the sweep found -- from the store, and from the cache."""
         # At the point of use, like every other pyiceberg import here: the
         # module has to import without the extra installed.
-        from rekep.iceberg.fileio import CONTENT_CACHE
+        from rekep.arrow_file_io import CONTENT_CACHE
 
         for filesystem, path, location, _ in orphans:
             CONTENT_CACHE.evict(location)
@@ -1337,46 +1414,6 @@ class IcebergDataset(Dataset):
                 data.add(entry.data_file.file_path)
         return data, files
 
-    def maybe_optimize(
-        self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any
-    ) -> dict[str, int] | None:
-        """`optimize`, but only once cheap signals say the table needs it."""
-        table = self.iceberg_table
-        reference = self._branch_name(branch)
-        head = self._branch_head(table, reference)
-        if head is None:
-            return None
-        snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
-        manifests = len(snapshot.manifests(table.io)) if snapshot is not None else 0
-        fragmented = (
-            len(table.metadata.snapshots) >= AUTO_OPTIMIZE_SNAPSHOTS
-            or manifests >= AUTO_OPTIMIZE_MANIFESTS
-            or self._compactable_files(snapshot, min_files, branch) >= AUTO_OPTIMIZE_FILES
-        )
-        if not fragmented:
-            return None
-        return self.optimize(min_files=min_files, branch=branch, **kwargs)
-
-    def maybe_compact(self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any) -> int:
-        """Compact once cheap file signals show enough fragments to rewrite."""
-        table = self.iceberg_table
-        reference = self._branch_name(branch)
-        head = self._branch_head(table, reference)
-        if head is None:
-            return 0
-        snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
-        if self._compactable_files(snapshot, min_files, branch) < AUTO_OPTIMIZE_FILES:
-            return 0
-        return self.compact(min_files=min_files, branch=branch, **kwargs)
-
-    def _compactable_files(self, snapshot: Any, min_files: int, branch: str | None) -> int:
-        """Files an automatic pass could rewrite, avoiding a plan when bounded below."""
-        stored = _stored_files(snapshot)
-        if stored is not None and stored < AUTO_OPTIMIZE_FILES:
-            return 0
-        # A missing summary means the only safe answer is to ask the planner.
-        return sum(count for _, _, count in self._plan_rows(min_files, branch))
-
     def optimize(
         self,
         *,
@@ -1389,11 +1426,16 @@ class IcebergDataset(Dataset):
         **kwargs: Any,
     ) -> dict[str, int]:
         """Merge manifests, compact files, then expire and sweep -- in that order."""
-        if self.iceberg_table.properties.get(MERGE_MANIFESTS) != "true":
-            # Only when it is not already on: a no-op commit is still a metadata
-            # version, and a routine that runs on a schedule would spend one
-            # every time.
-            self.set_properties({MERGE_MANIFESTS: "true"})
+        properties = self.iceberg_table.properties
+        updates = {
+            name: value for name, value in MAINTENANCE_PROPERTIES.items() if name not in properties
+        }
+        if properties.get(MERGE_MANIFESTS) != "true":
+            updates[MERGE_MANIFESTS] = "true"
+        if updates:
+            # A no-op commit is still a metadata version, so a scheduled pass
+            # only supplies declarations the table does not already carry.
+            self.set_properties(updates)
         rewritten = self.compact(min_files=min_files, **kwargs)
         report = self.cleanup(
             retain=retain,
@@ -1796,27 +1838,10 @@ def _key_ranges(
     """A predicate every row matching `chunk` on `join` must satisfy."""
     from pyiceberg.expressions import And
 
+    _validate_merge_keys(chunk, join)
     terms = []
     for column in join:
         values = chunk.column(column)
-        if values.null_count:
-            # A null never equals anything in Iceberg, so no predicate can find
-            # the stored row a null key would match -- the merge would insert a
-            # second one. pyiceberg refuses a null literal too, one row later.
-            raise ValueError(
-                f"column {column!r} is a merge key and cannot be null; "
-                "a null key matches nothing, so merging on it would duplicate rows"
-            )
-        if _has_nan(values):
-            # And no literal can name a NaN, which the two branches below
-            # disagree about: `In` refuses it (pyiceberg will not build the
-            # literal), while `min_max` skips it and hands back a range the
-            # stored row falls outside -- so the merge would insert a second
-            # copy, and a third next time, without ever raising.
-            raise ValueError(
-                f"column {column!r} is a merge key and cannot be NaN; "
-                "no predicate can name a NaN, so merging on it would duplicate rows"
-            )
         term = _column_term(column, values)
         if term is not None:
             terms.append(term)
@@ -1834,6 +1859,22 @@ def _key_ranges(
     if not terms:
         return _always_true()
     return And(*terms) if len(terms) > 1 else terms[0]
+
+
+def _validate_merge_keys(chunk: pyarrow.Table, join: Sequence[str]) -> None:
+    """Refuse merge keys no Iceberg predicate can name exactly."""
+    for column in join:
+        values = chunk.column(column)
+        if values.null_count:
+            raise ValueError(
+                f"column {column!r} is a merge key and cannot be null; "
+                "a null key matches nothing, so merging on it would duplicate rows"
+            )
+        if _has_nan(values):
+            raise ValueError(
+                f"column {column!r} is a merge key and cannot be NaN; "
+                "no predicate can name a NaN, so merging on it would duplicate rows"
+            )
 
 
 def _derivable(
@@ -2013,6 +2054,38 @@ def _between(column: str, low: Any, high: Any) -> Any:
     from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual
 
     return And(GreaterThanOrEqual(column, low), LessThanOrEqual(column, high))
+
+
+def _checked_merge_chunk(table: Any, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """A source chunk validated once for either Iceberg merge implementation."""
+    from pyiceberg.io.pyarrow import _check_pyarrow_schema_compatible
+    from pyiceberg.table import upsert_util
+
+    if SOURCE_INDEX in join or TARGET_INDEX in join:
+        # pyiceberg's own message, before an Arrow join fails on the duplicate.
+        raise ValueError(f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames")
+    chunk = normalised_keys(chunk, join)
+    _validate_merge_keys(chunk, join)
+    if upsert_util.has_duplicate_rows(chunk, join):
+        raise ValueError(
+            "Duplicate rows found in source dataset based on the key columns. No upsert executed"
+        )
+    # PyIceberg permits an omitted optional column, but a merge replaces the
+    # whole matched row and would turn that stored value into null.
+    _check_pyarrow_schema_compatible(
+        table.schema(),
+        provided_schema=chunk.schema,
+        format_version=table.format_version,
+        downcast_ns_timestamp_to_us=_downcasts_ns(),
+    )
+    stored = [member.name for member in table.schema().fields]
+    missing = [name for name in stored if name not in chunk.column_names]
+    if missing:
+        raise ValueError(
+            f"chunk is missing {missing}, and a merge writes the row it matches: the stored "
+            "values would become nulls. Cast it onto the table's shape before merging"
+        )
+    return chunk
 
 
 def _downcasts_ns() -> bool:
@@ -2315,6 +2388,468 @@ def _counts(row: Any) -> list[int]:
     changes files without changing rows.
     """
     return [int(row["file_count"]), int(row["record_count"])]
+
+
+@dataclasses.dataclass(frozen=True)
+class _PartitionColumn:
+    """One supported partition field and its Arrow transform."""
+
+    name: str
+    source: str
+    transform: Any
+
+
+def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
+    """The current spec's supported transformed source columns."""
+    from pyiceberg.transforms import (
+        BucketTransform,
+        DayTransform,
+        HourTransform,
+        IdentityTransform,
+        MonthTransform,
+        TruncateTransform,
+        YearTransform,
+    )
+
+    supported = (
+        IdentityTransform,
+        DayTransform,
+        HourTransform,
+        MonthTransform,
+        YearTransform,
+        BucketTransform,
+        TruncateTransform,
+    )
+    schema = table.schema()
+    spec = table.spec()
+    if spec.is_unpartitioned() or any(
+        not isinstance(field.transform, supported) for field in spec.fields
+    ):
+        return None
+    return tuple(
+        _PartitionColumn(
+            field.name,
+            schema.find_column_name(field.source_id),
+            field.transform.pyarrow_transform(schema.find_field(field.source_id).field_type),
+        )
+        for field in spec.fields
+    )
+
+
+def _identity_partitions(table: Any) -> tuple[tuple[str, str], ...] | None:
+    """Current `(partition field, source column)` pairs when all are identities."""
+    from pyiceberg.transforms import IdentityTransform
+
+    spec = table.spec()
+    if spec.is_unpartitioned():
+        return None
+    identities = tuple(
+        (field.name, table.schema().find_column_name(field.source_id))
+        for field in spec.fields
+        if isinstance(field.transform, IdentityTransform)
+    )
+    return identities if len(identities) == len(spec.fields) else None
+
+
+def _requiring_columns(
+    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], columns: Sequence[str]
+) -> pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]:
+    """Refuse an omitted partition column before a nullable cast can invent it."""
+
+    def validate(schema: pyarrow.Schema) -> None:
+        missing = [name for name in columns if not _schema_has_column(schema, name)]
+        if missing:
+            raise ValueError(
+                f"partition columns {missing} are missing from the source; "
+                "partition overwrite cannot infer which partitions to replace"
+            )
+
+    if isinstance(source, pyarrow.RecordBatchReader):
+        validate(source.schema)
+        return source
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for batch in source:
+            validate(batch.schema)
+            yield batch
+
+    return batches()
+
+
+def _schema_has_column(schema: pyarrow.Schema, name: str) -> bool:
+    """Whether an Arrow schema contains an exact or nested column path."""
+    if name in schema.names:
+        return True
+    root, *nested = name.split(".")
+    try:
+        field = schema.field(root)
+        for member in nested:
+            field = field.type.field(member)
+    except (KeyError, TypeError):
+        return False
+    return True
+
+
+@dataclasses.dataclass(frozen=True)
+class _StagedPartition:
+    """Final data-file paths and row count for one complete partition."""
+
+    partition: Mapping[str, Any]
+    paths: tuple[str, ...]
+    data_files: tuple[Any, ...]
+    rows: int
+
+
+class _PartitionStager:
+    """Bounded local Parquet staging for complete partitions."""
+
+    def __init__(self, table: Any, sort_by: Sequence[str], file_row_size: int) -> None:
+        from pyiceberg.io.pyarrow import _get_parquet_writer_kwargs
+        from pyiceberg.table import TableProperties
+        from pyiceberg.table.locations import load_location_provider
+        from pyiceberg.utils.properties import property_as_int
+
+        self.table = table
+        self.sort_by = tuple(sort_by)
+        self.file_row_size = max(int(file_row_size), 1)
+        self.directory = tempfile.TemporaryDirectory(prefix="rekep-iceberg-")
+        self.location_provider = load_location_provider(
+            table_location=table.metadata.location,
+            table_properties=table.metadata.properties,
+        )
+        self.writer_kwargs = _get_parquet_writer_kwargs(table.metadata.properties)
+        self.row_group_size = property_as_int(
+            properties=table.metadata.properties,
+            property_name=TableProperties.PARQUET_ROW_GROUP_LIMIT,
+            default=TableProperties.PARQUET_ROW_GROUP_LIMIT_DEFAULT,
+        )
+        self.uploaded: set[str] = set()
+        self.partition: Mapping[str, Any] | None = None
+        self.paths: list[str] = []
+        self.data_files: list[Any] = []
+        self._writes_data_files = any(
+            not field.transform.preserves_order for field in table.spec().fields
+        )
+        self.rows = 0
+        self._writer: Any | None = None
+        self._local: str | None = None
+        self._target: str | None = None
+        self._file_rows = 0
+        self._last_key: tuple[Any, ...] | None = None
+
+    def __enter__(self) -> _PartitionStager:
+        return self
+
+    def __exit__(self, exc_type: object, _exc: object, _traceback: object) -> None:
+        errors: list[Exception] = []
+        try:
+            self._close_file(upload=False)
+        except Exception as error:
+            errors.append(error)
+        for path in tuple(self.uploaded):
+            try:
+                self.table.io.delete(path)
+            except FileNotFoundError:
+                pass
+            except Exception as error:
+                errors.append(error)
+        try:
+            self.directory.cleanup()
+        except Exception as error:
+            errors.append(error)
+        if exc_type is None and errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ExceptionGroup("partition staging cleanup failed", errors)
+
+    def start(self, partition: Mapping[str, Any]) -> None:
+        if self.partition is not None:
+            raise RuntimeError("finish the staged partition before starting another")
+        self.partition = dict(partition)
+        self.paths = []
+        self.data_files = []
+        self.rows = 0
+
+    def write(self, chunk: pyarrow.Table) -> None:
+        """Write one bounded source chunk without mixing partition values."""
+        if self.partition is None:
+            raise RuntimeError("start a staged partition before writing it")
+        if self.sort_by and not _in_sort_order(chunk, self.sort_by):
+            chunk = chunk.sort_by([(name, "ascending") for name in self.sort_by])
+        offset = 0
+        while offset < chunk.num_rows:
+            available = self.file_row_size - self._file_rows
+            piece = chunk.slice(offset, min(available, chunk.num_rows - offset))
+            piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
+            first = _row_key(piece_batches[0], self.sort_by, 0)
+            if self._writer is not None and self._last_key is not None and first < self._last_key:
+                self._close_file(upload=True)
+                available = self.file_row_size
+                piece = chunk.slice(offset, min(available, chunk.num_rows - offset))
+                piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
+            self._open_file(piece.schema)
+            self._writer.write_table(piece, row_group_size=self.row_group_size)
+            self._file_rows += piece.num_rows
+            self.rows += piece.num_rows
+            offset += piece.num_rows
+            if self.sort_by:
+                last_batch = piece_batches[-1]
+                self._last_key = _row_key(last_batch, self.sort_by, last_batch.num_rows - 1)
+            if self._file_rows >= self.file_row_size:
+                self._close_file(upload=True)
+
+    def finish(self) -> _StagedPartition:
+        if self.partition is None:
+            raise RuntimeError("no staged partition to finish")
+        self._close_file(upload=True)
+        staged = _StagedPartition(
+            dict(self.partition), tuple(self.paths), tuple(self.data_files), self.rows
+        )
+        self.partition = None
+        self.paths = []
+        self.data_files = []
+        self.rows = 0
+        return staged
+
+    def release(self, partitions: Sequence[_StagedPartition]) -> None:
+        """Leave successfully committed targets in place on context exit."""
+        for partition in partitions:
+            self.uploaded.difference_update(partition.paths)
+
+    def _open_file(self, schema: pyarrow.Schema) -> None:
+        if self._writer is not None:
+            return
+        import pyarrow.parquet
+
+        identifier = uuid.uuid4()
+        self._local = os.path.join(self.directory.name, f"{identifier}.parquet")
+        self._target = self.location_provider.new_data_location(
+            data_file_name=f"{identifier}.parquet",
+            partition_key=_partition_key(self.table, self.partition or {}),
+        )
+        self._writer = pyarrow.parquet.ParquetWriter(
+            self._local,
+            schema=schema,
+            store_decimal_as_integer=True,
+            **self.writer_kwargs,
+        )
+        self._file_rows = 0
+        self._last_key = None
+
+    def _close_file(self, *, upload: bool) -> None:
+        writer, local, target = self._writer, self._local, self._target
+        self._writer = self._local = self._target = None
+        self._file_rows = 0
+        self._last_key = None
+        if writer is None:
+            return
+        try:
+            writer.close()
+            if upload:
+                data_file = (
+                    _staged_data_file(self.table, local, target, self.partition or {})
+                    if self._writes_data_files
+                    else None
+                )
+                copier = getattr(self.table.io, "copy_from_local", None)
+                if copier is None:
+                    _copy_to_output(self.table.io, local, target)
+                else:
+                    copier(local, target)
+                self.paths.append(target)
+                if data_file is not None:
+                    self.data_files.append(data_file)
+                self.uploaded.add(target)
+        finally:
+            try:
+                os.unlink(local)
+            except FileNotFoundError:
+                pass
+
+
+def _partition_key(table: Any, partition: Mapping[str, Any]) -> Any:
+    """The current spec's path key for one transformed partition."""
+    from pyiceberg.partitioning import PartitionFieldValue, PartitionKey
+
+    spec = table.spec()
+    return PartitionKey(
+        [PartitionFieldValue(field, partition[field.name]) for field in spec.fields],
+        spec,
+        table.schema(),
+    )
+
+
+def _partition_data_files(
+    table: Any, replacements: Sequence[_StagedPartition], reference: str
+) -> list[Any]:
+    """Live data files whose current-spec partition is being replaced."""
+    from pyiceberg.manifest import DataFileContent, ManifestContent
+
+    current = table.spec()
+    targets = {
+        _partition_identity(_partition_key(table, replacement.partition).partition)
+        for replacement in replacements
+    }
+    snapshot = table.metadata.snapshot_by_name(reference)
+    if snapshot is None:
+        return []
+    found = []
+    for manifest in snapshot.manifests(io=table.io):
+        if manifest.content != ManifestContent.DATA:
+            continue
+        stored = table.metadata.specs()[manifest.partition_spec_id]
+        for entry in manifest.fetch_manifest_entry(io=table.io, discard_deleted=True):
+            data_file = entry.data_file
+            if data_file.content != DataFileContent.DATA:
+                continue
+            if not current.compatible_with(stored):
+                raise ValueError("partition overwrite cannot mix incompatible live partition specs")
+            if _partition_identity(data_file.partition) in targets:
+                found.append(data_file)
+    return found
+
+
+def _staged_data_file(table: Any, local: str, target: str, partition: Mapping[str, Any]) -> Any:
+    """A staged Parquet footer plus its already computed non-linear partition."""
+    import pyarrow.parquet
+    from pyiceberg.io.pyarrow import (
+        compute_statistics_plan,
+        data_file_statistics_from_parquet_metadata,
+        parquet_path_to_id_mapping,
+    )
+    from pyiceberg.manifest import DataFile, DataFileContent, FileFormat
+
+    metadata = pyarrow.parquet.read_metadata(local)
+    schema = table.metadata.schema()
+    statistics = data_file_statistics_from_parquet_metadata(
+        parquet_metadata=metadata,
+        stats_columns=compute_statistics_plan(schema, table.metadata.properties),
+        parquet_column_mapping=parquet_path_to_id_mapping(schema),
+    )
+    return DataFile.from_args(
+        _table_format_version=table.metadata.format_version,
+        content=DataFileContent.DATA,
+        file_path=target,
+        file_format=FileFormat.PARQUET,
+        partition=_partition_key(table, partition).partition,
+        file_size_in_bytes=os.path.getsize(local),
+        sort_order_id=None,
+        spec_id=table.metadata.default_spec_id,
+        equality_ids=None,
+        key_metadata=None,
+        **statistics.to_serialized_dict(),
+    )
+
+
+def _copy_to_output(io: Any, source: str, target: str) -> None:
+    """Bounded fallback for a custom PyIceberg FileIO without Arrow copying."""
+    try:
+        with open(source, "rb") as incoming, io.new_output(target).create(overwrite=True) as output:
+            while payload := incoming.read(1 << 22):
+                output.write(payload)
+    except Exception:
+        try:
+            io.delete(target)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _staged_partition_stream(
+    source: pyarrow.RecordBatchReader,
+    partitions: Sequence[_PartitionColumn],
+    stager: _PartitionStager,
+) -> Iterator[_StagedPartition]:
+    """Stage adjacent partition runs while keeping only one input batch in memory."""
+    current: tuple[Any, ...] | None = None
+    closed: set[tuple[Any, ...]] = set()
+    for batch in source:
+        chunk = pyarrow.Table.from_batches([batch])
+        for identity, partition, run in _partition_runs(chunk, partitions):
+            if identity != current:
+                if identity in closed:
+                    columns = [column.source for column in partitions]
+                    raise ValueError(
+                        f"partition {partition} recurs after another partition; "
+                        f"order the source by {columns} before partition overwrite"
+                    )
+                if current is not None:
+                    closed.add(current)
+                    yield stager.finish()
+                current = identity
+                stager.start(partition)
+            stager.write(run)
+    if current is not None:
+        yield stager.finish()
+
+
+def _partition_runs(
+    chunk: pyarrow.Table, partitions: Sequence[_PartitionColumn]
+) -> Iterator[tuple[tuple[Any, ...], dict[str, Any], pyarrow.Table]]:
+    """Contiguous transformed-partition runs, found by Arrow comparisons."""
+    if not chunk.num_rows:
+        return
+    same = None
+    values_by_partition: list[Any] = []
+    for partition in partitions:
+        values = partition.transform(_arrow_source(chunk, partition.source))
+        if isinstance(values, pyarrow.ChunkedArray):
+            values = values.combine_chunks()
+        values_by_partition.append(values)
+        if (
+            pyarrow.types.is_floating(values.type)
+            and pyarrow.compute.any(
+                pyarrow.compute.fill_null(pyarrow.compute.is_nan(values), False)
+            ).as_py()
+        ):
+            raise ValueError(
+                f"partition column {partition.source!r} contains NaN, which partition staging "
+                "does not support"
+            )
+        before, after = values[:-1], values[1:]
+        equal = pyarrow.compute.fill_null(pyarrow.compute.equal(before, after), False)
+        both_null = pyarrow.compute.and_(
+            pyarrow.compute.is_null(before), pyarrow.compute.is_null(after)
+        )
+        equal = pyarrow.compute.or_(equal, both_null)
+        same = equal if same is None else pyarrow.compute.and_(same, equal)
+    boundaries = (
+        [int(index) + 1 for index in pyarrow.compute.indices_nonzero(pyarrow.compute.invert(same))]
+        if same is not None
+        else []
+    )
+    starts = [0, *boundaries]
+    for start, stop in zip(starts, [*boundaries, chunk.num_rows], strict=True):
+        partition = {
+            field.name: values[start].as_py()
+            for field, values in zip(partitions, values_by_partition, strict=True)
+        }
+        identity = _partition_identity(partition)
+        yield identity, partition, chunk.slice(start, stop - start)
+
+
+def _arrow_source(chunk: pyarrow.Table, source: str) -> Any:
+    """An exact or nested Arrow source column."""
+    if source in chunk.column_names:
+        return chunk.column(source)
+    root, *nested = source.split(".")
+    return pyarrow.compute.struct_field(chunk.column(root), nested)
+
+
+def _partition_identity(partition: Any) -> tuple[Any, ...]:
+    """A hashable partition identity preserving type and null distinctions."""
+    values = (
+        partition.values()
+        if isinstance(partition, Mapping)
+        else (partition[index] for index in range(len(partition)))
+    )
+    return tuple(
+        (
+            type(value).__qualname__,
+            repr(0.0 if isinstance(value, float) and value == 0 else value),
+        )
+        for value in values
+    )
 
 
 def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> Any:

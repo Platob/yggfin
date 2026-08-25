@@ -18,7 +18,7 @@ from rekep.fix.columns import (
     QUOTE,
     SESSION,
     TAG,
-    FixKwarg,
+    Kwarg,
     named_columns,
 )
 from rekep.fix.components import (
@@ -57,7 +57,6 @@ from rekep.fix.message import (
     BRIDGE_WIRE,
     MARKER,
     SOH,
-    FixPairs,
     detect_entry_separator,
     detect_separator,
     message_bodies,
@@ -127,10 +126,9 @@ __all__ = [
     "FieldRule",
     "FieldRules",
     "FixCodec",
-    "FixPairs",
     "FixRegistry",
     "KWARGS",
-    "FixKwarg",
+    "Kwarg",
     "KeyCount",
     "KeyCounts",
     "KeyReport",

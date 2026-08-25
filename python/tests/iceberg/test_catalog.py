@@ -131,11 +131,11 @@ def test_a_dataset_only_closes_the_catalog_it_owns(monkeypatch: pytest.MonkeyPat
         closed += 1
 
     monkeypatch.setattr(catalog, "close", close)
-    shared = catalog.dataset("trading.quotes")
+    shared = catalog.dataset("trading.quotes", field=Quote.into_field())
     shared.close()
     assert closed == 0
 
-    owned = IcebergDataset(name="trading.quotes")
+    owned = IcebergDataset(field=Quote.into_field("trading.quotes"))
     owned.__dict__["store"] = catalog
     owned.__dict__["_owns_store"] = True
     owned.close()
@@ -185,6 +185,8 @@ def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None
     dataset = space.dataset("quotes", field=Quote.into_field())
     assert isinstance(dataset, IcebergDataset)
     assert dataset.name == "trading.quotes"
+    assert dataset.namespace == "trading"
+    assert dataset.field.name == "trading.quotes"
 
 
 # -- tables -----------------------------------------------------------------

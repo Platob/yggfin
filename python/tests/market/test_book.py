@@ -7,7 +7,7 @@ import math
 import pyarrow
 import pytest
 
-from rekep.market import Book, Level
+from rekep.market import Book, Execution, Level, Order, Side, State
 
 from .conftest import batch
 
@@ -135,3 +135,90 @@ def test_generic_batch_and_table_forms_agree_including_zero_rows() -> None:
     assert Book.summarise_arrow(table).equals(
         pyarrow.Table.from_batches([Book.summarise_arrow_batch(given)])
     )
+
+
+def test_book_arrow_reader_matches_nested_document_projection() -> None:
+    bid = Order(
+        unix=1,
+        hash=11,
+        xhash=12,
+        linked_events=[(0, 10)],
+        parent_hash=[9],
+        state=State.NEW,
+        code="B1",
+        codes={"order": "B1"},
+        metadata={"source": "bid"},
+        side=Side.BID,
+        px=100.0,
+        qty=3.0,
+        order_id="B1",
+    )
+    ask = Order(
+        unix=1,
+        hash=21,
+        xhash=22,
+        linked_events=[(0, 20)],
+        parent_hash=[19],
+        state=State.NEW,
+        code="A1",
+        codes={"order": "A1"},
+        metadata={"source": "ask"},
+        side=Side.ASK,
+        px=101.0,
+        qty=4.0,
+        order_id="A1",
+    )
+    execution = Execution(
+        unix=2,
+        hash=31,
+        xhash=32,
+        linked_events=[(1, bid.xhash)],
+        parent_hash=[bid.hash],
+        state=State.FILLED,
+        code="E1",
+        codes={"execution": "E1"},
+        metadata={"source": "trade"},
+        side=Side.BID,
+        px=100.0,
+        qty=1.0,
+        exec_id="E1",
+    )
+    rows = [
+        Book(
+            unix=2,
+            linked_events=[(1, bid.xhash), (2, execution.xhash)],
+            parent_hash=[bid.hash, execution.hash],
+            codes={"symbol": "BTC-USD"},
+            metadata={"kind": "delta"},
+            bid_levels=[Level(px=100.0, qty=3.0)],
+            ask_levels=[Level(px=101.0, qty=4.0)],
+            deltas=[bid],
+            executions=[execution],
+        ),
+        Book(
+            unix=3,
+            sunix=3,
+            linked_events=[(1, bid.xhash), (1, ask.xhash)],
+            parent_hash=[bid.hash, ask.hash],
+            codes={"symbol": "BTC-USD"},
+            metadata={"kind": "snapshot"},
+            bid_levels=[Level(px=100.0, qty=3.0)],
+            ask_levels=[Level(px=101.0, qty=4.0)],
+            bid_alive=[bid],
+            ask_alive=[ask],
+        ),
+    ]
+    schema = Book.into_field().into_arrow_schema()
+    expected = pyarrow.Table.from_pylist([row.into_dict() for row in rows], schema=schema)
+    batches = list(Book.into_arrow_reader(iter(rows), batch_row_size=1))
+    actual = pyarrow.Table.from_batches(batches, schema=schema)
+
+    assert [batch.num_rows for batch in batches] == [1, 1]
+    assert actual.schema.equals(schema, check_metadata=True)
+    assert actual.equals(expected)
+
+
+def test_empty_book_arrow_reader_keeps_the_contract() -> None:
+    reader = Book.into_arrow_reader(())
+    assert reader.schema.equals(Book.into_field().into_arrow_schema(), check_metadata=True)
+    assert list(reader) == []

@@ -3,7 +3,7 @@ type: struct
 description: One log header, its provenance, and its protocol-neutral payload.
 metadata:
   namespace: rekep.text.message
-  version: '2'
+  version: '4'
 fields:
 - name: unix
   type: int64
@@ -29,7 +29,7 @@ fields:
     enum:name: EventType
     enum:key_type: int32
     enum:value_type: utf8
-    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+    enum:values: '{"0":"UNKNOWN","10":"MISC","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -144,15 +144,33 @@ fields:
   type: string
   description: Payload after the fixed log header, with continuation lines folded
     in.
+- name: protocol_code
+  type: string
+  description: Protocol syntax detected without interpreting its fields.
+- name: MsgType
+  type: string
+  nullable: true
+  description: First FIX message discriminator when the payload names one.
 - name: kwargs
   type: list
-  description: Ordered arguments parsed from the payload without protocol interpretation.
+  description: Ordered payload arguments other than the promoted message discriminator.
   item:
     type: struct
     fields:
+    - name: tag
+      type: int32
+      description: Numeric identity written or resolved; zero while unresolved.
     - name: key
       type: string
-      description: Key exactly as written, including any leading marker.
+      description: Terminal spelling without a leading argument marker.
     - name: value
       type: string
       description: Text after the first equals sign; an empty value is empty text.
+    - name: namespace
+      type: string
+      nullable: true
+      description: Prefix outside an indexed container.
+    - name: comp
+      type: string
+      nullable: true
+      description: Indexed container prefix.

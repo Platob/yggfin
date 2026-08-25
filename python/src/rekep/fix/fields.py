@@ -271,6 +271,7 @@ STAMP_PATTERN = (
     r"[ \t]*Z?[ \t]*$"
 )
 _STAMP = re.compile(STAMP_PATTERN, re.ASCII)
+_FULL_STAMP_PATTERN = r"^[0-9]{8}-[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?$"
 
 #: The epoch as a proleptic Gregorian ordinal, from the one module that
 #: declares it. Re-exported here because a reader of a FIX date reaches for it
@@ -319,6 +320,55 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
     # is one nanosecond. Padding to nine and reading it as an integer is that.
     nanos = int(fraction.ljust(9, "0")) if fraction else 0
     return base + (hours * 3600 + minutes * 60 + secs) * NANOS + nanos
+
+
+def scalar_fix_temporal(
+    text: str, arrow_type: pyarrow.DataType
+) -> datetime.datetime | datetime.date | datetime.time | None:
+    """Read one FIX temporal without starting an Arrow kernel pipeline."""
+    nanos = unix_of(text)
+    if nanos is None:
+        return None
+    kinds = pyarrow.types
+    if kinds.is_date(arrow_type):
+        days = nanos // _A_DAY
+        try:
+            return datetime.date.fromordinal(EPOCH_ORDINAL + days)
+        except ValueError:
+            return None
+
+    divisor = {"s": NANOS, "ms": 1_000_000, "us": 1_000, "ns": 1}[arrow_type.unit]
+    if kinds.is_time(arrow_type):
+        canonical = (nanos % _A_DAY) // divisor * divisor
+        _, within_day = divmod(canonical, _A_DAY)
+        seconds, fraction = divmod(within_day, NANOS)
+        hour, remainder = divmod(seconds, 3_600)
+        minute, second = divmod(remainder, 60)
+        return datetime.time(hour, minute, second, fraction // 1_000)
+
+    # Arrow narrows negative timestamps toward zero. Preserve that behavior
+    # before checking the destination's signed int64 storage range.
+    units = nanos // divisor if nanos >= 0 else -((-nanos) // divisor)
+    if not -(1 << 63) <= units < 1 << 63:
+        return None
+    canonical = units * divisor
+    days, within_day = divmod(canonical, _A_DAY)
+    seconds, fraction = divmod(within_day, NANOS)
+    hour, remainder = divmod(seconds, 3_600)
+    minute, second = divmod(remainder, 60)
+    try:
+        day = datetime.date.fromordinal(EPOCH_ORDINAL + days)
+    except ValueError:
+        return None
+    return datetime.datetime(
+        day.year,
+        day.month,
+        day.day,
+        hour,
+        minute,
+        second,
+        fraction // 1_000,
+    )
 
 
 def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
@@ -387,6 +437,105 @@ def _cast_arrow_integer(text: Any, arrow_type: pyarrow.DataType) -> Any:
 
 def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
     """A FIX time column parsed without letting one malformed row stop its batch."""
+    compute = pyarrow.compute
+    canonical = compute.fill_null(compute.match_substring_regex(text, _FULL_STAMP_PATTERN), True)
+    if compute.all(canonical).as_py():
+        return _cast_arrow_full_stamp(text, arrow_type)
+    return _cast_arrow_stamp_general(text, arrow_type)
+
+
+def _cast_arrow_full_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """A homogeneous column of canonical full FIX timestamps."""
+    compute = pyarrow.compute
+    integer = pyarrow.int64()
+
+    def number(start: int, stop: int) -> Any:
+        return compute.cast(compute.utf8_slice_codeunits(text, start, stop), integer)
+
+    def remainder(values: Any, divisor: int) -> Any:
+        return compute.subtract(values, compute.multiply(compute.divide(values, divisor), divisor))
+
+    year, month, day = number(0, 4), number(4, 6), number(6, 8)
+    hour, minute, second = number(9, 11), number(12, 14), number(15, 17)
+    leap_year = compute.or_(
+        compute.equal(remainder(year, 400), 0),
+        compute.and_(
+            compute.equal(remainder(year, 4), 0),
+            compute.not_equal(remainder(year, 100), 0),
+        ),
+    )
+    february = compute.equal(month, 2)
+    thirty_day = compute.is_in(month, value_set=pyarrow.array([4, 6, 9, 11], integer))
+    month_days = compute.subtract(
+        compute.subtract(pyarrow.scalar(31, integer), compute.cast(thirty_day, integer)),
+        compute.multiply(compute.cast(february, integer), 3),
+    )
+    month_days = compute.add(
+        month_days,
+        compute.cast(compute.and_(february, leap_year), integer),
+    )
+    valid = compute.fill_null(
+        compute.and_(
+            compute.and_(
+                compute.and_(compute.greater(year, 0), compute.greater_equal(month, 1)),
+                compute.less_equal(month, 12),
+            ),
+            compute.and_(
+                compute.and_(compute.greater_equal(day, 1), compute.less_equal(day, month_days)),
+                compute.and_(
+                    compute.and_(compute.less_equal(hour, 23), compute.less_equal(minute, 59)),
+                    compute.less_equal(second, 60),
+                ),
+            ),
+        ),
+        False,
+    )
+
+    # Howard Hinnant's civil-date transform gives exact proleptic Gregorian
+    # epoch days without entering timestamp[ns], whose range ends in 2262.
+    adjusted_year = compute.subtract(year, compute.cast(compute.less_equal(month, 2), integer))
+    era = compute.divide(adjusted_year, 400)
+    year_of_era = compute.subtract(adjusted_year, compute.multiply(era, 400))
+    shifted_month = compute.add(
+        month,
+        compute.if_else(
+            compute.greater(month, 2),
+            pyarrow.scalar(-3, integer),
+            pyarrow.scalar(9, integer),
+        ),
+    )
+    day_of_year = compute.add(
+        compute.divide(compute.add(compute.multiply(shifted_month, 153), 2), 5),
+        compute.subtract(day, 1),
+    )
+    day_of_era = compute.add(
+        compute.add(
+            compute.subtract(
+                compute.add(compute.multiply(year_of_era, 365), compute.divide(year_of_era, 4)),
+                compute.divide(year_of_era, 100),
+            ),
+            compute.divide(year_of_era, 400),
+        ),
+        day_of_year,
+    )
+    epoch_days = compute.subtract(compute.add(compute.multiply(era, 146_097), day_of_era), 719_468)
+    seconds = compute.add(
+        compute.multiply(epoch_days, SECONDS_A_DAY),
+        compute.add(
+            compute.multiply(hour, 3_600),
+            compute.add(compute.multiply(minute, 60), second),
+        ),
+    )
+    fraction = compute.utf8_slice_codeunits(text, 18, 27)
+    fraction = compute.if_else(
+        compute.equal(compute.binary_length(fraction), 0), pyarrow.scalar("0"), fraction
+    )
+    nanos = compute.cast(compute.utf8_rpad(fraction, 9, "0"), pyarrow.int64())
+    return _temporal(seconds, nanos, valid, arrow_type)
+
+
+def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """All admitted FIX temporal spellings."""
     compute = pyarrow.compute
     parts = compute.extract_regex(text, STAMP_PATTERN)
 

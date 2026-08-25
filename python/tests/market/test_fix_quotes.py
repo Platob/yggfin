@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from rekep import FixCodec, FixMsg, Message
 from rekep.fix import FixRegistry
-from rekep.market import MarketKind, Order, Side, State
+from rekep.market import BookIterator, EventType, MarketKind, Order, Side, State
 from rekep.market.fix import FixEvents, unix_of
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -132,6 +133,51 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
         ("MSFT", Side.ASK, "ENTRY-2"),
     ]
     assert len({row.xhash for row in rows}) == 4
+
+
+def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> None:
+    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    line = (
+        "8=FIX.4.4|35=i|34=1|296=1|302=SET-1|304=1|295=1|"
+        "299=ENTRY-1|55=AAPL|132=100|133=101|134=10|135=11|"
+        "60=20260821-10:00:00|10=000"
+    )
+    raw = next(
+        iter(
+            Message.into_arrow_reader(
+                [Message(message=line, MsgType="i", etype=EventType.QUOTE)],
+                batch_row_size=1,
+            )
+        )
+    )
+    batch = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    direct = FixMsg.from_text(line)
+
+    direct_events = list(direct.into_market_events(fix_version="4.4"))
+    stored_events = list(stored.into_market_events(fix_version="4.4"))
+
+    def project(event):
+        return event.symbol, event.side, event.px, event.qty, event.order_id
+
+    assert [project(event) for event in stored_events] == [
+        project(event) for event in direct_events
+    ]
+
+    direct_books = list(BookIterator(logs=[direct], snapshot_every=0))
+    stored_books = list(BookIterator(logs=[stored], snapshot_every=0))
+
+    def book(value):
+        return (
+            value.code,
+            value.bid_px,
+            value.bid_qty,
+            value.ask_px,
+            value.ask_qty,
+            len(value.deltas),
+        )
+
+    assert [book(value) for value in stored_books] == [book(value) for value in direct_books]
 
 
 def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:

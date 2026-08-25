@@ -107,6 +107,27 @@ def test_the_projection_is_built_once() -> None:
     assert isinstance(Venue.__dict__["into_field"], classmethod)
 
 
+def test_a_scalar_projection_can_override_its_outer_name() -> None:
+    declared = Venue.into_field()
+    named = Venue.into_field("logs.venues")
+
+    assert named is Venue.into_field("logs.venues")
+    assert named == Venue.into_field(name="logs.venues")
+    assert isinstance(named, StructField) and type(named) is type(declared)
+    assert named.name == "logs.venues"
+    assert named.arrow_type == declared.arrow_type and named.metadata == declared.metadata
+    assert declared.name == "Venue", "naming a table does not mutate the cached contract"
+
+
+def test_with_name_copies_a_field_and_generic_class_conversion_honours_it() -> None:
+    declared = Venue.into_field()
+    named = declared.with_name("market.venues")
+
+    assert named is not declared and type(named) is type(declared)
+    assert named.name == Field.from_(Venue, "market.venues").name == "market.venues"
+    assert declared.name == "Venue"
+
+
 def test_an_instance_sees_the_same_field() -> None:
     assert Venue(mic="XPAR").into_field() is Venue.into_field()
 

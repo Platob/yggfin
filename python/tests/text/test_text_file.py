@@ -7,7 +7,8 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Kwarg, Message
+import rekep.text.text_file as text_file_module
+from rekep import Dataset, Field, FixRegistry, Kwarg, Message
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFileIO
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
@@ -448,12 +449,13 @@ MESSAGE_COLUMNS = [
     "thread_name",
     "plugin_code",
     "message",
+    "protocol_code",
+    "MsgType",
     "kwargs",
 ]
 
 FIX_COLUMNS = {
     "BeginString",
-    "MsgType",
     "SenderCompID",
     "TargetCompID",
     "Symbol",
@@ -479,26 +481,72 @@ def test_schema(plain: Path) -> None:
 
 
 def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> None:
-    table = TextFile.from_path(wire).read_arrow_table()
+    table = TextFile.from_path(
+        wire,
+        msg_type_event_types=FixRegistry.from_builtin().msg_type_event_types(),
+    ).read_arrow_table()
     payloads = [line.split(" (INFO) ", 1)[1] for line in WIRE.splitlines()]
 
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == payloads
-    assert table.column("etype").to_pylist() == [int(EventType.UNKNOWN)] * 3
+    assert table.column("MsgType").to_pylist() == ["D", "AB", None]
+    assert table.column("etype").to_pylist() == [
+        int(EventType.ORDER),
+        int(EventType.MISC),
+        int(EventType.MISC),
+    ]
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
     assert [entry["value"] for entry in table.column("kwargs")[0].as_py()[:3]] == [
         "FIX.4.2",
         "176",
-        "D",
+        "7",
     ]
+    assert "35" not in [entry["key"] for entry in table.column("kwargs")[0].as_py()]
     assert table.column("kwargs")[2].as_py() == []
+
+
+def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
+    tmp_path: Path,
+) -> None:
+    log = _timed_log(
+        tmp_path / "message-types.txt",
+        ("2026-08-14 00:05:01.000", "35=D|Text=wire"),
+        ("2026-08-14 00:05:02.000", "MsgType=8|Text=rendered"),
+        ("2026-08-14 00:05:03.000", "#MSGTYPE=W|#Text=marked"),
+        ("2026-08-14 00:05:04.000", "msg_type=G|Text=generic"),
+        ("2026-08-14 00:05:05.000", "35=D|35=8|Text=first"),
+    )
+    log.msg_type_event_types = FixRegistry.from_builtin().msg_type_event_types()
+
+    table = log.read_arrow_table()
+
+    assert table.column("MsgType").to_pylist() == ["D", "8", "W", None, "D"]
+    assert table.column("etype").to_pylist() == [
+        int(EventType.ORDER),
+        int(EventType.EXECUTION),
+        int(EventType.BOOK),
+        int(EventType.MISC),
+        int(EventType.ORDER),
+    ]
+    keys = [[entry["key"] for entry in row] for row in table.column("kwargs").to_pylist()]
+    assert keys == [
+        ["Text"],
+        ["Text"],
+        ["Text"],
+        ["msg_type", "Text"],
+        ["Text"],
+    ]
 
 
 def test_text_file_has_no_protocol_codec_option(wire: Path) -> None:
     with pytest.raises(TypeError, match="codec"):
         TextFile.from_path(wire, codec=object())
+
+
+def test_protocol_rules_are_caller_owned(wire: Path) -> None:
+    assert TextFile.from_path(wire).protocol_rules is None
 
 
 # -- arrow reader -----------------------------------------------------------
@@ -521,48 +569,77 @@ def test_reader_returns_a_record_batch_reader(plain: Path) -> None:
         reader.read_all()
 
 
-def test_reader_excludes_exact_plugin_codes_before_projection(tmp_path: Path) -> None:
-    path = tmp_path / "plugins.txt"
+def _timed_log(path: Path, *rows: tuple[str, str]) -> TextFile:
     path.write_text(
-        "2026-08-14 00:05:01.000 [t] [drop] (INFO) lower\n"
-        "2026-08-14 00:05:02.000 [t] [DROP] (INFO) upper\n"
-        "2026-08-14 00:05:03.000 [t] [] (INFO) unnamed\n"
-        "2026-08-14 00:05:04.000 [t] [keep] (INFO) kept\n"
+        "".join(f"{stamp} [t] [plugin] (INFO) {message}\n" for stamp, message in rows),
+        encoding="utf-8",
     )
-    log = TextFile.from_path(path)
+    return TextFile.from_path(path)
 
-    table = log.read_arrow_table(exclude_plugins=("drop", ""))
-    assert table.column("plugin_code").to_pylist() == ["DROP", "keep"]
-    assert table.column("source_rownum").to_pylist() == [2, 4]
+
+def test_reader_includes_any_regex_and_excludes_any_match_before_projection(
+    tmp_path: Path,
+) -> None:
+    log = _timed_log(
+        tmp_path / "messages.txt",
+        ("2026-08-14 00:05:01.000", "lower"),
+        ("2026-08-14 00:05:02.000", "UPPER"),
+        ("2026-08-14 00:05:03.000", "lower secret"),
+        ("2026-08-14 00:05:04.000", "Lower"),
+    )
+
+    table = log.read_arrow_table(
+        include_regexes=(r"^lower", r"^UPPER$"), exclude_regexes=(r"secret", r"UPPER")
+    )
+    assert table.column("message").to_pylist() == ["lower"]
+    assert table.column("source_rownum").to_pylist() == [1]
 
     projected = log.read_arrow_table(
-        pyarrow.schema([("message", pyarrow.string())]), exclude_plugins=("drop", "")
+        pyarrow.schema([("message", pyarrow.string())]),
+        include_regexes=(r"lower", r"UPPER"),
+        exclude_regexes=(r"secret",),
     )
-    assert projected.to_pydict() == {"message": ["upper", "kept"]}
+    assert projected.to_pydict() == {"message": ["lower", "UPPER"]}
 
 
-def test_an_excluded_plugins_continuation_is_excluded_with_it(tmp_path: Path) -> None:
+def test_regexes_match_the_complete_folded_message(tmp_path: Path) -> None:
     path = tmp_path / "continuation.txt"
     path.write_text(
-        "2026-08-14 00:05:01.000 [t] [keep] (INFO) first\n"
-        "2026-08-14 00:05:02.000 [t] [drop] (INFO) hidden\n"
-        "\tat hidden.Trace.call(Trace.java:1)\n"
-        "2026-08-14 00:05:03.000 [t] [keep] (INFO) last\n"
+        "2026-08-14 00:05:01.000 [t] [plugin] (INFO) first\n"
+        "\tat visible.Trace.call(Trace.java:1)\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) hidden\n"
+        "\tat hidden.Trace.call(Trace.java:2)\n"
+        "2026-08-14 00:05:03.000 [t] [plugin] (INFO) last\n"
     )
 
-    table = TextFile.from_path(path).read_arrow_table(exclude_plugins=("drop",))
-    assert table.column("message").to_pylist() == ["first", "last"]
-    assert table.column("source_rownum").to_pylist() == [1, 4]
+    table = TextFile.from_path(path).read_arrow_table(
+        include_regexes=(r"Trace\.java",), exclude_regexes=(r"hidden\.Trace",)
+    )
+    assert table.column("message").to_pylist() == ["first\n\tat visible.Trace.call(Trace.java:1)"]
+    assert table.column("source_rownum").to_pylist() == [1]
 
 
-def test_excluded_plugins_never_reach_kwarg_parsing(
+def test_message_regexes_count_unicode_characters_not_utf8_bytes(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "unicode.txt",
+        ("2026-08-14 00:05:01.000", "é"),
+        ("2026-08-14 00:05:02.000", "😀"),
+        ("2026-08-14 00:05:03.000", "ab"),
+    )
+
+    table = log.read_arrow_table(include_regexes=(r"^.$",))
+    assert table.column("message").to_pylist() == ["é", "😀"]
+
+
+def test_message_and_time_filters_run_before_kwarg_parsing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    path = tmp_path / "plugins.txt"
-    path.write_text(
-        "2026-08-14 00:05:01.000 [t] [drop] (INFO) hidden A=1\n"
-        "2026-08-14 00:05:02.000 [t] [drop] (INFO) hidden B=2\n"
-        "2026-08-14 00:05:03.000 [t] [keep] (INFO) kept C=3\n"
+    log = _timed_log(
+        tmp_path / "filtered.txt",
+        ("2026-08-14 00:05:01.000", "outside A=1"),
+        ("2026-08-14 00:05:02.000", "hidden B=2"),
+        ("2026-08-14 00:05:03.000", "kept C=3"),
+        ("2026-08-14 00:05:04.000", "at-end D=4"),
     )
     parsed: list[int] = []
     original = Kwarg.parse_arrow.__func__
@@ -572,21 +649,187 @@ def test_excluded_plugins_never_reach_kwarg_parsing(
         return original(cls, messages)
 
     monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(counted))
-    table = TextFile.from_path(path).read_arrow_table(exclude_plugins=("drop",))
+    table = log.read_arrow_table(
+        exclude_regexes=(r"^hidden",),
+        start_unix=unix_of("2026-08-14 00:05:02.000"),
+        end_unix=unix_of("2026-08-14 00:05:04.000"),
+    )
 
     assert table.column("message").to_pylist() == ["kept C=3"]
-    assert parsed == [1]
+    assert parsed == [], "a single incidental assignment is not a structured message"
 
 
-def test_excluding_every_plugin_emits_no_batches_and_a_string_is_refused(tmp_path: Path) -> None:
-    path = tmp_path / "only-drop.txt"
-    path.write_text("2026-08-14 00:05:01.000 [t] [drop] (INFO) hidden\n")
+def test_time_filter_runs_before_payload_utf8_decoding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "invalid-before-window.txt"
+    path.write_bytes(
+        b"2026-08-14 00:05:01.000 [t] [plugin] (INFO) "
+        + b"\xff" * (1 << 20)
+        + b"\n2026-08-14 00:05:02.000 [t] [plugin] (INFO) kept\n"
+    )
+    original = text_file_module._utf8
 
-    with TextFile.from_path(path) as log:
-        assert list(log.into_arrow_batches(exclude_plugins=("drop",))) == []
-    with TextFile.from_path(path) as log:
-        with pytest.raises(TypeError, match="sequence of plugin codes"):
-            log.into_arrow_reader(exclude_plugins="drop").read_all()
+    def reject_dirty(values):  # noqa: ANN001, ANN202 - observes the conversion boundary
+        assert all(b"\xff" not in (value or b"") for value in values.to_pylist())
+        return original(values)
+
+    monkeypatch.setattr(text_file_module, "_utf8", reject_dirty)
+    table = TextFile.from_path(path).read_arrow_table(start_unix=unix_of("2026-08-14 00:05:02.000"))
+
+    assert table.column("message").to_pylist() == ["kept"]
+
+
+def test_regex_arguments_are_lists_and_can_filter_every_message(tmp_path: Path) -> None:
+    log = _timed_log(tmp_path / "one.txt", ("2026-08-14 00:05:01.000", "hidden"))
+
+    assert list(log.into_arrow_batches(exclude_regexes=(r"hidden",))) == []
+    with pytest.raises(TypeError, match="include_regexes must be a sequence"):
+        log.into_arrow_reader(include_regexes="hidden").read_all()  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="exclude_regexes must contain only regex strings"):
+        log.into_arrow_reader(exclude_regexes=(1,)).read_all()  # type: ignore[arg-type]
+    with pytest.raises(pyarrow.ArrowInvalid, match="Invalid regular expression"):
+        log.into_arrow_batches(include_regexes=(r"[",))
+
+
+def test_start_is_inclusive_and_end_is_exclusive(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "bounded.txt",
+        ("2026-08-14 00:05:01.000", "before"),
+        ("2026-08-14 00:05:02.000", "start"),
+        ("2026-08-14 00:05:03.000", "inside"),
+        ("2026-08-14 00:05:04.000", "end"),
+    )
+
+    table = log.read_arrow_table(
+        start_unix=unix_of("2026-08-14 00:05:02.000"),
+        end_unix=unix_of("2026-08-14 00:05:04.000"),
+    )
+    assert table.column("message").to_pylist() == ["start", "inside"]
+    assert (
+        list(
+            log.into_arrow_batches(
+                start_unix=unix_of("2026-08-14 00:05:02.000"),
+                end_unix=unix_of("2026-08-14 00:05:02.000"),
+            )
+        )
+        == []
+    )
+
+
+def test_duration_batches_use_an_exact_explicit_start_and_skip_empty_windows(
+    tmp_path: Path,
+) -> None:
+    log = _timed_log(
+        tmp_path / "duration.txt",
+        ("2026-08-14 00:05:01.250", "first"),
+        ("2026-08-14 00:05:02.249", "same-window"),
+        ("2026-08-14 00:05:02.250", "boundary"),
+        ("2026-08-14 00:05:04.500", "after-gap"),
+    )
+    start = unix_of("2026-08-14 00:05:01.250")
+
+    batches = list(log.into_arrow_batches(start_unix=start, duration_ns=SECOND))
+    assert [batch.column("message").to_pylist() for batch in batches] == [
+        ["first", "same-window"],
+        ["boundary"],
+        ["after-gap"],
+    ]
+
+
+def test_duration_without_a_start_uses_the_first_unix_truncated_to_duration(
+    tmp_path: Path,
+) -> None:
+    log = _timed_log(
+        tmp_path / "implicit-duration.txt",
+        ("2026-08-14 00:05:01.900", "first"),
+        ("2026-08-14 00:05:02.000", "boundary"),
+        ("2026-08-14 00:05:02.999", "same-window"),
+        ("2026-08-14 00:05:03.000", "next"),
+    )
+
+    batches = list(log.into_arrow_batches(duration_ns=SECOND))
+    assert [batch.column("message").to_pylist() for batch in batches] == [
+        ["first"],
+        ["boundary", "same-window"],
+        ["next"],
+    ]
+
+
+def test_duration_keeps_the_row_bound_and_rejects_invalid_windows(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "busy.txt",
+        *((f"2026-08-14 00:05:01.{index:03}", str(index)) for index in range(5)),
+    )
+
+    batches = list(log.into_arrow_batches(batch_row_size=2, duration_ns=SECOND))
+    assert [batch.num_rows for batch in batches] == [2, 2, 1]
+    filtered = _timed_log(
+        tmp_path / "filtered-busy.txt",
+        ("2026-08-14 00:05:01.000", "keep-1"),
+        ("2026-08-14 00:05:01.100", "drop"),
+        ("2026-08-14 00:05:01.200", "keep-2"),
+        ("2026-08-14 00:05:01.300", "keep-3"),
+    )
+    batches = list(
+        filtered.into_arrow_batches(
+            batch_row_size=2, exclude_regexes=(r"^drop$",), duration_ns=SECOND
+        )
+    )
+    assert [batch.num_rows for batch in batches] == [2, 1]
+    with pytest.raises(ValueError, match="duration_ns must be a positive integer"):
+        log.into_arrow_batches(duration_ns=0)
+    with pytest.raises(ValueError, match="batch_row_size must be a positive integer"):
+        log.into_arrow_batches(batch_row_size=0)
+    with pytest.raises(ValueError, match="read_byte_size must be a positive integer"):
+        log.into_arrow_batches(read_byte_size=0)
+    with pytest.raises(ValueError, match="read_byte_size must be a positive integer"):
+        log.into_arrow_batches(read_byte_size=-1)
+    with pytest.raises(ValueError, match="batch_byte_size must be a positive integer"):
+        log.into_arrow_batches(batch_byte_size=0)
+    with pytest.raises(ValueError, match="start_unix must be less than or equal"):
+        log.into_arrow_batches(start_unix=2, end_unix=1)
+
+
+def test_time_options_validate_int64_before_an_empty_source_is_read(tmp_path: Path) -> None:
+    path = tmp_path / "empty.txt"
+    path.touch()
+    log = TextFile.from_path(path)
+
+    with pytest.raises(ValueError, match="start_unix must fit"):
+        log.into_arrow_batches(start_unix=1 << 63)
+    with pytest.raises(ValueError, match="end_unix must fit"):
+        log.into_arrow_batches(end_unix=-(1 << 63) - 1)
+    with pytest.raises(ValueError, match="duration_ns must be a positive integer"):
+        log.into_arrow_batches(duration_ns=1 << 63)
+
+
+def test_duration_handles_an_int64_wide_distance_from_the_start(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "wide-duration.txt",
+        ("2026-08-14 00:05:01.000", "first"),
+        ("2026-08-14 00:05:02.000", "second"),
+    )
+
+    batches = list(log.into_arrow_batches(start_unix=-(1 << 63), duration_ns=SECOND))
+    assert [batch.column("message").to_pylist() for batch in batches] == [
+        ["first"],
+        ["second"],
+    ]
+
+
+def test_duration_rejects_a_window_that_recurs_after_a_later_one(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "unordered.txt",
+        ("2026-08-14 00:05:01.100", "first"),
+        ("2026-08-14 00:05:02.100", "later"),
+        ("2026-08-14 00:05:01.200", "recurred"),
+    )
+    batches = iter(log.into_arrow_batches(duration_ns=SECOND))
+
+    assert next(batches).column("message").to_pylist() == ["first"]
+    with pytest.raises(ValueError, match="duration window recurs"):
+        next(batches)
 
 
 def test_first_row(plain: Path) -> None:
@@ -717,6 +960,32 @@ def test_batching_does_not_change_the_result(plain: Path, batch_row_size: int) -
     assert max(batch.num_rows for batch in batches) <= batch_row_size
     messages = [message for batch in batches for message in batch.column("message").to_pylist()]
     assert messages == whole.column("message").to_pylist()
+
+
+def test_large_payloads_stop_a_batch_before_the_row_limit(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "wide.txt",
+        *((f"2026-08-14 00:05:0{index}.000", "x" * 100) for index in range(4)),
+    )
+
+    batches = list(log.into_arrow_batches(batch_row_size=100, batch_byte_size=1))
+
+    assert [batch.num_rows for batch in batches] == [1, 1, 1, 1]
+    assert [batch.column("message")[0].as_py() for batch in batches] == ["x" * 100] * 4
+
+
+def test_one_long_compressed_line_streams_across_tiny_reads(tmp_path: Path) -> None:
+    """A physical line is accumulated once, not recopied for every compressed read."""
+    payload = "diagnostic " + "x" * (1 << 18)
+    raw = f"2026-08-14 00:05:00.000 [t] [M] (INFO) {payload}\n".encode()
+    path = tmp_path / "wide.txt.gz"
+    path.write_bytes(gzip.compress(raw))
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table(read_byte_size=31, batch_byte_size=4_096)
+
+    assert table.num_rows == 1
+    assert table.column("message")[0].as_py() == payload
 
 
 def test_a_continuation_on_the_batch_boundary_is_still_folded(tmp_path: Path) -> None:
@@ -1174,15 +1443,10 @@ def test_a_static_value_of_none_is_refused(plain: Path) -> None:
 
 def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path) -> None:
     """A duplicate raw-message column is refused before Arrow sees it."""
-    for taken in ("unix", "hash", "code", "source_url", "message"):
+    for taken in ("unix", "hash", "code", "source_url", "message", "MsgType"):
         log = TextFile.from_path(plain, static_values={taken: "x"})
         with pytest.raises(ValueError, match=f"static value '{taken}' is already a column"):
             log.into_struct_field()
-    # A protocol field is ordinary caller metadata until a protocol parser owns it.
-    assert (
-        TextFile.from_path(plain, static_values={"MsgType": "D"}).into_struct_field().names[-1]
-        == "MsgType"
-    )
 
 
 def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: Path) -> None:

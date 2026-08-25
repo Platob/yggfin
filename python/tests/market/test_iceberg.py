@@ -102,10 +102,9 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     from rekep.iceberg import IcebergDataset
 
     dataset = IcebergDataset(
-        name=f"market.{shape.__name__.lower()}",
+        field=shape.into_field(f"market.{shape.__name__.lower()}"),
         catalog="test",
         properties=catalog_properties(tmp_path),
-        field=shape.into_field(),
     )
     unix_partition = UNIX // SECOND
     given = batch(shape, 3, unix_partition=[unix_partition] * 3)
@@ -131,10 +130,9 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     from rekep.iceberg import IcebergDataset
 
     dataset = IcebergDataset(
-        name="market.books",
+        field=Book.into_field("market.books"),
         catalog="test",
         properties=catalog_properties(tmp_path),
-        field=Book.into_field(),
     )
     levels = [
         [{"px": 10.0, "qty": 5.0}],

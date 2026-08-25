@@ -169,6 +169,14 @@ class Url:
             query=dict(self.query),
         )
 
+    def resolve(self, root: str | os.PathLike[str] = ".") -> str:
+        """Resolve a job-relative local location, leaving a remote URI remote."""
+        if self.scheme not in LOCAL:
+            return self.into_string()
+        if DRIVE.match(self.path) or self.path.startswith("/"):
+            return self._local_path()
+        return Url.from_path(root).join(self.path)._local_path()
+
     # -- walking ------------------------------------------------------------
 
     def join(self, *segments: str) -> Url:

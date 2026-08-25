@@ -13,7 +13,7 @@ order.yaml
 
 Each file is one Arrow `Field` document with exact types, order, nullability,
 keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
-`message.yaml` is version 2 and `fixmsg.yaml` is version 4.
+`message.yaml` is version 3 and `fixmsg.yaml` is version 5.
 
 ```python
 from rekep import Field

@@ -150,17 +150,21 @@ VENDOR_HEADER = (
 def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: FixRegistry) -> None:
     path = tmp_path / "vendor.log"
     path.write_text(f"20260821-10:00:00.123|t-1|VendorBridge|{LINE}\n")
-    with TextFile.from_path(path, header_pattern=VENDOR_HEADER) as log:
+    with TextFile.from_path(
+        path,
+        header_pattern=VENDOR_HEADER,
+        msg_type_event_types=registry.msg_type_event_types(),
+    ) as log:
         messages = log.into_arrow_table()
     rows = pyarrow.Table.from_batches(
         [
-            FixMsg.from_message_arrow_batch(batch, codec_of(registry), FixMsg.into_message_rules())
+            FixMsg.from_message_arrow_batch(batch, codec_of(registry))
             for batch in messages.to_batches()
         ]
     )
     assert messages.num_rows == 1
     assert messages.column("plugin_code").to_pylist() == ["VendorBridge"]
-    assert "MsgType" not in messages.schema.names
+    assert messages.column("MsgType").to_pylist() == ["D"]
     assert rows.column("MsgType").to_pylist() == ["D"]
 
 

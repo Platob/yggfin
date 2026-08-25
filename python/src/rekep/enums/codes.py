@@ -60,6 +60,7 @@ class EventType(Ranged):
     """Event kind banded by what the row asserts."""
 
     UNKNOWN = 0
+    MISC = 10
     INTENT = 100
     ORDER = 110
     QUOTE = 120

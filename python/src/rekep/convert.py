@@ -233,6 +233,12 @@ def _members(cls: type) -> tuple[str, ...]:
 
 
 @functools.cache
+def _hints(cls: type) -> Mapping[str, Any]:
+    """Resolved dataclass annotations shared by every decoded row."""
+    return get_type_hints(cls)
+
+
+@functools.cache
 def _dumps_itself(cls: Any) -> bool:
     """`_owns(cls, "into_dict")`, cached: it is a property of the class."""
     return _owns(cls, "into_dict")
@@ -318,7 +324,7 @@ def _decode_dataclass(cls: type, mapping: Mapping[str, Any]) -> Any:
         raise TypeError(f"{cls.__name__} must be a dataclass to be deserialised")
     if not isinstance(mapping, Mapping):
         raise TypeError(f"{cls.__name__} expects a mapping, got {type(mapping).__name__}")
-    hints = get_type_hints(cls)
+    hints = _hints(cls)
     return cls(
         **{
             f.name: _decode(mapping[f.name], hints.get(f.name, Any))

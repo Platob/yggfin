@@ -19,7 +19,7 @@ PUBLISHED = {
     "order.yaml": Order,
     "execution.yaml": Execution,
 }
-VERSIONS = {"message.yaml": "2", "fixmsg.yaml": "4"}
+VERSIONS = {"message.yaml": "4", "fixmsg.yaml": "5"}
 
 
 def test_only_pipeline_outputs_are_published() -> None:

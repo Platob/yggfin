@@ -3,7 +3,7 @@ type: struct
 description: One raw message transcribed under the FIX registry.
 metadata:
   namespace: rekep.text.fixmsg
-  version: '4'
+  version: '5'
 fields:
 - name: unix
   type: int64
@@ -29,7 +29,7 @@ fields:
     enum:name: EventType
     enum:key_type: int32
     enum:value_type: utf8
-    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+    enum:values: '{"0":"UNKNOWN","10":"MISC","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -145,6 +145,70 @@ fields:
   nullable: true
   description: Payload with the header and level stripped; null where `kwargs` holds
     it all.
+- name: protocol_code
+  type: string
+  description: Which protocol the line carries; OTHER is a line that carries none.
+- name: MsgType
+  type: string
+  nullable: true
+  description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
+    Note: A "U" as the first character in the MsgType field (i.e. U, U2, etc) indicates
+    that the message format is privately defined between the sender and receiver.
+    *** Note the use of lower case letters ***'
+  metadata:
+    fix:tag: '35'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"Heartbeat <0>","1":"TestRequest <1>","2":"ResendRequest <2>","3":"Reject
+      <3>","4":"SequenceReset <4>","5":"Logout <5>","6":"IOI <6>","7":"Advertisement
+      <7>","8":"ExecutionReport <8>","9":"OrderCancelReject <9>","A":"Logon <A>","AA":"DerivativeSecurityList
+      <AA>","AB":"NewOrderMultileg <AB>","AC":"MultilegOrderCancelReplace <AC> (a.k.a.
+      Multileg Order Modification Request)","AD":"TradeCaptureReportRequest <AD>","AE":"TradeCaptureReport
+      <AE>","AF":"OrderMassStatusRequest <AF>","AG":"QuoteRequestReject <AG>","AH":"RFQRequest
+      <AH>","AI":"QuoteStatusReport <AI>","AJ":"QuoteResponse <AJ>","AK":"Confirmation
+      <AK>","AL":"PositionMaintenanceRequest <AL>","AM":"PositionMaintenanceReport
+      <AM>","AN":"RequestForPositions <AN>","AO":"RequestForPositionsAck <AO>","AP":"PositionReport
+      <AP>","AQ":"TradeCaptureReportRequestAck <AQ>","AR":"TradeCaptureReportAck <AR>","AS":"AllocationReport
+      <AS> (aka Allocation Claim)","AT":"AllocationReportAck <AT> (aka Allocation
+      Claim Ack)","AU":"ConfirmationAck <AU> (aka Affirmation)","AV":"SettlementInstructionRequest
+      <AV>","AW":"AssignmentReport <AW>","AX":"CollateralRequest <AX>","AY":"CollateralAssignment
+      <AY>","AZ":"CollateralResponse <AZ>","B":"News <B>","BA":"CollateralReport <BA>","BB":"CollateralInquiry
+      <BB>","BC":"NetworkCounterpartySystemStatusRequest <BC>","BD":"NetworkCounterpartySystemStatusResponse
+      <BD>","BE":"UserRequest <BE>","BF":"UserResponse <BF>","BG":"CollateralInquiryAck
+      <BG>","BH":"ConfirmationRequest <BH>","BI":"TradingSessionListRequest <BI>","BJ":"TradingSessionList
+      <BJ>","BK":"SecurityListUpdateReport <BK>","BL":"AdjustedPositionReport <BL>","BM":"AllocationInstructionAlert
+      <BM>","BN":"ExecutionAcknowledgement <BN>","BO":"ContraryIntentionReport <BO>","BP":"SecurityDefinitionUpdateReport
+      <BP>","BQ":"SettlementObligationReport <BP>","BR":"DerivativeSecurityListUpdateReport
+      <BR>","BS":"TradingSessionListUpdateReport <BS>","BT":"MarketDefinitionRequest
+      <BT>","BU":"MarketDefinition <BU>","BV":"MarketDefinitionUpdateReport <BV>","BW":"ApplicationMessageRequest
+      <BW>","BX":"ApplicationMessageRequestAck <BX>","BY":"ApplicationMessageReport
+      <BY>","BZ":"OrderMassActionReport <BZ>","C":"Email <C>","CA":"OrderMassActionRequest
+      <CA>","CB":"UserNotification <CB>","CC":"StreamAssignmentRequest <CC>","CD":"StreamAssignmentReport
+      <CD>","CE":"StreamAssignmentReportACK <CE>","CF":"PartyDetailsListRequest","CG":"PartyDetailsListReport","D":"NewOrderSingle
+      <D>","E":"NewOrderList <E>","F":"OrderCancelRequest <F>","G":"OrderCancel/ReplaceRequest
+      <G>","H":"OrderStatusRequest <H>","J":"AllocationInstruction <J>","K":"ListCancelRequest
+      <K>","L":"ListExecute <L>","M":"ListStatusRequest <M>","N":"ListStatus <N>","P":"AllocationInstructionAck
+      <P>","Q":"DontKnowTrade <Q>","R":"QuoteRequest <R>","S":"Quote <S>","T":"SettlementInstructions
+      <T>","V":"MarketDataRequest <V>","W":"MarketDataSnapshotFullRefresh <W>","X":"MarketDataIncrementalRefresh
+      <X>","Y":"MarketDataRequestReject <Y>","Z":"QuoteCancel <Z>","a":"QuoteStatusRequest
+      <a>","b":"MassQuoteAcknowledgement <b>","c":"SecurityDefinitionRequest <c>","d":"SecurityDefinition
+      <d>","e":"SecurityStatusRequest <e>","f":"SecurityStatus <f>","g":"TradingSessionStatusRequest
+      <g>","h":"TradingSessionStatus <h>","i":"MassQuote <i>","j":"BusinessMessageReject
+      <j>","k":"BidRequest <k>","l":"BidResponse <l> (lowercase L)","m":"ListStrikePrice
+      <m>","n":"XMLnonFIX <n>","o":"RegistrationInstructions <o>","p":"RegistrationInstructionsResponse
+      <p>","q":"OrderMassCancelRequest <q>","r":"OrderMassCancelReport <r>","s":"NewOrderCross
+      <s>","t":"CrossOrderCancelReplaceRequest <t>","u":"CrossOrderCancelRequest <u>","v":"SecurityTypeRequest
+      <v>","w":"SecurityTypes <w>","x":"SecurityListRequest <x>","y":"SecurityList
+      <y>","z":"DerivativeSecurityListRequest <z>"}'
+    fix:value_names: '{"0":"HEARTBEAT","1":"TEST_REQUEST","2":"RESEND_REQUEST","3":"REJECT","4":"SEQUENCE_RESET","5":"LOGOUT","6":"IOI","7":"ADVERTISEMENT","8":"EXECUTION_REPORT","9":"ORDER_CANCEL_REJECT","A":"LOGON","B":"NEWS","C":"EMAIL","D":"NEW_ORDER_SINGLE","E":"NEW_ORDER_LIST","F":"ORDER_CANCEL_REQUEST","G":"ORDER_CANCEL_REPLACE_REQUEST","H":"ORDER_STATUS_REQUEST","J":"ALLOCATION_INSTRUCTION","K":"LIST_CANCEL_REQUEST","L":"LIST_EXECUTE","M":"LIST_STATUS_REQUEST","N":"LIST_STATUS","P":"ALLOCATION_INSTRUCTION_ACK","Q":"DONT_KNOW_TRADE","R":"QUOTE_REQUEST","S":"QUOTE","T":"SETTLEMENT_INSTRUCTIONS","V":"MARKET_DATA_REQUEST","W":"MARKET_DATA_SNAPSHOT_FULL_REFRESH","X":"MARKET_DATA_INCREMENTAL_REFRESH","Y":"MARKET_DATA_REQUEST_REJECT","Z":"QUOTE_CANCEL","a":"QUOTE_STATUS_REQUEST","b":"MASS_QUOTE_ACK","c":"SECURITY_DEFINITION_REQUEST","d":"SECURITY_DEFINITION","e":"SECURITY_STATUS_REQUEST","f":"SECURITY_STATUS","g":"TRADING_SESSION_STATUS_REQUEST","h":"TRADING_SESSION_STATUS","i":"MASS_QUOTE","j":"BUSINESS_MESSAGE_REJECT","k":"BID_REQUEST","l":"BID_RESPONSE","m":"LIST_STRIKE_PRICE","AA":"DERIVATIVE_SECURITY_LIST","AB":"NEW_ORDER_MULTILEG","AC":"MULTILEG_ORDER_CANCEL_REPLACE","AD":"TRADE_CAPTURE_REPORT_REQUEST","AE":"TRADE_CAPTURE_REPORT","AF":"ORDER_MASS_STATUS_REQUEST","AG":"QUOTE_REQUEST_REJECT","AH":"RFQ_REQUEST","AI":"QUOTE_STATUS_REPORT","n":"XM_LNON_FIX","o":"REGISTRATION_INSTRUCTIONS","p":"REGISTRATION_INSTRUCTIONS_RESPONSE","q":"ORDER_MASS_CANCEL_REQUEST","r":"ORDER_MASS_CANCEL_REPORT","s":"NEW_ORDER_CROSS","t":"CROSS_ORDER_CANCEL_REPLACE_REQUEST","u":"CROSS_ORDER_CANCEL_REQUEST","v":"SECURITY_TYPE_REQUEST","w":"SECURITY_TYPES","x":"SECURITY_LIST_REQUEST","y":"SECURITY_LIST","z":"DERIVATIVE_SECURITY_LIST_REQUEST","AJ":"QUOTE_RESPONSE","AK":"CONFIRMATION","AL":"POSITION_MAINTENANCE_REQUEST","AM":"POSITION_MAINTENANCE_REPORT","AN":"REQUEST_FOR_POSITIONS","AO":"REQUEST_FOR_POSITIONS_ACK","AP":"POSITION_REPORT","AQ":"TRADE_CAPTURE_REPORT_REQUEST_ACK","AR":"TRADE_CAPTURE_REPORT_ACK","AS":"ALLOCATION_REPORT","AT":"ALLOCATION_REPORT_ACK","AU":"CONFIRMATION_ACK","AV":"SETTLEMENT_INSTRUCTION_REQUEST","AW":"ASSIGNMENT_REPORT","AX":"COLLATERAL_REQUEST","AY":"COLLATERAL_ASSIGNMENT","AZ":"COLLATERAL_RESPONSE","BA":"COLLATERAL_REPORT","BB":"COLLATERAL_INQUIRY","BC":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST","BD":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE","BE":"USER_REQUEST","BF":"USER_RESPONSE","BG":"COLLATERAL_INQUIRY_ACK","BH":"CONFIRMATION_REQUEST","BI":"TRADING_SESSION_LIST_REQUEST","BJ":"TRADING_SESSION_LIST","BK":"SECURITY_LIST_UPDATE_REPORT","BL":"ADJUSTED_POSITION_REPORT","BM":"ALLOCATION_INSTRUCTION_ALERT","BN":"EXECUTION_ACK","BO":"CONTRARY_INTENTION_REPORT","BP":"SECURITY_DEFINITION_UPDATE_REPORT","BQ":"SETTLEMENT_OBLIGATION_REPORT","BR":"DERIVATIVE_SECURITY_LIST_UPDATE_REPORT","BS":"TRADING_SESSION_LIST_UPDATE_REPORT","BT":"MARKET_DEFINITION_REQUEST","BU":"MARKET_DEFINITION","BV":"MARKET_DEFINITION_UPDATE_REPORT","BW":"APPLICATION_MESSAGE_REQUEST","BX":"APPLICATION_MESSAGE_REQUEST_ACK","BY":"APPLICATION_MESSAGE_REPORT","BZ":"ORDER_MASS_ACTION_REPORT","CA":"ORDER_MASS_ACTION_REQUEST","CB":"USER_NOTIFICATION","CC":"STREAM_ASSIGNMENT_REQUEST","CD":"STREAM_ASSIGNMENT_REPORT","CE":"STREAM_ASSIGNMENT_REPORT_ACK","CF":"PARTY_DETAILS_LIST_REQUEST","CG":"PARTY_DETAILS_LIST_REPORT","CH":"MARGIN_REQUIREMENT_INQUIRY","CI":"MARGIN_REQUIREMENT_INQUIRY_ACK","CJ":"MARGIN_REQUIREMENT_REPORT","CK":"PARTY_DETAILS_LIST_UPDATE_REPORT","CL":"PARTY_RISK_LIMITS_REQUEST","CM":"PARTY_RISK_LIMITS_REPORT","CN":"SECURITY_MASS_STATUS_REQUEST","CO":"SECURITY_MASS_STATUS","CQ":"ACCOUNT_SUMMARY_REPORT","CR":"PARTY_RISK_LIMITS_UPDATE_REPORT","CS":"PARTY_RISK_LIMITS_DEFINITION_REQUEST","CT":"PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK","CU":"PARTY_ENTITLEMENTS_REQUEST","CV":"PARTY_ENTITLEMENTS_REPORT","CW":"QUOTE_ACK","CX":"PARTY_DETAILS_DEFINITION_REQUEST","CY":"PARTY_DETAILS_DEFINITION_REQUEST_ACK","CZ":"PARTY_ENTITLEMENTS_UPDATE_REPORT","DA":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST","DB":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK","DC":"TRADE_MATCH_REPORT","DD":"TRADE_MATCH_REPORT_ACK","DE":"PARTY_RISK_LIMITS_REPORT_ACK","DF":"PARTY_RISK_LIMIT_CHECK_REQUEST","DG":"PARTY_RISK_LIMIT_CHECK_REQUEST_ACK","DH":"PARTY_ACTION_REQUEST","DI":"PARTY_ACTION_REPORT","DJ":"MASS_ORDER","DK":"MASS_ORDER_ACK","DL":"POSITION_TRANSFER_INSTRUCTION","DM":"POSITION_TRANSFER_INSTRUCTION_ACK","DN":"POSITION_TRANSFER_REPORT","DO":"MARKET_DATA_STATISTICS_REQUEST","DP":"MARKET_DATA_STATISTICS_REPORT","DQ":"COLLATERAL_REPORT_ACK","DR":"MARKET_DATA_REPORT","DS":"CROSS_REQUEST","DT":"CROSS_REQUEST_ACK","DU":"ALLOCATION_INSTRUCTION_ALERT_REQUEST","DV":"ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK","DW":"TRADE_AGGREGATION_REQUEST","DX":"TRADE_AGGREGATION_REPORT","EA":"PAY_MANAGEMENT_REPORT","EB":"PAY_MANAGEMENT_REPORT_ACK","DY":"PAY_MANAGEMENT_REQUEST","DZ":"PAY_MANAGEMENT_REQUEST_ACK"}'
+    fix:event_types: '{"8":210,"9":110,"AE":210,"D":110,"F":110,"G":110,"W":320,"X":320,"AG":120,"AH":120,"AI":120,"AJ":120,"R":120,"S":120,"Z":120,"a":120,"b":120,"i":120,"d":410}'
+    fix:handlers: '{"8":"execution_report","9":"order","AE":"execution","D":"order","F":"order","G":"order","W":"entries","X":"entries","AI":"quote","AJ":"quote","S":"quote","Z":"quote","i":"mass_quote","d":"instrument"}'
+    fix:order_states: '{"D":110,"F":240,"G":230,"9":0}'
+    fix:technical_values: '["0","1","2","3","4","5","A"]'
+    fix:technical_plugins: '["jolokia"]'
+    fix:components: '["StandardHeader"]'
+    fix:name: MsgType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: kwargs
   type: list
   nullable: true
@@ -155,14 +219,13 @@ fields:
     fields:
     - name: tag
       type: int32
-      description: Numeric key written or resolved; zero while unresolved.
+      description: Numeric identity written or resolved; zero while unresolved.
     - name: key
       type: string
-      description: Terminal spelling, canonicalized when resolved.
+      description: Terminal spelling without a leading argument marker.
     - name: value
       type: string
-      description: Text at the current transcription level; an empty value is empty
-        text.
+      description: Text after the first equals sign; an empty value is empty text.
     - name: namespace
       type: string
       nullable: true
@@ -171,9 +234,6 @@ fields:
       type: string
       nullable: true
       description: Indexed container prefix.
-- name: protocol_code
-  type: string
-  description: Which protocol the line carries; OTHER is a line that carries none.
 - name: unix_source
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own
@@ -446,62 +506,6 @@ fields:
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
     fix:name: BodyLength
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: MsgType
-  type: string
-  nullable: true
-  description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
-    Note: A "U" as the first character in the MsgType field (i.e. U, U2, etc) indicates
-    that the message format is privately defined between the sender and receiver.
-    *** Note the use of lower case letters ***'
-  metadata:
-    fix:tag: '35'
-    fix:type: String
-    fix:version: 5.0.SP2
-    fix:values: '{"0":"Heartbeat <0>","1":"TestRequest <1>","2":"ResendRequest <2>","3":"Reject
-      <3>","4":"SequenceReset <4>","5":"Logout <5>","6":"IOI <6>","7":"Advertisement
-      <7>","8":"ExecutionReport <8>","9":"OrderCancelReject <9>","A":"Logon <A>","AA":"DerivativeSecurityList
-      <AA>","AB":"NewOrderMultileg <AB>","AC":"MultilegOrderCancelReplace <AC> (a.k.a.
-      Multileg Order Modification Request)","AD":"TradeCaptureReportRequest <AD>","AE":"TradeCaptureReport
-      <AE>","AF":"OrderMassStatusRequest <AF>","AG":"QuoteRequestReject <AG>","AH":"RFQRequest
-      <AH>","AI":"QuoteStatusReport <AI>","AJ":"QuoteResponse <AJ>","AK":"Confirmation
-      <AK>","AL":"PositionMaintenanceRequest <AL>","AM":"PositionMaintenanceReport
-      <AM>","AN":"RequestForPositions <AN>","AO":"RequestForPositionsAck <AO>","AP":"PositionReport
-      <AP>","AQ":"TradeCaptureReportRequestAck <AQ>","AR":"TradeCaptureReportAck <AR>","AS":"AllocationReport
-      <AS> (aka Allocation Claim)","AT":"AllocationReportAck <AT> (aka Allocation
-      Claim Ack)","AU":"ConfirmationAck <AU> (aka Affirmation)","AV":"SettlementInstructionRequest
-      <AV>","AW":"AssignmentReport <AW>","AX":"CollateralRequest <AX>","AY":"CollateralAssignment
-      <AY>","AZ":"CollateralResponse <AZ>","B":"News <B>","BA":"CollateralReport <BA>","BB":"CollateralInquiry
-      <BB>","BC":"NetworkCounterpartySystemStatusRequest <BC>","BD":"NetworkCounterpartySystemStatusResponse
-      <BD>","BE":"UserRequest <BE>","BF":"UserResponse <BF>","BG":"CollateralInquiryAck
-      <BG>","BH":"ConfirmationRequest <BH>","BI":"TradingSessionListRequest <BI>","BJ":"TradingSessionList
-      <BJ>","BK":"SecurityListUpdateReport <BK>","BL":"AdjustedPositionReport <BL>","BM":"AllocationInstructionAlert
-      <BM>","BN":"ExecutionAcknowledgement <BN>","BO":"ContraryIntentionReport <BO>","BP":"SecurityDefinitionUpdateReport
-      <BP>","BQ":"SettlementObligationReport <BP>","BR":"DerivativeSecurityListUpdateReport
-      <BR>","BS":"TradingSessionListUpdateReport <BS>","BT":"MarketDefinitionRequest
-      <BT>","BU":"MarketDefinition <BU>","BV":"MarketDefinitionUpdateReport <BV>","BW":"ApplicationMessageRequest
-      <BW>","BX":"ApplicationMessageRequestAck <BX>","BY":"ApplicationMessageReport
-      <BY>","BZ":"OrderMassActionReport <BZ>","C":"Email <C>","CA":"OrderMassActionRequest
-      <CA>","CB":"UserNotification <CB>","CC":"StreamAssignmentRequest <CC>","CD":"StreamAssignmentReport
-      <CD>","CE":"StreamAssignmentReportACK <CE>","CF":"PartyDetailsListRequest","CG":"PartyDetailsListReport","D":"NewOrderSingle
-      <D>","E":"NewOrderList <E>","F":"OrderCancelRequest <F>","G":"OrderCancel/ReplaceRequest
-      <G>","H":"OrderStatusRequest <H>","J":"AllocationInstruction <J>","K":"ListCancelRequest
-      <K>","L":"ListExecute <L>","M":"ListStatusRequest <M>","N":"ListStatus <N>","P":"AllocationInstructionAck
-      <P>","Q":"DontKnowTrade <Q>","R":"QuoteRequest <R>","S":"Quote <S>","T":"SettlementInstructions
-      <T>","V":"MarketDataRequest <V>","W":"MarketDataSnapshotFullRefresh <W>","X":"MarketDataIncrementalRefresh
-      <X>","Y":"MarketDataRequestReject <Y>","Z":"QuoteCancel <Z>","a":"QuoteStatusRequest
-      <a>","b":"MassQuoteAcknowledgement <b>","c":"SecurityDefinitionRequest <c>","d":"SecurityDefinition
-      <d>","e":"SecurityStatusRequest <e>","f":"SecurityStatus <f>","g":"TradingSessionStatusRequest
-      <g>","h":"TradingSessionStatus <h>","i":"MassQuote <i>","j":"BusinessMessageReject
-      <j>","k":"BidRequest <k>","l":"BidResponse <l> (lowercase L)","m":"ListStrikePrice
-      <m>","n":"XMLnonFIX <n>","o":"RegistrationInstructions <o>","p":"RegistrationInstructionsResponse
-      <p>","q":"OrderMassCancelRequest <q>","r":"OrderMassCancelReport <r>","s":"NewOrderCross
-      <s>","t":"CrossOrderCancelReplaceRequest <t>","u":"CrossOrderCancelRequest <u>","v":"SecurityTypeRequest
-      <v>","w":"SecurityTypes <w>","x":"SecurityListRequest <x>","y":"SecurityList
-      <y>","z":"DerivativeSecurityListRequest <z>"}'
-    fix:value_names: '{"0":"HEARTBEAT","1":"TEST_REQUEST","2":"RESEND_REQUEST","3":"REJECT","4":"SEQUENCE_RESET","5":"LOGOUT","6":"IOI","7":"ADVERTISEMENT","8":"EXECUTION_REPORT","9":"ORDER_CANCEL_REJECT","A":"LOGON","B":"NEWS","C":"EMAIL","D":"NEW_ORDER_SINGLE","E":"NEW_ORDER_LIST","F":"ORDER_CANCEL_REQUEST","G":"ORDER_CANCEL_REPLACE_REQUEST","H":"ORDER_STATUS_REQUEST","J":"ALLOCATION_INSTRUCTION","K":"LIST_CANCEL_REQUEST","L":"LIST_EXECUTE","M":"LIST_STATUS_REQUEST","N":"LIST_STATUS","P":"ALLOCATION_INSTRUCTION_ACK","Q":"DONT_KNOW_TRADE","R":"QUOTE_REQUEST","S":"QUOTE","T":"SETTLEMENT_INSTRUCTIONS","V":"MARKET_DATA_REQUEST","W":"MARKET_DATA_SNAPSHOT_FULL_REFRESH","X":"MARKET_DATA_INCREMENTAL_REFRESH","Y":"MARKET_DATA_REQUEST_REJECT","Z":"QUOTE_CANCEL","a":"QUOTE_STATUS_REQUEST","b":"MASS_QUOTE_ACK","c":"SECURITY_DEFINITION_REQUEST","d":"SECURITY_DEFINITION","e":"SECURITY_STATUS_REQUEST","f":"SECURITY_STATUS","g":"TRADING_SESSION_STATUS_REQUEST","h":"TRADING_SESSION_STATUS","i":"MASS_QUOTE","j":"BUSINESS_MESSAGE_REJECT","k":"BID_REQUEST","l":"BID_RESPONSE","m":"LIST_STRIKE_PRICE","AA":"DERIVATIVE_SECURITY_LIST","AB":"NEW_ORDER_MULTILEG","AC":"MULTILEG_ORDER_CANCEL_REPLACE","AD":"TRADE_CAPTURE_REPORT_REQUEST","AE":"TRADE_CAPTURE_REPORT","AF":"ORDER_MASS_STATUS_REQUEST","AG":"QUOTE_REQUEST_REJECT","AH":"RFQ_REQUEST","AI":"QUOTE_STATUS_REPORT","n":"XM_LNON_FIX","o":"REGISTRATION_INSTRUCTIONS","p":"REGISTRATION_INSTRUCTIONS_RESPONSE","q":"ORDER_MASS_CANCEL_REQUEST","r":"ORDER_MASS_CANCEL_REPORT","s":"NEW_ORDER_CROSS","t":"CROSS_ORDER_CANCEL_REPLACE_REQUEST","u":"CROSS_ORDER_CANCEL_REQUEST","v":"SECURITY_TYPE_REQUEST","w":"SECURITY_TYPES","x":"SECURITY_LIST_REQUEST","y":"SECURITY_LIST","z":"DERIVATIVE_SECURITY_LIST_REQUEST","AJ":"QUOTE_RESPONSE","AK":"CONFIRMATION","AL":"POSITION_MAINTENANCE_REQUEST","AM":"POSITION_MAINTENANCE_REPORT","AN":"REQUEST_FOR_POSITIONS","AO":"REQUEST_FOR_POSITIONS_ACK","AP":"POSITION_REPORT","AQ":"TRADE_CAPTURE_REPORT_REQUEST_ACK","AR":"TRADE_CAPTURE_REPORT_ACK","AS":"ALLOCATION_REPORT","AT":"ALLOCATION_REPORT_ACK","AU":"CONFIRMATION_ACK","AV":"SETTLEMENT_INSTRUCTION_REQUEST","AW":"ASSIGNMENT_REPORT","AX":"COLLATERAL_REQUEST","AY":"COLLATERAL_ASSIGNMENT","AZ":"COLLATERAL_RESPONSE","BA":"COLLATERAL_REPORT","BB":"COLLATERAL_INQUIRY","BC":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST","BD":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE","BE":"USER_REQUEST","BF":"USER_RESPONSE","BG":"COLLATERAL_INQUIRY_ACK","BH":"CONFIRMATION_REQUEST","BI":"TRADING_SESSION_LIST_REQUEST","BJ":"TRADING_SESSION_LIST","BK":"SECURITY_LIST_UPDATE_REPORT","BL":"ADJUSTED_POSITION_REPORT","BM":"ALLOCATION_INSTRUCTION_ALERT","BN":"EXECUTION_ACK","BO":"CONTRARY_INTENTION_REPORT","BP":"SECURITY_DEFINITION_UPDATE_REPORT","BQ":"SETTLEMENT_OBLIGATION_REPORT","BR":"DERIVATIVE_SECURITY_LIST_UPDATE_REPORT","BS":"TRADING_SESSION_LIST_UPDATE_REPORT","BT":"MARKET_DEFINITION_REQUEST","BU":"MARKET_DEFINITION","BV":"MARKET_DEFINITION_UPDATE_REPORT","BW":"APPLICATION_MESSAGE_REQUEST","BX":"APPLICATION_MESSAGE_REQUEST_ACK","BY":"APPLICATION_MESSAGE_REPORT","BZ":"ORDER_MASS_ACTION_REPORT","CA":"ORDER_MASS_ACTION_REQUEST","CB":"USER_NOTIFICATION","CC":"STREAM_ASSIGNMENT_REQUEST","CD":"STREAM_ASSIGNMENT_REPORT","CE":"STREAM_ASSIGNMENT_REPORT_ACK","CF":"PARTY_DETAILS_LIST_REQUEST","CG":"PARTY_DETAILS_LIST_REPORT","CH":"MARGIN_REQUIREMENT_INQUIRY","CI":"MARGIN_REQUIREMENT_INQUIRY_ACK","CJ":"MARGIN_REQUIREMENT_REPORT","CK":"PARTY_DETAILS_LIST_UPDATE_REPORT","CL":"PARTY_RISK_LIMITS_REQUEST","CM":"PARTY_RISK_LIMITS_REPORT","CN":"SECURITY_MASS_STATUS_REQUEST","CO":"SECURITY_MASS_STATUS","CQ":"ACCOUNT_SUMMARY_REPORT","CR":"PARTY_RISK_LIMITS_UPDATE_REPORT","CS":"PARTY_RISK_LIMITS_DEFINITION_REQUEST","CT":"PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK","CU":"PARTY_ENTITLEMENTS_REQUEST","CV":"PARTY_ENTITLEMENTS_REPORT","CW":"QUOTE_ACK","CX":"PARTY_DETAILS_DEFINITION_REQUEST","CY":"PARTY_DETAILS_DEFINITION_REQUEST_ACK","CZ":"PARTY_ENTITLEMENTS_UPDATE_REPORT","DA":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST","DB":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK","DC":"TRADE_MATCH_REPORT","DD":"TRADE_MATCH_REPORT_ACK","DE":"PARTY_RISK_LIMITS_REPORT_ACK","DF":"PARTY_RISK_LIMIT_CHECK_REQUEST","DG":"PARTY_RISK_LIMIT_CHECK_REQUEST_ACK","DH":"PARTY_ACTION_REQUEST","DI":"PARTY_ACTION_REPORT","DJ":"MASS_ORDER","DK":"MASS_ORDER_ACK","DL":"POSITION_TRANSFER_INSTRUCTION","DM":"POSITION_TRANSFER_INSTRUCTION_ACK","DN":"POSITION_TRANSFER_REPORT","DO":"MARKET_DATA_STATISTICS_REQUEST","DP":"MARKET_DATA_STATISTICS_REPORT","DQ":"COLLATERAL_REPORT_ACK","DR":"MARKET_DATA_REPORT","DS":"CROSS_REQUEST","DT":"CROSS_REQUEST_ACK","DU":"ALLOCATION_INSTRUCTION_ALERT_REQUEST","DV":"ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK","DW":"TRADE_AGGREGATION_REQUEST","DX":"TRADE_AGGREGATION_REPORT","EA":"PAY_MANAGEMENT_REPORT","EB":"PAY_MANAGEMENT_REPORT_ACK","DY":"PAY_MANAGEMENT_REQUEST","DZ":"PAY_MANAGEMENT_REQUEST_ACK"}'
-    fix:components: '["StandardHeader"]'
-    fix:name: MsgType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: CheckSum
   type: string
@@ -1288,6 +1292,7 @@ fields:
       New","B":"Calculated","C":"Expired","D":"Accepted for Bidding","E":"Pending
       Replace (i.e. result of Order Cancel/Replace Request <G> )"}'
     fix:value_names: '{"0":"NEW","1":"PARTIALLY_FILLED","2":"FILLED","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"ACCEPTED_FOR_BIDDING","E":"PENDING_REPLACE"}'
+    fix:states: '{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"D":220,"E":230}'
     fix:used_in: '["ExecutionReport","OrderCancelReject","TradeCaptureReport","TradeCaptureReportAck","Execution
       Report","Order Cancel Reject","Trade Capture Report","List Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
@@ -1312,6 +1317,8 @@ fields:
       in a Clearing Hold","K":"Trade has been released to Clearing","L":"Triggered
       or Activated by System"}'
     fix:value_names: '{"0":"NEW","1":"PARTIAL_FILL","2":"FILL","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"RESTATED","E":"PENDING_REPLACE","F":"TRADE","G":"TRADE_CORRECT","H":"TRADE_CANCEL","I":"ORDER_STATUS","J":"TRADE_IN_A_CLEARING_HOLD","K":"TRADE_HAS_BEEN_RELEASED_TO_CLEARING","L":"TRIGGERED_OR_ACTIVATED_BY_SYSTEM","M":"LOCKED","N":"RELEASED"}'
+    fix:states: '{"1":410,"2":410,"F":410,"G":520,"H":510}'
+    fix:order_states: '{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"E":230}'
     fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","Execution
       Report","Trade Capture Report Request","Trade Capture Report","Trade Capture
       Report Ack"]'
@@ -1565,6 +1572,7 @@ fields:
       Market","16":"Active","17":"Canceled","18":"Unsolicited Quote Replenishment","19":"Pending
       End Trade","20":"Too Late to End"}'
     fix:value_names: '{"0":"ACCEPTED","1":"CANCEL_FOR_SYMBOL","2":"CANCELED_FOR_SECURITY_TYPE","3":"CANCELED_FOR_UNDERLYING","4":"CANCELED_ALL","5":"REJECTED","6":"REMOVED_FROM_MARKET","10":"PENDING","9":"QUOTE_NOT_FOUND","8":"QUERY","7":"EXPIRED","11":"PASS","12":"LOCKED_MARKET_WARNING","13":"CROSS_MARKET_WARNING","14":"CANCELED_DUE_TO_LOCK_MARKET","15":"CANCELED_DUE_TO_CROSS_MARKET","16":"ACTIVE","17":"CANCELED","18":"UNSOLICITED_QUOTE_REPLENISHMENT","19":"PENDING_END_TRADE","20":"TOO_LATE_TO_END","21":"TRADED","22":"TRADED_AND_REMOVED","23":"CONTRACT_TERMINATES"}'
+    fix:states: '{"0":220,"1":510,"2":510,"3":510,"4":510,"5":610,"6":510,"7":530,"9":610,"10":100,"11":510,"12":200,"13":200,"14":510,"15":510,"16":200,"17":510,"18":200,"19":240,"21":410,"22":410,"23":530}'
     fix:used_in: '["QuoteStatusReport","MassQuoteAcknowledgement","Quote Status Report","Mass
       Quote Acknowledgement","Quote Acknowledgement"]'
     fix:name: QuoteStatus
@@ -1600,6 +1608,7 @@ fields:
     fix:values: '{"1":"Hit/Lift","2":"Counter","3":"Expired","4":"Cover","5":"Done
       Away","6":"Pass","7":"End Trade","8":"Timed Out"}'
     fix:value_names: '{"1":"HIT","2":"COUNTER","3":"EXPIRED","4":"COVER","5":"DONE_AWAY","6":"PASS","7":"END_TRADE","8":"TIMED_OUT","9":"TIED","10":"TIED_COVER","11":"ACCEPT","12":"TERMINATE_CONTRACT"}'
+    fix:states: '{"1":410,"2":200,"3":530,"4":200,"5":510,"6":510,"7":510,"8":510,"9":200,"10":200,"11":220,"12":510}'
     fix:used_in: '["QuoteResponse","Quote Response"]'
     fix:name: QuoteRespType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'

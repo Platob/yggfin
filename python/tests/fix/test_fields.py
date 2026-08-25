@@ -9,6 +9,8 @@ import rekep.fix.fields
 import rekep.market
 import rekep.market.fix
 from rekep.fix import arrow_type_of, cast_arrow_bool, cast_arrow_fix, fix_field, unix_of
+from rekep.fix.fields import scalar_fix_temporal
+from rekep.fix.message import render_fix_value
 
 # -- datatypes ---------------------------------------------------------------
 
@@ -50,6 +52,40 @@ def test_the_timezone_carrying_types_stay_text() -> None:
     """A naive Arrow type would drop the offset that is part of the value."""
     assert arrow_type_of("TZTimestamp") == pyarrow.string()
     assert arrow_type_of("TZTimeOnly") == pyarrow.string()
+
+
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pyarrow.timestamp("ns"),
+        pyarrow.timestamp("us"),
+        pyarrow.timestamp("ms"),
+        pyarrow.timestamp("s"),
+        pyarrow.date32(),
+        pyarrow.time64("ns"),
+    ],
+)
+@pytest.mark.parametrize(
+    "text",
+    [
+        "20260821-09:59:00",
+        "20260821-09:59:00.123456789",
+        "20260821",
+        "09:59:60.5",
+        "19691231-23:59:59.999999999",
+        "16000101-00:00:00.123456789",
+        "20260230",
+    ],
+)
+def test_the_scalar_temporal_reader_matches_the_arrow_boundary(
+    arrow_type: pyarrow.DataType, text: str
+) -> None:
+    vector = cast_arrow_fix(pyarrow.array([text]), arrow_type)[0].as_py()
+    scalar = scalar_fix_temporal(text, arrow_type)
+
+    expected = text if vector is None else render_fix_value(vector)
+    actual = text if scalar is None else render_fix_value(scalar)
+    assert actual == expected
 
 
 # -- building ----------------------------------------------------------------
@@ -225,6 +261,52 @@ def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
     assert read.to_pylist() == expected
     assert read.null_count == 6, "only the impossible dates and clocks"
     assert read[1].as_py() == 1787308200000000000
+
+
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pyarrow.timestamp("ns"),
+        pyarrow.timestamp("us"),
+        pyarrow.timestamp("s"),
+        pyarrow.date32(),
+        pyarrow.time64("ns"),
+        pyarrow.time32("s"),
+    ],
+)
+def test_canonical_full_stamps_match_the_general_temporal_reader(
+    arrow_type: pyarrow.DataType,
+) -> None:
+    canonical = [
+        "19700101-00:00:00",
+        "19691231-23:59:59.999999999",
+        "20240229-12:34:56.1",
+        "19000229-12:34:56.12",
+        "20000229-12:34:56.123",
+        "00000101-00:00:00.1234",
+        "99991231-23:59:59.123456789",
+        "20260630-23:59:60.5",
+        "20260821-24:00:00",
+        "20260821-23:60:00",
+        "20260821-23:59:61",
+        None,
+    ]
+    fast = cast_arrow_fix(pyarrow.array(canonical), arrow_type)
+    # One admitted noncanonical spelling selects the general reader for its
+    # whole batch, giving an independent boundary for the canonical prefix.
+    general = cast_arrow_fix(pyarrow.array([*canonical, "20260821T10:30:00"]), arrow_type)
+    assert fast.equals(general.slice(0, len(canonical)))
+
+
+def test_canonical_full_stamps_do_not_build_the_general_regex_struct(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(pyarrow.compute, "extract_regex", _unreachable)
+    read = cast_arrow_fix(
+        pyarrow.array(["20260821-10:30:00.123456789", None]),
+        pyarrow.timestamp("ns"),
+    )
+    assert read.cast(pyarrow.int64()).to_pylist() == [1787308200123456789, None]
 
 
 def test_a_valid_date_outside_nanosecond_range_reads_null_without_overflow() -> None:

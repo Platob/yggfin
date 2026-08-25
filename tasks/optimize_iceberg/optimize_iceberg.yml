@@ -1,0 +1,20 @@
+name: optimize_iceberg
+notebook: optimize_iceberg.ipynb
+parameters:
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  # Null visits every namespace recursively.
+  namespace: null
+  # root, main, and master name the same Iceberg root branch.
+  branch: root
+  min_files: 2
+  # Keep both a useful recent count and a time-travel window.
+  retain: 24
+  snapshot_age_days: 7
+  # Protect files written by an in-flight or recently failed writer.
+  orphan_age_days: 3
+  remove_orphans: true
+  metadata: true

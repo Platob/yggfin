@@ -5,7 +5,7 @@ installation, configuration, local validation, scheduling, historical
 backfills, Iceberg branches, distributed deployment, monitoring, retries, and
 troubleshooting.
 
-The DAG needs Airflow 3.x and
+The publishing and maintenance DAGs need Airflow 3.x and
 `apache-airflow-providers-papermill>=3.13,<4`. Deploy the complete repository
 revision because parsing loads the adjacent YAML files and workers execute the
 notebooks.
@@ -17,7 +17,7 @@ mkdir -p "$REKEP_NOTEBOOK_OUTPUT"
 
 airflow dags test \
   --dagfile-path "$REKEP_ROOT/tasks/airflow/market_pipeline.py" \
-  --conf '{"branch":"root"}' \
+  --conf '{"branch":"root","books":true}' \
   rekep_market_pipeline \
   2026-08-21T10:00:00Z
 ```
@@ -46,6 +46,15 @@ writes orders and executions itself and returns zero `flatten` counts, so both
 flattening tasks are skipped at runtime. In book mode each flattener is routed
 from its own nested row count; an interval with only orders does not run the
 execution flattener, or vice versa.
+
+Set the DAG's boolean `books` parameter to `false` for direct mode without
+editing the deployed YAML; native template rendering keeps it a boolean in the
+Papermill notebook parameters.
+
+`rekep_iceberg_maintenance` runs daily at 02:30 UTC with catch-up disabled. It
+executes `tasks/optimize_iceberg/optimize_iceberg.yml`, keeping at least 24
+snapshots and seven days of history before sweeping files that have been
+unreachable for three days. Review that policy before unpausing the DAG.
 
 The DAG is hourly, starts at 2026-01-01 UTC, and has catch-up enabled. Review
 the intended history before unpausing it; otherwise Airflow creates every

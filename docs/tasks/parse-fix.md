@@ -1,16 +1,22 @@
 # Parse FIX
 
-`tasks/parse_fix/parse_fix.ipynb` reads protocol-neutral `Message` rows from
-`logs.messages`, parses their payloads as FIX where the configured rules say
-they are FIX, and routes the resulting `FixMsg` rows.
+`tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
+`FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
+`etype >= INTENT` before any FIX dictionary work begins. A disjoint
+`etype < INTENT` scan retains terminal operational and unrecognized rows.
 
-This is the first stage that opens the FIX dictionary. For each Arrow batch it:
+`parse_messages` has already opened the dictionary for MsgType event metadata.
+This stage opens the same dictionary for full transcription. For each Arrow
+batch it:
 
-1. classifies each raw `message` and selects its stored ordered `kwargs`;
+1. reads the stored protocol classification and ordered `kwargs`;
 2. infers the FIX application version;
 3. resolves names, tags, types and configured value spellings;
 4. lifts declared fields and structured components;
-5. derives the event category, venue, transaction time and identities.
+5. derives the venue, transaction time and identities.
+
+`Message.etype`, `Message.MsgType`, and `Message.protocol_code` pass through
+this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `kwargs`. A resolved entry records the
 canonical FIX key, its numeric tag, its value, and either its component path or
@@ -20,17 +26,15 @@ their physical column name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`,
 
 ## Routing
 
-`Rules.into_arrow_category_array` selects one destination per parsed row:
-
-| Table | Rows |
-| --- | --- |
-| `fix.market` | Orders, quotes, executions, books and instruments. |
-| `fix.misc` | Recognized operational traffic that is not a market event. |
-| `fix.unknown` | Payloads no configured protocol recognizes. |
-
-All destinations use the same `FixMsg` contract. A market row may drop
-the raw `message` after the ordered resolved fields carry its content; misc and
-unknown rows retain the raw payload as the content of record.
+The task writes orders, quotes, executions, books and instruments to
+`fix.market`. Recognized operational traffic, rows without MsgType, and unknown
+events on a recognized transport go to `fix.misc`; an unknown event on an
+unrecognized transport goes to `fix.unknown`. Market and terminal predicates
+are pushed independently, so neither stream sees the other's rows. Registry-
+declared technical MsgTypes and exact plugin codes are excluded by the scan;
+a case-folded Arrow mask catches plugin spelling variants before counting or
+transcription. The raw `message` column is projected out for both streams:
+stored `kwargs` already carry the parsed content needed for transcription.
 
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,
@@ -46,8 +50,14 @@ then `flatten_instruments` writes the Instrument table.
 
 ## Configuration
 
-The adjacent `parse_fix.yml` owns every FIX setting: `fix_dictionary`,
-`null_values`, event `rules`, protocol rules, and declared `fields`. It also
-selects the catalog, branch, source interval, static columns and batch sizes.
-A dictionary or rule change reruns this stage against retained `Message` rows;
-the stored arguments are resolved again without tokenizing the raw payload.
+The adjacent `parse_fix.yml` owns full-transcription settings: `fix_dictionary`,
+`null_values`, protocol rules, and declared `fields`. It also selects the
+catalog, branch, source interval and batch sizes. A dictionary, field, or
+protocol-rule change reruns this stage against retained `Message` rows; the
+stored arguments are resolved again without tokenizing the raw payload.
+Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
+metadata is read by `parse_messages` because `etype` is part of `Message`;
+changing that metadata requires rebuilding `logs.messages`, while other
+dictionary changes can rerun only this stage. The projected conversion requires
+the version 4 `MsgType`, `kwargs`, and `protocol_code` columns and refuses an
+older source table with a rebuild instruction.

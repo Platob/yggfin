@@ -9,17 +9,18 @@ from rekep import FixMsg
 from rekep.iceberg import IcebergDataset
 
 logs = IcebergDataset(
-    name="fix.market",
+    field=FixMsg.into_field("fix.market"),
     catalog="local",
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
         "warehouse": "file:///warehouse",
     },
-    field=FixMsg.into_field(),
     branch="root",
 )
 ```
+
+The field name is the full table identifier; `logs.namespace` is `"fix"`.
 
 ## Read
 
@@ -51,26 +52,43 @@ logs.overwrite_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 logs.append_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 ```
 
-`overwrite_*` replaces the rows whose keys match and inserts the rest, and has
-no keyless mode: replacing rows means knowing which rows. `append_*` inserts,
-skipping the keys already stored when `merge_by` names them and inserting
-everything when it does not.
+`overwrite_*` replaces the rows whose keys match and inserts the rest. A false
+`merge_by` on a table partitioned by `identity`, `day`, `hour`, `month`,
+`year`, `bucket`, or `truncate` makes the streamed rows the complete
+replacement for their partitions; it remains invalid on an unpartitioned
+table. `append_*` inserts, skipping stored keys when `merge_by` names them and
+inserting everything when it does not.
 
 Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested
 commit size. Schema additions are nullable and additive.
 
 Keyed writes push safe key ranges, including declared derived partition
-columns, into Iceberg planning. Stored candidates are then consumed one
-partition and record batch at a time. Overwrite retains only compact positions
-into the current commit chunk, while insert progressively removes stored keys
-and stops once none remain; neither path collects the planned table rows.
+columns, into Iceberg planning. When the merge key contains or determines each
+identity partition column, overwrite reads only each touched partition,
+preserves its unmatched rows, and follows the bounded exact merge path. A key
+that may move between partitions uses that same path. Insert progressively
+removes stored keys and stops once none remain.
 
-The supported stable PyIceberg commit API still requires an Arrow `Table`, and
-its newer reader write path does not support partitioned tables. Consequently,
-one `commit_row_size` chunk is the only intentional write materialization;
-the default is 1,000,000 rows. Passing `0` or `None` explicitly requests one
-whole-stream commit and therefore requires that stream to fit in memory.
+A complete partition replacement applies the table's transforms with Arrow,
+stages bounded local Parquet files, then copies them through the table's
+configured filesystem to final Iceberg data locations. One transaction drops
+only data files in the exact transformed partitions and registers each new
+file from its footer; order-preserving transforms use PyIceberg `add_files`,
+while bucket partitions carry the already-computed hash into the same snapshot.
+Parquet bytes are never collected into an Arrow table for the commit. Local
+stages are removed after each upload, and cleanup attempts every uploaded path
+even if one removal fails. A failure whose catalog acknowledgement is
+ambiguous leaves the files for orphan maintenance rather than risk deleting
+committed data.
+
+The source must keep each partition contiguous, and a recurrence after another
+partition is rejected. Writes are incremental: complete groups committed
+before a later source or ordering error remain committed. Replacements
+accumulate toward `commit_row_size`; the default is 1,000,000 rows and `0`
+groups the whole ordered stream into one transaction. The same setting caps
+each staged Parquet file, so an individual partition may exceed it without
+having to fit in memory.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
@@ -97,6 +115,14 @@ properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
 same Arrow S3 filesystem as `s3://`. Recorded and listed paths are compared
 only after the same resolver normalizes them.
 
+PyIceberg is configured with the package-level
+`rekep.arrow_file_io.ArrowFileIO` implementation.
+
+Partition staging uses that same instance to copy local Parquet files to the
+final path produced by Iceberg's location provider. Local warehouses and
+`s3`/`s3a` warehouses therefore share one bounded copy path and the catalog's
+endpoint, region, and credential configuration.
+
 `ArrowFileIO.spill(local=None, temporary=False)` returns a local `ArrowFileIO`;
 an already-local bound input returns itself. Persistent spills
 use a deterministic name, are pulled again when the remote byte size changes,
@@ -108,6 +134,8 @@ compressed bytes in 4 MiB chunks, decoded incrementally by Arrow, and purged
 when the reader finishes. Its disk use is the compressed object size and its
 memory use stays bounded by the copy/read chunk and one parsed record batch;
 the expanded capture is never materialized as a file or Arrow table.
+Exhausting the reader closes that owner. A partial consumer closes the
+surrounding `TextFile` context to release the decoder and temporary spill.
 
 S3-compatible stores can be configured once per process. `S3_ENDPOINT_URL`,
 `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and `S3_REGION`
@@ -121,17 +149,41 @@ credential environment chain.
 ## Maintenance
 
 ```python
+import datetime
+
 logs.compact(branch="root")
-logs.cleanup()
-logs.optimize(branch="root")
+logs.cleanup(retain=24, older_than=datetime.timedelta(days=7))
+logs.optimize(
+    branch="root",
+    retain=24,
+    older_than=datetime.timedelta(days=7),
+    orphan_age=datetime.timedelta(days=3),
+)
 ```
 
-Write streams automatically ask for compaction once at least 16 files are
-compactable. The pass settles once a partition has no newer data and keeps all
-snapshots; set `auto_compact=False` when another service owns file rewriting.
-Cleanup expires snapshots and removes only old files unreferenced by any live
-snapshot. `optimize` compacts, then cleans, returning counts for each action;
-`auto_optimize=True` explicitly permits a writer to run that full policy.
+Write streams do not run maintenance. Call these operations explicitly, or run
+the scheduled maintenance described below.
+
+Snapshot expiration itself removes history from the current metadata JSON. It
+does not remove rows visible in a retained snapshot, but it permanently removes
+time travel and rollback to an expired state. PyIceberg 0.11 does not delete
+physical files during that operation. `cleanup` follows the metadata commit
+with rekep's reachability sweep: only files unreferenced by every retained
+snapshot, branch, tag, statistics entry, and current metadata version are
+eligible. That includes obsolete Parquet data, manifest-list Avro, manifest
+Avro, and untracked metadata JSON files. The orphan age is a grace period for
+files an in-flight writer has produced but not committed.
+
+`optimize` compacts, then cleans, returning counts for each action. It also
+supplies absent manifest merging and metadata JSON retention properties to
+existing tables; an explicit table property still wins.
+
+The Airflow deployment runs `optimize_iceberg` daily at 02:30 UTC. Its
+checked-in policy keeps at least 24 snapshots and seven days, waits three days
+before deleting unreachable files, and visits nested namespaces. This gives
+idle tables another sweep after their grace period has elapsed. Run it when
+ordinary writers are quiet; catalog commit conflicts fail safely and are
+retried, but avoiding overlap prevents wasted rewrites.
 
 ## Testing and benchmark
 

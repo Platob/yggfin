@@ -4,16 +4,26 @@ parameters:
   project_root: .
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
   source: data/capture
+  # MsgType metadata maps values to EventType codes and skips registry-declared
+  # technical traffic before a row reaches protocol translation.
+  fix_dictionary: data/fix
+  # Protocol syntax classification. Null uses the shipped default rules; keep
+  # custom rules aligned with parse_fix.
+  protocols: null
   pattern: "*.log*"
   # The fixed header every line opens with, as a regex naming `timestamp`,
   # `thread_name`, `plugin_code` and `message`. Null reads the shipped one.
   header: null
   recursive: true
   timezone: Europe/Paris
-  # Exact, case-sensitive plugin codes omitted before message identities are built.
-  exclude_plugins: []
+  # Arrow RE2 payload patterns: any include admits, while any exclude rejects.
+  # Filtering happens before kwargs and message identities are built.
+  include_regexes: []
+  exclude_regexes: []
   start: null
   end: null
+  # Optional recording-time batch window in nanoseconds.
+  duration_ns: null
   # AWS Glue with an S3 warehouse (replace the active local block):
   # catalog: rekep-production
   # catalog_properties:
@@ -32,10 +42,9 @@ parameters:
   branch: root
   # Retained so protocol parsers can be rerun without reading the source files.
   target: logs.messages
-  static_values:
-    bridge: bridge-1
-    environment: prod
   merge_by: true
   batch_row_size: 65536
+  # Also bounds batches containing unusually large diagnostics.
+  batch_byte_size: 67108864
   commit_row_size: 250000
   limit: null

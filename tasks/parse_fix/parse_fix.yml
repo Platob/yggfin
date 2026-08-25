@@ -8,9 +8,6 @@ parameters:
   end: null
   fix_dictionary: data/fix
   null_values: ["", "null", "<null>", "n/a"]
-  # Event classification. Null uses a fresh copy of FixMsg's FIX defaults;
-  # declare MessageRules here to replace them.
-  rules: null
   protocols: null
   # How named fields read, where a job says what the dictionary cannot: a
   # vendor tag that carries an instant, a value spelling only this estate
@@ -43,9 +40,6 @@ parameters:
   target_pattern: "fix.{category}"
   instrument_source: market.instruments
   instrument_snapshot_every: 3600000000000
-  static_values:
-    bridge: bridge-1
-    environment: prod
   merge_by: true
   batch_row_size: 65536
   commit_row_size: 250000

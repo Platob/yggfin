@@ -1,6 +1,8 @@
 name: parse_market
 notebook: parse_market.ipynb
 parameters:
+  project_root: .
+  fix_dictionary: data/fix
   # Iceberg sources and targets are catalog table identifiers; their S3 file
   # locations come from the catalog warehouse below.
   source: fix.market

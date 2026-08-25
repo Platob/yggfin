@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 
 import pyarrow
 import pytest
 
+from rekep.fix import FixRegistry
 from rekep.market import (
     MIC,
     AssetKind,
     Book,
     BookIterator,
     Currency,
+    EventType,
     Execution,
     Instrument,
     MarketEvent,
@@ -23,8 +26,11 @@ from rekep.market import (
 )
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
+from rekep.market.fix_arrow import into_flat_market_batches
 from rekep.market.identity import NIL
 from rekep.text import FixMsg
+
+DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
 BASE = (1_787_000_000_000_000_000 // HOUR) * HOUR
@@ -106,6 +112,22 @@ def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None
     assert instrument.symbol == book.code == "BTC-USD"
     assert book.instrument_xhash == instrument.xhash
     assert book.bid_px == 100.0 and book.bid_qty == 2.0
+
+
+def test_book_translation_uses_the_selected_fix_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    seen = []
+
+    def translated(_message, **declared):
+        seen.append(declared.get("registry"))
+        return iter(())
+
+    monkeypatch.setattr(FixMsg, "into_market_events", translated)
+
+    assert list(BookIterator(logs=[FixMsg(etype=EventType.ORDER)], registry=registry)) == []
+    assert seen == [registry]
 
 
 def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
@@ -374,6 +396,322 @@ def test_an_empty_market_arrow_batch_emits_nothing() -> None:
     )
 
     assert list(FixMsg.into_market_arrow_batches(empty)) == []
+
+
+def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
+    def message(offset: int, message_type: str, **given) -> FixMsg:
+        return FixMsg(
+            unix=BASE + offset,
+            unix_source="TransactTime",
+            BeginString="FIX.4.4",
+            MsgType=message_type,
+            Symbol="ETH-USD",
+            mic=MIC.from_str("XPAR"),
+            **given,
+        )
+
+    logs = [
+        message(
+            1,
+            "D",
+            ClOrdID="C-1",
+            Side="1",
+            OrdType="2",
+            OrderQty=10.0,
+            Price=100.0,
+        ),
+        message(2, "F", OrigClOrdID="C-1", ClOrdID="C-2", Side="1", OrderQty=10.0),
+        message(
+            3,
+            "G",
+            OrigClOrdID="C-1",
+            ClOrdID="C-3",
+            Side="1",
+            OrdType="2",
+            OrderQty=12.0,
+            CumQty=2.0,
+            LeavesQty=10.0,
+            Price=99.5,
+        ),
+        message(
+            4,
+            "8",
+            OrderID="O-1",
+            ClOrdID="C-3",
+            ExecID="E-1",
+            Side="1",
+            OrdStatus="1",
+            ExecType="F",
+            OrderQty=12.0,
+            Price=99.5,
+            LastPx=99.25,
+            LastQty=2.0,
+            CumQty=2.0,
+            LeavesQty=10.0,
+            AvgPx=99.25,
+            kwargs=[(1057, "Y"), (9998, "audit")],
+        ),
+        message(
+            5,
+            "AE",
+            ExecID="E-2",
+            ExecType="F",
+            Side="2",
+            LastPx=99.75,
+            LastQty=3.0,
+            kwargs=[(1003, "T-2")],
+        ),
+        message(
+            6,
+            "8",
+            OrderID="O-2",
+            ExecID="E-3",
+            Side="2",
+            OrdStatus="2",
+            ExecType="F",
+            OrderQty=2.0,
+            Price=101.0,
+            LastPx=101.25,
+            LastQty=2.0,
+            CumQty=2.0,
+            LeavesQty=0.0,
+            AvgPx=101.25,
+        ),
+        message(
+            7,
+            "AE",
+            ExecID="E-4",
+            ExecType="G",
+            Side="2",
+            LastPx=99.5,
+            LastQty=2.0,
+            CumQty=5.0,
+            LeavesQty=0.0,
+            AvgPx=99.6,
+            kwargs=[(19, "E-2")],
+        ),
+    ]
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    expected = {Order: [], Execution: []}
+    for message in FixMsg.from_arrow_reader([batch]):
+        for event in message.into_market_events(registry=registry):
+            expected[type(event)].append(event)
+
+    assert into_flat_market_batches(batch, {"registry": registry}) is not None
+    found = {Order: [], Execution: []}
+    for event_type, translated in FixMsg.into_market_arrow_batches(
+        batch, batch_row_size=2, registry=registry
+    ):
+        found[event_type].append(translated)
+
+    for event_type in (Order, Execution):
+        expected_table = pyarrow.Table.from_batches(
+            list(event_type.into_arrow_reader(expected[event_type]))
+        )
+        found_table = pyarrow.Table.from_batches(found[event_type])
+        different = [
+            name
+            for name in found_table.schema.names
+            if not found_table[name].equals(expected_table[name])
+        ]
+        assert not different, {
+            name: (found_table[name].to_pylist(), expected_table[name].to_pylist())
+            for name in different
+        }
+
+
+def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import rekep.market.fix_arrow as fix_arrow
+
+    def message(offset: int, message_type: str, **given) -> FixMsg:
+        return FixMsg(
+            unix=BASE + offset,
+            BeginString="FIX.4.4",
+            MsgType=message_type,
+            Symbol="ETH-USD",
+            mic=MIC.from_str("XPAR"),
+            **given,
+        )
+
+    logs = [
+        message(1, "D", ClOrdID="C-1", Side="1", OrdType="2", OrderQty=10.0),
+        message(2, "W", kwargs=[(268, "0")]),
+        message(3, "AE", ExecID="E-1", ExecType="F", Side="2", LastPx=99.0, LastQty=1.0),
+        message(4, "S", QuoteID="Q-1", BidPx=98.0, OfferPx=100.0),
+        message(
+            5,
+            "8",
+            OrderID="O-1",
+            ClOrdID="C-1",
+            ExecID="E-2",
+            Side="1",
+            OrdStatus="1",
+            ExecType="F",
+            OrderQty=10.0,
+            LastPx=99.5,
+            LastQty=2.0,
+            CumQty=2.0,
+            LeavesQty=8.0,
+            AvgPx=99.5,
+        ),
+        message(6, "0"),
+        message(7, "F", OrigClOrdID="C-1", ClOrdID="C-2", Side="1"),
+    ]
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    expected = {Order: [], Execution: []}
+    for message in FixMsg.from_arrow_reader([batch]):
+        for event in message.into_market_events(registry=registry):
+            if type(event) in expected:
+                expected[type(event)].append(event)
+
+    original = fix_arrow.flat_market_parts
+    activated: list[bool] = []
+
+    def observed(*args, **kwargs):
+        translated = original(*args, **kwargs)
+        activated.append(translated is not None)
+        return translated
+
+    monkeypatch.setattr(fix_arrow, "flat_market_parts", observed)
+    found = {Order: [], Execution: []}
+    for event_type, translated in FixMsg.into_market_arrow_batches(
+        batch, batch_row_size=2, registry=registry
+    ):
+        found[event_type].append(translated)
+
+    assert activated == [False, True]
+    for event_type in (Order, Execution):
+        expected_table = pyarrow.Table.from_batches(
+            list(event_type.into_arrow_reader(expected[event_type]))
+        )
+        found_table = pyarrow.Table.from_batches(found[event_type])
+        assert found_table.equals(expected_table)
+
+
+def test_flat_fix_arrow_uses_custom_handlers_and_states(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    builtin = FixRegistry.from_builtin()
+    msg_type = builtin.entry("MsgType")
+    ord_status = builtin.entry("OrdStatus")
+    exec_type = builtin.entry("ExecType")
+    assert msg_type is not None and ord_status is not None and exec_type is not None
+    configured = {
+        "MsgType": dataclasses.replace(
+            msg_type,
+            handlers={**msg_type.handlers, "Q": "order", "R": "execution_report"},
+            order_states={**msg_type.order_states, "Q": State.PENDING_NEW},
+        ),
+        "OrdStatus": dataclasses.replace(
+            ord_status,
+            states={**ord_status.states, "Z": State.PARTIALLY_FILLED},
+        ),
+        "ExecType": dataclasses.replace(
+            exec_type,
+            states={**exec_type.states, "T": State.FILLED},
+        ),
+    }
+    fields = (
+        "MsgType",
+        "Symbol",
+        "ClOrdID",
+        "Side",
+        "OrdType",
+        "OrderQty",
+        "Price",
+        "OrderID",
+        "ExecID",
+        "OrdStatus",
+        "ExecType",
+        "LastPx",
+        "LastQty",
+        "CumQty",
+        "LeavesQty",
+        "AvgPx",
+    )
+    wire_tags: dict[str, int] = {}
+    for index, name in enumerate(fields):
+        entry = configured.get(name) or builtin.entry(name)
+        assert entry is not None
+        if name != "MsgType":
+            entry = dataclasses.replace(entry, tag=9000 + index)
+        assert entry.tag is not None
+        wire_tags[name] = entry.tag
+        registry.add_field(entry)
+    logs = [
+        FixMsg(
+            unix=BASE + 1,
+            protocol_version="4.4",
+            MsgType="Q",
+            kwargs=[
+                (wire_tags["Symbol"], "AAPL"),
+                (wire_tags["ClOrdID"], "CUSTOM-1"),
+                (wire_tags["Side"], "1"),
+                (wire_tags["OrdType"], "2"),
+                (wire_tags["OrderQty"], "5"),
+                (wire_tags["Price"], "100"),
+            ],
+        ),
+        FixMsg(
+            unix=BASE + 2,
+            protocol_version="4.4",
+            MsgType="R",
+            kwargs=[
+                (wire_tags["Symbol"], "AAPL"),
+                (wire_tags["OrderID"], "ORDER-1"),
+                (wire_tags["ClOrdID"], "CUSTOM-1"),
+                (wire_tags["ExecID"], "EXEC-1"),
+                (wire_tags["Side"], "1"),
+                (wire_tags["OrdType"], "2"),
+                (wire_tags["OrdStatus"], "Z"),
+                (wire_tags["ExecType"], "T"),
+                (wire_tags["OrderQty"], "5"),
+                (wire_tags["Price"], "100"),
+                (wire_tags["LastPx"], "100.25"),
+                (wire_tags["LastQty"], "2"),
+                (wire_tags["CumQty"], "2"),
+                (wire_tags["LeavesQty"], "3"),
+                (wire_tags["AvgPx"], "100.25"),
+            ],
+        ),
+    ]
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    expected = {Order: [], Execution: []}
+    for message in FixMsg.from_arrow_reader([batch]):
+        for event in message.into_market_events(registry=registry):
+            expected[type(event)].append(event)
+
+    assert into_flat_market_batches(batch, {"registry": registry}) is not None
+    found = {Order: [], Execution: []}
+    for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry):
+        found[event_type].append(translated)
+
+    for event_type in (Order, Execution):
+        expected_table = pyarrow.Table.from_batches(
+            list(event_type.into_arrow_reader(expected[event_type]))
+        )
+        found_table = pyarrow.Table.from_batches(found[event_type])
+        different = [
+            name
+            for name in found_table.schema.names
+            if not found_table[name].equals(expected_table[name])
+        ]
+        assert not different, {
+            name: (found_table[name].to_pylist(), expected_table[name].to_pylist())
+            for name in different
+        }
+    assert [order.state for order in expected[Order]] == [
+        State.PENDING_NEW,
+        State.PARTIALLY_FILLED,
+    ]
+    assert expected[Execution][0].state is State.FILLED
+    assert expected[Order][0].codes["cl_ord_id"] == "CUSTOM-1"
 
 
 def test_reference_input_is_read_only_and_books_remain_the_only_output() -> None:

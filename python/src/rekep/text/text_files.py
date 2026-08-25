@@ -20,11 +20,15 @@ from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
 from rekep.text.text_file import (
+    DEFAULT_BATCH_BYTE_SIZE,
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
-    _exclude_plugin_codes,
+    _regexes,
+    _validate_read_sizes,
+    _validate_window,
+    _windowed_batches,
     compiled_header,
     parsed_field_of,
     static_columns_of,
@@ -101,6 +105,18 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: IANA zone the wall clock in the headers belongs to, passed to every file.
     timezone: str | None = None
 
+    #: Registry-owned MsgType values shared by every file in the stream.
+    msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
+
+    #: Registry-owned operational MsgTypes excluded from market parsing.
+    technical_msg_types: frozenset[str] = frozenset()
+
+    #: Registry-owned plugin codes excluded from market parsing.
+    technical_plugin_codes: frozenset[str] = frozenset()
+
+    #: Syntax-only protocol classifier shared by every file in the stream.
+    protocol_rules: Any | None = None
+
     #: Constant columns every row of the capture carries, appended after the
     #: data columns in insertion order -- the same declaration `TextFile` takes,
     #: passed to every file the walk opens, so a set is one shape and not one
@@ -141,7 +157,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         The whole of the common case: `TextFiles.from_folder("/var/log/app")`,
         `TextFiles.from_folder("s3://bucket/logs/2026-08-14")`. Anything else
         the set declares -- `pattern`, `recursive`, `reverse`, `timezone`,
-        `static_values` -- is a keyword here, so a call reads as one shape.
+        `msg_type_event_types`, `static_values` -- is a keyword here, so a call reads
+        as one shape.
         """
         return cls.from_folders([source], filesystem, **declared)
 
@@ -224,7 +241,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
         self,
         schema: Any = None,
         *,
-        exclude_plugins: Sequence[str] = (),
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
         **kwargs: Any,
     ) -> pyarrow.RecordBatchReader:
         """Parse every log in order, cast onto `schema` when one is asked for.
@@ -232,7 +253,14 @@ class TextFiles(Dataset, io.BufferedIOBase):
         With none, the reader is the parser's own -- see `into_arrow_reader`
         for the parsing options, which are passed straight through.
         """
-        reader = self.into_arrow_reader(exclude_plugins=exclude_plugins, **kwargs)
+        reader = self.into_arrow_reader(
+            include_regexes=include_regexes,
+            exclude_regexes=exclude_regexes,
+            start_unix=start_unix,
+            end_unix=end_unix,
+            duration_ns=duration_ns,
+            **kwargs,
+        )
         target = self.target_field(schema)
         if target.arrow_schema.equals(reader.schema):
             return reader
@@ -315,6 +343,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 header_pattern=self.header_pattern,
                 row=self.row,
                 timezone=self.timezone,
+                msg_type_event_types=self.msg_type_event_types,
+                technical_msg_types=self.technical_msg_types,
+                technical_plugin_codes=self.technical_plugin_codes,
+                protocol_rules=self.protocol_rules,
                 static_values=self.static_values,
             )
 
@@ -351,10 +383,24 @@ class TextFiles(Dataset, io.BufferedIOBase):
     # -- converting ---------------------------------------------------------
 
     def into_arrow_reader(
-        self, *, exclude_plugins: Sequence[str] = (), **kwargs: Any
+        self,
+        *,
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
+        **kwargs: Any,
     ) -> pyarrow.RecordBatchReader:
         """Stream the whole set as Arrow record batches, one file open at a time."""
-        batches = self.into_arrow_batches(exclude_plugins=exclude_plugins, **kwargs)
+        batches = self.into_arrow_batches(
+            include_regexes=include_regexes,
+            exclude_regexes=exclude_regexes,
+            start_unix=start_unix,
+            end_unix=end_unix,
+            duration_ns=duration_ns,
+            **kwargs,
+        )
         return pyarrow.RecordBatchReader.from_batches(self.schema, batches)
 
     def into_arrow_table(self, **kwargs: Any) -> pyarrow.Table:
@@ -366,29 +412,80 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
-        exclude_plugins: Sequence[str] = (),
+        *,
+        batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        include_regexes: Sequence[str] = (),
+        exclude_regexes: Sequence[str] = (),
+        start_unix: int | None = None,
+        end_unix: int | None = None,
+        duration_ns: int | None = None,
     ) -> Iterator[pyarrow.RecordBatch]:
-        """Parse every log in order, in batches that do not end at a file."""
+        """Parse every log in order without splitting a shared duration window."""
         self._check_open()
-        exclude_plugins = _exclude_plugin_codes(exclude_plugins)
-        pending: list[pyarrow.RecordBatch] = []
-        rows = 0
+        includes = _regexes("include_regexes", include_regexes)
+        excludes = _regexes("exclude_regexes", exclude_regexes)
+        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
+        _validate_window(start_unix, end_unix, duration_ns)
+        batches = self._filtered_batches(
+            batch_row_size,
+            read_byte_size,
+            batch_byte_size,
+            fold_continuations,
+            includes,
+            excludes,
+            start_unix,
+            end_unix,
+        )
+        batches = _windowed_batches(
+            batches,
+            batch_row_size,
+            batch_byte_size=batch_byte_size,
+            duration_ns=duration_ns,
+            start_unix=start_unix,
+        )
+        return self._release_arrow_batches(batches)
+
+    def _release_arrow_batches(
+        self, batches: Iterator[pyarrow.RecordBatch]
+    ) -> Iterator[pyarrow.RecordBatch]:
+        """Forget a completed stream and close it when its consumer stops."""
+        self._check_open()
+        self.__dict__.setdefault("_arrow_batches", set()).add(batches)
+        try:
+            yield from batches
+        finally:
+            close = getattr(batches, "close", None)
+            if close is not None:
+                close()
+            active = self.__dict__.get("_arrow_batches")
+            if active is not None:
+                active.discard(batches)
+
+    def _filtered_batches(
+        self,
+        batch_row_size: int,
+        read_byte_size: int,
+        batch_byte_size: int,
+        fold_continuations: bool,
+        include_regexes: Sequence[str],
+        exclude_regexes: Sequence[str],
+        start_unix: int | None,
+        end_unix: int | None,
+    ) -> Iterator[pyarrow.RecordBatch]:
+        """Filtered per-file batches, leaving set-wide windowing to the caller."""
         for log in self.into_files():
             with log:
-                batches = log.into_arrow_batches(
+                batches = log._filtered_batches(
                     batch_row_size,
                     read_byte_size,
+                    batch_byte_size,
                     fold_continuations,
-                    exclude_plugins,
+                    include_regexes,
+                    exclude_regexes,
+                    start_unix,
+                    end_unix,
                 )
-                for batch in batches:
-                    pending.append(batch)
-                    rows += batch.num_rows
-                    if rows >= batch_row_size:
-                        yield _one(pending, self.schema)
-                        pending, rows = [], 0
-        if pending:
-            yield _one(pending, self.schema)
+                yield from batches
 
     def into_byte_chunks(
         self,
@@ -486,10 +583,14 @@ class TextFiles(Dataset, io.BufferedIOBase):
     def close(self) -> None:
         """Close the stream if one was ever started, without starting one.
 
-        Closing the generator raises `GeneratorExit` inside it, which leaves
+        Closing either generator raises `GeneratorExit` inside it, which leaves
         the `with` around the file it was reading -- so the open log is closed
         by the same statement that opened it.
         """
+        for batches in self.__dict__.pop("_arrow_batches", ()):
+            close = getattr(batches, "close", None)
+            if close is not None:
+                close()
         chunks = self.__dict__.pop("_byte_chunks", None)
         if chunks is not None:
             chunks.close()
@@ -524,17 +625,6 @@ class _Sink(io.RawIOBase):
         """Everything written since the last drain, and nothing held after it."""
         chunks, self.chunks = self.chunks, []
         return chunks
-
-
-def _one(batches: list[pyarrow.RecordBatch], schema: pyarrow.Schema) -> pyarrow.RecordBatch:
-    """The batches as one, without a Python row ever being touched.
-
-    A single batch is handed back as it is -- the case a set of big logs is
-    made of, and the one where a copy would be pure loss.
-    """
-    if len(batches) == 1:
-        return batches[0]
-    return pyarrow.Table.from_batches(batches, schema).combine_chunks().to_batches()[0]
 
 
 def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...]:

@@ -5,14 +5,15 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.compute
 
-from rekep.convert import Convertible
-from rekep.fields import Field, scalar
+from rekep.fields import Field
 from rekep.fix.registry import FixRegistry
+from rekep.kwargs import KWARGS as KWARGS
+from rekep.kwargs import TAG as TAG
+from rekep.kwargs import Kwarg as Kwarg
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
 # declared a second time in code.
@@ -145,116 +146,6 @@ _STAMP_FIELDS: tuple[str, ...] = (
     "TransactTime",
     "ValidUntilTime",
 )
-
-#: What a resolved key is: the tag number, as the `int32` every other code
-#: column here is.
-TAG: pyarrow.DataType = pyarrow.int32()
-
-# A rendered key is split structurally before a registry gives it meaning.
-NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
-GROUP_ENTRY = r"\[[0-9]+\]$"
-IS_TAG = r"^[0-9]{1,9}$"
-
-
-@scalar(slots=True)
-class FixKwarg(Convertible, Mapping[str, Any]):
-    """One FIX field retained after transcription."""
-
-    tag: Annotated[int, Field(arrow_type=TAG)] = 0
-    """Numeric key written or resolved; zero while unresolved."""
-
-    key: str = ""
-    """Terminal spelling, canonicalized when resolved."""
-
-    value: str = ""
-    """Text at the current transcription level; an empty value is empty text."""
-
-    namespace: str | None = None
-    """Prefix outside an indexed container."""
-
-    comp: str | None = None
-    """Indexed container prefix."""
-
-    @classmethod
-    def from_stored(cls, entry: Any) -> FixKwarg:
-        """Normalize a scalar, mapping, or pair into one argument."""
-        if isinstance(entry, cls):
-            return entry
-        if isinstance(entry, Mapping):
-            value = entry.get("value")
-            spelling = str(entry["key"])
-            numeric = spelling.isascii() and spelling.isdigit() and len(spelling) <= 9
-            stored_tag = entry.get("tag")
-            return cls(
-                tag=int(stored_tag) if stored_tag is not None else int(spelling) if numeric else 0,
-                key=spelling,
-                value="" if value is None else str(value),
-                namespace=entry.get("namespace"),
-                comp=entry.get("comp"),
-            )
-        key, value = entry
-        spelling = str(key)
-        numeric = spelling.isascii() and spelling.isdigit() and len(spelling) <= 9
-        tag = int(spelling) if numeric else 0
-        lead, _, name = spelling.rpartition(".")
-        tail = lead.rsplit(".", 1)[-1]
-        index = tail.rpartition("[")[2].removesuffix("]")
-        inside = bool(lead) and tail.endswith("]") and index.isdigit()
-        return cls(
-            tag=tag,
-            key=name or spelling,
-            value="" if value is None else str(value),
-            namespace=lead if lead and not inside else None,
-            comp=lead if inside else None,
-        )
-
-    def __getitem__(self, name: str) -> Any:
-        if name not in KWARG_PARTS:
-            raise KeyError(name)
-        return getattr(self, name)
-
-    def __iter__(self):
-        return iter(KWARG_PARTS)
-
-    def __len__(self) -> int:
-        return len(KWARG_PARTS)
-
-    @staticmethod
-    def structure_arrow(keys: Any, values: Any) -> tuple[Any, Any, Any, Any, Any]:
-        """Split key spellings into the stable argument members."""
-        compute = pyarrow.compute
-        values = compute.fill_null(values, "")
-        encoded = keys.dictionary_encode()
-        spellings, indices = encoded.dictionary, encoded.indices
-        numeric = compute.fill_null(compute.match_substring_regex(spellings, IS_TAG), False)
-        tags = compute.if_else(numeric, spellings, pyarrow.scalar("0")).cast(TAG)
-        parts = compute.extract_regex(spellings, NAMESPACED_KEY)
-        lead = compute.struct_field(parts, "namespace")
-        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
-        entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
-        nothing = pyarrow.scalar(None, pyarrow.string())
-        return (
-            compute.take(tags, indices),
-            compute.take(compute.fill_null(compute.struct_field(parts, "key"), spellings), indices),
-            values,
-            compute.take(
-                compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing), indices
-            ),
-            compute.take(compute.if_else(compute.and_(led, entry), lead, nothing), indices),
-        )
-
-
-#: One FIX shape before and after registry completion. Transcription supplies
-#: spelling facts; completion fills registry facts and removes promoted fields.
-KWARGS: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field("item", FixKwarg.into_field().arrow_type, nullable=False)
-)
-
-#: The members of one stored field, in the order `KWARGS` declares them. Read
-#: off the type rather than spelled a second time: this list existed twice, in
-#: two modules, and a member added to one and not the other is the shape bug
-#: that costs a whole column.
-KWARG_PARTS: tuple[str, ...] = tuple(member.name for member in KWARGS.value_type)
 
 
 def _physical_type(member: Field) -> pyarrow.DataType:

@@ -19,6 +19,13 @@ class Terminal(io.StringIO):
         return True
 
 
+@pytest.fixture(autouse=True)
+def isolated_colour_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Host colour preferences must not decide these explicit stream tests."""
+    for name in ("NO_COLOR", "FORCE_COLOR", "TERM"):
+        monkeypatch.delenv(name, raising=False)
+
+
 def test_a_pipe_gets_the_same_text_without_the_escapes() -> None:
     """A CLI whose output is unreadable once redirected is one nobody can script."""
     written = io.StringIO()

@@ -16,6 +16,7 @@ import json
 import pyarrow
 import pytest
 
+from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix.entries import (
     ANY_VERSION,
@@ -233,6 +234,51 @@ def test_a_hand_written_translation_survives_a_rebuild() -> None:
     assert entry.translate("achat") == "1"
     assert entry.translate("Buy") == "1", "and the generated ones are still there"
     assert FieldEntry.from_dict(entry.into_dict()).translate("achat") == "1"
+
+
+def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
+    entry = _entry(
+        name="MsgType",
+        tag=35,
+        values={"0": "Heartbeat", "D": "NewOrderSingle"},
+        event_types={"D": EventType.ORDER},
+    )
+
+    restored = FieldEntry.from_dict(entry.into_dict())
+    assert restored.event_types == {"D": EventType.ORDER}
+    assert json.loads(restored.into_merged().fix["event_types"]) == {"D": 110}
+    assert restored.event_type("D") is EventType.ORDER
+    assert restored.event_type("0") is EventType.MISC, "known FIX traffic, but not market data"
+    assert restored.event_type("U1") is EventType.UNKNOWN, "not declared by this registry"
+
+
+def test_market_configuration_round_trips_through_field_metadata() -> None:
+    entry = _entry(
+        name="MsgType",
+        tag=35,
+        event_types={"D": "ORDER"},
+        handlers={"D": "order"},
+        order_states={"D": "PENDING_NEW"},
+        technical_values=("0", "1"),
+        technical_plugins=("jolokia",),
+    )
+
+    restored = FieldEntry.from_dict(entry.into_dict())
+    metadata = restored.into_merged().fix
+
+    assert restored.event_types == {"D": EventType.ORDER}
+    assert restored.order_states == {"D": State.PENDING_NEW}
+    assert restored.handlers == {"D": "order"}
+    assert json.loads(metadata["order_states"]) == {"D": int(State.PENDING_NEW)}
+    assert json.loads(metadata["technical_values"]) == ["0", "1"]
+    assert json.loads(metadata["technical_plugins"]) == ["jolokia"]
+
+
+def test_event_kinds_only_belong_to_msg_type_and_must_name_a_stable_code() -> None:
+    with pytest.raises(ValueError, match="belong to MsgType"):
+        _entry(event_types={"D": EventType.ORDER})
+    with pytest.raises(ValueError, match="unknown EventType"):
+        _entry(name="MsgType", tag=35, event_types={"D": "invented"})  # type: ignore[dict-item]
 
 
 # -- reading a record back ---------------------------------------------------

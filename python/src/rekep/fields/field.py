@@ -8,7 +8,7 @@ import itertools
 import re
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Self
 
 import pyarrow
 
@@ -349,6 +349,10 @@ class Field(Convertible):
             metadata={**self.metadata, **other.metadata},
         )
 
+    def with_name(self, name: str) -> Self:
+        """A copy carrying `name`, without changing this declaration."""
+        return dataclasses.replace(self, name=name)
+
     def merge_with(self, other: Any) -> Field:
         """This field widened with whatever `other` has and it does not."""
         return self.merge_with_arrow_field(Field.from_(other).into_arrow_field())
@@ -439,7 +443,7 @@ class Field(Convertible):
     @classmethod
     def from_field(cls, source: Field, name: str = "") -> Field:
         """A field is already one; `name` renames a copy of it."""
-        return dataclasses.replace(source, name=name) if name else source
+        return source.with_name(name) if name else source
 
     @classmethod
     def from_class(cls, source: Any, name: str = "") -> Field:
@@ -453,7 +457,7 @@ class Field(Convertible):
         declared = getattr(source, "into_field", None)
         built = declared() if callable(declared) else None
         if isinstance(built, Field):
-            return built
+            return built.with_name(name) if name else built
         if isinstance(source, type) and dataclasses.is_dataclass(source):
             return cls.from_dataclass(source, name or None)
         raise TypeError(
@@ -1261,8 +1265,10 @@ def scalar(cls: type | None = None, /, **kwargs: Any) -> Any:
 
 
 @functools.cache
-def _into_class_field(owner: type) -> StructField:
-    """Build a class declaration once, after its module resolved forward references."""
+def _into_class_field(owner: type, name: str | None = None) -> StructField:
+    """Build a class declaration once, optionally with another outer name."""
+    if name is not None:
+        return _into_class_field(owner).with_name(name)
     return Field.from_dataclass(owner)
 
 

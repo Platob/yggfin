@@ -8,7 +8,7 @@ on [Benchmarks](benchmarks.md).
 ![End-to-end execution architecture](assets/workflow-run.svg)
 
 Only `fix.market` continues into market readers. `fix.misc` and
-`fix.unknown` remain complete terminal Iceberg tables.
+`fix.unknown` are terminal routes; a route with no rows need not create a table.
 
 ## Run context
 
@@ -66,16 +66,16 @@ deterministically reconstructed Instrument lifecycle rows.
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
 | `fix.market` | 27 | 7 |
-| `fix.misc` | 1 | 1 |
-| `fix.unknown` | 1 | 1 |
+| `fix.misc` | 2 | 1 |
+| `fix.unknown` | 0 | 0 |
 | `market.instruments` | 16 | 4 |
 | `market.books` | 17 | 5 |
 | `market.orders` | 15 | 4 |
 | `market.executions` | 3 | 1 |
 
-Routing conserved all input: 11 FIX market rows, one `MISC` heartbeat, and one
-`OTHER` row. `parse_fix` added 16 normalized Instrument versions to the same
-market table, including hourly snapshots; only this table continued.
+Routing conserved all input: 11 FIX market rows and two `MISC` rows without a
+MsgType. `parse_fix` added 16 normalized Instrument versions to the same market
+table, including hourly snapshots; only this table continued.
 
 | Contract | State counts | Errors |
 | --- | --- | ---: |
@@ -98,7 +98,7 @@ the short 1.5 s test bound; the normal workflow default is one day.
 | market, `10:30:00.350Z` | `FIX / INSTRUMENT / d` | `US0378331005` | `969=.01`, `561=1`, `107=Apple Inc.` |
 | market, `10:30:00.350Z` | `REKEP / INSTRUMENT / d` | `AAPL` | normalized lifecycle envelope and ordered registry fields |
 | misc, `10:30:00.800Z` | `MISC` | `HealthMonitor` | heartbeat retained verbatim |
-| unknown, `10:30:00.900Z` | `OTHER` | `ExperimentalAdapter` | opaque payload retained verbatim |
+| misc, `10:30:00.900Z` | `MISC` | `ExperimentalAdapter` | opaque payload retained verbatim |
 
 The raw Security Definition remains lossless. `parse_fix` infers 4.4 from its
 `BeginString`, prepares that registry once, versions the Instrument, and stores

@@ -6,11 +6,12 @@ test says which FIX definition it rests on.
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 
 import pytest
 
-from rekep.fix import FixPairs, FixRegistry, fix_field
+from rekep.fix import FixRegistry, fix_field
 from rekep.market import (
     MIC,
     AssetKind,
@@ -25,13 +26,13 @@ from rekep.market import (
 )
 from rekep.market.fix import (
     CARRIED_FIELDS,
-    FIX_STATES,
     TRANSACTED,
     FixEvents,
     MarketTags,
     market_tags,
     unix_of,
 )
+from rekep.text import FixMsg
 
 #: One filled ExecutionReport, spelled the way a log prints one.
 FILLED = (
@@ -636,8 +637,132 @@ def test_standard_state_keeps_the_original_field_specific_codes() -> None:
     assert order.metadata["39"] == fill.metadata["39"] == "1"
     assert order.metadata["150"] == fill.metadata["150"] == "F"
     assert order.metadata["40"] == fill.metadata["40"] == "2"
-    assert FIX_STATES["OrdStatus"]["1"] is State.PARTIALLY_FILLED
-    assert FIX_STATES["MDUpdateAction"]["1"] is State.OPEN
+    registry = FixRegistry.from_builtin()
+    assert registry.state_values("OrdStatus")["1"] is State.PARTIALLY_FILLED
+    assert registry.state_values("MDUpdateAction")["1"] is State.OPEN
+
+
+@pytest.mark.parametrize(
+    "field,expected",
+    [
+        (
+            "OrdStatus",
+            {
+                "0": State.NEW,
+                "1": State.PARTIALLY_FILLED,
+                "2": State.FILLED,
+                "3": State.DONE_FOR_DAY,
+                "4": State.CANCELLED,
+                "5": State.REPLACED,
+                "6": State.PENDING_CANCEL,
+                "7": State.STOPPED,
+                "8": State.REJECTED,
+                "9": State.SUSPENDED,
+                "A": State.PENDING_NEW,
+                "B": State.CALCULATED,
+                "C": State.EXPIRED,
+                "D": State.ACCEPTED,
+                "E": State.PENDING_REPLACE,
+            },
+        ),
+        (
+            "ExecType",
+            {
+                "1": State.FILLED,
+                "2": State.FILLED,
+                "F": State.FILLED,
+                "G": State.REPLACED,
+                "H": State.CANCELLED,
+            },
+        ),
+        (
+            "MDUpdateAction",
+            {
+                "0": State.NEW,
+                "1": State.OPEN,
+                "2": State.CANCELLED,
+                "3": State.CANCELLED,
+                "4": State.CANCELLED,
+                "5": State.OPEN,
+            },
+        ),
+        (
+            "QuoteStatus",
+            {
+                "0": State.ACCEPTED,
+                "1": State.CANCELLED,
+                "2": State.CANCELLED,
+                "3": State.CANCELLED,
+                "4": State.CANCELLED,
+                "5": State.REJECTED,
+                "6": State.CANCELLED,
+                "7": State.EXPIRED,
+                "9": State.REJECTED,
+                "10": State.PENDING,
+                "11": State.CANCELLED,
+                "12": State.OPEN,
+                "13": State.OPEN,
+                "14": State.CANCELLED,
+                "15": State.CANCELLED,
+                "16": State.OPEN,
+                "17": State.CANCELLED,
+                "18": State.OPEN,
+                "19": State.PENDING_CANCEL,
+                "21": State.FILLED,
+                "22": State.FILLED,
+                "23": State.EXPIRED,
+            },
+        ),
+        (
+            "QuoteRespType",
+            {
+                "1": State.FILLED,
+                "2": State.OPEN,
+                "3": State.EXPIRED,
+                "4": State.OPEN,
+                "5": State.CANCELLED,
+                "6": State.CANCELLED,
+                "7": State.CANCELLED,
+                "8": State.CANCELLED,
+                "9": State.OPEN,
+                "10": State.OPEN,
+                "11": State.ACCEPTED,
+                "12": State.CANCELLED,
+            },
+        ),
+    ],
+)
+def test_every_builtin_fix_state_is_registry_configuration(
+    field: str, expected: dict[str, State]
+) -> None:
+    assert FixRegistry.from_builtin().state_values(field) == expected
+
+
+def test_order_state_fallbacks_are_registry_configuration() -> None:
+    registry = FixRegistry.from_builtin()
+
+    assert registry.order_state_values("MsgType") == {
+        "D": State.PENDING_NEW,
+        "F": State.PENDING_CANCEL,
+        "G": State.PENDING_REPLACE,
+        "9": State.UNKNOWN,
+    }
+    assert registry.order_state_values("ExecType") == {
+        "0": State.NEW,
+        "1": State.PARTIALLY_FILLED,
+        "2": State.FILLED,
+        "3": State.DONE_FOR_DAY,
+        "4": State.CANCELLED,
+        "5": State.REPLACED,
+        "6": State.PENDING_CANCEL,
+        "7": State.STOPPED,
+        "8": State.REJECTED,
+        "9": State.SUSPENDED,
+        "A": State.PENDING_NEW,
+        "B": State.CALCULATED,
+        "C": State.EXPIRED,
+        "E": State.PENDING_REPLACE,
+    }
 
 
 def test_standard_kind_keeps_each_many_to_one_order_type_spelling() -> None:
@@ -763,6 +888,21 @@ def test_one_reading_of_a_dictionary_serves_every_message_that_uses_it() -> None
     assert "54" not in order.metadata
 
 
+def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    entry = FixRegistry.from_builtin().entry("OrdStatus")
+    registry.add_field(dataclasses.replace(entry, states={"0": State.NEW}))
+    first = MarketTags.of(registry)
+    first_state = first.states["OrdStatus"]["0"]
+
+    registry.update_field(dataclasses.replace(entry, states={"0": State.CANCELLED}))
+    second = MarketTags.of(registry)
+
+    assert second is not first
+    assert first_state is State.NEW
+    assert second.states["OrdStatus"]["0"] is State.CANCELLED
+
+
 def test_every_carried_tag_comes_from_the_builtin_registry() -> None:
     registry = FixRegistry.from_builtin()
     tags = market_tags()
@@ -783,14 +923,14 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
     """A decoder that only works on complete headers is no use on a log."""
     (order,) = list(
         FixEvents(
-            message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]),
+            message=FixMsg.from_pairs([("11", "CL-1"), ("54", "1")]),
             fix_version="4.4",
         )
     )
     assert isinstance(order, Order)
     reported = list(
         FixEvents(
-            message=FixPairs.from_pairs([("17", "EX-1"), ("150", "F")]),
+            message=FixMsg.from_pairs([("17", "EX-1"), ("150", "F")]),
             fix_version="4.4",
         )
     )
@@ -800,7 +940,7 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
 
 
 def test_a_fragment_with_no_version_remains_raw() -> None:
-    reader = FixEvents(message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]))
+    reader = FixEvents(message=FixMsg.from_pairs([("11", "CL-1"), ("54", "1")]))
     assert reader.version is None
     assert list(reader) == []
     assert list(reader.into_instruments()) == []

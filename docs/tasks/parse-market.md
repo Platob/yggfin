@@ -9,9 +9,10 @@ executions.
 With `books: false`, it does not construct or write Books.
 `FixMsg.into_market_arrow_batches()` adapts the input stream into bounded,
 typed Order and Execution batches for `order_target` and `execution_target`.
-The Arrow boundary is bounded adaptation rather than a second FIX translator:
-the scalar `FixEvents` reader still owns repeating groups, normalization, and
-event identity. Either direct target may be null, but at least one is required.
+Flat messages use the selected FIX dictionary's dispatch, field tags, and
+lifecycle mappings through Arrow kernels. Repeating groups and uncommon or
+custom shapes fall back to the same scalar translator without changing output.
+Either direct target may be null, but at least one is required.
 Direct rows are exactly the events carried by FIX: the mode does not create
 book snapshots, book-generated expiry or rejection rows, lifecycle completion
 from resting state, or a carrying `Book.hash` parent.
@@ -33,9 +34,10 @@ reasons belong to the shared event and book models rather than the notebook.
 Direct mode skips normalized Instrument rows and keeps the instrument facts
 carried by each translated FIX message.
 
-The adjacent `parse_market.yml` sets the mode and all three targets, plus
-snapshot cadence, lateness, live-order age, side bound, catalog, and commit
-size. Switching only `books` to `false` selects the configured direct targets.
+The adjacent `parse_market.yml` sets the FIX dictionary, mode, all three
+targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
+commit size. The same dictionary controls both direct and book translation.
+Switching only `books` to `false` selects the configured direct targets.
 
 The result's `read` mapping reports every attempted Book, Order, and Execution.
 In book mode the Order and Execution counts come from the selected Books'

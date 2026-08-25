@@ -5,7 +5,8 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
-from rekep.fix import FixPairs, FixRegistry
+from rekep import FixMsg
+from rekep.fix import FixRegistry
 from rekep.fix.access import Entry, FieldAccess
 from rekep.fix.transcribe import FixCodec
 
@@ -69,7 +70,7 @@ def test_a_group_entry_answers_a_bare_name_and_its_own_path(access: FieldAccess)
 
 def test_a_repeated_tag_reads_every_value_in_wire_order(access: FieldAccess) -> None:
     """`readings` is what a repeating tag is: order is the identity."""
-    message = FixPairs.from_text("8=FIX.4.4|453=2|448=ONE|448=TWO|448=THREE|10=000")
+    message = FixMsg.from_text("8=FIX.4.4|453=2|448=ONE|448=TWO|448=THREE|10=000")
     assert [found.raw for found in access.readings(message.pairs, 448)] == ["ONE", "TWO", "THREE"]
 
 
@@ -188,7 +189,7 @@ def test_pairs_and_stored_entries_read_alike(registry: FixRegistry) -> None:
     stored = codec.into_kwargs(
         codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
     ).to_pylist()[0]
-    pairs = FixPairs.from_text(RENDERED).pairs
+    pairs = FixMsg.from_text(RENDERED).pairs
     access = FieldAccess.of(registry, "4.4")
     for named in (54, "Side", "OrderQty", "NoPartyIDs[0].PartyID", "TECH.CLIENTID"):
         assert access.reading(stored, named).raw == access.reading(pairs, named).raw, named
@@ -198,20 +199,20 @@ def test_pairs_and_stored_entries_read_alike(registry: FixRegistry) -> None:
 
 
 def test_the_wire_model_reads_through_the_same_accessor() -> None:
-    """`FixPairs.get` is the accessor with no dictionary, not a second reading.
+    """`FixMsg.get` is the accessor with no dictionary, not a second reading.
 
     No dictionary, so a name resolves by spelling alone: a rendered message
     answers `Side` and a wire one answers `54`, and neither invents the
     other's spelling. What the shared rules still give it is the rest -- case,
     an entry index, and the group a member sits in.
     """
-    rendered = FixPairs.from_text(RENDERED)
-    assert rendered.get("Side") == "1"
-    assert rendered.get("side") == "1"
-    assert rendered.get("PartyID") == "ABC"
-    assert rendered.get("NoPartyIDs[0].PartyID") == "ABC"
-    assert rendered.values("PartyID") == ["ABC"]
-    assert FixPairs.from_text(WIRE).get(54) == "1"
+    rendered = FixMsg.from_text(RENDERED)
+    assert rendered.get("Side").raw == "1"
+    assert rendered.get("side").raw == "1"
+    assert rendered.get("PartyID").raw == "ABC"
+    assert rendered.get("NoPartyIDs[0].PartyID").raw == "ABC"
+    assert [reading.raw for reading in rendered.readings("PartyID")] == ["ABC"]
+    assert FixMsg.from_text(WIRE).get(54).raw == "1"
 
 
 def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None:

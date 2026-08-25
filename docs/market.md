@@ -12,10 +12,10 @@ currency, and their previous values. Protocol spelling stays in metadata while
 the stored fields use common semantics.
 
 ```python
-from rekep.market.fix import FixEvents
+from rekep import FixMsg
 
 # One wire line, as the events it carries.
-for event in FixEvents.from_text(line, fix_version="4.4"):
+for event in FixMsg.from_text(line).into_market_events(fix_version="4.4"):
     print(type(event).__name__, event.state.name, event.unix, event.xhash)
 ```
 

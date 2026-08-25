@@ -23,7 +23,7 @@ import pyarrow.compute
 
 from rekep.fields.arrays import sequence
 from rekep.fix.entries import FieldEntry, fold, translation_key
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import cast_arrow_fix, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import TagIndex
 
@@ -84,7 +84,9 @@ class Entry:
         if match is None:
             return cls(name=text, value=value)
         lead, name, index = match.group("lead", "name", "index")
+        numeric = bool(name) and name.isascii() and name.isdigit() and len(name) <= 9
         return cls(
+            tag=int(name) if numeric else 0,
             name=name or text,
             index=None if index is None else int(index),
             lead=lead,
@@ -388,6 +390,29 @@ class FieldAccess:
         return built
 
     # -- the typed half -------------------------------------------------------
+
+    @cached_property
+    def _temporal_fields(self) -> dict[int | str, pyarrow.DataType | None]:
+        return {}
+
+    def canonical_value(self, field: int | str, raw: Any) -> Any:
+        """Normalize temporal text whose original precision storage cannot retain."""
+        if not isinstance(raw, str):
+            return raw
+        temporal = self._temporal_fields.get(field, _MISSING)
+        if temporal is _MISSING:
+            record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
+            arrow_type = None if record is None else self._arrow_type(record)
+            temporal = (
+                arrow_type
+                if arrow_type is not None and pyarrow.types.is_temporal(arrow_type)
+                else None
+            )
+            self._temporal_fields[field] = temporal
+        if temporal is None:
+            return raw
+        typed = scalar_fix_temporal(raw, temporal)
+        return typed if typed is not None else raw
 
     def typed(self, field: int | str, raw: Any) -> Any:
         """`raw` as the dictionary reads it: translated, then cast to type.

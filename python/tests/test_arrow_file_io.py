@@ -13,8 +13,8 @@ import pyarrow.fs
 import pytest
 from pyiceberg.io.pyarrow import PyArrowFile
 
-from rekep.iceberg import fileio
-from rekep.iceberg.fileio import (
+import rekep.arrow_file_io as arrow_file_io
+from rekep.arrow_file_io import (
     CONTENT_CACHE,
     DEFAULT_CACHE_BYTES,
     ArrowFileIO,
@@ -26,12 +26,12 @@ from rekep.iceberg.fileio import (
 
 @pytest.fixture
 def windows(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(fileio, "_WINDOWS", True)
+    monkeypatch.setattr(arrow_file_io, "_WINDOWS", True)
 
 
 @pytest.fixture
 def posix(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(fileio, "_WINDOWS", False)
+    monkeypatch.setattr(arrow_file_io, "_WINDOWS", False)
 
 
 def test_a_file_uri_with_a_drive_sheds_the_leading_slash(windows: None) -> None:
@@ -211,6 +211,54 @@ def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
     assert settings["access_key"] == "key"
 
 
+# -- staged uploads ---------------------------------------------------------
+
+
+@pytest.mark.parametrize("scheme", ("s3", "s3a"))
+def test_a_local_stage_copies_to_the_configured_s3_path(tmp_path: Path, scheme: str) -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("bucket/table/data", recursive=True)
+    source = tmp_path / "stage.parquet"
+    source.write_bytes(b"parquet bytes")
+    requested: list[tuple[str, str]] = []
+    io = ArrowFileIO()
+
+    def filesystem(found_scheme: str, netloc: str) -> pyarrow.fs.FileSystem:
+        requested.append((found_scheme, netloc))
+        return store
+
+    io.fs_by_scheme = filesystem
+    target = f"{scheme}://bucket/table/data/part.parquet"
+
+    assert io.copy_from_local(source, target) == target
+    with store.open_input_file("bucket/table/data/part.parquet") as copied:
+        assert copied.read() == b"parquet bytes"
+    assert requested == [(scheme, "bucket")]
+
+
+def test_a_failed_local_stage_copy_removes_the_partial_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("bucket/data", recursive=True)
+    source = tmp_path / "stage.parquet"
+    source.write_bytes(b"complete")
+    io = ArrowFileIO()
+    io.fs_by_scheme = lambda *_: store
+    original = pyarrow.fs.copy_files
+
+    def broken(*args: object, **kwargs: object) -> None:
+        with store.open_output_stream("bucket/data/part.parquet") as output:
+            output.write(b"half")
+        raise OSError("upload stopped")
+
+    monkeypatch.setattr(pyarrow.fs, "copy_files", broken)
+    with pytest.raises(OSError, match="upload stopped"):
+        io.copy_from_local(source, "s3://bucket/data/part.parquet")
+    assert store.get_file_info("bucket/data/part.parquet").type == pyarrow.fs.FileType.NotFound
+    monkeypatch.setattr(pyarrow.fs, "copy_files", original)
+
+
 # -- remote spills ----------------------------------------------------------
 
 
@@ -379,15 +427,17 @@ def opens(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
 
 def test_only_what_iceberg_never_rewrites_is_cacheable() -> None:
     version = "00001-2f1a4c6e-8b3d-4a5f-9c7e-1d2b3a4c5d6e.metadata.json"
-    assert fileio._immutable("wh/metadata/snap-1-abc.avro"), "a manifest list"
-    assert fileio._immutable("wh/metadata/abc-m0.avro"), "a manifest"
-    assert fileio._immutable(f"wh/metadata/{version}"), "a metadata version Iceberg minted"
-    assert fileio._immutable(f"C:\\wh\\metadata\\{version}"), "however the path is spelled"
-    assert not fileio._immutable("wh/metadata/version-hint.text"), "the one mutable file"
-    assert not fileio._immutable("wh/metadata/v3.metadata.json"), (
+    assert arrow_file_io._immutable("wh/metadata/snap-1-abc.avro"), "a manifest list"
+    assert arrow_file_io._immutable("wh/metadata/abc-m0.avro"), "a manifest"
+    assert arrow_file_io._immutable(f"wh/metadata/{version}"), "a metadata version Iceberg minted"
+    assert arrow_file_io._immutable(f"C:\\wh\\metadata\\{version}"), "however the path is spelled"
+    assert not arrow_file_io._immutable("wh/metadata/version-hint.text"), "the one mutable file"
+    assert not arrow_file_io._immutable("wh/metadata/v3.metadata.json"), (
         "no UUID, so two racing writers can both produce it with different bytes"
     )
-    assert not fileio._immutable("wh/data/day=1/abc.parquet"), "data is read once, not repeatedly"
+    assert not arrow_file_io._immutable("wh/data/day=1/abc.parquet"), (
+        "data is read once, not repeatedly"
+    )
 
 
 def test_the_cache_holds_bounded_bytes_and_forgets_the_coldest_first() -> None:
@@ -408,6 +458,17 @@ def test_a_file_past_the_per_file_cap_is_never_held() -> None:
     cache = ContentCache(limit=80)
     cache.put("big", b"x" * 11)  # over limit // 8, would evict everything else
     assert cache.get("big") is None
+
+
+def test_an_oversized_immutable_input_streams_without_an_eager_copy(tmp_path: Path) -> None:
+    location = (tmp_path / "large.avro").as_posix()
+    (tmp_path / "large.avro").write_bytes(b"x" * 200)
+    io = ArrowFileIO({"rekep.io.cache-bytes": "1024"})
+
+    with io.new_input(location).open() as stream:
+        assert not isinstance(stream, pyarrow.BufferReader)
+        assert stream.read(1) == b"x"
+    assert CONTENT_CACHE.peek(location) is None
 
 
 def test_a_written_manifest_reads_back_without_the_store(tmp_path: Path) -> None:

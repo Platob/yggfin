@@ -370,6 +370,28 @@ def test_a_copy_is_where_a_walk_branches() -> None:
     assert child.query is not root.query
 
 
+@pytest.mark.parametrize("location", ["data/fix", "file:data/fix", "local:data/fix"])
+def test_resolve_roots_a_relative_local_location(location: str, tmp_path: Path) -> None:
+    assert Url.from_string(location).resolve(tmp_path) == (tmp_path / "data/fix").as_posix()
+
+
+def test_resolve_keeps_an_absolute_local_location(tmp_path: Path) -> None:
+    location = (tmp_path / "data/fix").as_posix()
+    assert Url.from_string(location).resolve(tmp_path / "other") == location
+
+
+def test_resolve_uses_the_root_for_an_empty_local_location(tmp_path: Path) -> None:
+    assert Url().resolve(tmp_path) == tmp_path.as_posix()
+
+
+def test_resolve_leaves_a_remote_location_remote(tmp_path: Path) -> None:
+    url = Url.from_string("s3://bucket/data/fix?region=eu-west-1")
+    before = url.copy()
+
+    assert url.resolve(tmp_path) == url.into_string()
+    assert url == before
+
+
 # -- the filesystem it names -------------------------------------------------
 
 

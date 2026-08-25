@@ -13,7 +13,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import scalar
-from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE
+from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, WIRE_MSG_TYPE
 
 #: Read wire tags, rendered names, or no message.
 CODECS: tuple[str, ...] = ("fix", "ul", "none")
@@ -88,7 +88,7 @@ class Rule(Convertible):
 
 
 #: Use parser-owned patterns so classification and parsing cannot drift.
-FIX = Rule(protocol="FIX", pattern=BEGIN_STRING, codec="fix")
+FIX = Rule(protocol="FIX", pattern=BEGIN_STRING, patterns=[WIRE_MSG_TYPE], codec="fix")
 
 UL = Rule(protocol="UL", pattern=BRIDGE, codec="ul")
 
@@ -154,8 +154,10 @@ class Rules(Convertible):
 
     def category_of(self, protocol: str | None, etype: int | EventType | None) -> str:
         """Target category for one parsed row."""
-        if etype is not None and int(etype) != int(EventType.UNKNOWN):
+        if etype is not None and int(etype) >= int(EventType.INTENT):
             return MARKET_CATEGORY
+        if etype is not None and int(etype) == int(EventType.MISC):
+            return MISC_CATEGORY
         if protocol in self.protocols:
             return MISC_CATEGORY
         return UNKNOWN_CATEGORY
@@ -191,7 +193,7 @@ class Rules(Convertible):
             return pyarrow.array([], pyarrow.string())
 
         event_codes = compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0)
-        market = compute.not_equal(event_codes, int(EventType.UNKNOWN))
+        market = compute.greater_equal(event_codes, int(EventType.INTENT))
         known = compute.fill_null(
             compute.is_in(
                 protocols.cast(pyarrow.string(), safe=False),
@@ -199,6 +201,7 @@ class Rules(Convertible):
             ),
             False,
         )
+        known = compute.or_(known, compute.equal(event_codes, int(EventType.MISC)))
         non_market = compute.if_else(
             known,
             pyarrow.scalar(MISC_CATEGORY),

@@ -44,12 +44,15 @@ def notebook_task(task_id: str, document: str) -> PapermillOperator:
     """Build one operator from an adjacent YAML/notebook pair."""
     path = ROOT / document
     configured = Task.from_yaml(path)
-    parameters = {
-        **rooted_parameters(configured.parameters),
-        "branch": "{{ params.branch }}",
-        "start": "{{ data_interval_start.isoformat() }}",
-        "end": "{{ data_interval_end.isoformat() }}",
-    }
+    parameters = rooted_parameters(configured.parameters)
+    if "branch" in parameters:
+        parameters["branch"] = "{{ params.branch }}"
+    if "books" in parameters:
+        parameters["books"] = "{{ params.books }}"
+    if "start" in parameters:
+        parameters["start"] = "{{ data_interval_start.isoformat() }}"
+    if "end" in parameters:
+        parameters["end"] = "{{ data_interval_end.isoformat() }}"
     return PapermillOperator(
         task_id=task_id,
         input_nb=str(configured.into_notebook_path(path)),
@@ -91,11 +94,17 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
     start_date=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
     catchup=True,
     max_active_runs=1,
-    params={"branch": Param("root", type="string", minLength=1)},
+    render_template_as_native_obj=True,
+    params={
+        "branch": Param("root", type="string", minLength=1),
+        "books": Param(True, type="boolean"),
+    },
     tags=["rekep", "arrow", "iceberg", "market", "notebook"],
 )
 def market_pipeline() -> None:
-    messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
+    messages = notebook_task(
+        "parse_messages", "tasks/parse_messages/parse_messages.yml"
+    )
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
     instruments = notebook_task(
         "flatten_instruments", "tasks/flatten_instruments/flatten_instruments.yml"
@@ -131,3 +140,24 @@ def market_pipeline() -> None:
 
 
 market_pipeline()
+
+
+@dag(
+    dag_id="rekep_iceberg_maintenance",
+    description="Compact Iceberg tables and clean expired history and orphan files.",
+    schedule="30 2 * * *",
+    start_date=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
+    catchup=False,
+    max_active_runs=1,
+    default_args={
+        "retries": 2,
+        "retry_delay": datetime.timedelta(minutes=10),
+    },
+    params={"branch": Param("root", type="string", minLength=1)},
+    tags=["rekep", "iceberg", "maintenance", "notebook"],
+)
+def iceberg_maintenance() -> None:
+    notebook_task("optimize_iceberg", "tasks/optimize_iceberg/optimize_iceberg.yml")
+
+
+iceberg_maintenance()

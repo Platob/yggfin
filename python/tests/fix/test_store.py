@@ -27,6 +27,7 @@ import pyarrow
 import pytest
 
 import rekep
+from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix import registry as registry_module
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
@@ -308,6 +309,75 @@ def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None
     assert store.remove_field("FAKE.VENDOR.CODE")
     assert store.resolve("FAKE.VENDOR.CODE") is None
     assert not store.remove_field("FAKE.VENDOR.CODE"), "and says so the second time"
+
+
+def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> None:
+    entry = FieldEntry(
+        name="MsgType",
+        tag=35,
+        versions=("9.1",),
+        type="String",
+        values={"0": "Heartbeat", "D": "NewOrderSingle"},
+    )
+    store.add_field(entry)
+    before = store.msg_type_event_types()
+    store.update_field(dataclasses.replace(entry, event_types={"D": EventType.ORDER}))
+
+    assert before == {"0": EventType.MISC, "D": EventType.MISC}
+    assert store.msg_type_event_types() == {"0": EventType.MISC, "D": EventType.ORDER}
+
+    reopened = Offline(cache_dir=store.cache_dir, offline=True)
+    assert reopened.msg_type_event_types() == {
+        "0": EventType.MISC,
+        "D": EventType.ORDER,
+    }
+    document = json.loads((Path(store.cache_dir) / shard_name(35)).read_text())
+    assert document["35"]["event_types"] == {"D": int(EventType.ORDER)}
+
+
+def test_market_dispatch_states_and_technical_skips_are_cached_store_data(
+    store: Offline,
+) -> None:
+    msg_type = FieldEntry(
+        name="MsgType",
+        tag=35,
+        versions=("9.1",),
+        type="String",
+        values={"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
+        event_types={"D": "ORDER"},
+        handlers={"D": "order"},
+        order_states={"D": "PENDING_NEW"},
+        technical_values=("0", "1"),
+        technical_plugins=("jolokia",),
+    )
+    status = FieldEntry(
+        name="OrdStatus",
+        tag=39,
+        versions=("9.1",),
+        type="char",
+        states={"0": "NEW", "1": int(State.PARTIALLY_FILLED)},
+    )
+    store.add_field(msg_type)
+    store.add_field(status)
+
+    cached = store.state_values("OrdStatus")
+    assert cached == {"0": State.NEW, "1": State.PARTIALLY_FILLED}
+    assert store.state_values("OrdStatus") is cached
+    assert store.order_state_values("MsgType") == {"D": State.PENDING_NEW}
+    assert store.msg_type_handlers() == {"D": "order"}
+    assert store.technical_msg_types() == {"0", "1"}
+    assert store.technical_plugin_codes() == {"jolokia"}
+
+    store.update_field(dataclasses.replace(status, states={"0": State.ACCEPTED}))
+    assert store.state_values("OrdStatus") == {"0": State.ACCEPTED}
+    assert store.state_values("OrdStatus") is not cached
+
+    reopened = Offline(cache_dir=store.cache_dir, offline=True)
+    assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
+    assert reopened.order_state_values("MsgType") == {"D": State.PENDING_NEW}
+    assert reopened.msg_type_handlers() == {"D": "order"}
+    assert reopened.technical_msg_types() == {"0", "1"}
+    assert reopened.technical_plugin_codes() == {"jolokia"}
 
 
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(

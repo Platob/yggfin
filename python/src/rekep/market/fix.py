@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-import json
 import types
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any, TypeVar
@@ -29,7 +28,7 @@ from rekep.fix.access import FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS
 from rekep.fix.entries import translation_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
-from rekep.fix.message import FixPairs
+from rekep.fix.message import group_pairs, indexed_group_pairs, render_fix_value
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -42,6 +41,7 @@ from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
+from rekep.text.fixmsg import FixMsg
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -125,24 +125,6 @@ _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
     }
 )
 
-#: MsgType <35> values that carry an order, and the state each *asserts* when
-#: the message itself does not say. A request is not an acknowledgement: a
-#: NewOrderSingle is what a participant asked for, and the venue has not
-#: agreed to anything yet, so it is `PENDING_NEW` rather than `NEW`.
-ORDERED: dict[str, State] = {
-    "D": State.PENDING_NEW,
-    "F": State.PENDING_CANCEL,
-    "G": State.PENDING_REPLACE,
-    "9": State.UNKNOWN,
-}
-
-#: MsgType <35> values that carry a book or a trade, entry by entry.
-ENTRIED = frozenset({"W", "X"})
-
-#: Quote messages. A quote is emitted as one indicative order per populated
-#: side, so the same book fold accepts orders, depth and quotes.
-QUOTED = frozenset({"S", "AI", "AJ", "Z"})
-
 #: MDEntryType <269> to the side of the book an entry belongs to. Everything
 #: else it enumerates -- an index value, a settlement price, a session high,
 #: an imbalance -- is a statistic about the market rather than an order in it,
@@ -189,126 +171,13 @@ INSTRUMENT_MESSAGE_FIELDS: frozenset[str] = INSTRUMENT_FIELDS | frozenset(
     }
 )
 
-#: What kind of event each MsgType <35> is about to become. Read before an
-#: event exists, because it is what ranks the regulatory stamps that decide
-#: the event's own `unix` -- so it cannot be asked of the built event.
-MESSAGE_EVENTS: Mapping[str, EventType] = types.MappingProxyType(
-    {
-        **{kind: EventType.BOOK for kind in ENTRIED},
-        **{kind: EventType.QUOTE for kind in QUOTED},
-        "i": EventType.QUOTE,
-        "8": EventType.EXECUTION,
-        "AE": EventType.EXECUTION,
-        **{kind: EventType.ORDER for kind in ORDERED},
-    }
-)
-
 #: The MDEntryType <269> that is a trade rather than a resting interest.
 ENTRY_TRADE = "2"
 
-#: FIX characters are field-specific: `1` is partially filled in OrdStatus
-#: and a changed level in MDUpdateAction. Standardise them here and keep the
-#: raw pair in event metadata.
-FIX_STATES: dict[str, dict[str, State]] = {
-    "OrdStatus": {
-        "0": State.NEW,
-        "1": State.PARTIALLY_FILLED,
-        "2": State.FILLED,
-        "3": State.DONE_FOR_DAY,
-        "4": State.CANCELLED,
-        "5": State.REPLACED,
-        "6": State.PENDING_CANCEL,
-        "7": State.STOPPED,
-        "8": State.REJECTED,
-        "9": State.SUSPENDED,
-        "A": State.PENDING_NEW,
-        "B": State.CALCULATED,
-        "C": State.EXPIRED,
-        "D": State.ACCEPTED,
-        "E": State.PENDING_REPLACE,
-    },
-    # Only trade-bearing ExecType values create an Execution row. OrdStatus
-    # carries the order lifecycle in the same message.
-    "ExecType": {
-        "1": State.FILLED,
-        "2": State.FILLED,
-        "F": State.FILLED,
-        "G": State.REPLACED,
-        "H": State.CANCELLED,
-    },
-    "MDUpdateAction": {
-        "0": State.NEW,
-        "1": State.OPEN,
-        "2": State.CANCELLED,
-        "3": State.CANCELLED,
-        "4": State.CANCELLED,
-        "5": State.OPEN,
-    },
-    "QuoteStatus": {
-        "0": State.ACCEPTED,
-        "1": State.CANCELLED,
-        "2": State.CANCELLED,
-        "3": State.CANCELLED,
-        "4": State.CANCELLED,
-        "5": State.REJECTED,
-        "6": State.CANCELLED,
-        "7": State.EXPIRED,
-        "9": State.REJECTED,
-        "10": State.PENDING,
-        "11": State.CANCELLED,
-        "12": State.OPEN,
-        "13": State.OPEN,
-        "14": State.CANCELLED,
-        "15": State.CANCELLED,
-        "16": State.OPEN,
-        "17": State.CANCELLED,
-        "18": State.OPEN,
-        "19": State.PENDING_CANCEL,
-        "21": State.FILLED,
-        "22": State.FILLED,
-        "23": State.EXPIRED,
-    },
-    "QuoteRespType": {
-        "1": State.FILLED,
-        "2": State.OPEN,
-        "3": State.EXPIRED,
-        "4": State.OPEN,
-        "5": State.CANCELLED,
-        "6": State.CANCELLED,
-        "7": State.CANCELLED,
-        "8": State.CANCELLED,
-        "9": State.OPEN,
-        "10": State.OPEN,
-        "11": State.ACCEPTED,
-        "12": State.CANCELLED,
-    },
-}
-
-# ExecType describes the report when OrdStatus is absent. Trade corrections
-# and cancellations (G/H) describe an Execution lifecycle, not the Order, and
-# therefore cannot safely stand in for the missing order status.
-EXEC_ORDER_STATES: Mapping[str, State] = types.MappingProxyType(
-    {
-        "0": State.NEW,
-        "1": State.PARTIALLY_FILLED,
-        "2": State.FILLED,
-        "3": State.DONE_FOR_DAY,
-        "4": State.CANCELLED,
-        "5": State.REPLACED,
-        "6": State.PENDING_CANCEL,
-        "7": State.STOPPED,
-        "8": State.REJECTED,
-        "9": State.SUSPENDED,
-        "A": State.PENDING_NEW,
-        "B": State.CALCULATED,
-        "C": State.EXPIRED,
-        "E": State.PENDING_REPLACE,
-    }
-)
-
 # Standardisation is intentionally many-to-one for order kinds and lifecycle
 # states. Keep the wire spelling beside the standard code for an audit.
-RAW_METADATA_FIELDS = frozenset(FIX_STATES) | {
+_STATE_FIELDS = ("OrdStatus", "ExecType", "MDUpdateAction", "QuoteStatus", "QuoteRespType")
+RAW_METADATA_FIELDS = frozenset(_STATE_FIELDS) | {
     "OrdType",
     "CxlQty",
     "ExpireTime",
@@ -350,10 +219,16 @@ class MarketTags:
     version: str | None = None
 
     @classmethod
-    @functools.lru_cache(maxsize=64)
     def of(cls, registry: FixRegistry | None = None, version: str | None = None) -> MarketTags:
         """One shared reading per `(registry, version)`, memos and all."""
-        return cls(FieldAccess.of(registry or FixRegistry.from_builtin(), version), version)
+        selected = registry if registry is not None else FixRegistry.from_builtin()
+        return cls._of(selected, version, selected.revision)
+
+    @classmethod
+    @functools.lru_cache(maxsize=64)
+    def _of(cls, registry: FixRegistry, version: str | None, _revision: int) -> MarketTags:
+        """One reading fixed to a registry generation."""
+        return cls(FieldAccess(registry, version), version)
 
     @classmethod
     @functools.cache
@@ -395,6 +270,37 @@ class MarketTags:
             found.setdefault(name, tag)
         return types.MappingProxyType(found)
 
+    @property
+    def registry(self) -> FixRegistry:
+        """Registry owning this cached market reading."""
+        return self.access.registry or FixRegistry.from_builtin()
+
+    @functools.cached_property
+    def states(self) -> Mapping[str, Mapping[str, State]]:
+        """Field-specific state maps fixed for this registry reading."""
+        return types.MappingProxyType(
+            {name: _registry_values(self.registry, "state_values", name) for name in _STATE_FIELDS}
+        )
+
+    @functools.cached_property
+    def ordered(self) -> Mapping[str, State]:
+        """Order-bearing MsgTypes and the request state each asserts."""
+        return _registry_values(self.registry, "order_state_values", "MsgType")
+
+    @functools.cached_property
+    def exec_order_states(self) -> Mapping[str, State]:
+        """ExecType fallbacks used only when OrdStatus is absent."""
+        return _registry_values(self.registry, "order_state_values", "ExecType")
+
+    @functools.cached_property
+    def handlers(self) -> Mapping[str, str]:
+        """Supported MsgTypes to their configured translation handler."""
+        builtin = FixRegistry.from_builtin().msg_type_handlers()
+        configured = self.registry.msg_type_handlers()
+        if self.registry is FixRegistry.from_builtin() or not configured:
+            return builtin
+        return types.MappingProxyType({**builtin, **configured})
+
     @functools.cached_property
     def names_by_tag(self) -> Mapping[str, str]:
         """Back from the selected wire tag to the standard name that earned it."""
@@ -402,6 +308,12 @@ class MarketTags:
         return types.MappingProxyType(
             {tag: name for name in self.standard() if (tag := tag_text(name)) != name}
         )
+
+    @functools.cached_property
+    def lookup_tags(self) -> Mapping[str, str]:
+        """Canonical market field names to their resolved wire keys."""
+        tag_text = self.access.tag_text
+        return types.MappingProxyType({name: tag_text(name) for name in self.tags})
 
     @functools.cached_property
     def claimed(self) -> frozenset[str]:
@@ -428,9 +340,24 @@ def market_tags(
     return MarketTags.of(registry, version).tags
 
 
+def _registry_values(registry: FixRegistry, method: str, field: str) -> Mapping[str, State]:
+    """Builtin lifecycle configuration with one registry's explicit overrides."""
+    builtin = FixRegistry.from_builtin()
+    defaults = getattr(builtin, method)(field)
+    configured = getattr(registry, method)(field)
+    if registry is builtin or not configured:
+        return defaults
+    return types.MappingProxyType({**defaults, **configured})
+
+
 #: What a probe of a message's fields answers for a key it does not carry --
 #: distinct from a key it carries as null, which is a value.
 _ABSENT = object()
+
+
+def _empty_fixmsg() -> FixMsg:
+    """An empty parsed message for the translator default."""
+    return FixMsg()
 
 
 @dataclasses.dataclass
@@ -443,8 +370,8 @@ class FixEvents(Convertible):
         """Conversions inferred for a FIX event translator."""
         return types.MappingProxyType({**super().into_redirects(), str: "text"})
 
-    message: FixPairs = dataclasses.field(default_factory=FixPairs)
-    """The message being read."""
+    message: FixMsg = dataclasses.field(default_factory=_empty_fixmsg)
+    """The parsed message being translated."""
 
     venue: str | None = None
     """Which feed this came off, when the reader knows and the message does not."""
@@ -461,12 +388,17 @@ class FixEvents(Convertible):
     fix_version: str | None = None
     """Registry version; otherwise inferred from BeginString when possible."""
 
+    def __post_init__(self) -> None:
+        """Require the parsed message that owns FIX-to-market conversion."""
+        if not isinstance(self.message, FixMsg):
+            raise TypeError(f"message must be FixMsg, got {type(self.message).__name__}")
+
     # -- building -----------------------------------------------------------
 
     @classmethod
     def from_text(cls, text: str | bytes, **carried: Any) -> FixEvents:
         """Events out of one log line, however it spells its separator."""
-        return cls(message=FixPairs.from_text(text), **carried)
+        return cls(message=FixMsg.from_text(text), **carried)
 
     @classmethod
     def from_pairs(
@@ -479,7 +411,7 @@ class FixEvents(Convertible):
         # With no explicit mapping, keep names until the instance can infer the
         # message version and apply its registry. Resolving newest-first here
         # would silently use the wrong tag for an older/custom version.
-        return cls(message=FixPairs.from_pairs(pairs, names), **carried)
+        return cls(message=FixMsg.from_pairs(pairs, names), **carried)
 
     # -- reading ------------------------------------------------------------
 
@@ -488,8 +420,10 @@ class FixEvents(Convertible):
         """Configured version, or the application version inferred from the message."""
         if self.fix_version is not None:
             return self.fix_version
+        if self.message.protocol_version is not None:
+            return self.message.protocol_version
         try:
-            return infer_version_from_pairs(self.message.pairs, self.registry)[0]
+            return infer_version_from_pairs(self.source_pairs, self.registry)[0]
         except (OSError, ValueError):
             return None
 
@@ -511,22 +445,63 @@ class FixEvents(Convertible):
         return self.dictionary.access
 
     @functools.cached_property
+    def source_pairs(self) -> list[tuple[str, str]]:
+        """The source-spelled projection, retained for indexed rendered groups."""
+        return self.message.into_fix_pairs()
+
+    @functools.cached_property
+    def pairs(self) -> list[tuple[str, str]]:
+        """The message projected once through this translator's dictionary."""
+        return self.message.into_fix_pairs(self.access)
+
+    @functools.cached_property
+    def _has_indexed_pairs(self) -> bool:
+        """Whether a rendered group path survives only in source spelling."""
+        return any(entry.comp or "[" in entry.key for entry in self.message.kwargs or ())
+
+    @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
         """The message as one value per key, first occurrence winning.
 
         The accessor's prepared execution: each named key resolves once
         through the shared rule table, and every later read is a dict probe.
         """
-        pairs = self.message.pairs
-        if any(not (key.isascii() and key.isdigit()) for key, _ in pairs):
-            # Only a message that actually spells a key as a name pays for the
-            # resolution. A wire message is already all tags, which is most of
-            # a feed, and running the pass over it re-resolved eighteen keys
-            # to themselves -- 29% of the conversion, for nothing.
-            pairs = self.access.tagged_pairs(pairs)
+        flat = self._flat_by_tag
+        if flat is not None:
+            return flat
         found: dict[str, Any] = {}
-        for key, value in pairs:
+        for key, value in self.pairs:
             found.setdefault(key, value)
+        return found
+
+    @functools.cached_property
+    def _flat_by_tag(self) -> dict[str, Any] | None:
+        """Promoted columns and simple numeric residuals without a FIX round trip."""
+        message = self.message
+        if any(
+            getattr(message, name, None) is not None
+            for name in ("Parties", "TrdRegTimestamps", "SideTrdRegTS")
+        ):
+            return None
+        entries = message.kwargs or ()
+        if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
+            return None
+
+        access = self.access
+        stored = [(str(entry.tag), entry.value) for entry in entries]
+        stored_tags = {tag for tag, _ in stored}
+        found: dict[str, Any] = {}
+        for name, tag in type(message).into_tagged_columns():
+            value = getattr(message, name, None)
+            if value is None or tag in stored_tags:
+                continue
+            found[tag] = render_fix_value(access.canonical_value(tag, value))
+        for name, spelling in type(message).into_named_columns():
+            value = getattr(message, name, None)
+            if value is not None:
+                found[spelling] = render_fix_value(access.canonical_value(spelling, value))
+        for tag, value in stored:
+            found.setdefault(tag, render_fix_value(access.canonical_value(tag, value)))
         return found
 
     @functools.cached_property
@@ -550,14 +525,22 @@ class FixEvents(Convertible):
         than a second `in`, because a field stored null is carried and a
         translation asks for twice as many fields as a message holds.
         """
-        found = self.by_tag.get(self.access.tag_text(field), _ABSENT)
+        if type(field) is str:
+            tag = self.dictionary.lookup_tags.get(field)
+            if tag is None:
+                tag = self.access.tag_text(field)
+        else:
+            tag = str(field)
+        found = self.by_tag.get(tag, _ABSENT)
         if found is not _ABSENT:
             return found
+        if self._flat_by_tag is not None:
+            return None
         return self.by_folded_tag.get(translation_key(field if type(field) is str else str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""
-        return FIX_STATES.get(field, {}).get(self.get(field) or "", default)
+        return self.dictionary.states.get(field, {}).get(self.get(field) or "", default)
 
     @functools.cached_property
     def _message_kind(self) -> str:
@@ -569,18 +552,19 @@ class FixEvents(Convertible):
         if self.version is None:
             return
         kind = self._message_kind
-        if kind in ENTRIED:
+        handler = self.dictionary.handlers.get(kind)
+        if handler == "entries":
             yield from self._entries(kind)
-        elif kind == "i":
+        elif handler == "mass_quote":
             yield from self._mass_quotes()
-        elif kind in QUOTED:
+        elif handler == "quote":
             yield from self._quotes(kind)
-        elif kind == "8":
+        elif handler == "execution_report":
             yield from self._reported()
-        elif kind == "AE":
+        elif handler == "execution":
             yield self.into_execution()
-        elif kind in ORDERED:
-            yield self.into_order(ORDERED[kind])
+        elif handler == "order" and kind in self.dictionary.ordered:
+            yield self.into_order(self.dictionary.ordered[kind])
 
     def into_instruments(self) -> Iterator[Instrument]:
         """Distinct repeating-entry instruments, or the header fallback."""
@@ -603,7 +587,7 @@ class FixEvents(Convertible):
 
     def _instrument_readers(self) -> Iterator[FixEvents]:
         """Entry projections when present, otherwise the message header."""
-        if self._message_kind in ENTRIED:
+        if self.dictionary.handlers.get(self._message_kind) == "entries":
             entries = self._group_entries("NoMDEntries")
             for entry in entries:
                 yield self._inside(entry)
@@ -658,7 +642,7 @@ class FixEvents(Convertible):
     def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
         """A repeating-group entry completed by its message header."""
         inside = FixEvents(
-            message=FixPairs(pairs=entry),
+            message=type(self.message).from_pairs(entry),
             venue=self.venue,
             mic=self.mic,
             runix=self.runix,
@@ -682,7 +666,7 @@ class FixEvents(Convertible):
     def _quote_readers(self) -> Iterator[FixEvents]:
         """MassQuote entries flattened through their enclosing quote set."""
         sets = _group_segments(
-            self.message.pairs,
+            self.pairs,
             self.access.tag_text("NoQuoteSets"),
             self._quote_group_delimiters[0],
         )
@@ -779,7 +763,7 @@ class FixEvents(Convertible):
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
         if state is State.UNKNOWN:
-            state = EXEC_ORDER_STATES.get(exec_type, State.UNKNOWN)
+            state = self.dictionary.exec_order_states.get(exec_type, State.UNKNOWN)
         order_qty = _number(get("OrderQty"))
         cumulative = _number(get("CumQty"))
         leaves = _number(get("LeavesQty"))
@@ -1023,7 +1007,13 @@ class FixEvents(Convertible):
 
     def _group_entries(self, name: str) -> list[list[tuple[str, str]]]:
         """One repeating group under its configured count tag or rendered name."""
-        return self.message.group(self.access.tag_text(name)) or self.message.indexed_group(name)
+        count_tag = self.access.tag_text(name)
+        if self._flat_by_tag is not None and count_tag not in self.by_tag:
+            return []
+        found = group_pairs(self.pairs, count_tag)
+        if found or not self._has_indexed_pairs:
+            return found
+        return indexed_group_pairs(self.source_pairs, name)
 
     def _group(self, name: str) -> list[dict[str, str]]:
         """One repeating group's entries, each as first-value-by-tag."""
@@ -1089,11 +1079,14 @@ class FixEvents(Convertible):
     def _event_type(self) -> EventType | None:
         """What kind of event this reader is about to build, for the ranking.
 
-        Read off `MsgType <35>` rather than from a built event, because the
-        ranking decides the event's own `unix` and so must be settled before
-        one exists.
+        Registry MsgType metadata is the classification authority. It is read
+        before building an event because the ranking decides that event's own
+        `unix`.
         """
-        return MESSAGE_EVENTS.get(self._message_kind)
+        registry = self.access.registry
+        if registry is None:
+            return None
+        return registry.msg_type_event_types().get(self._message_kind)
 
     def _expires(self, tif: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
@@ -1149,19 +1142,7 @@ class FixEvents(Convertible):
             value = self.get(name)
             if value is None:
                 continue
-            registry = self.registry or FixRegistry.from_builtin()
-            try:
-                member = (
-                    registry.scalar(name, version=self.version)
-                    if self.version
-                    else registry.scalar(name)
-                )
-            except (KeyError, OSError, ValueError):
-                member = FixRegistry.from_builtin().scalar(name)
-            try:
-                label = json.loads(member.fix.get("values", "{}"))[str(value)]
-            except (KeyError, TypeError, ValueError):
-                label = None
+            label = self.access.meaning(name, str(value))
             return f"{name}={value}: {label}" if label else f"{name}={value}"
         return None
 
@@ -1194,9 +1175,7 @@ class FixEvents(Convertible):
         """Every field the shapes have no column for, under the key it arrived as."""
         claimed, audited = self.dictionary.claimed, self.dictionary.audited
         return {
-            key: (
-                value if isinstance(value, str) else FixPairs.from_pairs([(key, value)]).pairs[0][1]
-            )
+            key: str(value)
             for key, value in self.by_tag.items()
             if key not in claimed or key in audited
         }

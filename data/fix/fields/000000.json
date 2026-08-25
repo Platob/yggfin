@@ -2106,6 +2106,61 @@
    "DY": "PAY_MANAGEMENT_REQUEST",
    "DZ": "PAY_MANAGEMENT_REQUEST_ACK"
   },
+  "event_types": {
+   "8": 210,
+   "9": 110,
+   "AE": 210,
+   "D": 110,
+   "F": 110,
+   "G": 110,
+   "W": 320,
+   "X": 320,
+   "AG": 120,
+   "AH": 120,
+   "AI": 120,
+   "AJ": 120,
+   "R": 120,
+   "S": 120,
+   "Z": 120,
+   "a": 120,
+   "b": 120,
+   "i": 120,
+   "d": 410
+  },
+  "handlers": {
+   "8": "execution_report",
+   "9": "order",
+   "AE": "execution",
+   "D": "order",
+   "F": "order",
+   "G": "order",
+   "W": "entries",
+   "X": "entries",
+   "AI": "quote",
+   "AJ": "quote",
+   "S": "quote",
+   "Z": "quote",
+   "i": "mass_quote",
+   "d": "instrument"
+  },
+  "order_states": {
+   "D": 110,
+   "F": 240,
+   "G": 230,
+   "9": 0
+  },
+  "technical_values": [
+   "0",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "A"
+  ],
+  "technical_plugins": [
+   "jolokia"
+  ],
   "translations": {
    "heartbeat0": "0",
    "testrequest1": "1",
@@ -2685,6 +2740,23 @@
    "C": "EXPIRED",
    "D": "ACCEPTED_FOR_BIDDING",
    "E": "PENDING_REPLACE"
+  },
+  "states": {
+   "0": 210,
+   "1": 310,
+   "2": 410,
+   "3": 420,
+   "4": 510,
+   "5": 520,
+   "6": 240,
+   "7": 260,
+   "8": 610,
+   "9": 250,
+   "A": 110,
+   "B": 430,
+   "C": 530,
+   "D": 220,
+   "E": 230
   },
   "translations": {
    "new": "0",
@@ -8112,6 +8184,29 @@
    "L": "TRIGGERED_OR_ACTIVATED_BY_SYSTEM",
    "M": "LOCKED",
    "N": "RELEASED"
+  },
+  "states": {
+   "1": 410,
+   "2": 410,
+   "F": 410,
+   "G": 520,
+   "H": 510
+  },
+  "order_states": {
+   "0": 210,
+   "1": 310,
+   "2": 410,
+   "3": 420,
+   "4": 510,
+   "5": 520,
+   "6": 240,
+   "7": 260,
+   "8": 610,
+   "9": 250,
+   "A": 110,
+   "B": 430,
+   "C": 530,
+   "E": 230
   },
   "translations": {
    "new": "0",
@@ -13900,6 +13995,14 @@
    "4": "DELETE_FROM",
    "5": "OVERLAY"
   },
+  "states": {
+   "0": 210,
+   "1": 200,
+   "2": 510,
+   "3": 510,
+   "4": 510,
+   "5": 200
+  },
   "translations": {
    "new": "0",
    "change": "1",
@@ -14609,6 +14712,30 @@
    "21": "TRADED",
    "22": "TRADED_AND_REMOVED",
    "23": "CONTRACT_TERMINATES"
+  },
+  "states": {
+   "0": 220,
+   "1": 510,
+   "2": 510,
+   "3": 510,
+   "4": 510,
+   "5": 610,
+   "6": 510,
+   "7": 530,
+   "9": 610,
+   "10": 100,
+   "11": 510,
+   "12": 200,
+   "13": 200,
+   "14": 510,
+   "15": 510,
+   "16": 200,
+   "17": 510,
+   "18": 200,
+   "19": 240,
+   "21": 410,
+   "22": 410,
+   "23": 530
   },
   "translations": {
    "accepted": "0",

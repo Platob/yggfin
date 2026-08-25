@@ -126,6 +126,32 @@ def test_a_book_hash_frames_both_ordered_live_sides_explicitly() -> None:
     assert only.hash == Book.hash_of(*expected)
 
 
+def test_book_hash_cache_follows_each_side_change() -> None:
+    bid = order(10, Side.BID, 100.0, 5.0, "B1")
+    ask = order(20, Side.ASK, 101.0, 7.0, "A1")
+    better_bid = order(30, Side.BID, 100.5, 3.0, "B2")
+    cancel = order(40, Side.BID, 100.0, 5.0, "B1", state=State.CANCELLED)
+
+    found = list(BookIterator.from_events([bid, ask, better_bid, cancel], snapshot_every=0))
+    expected_sides = [
+        ([bid.hash], []),
+        ([bid.hash], [ask.hash]),
+        ([better_bid.hash, bid.hash], [ask.hash]),
+        ([better_bid.hash], [ask.hash]),
+    ]
+    for book, (bids, asks) in zip(found, expected_sides, strict=True):
+        expected = (
+            book.unix,
+            book.instrument_xhash,
+            len(bids),
+            *bids,
+            len(asks),
+            *asks,
+        )
+        assert book.version_parts() == expected
+        assert book.hash == Book.hash_of(*expected)
+
+
 # -- what it refuses ---------------------------------------------------------
 
 

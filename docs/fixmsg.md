@@ -4,32 +4,37 @@
 its payload has been parsed against a FIX dictionary.
 
 ```python
-from rekep import FixCodec, FixMsg, TextFiles
+from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
+
+registry = FixRegistry(cache_dir="data/fix", offline=True)
 
 source = TextFiles.from_folder(
     "s3://bucket/capture",
     pattern="*.log*",
     timezone="Europe/Paris",
+    msg_type_event_types=registry.msg_type_event_types(),
+    technical_msg_types=registry.technical_msg_types(),
+    technical_plugin_codes=registry.technical_plugin_codes(),
 )
-codec = FixCodec()
+codec = FixCodec(registry=registry)
 
 for batch in source.read_arrow_reader(batch_row_size=65_536):
-    parsed = FixMsg.from_message_arrow_batch(
-        batch, codec, FixMsg.into_message_rules()
-    )
+    parsed = FixMsg.from_message_arrow_batch(batch, codec)
 ```
 
 `TextFile` and `TextFiles` extract the log header, retain the raw payload, and
-split key/value syntax once into ordered `Kwarg` values. The `FixMsg`
-conversion owns protocol classification, dictionary resolution, structured
-components, event time and market identities; it consumes those stored
-arguments instead of tokenizing the payload again.
-`MessageRules` itself is protocol-neutral and empty; the `FixMsg` factory
-returns a fresh set of FIX event patterns for each parse.
+split structured key/value syntax once into ordered `Kwarg` values. They assign
+`etype` through the registry's MsgType metadata and retain the unambiguous
+`MsgType` plus a syntax-only `protocol_code`. The `FixMsg` conversion owns
+dictionary resolution, structured components, event time and market identities;
+it consumes those stored arguments instead of tokenizing the payload again.
+Long prose and diagnostics that contain neither a discriminator nor two
+delimiter-separated assignments skip tokenization entirely. Registry-declared
+technical MsgTypes and plugins also keep their discriminator but skip argument
+tokenization.
 
-The published protocol-neutral `Message` contract is version 2. Required raw
-and FIX argument values plus the canonical FIX projection make the `FixMsg`
-contract version 4.
+The published `Message` contract is version 4. Required raw and FIX argument
+values plus the canonical FIX projection make the `FixMsg` contract version 5.
 
 ## Parsed record
 
@@ -55,25 +60,28 @@ timezone is not documented remains naive.
 
 ## Ordered residue
 
-A raw `Message.kwargs` item is deliberately only `key` and `value`. The key
-keeps its syntax, including a bridge marker such as `#SIDE`; it does not yet
-claim a FIX tag, component, namespace, or canonical name. Its value is required,
-with an explicitly empty value stored as `""`.
+A raw `Message.kwargs` and a resolved `FixMsg.kwargs` use the same `Kwarg`
+shape. The generic parser strips a leading argument marker, so `#SIDE` is
+stored as `SIDE`; it does not apply FIX aliases or dictionary meaning. The
+message discriminator is promoted to `Message.MsgType` and is not duplicated
+in the residual list.
 
-`kwargs` retains every field that no promoted column or structured component
-took. Each list item contains:
+Each list item contains:
 
-- `tag`: the resolved FIX tag, or `0` for an unresolved rendered name;
-- `key`: the canonical field name where one resolved;
+- `tag`: a numeric key already present in the payload, a later resolved FIX
+  tag, or `0` while unresolved;
+- `key`: the terminal spelling without `#`, canonicalized by the FIX stage
+  where the registry resolves it;
 - `value`: the value carried by the message;
-- `comp`: its FIX component or repeating-group entry, such as
-  `NoPartyIDs[0]`;
-- `namespace`: a vendor prefix, such as `TECH` in `TECH.CLIENTID`.
+- `comp`: an indexed container prefix, such as `NoPartyIDs[0]`;
+- `namespace`: a non-indexed prefix, such as `TECH` in `TECH.CLIENTID`.
 
 The outer value is a list, not a map, because repeated fields and wire order
 are data. `value` is always present; an explicitly empty value is `""`. Raw
 `Message.kwargs` is always a list. A `FixMsg` carrying no recognized message
 has null `kwargs`; a parsed message with no residual fields has an empty list.
+After resolution, `kwargs` retains every field that no promoted column or
+structured component took.
 
 Structured FIX components also use their FIX spellings:
 
@@ -86,13 +94,21 @@ Structured FIX components also use their FIX spellings:
 accessor, whether the caller names a numeric tag, canonical field name,
 component path or namespace-qualified key.
 
+A `35=U...` wrapper may carry a rendered bridge payload with its own
+`MSGTYPE`. In that form the named discriminator and named flat fields are
+authoritative, so numeric copies of the same registry identities are removed;
+indexed group members are never treated as duplicates.
+
 ## Stored categories
 
-`fix.market`, `fix.misc` and `fix.unknown` share the same
-contract. A row that cannot become a market event therefore remains queryable
-without a second row model. Market rows may store `message` as null because
-their ordered resolved fields carry the payload; redirected rows retain the raw
-message.
+`parse_fix` uses disjoint pushed scans. Rows whose stored `Message.etype` is at
+least `INTENT` go to `fix.market`; non-technical `MISC` rows go to `fix.misc`.
+An unknown discriminator also goes to `fix.misc` when the transport is
+recognized; only an unknown event on an unrecognized transport goes to
+`fix.unknown`. Registry-declared technical MsgTypes and plugins do not enter a
+FIX table. Both scans project the raw `message` column out: the already parsed
+arguments carry the transcription input, so every resulting `FixMsg.message`
+is null.
 
 The market readers consume only `fix.market`, ordered by
 `(unix, MsgSeqNum, hash)`. Normalized Instrument rows use the package-owned

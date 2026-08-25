@@ -500,7 +500,7 @@ def sweep_fs(rows: int, days: int) -> None:
 
     from pyiceberg.io.pyarrow import PyArrowFile
 
-    from rekep.iceberg.fileio import CONTENT_CACHE
+    from rekep.arrow_file_io import CONTENT_CACHE
 
     counts: dict[str, int] = {}
 
@@ -641,33 +641,15 @@ def sweep_fs(rows: int, days: int) -> None:
 
 
 def sweep_maintain(rows: int, days: int) -> None:
-    """The maintenance a streaming table needs, and what a reader holds.
+    """What a reader holds and whether explicit compaction settles.
 
-    Three questions seconds on a local disk answer badly and counts answer
-    exactly: how much of a table a *reader* materialises before its consumer
-    asks, how much of the metadata `maybe_optimize` walks to decide there is
-    nothing to do, and whether compaction settles -- which is the difference
-    between a routine that costs nothing on a quiet table and one that reads
-    and rewrites the whole table every time it runs.
+    Counts answer how much a reader materialises before its consumer asks and
+    whether repeated compaction stops rewriting an unchanged table.
     """
     import gc
 
     from pyiceberg.io.pyarrow import PyArrowFile
-    from pyiceberg.manifest import ManifestFile
-    from pyiceberg.table.inspect import InspectTable
 
-    walks: list[str] = []
-    partitions, entries = InspectTable.partitions, ManifestFile.fetch_manifest_entry
-
-    def counted(self: Any, snapshot_id: int | None = None) -> Any:
-        walks.append("partitions")
-        return partitions(self, snapshot_id)
-
-    def fetched(self: Any, io: Any, discard_deleted: bool = True) -> Any:
-        walks.append("manifest")
-        return entries(self, io, discard_deleted)
-
-    InspectTable.partitions, ManifestFile.fetch_manifest_entry = counted, fetched
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-maint-"))
     try:
         path = tmp / "bench.txt"
@@ -713,27 +695,6 @@ def sweep_maintain(rows: int, days: int) -> None:
         finally:
             PyArrowFile.open = original
 
-        # -- deciding, and settling ---------------------------------------
-        print("\n== maintenance ==")
-        header(("case", "partitions", "manifests", "seconds", "result"), (30, 11, 10, 9, 26))
-
-        def maintenance(label: str, call: Callable[[], Any]) -> None:
-            walks.clear()
-            seconds, out = timed(call)
-            print(
-                f"{label:>30} {walks.count('partitions'):>11} {walks.count('manifest'):>10} "
-                f"{seconds:>9.3f}  {out!s:.26}"
-            )
-
-        quiet = dataset(tmp / "quiet", partitioned=True, properties=OPTIMISED)
-        quiet.append_arrow(table.slice(0, 2_000), commit_row_size=0)
-        maintenance("maybe_optimize, quiet table", quiet.maybe_optimize)
-
-        frayed = dataset(tmp / "frayed", partitioned=True, properties=OPTIMISED)
-        frayed.append_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
-        maintenance("maybe_optimize, frayed", frayed.maybe_optimize)
-        maintenance("maybe_optimize, settled", frayed.maybe_optimize)
-
         # -- does a rewrite settle, on every partition shape? -------------
         print("\n== compaction settles: files rewritten per run ==")
         header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
@@ -753,7 +714,6 @@ def sweep_maintain(rows: int, days: int) -> None:
                 f"{target.refresh().read_arrow_table().num_rows:>10,}"
             )
     finally:
-        InspectTable.partitions, ManifestFile.fetch_manifest_entry = partitions, entries
         shutil.rmtree(tmp, ignore_errors=True)
 
 
