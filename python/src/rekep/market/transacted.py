@@ -51,10 +51,10 @@ class Stamped:
     rung is a small record rather than a string, and every rung is one kind of
     thing.
 
-    Both readings of a rung are here: `of` answers for one row a caller holds
-    as a message, `arrow` for a whole batch a caller holds as columns. Two
-    executions of one declaration, on the declaration, so neither can drift
-    into being a second rule.
+    Both readings of a rung are here: `transacted` answers for one row a
+    caller holds as a message, `arrow` for a whole batch it holds as columns.
+    Two executions of one declaration, on the declaration, so neither can
+    drift into being a second rule.
     """
 
     #: What names this rung where a reading is recorded, and in the docs.
@@ -80,7 +80,7 @@ class Stamped:
 
     # -- one row --------------------------------------------------------------
 
-    def of(
+    def transacted(
         self,
         read: Callable[[str], Any],
         entries: Callable[[str], Sequence[Any]],
@@ -182,8 +182,8 @@ class Stamped:
         if any(column is None for column in read):
             return None
         if len(read) == 1:
-            return self.arrow_nanos(read[0], rows)
-        date, clock = (self.arrow_nanos(column, rows) for column in read)
+            return self._arrow_nanos(read[0], rows)
+        date, clock = (self._arrow_nanos(column, rows) for column in read)
         return pyarrow.compute.coalesce(clock, date)
 
     def _arrow_entry(self, column: Any, etypes: Any, rows: int) -> tuple[Any, Any]:
@@ -202,7 +202,7 @@ class Stamped:
             return None, None
         parents = compute.list_parent_indices(column).cast(pyarrow.int64())
         entries = compute.list_flatten(column)
-        instants = self.arrow_nanos(
+        instants = self._arrow_nanos(
             compute.struct_field(entries, snake_of(self.instant)), len(parents)
         )
         kinds = compute.struct_field(entries, snake_of(self.kind))
@@ -258,7 +258,7 @@ class Stamped:
         return rank
 
     @staticmethod
-    def arrow_nanos(column: Any, rows: int) -> Any:
+    def _arrow_nanos(column: Any, rows: int) -> Any:
         """One clock column as the epoch nanoseconds a `*unix` column holds."""
         if column is None:
             return pyarrow.nulls(rows, pyarrow.int64())
@@ -412,7 +412,7 @@ def resolve(
     """
     reader = member or Stamped.member
     for rung in TRANSACTED:
-        found = rung.of(read, entries, etype, recorded, reader)
+        found = rung.transacted(read, entries, etype, recorded, reader)
         if found is not None:
             return found
     if recorded:
