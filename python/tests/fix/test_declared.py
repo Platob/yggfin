@@ -78,6 +78,14 @@ def test_a_tag_the_dictionary_does_not_number_reads_as_declared(registry: FixReg
     assert codec_of(registry).tag_field(9999, "4.4") is None
 
 
+def test_a_declared_type_is_held_as_arrow_spells_it() -> None:
+    """A dumped rule states its unit and its zone whichever spelling wrote it."""
+    assert FieldRule(field="X", type="date").type == "date32[day]"
+    assert FieldRule(field="X", type="UTCDateOnly").type == "date32[day]"
+    assert FieldRule(field="X", type="date32[day]").type == "date32[day]"
+    assert FieldRule(field="X", type="int").type == "int64"
+
+
 def test_a_type_that_is_neither_arrow_nor_fix_is_refused() -> None:
     with pytest.raises(ValueError, match="neither an Arrow type nor a FIX datatype"):
         FieldRule(field="Side", type="whatever")

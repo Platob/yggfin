@@ -104,6 +104,22 @@ def arrow_type_of(datatype: str | None) -> pyarrow.DataType:
     return FIX_SCALARS.get(datatype.strip().lower(), pyarrow.string())
 
 
+def declared_arrow_type(text: str) -> pyarrow.DataType | None:
+    """The type `text` names, in either spelling a document may use; None for neither.
+
+    Arrow's own first -- `date32[day]`, `timestamp[us, tz=UTC]` -- because
+    that is what a dumped schema writes and so what a reader of one reaches
+    for, and it says the unit and the zone where a FIX datatype only implies
+    them. A FIX datatype (`UTCDateOnly`) is the alias it is.
+    """
+    if not text:
+        return None
+    try:
+        return arrow_type_for(text)
+    except (KeyError, ValueError):
+        return FIX_SCALARS.get(text.strip().lower())
+
+
 def fix_field(
     name: str,
     tag: int | str,
@@ -150,33 +166,30 @@ class FieldRule(Convertible):
 
     type: str = ""
     """Arrow type its column stores, as Arrow spells one -- `date32[day]`,
-    `timestamp[us, tz=UTC]`. A FIX datatype (`UTCTimestamp`) is accepted and
-    means what it projects to. Empty leaves the dictionary's type alone."""
+    `timestamp[us, tz=UTC]`. A FIX datatype (`UTCDateOnly`) is accepted and
+    normalizes to what it projects to, so a dumped rule always states its unit
+    and its zone. Empty leaves the dictionary's type alone."""
 
     values: dict[str, str] = dataclasses.field(default_factory=dict)
     """`{what a feed writes: what it means}`, folded like the dictionary's own."""
 
     def __post_init__(self) -> None:
+        """Refuse a rule that names nothing, and normalize the type it names."""
         if not self.field:
             raise ValueError("a field rule names no field")
-        if self.type and self.arrow_type is None:
+        if not self.type:
+            return
+        found = declared_arrow_type(self.type)
+        if found is None:
             raise ValueError(f"{self.type!r} is neither an Arrow type nor a FIX datatype")
+        # Held as Arrow spells it, so a rule read back says the unit and the
+        # zone whichever spelling wrote it: `date` dumps as `date32[day]`.
+        self.type = str(found)
 
     @functools.cached_property
     def arrow_type(self) -> pyarrow.DataType | None:
-        """`type` as Arrow holds it; None where the rule only translates values.
-
-        Arrow's own spelling first, because that is what a contract and a
-        dumped schema write and so what a reader of one will reach for.
-        """
-        if not self.type:
-            return None
-        try:
-            return arrow_type_for(self.type)
-        except (KeyError, ValueError):
-            pass
-        found = FIX_SCALARS.get(self.type.strip().lower())
-        return found
+        """`type` as Arrow holds it; None where the rule only translates values."""
+        return declared_arrow_type(self.type)
 
     @functools.cached_property
     def folded(self) -> str:

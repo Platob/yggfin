@@ -46,6 +46,7 @@ from rekep.fix.fields import (
     arrow_type_of,
     cast_arrow_bool,
     cast_arrow_fix,
+    declared_arrow_type,
     fix_field,
     unix_of,
 )
@@ -168,6 +169,7 @@ __all__ = [
     "arrow_type_of",
     "cast_arrow_bool",
     "cast_arrow_fix",
+    "declared_arrow_type",
     "classify",
     "count_files",
     "count_reader",
