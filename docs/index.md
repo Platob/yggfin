@@ -7,19 +7,16 @@ products: FIX messages, instruments, books, orders, and executions.
 
 ## Workflow
 
-```text
-TextFile(s)
-    |
-parse_messages -------------> text.messages
-    |
-parse_fix ------------------> fixmessage tables
-    |\
-    | `---------------------> flatten_instruments -> instrument
-    v
-parse_market ---------------> book
-    |\
-    | `---------------------> flatten_executions -> execution
-    `-----------------------> flatten_orders -----> order
+```mermaid
+flowchart TD
+    L[TextFile / TextFiles] --> PM[parse_messages]
+    PM --> M[(text.messages)]
+    M --> PF[parse_fix]
+    PF --> FM[(fixmessage.market<br/>misc, unknown)]
+    FM --> FI[flatten_instruments] --> I[(instrument)]
+    FM --> PK[parse_market] --> B[(book)]
+    PK --> FO[flatten_orders] --> O[(order)]
+    PK --> FE[flatten_executions] --> E[(execution)]
 ```
 
 Concrete stages are notebooks with adjacent YAML files under `tasks/`. The
@@ -28,16 +25,25 @@ it does not own deployment-specific jobs.
 
 ## Guides
 
+**Declaring data**
+
 - [Design](design.md): boundaries and maintenance rules.
 - [Types](types.md): `@scalar`, fields, and recursive casts.
 - [Contracts](contracts.md): the five portable schemas.
+- [Identity](identity.md): cross-language binary hashing.
+
+**Parsing**
+
 - [FixMessage](fixmessage.md): streamed text parsing and routing.
 - [FIX](fix.md): registry-driven transcription.
+- [Configuring a parse](configuring.md): headers, rules, field readings.
+
+**Downstream**
+
 - [Market](market.md): events, instruments, books, and audit rows.
 - [Iceberg](iceberg.md): streaming reads, writes, and maintenance.
-- [Tasks](tasks.md): notebooks, configs, and Airflow.
+- [Pipeline](tasks.md): notebooks, configs, and Airflow.
 - [End-to-end run](workflow-run.md): execution evidence and schema lineage.
-- [Identity](identity.md): cross-language binary hashing.
 - [Benchmarks](benchmarks.md): focused internal measurements.
 
 ## Install
