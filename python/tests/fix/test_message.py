@@ -16,6 +16,7 @@ from rekep.fix import (
     rendered_keys,
     tag_arrow_array,
 )
+from rekep.fix.message import _TAG_PROBE, _Names
 
 PIPE = "8=FIX.4.2|9=2058|35=8|49=BRK|54=1|58=hello world|10=045"
 SOHED = PIPE.replace("|", SOH)
@@ -615,6 +616,34 @@ def test_a_number_the_key_type_cannot_hold_is_unknown_not_a_crash() -> None:
     assert tag_arrow_array(maps, pyarrow.int64()).to_pylist() == [
         [(54, "1"), (1786665901147250000, "x")]
     ]
+
+
+def test_a_name_past_the_cast_probe_still_resolves() -> None:
+    """The branch where the probe reads as tags and the whole column does not.
+
+    `_tag_numbers` casts the head of a key column before the rest of it, so a
+    column whose first keys are all digits takes the cast -- and has to fall
+    through to the dictionary when a name turns up beyond the probe.
+    """
+    keys = ["54"] * (_TAG_PROBE * 2) + ["Price"]
+    maps = pyarrow.MapArray.from_arrays(
+        pyarrow.array([0, len(keys)], pyarrow.int32()),
+        pyarrow.array(keys),
+        pyarrow.array(["1"] * (_TAG_PROBE * 2) + ["9.5"]),
+    )
+    tagged = tag_arrow_array(maps, names={"Price": 44}).to_pylist()
+    assert tagged[0][-1] == (44, "9.5")
+    assert {tag for tag, _ in tagged[0]} == {54, 44}
+
+
+def test_one_folded_dictionary_serves_both_readings_of_it() -> None:
+    """`_Names` is walked once per mapping, and answers keys and tags alike."""
+    names = {" Side ": 54, "Price": "44"}
+    held = _Names.of(names)
+    assert _Names.of(names) is held, "the same mapping folds once"
+    assert held.keys == {"side": "54", "price": "44"}
+    assert held.tags == {"side": 54, "price": 44}
+    assert _Names.of({}).keys == {} and _Names.of(None).keys == {}
 
 
 def test_mixed_digit_and_named_keys_resolve_together() -> None:

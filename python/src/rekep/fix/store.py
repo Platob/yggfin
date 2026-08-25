@@ -1280,4 +1280,3 @@ def slug_collisions(names: Iterable[str]) -> dict[str, list[str]]:
     for name in names:
         found.setdefault(slug_of(name), []).append(name)
     return {slug: shared for slug, shared in found.items() if len(shared) > 1}
-
