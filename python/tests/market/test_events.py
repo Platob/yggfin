@@ -176,6 +176,34 @@ def test_a_shape_hashes_whole_columns_the_way_it_hashes_one_row() -> None:
     assert Order.hash_arrow(symbols, ids).to_pylist() != Book.hash_arrow(symbols, ids).to_pylist()
 
 
+def test_event_object_streams_cross_the_arrow_boundary_in_bounded_batches() -> None:
+    events = [
+        Order(
+            unix=1,
+            code="A",
+            codes={"order_id": "A", "client_order_id": "C1"},
+            linked_events=[(0, 7)],
+            side=Side.BUY,
+        ).identify(),
+        Order(unix=2, code="B", side=Side.SELL).identify(),
+    ]
+    reader = Order.into_arrow_reader(events, batch_row_size=1)
+    batches = list(reader)
+    assert [batch.num_rows for batch in batches] == [1, 1]
+
+    source = pyarrow.RecordBatchReader.from_batches(reader.schema, batches)
+    rebuilt = list(Order.from_arrow_reader(source))
+    assert [one.into_dict() for one in rebuilt] == [one.into_dict() for one in events]
+
+
+def test_an_empty_event_stream_still_declares_its_schema() -> None:
+    reader = Order.into_arrow_reader(())
+    assert reader.read_all().num_rows == 0
+    assert reader.schema.equals(Order.into_field().into_arrow_schema(), check_metadata=True)
+    with pytest.raises(ValueError, match="batch_row_size must be positive"):
+        Order.into_arrow_reader((), batch_row_size=0)
+
+
 def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
     unix, instrument_xhash = 1_710_374_400_000_000_123, 42
     built = Book(unix=unix, instrument_xhash=instrument_xhash).identify()

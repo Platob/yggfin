@@ -135,12 +135,20 @@ def test_a_leading_plus_is_a_valid_fix_integer() -> None:
 
 
 def test_a_number_wider_than_the_target_reads_null_where_arrow_itself_raises() -> None:
-    """The width guard, against the reference: Arrow raises, this nulls the one row."""
-    spelled = ["9" * 18, "9" * 19, "7"]
+    """The range guard preserves both int64 limits and nulls only overflow."""
+    spelled = [
+        "9223372036854775807",
+        "9223372036854775808",
+        "-9223372036854775808",
+        "-9223372036854775809",
+        "7",
+    ]
     with pytest.raises(pyarrow.ArrowInvalid):
         pyarrow.array(spelled).cast(pyarrow.int64())
     assert cast_arrow_fix(pyarrow.array(spelled), pyarrow.int64()).to_pylist() == [
-        999999999999999999,
+        9223372036854775807,
+        None,
+        -9223372036854775808,
         None,
         7,
     ]
@@ -161,6 +169,10 @@ def test_a_stamp_a_date_and_a_time_of_day_each_read_as_the_type_declared() -> No
     assert date.to_pylist() == [datetime.date(2026, 8, 21)] * 2
     clock = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time64("ns"))
     assert clock.to_pylist() == [datetime.time(10, 30, 0, 500000)]
+    seconds = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time32("s"))
+    millis = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time32("ms"))
+    assert seconds.to_pylist() == [datetime.time(10, 30)]
+    assert millis.to_pylist() == [datetime.time(10, 30, 0, 500000)]
 
 
 def test_binary_keeps_the_bytes_the_line_carried() -> None:
@@ -191,15 +203,66 @@ def test_the_column_reading_answers_what_the_value_reading_does(
     assert read.cast(pyarrow.int64()).to_pylist() == expected
 
 
-def test_a_date_that_does_not_exist_nulls_its_own_row_and_no_other() -> None:
-    """The shape parses and the date does not, which is what the scalar fallback is for."""
-    spelled = ["20260230-00:00:00", "20260821-10:30:00", "20250229", "20260821"]
+def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spelled = [
+        "20260230-00:00:00",
+        "20260821-10:30:00",
+        "20250229",
+        "00000101",
+        "20260821",
+        "20260630-23:59:60",
+        "20260821-24:00:00",
+        "20260821-23:60:00",
+        "20260821-23:59:61",
+    ]
+    expected = [unix_of(one) for one in spelled]
     with pytest.raises(pyarrow.ArrowInvalid):
         pyarrow.array(["2026-02-30T00:00:00.0"]).cast(pyarrow.timestamp("ns"))
+    monkeypatch.setattr(rekep.fix.fields, "unix_of", _unreachable)
     read = cast_arrow_fix(pyarrow.array(spelled), pyarrow.timestamp("ns")).cast(pyarrow.int64())
-    assert read.to_pylist() == [unix_of(one) for one in spelled]
-    assert read.null_count == 2, "only the two impossible dates"
+    assert read.to_pylist() == expected
+    assert read.null_count == 6, "only the impossible dates and clocks"
     assert read[1].as_py() == 1787308200000000000
+
+
+def test_a_valid_date_outside_nanosecond_range_reads_null_without_overflow() -> None:
+    read = cast_arrow_fix(
+        pyarrow.array(["99991231-23:59:59", "20260821-10:30:00"]),
+        pyarrow.timestamp("ns"),
+    )
+    assert read.is_null().to_pylist() == [True, False]
+
+
+def test_a_valid_date_uses_the_destination_temporal_range() -> None:
+    spelled = pyarrow.array(["16000101-00:00:00.123456789", "99991231-23:59:59.987654321"])
+    dates = cast_arrow_fix(spelled, pyarrow.date32())
+    assert dates.to_pylist() == [datetime.date(1600, 1, 1), datetime.date(9999, 12, 31)]
+    stamps = cast_arrow_fix(spelled, pyarrow.timestamp("us"))
+    assert stamps.to_pylist() == [
+        datetime.datetime(1600, 1, 1, 0, 0, 0, 123457),
+        datetime.datetime(9999, 12, 31, 23, 59, 59, 987654),
+    ]
+
+
+@pytest.mark.parametrize(
+    "arrow_type", [pyarrow.date32(), pyarrow.timestamp("s"), pyarrow.timestamp("us")]
+)
+def test_year_zero_is_not_a_valid_fix_date(arrow_type: pyarrow.DataType) -> None:
+    read = cast_arrow_fix(pyarrow.array(["00000101", "00000101-00:00:00"]), arrow_type)
+    assert read.null_count == 2
+
+
+@pytest.mark.parametrize("unit", ["s", "ms", "us", "ns"])
+def test_a_pre_epoch_fraction_keeps_arrow_timestamp_narrowing(unit: str) -> None:
+    spelled = "19691231-23:59:59.999999999"
+    expected = (
+        pyarrow.array([unix_of(spelled)], pyarrow.int64())
+        .cast(pyarrow.timestamp("ns"))
+        .cast(pyarrow.timestamp(unit), safe=False)
+    )
+    assert cast_arrow_fix(pyarrow.array([spelled]), pyarrow.timestamp(unit)).equals(expected)
 
 
 def test_a_chunked_column_is_read_chunk_by_chunk_and_stays_chunked() -> None:

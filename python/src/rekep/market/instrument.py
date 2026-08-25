@@ -343,10 +343,11 @@ class _InstrumentIterator:
         """Keep the latest supplied version for each lifecycle."""
         self._unix = known.unix if self._unix is None else max(self._unix, known.unix)
         current = self._states.get(known.xhash)
-        if current is not None and (current.previous.unix, current.previous.version) >= (
-            known.unix,
-            known.version,
-        ):
+        if current is not None and (
+            current.previous.unix,
+            current.previous.version,
+            current.previous.hash,
+        ) >= (known.unix, known.version, known.hash):
             return
         state = _InstrumentState(
             xhash=known.xhash,

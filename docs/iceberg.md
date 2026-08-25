@@ -16,6 +16,7 @@ logs = IcebergDataset(
         "warehouse": "file:///warehouse",
     },
     field=FixMessage.into_field(),
+    branch="root",
 )
 ```
 
@@ -27,7 +28,7 @@ reader = logs.read_arrow_reader(
     columns=["unix", "hash", "symbol"],
     order_by=["unix", "msg_seq_num", "hash"],
     snapshot_id=None,
-    branch="main",
+    branch="root",
 )
 ```
 
@@ -64,9 +65,11 @@ event fields, and the FixMessage sequence rename need an explicit table migratio
 recreation. Dataset writes do not guess missing lineage or keep retired columns
 alive.
 
-Every verb accepts `branch`; reads also accept `snapshot_id`. A producer that
-does not provide Iceberg ids is numbered at creation, while a contract that
-already carries ids keeps them.
+Every data verb accepts `branch`; reads also accept `snapshot_id`. `root`,
+`main`, and `master` are aliases for Iceberg's physical `main` ref, so task
+configuration does not depend on an organization's default-branch spelling.
+A producer that does not provide Iceberg ids is numbered at creation, while a
+contract that already carries ids keeps them.
 
 ## Filesystems
 
@@ -78,14 +81,17 @@ resolver normalizes them.
 ## Maintenance
 
 ```python
-logs.compact(branch="main")
-logs.cleanup(branch="main")
-logs.optimize(branch="main")
+logs.compact(branch="root")
+logs.cleanup()
+logs.optimize(branch="root")
 ```
 
-Compaction settles once a partition has no newer data. Cleanup expires
-snapshots and removes only old files unreferenced by any live snapshot.
-`optimize` compacts, then cleans, returning counts for each action.
+Write streams automatically ask for compaction once at least 16 files are
+compactable. The pass settles once a partition has no newer data and keeps all
+snapshots; set `auto_compact=False` when another service owns file rewriting.
+Cleanup expires snapshots and removes only old files unreferenced by any live
+snapshot. `optimize` compacts, then cleans, returning counts for each action;
+`auto_optimize=True` explicitly permits a writer to run that full policy.
 
 ## Testing and benchmark
 

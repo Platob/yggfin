@@ -43,6 +43,8 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
+  # root, main, and master name the same Iceberg root branch.
+  branch: root
   # Retained, not transient: `parse_fix` re-reads it whenever the dictionary
   # or the rules change, which is what the split is for.
   target: text.messages

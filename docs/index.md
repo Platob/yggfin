@@ -3,7 +3,14 @@
 `rekep` turns ordered text logs into Arrow records and writes five Iceberg
 products: FIX messages, instruments, books, orders, and executions.
 
-![Arrow-centred workflow](assets/arrow-hub.svg)
+![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](assets/arrow-hub.svg)
+
+Arrow is the project's shared columnar boundary: Iceberg tables and encoded
+files sit on one side, while Spark, DataFrames, query engines, and SQL database
+drivers sit on the other. The distinction matters—Arrow is neither the store
+nor the engine, so each can change without replacing the in-memory contract.
+See [why rekep chooses Apache Arrow](arrow.md) for the sourced interoperability
+details and the limits of zero-copy exchange.
 
 ## Workflow
 
@@ -14,9 +21,12 @@ flowchart TD
     M --> PF[parse_fix]
     PF --> FM[(fixmessage.market<br/>misc, unknown)]
     FM --> FI[flatten_instruments] --> I[(instrument)]
-    FM --> PK[parse_market] --> B[(book)]
-    PK --> FO[flatten_orders] --> O[(order)]
-    PK --> FE[flatten_executions] --> E[(execution)]
+    FM --> PK[parse_market]
+    PK -->|books: true| B[(book)]
+    B --> FO[flatten_orders] --> O[(order)]
+    B --> FE[flatten_executions] --> E[(execution)]
+    PK -->|books: false| O
+    PK -->|books: false| E
 ```
 
 Concrete stages are notebooks with adjacent YAML files under `tasks/`. The
@@ -27,6 +37,7 @@ it does not own deployment-specific jobs.
 
 **Declaring data**
 
+- [Why Arrow](arrow.md): storage, database, and compute interoperability.
 - [Design](design.md): boundaries and maintenance rules.
 - [Types](types.md): `@scalar`, fields, and recursive casts.
 - [Contracts](contracts.md): the five portable schemas.
@@ -43,6 +54,7 @@ it does not own deployment-specific jobs.
 - [Market](market.md): events, instruments, books, and audit rows.
 - [Iceberg](iceberg.md): streaming reads, writes, and maintenance.
 - [Pipeline](tasks.md): notebooks, configs, and Airflow.
+- [Airflow](airflow.md): deployment, runs, backfills, and operations.
 - [End-to-end run](workflow-run.md): execution evidence and schema lineage.
 - [Benchmarks](benchmarks.md): focused internal measurements.
 

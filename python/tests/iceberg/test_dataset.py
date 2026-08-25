@@ -63,6 +63,9 @@ def dataset(tmp_path: Path) -> IcebergDataset:
         catalog="test",
         properties=catalog_properties(tmp_path),
         field=Quote.into_field(),
+        # Fragmentation tests control maintenance themselves. Production
+        # defaults are exercised in the dedicated automatic-compaction cases.
+        auto_compact=False,
     )
 
 
@@ -87,6 +90,7 @@ def logs(tmp_path: Path) -> IcebergDataset:
         catalog="test",
         properties=catalog_properties(tmp_path),
         field=FixMessage.into_field(),
+        auto_compact=False,
     )
 
 
@@ -935,6 +939,93 @@ def test_a_branch_is_written_and_read_on_its_own(dataset: IcebergDataset) -> Non
     assert dataset.read_arrow_table().num_rows == 2, "main is untouched"
 
 
+@pytest.mark.parametrize("alias", ["root", "main", "master"])
+def test_root_branch_aliases_override_a_named_default(dataset: IcebergDataset, alias: str) -> None:
+    dataset.append_arrow_table(quotes(2))
+    dataset.create_branch("dev")
+    dataset.branch = "dev"
+    dataset.append_arrow(quotes(1, alias), branch=alias)
+    assert dataset.read_arrow_table().num_rows == 2, "None still inherits dev"
+    assert dataset.read_arrow_table(branch=alias).num_rows == 3
+    assert dataset.scan_plan(branch=alias)["rows"] == 3
+    assert set(dataset.refs()) == {"main", "dev"}, "aliases never become stored refs"
+
+
+@pytest.mark.parametrize("alias", ["root", "main", "master"])
+def test_root_branch_aliases_are_reserved(dataset: IcebergDataset, alias: str) -> None:
+    dataset.append_arrow_table(quotes(1))
+    with pytest.raises(ValueError, match="reserved"):
+        dataset.create_branch(alias)
+    with pytest.raises(ValueError, match="reserved"):
+        dataset.remove_branch(alias)
+
+
+@pytest.mark.parametrize("plan_merges", [True, False])
+def test_a_missing_branch_is_refused_before_a_merge_replay(
+    dataset: IcebergDataset, plan_merges: bool
+) -> None:
+    given = quotes(2)
+    dataset.append_arrow_table(given)
+    dataset.plan_merges = plan_merges
+
+    with pytest.raises(ValueError, match="unknown ref=missing"):
+        dataset.overwrite_arrow_table(given, branch="missing")
+
+    assert set(dataset.refs()) == {"main"}
+    assert dataset.read_arrow_table().num_rows == 2
+
+
+def test_a_missing_branch_is_refused_before_an_insert_replay(
+    dataset: IcebergDataset,
+) -> None:
+    given = quotes(2)
+    dataset.append_arrow_table(given)
+
+    with pytest.raises(ValueError, match="unknown ref=missing"):
+        dataset.append_arrow_table(given, merge_by=True, branch="missing")
+
+    assert set(dataset.refs()) == {"main"}
+    assert dataset.read_arrow_table().num_rows == 2
+
+
+@pytest.mark.parametrize("operation", ["append", "delete"])
+def test_a_missing_branch_is_refused_by_blind_writes(
+    dataset: IcebergDataset, operation: str
+) -> None:
+    dataset.append_arrow_table(quotes(2))
+
+    with pytest.raises(ValueError, match="unknown ref=missing"):
+        if operation == "append":
+            dataset.append_arrow_table(quotes(1, "later"), branch="missing")
+        else:
+            dataset.delete("size >= 0", branch="missing")
+
+    assert set(dataset.refs()) == {"main"}
+    assert dataset.read_arrow_table().num_rows == 2
+
+
+@pytest.mark.parametrize("operation", ["compaction_plan", "maybe_compact", "maybe_optimize"])
+def test_a_missing_branch_is_refused_before_maintenance_planning(
+    dataset: IcebergDataset, operation: str
+) -> None:
+    dataset.append_arrow_table(quotes(2))
+    with pytest.raises(ValueError, match="unknown ref=missing"):
+        getattr(dataset, operation)(branch="missing")
+
+
+def test_an_unwritten_root_still_plans_nothing_and_accepts_its_first_merge(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.create_with()
+    assert dataset.refs() == {}
+    assert dataset.compaction_plan(branch="root") == []
+    assert dataset.maybe_compact(branch="master") == 0
+    assert dataset.maybe_optimize(branch="main") is None
+
+    dataset.overwrite_arrow_table(quotes(1), branch="root")
+    assert dataset.read_arrow_table(branch="master").num_rows == 1
+
+
 def test_a_branch_is_removed(dataset: IcebergDataset) -> None:
     dataset.append_arrow_table(quotes(1))
     dataset.create_branch("dev")
@@ -1461,6 +1552,9 @@ def test_a_snapshot_id_and_a_branch_together_are_refused(dataset: IcebergDataset
         dataset.read_arrow_table(snapshot_id=first, branch="dev")
     with pytest.raises(ValueError, match="two different states"):
         dataset.scan_plan(snapshot_id=first, branch="dev")
+    for alias in ("root", "main", "master"):
+        assert dataset.read_arrow_table(snapshot_id=first, branch=alias).num_rows == 2
+        assert dataset.scan_plan(snapshot_id=first, branch=alias)["rows"] == 2
     dataset.branch = "dev"
     assert dataset.read_arrow_table(snapshot_id=first).num_rows == 2, "a default is not a conflict"
 
@@ -2032,20 +2126,71 @@ def test_optimize_can_skip_the_sweep(
     assert listed, "and asking for the sweep still sweeps"
 
 
-def test_a_stream_ends_by_asking_maybe_optimize_only_when_asked(
+@pytest.mark.parametrize("plan_merges", [True, False])
+def test_a_stream_runs_one_automatic_policy_and_a_replay_runs_none(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, plan_merges: bool
+) -> None:
+    compacted: list[dict] = []
+    optimized: list[dict] = []
+    monkeypatch.setattr(
+        IcebergDataset, "maybe_compact", lambda self, **kwargs: compacted.append(kwargs)
+    )
+    monkeypatch.setattr(
+        IcebergDataset, "maybe_optimize", lambda self, **kwargs: optimized.append(kwargs)
+    )
+    dataset.auto_compact = True
+    dataset.plan_merges = plan_merges
+    dataset.append_arrow_table(quotes(2))
+    assert len(compacted) == 1 and optimized == []
+    dataset.append_arrow(keyed("T", 2), merge_by=True)
+    assert len(compacted) == 2
+    dataset.append_arrow(keyed("T", 2), merge_by=True)
+    assert len(compacted) == 2, "a replay committed nothing, so it maintained nothing"
+    dataset.auto_optimize = True
+    dataset.append_arrow(keyed("U", 2), merge_by=True)
+    assert len(optimized) == 1 and len(compacted) == 2
+
+
+def test_an_explicit_empty_batch_commits_and_maintains_nothing(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[dict] = []
+    compacted: list[dict] = []
     monkeypatch.setattr(
-        IcebergDataset, "maybe_optimize", lambda self, **kwargs: calls.append(kwargs)
+        IcebergDataset, "maybe_compact", lambda self, **kwargs: compacted.append(kwargs)
     )
-    dataset.append_arrow_table(quotes(2))
-    assert calls == [], "off by default: expiring snapshots is not a writer's call"
-    dataset.auto_optimize = True
-    dataset.append_arrow_table(quotes(2))
-    assert len(calls) == 1
-    dataset.append_arrow(keyed("T", 2), merge_by=True)
-    assert len(calls) == 2
+    dataset.auto_compact = True
+    schema = Quote.into_field().into_arrow_schema()
+    empty = pyarrow.RecordBatch.from_arrays(
+        [pyarrow.array([], field.type) for field in schema], schema=schema
+    )
+
+    assert dataset.append_arrow_reader(iter([empty]), merge_by=False) == 0
+    assert dataset.iceberg_table.current_snapshot() is None
+    assert compacted == []
+
+
+def test_default_auto_compaction_rewrites_files_but_keeps_history(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    assert IcebergDataset(name="unopened.table").auto_compact is True
+    monkeypatch.setattr(module, "AUTO_OPTIMIZE_FILES", 3)
+    dataset.auto_compact = True
+    dataset.append_arrow(quotes(4).to_reader(max_chunksize=1), commit_row_size=1)
+    snapshots = dataset.iceberg_table.snapshots()
+    assert dataset.data_files().num_rows < 4
+    assert len(snapshots) >= 5, "four appends and compaction remain available"
+    assert dataset.read_arrow_table(snapshot_id=snapshots[0].snapshot_id).num_rows == 1
+
+
+def test_compaction_aliases_settle_under_the_physical_root(dataset: IcebergDataset) -> None:
+    for index in range(3):
+        dataset.append_arrow(quotes(2, f"v{index}"), branch="master", commit_row_size=0)
+    assert dataset.compact(branch="master") > 0
+    assert dataset.compact(branch="root") == 0
+    assert dataset.compaction_marks()
+    assert all(key.startswith("main/") for key in dataset.compaction_marks())
 
 
 # -- maintenance that settles -----------------------------------------------
@@ -2257,9 +2402,9 @@ def test_a_key_range_bands_a_type_that_cannot_be_subtracted() -> None:
 
 def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> None:
     """A string key has no arithmetic to find gaps with, and a nanosecond
-    timestamp has no bound pyarrow will hand back as a `datetime` at all. One
-    keeps its single range; the other contributes no term, which widens the
-    filter -- the only direction it may be wrong in."""
+    timestamp has finer bounds than an Iceberg literal can retain. One keeps
+    its single range; the other contributes no term, which widens the filter --
+    the only direction it may be wrong in."""
     from rekep.iceberg.dataset import _always_true, _banded, _key_ranges
 
     text = pyarrow.chunked_array([pyarrow.array([f"S{i:06d}" for i in range(600)])])
@@ -2269,6 +2414,7 @@ def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> 
         [pyarrow.array([1_700_000_000_000_000_000 + i for i in range(600)], pyarrow.int64())]
     ).cast(pyarrow.timestamp("ns"))
     assert _banded("at", nanos) is None
+    assert _banded("at", nanos.cast(pyarrow.time64("ns"))) is None
     chunk = pyarrow.Table.from_arrays([nanos], names=["at"])
     assert _key_ranges(chunk, ["at"]) == _always_true(), "no term at all, not a wrong one"
 

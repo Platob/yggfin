@@ -368,6 +368,10 @@ def test_the_conversions_never_walk_rows_in_python() -> None:
     values, member = arrays.interleave([pyarrow.array([1, 2]), pyarrow.array([10, 20])], length=2)
     assert values.to_pylist() == [1, 10, 2, 20]
     assert member.to_pylist() == [0, 1, 0, 1]
+    chunked = [pyarrow.chunked_array([[1], [2]]), pyarrow.chunked_array([[10], [20]])]
+    values, member = arrays.interleave(chunked, length=2)
+    assert values.to_pylist() == [1, 10, 2, 20]
+    assert member.to_pylist() == [0, 1, 0, 1]
     assert arrays.sequence(4).to_pylist() == [0, 1, 2, 3]
     assert arrays.repeat_sizes(3, 2).to_pylist() == [3, 3]
 

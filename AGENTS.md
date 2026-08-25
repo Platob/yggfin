@@ -159,6 +159,10 @@ parse_messages -> parse_fix -> parse_market -> flatten_orders
                       `------------> flatten_instruments
 ```
 
+With `parse_market.books: false`, the market task bypasses Book construction
+and writes the FIX-carried Order and Execution rows itself; the two flatten
+tasks are skipped by the Airflow result route.
+
 Inputs are text files. Persisted outputs are the structured message table,
 the three FixMessage tables, and instrument, book, order and execution tables.
 

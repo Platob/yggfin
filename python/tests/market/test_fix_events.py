@@ -331,6 +331,38 @@ def test_an_order_carries_every_slot_the_message_filled() -> None:
     assert order.prev_client_order_id == "CL-6"
 
 
+def test_every_parsed_identifier_is_retained_in_isolated_code_maps() -> None:
+    report = FILLED.replace(
+        "|17=EX-3|",
+        "|17=EX-3|527=EX-SECONDARY|19=EX-2|1003=TR-1|278=MD-1|280=MD-0|",
+    )
+    order, execution = events(report)
+    shared = {
+        "order_id": "ORD-9",
+        "orig_cl_ord_id": "CL-6",
+        "cl_ord_id": "CL-7",
+        "exec_id": "EX-3",
+        "secondary_exec_id": "EX-SECONDARY",
+        "exec_ref_id": "EX-2",
+        "trade_id": "TR-1",
+        "md_entry_id": "MD-1",
+        "md_entry_ref_id": "MD-0",
+        "symbol": "BTC-USD",
+    }
+
+    assert {name: order.codes[name] for name in shared} == shared
+    assert {name: execution.codes[name] for name in shared} == shared
+    assert order.codes is not execution.codes
+    order.codes["local"] = "order-only"
+    assert "local" not in execution.codes
+
+
+def test_a_rendered_identifier_missing_from_the_merged_index_is_still_retained() -> None:
+    parsed = FixEvents.from_pairs([("MDEntryRefID", "MD-NAMED")], fix_version="4.4")
+
+    assert parsed._identifier_codes["md_entry_ref_id"] == "MD-NAMED"
+
+
 def test_order_qty_uses_explicit_or_derived_live_quantity() -> None:
     explicit, _ = events(FILLED)
     derived, _ = events(FILLED.replace("|151=6|", "|"))

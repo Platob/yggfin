@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.fields import scalar
-from rekep.fields.arrays import build_list, build_map, sequence
+from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
 from rekep.fix.columns import DECLARATIONS, KWARGS
 from rekep.fix.fields import STAMP_PATTERN, cast_arrow_fix
 from rekep.fix.quickfix import (
@@ -186,7 +186,7 @@ class ComponentGroup:
         row_ids = sequence(rows)
 
         count_match = compute.is_in(keys, value_set=self._count_array)
-        count_occurrences = _counts(compute.filter(parents, count_match), rows)
+        count_occurrences = dense_counts(compute.filter(parents, count_match), rows)
         count_positions = _first_by_parent(positions, parents, count_match, row_ids)
         count_values = _first_by_parent(values, parents, count_match, row_ids)
         count_is_numeric = compute.fill_null(
@@ -201,7 +201,7 @@ class ComponentGroup:
         counted_inside = _contiguous_after(
             positions, parents, count_positions, count_match, allowed
         )
-        counted_delimiters = _counts(
+        counted_delimiters = dense_counts(
             compute.filter(parents, compute.and_(counted_inside, is_delimiter)), rows
         )
         first_counted_delimiter = _first_by_parent(
@@ -225,7 +225,7 @@ class ComponentGroup:
 
         first_delimiter = _first_by_parent(positions, parents, is_delimiter, row_ids)
         inferred_inside = _contiguous_from(positions, parents, first_delimiter, allowed)
-        inferred_delimiters = _counts(
+        inferred_delimiters = dense_counts(
             compute.filter(parents, compute.and_(inferred_inside, is_delimiter)), rows
         )
         inferred_valid = _all(
@@ -296,7 +296,7 @@ class ComponentGroup:
         )
         buffered = compute.and_(buffered, bufferable)
         buffered_party = compute.filter(party_index, buffered).cast(pyarrow.int64())
-        buffer_sizes = _counts(buffered_party, len(party_groups))
+        buffer_sizes = dense_counts(buffered_party, len(party_groups))
         buffer_type = row_field.field("buffer").arrow_type
         assert buffer_type is not None
         buffers = build_map(
@@ -322,7 +322,7 @@ class ComponentGroup:
             compute.and_(count_match, compute.take(counted_valid, parents)),
         )
         keep = compute.invert(remove)
-        residual_sizes = _counts(compute.filter(parents, keep), rows)
+        residual_sizes = dense_counts(compute.filter(parents, keep), rows)
         residual = build_list(
             KWARGS,
             residual_sizes,
@@ -674,16 +674,6 @@ def _all(*conditions: Any) -> Any:
     for condition in conditions[1:]:
         found = pyarrow.compute.and_(found, pyarrow.compute.fill_null(condition, False))
     return found
-
-
-def _counts(ids: Any, size: int) -> pyarrow.Array:
-    """Counts for dense ids `0..size`, including groups that have no value."""
-    compute = pyarrow.compute
-    if not len(ids):
-        return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int64()), size)
-    counted = compute.value_counts(ids)
-    where = compute.index_in(sequence(size), value_set=counted.field("values"))
-    return compute.fill_null(compute.take(counted.field("counts"), where), 0).cast(pyarrow.int64())
 
 
 def _first_by_parent(values: Any, parents: Any, matches: Any, row_ids: Any) -> pyarrow.Array:

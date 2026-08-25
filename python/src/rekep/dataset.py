@@ -484,6 +484,8 @@ def arrow_chunks(
     rows = 0
     schema = source.schema if isinstance(source, pyarrow.RecordBatchReader) else None
     for batch in source:
+        if not batch.num_rows:
+            continue
         schema = schema or batch.schema
         batches.append(batch)
         rows += batch.num_rows

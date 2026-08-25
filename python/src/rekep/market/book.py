@@ -27,7 +27,7 @@ from rekep.market.event import DAY, HOUR, SYMBOL_CODE, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL
 from rekep.market.instrument import Instrument
-from rekep.market.orders import Execution, Order, _quantity_transition
+from rekep.market.orders import CLIENT_ORDER_CODE, Execution, Order, _quantity_transition
 
 if TYPE_CHECKING:
     from rekep.text.fixmessage import FixMessage
@@ -38,6 +38,11 @@ _ARROW_DISPATCH = MappingProxyType(
         pyarrow.Table: "arrow_table",
     }
 )
+
+# Amortize heap rebuilds while bounding stale revisions independently of replay length.
+_DEADLINE_STALE_BUFFER = 64
+# Keep the stable root and current identifiers; bound only historical lookup aliases.
+_ORDER_ALIAS_LIMIT = 64
 
 
 @scalar(slots=True, weakref_slot=True)
@@ -396,15 +401,6 @@ def _resting(order: Order) -> float:
     return max(qty - (hidden if hidden is not None and hidden > 0 else 0.0), 0.0)
 
 
-def _names_of(event: MarketEvent) -> tuple[str | None, str | None, str | None]:
-    """Source order identifiers carried by an order or execution."""
-    return (
-        getattr(event, "order_id", None),
-        getattr(event, "client_order_id", None),
-        getattr(event, "prev_client_order_id", None),
-    )
-
-
 def _combined(column: Any) -> Any:
     """A column as one Array, because the offsets of a chunk index its own child."""
     return column.combine_chunks() if isinstance(column, pyarrow.ChunkedArray) else column
@@ -476,8 +472,13 @@ class _Side:
     orders: dict[int, Order] = dataclasses.field(default_factory=dict)
     """Every live order, by lifecycle, in no particular order."""
 
-    named: dict[str, int] = dataclasses.field(default_factory=dict)
-    """Which lifecycle each venue or client identifier belongs to."""
+    named: dict[tuple[str, str], dict[int | None, int]] = dataclasses.field(default_factory=dict)
+    """Lifecycle for each typed identifier and known venue scope."""
+
+    aliases: dict[int, dict[tuple[int | None, str, str], None]] = dataclasses.field(
+        default_factory=dict
+    )
+    """Current lookup keys per lifecycle, cached for bounded replacement and removal."""
 
     levels: dict[float, _LevelState] = dataclasses.field(default_factory=dict)
     """Live levels by price, updated incrementally as orders move."""
@@ -498,6 +499,9 @@ class _Side:
         default_factory=list, init=False, repr=False
     )
     _deadline_tokens: dict[int, int] = dataclasses.field(
+        default_factory=dict, init=False, repr=False
+    )
+    _deadline_values: dict[int, int] = dataclasses.field(
         default_factory=dict, init=False, repr=False
     )
     _next_deadline_token: int = dataclasses.field(default=0, init=False, repr=False)
@@ -561,9 +565,6 @@ class _Side:
             recovered_xhash.add(order.xhash)
             restored._remember(order)
             restored._join(order, quantity)
-            for spelling in _names_of(order):
-                if spelling:
-                    restored.named[spelling] = order.xhash
         for captured in captured_levels.values():
             recovered = restored.levels.get(captured.px)
             if recovered is None:
@@ -703,6 +704,7 @@ class _Side:
 
     def has_due(self, unix: int) -> bool:
         """Whether the earliest indexed deadline is observable by `unix`."""
+        self._discard_stale_deadlines()
         return bool(self._deadlines and self._deadlines[0][0] <= unix)
 
     def purge(self, unix: int, reason: str) -> list[Order]:
@@ -799,10 +801,20 @@ class _Side:
         # Complete once here so both the book and its auditable delta use the
         # same linked version; publishing the raw partial report loses terms.
         settled = copy.copy(order)
+        # Completion records identifiers in `codes`; isolate the fold's copy
+        # from the immutable input event before that map is extended.
+        settled.codes = dict(order.codes)
         if standing is not None and settled.xhash and settled.xhash == standing.xhash:
             settled._completed_from_same_lifecycle(standing)
-        elif standing is not None or not settled.xhash or not settled.hash:
+        elif standing is not None:
+            # A typed identifier hit is the continuity proof. Synchronize
+            # before generic completion so a newly assigned source code cannot
+            # split the established lifecycle.
+            settled.code = standing.code
+            settled.xhash = standing.xhash
             settled.completed_from(standing)
+        elif not settled.xhash or not settled.hash:
+            settled.completed_from(None)
         settled = BookIterator.validate(settled)
         if (
             standing is not None
@@ -849,9 +861,6 @@ class _Side:
             level.members[settled.xhash] = None
             self._moved(level)
             self._remember(settled)
-            for spelling in _names_of(settled):
-                if spelling:
-                    self.named[spelling] = settled.xhash
             return bool(moved), settled
         if standing is not None:
             self._leave(standing)
@@ -866,9 +875,6 @@ class _Side:
         else:
             self._remember(settled)
             self._join(settled, after)
-            for spelling in _names_of(settled):
-                if spelling:
-                    self.named[spelling] = settled.xhash
         moved = after - before
         if not moved and (standing is None or standing.px == settled.px):
             return False, settled
@@ -898,15 +904,8 @@ class _Side:
                 level.members = {
                     working.xhash if xhash == old_xhash else xhash: None for xhash in level.members
                 }
-            self.orders.pop(old_xhash, None)
-            self._deadline_tokens.pop(old_xhash, None)
-            for spelling, identity in tuple(self.named.items()):
-                if identity == old_xhash:
-                    self.named[spelling] = working.xhash
+            self._rekey(old_xhash, working.xhash)
         self._remember(working)
-        for spelling in (*_names_of(standing), *_names_of(working)):
-            if spelling:
-                self.named[spelling] = working.xhash
         return requested
 
     def revise_quantity(
@@ -952,7 +951,7 @@ class _Side:
         return before != after
 
     def standing(self, event: Order | Execution) -> Order | None:
-        """The live order matched by lifecycle links, then source identifiers."""
+        """The live order matched by exact lifecycle, links, then typed codes."""
         if event.is_order() and event.xhash:
             found = self.orders.get(event.xhash)
             if found is not None:
@@ -961,10 +960,29 @@ class _Side:
             found = self.orders.get(identity)
             if found is not None:
                 return found
-        for spelling in _names_of(event):
-            identity = self.named.get(spelling) if spelling else None
-            if identity is not None:
-                return self.orders.get(identity)
+        aliases = tuple(Order.lookup_codes_of(event))
+        scope = int(event.mic) if event.mic else None
+        venue = {value for namespace, value in aliases if namespace != CLIENT_ORDER_CODE}
+        for key in aliases:
+            scoped = self.named.get(key)
+            if not scoped:
+                continue
+            if scope is not None:
+                identity = scoped.get(scope, scoped.get(None))
+            else:
+                identity = next(iter(scoped.values())) if len(scoped) == 1 else None
+            found = self.orders.get(identity) if identity is not None else None
+            if found is None:
+                continue
+            if key[0] == CLIENT_ORDER_CODE and venue:
+                standing_venue = {
+                    value
+                    for _, namespace, value in self.aliases.get(found.xhash, ())
+                    if namespace != CLIENT_ORDER_CODE
+                }
+                if standing_venue and venue.isdisjoint(standing_venue):
+                    continue
+            return found
         return None
 
     def remove(self, xhash: int) -> None:
@@ -1016,23 +1034,75 @@ class _Side:
             self.alive.pop(at)
 
     def _forget(self, xhash: int) -> None:
-        """Drop one order and the names that pointed at it, level already left."""
-        gone = self.orders.pop(xhash, None)
-        if gone is None:
-            return
+        """Drop one order and every cached code that still points at it."""
+        self.orders.pop(xhash, None)
         self._deadline_tokens.pop(xhash, None)
-        for spelling in _names_of(gone):
-            if spelling and self.named.get(spelling) == xhash:
-                del self.named[spelling]
+        self._deadline_values.pop(xhash, None)
+        for scope, namespace, value in self.aliases.pop(xhash, ()):
+            key = (namespace, value)
+            scoped = self.named.get(key)
+            if scoped is None or scoped.get(scope) != xhash:
+                continue
+            del scoped[scope]
+            if not scoped:
+                del self.named[key]
+        self._compact_deadlines()
+
+    def _rekey(self, old: int, new: int) -> None:
+        """Move one lifecycle's state and code cache without scanning either index."""
+        self.orders.pop(old, None)
+        self._deadline_tokens.pop(old, None)
+        self._deadline_values.pop(old, None)
+        aliases = self.aliases.pop(old, {})
+        if aliases:
+            self.aliases[new] = aliases
+            for scope, namespace, value in aliases:
+                scoped = self.named.get((namespace, value))
+                if scoped is not None and scoped.get(scope) == old:
+                    scoped[scope] = new
+        self._compact_deadlines()
 
     def _remember(self, order: Order) -> None:
-        """Store one live order and push its current lazy deadline entry.
+        """Store one live order, its bounded code index, and its lazy deadline.
 
         A new version of a resting order is a new content hash even where it
         stands at the same price for the same quantity, so its level forgets
         what it settled into whether or not the level itself moved.
         """
-        self.orders[order.xhash] = order
+        xhash = order.xhash
+        self.orders[xhash] = order
+        scope = int(order.mic) if order.mic else None
+        current = dict.fromkeys((scope, *key) for key in Order.lookup_codes_of(order))
+        previous = self.aliases.get(xhash, {})
+        remembered = {
+            alias: None
+            for alias in previous
+            if self.named.get((alias[1], alias[2]), {}).get(alias[0]) in (None, xhash)
+        }
+        remembered.update(current)
+        pinned = set(current)
+        if order.code:
+            pinned.update(alias for alias in remembered if alias[2] == order.code)
+        for alias in tuple(remembered):
+            if len(remembered) <= _ORDER_ALIAS_LIMIT:
+                break
+            if alias not in pinned:
+                del remembered[alias]
+        for old_scope, namespace, value in previous.keys() - remembered.keys():
+            key = (namespace, value)
+            scoped = self.named.get(key)
+            if scoped is None or scoped.get(old_scope) != xhash:
+                continue
+            del scoped[old_scope]
+            if not scoped:
+                del self.named[key]
+        self.aliases[xhash] = remembered
+        for current_scope, namespace, value in remembered:
+            if (current_scope, namespace, value) not in current:
+                scoped = self.named.get((namespace, value), {})
+                if scoped.get(current_scope) not in (None, xhash):
+                    continue
+            self.named.setdefault((namespace, value), {})[current_scope] = xhash
         self._moved(order.px)
         self._index_deadline(order)
 
@@ -1041,11 +1111,39 @@ class _Side:
         current = self._deadline_of(order)
         if current is None:
             self._deadline_tokens.pop(order.xhash, None)
+            self._deadline_values.pop(order.xhash, None)
+            self._compact_deadlines()
+            return
+        deadline = current[0]
+        if self._deadline_values.get(order.xhash) == deadline:
             return
         self._next_deadline_token += 1
         token = self._next_deadline_token
         self._deadline_tokens[order.xhash] = token
-        heapq.heappush(self._deadlines, (current[0], order.xhash, token))
+        self._deadline_values[order.xhash] = deadline
+        heapq.heappush(self._deadlines, (deadline, order.xhash, token))
+        self._compact_deadlines()
+
+    def _discard_stale_deadlines(self) -> None:
+        """Pop invalid heap heads before a due-time query reads one."""
+        while self._deadlines:
+            _, xhash, token = self._deadlines[0]
+            if self._deadline_tokens.get(xhash) == token:
+                return
+            heapq.heappop(self._deadlines)
+
+    def _compact_deadlines(self) -> None:
+        """Bound lazy stale entries while keeping deadline updates O(log n)."""
+        active = len(self._deadline_tokens)
+        if not active:
+            self._deadlines.clear()
+            return
+        if len(self._deadlines) <= active * 2 + _DEADLINE_STALE_BUFFER:
+            return
+        self._deadlines = [
+            entry for entry in self._deadlines if self._deadline_tokens.get(entry[1]) == entry[2]
+        ]
+        heapq.heapify(self._deadlines)
 
     def _deadline_of(self, order: Order) -> tuple[int, str] | None:
         """The earliest explicit or configured age deadline and its audit reason."""
@@ -1174,8 +1272,8 @@ class _Folding:
     reported_lifecycles: dict[int, int] = dataclasses.field(default_factory=dict)
     """Pending Order lifecycle to its source hash for linked report pairing."""
 
-    reported_names: dict[str, int] = dataclasses.field(default_factory=dict)
-    """Pending source identifiers to their Order source hash."""
+    reported_names: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
+    """Pending typed source identifiers to their Order source hash."""
 
     reported_source_links: dict[int, tuple[int, int]] = dataclasses.field(default_factory=dict)
     """Raw generated Order link replaced by the completed published Order."""
@@ -1204,7 +1302,7 @@ class BookIterator:
     """On flush, complete boundaries before this exclusive instant; None does not guess."""
 
     snapshots: Iterable[Book] = ()
-    """Latest prior book snapshots used to resume live orders."""
+    """Prior snapshots, normalized to the latest version of each book."""
 
     max_order_age_ns: int | None = DAY
     """Expire unchanged orders after one day; None uses explicit `eunix` only."""
@@ -1238,6 +1336,18 @@ class BookIterator:
         self._unix: int | None = None
         self._swept: int | None = None
         self._instruments: dict[int, Instrument] = {}
+        latest: dict[int, Book] = {}
+        for snapshot in self.snapshots:
+            current = latest.get(snapshot.instrument_xhash)
+            if current is None or (snapshot.unix, snapshot.version, snapshot.hash) > (
+                current.unix,
+                current.version,
+                current.hash,
+            ):
+                latest[snapshot.instrument_xhash] = snapshot
+        self.snapshots = tuple(
+            sorted(latest.values(), key=lambda row: (row.unix, row.instrument_xhash))
+        )
         for snapshot in self.snapshots:
             self._restore(snapshot)
 
@@ -1397,9 +1507,8 @@ class BookIterator:
             state.reported_lifecycles[source_link[1]] = key
         if order.xhash:
             state.reported_lifecycles[order.xhash] = key
-        for spelling in _names_of(order):
-            if spelling:
-                state.reported_names[spelling] = key
+        for code in Order.lookup_codes_of(order):
+            state.reported_names[code] = key
         if unpublished:
             state.unpublished.add(key)
 
@@ -1412,7 +1521,7 @@ class BookIterator:
 
         candidates = [state.reported_lifecycles.get(xhash) for _, xhash in execution.linked_events]
         candidates.extend(
-            state.reported_names.get(spelling) for spelling in _names_of(execution) if spelling
+            state.reported_names.get(code) for code in Order.lookup_codes_of(execution)
         )
         for key in dict.fromkeys(candidate for candidate in candidates if candidate is not None):
             order = state.reported.get(key)

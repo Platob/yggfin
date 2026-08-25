@@ -31,6 +31,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Why Arrow: arrow.md
   - Declaring data:
       - Design rules: design.md
       - Types: types.md
@@ -44,6 +45,7 @@ nav:
   - Storage: iceberg.md
   - Pipeline:
       - Overview: tasks.md
+      - Airflow deployment: airflow.md
       - End-to-end run: workflow-run.md
       - Parse messages: tasks/parse-messages.md
       - Parse FIX: tasks/parse-fix.md

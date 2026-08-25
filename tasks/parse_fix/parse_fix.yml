@@ -26,6 +26,8 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
+  # root, main, and master name the same Iceberg root branch.
+  branch: root
   target_pattern: "fixmessage.{category}"
   instrument_source: market.instruments
   instrument_snapshot_every: 3600000000000

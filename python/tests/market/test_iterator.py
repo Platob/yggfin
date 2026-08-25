@@ -8,6 +8,7 @@ import pyarrow
 import pytest
 
 from rekep.market import (
+    MIC,
     AssetKind,
     Book,
     BookIterator,
@@ -118,6 +119,261 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
         "US0378331005",
         "FR0000120271",
     ]
+
+
+def test_log_codes_retain_all_parsed_identifiers_in_lookup_order() -> None:
+    columns = {
+        "order_id": pyarrow.array(["ORD-1", None]),
+        "orig_cl_ord_id": pyarrow.array(["CL-0", None]),
+        "cl_ord_id": pyarrow.array(["CL-1", "CL-2"]),
+        "exec_id": pyarrow.array(["EX-1", None]),
+        "quote_set_id": pyarrow.array([None, "SET-1"]),
+        "symbol": pyarrow.array(["AAPL", "MSFT"]),
+    }
+
+    codes = FixMessage.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+
+    assert list(codes[0].items()) == [
+        ("order_id", "ORD-1"),
+        ("orig_cl_ord_id", "CL-0"),
+        ("cl_ord_id", "CL-1"),
+        ("exec_id", "EX-1"),
+        ("symbol", "AAPL"),
+    ]
+    assert list(codes[1].items()) == [
+        ("cl_ord_id", "CL-2"),
+        ("quote_set_id", "SET-1"),
+        ("symbol", "MSFT"),
+    ]
+
+
+def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
+    log = FixMessage(
+        kwargs=[
+            (198, "ORD-SECONDARY"),
+            (526, "CL-SECONDARY"),
+            (527, "EXEC-SECONDARY"),
+            (19, "EXEC-REF"),
+            (1003, "TRADE"),
+            (880, "MATCH"),
+            (278, "MD-ENTRY"),
+            (280, "MD-REF"),
+        ]
+    )
+    batch = pyarrow.Table.from_pylist(
+        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+    ).to_batches()[0]
+
+    (codes,) = FixMessage.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+        maps_as_pydicts="strict"
+    )
+
+    assert list(codes.items()) == [
+        ("secondary_order_id", "ORD-SECONDARY"),
+        ("secondary_cl_ord_id", "CL-SECONDARY"),
+        ("secondary_exec_id", "EXEC-SECONDARY"),
+        ("exec_ref_id", "EXEC-REF"),
+        ("trade_id", "TRADE"),
+        ("trd_match_id", "MATCH"),
+        ("md_entry_id", "MD-ENTRY"),
+        ("md_entry_ref_id", "MD-REF"),
+    ]
+
+
+def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
+    log = FixMessage(
+        kwargs=[
+            ("SecondaryExecID", "EXEC-NAMED"),
+            ("MDEntryRefID", "MD-NAMED"),
+        ]
+    )
+    batch = pyarrow.Table.from_pylist(
+        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+    ).to_batches()[0]
+
+    (codes,) = FixMessage.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+        maps_as_pydicts="strict"
+    )
+
+    assert list(codes.items()) == [
+        ("secondary_exec_id", "EXEC-NAMED"),
+        ("md_entry_ref_id", "MD-NAMED"),
+    ]
+
+
+def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
+    logs = [
+        FixMessage(kwargs=[(37, "ORDER-RESIDUAL")]),
+        FixMessage(order_id="ORDER-PROMOTED", kwargs=[(37, "ORDER-IGNORED")]),
+    ]
+    table = pyarrow.Table.from_pylist(
+        [log.into_dict() for log in logs],
+        schema=FixMessage.into_field().into_arrow_schema(),
+    )
+    columns = {name: table.column(name) for name in table.schema.names}
+
+    codes = FixMessage.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+
+    assert [row["order_id"] for row in codes] == [
+        "ORDER-RESIDUAL",
+        "ORDER-PROMOTED",
+    ]
+
+
+def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
+    def message(offset: int, msg_type: str, **given) -> FixMessage:
+        return FixMessage(
+            unix=BASE + offset,
+            unix_source="TransactTime",
+            begin_string="FIX.4.4",
+            msg_type=msg_type,
+            symbol="BTC-USD",
+            mic=MIC.from_str("XCME"),
+            **given,
+        )
+
+    logs = [
+        message(
+            1,
+            "D",
+            cl_ord_id="CL-1",
+            side="1",
+            ord_type="2",
+            order_qty=5.0,
+            price=100.0,
+            kwargs=[(9999, "order-meta")],
+            reason="order reason",
+        ),
+        message(
+            2,
+            "8",
+            order_id="ORD-1",
+            cl_ord_id="CL-1",
+            exec_id="EXEC-1",
+            side="1",
+            ord_type="2",
+            ord_status="1",
+            exec_type="F",
+            order_qty=5.0,
+            price=100.0,
+            last_px=100.5,
+            last_qty=2.0,
+            cum_qty=2.0,
+            leaves_qty=3.0,
+            vwap=100.5,
+            kwargs=[(1003, "TRADE-1"), (9998, "report-meta")],
+        ),
+        message(
+            3,
+            "AE",
+            exec_id="EXEC-2",
+            side="2",
+            last_px=101.0,
+            last_qty=1.0,
+            kwargs=[(1003, "TRADE-2")],
+        ),
+        message(4, "0"),
+        message(
+            5,
+            "W",
+            kwargs=[
+                (268, "4"),
+                (269, "0"),
+                (278, "BID-1"),
+                (270, "100"),
+                (271, "5"),
+                (269, "1"),
+                (278, "ASK-1"),
+                (270, "101"),
+                (271, "4"),
+                (269, "2"),
+                (278, "TRADE-ENTRY"),
+                (270, "100.5"),
+                (271, "2"),
+                (269, "4"),
+                (270, "99"),
+            ],
+        ),
+        message(
+            6,
+            "S",
+            quote_id="QUOTE-1",
+            bid_px=99.0,
+            bid_size=3.0,
+            offer_px=102.0,
+            offer_size=4.0,
+        ),
+        message(
+            7,
+            "i",
+            kwargs=[
+                (296, "1"),
+                (302, "SET-1"),
+                (295, "2"),
+                (299, "QUOTE-2"),
+                (132, "99"),
+                (134, "3"),
+                (133, "101"),
+                (135, "4"),
+                (299, "QUOTE-3"),
+                (132, "98"),
+                (134, "2"),
+                (133, "102"),
+                (135, "5"),
+            ],
+        ),
+    ]
+    schema = FixMessage.into_field().into_arrow_schema()
+    source = pyarrow.Table.from_pylist([log.into_dict() for log in logs], schema=schema)
+    source_batches = source.to_batches(max_chunksize=2)
+    stored = list(FixMessage.from_arrow_reader(source_batches))
+    expected = {Order: [], Execution: []}
+    for log in stored:
+        for event in log.into_market_events():
+            expected[type(event)].append(event)
+
+    found = {Order: [], Execution: []}
+    reader = pyarrow.RecordBatchReader.from_batches(schema, source_batches)
+    for event_type, batch in FixMessage.into_market_arrow_batches(reader, batch_row_size=2):
+        assert batch.schema.equals(event_type.into_field().into_arrow_schema(), check_metadata=True)
+        found[event_type].append(batch)
+
+    assert [batch.num_rows for batch in found[Order]] == [2, 2, 2, 2, 2]
+    assert [batch.num_rows for batch in found[Execution]] == [2, 1]
+    atomic = list(
+        FixMessage.into_market_arrow_batches(
+            pyarrow.RecordBatchReader.from_batches(schema, source_batches),
+            batch_row_size=None,
+        )
+    )
+    assert [(event_type, batch.num_rows) for event_type, batch in atomic] == [
+        (Order, 10),
+        (Execution, 3),
+    ]
+    for event_type in (Order, Execution):
+        expected_table = pyarrow.Table.from_batches(
+            list(event_type.into_arrow_reader(expected[event_type], batch_row_size=2)),
+            schema=event_type.into_field().into_arrow_schema(),
+        )
+        found_table = pyarrow.Table.from_batches(
+            found[event_type], schema=event_type.into_field().into_arrow_schema()
+        )
+        assert found_table.equals(expected_table)
+    report_order = expected[Order][1]
+    report_execution = expected[Execution][0]
+    assert report_execution.parent_hash == [report_order.hash]
+    assert report_execution.linked_events == [(report_order.unix, report_order.xhash)]
+    assert report_execution.codes["trade_id"] == "TRADE-1"
+    assert report_execution.metadata["9998"] == "report-meta"
+
+
+def test_an_empty_market_arrow_batch_emits_nothing() -> None:
+    schema = FixMessage.into_field().into_arrow_schema()
+    empty = pyarrow.RecordBatch.from_arrays(
+        [pyarrow.array([], field.type) for field in schema], schema=schema
+    )
+
+    assert list(FixMessage.into_market_arrow_batches(empty)) == []
 
 
 def test_reference_input_is_read_only_and_books_remain_the_only_output() -> None:
@@ -466,6 +722,25 @@ def test_recovery_continues_full_instrument_snapshots() -> None:
     assert all(one.cfi == BTC_RICH.cfi for one in recovered)
 
 
+def test_instrument_recovery_breaks_equal_versions_by_hash() -> None:
+    def seed(unix: int, label: str) -> Instrument:
+        known = dataclasses.replace(BTC, unix=unix, label=label).with_previous(None)
+        assert known is not None
+        return known
+
+    old = seed(BASE, "old")
+    peers = [seed(BASE + 60, "first"), seed(BASE + 60, "second")]
+    low, high = sorted(peers, key=lambda row: row.hash)
+
+    (snapshot,) = Instrument.from_observations(
+        (),
+        instruments=[low, old, high],
+        snapshot_until=BASE + HOUR + 1,
+    )
+
+    assert snapshot.label == high.label
+
+
 def test_every_instrument_gets_the_hour_and_not_only_the_one_that_traded() -> None:
     """The hour is a property of the clock: a book nothing happened to for three
     hours still stood there for three hours."""
@@ -752,6 +1027,27 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
     assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 8.0
 
 
+def test_book_recovery_normalizes_candidates_by_unix_version_and_hash() -> None:
+    def seeds(named: str) -> list[Book]:
+        books = BookIterator.from_events(
+            [
+                order(BASE + 60, BTC, Side.BID, 100.0, 5.0, named),
+                order(BASE + 2 * HOUR + 60, BTC, Side.ASK, 101.0, 1.0, f"A-{named}"),
+            ]
+        )
+        return [book for book in books if book.sunix is not None]
+
+    first, second = seeds("B1"), seeds("B2")
+    old = first[0]
+    low, high = sorted((first[-1], second[-1]), key=lambda row: row.hash)
+    assert (low.unix, low.version) == (high.unix, high.version)
+
+    restored = BookIterator(snapshots=[high, old, low], snapshot_every=0)
+
+    assert restored.snapshots == (high,)
+    assert restored.folding[BTC.xhash].previous is high
+
+
 def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1")
@@ -848,6 +1144,71 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
     seeded = next(one for one in seed.bid_alive if one.order_id == "B1")
     assert audited.prev_unix == seeded.unix == placed.unix
     assert audited.version == seeded.version + 1
+
+
+def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
+    placed = initial(
+        Order(
+            unix=BASE + 10,
+            side=Side.BID,
+            px=100.0,
+            qty=5.0,
+            client_order_id="CL-1",
+            codes={"cl_ord_id": "CL-1"},
+            state=State.NEW,
+        ),
+        BTC,
+    )
+    amended = initial(
+        Order(
+            unix=BASE + 20,
+            side=Side.BID,
+            px=100.0,
+            qty=4.0,
+            order_id="ORD-1",
+            client_order_id="CL-2",
+            prev_client_order_id="CL-1",
+            codes={
+                "order_id": "ORD-1",
+                "orig_cl_ord_id": "CL-1",
+                "cl_ord_id": "CL-2",
+            },
+            state=State.OPEN,
+        ),
+        BTC,
+    )
+    clock = order(BASE + HOUR + 30, BTC, Side.ASK, 101.0, 1.0, "A1")
+    seed = next(
+        book
+        for book in BookIterator.from_events([placed, amended, clock])
+        if book.sunix is not None
+    )
+
+    restored = BookIterator(snapshots=[seed])
+    side = restored.folding[BTC.xhash].bid
+    lifecycle = next(iter(side.orders))
+
+    for name, code in (
+        ("cl_ord_id", "CL-1"),
+        ("orig_cl_ord_id", "CL-1"),
+        ("cl_ord_id", "CL-2"),
+        ("order_id", "ORD-1"),
+    ):
+        assert side.standing(Order(codes={name: code})).xhash == lifecycle
+
+    side.apply(
+        initial(
+            Order(
+                unix=BASE + HOUR + 40,
+                side=Side.BID,
+                order_id="ORD-1",
+                codes={"order_id": "ORD-1"},
+                state=State.CANCELLED,
+            ),
+            BTC,
+        )
+    )
+    assert side.named == {} and side.aliases == {}
 
 
 def test_recovery_refuses_a_live_level_it_cannot_reconstruct() -> None:

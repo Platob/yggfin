@@ -26,6 +26,7 @@ from rekep.enums import (
 from rekep.fields import StructField
 from rekep.fix import infer_version_from_pairs
 from rekep.fix.access import FieldAccess
+from rekep.fix.columns import IDENTIFIER_FIELDS
 from rekep.fix.entries import translation_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import FixPairs
@@ -37,7 +38,7 @@ from rekep.fix.quickfix import (
     SpecMember,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import SYMBOL_CODE, MarketEvent
+from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
@@ -1115,13 +1116,25 @@ class FixEvents(Convertible):
         instrument = self.instrument
         mic = self._mic()
         return {
-            "codes": {SYMBOL_CODE: instrument.symbol} if instrument.symbol else {},
+            "codes": self._identifier_codes,
             "mic": mic,
             "reason": self._reason(),
             "instrument_xhash": instrument.xhash,
             "px_unit": instrument.currency.into_str() if instrument.currency else "",
             "ccy": instrument.currency,
         }
+
+    @functools.cached_property
+    def _identifier_codes(self) -> dict[str, str]:
+        """Every readable identifier this message carries, in lookup order."""
+        found: dict[str, str] = {}
+        for stored, field, tag in IDENTIFIER_FIELDS:
+            value = self.get(tag) if tag else None
+            if value is None:
+                value = self.get(field)
+            if value is not None and str(value):
+                found.setdefault(stored, str(value))
+        return found
 
     def _reason(self) -> str | None:
         """FIX text or the first structured reject/restatement reason."""
@@ -1154,7 +1167,11 @@ class FixEvents(Convertible):
 
     def _shared(self) -> dict[str, Any]:
         """The shared envelope with event-owned metadata."""
-        return {**self._shared_values, "metadata": dict(self.extras)}
+        return {
+            **self._shared_values,
+            "codes": dict(self._shared_values["codes"]),
+            "metadata": dict(self.extras),
+        }
 
     def _mic(self) -> MIC | None:
         """First valid ISO code: exchange fields, configured feed, then session peers."""

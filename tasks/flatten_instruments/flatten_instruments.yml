@@ -21,5 +21,7 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
+  # root, main, and master name the same Iceberg root branch.
+  branch: root
   merge_by: true
   commit_row_size: 250000

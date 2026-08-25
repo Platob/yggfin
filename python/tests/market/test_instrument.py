@@ -190,6 +190,71 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
     assert restored.into_dict() == instrument.into_dict()
 
 
+def test_normalized_instrument_batches_decode_without_python_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    instruments = [
+        Instrument(
+            unix=1_000,
+            cunix=900,
+            runix=1_100,
+            parent_hash=[11, 12],
+            symbol="CAL-27",
+            kind=AssetKind.MULTILEG,
+            security_id="FR0000000001",
+            security_id_source="4",
+            alt_ids={"ISIN": "FR0000000001", "RIC": "CAL.N", "Z": "vendor"},
+            security_type="MLEG",
+            exchange="XPAR",
+            currency=Currency.EUR,
+            multiplier=10.0,
+            tick=0.01,
+            lot=1.0,
+            maturity=datetime.date(2027, 6, 18),
+            strike=42.0,
+            option_kind=OptionKind.CALL,
+            label="Calendar spread",
+            legs=[
+                Leg(
+                    symbol="JUN-27",
+                    side=Side.BUY,
+                    ratio=1.0,
+                    kind=AssetKind.FUTURE,
+                    currency=Currency.EUR,
+                    maturity=datetime.date(2027, 6, 18),
+                ),
+                Leg(symbol="SEP-27", side=Side.SELL, ratio=2.0),
+            ],
+        ).identify(),
+        Instrument(unix=2_000, cunix=2_000, runix=2_000, symbol="CASH").identify(),
+    ]
+    messages = [FixMessage.from_instrument(one) for one in instruments]
+    source = pyarrow.Table.from_pylist(
+        [one.into_dict() for one in messages],
+        schema=FixMessage.into_field().into_arrow_schema(),
+    ).to_batches()[0]
+    expected = pyarrow.Table.from_pylist(
+        [dataclasses.asdict(one) for one in instruments],
+        schema=Instrument.into_field().into_arrow_schema(),
+    ).to_batches()[0]
+
+    monkeypatch.setattr(FixMessage, "into_instrument", lambda *_args, **_kwargs: pytest.fail())
+    found = FixMessage.into_instrument_arrow_batch(source)
+
+    assert found.schema.equals(expected.schema, check_metadata=True)
+    assert found.equals(expected)
+
+
+def test_an_empty_normalized_instrument_batch_keeps_the_target_schema() -> None:
+    schema = FixMessage.into_field().into_arrow_schema()
+    empty = pyarrow.RecordBatch.from_arrays(
+        [pyarrow.array([], field.type) for field in schema], schema=schema
+    )
+    found = FixMessage.into_instrument_arrow_batch(empty)
+    assert found.num_rows == 0
+    assert found.schema.equals(Instrument.into_field().into_arrow_schema(), check_metadata=True)
+
+
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
     """A tick or a maturity learnt afterwards is not part of the key, deliberately:
     an identity that moved when a field was enriched would break every join to it."""

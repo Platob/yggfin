@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import dataclasses
 import functools
+from collections.abc import Iterator
+from types import MappingProxyType
 from typing import Annotated, Any
 
 from rekep.enums import EventType, State, TimeInForce
@@ -11,6 +13,33 @@ from rekep.fields import scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL
+
+# Exact source fields stay on Order/Execution. These two namespaces are only
+# the lookup meaning of those fields: equal text in OrderID and ClOrdID is not
+# evidence that two orders are the same lifecycle.
+VENUE_ORDER_CODE = "order"
+CLIENT_ORDER_CODE = "client_order"
+
+_ORDER_CODE_NAMES = MappingProxyType(
+    {
+        "orderid": VENUE_ORDER_CODE,
+        "secondaryorderid": VENUE_ORDER_CODE,
+        "quoteentryid": VENUE_ORDER_CODE,
+        "quoteid": VENUE_ORDER_CODE,
+        "mdentryid": VENUE_ORDER_CODE,
+        "mdentryrefid": VENUE_ORDER_CODE,
+        "origclordid": CLIENT_ORDER_CODE,
+        "clordid": CLIENT_ORDER_CODE,
+        "secondaryclordid": CLIENT_ORDER_CODE,
+        "quotereqid": CLIENT_ORDER_CODE,
+    }
+)
+
+
+@functools.lru_cache(maxsize=128)
+def _code_name(name: str) -> str:
+    """One source identifier name in the spelling the lookup contract reads."""
+    return "".join(character for character in name.casefold() if character.isalnum())
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -215,8 +244,34 @@ class Order(MarketEvent):
         return self.code or self._named_life_code() or MarketEvent.life_code(self)
 
     def _named_life_code(self) -> str:
-        """The strongest order identifier this version carries itself."""
-        return self.order_id or self.prev_client_order_id or self.client_order_id or ""
+        """The strongest typed order identifier this version carries."""
+        return next((value for _, value in self.lookup_codes_of(self)), "")
+
+    @classmethod
+    def lookup_codes_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
+        """Typed order identifiers on `event`, strongest first and once each.
+
+        Venue identifiers lead client identifiers; exact columns are inserted
+        at their strength within that order so hand-built rows remain indexed.
+        Parsed `codes` retains identifiers not promoted to dedicated columns.
+        """
+        found: set[tuple[str, str]] = set()
+        parsed: list[tuple[str, str]] = []
+        for name, value in event.codes.items():
+            namespace = _ORDER_CODE_NAMES.get(_code_name(name))
+            if namespace is not None and value:
+                parsed.append((namespace, str(value)))
+        candidates = [
+            (VENUE_ORDER_CODE, getattr(event, "order_id", None)),
+            *(key for key in parsed if key[0] == VENUE_ORDER_CODE),
+            (CLIENT_ORDER_CODE, getattr(event, "prev_client_order_id", None)),
+            (CLIENT_ORDER_CODE, getattr(event, "client_order_id", None)),
+            *(key for key in parsed if key[0] == CLIENT_ORDER_CODE),
+        ]
+        for namespace, value in candidates:
+            if value and (key := (namespace, str(value))) not in found:
+                found.add(key)
+                yield key
 
     def _continues_named_life(self, previous: Event) -> bool:
         """Whether FIX identifiers link this row to the preceding Order."""

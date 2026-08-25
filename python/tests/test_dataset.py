@@ -433,6 +433,12 @@ def test_chunks_take_the_schema_from_a_reader() -> None:
     assert chunk.schema.equals(reader.schema)
 
 
+def test_chunks_ignore_explicit_zero_row_batches() -> None:
+    assert list(arrow_chunks(iter([rows(0)]), None)) == []
+    (chunk,) = arrow_chunks(iter([rows(0), rows(2), rows(0)]), None)
+    assert chunk.num_rows == 2
+
+
 # -- creating ---------------------------------------------------------------
 
 

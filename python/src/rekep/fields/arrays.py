@@ -20,6 +20,16 @@ def sequence(length: int) -> pyarrow.Array:
     return pyarrow.compute.subtract(pyarrow.compute.cumulative_sum(ones), 1)
 
 
+def dense_counts(ids: pyarrow.Array, size: int) -> pyarrow.Array:
+    """Counts for dense ids `0..size - 1`, including ids with no value."""
+    compute = pyarrow.compute
+    if not len(ids):
+        return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int64()), size)
+    counted = compute.value_counts(ids)
+    where = compute.index_in(sequence(size), value_set=counted.field("values"))
+    return compute.fill_null(compute.take(counted.field("counts"), where), 0).cast(pyarrow.int64())
+
+
 def null_mask(array: pyarrow.Array) -> pyarrow.Array | None:
     """Which rows are null, or None when none are -- a builder wants no mask then."""
     return array.is_null() if array.null_count else None
@@ -230,8 +240,14 @@ def list_column(array: pyarrow.Array, index: int) -> pyarrow.Array:
     return pyarrow.compute.list_element(array, index)
 
 
-def interleave(columns: list[pyarrow.Array], length: int) -> tuple[pyarrow.Array, pyarrow.Array]:
+def interleave(
+    columns: list[pyarrow.Array | pyarrow.ChunkedArray], length: int
+) -> tuple[pyarrow.Array, pyarrow.Array]:
     """`(entry values, member index)` for `length` rows of `len(columns)` members."""
+    columns = [
+        column.combine_chunks() if isinstance(column, pyarrow.ChunkedArray) else column
+        for column in columns
+    ]
     members = len(columns)
     positions = sequence(length * members)
     rows = pyarrow.compute.divide(positions, members)

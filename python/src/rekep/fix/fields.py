@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import decimal
 import functools
 import json
 import re
@@ -282,7 +283,6 @@ _A_DAY = SECONDS_A_DAY * NANOS
 
 #: Widths that cannot overflow the target: Arrow *raises* on a string it cannot
 #: parse, and a raise mid-batch loses a capture over one malformed field.
-_INTEGER = r"^[+-]?[0-9]{1,18}$"
 _DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?$"
 
 
@@ -345,17 +345,10 @@ def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
     text = pyarrow.compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
     if kinds.is_temporal(arrow_type):
         return _cast_arrow_stamp(text, arrow_type)
-    if (
-        kinds.is_integer(arrow_type)
-        or kinds.is_floating(arrow_type)
-        or kinds.is_decimal(arrow_type)
-    ):
-        pattern = _INTEGER if kinds.is_integer(arrow_type) else _DECIMAL
-        readable = _only(text, pattern)
-        if kinds.is_integer(arrow_type):
-            # Arrow accepts `-1` but rejects FIX's equally valid `+1`.
-            readable = pyarrow.compute.replace_substring_regex(readable, r"^\+", "")
-        return readable.cast(arrow_type, safe=False)
+    if kinds.is_integer(arrow_type):
+        return _cast_arrow_integer(text, arrow_type)
+    if kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
+        return _only(text, _DECIMAL).cast(arrow_type, safe=False)
     return text.cast(arrow_type, safe=False)
 
 
@@ -366,16 +359,34 @@ def _only(text: Any, pattern: str) -> Any:
     return compute.if_else(matched, text, pyarrow.scalar(None, pyarrow.string()))
 
 
-def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
-    """`unix_of` over a whole column: one regex pass, then arithmetic.
+def _cast_arrow_integer(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """Read the complete target integer range while nulling overflow per row."""
+    compute = pyarrow.compute
+    # Decimal128 is the checked staging type Arrow's integer parser lacks: it
+    # admits every uint64 spelling, then a mask removes values the target cannot hold.
+    readable = _only(text, r"^[+-]?[0-9]{1,20}$")
+    readable = compute.replace_substring_regex(readable, r"^\+", "")
+    staging = pyarrow.decimal128(21, 0)
+    values = readable.cast(staging)
+    bits = arrow_type.bit_width
+    signed = pyarrow.types.is_signed_integer(arrow_type)
+    lower = -(1 << (bits - 1)) if signed else 0
+    upper = (1 << (bits - int(signed))) - 1
+    inside = compute.fill_null(
+        compute.and_(
+            compute.greater_equal(values, pyarrow.scalar(decimal.Decimal(lower), staging)),
+            compute.less_equal(values, pyarrow.scalar(decimal.Decimal(upper), staging)),
+        ),
+        False,
+    )
+    safe = compute.if_else(inside, values, pyarrow.scalar(decimal.Decimal(0), staging)).cast(
+        arrow_type
+    )
+    return compute.if_else(inside, safe, pyarrow.scalar(None, arrow_type))
 
-    Assembled into ISO 8601 and handed to Arrow's own parser rather than
-    reimplementing the civil-date arithmetic here. A date that parses as a
-    shape but is not one -- `20260230`, `20250229` -- makes that parser raise,
-    so the whole column falls back to the scalar reading, which answers null
-    for exactly those rows. Vectorised for every batch, scalar for the one that
-    carries a broken stamp.
-    """
+
+def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """A FIX time column parsed without letting one malformed row stop its batch."""
     compute = pyarrow.compute
     parts = compute.extract_regex(text, STAMP_PATTERN)
 
@@ -394,31 +405,89 @@ def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
     date = compute.binary_join_element_wise(
         part("year", "1970"), part("month", "01"), part("day", "01"), "-"
     )
+    second = part("second", "00")
+    leap = compute.equal(second, "60")
     clock = compute.binary_join_element_wise(
-        part("hour", "00"), part("minute", "00"), part("second", "00"), ":"
+        part("hour", "00"),
+        part("minute", "00"),
+        compute.if_else(leap, pyarrow.scalar("59"), second),
+        ":",
     )
-    stamp = compute.binary_join_element_wise(
-        compute.binary_join_element_wise(date, clock, "T"), part("fraction", "0"), "."
+    stamp = compute.binary_join_element_wise(date, clock, "T")
+    parsed = compute.strptime(stamp, format="%Y-%m-%dT%H:%M:%S", unit="s", error_is_null=True)
+    # `strptime` normalizes impossible civil dates and clocks. A round trip
+    # distinguishes that normalization from a value the wire actually carried.
+    canonical = compute.strftime(parsed, format="%Y-%m-%dT%H:%M:%S")
+    valid = compute.fill_null(
+        compute.and_(
+            compute.and_(present, compute.equal(canonical, stamp)),
+            compute.or_(
+                compute.invert(given("year")),
+                compute.not_equal(part("year", "1970"), "0000"),
+            ),
+        ),
+        False,
     )
-    stamp = compute.if_else(present, stamp, pyarrow.scalar(None, pyarrow.string()))
-    try:
-        nanos = stamp.cast(pyarrow.timestamp("ns")).cast(pyarrow.int64())
-    except pyarrow.ArrowInvalid:
-        nanos = pyarrow.array([unix_of(one) for one in text.to_pylist()], pyarrow.int64())
-    return _temporal(nanos, arrow_type)
+    seconds = compute.add(parsed.cast(pyarrow.int64()), compute.cast(leap, pyarrow.int64()))
+    fraction = compute.cast(compute.utf8_rpad(part("fraction", "0"), 9, "0"), pyarrow.int64())
+
+    return _temporal(seconds, fraction, valid, arrow_type)
 
 
-def _temporal(nanos: Any, arrow_type: pyarrow.DataType) -> Any:
-    """Nanoseconds since the epoch as the temporal type asked for."""
+def _temporal(seconds: Any, fraction: Any, valid: Any, arrow_type: pyarrow.DataType) -> Any:
+    """Parsed seconds and nanoseconds as the temporal type asked for."""
     compute = pyarrow.compute
     kinds = pyarrow.types
+    zero = pyarrow.scalar(0, pyarrow.int64())
+    safe_seconds = compute.if_else(valid, seconds, zero)
     if kinds.is_date(arrow_type):
-        days = compute.divide(nanos, pyarrow.scalar(_A_DAY, pyarrow.int64()))
-        return days.cast(pyarrow.int32(), safe=False).cast(arrow_type, safe=False)
+        stamps = compute.if_else(valid, safe_seconds, pyarrow.scalar(None, pyarrow.int64()))
+        return stamps.cast(pyarrow.timestamp("s")).cast(arrow_type, safe=False)
+
+    factor = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": NANOS}[arrow_type.unit]
+    divisor = NANOS // factor
+    subunits = compute.divide(fraction, pyarrow.scalar(divisor, pyarrow.int64()))
     if kinds.is_time(arrow_type):
-        return (
-            nanos.cast(pyarrow.timestamp("ns"))
-            .cast(pyarrow.time64("ns"))
+        storage = pyarrow.int32() if arrow_type.bit_width == 32 else pyarrow.int64()
+        base = (
+            safe_seconds.cast(pyarrow.timestamp("s"))
             .cast(arrow_type, safe=False)
+            .cast(storage)
+            .cast(pyarrow.int64())
         )
-    return nanos.cast(pyarrow.timestamp("ns")).cast(arrow_type, safe=False)
+        units = compute.add(base, compute.if_else(valid, subunits, zero))
+        values = units.cast(storage).cast(arrow_type)
+        return compute.if_else(valid, values, pyarrow.scalar(None, arrow_type))
+
+    # Bound in the destination unit before multiplying: a four-digit year fits
+    # timestamp[s/us] even when it cannot fit timestamp[ns].
+    # Arrow narrows negative epoch values toward zero, so a discarded fraction
+    # advances their integer unit before the range check.
+    remainder = compute.subtract(fraction, compute.multiply(subunits, divisor))
+    rounds_toward_zero = compute.and_(compute.less(seconds, 0), compute.greater(remainder, 0))
+    subunits = compute.add(subunits, compute.cast(rounds_toward_zero, pyarrow.int64()))
+    carry = compute.cast(compute.equal(subunits, factor), pyarrow.int64())
+    seconds = compute.add(seconds, carry)
+    subunits = compute.subtract(subunits, compute.multiply(carry, factor))
+    lower_second, lower_subunit = divmod(-(1 << 63), factor)
+    upper_second, upper_subunit = divmod((1 << 63) - 1, factor)
+    above_lower = compute.or_(
+        compute.greater(seconds, lower_second),
+        compute.and_(
+            compute.equal(seconds, lower_second),
+            compute.greater_equal(subunits, lower_subunit),
+        ),
+    )
+    below_upper = compute.or_(
+        compute.less(seconds, upper_second),
+        compute.and_(
+            compute.equal(seconds, upper_second),
+            compute.less_equal(subunits, upper_subunit),
+        ),
+    )
+    inside = compute.fill_null(compute.and_(valid, compute.and_(above_lower, below_upper)), False)
+    safe_seconds = compute.if_else(inside, seconds, zero)
+    safe_subunits = compute.if_else(inside, subunits, zero)
+    units = compute.add(compute.multiply(safe_seconds, factor), safe_subunits)
+    values = units.cast(arrow_type, safe=False)
+    return compute.if_else(inside, values, pyarrow.scalar(None, arrow_type))

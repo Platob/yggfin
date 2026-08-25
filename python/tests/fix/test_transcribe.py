@@ -42,6 +42,7 @@ from rekep.fix.transcribe import (
     BEGIN_STRING_SOURCE,
     NO_SOURCE,
     TagIndex,
+    _version_from_evidence,
     _version_key,
 )
 
@@ -429,6 +430,76 @@ def test_scalar_pair_version_inference_stops_at_the_checksum(codec: FixCodec) ->
     assert infer_version_from_pairs(pairs, codec.registry) == (None, NO_SOURCE)
 
 
+def test_kwargs_version_inference_matches_scalar_without_materialising_rows(
+    codec: FixCodec, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    evidence = [
+        (None, None, None),
+        (None, None, None),
+        (" FIX.4.4 ", None, None),
+        ("8=fix.5.0sp2", None, None),
+        ("FIXT.1.1", "9", None),
+        ("fixt-1-1", None, "8"),
+        ("FIXT.1.1", "bogus", "9"),
+        (None, "9", None),
+        ("FIX.unknown", None, None),
+        ("FIXT.1.1", " 5.0.sp1 ", None),
+        ("FIXT.1.1", "", "9"),
+        ("FIX.4.2", None, None),
+    ]
+    rows = [
+        None,
+        [],
+        [(8, "8", evidence[2][0])],
+        [(None, "BeginString", evidence[3][0])],
+        [(8, "8", evidence[4][0]), (1128, "1128", evidence[4][1])],
+        [
+            (None, "BeginString", evidence[5][0]),
+            (None, "DefaultApplVerID", evidence[5][2]),
+        ],
+        [
+            (8, "8", evidence[6][0]),
+            (1128, "1128", evidence[6][1]),
+            (1137, "1137", evidence[6][2]),
+        ],
+        [(1128, "1128", evidence[7][1])],
+        [(8, "8", evidence[8][0])],
+        [
+            (None, "BeginString", evidence[9][0]),
+            (None, "ApplVerID", evidence[9][1]),
+        ],
+        [
+            (8, "8", evidence[10][0]),
+            (1128, "1128", evidence[10][1]),
+            (1137, "1137", evidence[10][2]),
+        ],
+        [
+            (8, "8", evidence[11][0]),
+            (8, "BeginString", "FIX.4.4"),
+        ],
+    ]
+    expected = [
+        _version_from_evidence(*one, codec._spellings)  # noqa: SLF001
+        for one in evidence
+    ]
+
+    def scalar_path(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the batch path called the scalar resolver")
+
+    monkeypatch.setattr("rekep.fix.transcribe._version_from_evidence", scalar_path)
+    whole = _kwargs_array(rows)
+    chunked = pyarrow.chunked_array([whole.slice(0, 5), whole.slice(5)], type=KWARGS)
+    for kwargs in (whole, chunked):
+        versions, sources = codec.versions_of_kwargs(kwargs)
+        assert list(zip(versions.to_pylist(), sources.to_pylist(), strict=True)) == expected
+
+
+def test_kwargs_version_inference_keeps_empty_columns_typed(codec: FixCodec) -> None:
+    versions, sources = codec.versions_of_kwargs(pyarrow.array([], type=KWARGS))
+    assert versions.type == sources.type == pyarrow.string()
+    assert len(versions) == len(sources) == 0
+
+
 def test_a_mixed_column_resolves_each_beginstring(codec: FixCodec) -> None:
     messages = pyarrow.array(
         [
@@ -770,7 +841,10 @@ def test_the_stored_members_are_declared_once_and_nowhere_else() -> None:
     spelled = [
         path.relative_to(package).as_posix()
         for path in package.rglob("*.py")
-        if re.search(r"""\(\s*["']tag["']\s*,\s*["']key["']\s*,""", path.read_text())
+        if re.search(
+            r"""\(\s*["']tag["']\s*,\s*["']key["']\s*,""",
+            path.read_text(encoding="utf-8"),
+        )
     ]
     assert not spelled, f"the stored members are spelled again in {spelled}"
 

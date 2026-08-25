@@ -137,6 +137,8 @@ _APPL_VERSIONS = {
     "8": "5.0.SP1",
     "9": "5.0.SP2",
 }
+_APPL_VERSION_KEYS = pyarrow.array(list(_APPL_VERSIONS), pyarrow.string())
+_APPL_VERSION_VALUES = pyarrow.array(list(_APPL_VERSIONS.values()), pyarrow.string())
 _BEGIN_KEYS = pyarrow.array(["8", "beginstring"], pyarrow.string())
 _APPLICATION_KEYS = pyarrow.array(["1128", "applverid"], pyarrow.string())
 _DEFAULT_APPLICATION_KEYS = pyarrow.array(["1137", "defaultapplverid"], pyarrow.string())
@@ -665,24 +667,36 @@ class FixCodec(Convertible):
         begins = FieldAccess.first_named(kwargs, 8, "BeginString", rows)
         application = FieldAccess.first_named(kwargs, 1128, "ApplVerID", rows)
         default = FieldAccess.first_named(kwargs, 1137, "DefaultApplVerID", rows)
-        spellings = self._spellings
-        versions: list[str | None] = []
-        sources: list[str] = []
-        # One reading per *distinct* evidence triple rather than per row: a
-        # capture is one session and answers the same way on every line.
-        seen: dict[tuple[Any, Any, Any], tuple[str | None, str]] = {}
-        for evidence in zip(
-            begins.to_pylist(), application.to_pylist(), default.to_pylist(), strict=True
-        ):
-            found = seen.get(evidence)
-            if found is None:
-                found = seen[evidence] = _version_from_evidence(*evidence, spellings)
-            versions.append(found[0])
-            sources.append(found[1])
-        return (
-            pyarrow.array(versions, pyarrow.string()),
-            pyarrow.array(sources, pyarrow.string()),
+        compute = pyarrow.compute
+        version_keys, version_values = self._version_lookup
+
+        def registered(evidence: Any) -> Any:
+            return compute.take(
+                version_values,
+                compute.index_in(_version_keys_arrow(evidence), value_set=version_keys),
+            )
+
+        def applied(evidence: Any) -> Any:
+            direct = compute.take(
+                _APPL_VERSION_VALUES,
+                compute.index_in(
+                    compute.utf8_trim_whitespace(evidence), value_set=_APPL_VERSION_KEYS
+                ),
+            )
+            return compute.coalesce(direct, registered(evidence))
+
+        begin_keys = _version_keys_arrow(begins)
+        fixt = compute.fill_null(compute.match_substring_regex(begin_keys, r"^FIXT"), False)
+        application_version = compute.if_else(
+            compute.is_valid(application), applied(application), applied(default)
         )
+        versions = compute.if_else(fixt, application_version, registered(begins))
+        sources = compute.if_else(
+            compute.is_valid(versions),
+            compute.if_else(fixt, APPLICATION_VERSION_SOURCE, BEGIN_STRING_SOURCE),
+            NO_SOURCE,
+        )
+        return versions, sources
 
     def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
         """A message-stage `kwargs` column, resolved the rest of the way.
@@ -1158,6 +1172,14 @@ class FixCodec(Convertible):
     def _spellings(self) -> dict[str, str]:
         """`{version key: canonical spelling}` for every version the store holds."""
         return dict(version_spellings(self.registry))
+
+    @cached_property
+    def _version_lookup(self) -> tuple[pyarrow.Array, pyarrow.Array]:
+        """Registry version keys and canonical spellings as one Arrow lookup."""
+        return (
+            pyarrow.array(list(self._spellings), pyarrow.string()),
+            pyarrow.array(list(self._spellings.values()), pyarrow.string()),
+        )
 
     def _tags(self, version: str | None) -> dict[str, int]:
         """`{name: tag}` for one explicit version; empty when unknown."""
@@ -1682,3 +1704,22 @@ def _version_key(spelling: str) -> str:
     if text.startswith("FIXT"):
         return text
     return text[3:] if text.startswith("FIX") else text
+
+
+def _version_keys_arrow(spellings: Any) -> Any:
+    """`_version_key` over a string column in Arrow kernels."""
+    compute = pyarrow.compute
+    keys = compute.replace_substring_regex(
+        compute.utf8_upper(compute.utf8_trim_whitespace(spellings)),
+        r"[^A-Za-z0-9]",
+        "",
+    )
+    prefixed = compute.fill_null(compute.match_substring_regex(keys, r"^8FIX"), False)
+    keys = compute.if_else(prefixed, compute.utf8_slice_codeunits(keys, 1), keys)
+    transport = compute.fill_null(compute.match_substring_regex(keys, r"^FIXT"), False)
+    fix = compute.fill_null(compute.match_substring_regex(keys, r"^FIX"), False)
+    return compute.if_else(
+        transport,
+        keys,
+        compute.if_else(fix, compute.utf8_slice_codeunits(keys, 3), keys),
+    )

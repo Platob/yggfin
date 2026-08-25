@@ -30,9 +30,10 @@ from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
 from rekep.iceberg.fields import metrics_for
 
-#: The branch a read or a write lands on when nothing names one -- pyiceberg's
-#: own default, spelled out here so the two cannot disagree about it.
+#: The physical root ref PyIceberg stores. Public callers may spell the same
+#: state ``root``, ``main``, or ``master`` without creating extra refs.
 MAIN = "main"
+ROOT_BRANCHES = frozenset({"root", "main", "master"})
 
 #: How long a file must have been unreferenced before `cleanup` deletes it. A
 #: writer that is committing right now has files on disk that no snapshot
@@ -173,7 +174,8 @@ class IcebergDataset(Dataset):
     #: The declared shape. None means "whatever the table says".
     field: StructField | None = None
 
-    #: Branch reads and writes use unless a call names another; None is `main`.
+    #: Branch reads and writes use unless a call names another. None, `root`,
+    #: `main`, and `master` all mean the table's root state.
     branch: str | None = None
 
     #: Rows one commit carries when a write does not name a size. Iceberg lands
@@ -200,17 +202,24 @@ class IcebergDataset(Dataset):
     #: Iceberg's, and Iceberg's defaults are not tuned for a stream.
     optimize_commits: bool = True
 
-    #: Whether a write stream ends by asking `maybe_optimize` whether the
-    #: table has fragmented enough to be worth an `optimize` -- the check is
-    #: metadata already in memory, the run only happens past the
-    #: `AUTO_OPTIMIZE_*` thresholds. Off by default for one reason: `optimize`
-    #: expires snapshots, and whether yesterday's snapshots are still wanted
-    #: is not something a writer can decide for its readers.
+    #: Whether a write stream compacts once file fragmentation crosses the
+    #: automatic threshold. This rewrites data files but keeps snapshots and
+    #: orphan cleanup in the explicit maintenance path.
+    auto_compact: bool = True
+
+    #: Whether a write stream may run full maintenance after it fragments.
+    #: This supersedes `auto_compact` because `optimize` also expires snapshots
+    #: and sweeps orphans, decisions a writer must only make when asked.
     auto_optimize: bool = False
 
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
     table_properties: dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Normalize public root spellings once while keeping named refs exact."""
+        if self.branch in ROOT_BRANCHES:
+            self.branch = None
 
     # -- the table ----------------------------------------------------------
 
@@ -441,13 +450,38 @@ class IcebergDataset(Dataset):
     def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
         """The branch a read follows, or None when a snapshot id decides instead."""
         if snapshot_id is None:
-            return branch or self.branch
-        if branch is not None:
+            reference = self._branch_name(branch)
+            return None if reference == MAIN else reference
+        if branch is not None and self._branch_name(branch) != MAIN:
             raise ValueError(
                 f"snapshot_id={snapshot_id} and branch={branch!r} name two different states; "
                 "a snapshot id is already exact, so pass one or the other"
             )
         return None
+
+    def _branch_name(self, branch: str | None) -> str:
+        """The stored ref for a branch argument, with root aliases collapsed."""
+        reference = self.branch if branch is None else branch
+        return MAIN if reference is None or reference in ROOT_BRANCHES else reference
+
+    @staticmethod
+    def _branch_head(table: Any, reference: str) -> Any:
+        """A stored ref head; only an unwritten physical root may have none."""
+        head = table.refs().get(reference)
+        if head is None and reference != MAIN:
+            raise ValueError(f"Cannot scan unknown ref={reference}")
+        return head
+
+    def _branch_scan(self, table: Any, scan: Any, reference: str) -> Any:
+        """Pin a scan to its validated ref, leaving an unwritten root unpinned."""
+        return scan if self._branch_head(table, reference) is None else scan.use_ref(reference)
+
+    def _finish_write(self, branch: str | None) -> None:
+        """Run the maintenance policy once, after the whole input stream."""
+        if self.auto_optimize:
+            self.maybe_optimize(branch=branch)
+        elif self.auto_compact:
+            self.maybe_compact(branch=branch)
 
     def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
         """`{the scan's name: the target's name}` for every column it can fill."""
@@ -481,7 +515,7 @@ class IcebergDataset(Dataset):
         # insert-only writer's known maximum. Its cheap monotonic proof is no
         # longer complete after either operation.
         self.__dict__.pop("_insert_upper", None)
-        self.get_or_create_table()
+        table = self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
         join = self.merge_columns(merge_by)
         if not join:
@@ -490,21 +524,27 @@ class IcebergDataset(Dataset):
                 "replaces the rows whose keys match -- pass True for the primary key "
                 "or the columns to match on, or use append_arrow_* to add rows blindly"
             )
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
+        self._branch_head(table, reference)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        committed = False
         for chunk in arrow_chunks(reader, rows):
             chunk = self.sorted(chunk)
             if self.plan_merges:
-                self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
+                changed = self.merge_arrow_table(
+                    chunk, join, branch=reference, properties=properties
+                )
+                committed = committed or any(changed)
             else:
-                self.iceberg_table.upsert(
+                changed = self.iceberg_table.upsert(
                     chunk,
                     join_cols=join,
                     branch=reference,
                     snapshot_properties=properties or {},
                 )
-        if self.auto_optimize:
-            self.maybe_optimize(branch=branch)
+                committed = committed or bool(changed.rows_updated or changed.rows_inserted)
+        if committed:
+            self._finish_write(reference)
 
     def _append_arrow_reader(
         self,
@@ -519,13 +559,16 @@ class IcebergDataset(Dataset):
         self.__dict__.pop("_insert_upper", None)
         table = self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
+        self._branch_head(table, reference)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
         snapshot = properties or {}
+        committed = False
         for chunk in arrow_chunks(reader, rows):
             table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
-        if self.auto_optimize:
-            self.maybe_optimize(branch=branch)
+            committed = True
+        if committed:
+            self._finish_write(reference)
 
     def merge_arrow_table(
         self,
@@ -588,11 +631,10 @@ class IcebergDataset(Dataset):
         # it writes.
         chunk = normalised_keys(chunk, join)
         shape = Field.from_(chunk.schema)
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
         derived = self.derived_columns()
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
-        if reference in table.refs():
-            scan = scan.use_ref(reference)
+        scan = self._branch_scan(table, scan, reference)
         # Planned once and read from that plan: `to_arrow_batch_reader` plans
         # again on its own, and a streaming merge pays planning per chunk.
         tasks = list(scan.plan_files())
@@ -686,14 +728,15 @@ class IcebergDataset(Dataset):
             return inserted
         self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
+        reference = self._branch_name(branch)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
         inserted = 0
         for chunk in arrow_chunks(reader, rows):
             inserted += self.insert_arrow_table(
-                self.sorted(chunk), join, branch=branch, properties=properties
+                self.sorted(chunk), join, branch=reference, properties=properties
             )
-        if self.auto_optimize:
-            self.maybe_optimize(branch=branch)
+        if inserted:
+            self._finish_write(reference)
         return inserted
 
     def insert_arrow_table(
@@ -716,13 +759,13 @@ class IcebergDataset(Dataset):
         if chunk.num_rows == 0:
             return 0
         chunk = first_rows(normalised_keys(chunk, join), join)
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
+        head = self._branch_head(table, reference)
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
         row_filter = _key_ranges(chunk, join, self.derived_columns())
         span = self._insert_span(chunk, join, reference)
-        head = table.current_snapshot()
-        empty = reference == MAIN and head is None
+        empty = head is None
         snapshot_id = head.snapshot_id if head is not None else None
         if span is not None and self._strictly_after_inserted(span, empty, snapshot_id):
             # Once this object has filled an empty table, the upper bound is
@@ -732,8 +775,7 @@ class IcebergDataset(Dataset):
             self._remember_inserted(span, table, establish=empty)
             return chunk.num_rows
         scan = table.scan(row_filter=row_filter)
-        if reference in table.refs():
-            scan = scan.use_ref(reference)
+        scan = self._branch_scan(table, scan, reference)
         # Keys only -- an append never compares a non-key column, so it never
         # reads one -- but chosen by field **id** and not by name. A scan
         # pinned to a branch reads under *that* snapshot's schema, so a key
@@ -828,7 +870,7 @@ class IcebergDataset(Dataset):
         bounded = previous[0] if previous is not None else None
         if bounded is None or pyarrow.compute.greater(upper, bounded).as_py():
             bounded = upper
-        head = table.current_snapshot()
+        head = self._branch_head(table, key[0])
         remembered[key] = (bounded, head.snapshot_id if head is not None else None)
 
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
@@ -849,7 +891,8 @@ class IcebergDataset(Dataset):
         """Delete the rows a filter matches, in one commit."""
         self.__dict__.pop("_insert_upper", None)
         table = self.iceberg_table
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
+        self._branch_head(table, reference)
         if row_filter is None:
             table.delete(branch=reference)
         else:
@@ -867,6 +910,8 @@ class IcebergDataset(Dataset):
 
     def create_branch(self, name: str, snapshot_id: int | None = None) -> IcebergDataset:
         """Branch off the current state, or off `snapshot_id`."""
+        if name in ROOT_BRANCHES:
+            raise ValueError(f"{name!r} is a reserved spelling for the root branch")
         table = self.iceberg_table
         head = table.current_snapshot()
         current = snapshot_id or (head.snapshot_id if head else None)
@@ -878,6 +923,8 @@ class IcebergDataset(Dataset):
 
     def remove_branch(self, name: str) -> IcebergDataset:
         """Drop a branch, keeping whatever `main` still references."""
+        if name in ROOT_BRANCHES:
+            raise ValueError(f"{name!r} is a reserved spelling for the root branch")
         with self.iceberg_table.manage_snapshots() as manage:
             manage.remove_branch(name)
         return self.refresh()
@@ -975,7 +1022,7 @@ class IcebergDataset(Dataset):
     def _plan_rows(self, min_files: int, branch: str | None) -> list[tuple[str, Any, int]]:
         """`compaction_plan`, with the mark key each part is recorded under."""
         table = self.iceberg_table
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
         rows = self._partition_rows(reference)
         if not rows:
             return []
@@ -1027,8 +1074,11 @@ class IcebergDataset(Dataset):
         held = self.__dict__.get("_partitions")
         if held is not None and held[0] == key:
             return held[1]
-        head = table.refs().get(reference)
-        found = table.inspect.partitions(snapshot_id=head.snapshot_id if head is not None else None)
+        head = self._branch_head(table, reference)
+        if head is None:
+            self.__dict__["_partitions"] = (key, [])
+            return []
+        found = table.inspect.partitions(snapshot_id=head.snapshot_id)
         rows = found.to_pylist() if found.num_rows else []
         self.__dict__["_partitions"] = (key, rows)
         return rows
@@ -1058,7 +1108,7 @@ class IcebergDataset(Dataset):
         """Rewrite fragmented parts of the table, one commit each."""
         if target_file_size:
             self.set_properties({TARGET_FILE_SIZE: str(target_file_size)})
-        reference = branch or self.branch or MAIN
+        reference = self._branch_name(branch)
         plan = (
             # What that filter's own scan plans, not the whole table's files:
             # counting every manifest to report a number about one partition is
@@ -1287,8 +1337,8 @@ class IcebergDataset(Dataset):
     ) -> dict[str, int] | None:
         """`optimize`, but only once cheap signals say the table needs it."""
         table = self.iceberg_table
-        reference = branch or self.branch or MAIN
-        head = table.refs().get(reference)
+        reference = self._branch_name(branch)
+        head = self._branch_head(table, reference)
         if head is None:
             return None
         snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
@@ -1296,17 +1346,31 @@ class IcebergDataset(Dataset):
         fragmented = (
             len(table.metadata.snapshots) >= AUTO_OPTIMIZE_SNAPSHOTS
             or manifests >= AUTO_OPTIMIZE_MANIFESTS
-            or (
-                # None is "the summary does not say", and the only safe reading
-                # of that is to ask the planner after all.
-                (_stored_files(snapshot) or AUTO_OPTIMIZE_FILES) >= AUTO_OPTIMIZE_FILES
-                and sum(count for _, _, count in self._plan_rows(min_files, branch))
-                >= AUTO_OPTIMIZE_FILES
-            )
+            or self._compactable_files(snapshot, min_files, branch) >= AUTO_OPTIMIZE_FILES
         )
         if not fragmented:
             return None
         return self.optimize(min_files=min_files, branch=branch, **kwargs)
+
+    def maybe_compact(self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any) -> int:
+        """Compact once cheap file signals show enough fragments to rewrite."""
+        table = self.iceberg_table
+        reference = self._branch_name(branch)
+        head = self._branch_head(table, reference)
+        if head is None:
+            return 0
+        snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
+        if self._compactable_files(snapshot, min_files, branch) < AUTO_OPTIMIZE_FILES:
+            return 0
+        return self.compact(min_files=min_files, branch=branch, **kwargs)
+
+    def _compactable_files(self, snapshot: Any, min_files: int, branch: str | None) -> int:
+        """Files an automatic pass could rewrite, avoiding a plan when bounded below."""
+        stored = _stored_files(snapshot)
+        if stored is not None and stored < AUTO_OPTIMIZE_FILES:
+            return 0
+        # A missing summary means the only safe answer is to ask the planner.
+        return sum(count for _, _, count in self._plan_rows(min_files, branch))
 
     def optimize(
         self,
@@ -1792,16 +1856,18 @@ def _has_nan(values: Any) -> bool:
 def _banded(column: str, values: Any) -> Any | None:
     """The narrowest union of ranges that still covers every value in `values`."""
     compute = pyarrow.compute
+    kind = values.type
+    if (pyarrow.types.is_timestamp(kind) or pyarrow.types.is_time64(kind)) and kind.unit == "ns":
+        # Iceberg temporal values and their predicate literals stop at microseconds.
+        # Rounding a nanosecond bound could exclude a row; no term is a safe superset.
+        return None
     try:
         bounds = compute.min_max(values).as_py()
         whole = _between(column, bounds["min"], bounds["max"])
     except (ValueError, pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, OverflowError):
-        # A bound this column cannot be *said* in -- a nanosecond timestamp,
-        # which pyarrow refuses to hand back as a `datetime` at all. No term is
-        # the honest answer: it widens the filter, and a merge's filter may
-        # only ever be wider than the rows it has to find.
+        # A bound this column cannot express has no honest term: omission widens
+        # the filter, and a merge filter may only be wider than the rows it must find.
         return None
-    kind = values.type
     if not (
         pyarrow.types.is_integer(kind)
         or pyarrow.types.is_floating(kind)

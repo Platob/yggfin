@@ -1,21 +1,47 @@
 # Parse market
 
 `tasks/parse_market/parse_market.ipynb` reads
-`fixmessage.market` in `(unix, msg_seq_num, hash)` order and folds it through
-`BookIterator`.
-It writes only `market.books`.
+`fixmessage.market` in `(unix, msg_seq_num, hash)` order. With the default
+`books: true`, it folds that stream through `BookIterator`, writes only
+`market.books`, and leaves the two flatten notebooks to publish orders and
+executions.
 
-For a bounded interval the reader includes recovery history before `start` and
-late input after `end`, then writes only `[start, end)`. The scan starts at the
-hour containing `start` minus one hour and stops after the hour containing
-`end` plus 15 minutes. Prior Book snapshots restore live orders.
+With `books: false`, it does not construct or write Books.
+`FixMessage.into_market_arrow_batches()` adapts the input stream into bounded,
+typed Order and Execution batches for `order_target` and `execution_target`.
+The Arrow boundary is bounded adaptation rather than a second FIX translator:
+the scalar `FixEvents` reader still owns repeating groups, normalization, and
+event identity. Either direct target may be null, but at least one is required.
+Direct rows are exactly the events carried by FIX: the mode does not create
+book snapshots, book-generated expiry or rejection rows, lifecycle completion
+from resting state, or a carrying `Book.hash` parent.
+Use empty direct targets, or targets dedicated to this mode, when switching an
+existing deployment: merge-by cannot remove older book-normalized rows whose
+hashes differ from their raw FIX versions.
+
+For a bounded interval the reader scans a wider source range, then filters
+each emitted Book or event back to `[start, end)`. The scan starts at the hour
+containing `start` minus one hour and stops after the hour containing `end`
+plus 15 minutes. In book mode, prior Book snapshots use that recovery history
+to restore live orders.
 
 `parse_market` never reads `market.instruments`. Normalized instrument
 lifecycle rows already share the sorted `fixmessage.market` input; `BookIterator`
 indexes them by `etype` and folds the remaining rows. Snapshot generation,
 terminal-state handling, one-day inactivity expiry, and internal rejection
 reasons belong to the shared event and book models rather than the notebook.
+Direct mode skips normalized Instrument rows and keeps the instrument facts
+carried by each translated FIX message.
 
-The adjacent `parse_market.yml`
-sets snapshot cadence, lateness, live-order age, side bound, catalog, and
-commit size.
+The adjacent `parse_market.yml` sets the mode and all three targets, plus
+snapshot cadence, lateness, live-order age, side bound, catalog, and commit
+size. Switching only `books` to `false` selects the configured direct targets.
+
+The result's `read` mapping reports every attempted Book, Order, and Execution.
+In book mode the Order and Execution counts come from the selected Books'
+nested deltas; in direct mode they are the translated rows written here. The
+separate `flatten` mapping is downstream work: it carries those nested counts
+in book mode and stays zero in direct mode, where no flatten task is needed.
+A positive `commit_row_size` bounds direct-event Arrow batches. Zero retains
+the explicit whole-stream atomic-commit behavior and drains each event type
+only at the end.

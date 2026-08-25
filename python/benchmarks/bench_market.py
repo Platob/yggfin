@@ -238,6 +238,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     """Decode package-authored instrument rows directly and through generic FIX."""
     from rekep.enums import AssetKind, Currency, Side
     from rekep.market import Leg
+    from rekep.text import FixMessage
 
     sample = min(rows, 500)
     instrument = Instrument(
@@ -266,6 +267,9 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     # The registry leg is deliberately FIX.4.4; protocol reads never infer a
     # version when neither BeginString nor FIXT application-version tags exist.
     log = instrument.into_fixmessage(begin_string="FIX.4.4")
+    source = next(
+        iter(FixMessage.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
+    )
 
     def through_registry() -> list[Instrument]:
         built = []
@@ -274,17 +278,20 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
             built.append(log._instrument_version(parsed))
         return built
 
-    def direct() -> list[Instrument]:
-        return [log.into_instrument() for _ in range(sample)]
+    def direct() -> pyarrow.RecordBatch:
+        return FixMessage.into_instrument_arrow_batch(source)
 
     registry, generic = timed(through_registry, repeat)
     normalized, decoded = timed(direct, repeat)
     assert generic[0].into_dict() == instrument.into_dict()
-    assert decoded[0].into_dict() == instrument.into_dict()
+    assert (
+        Instrument.from_dict(decoded.slice(0, 1).to_pylist()[0]).into_dict()
+        == instrument.into_dict()
+    )
 
     print(f"\nInstrument <-> normalized FixMessage -- {sample:,} rows")
     report("generic FIX/registry reconstruction", registry, sample)
-    report("direct normalized-row decode", normalized, sample, against=registry)
+    report("batch normalized-row projection", normalized, sample, against=registry)
 
 
 def bench_mics(rows: int, repeat: int) -> None:
@@ -574,21 +581,71 @@ def fold_shape(events: int, live_levels: int, orders_per_level: int) -> tuple[Co
 
 
 def bench_standing(rows: int, repeat: int) -> None:
-    """Direct lifecycle lookup at shallow and deep live-book sizes."""
+    """Lifecycle and namespaced-code lookup at shallow and deep book sizes."""
+    from rekep.market import Execution, Order, Side, State
+
     probes = max(rows, 1_000)
     print(f"\nStanding lookup -- {probes:,} probes")
     for live in (100, min(max(rows, 1_000), 10_000)):
-        _, folding = fold_shape(live, live, 1)
-        state = next(iter(folding.folding.values()))
-        target = next(iter(state.bid.orders.values()))
-        seconds, found = timed(
-            lambda state=state, target=target: sum(
-                state.bid.standing(target) is target for _ in range(probes)
-            ),
-            repeat,
+        side = _Side(Side.BID)
+        for index in range(live):
+            side.apply(
+                Order(
+                    unix=UNIX + index,
+                    cunix=UNIX + index,
+                    xhash=index + 1,
+                    hash=index + 1,
+                    code=f"O{index}",
+                    codes={
+                        "secondary_order_id": f"V{index}",
+                        "secondary_cl_ord_id": f"C{index}",
+                    },
+                    order_id=f"O{index}",
+                    client_order_id=f"CL{index}",
+                    side=Side.BID,
+                    px=100.0,
+                    qty=1.0,
+                    state=State.NEW,
+                )
+            )
+        target = side.orders[live // 2 + 1]
+        cases = (
+            ("exact xhash", Order(xhash=target.xhash)),
+            ("linked xhash", Execution(linked_events=[(UNIX, target.xhash)])),
+            ("venue code", Order(codes={"secondary_order_id": f"V{live // 2}"})),
+            ("client code", Order(codes={"secondary_cl_ord_id": f"C{live // 2}"})),
+            ("code miss", Order(codes={"secondary_order_id": "missing"})),
         )
-        assert found == probes
-        report(f"standing, {live:,} live orders", seconds, probes)
+
+        def linear(event: Order | Execution, side: _Side = side) -> Order | None:
+            identities = ([event.xhash] if event.is_order() and event.xhash else []) + [
+                identity for _, identity in event.linked_events
+            ]
+            if identities:
+                return next(
+                    (order for order in side.orders.values() if order.xhash in identities), None
+                )
+            aliases = set(Order.lookup_codes_of(event))
+            return next(
+                (
+                    order
+                    for order in side.orders.values()
+                    if aliases.intersection(Order.lookup_codes_of(order))
+                ),
+                None,
+            )
+
+        for label, probe in cases:
+            expected = linear(probe)
+            assert side.standing(probe) is expected
+            seconds, found = timed(
+                lambda probe=probe, expected=expected, side=side: sum(
+                    side.standing(probe) is expected for _ in range(probes)
+                ),
+                repeat,
+            )
+            assert found == probes
+            report(f"{label}, {live:,} live orders", seconds, probes)
 
 
 def bench_operation_counts(rows: int) -> None:

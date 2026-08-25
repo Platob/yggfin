@@ -218,6 +218,47 @@ def _declaration(member: Field) -> Field:
 
 
 _REGISTRY = FixRegistry.from_builtin()
+_MERGED_FIELDS = _REGISTRY.merged_fields()
+
+# Source identifiers retained on parsed market rows, in lifecycle lookup
+# order. Tags come from the registry so this declaration never respells them.
+_IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
+    ("order_id", "OrderID"),
+    ("secondary_order_id", "SecondaryOrderID"),
+    ("orig_cl_ord_id", "OrigClOrdID"),
+    ("cl_ord_id", "ClOrdID"),
+    ("secondary_cl_ord_id", "SecondaryClOrdID"),
+    ("exec_id", "ExecID"),
+    ("secondary_exec_id", "SecondaryExecID"),
+    ("exec_ref_id", "ExecRefID"),
+    ("trade_id", "TradeID"),
+    ("trd_match_id", "TrdMatchID"),
+    ("quote_entry_id", "QuoteEntryID"),
+    ("quote_id", "QuoteID"),
+    ("quote_req_id", "QuoteReqID"),
+    ("quote_set_id", "QuoteSetID"),
+    ("md_entry_id", "MDEntryID"),
+    ("md_entry_ref_id", "MDEntryRefID"),
+    ("security_id", "SecurityID"),
+    ("isincode", "ISINCode"),
+    ("symbol", "Symbol"),
+)
+# The rendered ISIN has no wire tag; the bundled cross-version index omits 280
+# even though its version documents carry it, so those two cannot be derived here.
+_IDENTIFIER_FALLBACK_TAGS = MappingProxyType({"MDEntryRefID": 280, "ISINCode": 0})
+IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
+    (
+        stored,
+        name,
+        int(
+            member.fix.get("tag", 0)
+            if (member := _MERGED_FIELDS.get(name)) is not None
+            else _IDENTIFIER_FALLBACK_TAGS[name]
+        ),
+    )
+    for stored, name in _IDENTIFIER_NAMES
+)
+
 _ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
 FIXMESSAGE_FIELDS: Mapping[int, Field] = MappingProxyType(

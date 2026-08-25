@@ -511,6 +511,47 @@ class FieldAccess:
             )
         return found
 
+    @classmethod
+    def first_arrow_fields(
+        cls, stored: Any, wanted: Sequence[tuple[int, str]], rows: int
+    ) -> dict[str, Any]:
+        """First value per row for each field, matching numeric or rendered keys."""
+        flattened = cls._flattened(stored, rows)
+        if flattened is None or not wanted:
+            return {}
+        parents, entries, values = flattened
+        compute = pyarrow.compute
+        tags = compute.struct_field(entries, "tag")
+        keys = compute.utf8_lower(compute.struct_field(entries, "key"))
+        numbered = [(index, tag) for index, (tag, _) in enumerate(wanted) if tag]
+        if numbered:
+            positions, tag_values = zip(*numbered, strict=True)
+            by_tag = compute.take(
+                pyarrow.array(positions, pyarrow.int32()),
+                compute.index_in(tags, value_set=pyarrow.array(tag_values, tags.type)),
+            )
+        else:
+            by_tag = pyarrow.nulls(len(tags), pyarrow.int32())
+        by_name = compute.index_in(
+            keys,
+            value_set=pyarrow.array([name.casefold() for _, name in wanted], pyarrow.string()),
+        )
+        matched_positions = compute.coalesce(by_tag, by_name)
+        matches = compute.is_valid(matched_positions)
+        if not compute.any(matches, min_count=0).as_py():
+            return {}
+        matched_positions = compute.filter(matched_positions, matches)
+        matched_parents = compute.filter(parents, matches)
+        matched_values = compute.filter(values, matches)
+        row_ids = sequence(rows)
+        found = {}
+        for position in compute.unique(matched_positions).to_pylist():
+            at = compute.equal(matched_positions, position)
+            found[wanted[position][1]] = cls._first_per_row(
+                compute.filter(matched_values, at), compute.filter(matched_parents, at), row_ids
+            )
+        return found
+
     @staticmethod
     def _flattened(stored: Any, rows: int) -> tuple[Any, Any, Any] | None:
         """`(parents, entries, values)` of a stored column; None where it holds none."""

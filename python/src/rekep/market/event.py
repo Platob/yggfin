@@ -6,7 +6,7 @@ import copy
 import dataclasses
 import functools
 import operator
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Annotated, Any, Self
 
@@ -213,6 +213,36 @@ class Event(MarketConvertible):
         ]
         return values
 
+    @classmethod
+    def from_arrow_reader(
+        cls, source: pyarrow.RecordBatchReader | Iterable[pyarrow.RecordBatch]
+    ) -> Iterator[Self]:
+        """Build event objects lazily from a schema-checked Arrow stream."""
+        reader = cls.into_field().cast_arrow_reader(source)
+        for batch in reader:
+            yield from (cls.from_dict(row) for row in batch.to_pylist())
+
+    @classmethod
+    def into_arrow_reader(
+        cls, events: Iterable[Self], batch_row_size: int = 65_536
+    ) -> pyarrow.RecordBatchReader:
+        """Serialize event objects as bounded Arrow batches."""
+        if batch_row_size <= 0:
+            raise ValueError("batch_row_size must be positive")
+        schema = cls.into_field().into_arrow_schema()
+
+        def batches() -> Iterator[pyarrow.RecordBatch]:
+            held: list[dict[str, Any]] = []
+            for event in events:
+                held.append(event.into_dict())
+                if len(held) >= batch_row_size:
+                    yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                    held.clear()
+            if held:
+                yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+
+        return pyarrow.RecordBatchReader.from_batches(schema, batches())
+
     # -- what kind of event this is -----------------------------------------
 
     @classmethod
@@ -364,6 +394,7 @@ class Event(MarketConvertible):
             # from. Never copy it before this comparison: completion crosses
             # shapes, and an execution is not named by its order's code.
             self.code = previous.code or self.code
+            self._keep_lifecycle_codes(previous)
             self.version = previous.version + 1
             self.prev_unix = previous.unix
             self._remember_previous(previous)
@@ -390,11 +421,20 @@ class Event(MarketConvertible):
         self.xhash = previous.xhash
         self._drop_self_link()
         self.code = previous.code or self.code
+        self._keep_lifecycle_codes(previous)
         self.version = previous.version + 1
         self.prev_unix = previous.unix
         self._remember_previous(previous)
         self.hash = NIL
         return self
+
+    def _keep_lifecycle_codes(self, previous: Event) -> None:
+        """Carry absent identifiers while keeping this version's observed values."""
+        merged = dict(previous.codes)
+        for name, value in self.codes.items():
+            if value:
+                merged[name] = value
+        self.codes = merged
 
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it."""

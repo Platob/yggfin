@@ -174,7 +174,7 @@ def test_one_layout_is_all_that_is_left_of_the_store() -> None:
     found = {
         f"{path.relative_to(source)}:{number}"
         for path in sorted(source.rglob("*.py"))
-        for number, line in enumerate(path.read_text().splitlines(), start=1)
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
         if gone.search(line)
     }
     assert found == set()
