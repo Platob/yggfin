@@ -22,7 +22,7 @@ HOT_ROWS = (Event, MarketEvent, FixMessage, Instrument, Order, Execution, Book, 
 #: selects by position, or a contract already published, does not move with it.
 ENVELOPE = [
     "unix",
-    "unix_hour",
+    "unix_partition",
     "etype",
     "cunix",
     "runix",
@@ -77,7 +77,7 @@ def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
     assert shape.into_field().primary_keys() == ["unix", "hash"]
-    assert shape.into_field().partition_keys() == {"unix_hour": "identity"}
+    assert shape.into_field().partition_keys() == {"unix_partition": "identity"}
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
@@ -89,7 +89,7 @@ def test_every_event_is_laid_out_in_time_inside_its_partition(shape: type) -> No
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_the_hour_is_the_only_partition_a_market_event_declares(shape: type) -> None:
     """A hash bucket splits every hour into as many files and prunes nothing extra."""
-    assert list(shape.into_field().partition_keys()) == ["unix_hour"]
+    assert list(shape.into_field().partition_keys()) == ["unix_partition"]
     assert not shape.into_field().field("instrument_xhash").nullable
 
 
@@ -275,7 +275,7 @@ METRICS_BUDGET = 100
 FILTERED = {
     Order: (
         "unix",
-        "unix_hour",
+        "unix_partition",
         "etype",
         "state",
         "code",
@@ -285,7 +285,7 @@ FILTERED = {
     ),
     Execution: (
         "unix",
-        "unix_hour",
+        "unix_partition",
         "etype",
         "state",
         "code",
@@ -294,7 +294,7 @@ FILTERED = {
     ),
     Book: (
         "unix",
-        "unix_hour",
+        "unix_partition",
         "etype",
         "instrument_xhash",
         "px",

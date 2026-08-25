@@ -446,7 +446,7 @@ def _observed_at(
     return dataclasses.replace(
         instrument,
         unix=unix,
-        unix_hour=0,
+        unix_partition=0,
         etype=EventType.INSTRUMENT,
         cunix=instrument.cunix or unix,
         runix=instrument.runix or unix,

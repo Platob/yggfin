@@ -61,9 +61,13 @@ commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
-event fields, and the FixMessage sequence rename need an explicit table migration or
-recreation. Dataset writes do not guess missing lineage or keep retired columns
-alive.
+event fields, the FixMessage sequence rename, and renaming `unix_hour` to
+`unix_partition` while changing its values from epoch-nanosecond `long` to
+epoch-second `int` need an explicit table migration or recreation. Recreate or
+rewrite every table using one of the five market contracts, on every retained
+branch, before appending: an ordinary merge cannot migrate the renamed,
+rescaled, narrowed partition field. Dataset writes do not guess missing lineage
+or keep retired columns alive.
 
 Every data verb accepts `branch`; reads also accept `snapshot_id`. `root`,
 `main`, and `master` are aliases for Iceberg's physical `main` ref, so task

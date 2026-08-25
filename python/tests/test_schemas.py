@@ -46,7 +46,7 @@ def test_contract_matches_its_declaration(name: str, shape: type) -> None:
 def test_log_contract_keeps_time_keys() -> None:
     log = Field.from_yaml(str(SCHEMAS / "rekep" / "fixmessage.yaml"))
     assert log.primary_keys() == ["unix", "hash"]
-    assert log.partition_keys() == {"unix_hour": "identity"}
+    assert log.partition_keys() == {"unix_partition": "identity"}
 
 
 def test_market_contract_keeps_protocol_metadata() -> None:

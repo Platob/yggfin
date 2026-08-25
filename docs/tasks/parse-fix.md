@@ -52,7 +52,7 @@ unions them with one schema and no cast.
 
 | column | `market` | `misc` | `unknown` |
 | --- | --- | --- | --- |
-| `unix`, `unix_hour`, `hash`, `etype`, `runix` | yes | yes | yes |
+| `unix`, `unix_partition`, `hash`, `etype`, `runix` | yes | yes | yes |
 | `source_url`, `source_rownum`, `protocol_code` | yes | yes | yes |
 | `message` | **null** | yes | yes |
 | `kwargs` | yes, resolved | as the line split | as the line split |

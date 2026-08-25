@@ -151,11 +151,11 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `FixMessage` | 105 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
-| `Instrument` | 36 | `unix, hash` | `unix_hour` | `alt_ids`, `legs`, `codes` |
-| `Book` | 53 | `unix, hash` | `unix_hour` | levels, deltas, executions, live snapshot orders, `codes` |
-| `Order` | 40 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |
-| `Execution` | 42 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |
+| `FixMessage` | 105 | `unix, hash` | `unix_partition` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
+| `Instrument` | 36 | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
+| `Book` | 53 | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
+| `Order` | 40 | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
+| `Execution` | 42 | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
 
 The hour is the only partition. An instrument identity is a 64-bit hash, so
 bucketing it multiplies the files inside each hour without pruning a read the

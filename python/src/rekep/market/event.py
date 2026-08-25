@@ -28,10 +28,17 @@ if TYPE_CHECKING:
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
 
+#: What the compact partition clock holds. It stays an integer so identity
+#: partitions remain portable between Arrow and Iceberg engines.
+UNIX_PARTITION: dict[str, str] = {"unit": "second", "epoch": "1970-01-01"}
+
+#: Nanoseconds in a second.
+SECOND = 1_000_000_000
+
 #: Nanoseconds in a day.
 DAY = 86_400_000_000_000
 
-#: Nanoseconds in an hour, which is what `unix_hour` truncates `unix` to.
+#: Nanoseconds in an hour, used to locate `unix`'s partition boundary.
 HOUR = 3_600_000_000_000
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
@@ -93,21 +100,24 @@ class Event(MarketConvertible):
     # engine below reads the same way, and a transformed one needs Iceberg's
     # Rust core on the writer for no gain a reader can see.
     #
-    # An **hour**, and an `int64` rather than a date. A day of ticks is one
+    # An **hour**, and an integer rather than a date. A day of ticks is one
     # partition at day granularity, which prunes nothing inside a session --
-    # the query everybody actually writes. And the same integer as `unix`
-    # means a filter on the two is one comparison in one type:
-    # `WHERE unix_hour = X AND unix BETWEEN ...` prunes the partition and then
-    # the file, with no cast between a date and an instant in the middle of it.
+    # the query everybody actually writes. Whole epoch seconds keep identity
+    # partition paths compact while `unix` retains nanosecond precision.
     #
     # `derived_from` is the third thing this buys: a merge joins on `unix` and
     # `hash`, which names no partition column and so prunes nothing at the
     # manifest list -- it scales with the table, not with the chunk. Saying
-    # that `unix_hour` is a function of `unix` lets a merge name it anyway,
+    # that `unix_partition` is a function of `unix` lets a merge name it anyway,
     # because rows agreeing on `unix` agree here. Replaying one hour: 20 ms
     # against 93 over 168 hourly partitions, 27 against 164 over 336.
-    unix_hour: Annotated[int, Field.partition_key(derived_from="unix", metadata=UNIX)] = 0
-    """`unix` truncated to the hour -- what the data is partitioned on."""
+    unix_partition: Annotated[
+        int,
+        Field.partition_key(
+            arrow_type=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION
+        ),
+    ] = 0
+    """`unix`'s hour boundary in whole epoch seconds; the partition value."""
 
     # Third, not last: a read that spans the tables filters on it before
     # anything else, and Iceberg's column bounds are collected in pre-order.
@@ -190,7 +200,7 @@ class Event(MarketConvertible):
         self.normalize_float_members()
         if self.etype is EventType.UNKNOWN:
             self.etype = type(self).into_event_type()
-        self.unix_hour = self.unix - self.unix % HOUR
+        self.unix_partition = _unix_partition_of(self.unix)
         self._drop_self_link()
 
     @classmethod
@@ -350,7 +360,7 @@ class Event(MarketConvertible):
         }
         # Observation time is state only for a snapshot.
         if not snapshot:
-            ignored.update(("unix", "unix_hour"))
+            ignored.update(("unix", "unix_partition"))
         names = tuple(
             member.name for member in dataclasses.fields(cls) if member.name not in ignored
         )
@@ -446,7 +456,7 @@ class Event(MarketConvertible):
             # A message with no clock at all still belongs somewhere in time,
             # and the only honest answer is where the version before it was.
             self.unix = previous.unix
-            self.unix_hour = self.unix - self.unix % HOUR
+            self.unix_partition = _unix_partition_of(self.unix)
         if not self.runix:
             self.runix = previous.runix
         if self.eunix is None:
@@ -516,7 +526,7 @@ class Event(MarketConvertible):
             return None
         taken = copy.copy(self)
         taken.unix = unix
-        taken.unix_hour = unix - unix % HOUR
+        taken.unix_partition = _unix_partition_of(unix)
         # What it is a picture *of*: the instant of the state, which for a
         # picture of a picture is the original state and not the middle one.
         # Two snapshots of one unchanged book then agree on what they show and
@@ -628,13 +638,13 @@ class MarketEvent(Event):
     # was reaching into a map for the one key this package writes itself.
     #
     # Not a partition either, and this one is measured rather than argued. The
-    # case for bucketing it is real -- `unix_hour` prunes time and not
+    # case for bucketing it is real -- `unix_partition` prunes time and not
     # instrument, so a scan for one instrument across a week opens every
     # hour's files. But bucketing does not fix that: the bucket prunes files
     # *inside* an hour, and a scan across N hours still opens at least one
     # file per hour, which is what the query actually pays for. Over 144,000
     # rows across 72 hours and 40 instruments, one instrument's week cost
-    # 632 ms on `unix_hour` alone, 650 ms at bucket[8] and 671 ms at
+    # 632 ms on `unix_partition` alone, 650 ms at bucket[8] and 671 ms at
     # bucket[16] -- slower, not faster -- while the file count went 72 to 576
     # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
     # every consumer writes went 24 ms to 165 to 320. See docs/market.md.
@@ -873,8 +883,8 @@ class MarketEvent(Event):
         return field.cast_arrow_batch(raw)
 
 
-def hour_arrow(unix: Any) -> pyarrow.Array:
-    """`unix` truncated down to the hour it falls in -- the partition column.
+def unix_partition_arrow(unix: Any) -> pyarrow.Array:
+    """Return `unix`'s hour boundary as whole epoch seconds.
 
     The columnar twin of what `__post_init__` computes for one row, and here
     rather than in a parser because the rule belongs to the column: a
@@ -884,10 +894,16 @@ def hour_arrow(unix: Any) -> pyarrow.Array:
     compute = pyarrow.compute
     hour = pyarrow.scalar(HOUR, pyarrow.int64())
     remainder = compute.subtract(unix, compute.multiply(compute.divide(unix, hour), hour))
-    return compute.subtract(
+    floored = compute.subtract(
         unix,
         compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
     )
+    return compute.divide(floored, pyarrow.scalar(SECOND, pyarrow.int64())).cast(pyarrow.int32())
+
+
+def _unix_partition_of(unix: int) -> int:
+    """Return one nanosecond instant's hour boundary as epoch seconds."""
+    return (unix - unix % HOUR) // SECOND
 
 
 @functools.lru_cache(maxsize=65_536)

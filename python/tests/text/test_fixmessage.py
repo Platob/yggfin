@@ -11,7 +11,7 @@ from rekep import Field, FixMessage
 from rekep.fix import NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.market import MIC, Event, EventType
-from rekep.market.event import HOUR
+from rekep.market.event import HOUR, SECOND
 
 #: The dictionary this repository publishes, beside `python/`, read offline:
 #: a contract that only holds while the site answers is not a contract.
@@ -20,7 +20,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: The envelope every event carries, then log-only source ordering and content.
 ENVELOPE = [
     "unix",
-    "unix_hour",
+    "unix_partition",
     "etype",
     "cunix",
     "runix",
@@ -205,15 +205,18 @@ def test_the_key_is_the_moment_and_the_line() -> None:
 
 def test_the_partition_is_the_hour_the_line_falls_in() -> None:
     """An identity partition on an integer, so every engine below reads it alike."""
-    assert FixMessage.into_field().partition_keys() == {"unix_hour": "identity"}
-    assert FixMessage.into_field().field("unix_hour").arrow_type == pyarrow.int64()
+    assert FixMessage.into_field().partition_keys() == {"unix_partition": "identity"}
+    assert FixMessage.into_field().field("unix_partition").arrow_type == pyarrow.int32()
 
 
 def test_every_unix_column_declares_its_unit() -> None:
-    for name in ("unix", "unix_hour", "cunix", "runix", "eunix", "sunix", "prev_unix"):
+    for name in ("unix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
         metadata = FixMessage.into_field().field(name).metadata
         assert metadata["unit"] == "nanosecond", name
         assert metadata["epoch"] == "1970-01-01", name
+    partition_metadata = FixMessage.into_field().field("unix_partition").metadata
+    assert partition_metadata["unit"] == "second"
+    assert partition_metadata["epoch"] == "1970-01-01"
 
 
 def test_the_line_digest_is_an_int64_like_every_other_identifier() -> None:
@@ -233,8 +236,11 @@ def test_a_line_is_unclassified_until_something_classifies_it() -> None:
 
 def test_the_hour_is_derived_from_the_instant() -> None:
     built = FixMessage(unix=3 * HOUR + 5)
-    assert built.unix_hour == 3 * HOUR
-    assert FixMessage(unix=-1).unix_hour == -HOUR, "and it floors, either side of the epoch"
+    hour_seconds = HOUR // SECOND
+    assert built.unix_partition == 3 * hour_seconds
+    assert FixMessage(unix=-1).unix_partition == -hour_seconds, (
+        "and it floors, either side of the epoch"
+    )
 
 
 def test_the_schema_says_which_class_it_came_from() -> None:

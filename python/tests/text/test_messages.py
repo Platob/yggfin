@@ -10,7 +10,7 @@ import pytest
 
 from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules
 from rekep.fix.columns import COLUMNS
-from rekep.market.event import HOUR
+from rekep.market.event import HOUR, SECOND
 from rekep.text import HEADER_PATTERN, FixMessage, TextFile, TextFiles
 from rekep.times import unix_of
 
@@ -884,16 +884,16 @@ def test_the_group_and_transact_time_disagreeing_is_decided_by_the_chain(
     assert all(one != unix_of("20260814-09:30:00.000") for one in unix)
 
 
-def test_unix_hour_follows_the_resolved_time_and_not_the_header(
+def test_unix_partition_follows_the_resolved_time_and_not_the_header(
     transacted: pyarrow.Table,
 ) -> None:
     """A row moves partition with its transaction time, or a sorted read breaks."""
     for unix, hour in zip(
         transacted.column("unix").to_pylist(),
-        transacted.column("unix_hour").to_pylist(),
+        transacted.column("unix_partition").to_pylist(),
         strict=True,
     ):
-        assert hour == unix - unix % HOUR
+        assert hour == (unix - unix % HOUR) // SECOND
 
 
 def test_the_parse_and_the_translation_resolve_one_row_alike(

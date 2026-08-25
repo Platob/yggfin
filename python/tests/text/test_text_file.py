@@ -11,7 +11,7 @@ from rekep import Dataset, Field, FixMessage
 from rekep.fix import FixCodec, FixRegistry
 from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STAMPS
 from rekep.market import MIC, Event
-from rekep.market.event import HOUR
+from rekep.market.event import HOUR, SECOND, unix_partition_arrow
 from rekep.text import HEADER_PATTERN, TextFile
 from rekep.text.text_file import _local_micros
 from rekep.times import unix_of
@@ -476,11 +476,11 @@ def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == FixMessage.into_field().into_arrow_schema().names
     assert len(schema.names) == EXPECTED_LOG_COLUMNS
-    assert schema.names[:3] == ["unix", "unix_hour", "etype"], "the envelope leads"
+    assert schema.names[:3] == ["unix", "unix_partition", "etype"], "the envelope leads"
     assert len(LINE_COLUMNS) == EXPECTED_LINE_COLUMNS
     assert schema.names[-len(LINE_COLUMNS) :] == LINE_COLUMNS
     assert schema.field("unix").type == pyarrow.int64()
-    assert schema.field("unix_hour").type == pyarrow.int64()
+    assert schema.field("unix_partition").type == pyarrow.int32()
     assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
@@ -732,14 +732,14 @@ def test_first_row(plain: Path) -> None:
 
 
 def test_the_hour_column_is_the_instant_truncated(plain: Path) -> None:
-    """The denormalised partition column must agree with the nanosecond column."""
+    """The compact partition clock must agree with the nanosecond instant."""
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
     assert table.num_rows
     for row in table.to_pylist():
-        assert row["unix_hour"] == row["unix"] - row["unix"] % HOUR
-        assert row["unix_hour"] % HOUR == 0
-        assert 0 <= row["unix"] - row["unix_hour"] < HOUR
+        assert row["unix_partition"] == (row["unix"] - row["unix"] % HOUR) // SECOND
+        assert row["unix_partition"] % (HOUR // SECOND) == 0
+        assert 0 <= row["unix"] - row["unix_partition"] * SECOND < HOUR
 
 
 def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
@@ -984,7 +984,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     # the header regex read backwards, not the bytes that were parsed -- the
     # level marker a log prints is stripped into `message` and never rendered
     # back. What has to survive is what the columns say.
-    for column in ("unix", "unix_hour", "message"):
+    for column in ("unix", "unix_partition", "message"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
@@ -1137,10 +1137,15 @@ def test_the_hour_follows_the_instant_and_not_the_wall_clock() -> None:
     for zone in (None, "Europe/Paris", "Pacific/Auckland"):
         with TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
             batch = next(iter(log.into_arrow_batches()))
-        hours[zone] = (batch.column("unix")[0].as_py(), batch.column("unix_hour")[0].as_py())
+        hours[zone] = (
+            batch.column("unix")[0].as_py(),
+            batch.column("unix_partition")[0].as_py(),
+        )
     assert len({unix for unix, _ in hours.values()}) == 3, "the instants differ by zone"
-    for unix, unix_hour in hours.values():
-        assert unix_hour == unix - unix % HOUR, "and the hour follows each of them"
+    for unix, unix_partition in hours.values():
+        assert unix_partition == (unix - unix % HOUR) // SECOND, (
+            "and the partition follows each of them"
+        )
 
 
 def test_a_repeated_hour_resolves_rather_than_raising() -> None:
@@ -1182,12 +1187,27 @@ def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
     """Arrow has no modulo and its integer divide rounds toward zero, so this
     is the branch a two-kernel truncation gets wrong: `-1` would come out in
     the hour *after* the one containing it."""
-    import pyarrow
-
-    from rekep.market.event import hour_arrow
-
     before = pyarrow.array([-1, -HOUR - 1, 0, HOUR, 3 * HOUR + 5], type=pyarrow.int64())
-    assert hour_arrow(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
+    hour_seconds = HOUR // SECOND
+    partition = unix_partition_arrow(before)
+    assert partition.type == pyarrow.int32()
+    assert partition.to_pylist() == [
+        -hour_seconds,
+        -2 * hour_seconds,
+        0,
+        hour_seconds,
+        3 * hour_seconds,
+    ]
+
+
+@pytest.mark.parametrize(
+    "unix",
+    [(-2_147_482_800 * SECOND) - 1, 2_147_486_400 * SECOND],
+    ids=("before-lower-hour", "at-upper-hour"),
+)
+def test_a_partition_outside_signed_int32_seconds_is_refused(unix: int) -> None:
+    with pytest.raises(pyarrow.ArrowInvalid, match="not in range"):
+        unix_partition_arrow(pyarrow.array([unix], type=pyarrow.int64()))
 
 
 # -- static values ----------------------------------------------------------
@@ -1303,7 +1323,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "unix_hour", "thread_name", "plugin_code", "message"):
+    for column in ("unix", "unix_partition", "thread_name", "plugin_code", "message"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 

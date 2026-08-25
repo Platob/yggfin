@@ -45,7 +45,7 @@ from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import GROUP_ENTRY, NO_SOURCE
-from rekep.market.event import CODES_TYPE, Event, hour_arrow
+from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
@@ -668,7 +668,7 @@ class FixMessage(Event):
         columns["codes"] = cls.codes_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
         columns["unix"], columns["unix_source"] = resolve_arrow(columns, columns["runix"], rows)
-        columns["unix_hour"] = hour_arrow(columns["unix"])
+        columns["unix_partition"] = unix_partition_arrow(columns["unix"])
         columns["cunix"] = columns["unix"]
         columns["hash"] = cls.version_hash_arrow(columns, rows)
         linked = compute.not_equal(columns["code"], "")
@@ -1002,7 +1002,7 @@ class FixMessage(Event):
         return dataclasses.replace(
             instrument,
             unix=self.unix,
-            unix_hour=self.unix_hour,
+            unix_partition=self.unix_partition,
             etype=EventType.INSTRUMENT,
             cunix=self.cunix,
             runix=self.runix,

@@ -112,7 +112,7 @@ sending a code this package should refuse.
 Transaction time is not monotonic in file order -- a resend or a late
 regulatory stamp lands behind rows already read -- so:
 
-- `unix_hour` is recomputed from the resolved `unix`, and rows move between
+- `unix_partition` is recomputed from the resolved `unix`, and rows move between
   partitions accordingly. The partition stays a function of the column it is
   derived from, which is what keeps a partition-ordered read globally sorted.
 - The book fold already asks the storage engine for
@@ -125,19 +125,24 @@ regulatory stamp lands behind rows already read -- so:
 
 ## How market rows are laid out
 
-`unix_hour` is the only partition, and `instrument_code` is deliberately not a
-second one. The case for bucketing it is real -- the hour prunes time and not
-instrument, so a scan for one instrument across a week opens every hour's
-files -- so it was measured rather than argued.
+`unix_partition` is the only partition. It is the hour boundary in whole epoch
+seconds stored as a signed `int32`, while `unix` keeps the event instant in
+nanoseconds; the shorter identity value avoids nine meaningless zeroes in
+partition paths without changing hourly partition cardinality. Its supported
+instant range is 1901-12-13 21:00 UTC inclusive through 2038-01-19 04:00 UTC
+exclusive. `instrument_code` is deliberately not a second partition. The case
+for bucketing it is real -- the hour prunes time and not instrument, so a scan
+for one instrument across a week opens every hour's files -- so it was measured
+rather than argued.
 
 144,000 rows across 72 hours and 40 instruments, one instrument's whole week
 against one hour, best of five:
 
 | layout | files | mean file | one instrument, one week | one hour |
 | --- | ---: | ---: | ---: | ---: |
-| `unix_hour` alone | 72 | 76.0 KiB | 632 ms | 24 ms |
-| `unix_hour` + `bucket[8]` | 576 | 28.5 KiB | 650 ms | 165 ms |
-| `unix_hour` + `bucket[16]` | 1,152 | 25.0 KiB | 671 ms | 320 ms |
+| `unix_partition` alone | 72 | 76.0 KiB | 632 ms | 24 ms |
+| `unix_partition` + `bucket[8]` | 576 | 28.5 KiB | 650 ms | 165 ms |
+| `unix_partition` + `bucket[16]` | 1,152 | 25.0 KiB | 671 ms | 320 ms |
 
 Bucketing loses on the query it was meant to win. The reason is that a bucket
 prunes files *inside* an hour, and a scan across N hours still opens at least

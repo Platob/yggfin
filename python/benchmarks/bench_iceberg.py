@@ -138,7 +138,7 @@ def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]
     field = FixMessage.into_field()
     if not partitioned:
         field = field.into_dataclass("Flat").into_field()
-        field.field("unix_hour").is_partition_key = False
+        field.field("unix_partition").is_partition_key = False
     built = catalog(root).dataset("bench.logs", field=field, table_properties=properties)
     return built.create_with()
 
@@ -426,9 +426,9 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target.append_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
         # A partition the data actually has, read from the data rather than
-        # spelled out: `unix_hour` is whatever hour the generator's first line fell
+        # spelled out: `unix_partition` is whatever hour the generator's first line fell
         # in, and a filter naming an empty partition measures nothing.
-        hour = table.column("unix_hour")[0].as_py()
+        hour = table.column("unix_partition")[0].as_py()
         # The unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
@@ -444,10 +444,10 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
             ("everything", None, None, None),
-            ("partition = one hour", f"unix_hour = {hour}", None, None),
+            ("partition = one hour", f"unix_partition = {hour}", None, None),
             (
                 "partition, 3 columns",
-                f"unix_hour = {hour}",
+                f"unix_partition = {hour}",
                 ["unix", "plugin_code", "message"],
                 None,
             ),
@@ -565,7 +565,7 @@ def sweep_fs(rows: int, days: int) -> None:
         write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
         chunk = max(table.num_rows // 8, 1)
         half = table.slice(0, table.num_rows // 2)
-        hour = table.column("unix_hour")[0].as_py()
+        hour = table.column("unix_partition")[0].as_py()
 
         def leg(cached: bool) -> None:
             CONTENT_CACHE.clear()
@@ -617,12 +617,12 @@ def sweep_fs(rows: int, days: int) -> None:
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything", seconds)
                 seconds, _ = timed(
-                    lambda: target.read_arrow_table(row_filter=f"unix_hour = {hour}")
+                    lambda: target.read_arrow_table(row_filter=f"unix_partition = {hour}")
                 )
                 report("read one partition", seconds)
                 seconds, _ = timed(lambda: target.read_arrow_reader(limit=100).read_all())
                 report("read limit=100", seconds)
-                seconds, _ = timed(lambda: target.scan_plan(f"unix_hour = {hour}"))
+                seconds, _ = timed(lambda: target.scan_plan(f"unix_partition = {hour}"))
                 report("scan_plan one partition", seconds)
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything, again", seconds)
@@ -739,7 +739,7 @@ def sweep_maintain(rows: int, days: int) -> None:
         header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
         for label, built in (
             (
-                "identity (unix_hour)",
+                "identity (unix_partition)",
                 lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
             ),
             ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
@@ -920,9 +920,9 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     every run read the table back and wrote it out again, forever.
     """
     field = FixMessage.into_field().into_dataclass("Daily").into_field()
-    # `bucket[8]`, because `unix_hour` is an int64 and Iceberg's `day` transform is
-    # for dates. The point is unchanged: a transform, not the value itself.
-    field.field("unix_hour").is_partition_key = "bucket[8]"
+    # `bucket[8]`, because `unix_partition` is a signed integer and Iceberg's `day`
+    # transform is for dates. The point is unchanged: a transform, not the value itself.
+    field.field("unix_partition").is_partition_key = "bucket[8]"
     built = catalog(root).dataset("bench.daily", field=field, table_properties=OPTIMISED)
     return built.create_with()
 

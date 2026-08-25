@@ -35,6 +35,7 @@ from rekep.market import (  # noqa: E402
     identity,  # noqa: E402
 )
 from rekep.market.book import _Side  # noqa: E402
+from rekep.market.event import SECOND  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
     _binary,
@@ -43,9 +44,9 @@ from rekep.market.identity import (  # noqa: E402
     hash_of,
 )
 
-#: On an hour boundary, so `unix` and `unix_hour` agree without the fixture
-#: having to derive one from the other.
+#: One hour boundary in the nanosecond event clock and second partition clock.
 UNIX = 1710374400_000000000
+UNIX_PARTITION = UNIX // SECOND
 
 #: The states a day of orders actually visits, which is what makes the column
 #: worth encoding: a handful of distinct values repeated through a feed.
@@ -325,7 +326,7 @@ def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
     return {
         "unix": [UNIX] * rows,
-        "unix_hour": [UNIX] * rows,
+        "unix_partition": [UNIX_PARTITION] * rows,
         "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,

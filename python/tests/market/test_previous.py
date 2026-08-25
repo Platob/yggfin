@@ -137,7 +137,7 @@ def test_a_message_with_no_clock_lands_where_the_version_before_it_was() -> None
     first = resting()
     timeless = changed(_order(order_id="ORD-1", state=State.OPEN), first)
     assert timeless.unix == first.unix
-    assert timeless.unix_hour == first.unix_hour, "and the partition follows the time"
+    assert timeless.unix_partition == first.unix_partition, "and the partition follows the time"
 
 
 def test_what_the_message_did_send_always_wins() -> None:

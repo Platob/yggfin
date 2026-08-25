@@ -151,7 +151,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert len(FixMessage.into_field().names) == 109
     assert "FixMessage: 109 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
-    assert "unix_hour: int64  [partition identity]" in printed
+    assert "unix_partition: int32  [partition identity]" in printed
     assert (
         "kwargs: list<item: struct<tag: int32 not null, key: string not null, "
         "value: string, namespace: string, comp: string> not null>"

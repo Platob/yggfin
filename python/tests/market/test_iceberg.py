@@ -15,9 +15,10 @@ import pytest
 
 from rekep.fields import StructField
 from rekep.market import Book, Execution, Instrument, MarketEvent, Order
+from rekep.market.event import SECOND
 
 from ..conftest import catalog_properties
-from .conftest import batch
+from .conftest import UNIX, batch
 
 pytest.importorskip("pyiceberg")
 
@@ -76,9 +77,10 @@ def test_the_partition_is_the_hour_and_only_the_hour() -> None:
     64-bit hash multiplies the files in each hour without pruning anything more."""
     schema = Order.into_field().into_iceberg_schema()
     spec = Order.into_field().into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["unix_hour"]
+    assert [partition.name for partition in spec.fields] == ["unix_partition"]
     assert str(spec.fields[0].transform) == "identity"
-    assert schema.find_column_name(spec.fields[0].source_id) == "unix_hour"
+    assert schema.find_column_name(spec.fields[0].source_id) == "unix_partition"
+    assert str(schema.find_field("unix_partition").field_type) == "int"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
@@ -105,7 +107,8 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         properties=catalog_properties(tmp_path),
         field=shape.into_field(),
     )
-    given = batch(shape, 3)
+    unix_partition = UNIX // SECOND
+    given = batch(shape, 3, unix_partition=[unix_partition] * 3)
     # `append_`, not `overwrite_`: the fixture rows share a key, and what this
     # pins is the Arrow types surviving a round trip, not how rows are matched.
     dataset.append_arrow_table(pyarrow.Table.from_batches([given]))
@@ -114,7 +117,13 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     assert read.num_rows == 3
     assert read.column("hash").to_pylist() == given.column("hash").to_pylist()
     assert read.column("state").type == pyarrow.int32(), "the code stayed narrow"
+    assert read.column("unix_partition").type == pyarrow.int32()
     assert read.column("hash").type == pyarrow.int64(), "and the identifier stayed a long"
+    written = [task.file for task in dataset.iceberg_table.scan().plan_files()]
+    assert {one.partition[0] for one in written} == {unix_partition}
+    assert all(f"unix_partition={unix_partition}" in one.file_path for one in written), (
+        "the second-scale partition value keeps paths compact"
+    )
 
 
 def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Path) -> None:

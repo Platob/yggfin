@@ -65,8 +65,8 @@ for `Order` and `Execution` on the measured Python 3.12 runtime.
 
 `rekep.times.unix_of` and `datetime_of` are the one reading of "an instant",
 whatever spelled it: a `datetime`, a `date`, an integer already in the
-nanoseconds a `*unix` column holds, an ISO or FIX string, a wrapped value a
-pyarrow or numpy scalar hands back, and the named instants `now`, `utcnow`,
+nanoseconds an instant column such as `unix` holds, an ISO or FIX string, a
+wrapped value a pyarrow or numpy scalar hands back, and the named instants `now`, `utcnow`,
 `today`, `yesterday`, `tomorrow` and `epoch`.
 
 ```python

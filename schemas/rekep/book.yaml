@@ -13,11 +13,11 @@ fields:
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
     iceberg:sort_key: asc
-- name: unix_hour
-  type: int64
-  description: '`unix` truncated to the hour -- what the data is partitioned on.'
+- name: unix_partition
+  type: int32
+  description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata:
-    unit: nanosecond
+    unit: second
     epoch: '1970-01-01'
     iceberg:partition_key: identity
     iceberg:derived_from: unix
@@ -398,11 +398,12 @@ fields:
         unit: nanosecond
         epoch: '1970-01-01'
         iceberg:sort_key: asc
-    - name: unix_hour
-      type: int64
-      description: '`unix` truncated to the hour -- what the data is partitioned on.'
+    - name: unix_partition
+      type: int32
+      description: '`unix`''s hour boundary in whole epoch seconds; the partition
+        value.'
       metadata:
-        unit: nanosecond
+        unit: second
         epoch: '1970-01-01'
         iceberg:derived_from: unix
     - name: etype
@@ -825,11 +826,12 @@ fields:
         unit: nanosecond
         epoch: '1970-01-01'
         iceberg:sort_key: asc
-    - name: unix_hour
-      type: int64
-      description: '`unix` truncated to the hour -- what the data is partitioned on.'
+    - name: unix_partition
+      type: int32
+      description: '`unix`''s hour boundary in whole epoch seconds; the partition
+        value.'
       metadata:
-        unit: nanosecond
+        unit: second
         epoch: '1970-01-01'
         iceberg:derived_from: unix
     - name: etype
@@ -1297,11 +1299,12 @@ fields:
         unit: nanosecond
         epoch: '1970-01-01'
         iceberg:sort_key: asc
-    - name: unix_hour
-      type: int64
-      description: '`unix` truncated to the hour -- what the data is partitioned on.'
+    - name: unix_partition
+      type: int32
+      description: '`unix`''s hour boundary in whole epoch seconds; the partition
+        value.'
       metadata:
-        unit: nanosecond
+        unit: second
         epoch: '1970-01-01'
         iceberg:derived_from: unix
     - name: etype
@@ -1724,11 +1727,12 @@ fields:
         unit: nanosecond
         epoch: '1970-01-01'
         iceberg:sort_key: asc
-    - name: unix_hour
-      type: int64
-      description: '`unix` truncated to the hour -- what the data is partitioned on.'
+    - name: unix_partition
+      type: int32
+      description: '`unix`''s hour boundary in whole epoch seconds; the partition
+        value.'
       metadata:
-        unit: nanosecond
+        unit: second
         epoch: '1970-01-01'
         iceberg:derived_from: unix
     - name: etype

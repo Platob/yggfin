@@ -25,7 +25,7 @@ from rekep.filesystems import resolve
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
-from rekep.market.event import CODES_TYPE, hour_arrow
+from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
 from rekep.times import COMPACT, SHAPES, Stamp
@@ -477,7 +477,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             # what *recorded* it. Seeded with the header clock so a row whose
             # message says nothing about time still sorts where it was read.
             "unix": unix,
-            "unix_hour": hour_arrow(unix),
+            "unix_partition": unix_partition_arrow(unix),
             "etype": self.rules.etype_arrow(message),
             # A line is created when it is stamped. `runix` is when somebody
             # wrote it down *here*, which for a captured log is exactly what
