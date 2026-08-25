@@ -22,7 +22,7 @@ import pyarrow
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from _bench import parser  # noqa: E402
+from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import (  # noqa: E402
     SOH,
@@ -47,7 +47,10 @@ from rekep.fix.message import (  # noqa: E402
     _until_checksum,
 )
 from rekep.text import TextFile, TextFiles  # noqa: E402
-from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE  # noqa: E402
+from rekep.text.text_file import (  # noqa: E402
+    DEFAULT_BATCH_ROW_SIZE,
+    HEADER_PATTERN,
+)
 
 PLUGINS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -464,9 +467,81 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
         print(f"\n{rows:,} rows, {nbytes / 2**20:.1f} MiB, {shares}, best of {repeat}")
 
         _split_stage(path, rows, nbytes, repeat)
+        _header_stage(path, repeat)
         columns = _protocol_columns(path, protocols, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192)
         _pairs_stage(columns, repeat)
         _tags_stage(columns, repeat)
+
+
+def _header_stage(path: pathlib.Path, repeat: int) -> None:
+    """Stage zero: lines -> the four columns a header carries, two ways.
+
+    The one row-at-a-time loop left in the parser, raced against doing it in
+    kernels: one RE2 pass over the whole column, the continuations numbered by
+    a cumulative sum and joined back by a group-by. Both answer the same rows,
+    which is asserted before either is timed.
+
+    It is here so the answer stays measured. The kernel reading is the shape
+    this package prefers everywhere else, and on this fixture it loses: RE2
+    walks an alternation of three timestamp shapes over every byte of the
+    capture, where the loop stops at the first character of a line that is not
+    a header.
+    """
+    raw = path.read_bytes()
+    lines = [line for line in raw.split(b"\n") if line]
+    print(f"\n  lines -> header columns, {len(lines):,} lines")
+    print(f"    {'implementation':>34} {'lines/s':>12}")
+    indices = tuple(
+        HEADER_PATTERN.groupindex[name]
+        for name in ("timestamp", "thread_name", "plugin_code", "message")
+    )
+
+    def by_loop() -> list[tuple[bytes, ...]]:
+        rows: list[tuple[bytes, ...]] = []
+        match = HEADER_PATTERN.match
+        for line in lines:
+            found = match(line)
+            if found is None:
+                if rows:
+                    stamp, thread, plugin, message = rows[-1]
+                    rows[-1] = (stamp, thread, plugin, (message or b"") + b"\n" + line)
+                continue
+            rows.append(found.group(*indices))
+        return rows
+
+    def by_kernel() -> tuple[pyarrow.Array, ...]:
+        compute = pyarrow.compute
+        column = pyarrow.array(lines, pyarrow.binary()).cast(pyarrow.string(), safe=False)
+        # `(?s)` because RE2 takes no flag argument; the Python twin is
+        # compiled `re.DOTALL`.
+        found = compute.extract_regex(column, "(?s)" + HEADER_PATTERN.pattern.decode())
+        stamps = compute.struct_field(found, "timestamp")
+        header = compute.is_valid(stamps)
+        # A continuation belongs to the row above it: number the rows by how
+        # many headers have been seen, then join each row's messages back.
+        row = compute.subtract(compute.cumulative_sum(header.cast(pyarrow.int32())), 1)
+        message = compute.if_else(header, compute.struct_field(found, "message"), column)
+        grouped = (
+            pyarrow.table({"row": row, "message": message})
+            .group_by("row", use_threads=False)
+            .aggregate([("message", "list")])
+        )
+        keep = compute.greater_equal(grouped.column("row"), 0)
+        return (
+            compute.filter(stamps, header),
+            compute.filter(compute.struct_field(found, "thread_name"), header),
+            compute.filter(compute.struct_field(found, "plugin_code"), header),
+            compute.filter(compute.binary_join(grouped.column("message_list"), "\n"), keep),
+        )
+
+    looped, kerneled = by_loop(), by_kernel()
+    assert len(looped) == len(kerneled[0]), "the two readings found different rows"
+    assert [one[3].decode("utf-8", "replace") for one in looped[:64]] == (
+        kerneled[3].to_pylist()[:64]
+    ), "the two readings carry different messages"
+    for label, reading in (("per line, in Python (ships)", by_loop), ("one RE2 pass", by_kernel)):
+        seconds = best_of(reading, repeat)
+        print(f"    {label:>34} {len(lines) / seconds:>12,.0f}")
 
 
 def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> None:

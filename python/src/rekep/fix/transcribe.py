@@ -232,7 +232,24 @@ class TagIndex:
         resolved and whether what stands in front of it is a component or a
         namespace, and computing it twice would read the same column
         through the same regex twice.
+
+        Scanned once per **distinct** spelling and taken back across the
+        entries: a message keys its fields out of a bounded vocabulary, so a
+        batch of a hundred thousand entries carries a few dozen spellings. 25x
+        on a captured bridge batch, where every key is a name and none of the
+        fast paths below fire (benchmarks/bench_text_file.py).
         """
+        compute = pyarrow.compute
+        if isinstance(keys, pyarrow.ChunkedArray):
+            keys = keys.combine_chunks()
+        encoded = keys.dictionary_encode()
+        indices = encoded.indices
+        return tuple(
+            compute.take(one, indices) for one in self._resolve_distinct(encoded.dictionary)
+        )
+
+    def _resolve_distinct(self, keys: Any) -> tuple[Any, Any, Any, Any]:
+        """`resolve_with_match` over one column of distinct spellings."""
         compute = pyarrow.compute
         plain = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
         if compute.all(plain, min_count=0).as_py():
@@ -582,20 +599,31 @@ class FixCodec(Convertible):
         subscript, which is what `_GROUP_ENTRY` matches, and everything else in
         front of a name is a vendor's own prefix.
         """
+        # Read once per **distinct** spelling and taken back across the
+        # entries. A message keys its fields out of a bounded vocabulary --
+        # tags, or the names a bridge renders -- so a batch of a hundred
+        # thousand entries carries a few dozen spellings, and three regex
+        # passes over the entries were three passes over the same handful of
+        # strings repeated. 10x on a captured wire batch and 18x on a bridge
+        # one (benchmarks/bench_text_file.py).
         compute = pyarrow.compute
-        numeric = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
-        tags = compute.if_else(numeric, keys, pyarrow.scalar("0")).cast(TAG)
-        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
+        encoded = keys.dictionary_encode()
+        spellings, indices = encoded.dictionary, encoded.indices
+        numeric = compute.fill_null(compute.match_substring_regex(spellings, _IS_TAG), False)
+        tags = compute.if_else(numeric, spellings, pyarrow.scalar("0")).cast(TAG)
+        parts = compute.extract_regex(spellings, _NAMESPACED_KEY)
         lead = compute.struct_field(parts, "namespace")
         led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
         entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
         nothing = pyarrow.scalar(None, pyarrow.string())
         return (
-            tags,
-            compute.fill_null(compute.struct_field(parts, "key"), keys),
+            compute.take(tags, indices),
+            compute.take(compute.fill_null(compute.struct_field(parts, "key"), spellings), indices),
             values,
-            compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing),
-            compute.if_else(compute.and_(led, entry), lead, nothing),
+            compute.take(
+                compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing), indices
+            ),
+            compute.take(compute.if_else(compute.and_(led, entry), lead, nothing), indices),
         )
 
     def into_message_columns(self, messages: Any, plugins: Any = None) -> dict[str, Any]:
@@ -833,17 +861,29 @@ class FixCodec(Convertible):
         agreed, chosen = _liftable(parents, code, values)
         lift = compute.and_(wanted, agreed)
         taken = compute.and_(wanted, chosen)
-        found = compute.filter(code, taken)
-        where = compute.filter(parents, taken)
-        selected_values = compute.filter(values, taken)
+        # Sorted once by which column an entry belongs to, so each column is a
+        # *slice* of the run rather than two filters over the whole of it: a
+        # filter per column walks every lifted entry once per column, which
+        # is sixty passes over the batch where this is one sort and sixty
+        # zero-copy slices -- 2.7x on a captured batch
+        # (benchmarks/bench_text_file.py). The sort is stable, so parents stay
+        # row ordered inside a column, which is what the shortcut below reads.
+        order = compute.array_sort_indices(compute.filter(code, taken))
+        codes = compute.take(compute.filter(code, taken), order)
+        where = compute.take(compute.filter(parents, taken), order)
+        selected_values = compute.take(compute.filter(values, taken), order)
         row_ids = sequence(rows)
-        for one in compute.unique(found).to_pylist():
-            at = compute.equal(found, one)
-            column = compute.filter(selected_values, at)
-            column_rows = compute.filter(where, at)
+        # `value_counts` answers in first-appearance order, and a sorted
+        # column's first appearances are its groups, in order.
+        at = 0
+        for counted in compute.value_counts(codes).to_pylist():
+            one, run = counted["values"], counted["counts"]
+            column = selected_values.slice(at, run)
+            column_rows = where.slice(at, run)
+            at += run
             # Parent indices are row ordered and `_liftable` chose at most one
             # value per row, so covering every row already is the column.
-            if len(column_rows) != rows:
+            if run != rows:
                 column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
             if one >= 0:
                 columns[FLAT_COLUMNS[one]] = _cast(column, fields[one], FLAT_TYPES[one])
