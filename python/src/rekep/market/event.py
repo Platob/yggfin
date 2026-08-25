@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-import datetime
 import functools
 import operator
 from collections.abc import Mapping
@@ -12,6 +11,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Annotated, Any, Self
 
 import pyarrow
+import pyarrow.compute
 
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
@@ -23,14 +23,10 @@ if TYPE_CHECKING:
 
 #: What a `*unix` column holds, said once. Whole nanoseconds since the epoch,
 #: as an integer rather than a timestamp type -- which is the same choice
-#: `Log` makes, for the same reason: a width or a zone that a downstream is
+#: `FixMessage` makes, for the same reason: a width or a zone that a downstream is
 #: picky about is a conversion per row, and an integer survives every one of
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
-
-#: The day a `unix` of zero falls on, kept because a caller reading a `*unix`
-#: back into a calendar still wants somewhere to start.
-EPOCH = datetime.date(1970, 1, 1)
 
 #: Nanoseconds in a day.
 DAY = 86_400_000_000_000
@@ -590,6 +586,18 @@ class MarketEvent(Event):
     # Beside the hash rather than only inside `codes`: a hash joins, and a
     # person reads. Every filter, group and error message about an instrument
     # was reaching into a map for the one key this package writes itself.
+    #
+    # Not a partition either, and this one is measured rather than argued. The
+    # case for bucketing it is real -- `unix_hour` prunes time and not
+    # instrument, so a scan for one instrument across a week opens every
+    # hour's files. But bucketing does not fix that: the bucket prunes files
+    # *inside* an hour, and a scan across N hours still opens at least one
+    # file per hour, which is what the query actually pays for. Over 144,000
+    # rows across 72 hours and 40 instruments, one instrument's week cost
+    # 632 ms on `unix_hour` alone, 650 ms at bucket[8] and 671 ms at
+    # bucket[16] -- slower, not faster -- while the file count went 72 to 576
+    # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
+    # every consumer writes went 24 ms to 165 to 320. See docs/market.md.
     instrument_code: str = ""
     """Readable spelling of the instrument `instrument_xhash` names; empty when unstated."""
 
@@ -823,6 +831,23 @@ class MarketEvent(Event):
             [projected[name] for name in field.names], names=field.names
         )
         return field.cast_arrow_batch(raw)
+
+
+def hour_arrow(unix: Any) -> pyarrow.Array:
+    """`unix` truncated down to the hour it falls in -- the partition column.
+
+    The columnar twin of what `__post_init__` computes for one row, and here
+    rather than in a parser because the rule belongs to the column: a
+    partition that stopped being a function of `unix` would break every
+    ordered read that prunes on it.
+    """
+    compute = pyarrow.compute
+    hour = pyarrow.scalar(HOUR, pyarrow.int64())
+    remainder = compute.subtract(unix, compute.multiply(compute.divide(unix, hour), hour))
+    return compute.subtract(
+        unix,
+        compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
+    )
 
 
 @functools.lru_cache(maxsize=65_536)

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-import argparse
 import pathlib
 import sys
 import tempfile
-import time
 import zipfile
 from collections.abc import Callable
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import FixRegistry  # noqa: E402
 
@@ -27,17 +30,6 @@ QUESTIONS: dict[str, Callable[[FixRegistry], object]] = {
     "fields('4.4')  one version": lambda registry: registry.fields("4.4"),
     "load()  every version": lambda registry: registry.load(),
 }
-
-
-def best_of(function: Callable[[], object], repeat: int) -> float:
-    """Fastest of `repeat` timed calls, after one untimed warm-up."""
-    function()
-    fastest = float("inf")
-    for _ in range(repeat):
-        started = time.perf_counter()
-        function()
-        fastest = min(fastest, time.perf_counter() - started)
-    return fastest
 
 
 def unpacked(into: pathlib.Path) -> pathlib.Path:
@@ -108,10 +100,7 @@ def _zip(documents: dict[str, bytes], target: pathlib.Path, level: int | None) -
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repeat", type=int, default=7)
-    parser.add_argument("--quick", action="store_true")
-    arguments = parser.parse_args()
+    arguments = parser(__doc__, repeat=7).parse_args()
     repeat = 3 if arguments.quick else arguments.repeat
 
     if not ARCHIVE.exists():

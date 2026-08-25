@@ -1,4 +1,4 @@
-"""FIX fields promoted from parsed pairs to typed log columns."""
+"""FIX fields promoted from parsed pairs to typed FixMessage columns."""
 
 from __future__ import annotations
 
@@ -121,12 +121,18 @@ _PARTY_FIELDS: tuple[str, ...] = (
     "PartySubIDType",
 )
 
-# Fields materialized inside the structured TrdRegTimestamps component.
+# Fields materialized inside the two structured regulatory-clock components.
+# Declared here so each has a `DECLARATIONS` entry to annotate its column with;
+# none of them is a flat column of its own, because each belongs to an entry.
 _STAMP_GROUP_FIELDS: tuple[str, ...] = (
     "TrdRegTimestamp",
     "TrdRegTimestampType",
     "TrdRegTimestampOrigin",
     "NoTrdRegTimestamps",
+    "SideTrdRegTimestamp",
+    "SideTrdRegTimestampType",
+    "SideTrdRegTimestampSrc",
+    "NoSideTrdRegTS",
 )
 
 # FIX's documentation establishes UTC for these four timestamps.
@@ -159,8 +165,7 @@ TAG: pyarrow.DataType = pyarrow.int32()
 #: and `namespace` when it does not, which is what a vendor prefix is. So
 #: `NoPartyIDs[0].PartyID` is `PartyID` in component `NoPartyIDs[0]` and
 #: `TECH.CLIENTID` is `CLIENTID` in namespace `TECH`, and the two are told
-#: apart rather than filed together. `trans` is what the value means where its
-#: field enumerates its values.
+#: apart rather than filed together.
 #:
 #: The split is lossless: whichever of the two is set, joined to `key` by a
 #: dot, is the key exactly as the line rendered it.
@@ -172,7 +177,6 @@ KWARGS: pyarrow.DataType = pyarrow.list_(
                 pyarrow.field("tag", TAG, nullable=False),
                 pyarrow.field("key", pyarrow.string(), nullable=False),
                 pyarrow.field("value", pyarrow.string()),
-                pyarrow.field("trans", pyarrow.string()),
                 pyarrow.field("namespace", pyarrow.string()),
                 pyarrow.field("comp", pyarrow.string()),
             ]
@@ -180,6 +184,12 @@ KWARGS: pyarrow.DataType = pyarrow.list_(
         nullable=False,
     )
 )
+
+#: The members of one stored field, in the order `KWARGS` declares them. Read
+#: off the type rather than spelled a second time: this list existed twice, in
+#: two modules, and a member added to one and not the other is the shape bug
+#: that costs a whole column.
+KWARG_PARTS: tuple[str, ...] = tuple(member.name for member in KWARGS.value_type)
 
 
 def _physical_type(member: Field) -> pyarrow.DataType:
@@ -210,13 +220,13 @@ def _declaration(member: Field) -> Field:
 _REGISTRY = FixRegistry.from_builtin()
 _ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
-LOG_FIELDS: Mapping[int, Field] = MappingProxyType(
+FIXMESSAGE_FIELDS: Mapping[int, Field] = MappingProxyType(
     {int(member.fix["tag"]): member for member in _FIELDS}
 )
-if len(LOG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
+if len(FIXMESSAGE_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
     raise ValueError("the bundled FIX fields do not have unique tags")
 DECLARATIONS: Mapping[int, Field] = MappingProxyType(
-    {tag: _declaration(member) for tag, member in LOG_FIELDS.items()}
+    {tag: _declaration(member) for tag, member in FIXMESSAGE_FIELDS.items()}
 )
 
 _TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
@@ -326,8 +336,8 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 
 
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
-NAMED: Mapping[str, Field] = named_columns(_REGISTRY)
+NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
-#: The one the parsed log declares by name, kept as a name so `Log.isincode`
+#: The one the parsed log declares by name, kept as a name so `FixMessage.isincode`
 #: can annotate itself with it.
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]

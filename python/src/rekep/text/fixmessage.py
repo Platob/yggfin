@@ -16,22 +16,49 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
-from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
-from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
+from rekep.fields.arrays import groups_of, scattered
+from rekep.fix.access import Entry, FieldAccess, Reading
+from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARG_PARTS, KWARGS
+from rekep.fix.components import (
+    PARTIES,
+    SIDE_TRD_REG_TIMESTAMPS,
+    TRD_REG_TIMESTAMPS,
+    Party,
+    SideTrdRegTimestamp,
+    TrdRegTimestamp,
+)
+from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
-from rekep.market.event import Event
+from rekep.fix.transcribe import GROUP_ENTRY, NO_SOURCE
+from rekep.market.event import Event, hour_arrow
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
+
+# A `MsgType <35>` of our own, in the range FIX reserves for exactly this: `U`
+# followed by digits is user-defined, so a synthesized instrument can never
+# collide with a standard type a future FIX version adds. It is a type and not
+# a marker beside one: these rows go back out as FIX messages, and a consumer
+# holding only the message has no `etype` -- it has tag 35. Reusing `d` would
+# have made a synthesized instrument indistinguishable from a
+# `SecurityDefinition` a real bridge sent.
+_INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
 
 
+@functools.cache
+def _row_access() -> FieldAccess:
+    """The accessor a stored row reads through: the cross-version dictionary."""
+    return FieldAccess.of(FixRegistry.from_builtin(), None)
+
+
 @scalar(slots=True)
-class Log(Event):
+class FixMessage(Event):
     """One parsed line of a trading log."""
 
     @classmethod
@@ -51,6 +78,12 @@ class Log(Event):
     def into_instrument_protocol(cls) -> str:
         """Protocol marker for normalized internal rows."""
         return _INSTRUMENT_PROTOCOL
+
+    @classmethod
+    @functools.cache
+    def into_instrument_msg_type(cls) -> str:
+        """`MsgType <35>` a synthesized instrument row carries."""
+        return _INSTRUMENT_MSG_TYPE
 
     xhash: int = NIL
     """Digest of `code`, or the raw-line digest when no correlation code exists."""
@@ -103,11 +136,36 @@ class Log(Event):
     plugin_code: str = ""
     """Contents of the second bracketed field -- the emitting module."""
 
-    message: str = ""
-    """Payload with the header and level stripped, continuation lines folded in."""
+    # Nullable, and null on `fixmessage.market`: there `kwargs` carries every
+    # field the line held, so keeping the raw string beside it would store the
+    # same content twice. An all-null column run-length and dictionary encodes
+    # to nothing on disk, which is what makes one stored shape across the
+    # three tables affordable -- the same reasoning `_zeros` applies to the
+    # envelope members a parsed line leaves unset.
+    message: str | None = None
+    """Payload with the header and level stripped; null where `kwargs` holds it all."""
 
-    protocol: str = NO_PROTOCOL
+    protocol_code: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
+
+    # Without it nothing downstream can tell a real transaction time from a
+    # print time, and that distinction is the whole point of resolving one.
+    # Empty means no clock answered at all, which is a row with no time.
+    unix_source: str = ""
+    """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
+
+    # One column, not a FIX-specific one: every protocol with versions has a
+    # version, and a `fix_version` beside it would duplicate itself the first
+    # time a second versioned protocol appeared. Resolved once, at the message
+    # stage, so nothing downstream re-derives it.
+    protocol_version: str | None = None
+    """Which version of `protocol_code` the line is read under; null when unresolved."""
+
+    # Null because the message carried no version, or null because nothing
+    # tried? A consumer cannot tell the two apart from the value, and they are
+    # different facts about the row.
+    protocol_version_source: str = NO_SOURCE
+    """What resolved `protocol_version`: a BeginString, an application version, or nothing."""
 
     msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
@@ -134,6 +192,15 @@ class Log(Event):
         ),
     ] = None
     """FIX TrdRegTimestamps entries; null when the component is absent."""
+
+    side_trd_reg_timestamps: Annotated[
+        list[SideTrdRegTimestamp] | None,
+        Field(
+            arrow_type=SIDE_TRD_REG_TIMESTAMPS,
+            metadata={"fix:component": "SideTrdRegTS"},
+        ),
+    ] = None
+    """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
     isincode: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
@@ -403,7 +470,7 @@ class Log(Event):
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
     @classmethod
-    def from_instrument(cls, instrument: Any, **declared: Any) -> Log:
+    def from_instrument(cls, instrument: Any, **declared: Any) -> FixMessage:
         """Carry one normalized instrument version in the parsed-log stream."""
         from rekep.market.instrument import Instrument
 
@@ -418,9 +485,12 @@ class Log(Event):
                 "source_rownum": 0,
                 "thread_name": "",
                 "plugin_code": cls.into_instrument_plugin(),
-                "message": "",
-                "protocol": cls.into_instrument_protocol(),
-                "msg_type": "d",
+                # Null for the same reason a market row's is: `kwargs` below
+                # carries every fact this row states, so a raw line beside it
+                # would be the same content twice -- and there was no line.
+                "message": None,
+                "protocol_code": cls.into_instrument_protocol(),
+                "msg_type": cls.into_instrument_msg_type(),
                 "symbol": known.symbol or None,
                 "security_id": known.security_id,
                 "security_id_source": known.security_id_source,
@@ -441,13 +511,207 @@ class Log(Event):
         encoded["kwargs"] = _stored_entries(self.kwargs)
         return encoded
 
+    def get(self, field: int | str) -> Reading:
+        """One field off this row, whichever of the four ways it is named.
+
+        The one accessor (fix/access.py) reads the promoted columns first and
+        the stored `kwargs` after them, so a lifted fact and a residual one
+        answer through one call. The `Reading` carries the stored value and
+        the typed reading together.
+        """
+        return _row_access().reading(self._field_entries(), field)
+
+    def readings(self, field: int | str) -> list[Reading]:
+        """Every value of `field` on this row, in stored order."""
+        return _row_access().readings(self._field_entries(), field)
+
+    def _field_entries(self) -> Iterator[Any]:
+        """What the accessor scans: lifted columns in schema order, then `kwargs`."""
+        for name, tag in type(self).into_tagged_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                yield Entry(tag=int(tag), name=name, value=value)
+        for name, spelled in type(self).into_named_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                yield Entry(name=spelled, value=value)
+        yield from self.kwargs or ()
+
+    @classmethod
+    @functools.cache
+    def into_named_columns(cls) -> tuple[tuple[str, str], ...]:
+        """`(attribute, registry spelling)` for lifted columns FIX never numbered."""
+        return tuple(
+            (member.name, spelled)
+            for member in cls.into_field().fields
+            if not member.fix.get("tag") and (spelled := member.fix.get("name"))
+        )
+
     @property
     def is_instrument_version(self) -> bool:
-        """Whether this row is a normalized instrument lifecycle version."""
-        return (
-            self.etype is EventType.INSTRUMENT
-            and self.plugin_code == type(self).into_instrument_plugin()
+        """Whether this row is a normalized instrument lifecycle version.
+
+        One column answers it, and it is the one a message carries: these rows
+        are reinjected as FIX, and a consumer holding only the message has no
+        `etype` to dispatch on. `MsgType <35>` survives that round trip.
+        """
+        return self.msg_type == type(self).into_instrument_msg_type()
+
+    # -- the FIX stage --------------------------------------------------------
+
+    @classmethod
+    def resolve_arrow_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
+        """One batch of message-stage rows, resolved against the dictionary.
+
+        What `parse_fix` does to what `parse_messages` stored: the same
+        `kwargs` column filled the rest of the way, the fields that earn a
+        column lifted out of it, the structured components built, the
+        transaction time resolved now that those exist, and the digest taken
+        over the parsed values. `message` is never re-read -- everything comes
+        from the stored column, which is what makes a re-parse cheap.
+        """
+        rows = batch.num_rows
+        if not rows:
+            return batch
+        columns = {name: batch.column(name) for name in batch.schema.names}
+        columns.update(cls.resolved_columns(columns, codec, rows))
+        return cls.identified(columns, batch.schema, rows)
+
+    @classmethod
+    def resolved_columns(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> dict[str, Any]:
+        """Message-stage columns, resolved -- the one implementation of that.
+
+        Called from both stages: the parser runs it straight after
+        structuration when it is reading a capture whole, and `parse_fix` runs
+        it over stored rows. Split by the *stored* `protocol_version` rather
+        than by re-deriving one, which is the whole saving -- a batch carries
+        several dictionary versions and each slice is homogeneous.
+        """
+        compute = pyarrow.compute
+        versions = compute.fill_null(columns["protocol_version"], "")
+        parts, positions = [], []
+        for version, where in groups_of(versions):
+            taken = {
+                name: column if len(where) == rows else compute.take(column, where)
+                for name, column in columns.items()
+            }
+            parts.append(cls._resolved_columns(taken, codec, version.as_py() or None, len(where)))
+            positions.append(where)
+        if not parts:
+            return {}
+        return {name: scattered([part[name] for part in parts], positions) for name in parts[0]}
+
+    @classmethod
+    def _resolved_columns(
+        cls, columns: Mapping[str, Any], codec: Any, version: str | None, rows: int
+    ) -> dict[str, Any]:
+        """One homogeneous slice: `kwargs` completed, and what it gives up to columns."""
+        kwargs = codec.complete_kwargs(columns["kwargs"], version)
+        components, kwargs = codec.into_component_columns(kwargs, version)
+        lifted, kwargs = codec.into_lifted_columns(kwargs, version)
+        found: dict[str, Any] = {"kwargs": kwargs, **components, **lifted}
+        # A lifted value only fills a column the message stage left empty:
+        # `msg_type` is read off the front of the message before any of this,
+        # and the wire is the authority on what it says.
+        for name, column in found.items():
+            stored = columns.get(name)
+            if name != "kwargs" and stored is not None and stored.null_count < rows:
+                found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
+        return found
+
+    @classmethod
+    def identified(
+        cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
+    ) -> pyarrow.RecordBatch:
+        """The envelope a row earns: its instrument, its time, its identity.
+
+        Both parse paths end here -- the parser reading a capture whole and
+        `parse_fix` reading stored message rows -- because `hash` is what a
+        merge upserts on, and two routes that disagree about it write the same
+        line twice or collapse two lines into one.
+        """
+        from rekep.market.transacted import resolve_arrow
+
+        compute = pyarrow.compute
+        columns["symbol"] = cls.symbol_arrow(columns, rows)
+        columns["code"] = cls.code_arrow(columns, rows)
+        columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
+        columns["unix"], columns["unix_source"] = resolve_arrow(columns, columns["runix"], rows)
+        columns["unix_hour"] = hour_arrow(columns["unix"])
+        columns["cunix"] = columns["unix"]
+        columns["hash"] = cls.version_hash_arrow(columns, rows)
+        linked = compute.not_equal(columns["code"], "")
+        columns["xhash"] = compute.if_else(linked, cls.hash_arrow(columns["code"]), columns["hash"])
+        # `cast_arrow_fix` and not a plain cast, because the session columns
+        # arrive as the text the wire carried: `20260814-09:30:00.123` is an
+        # instant and `Y` is a boolean, and Arrow's own cast raises on both.
+        return pyarrow.RecordBatch.from_arrays(
+            [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
+            schema=schema,
         )
+
+    @classmethod
+    @functools.cache
+    def into_digest_columns(cls) -> tuple[str, ...]:
+        """What a stored row's `hash` is taken over, in this order.
+
+        The **parsed** values and never the raw line, so a message reformatted
+        but not changed hashes alike -- a bridge that rewrites its separator
+        or pads a fraction has not produced a second version of anything.
+
+        The tuple is the identity, so each member earns its place:
+
+        - `unix` and `unix_source`, because a row is a version of something
+          *at an instant*, and a re-parse that resolves the instant from a
+          different rung has genuinely learnt something new about the row.
+          Item 6's resolved time is deliberately in the digest for that
+          reason: two rows agreeing on content but not on when they happened
+          are two versions, not one.
+        - `source_url` and `source_rownum`, which are where the line was, and
+          together are unique across a capture -- so two identical lines in
+          one file stay two rows rather than collapsing into one.
+        - `protocol_code`, `protocol_version` and `msg_type`, which are what
+          the row was read *as*: the same bytes read under a different
+          dictionary is a different reading and deserves a different version.
+        - `kwargs`, which is the parsed content itself, in wire order.
+
+        `runix` is not here, and neither is `message`: when a line was written
+        down is not what it says, and the raw text is a spelling of `kwargs`.
+        """
+        return (
+            "unix",
+            "unix_source",
+            "source_url",
+            "source_rownum",
+            "protocol_code",
+            "protocol_version",
+            "msg_type",
+            "kwargs",
+        )
+
+    @classmethod
+    def version_hash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
+        """One digest per row, over the parsed values rather than the raw line.
+
+        A row that could not be read as a message has no parsed values, so it
+        hashes on the raw line instead -- which is the one stated exception to
+        the rule, and honest: for such a row the raw string *is* the content.
+        """
+        compute = pyarrow.compute
+        parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
+        digests = cls.hash_arrow(*parsed)
+        stored = columns.get("kwargs")
+        if stored is None:
+            return digests
+        unread = compute.is_null(stored)
+        if not compute.any(unread, min_count=0).as_py():
+            return digests
+        raw = cls.hash_arrow(
+            _digest_text(columns.get("message"), rows),
+            _digest_text(columns.get("source_url"), rows),
+            _digest_text(columns.get("source_rownum"), rows),
+        )
+        return compute.if_else(unread, raw, digests)
 
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -482,7 +746,7 @@ class Log(Event):
         """Rebuild the FIX market reader from promoted columns and residual pairs."""
         from rekep.market.fix import FixEvents
 
-        carried = {"runix": self.unix, "mic": self.mic, **declared}
+        carried = {"runix": self.runix or self.unix, "mic": self.mic, **declared}
         pairs: list[tuple[Any, Any]] = [
             (tag, value)
             for name, tag in type(self).into_tagged_columns()
@@ -490,10 +754,27 @@ class Log(Event):
         ]
         pairs.extend(_stored_pairs(self.kwargs))
         if pairs:
-            return FixEvents.from_pairs(pairs, **carried)
-        return (
-            FixEvents.from_text(self.message, **carried) if self.message else FixEvents(**carried)
-        )
+            built = FixEvents.from_pairs(pairs, **carried)
+        elif self.message:
+            built = FixEvents.from_text(self.message, **carried)
+        else:
+            built = FixEvents(**carried)
+        return self._transacted(built)
+
+    def _transacted(self, built: Any) -> Any:
+        """Hand the reader the transaction time this row already resolved.
+
+        Not re-derived, and it could not be: the regulatory groups the chain
+        reads first are lifted into typed columns of their own, so a reader
+        rebuilt from the residual pairs alone has lost them and would fall
+        down the chain to a weaker clock. The parse stage resolved it once and
+        stored which rung answered; this is that answer being consumed.
+        """
+        from rekep.market.transacted import Transacted
+
+        if self.unix_source:
+            built.__dict__["transacted"] = Transacted(self.unix, self.unix_source)
+        return built
 
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
         """Translate this parsed row into its ordered market events."""
@@ -506,9 +787,8 @@ class Log(Event):
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
         """Yield distinct instrument facts, synthesizing a symbol-only row when needed."""
-        normalized = dict(_stored_pairs(self.kwargs)) if self.is_instrument_version else None
-        if normalized is not None and _INSTRUMENT_KIND in normalized:
-            yield self._instrument_version(self._normalized_instrument(normalized))
+        if self.is_instrument_version and self.get(_INSTRUMENT_KIND):
+            yield self._instrument_version(self._normalized_instrument())
             return
         translated = tuple(self.into_fix_events(**declared).into_instruments())
         if not translated:
@@ -541,16 +821,24 @@ class Log(Event):
             currency=self.currency,
         )
 
-    def _normalized_instrument(self, pairs: Mapping[str, str]) -> Any:
-        """Decode one package-authored instrument row without rebuilding FIX state."""
+    def _normalized_instrument(self) -> Any:
+        """Decode one package-authored instrument row without rebuilding FIX state.
+
+        Every field reads through `get` -- the one accessor -- by the same
+        component path or namespace-qualified key `from_instrument` wrote it
+        under.
+        """
         from rekep.enums import AssetKind, IdSource, OptionKind, Side
         from rekep.market.instrument import Instrument, Leg
 
+        def read(spelling: str) -> str | None:
+            return self.get(spelling).raw
+
         alternatives: dict[str, str] = {}
-        for index in range(_pair_count(pairs, "NoSecurityAltID")):
+        for index in range(max(_pair_int(read("NoSecurityAltID")), 0)):
             root = f"NoSecurityAltID[{index}]"
-            value = pairs.get(f"{root}.SecurityAltID")
-            source = pairs.get(f"{root}.SecurityAltIDSource")
+            value = read(f"{root}.SecurityAltID")
+            source = read(f"{root}.SecurityAltIDSource")
             if not value:
                 continue
             scheme = IdSource.from_fix(source, IdSource.UNKNOWN)
@@ -564,11 +852,11 @@ class Log(Event):
             )
 
         legs = []
-        for index in range(_pair_count(pairs, "NoLegs")):
+        for index in range(max(_pair_int(read("NoLegs")), 0)):
             root = f"NoLegs[{index}]"
 
             def get(name: str, prefix: str = f"{root}.") -> str | None:
-                return pairs.get(f"{prefix}{name}")
+                return read(f"{prefix}{name}")
 
             cfi, security_type = get("LegCFICode"), get("LegSecurityType")
             fallback_kind = AssetKind.from_fix(cfi[:1], AssetKind.UNKNOWN) if cfi else None
@@ -597,7 +885,7 @@ class Log(Event):
         )
         return Instrument(
             symbol=self.symbol or "",
-            kind=AssetKind.from_code(pairs.get(_INSTRUMENT_KIND), fallback_kind),
+            kind=AssetKind.from_code(read(_INSTRUMENT_KIND), fallback_kind),
             security_id=self.security_id,
             security_id_source=self.security_id_source,
             isin_code=self.isincode,
@@ -606,18 +894,18 @@ class Log(Event):
             cfi=self.cfi_code,
             exchange=self.security_exchange,
             currency=self.currency,
-            multiplier=_pair_float(pairs.get("ContractMultiplier")),
-            tick=_pair_float(pairs.get("MinPriceIncrement")),
-            lot=_pair_float(pairs.get("RoundLot")),
-            maturity=_pair_date(pairs.get("MaturityDate")),
-            strike=_pair_float(pairs.get("StrikePrice")),
-            option_kind=OptionKind.from_fix(pairs.get("PutOrCall"), OptionKind.UNKNOWN),
-            label=pairs.get("SecurityDesc"),
+            multiplier=_pair_float(read("ContractMultiplier")),
+            tick=_pair_float(read("MinPriceIncrement")),
+            lot=_pair_float(read("RoundLot")),
+            maturity=_pair_date(read("MaturityDate")),
+            strike=_pair_float(read("StrikePrice")),
+            option_kind=OptionKind.from_fix(read("PutOrCall"), OptionKind.UNKNOWN),
+            label=read("SecurityDesc"),
             legs=legs or None,
         )
 
     def _instrument_version(self, instrument: Any) -> Any:
-        """Put decoded facts back on the lifecycle envelope this Log carries."""
+        """Put decoded facts back on the lifecycle envelope this FixMessage carries."""
         return dataclasses.replace(
             instrument,
             unix=self.unix,
@@ -673,7 +961,7 @@ class MessageCodec(Protocol):
         """One resolved version per parsed row, so a mixed batch can be split."""
         ...
 
-    def into_log_columns(
+    def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """`(kwargs, {column: array})`: what a log keeps, and what it lifts.
@@ -686,7 +974,7 @@ class MessageCodec(Protocol):
 
 
 @dataclasses.dataclass
-class LogRule(Convertible):
+class FixMessageRule(Convertible):
     """One pattern, and the kind of event a line matching it is."""
 
     pattern: str = ""
@@ -712,32 +1000,32 @@ class LogRule(Convertible):
 #: prints. Ordered most specific first, because the first match wins and a
 #: single line can name more than one of them -- an execution report quoting
 #: the order it fills says `ExecutionReport` *and* `NewOrderSingle`.
-DEFAULT_RULES: tuple[LogRule, ...] = (
-    LogRule(
+DEFAULT_RULES: tuple[FixMessageRule, ...] = (
+    FixMessageRule(
         r"35=8(\D|$)",
         EventType.EXECUTION,
         "a fill, or a report of one",
         [r"ExecutionReport"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=[DFG](\D|$)",
         EventType.ORDER,
         "an order, or an amendment to one",
         [r"NewOrderSingle", r"OrderCancel(Request|Replace)"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=X(\D|$)",
         EventType.BOOK,
         "an incremental book update",
         [r"MarketDataIncrementalRefresh"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=W(\D|$)",
         EventType.BOOK,
         "a full book snapshot",
         [r"MarketDataSnapshot"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=(?:AG|AH|AI|AJ|[RSZabi])(?:[^A-Za-z0-9]|$)",
         EventType.QUOTE,
         "a quote lifecycle message",
@@ -746,7 +1034,7 @@ DEFAULT_RULES: tuple[LogRule, ...] = (
             r"StatusReport|Response|Cancel|Request)?|RFQRequest)\b"
         ],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=d(\D|$)",
         EventType.INSTRUMENT,
         "reference data",
@@ -755,17 +1043,17 @@ DEFAULT_RULES: tuple[LogRule, ...] = (
 )
 
 
-def _default_log_rules() -> list[LogRule]:
+def _default_log_rules() -> list[FixMessageRule]:
     """Fresh default rules, including their mutable pattern lists."""
     return [dataclasses.replace(rule, patterns=list(rule.patterns)) for rule in DEFAULT_RULES]
 
 
 @dataclasses.dataclass
-class LogRules(Convertible):
+class FixMessageRules(Convertible):
     """Which `EventType` each line of a log is, by the first pattern that matches."""
 
     #: Rules in the order they are tried. The default reads a FIX trading log.
-    rules: list[LogRule] = dataclasses.field(default_factory=_default_log_rules)
+    rules: list[FixMessageRule] = dataclasses.field(default_factory=_default_log_rules)
 
     def etype_arrow(self, messages: Any) -> pyarrow.Array:
         """One `etype` per message: the first rule that matches, else `UNKNOWN`."""
@@ -781,7 +1069,7 @@ class LogRules(Convertible):
         return found.cast(_EVENT_CODE, safe=False)
 
 
-def _log_rule_hit(rule: LogRule, text: Any) -> Any:
+def _log_rule_hit(rule: FixMessageRule, text: Any) -> Any:
     """One log rule's any-pattern mask."""
     compute = pyarrow.compute
     mask = None
@@ -812,7 +1100,7 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
 
 
 def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
-    """Registry-shaped fields not already promoted on a normalized Log."""
+    """Registry-shaped fields not already promoted on a normalized FixMessage."""
     values = (
         (_INSTRUMENT_KIND, int(instrument.kind)),
         ("ContractMultiplier", instrument.multiplier),
@@ -871,10 +1159,6 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
     return pairs or None
 
 
-def _pair_count(pairs: Mapping[str, str], name: str) -> int:
-    return max(_pair_int(pairs.get(name)), 0)
-
-
 def _pair_int(value: Any) -> int:
     try:
         return int(value)
@@ -896,15 +1180,10 @@ def _pair_date(value: Any) -> datetime.date | None:
         return None
 
 
-#: The one segment of a rendered key that is a component and not a namespace
-#: without a dictionary to ask: an entry of a repeating group, which is what
-#: `_instrument_pairs` and every FIX renderer write with a subscript. Everything
-#: else in front of a name here is a namespace, which is what `rekep.kind` is.
-_GROUP_ENTRY = re.compile(r"\[[0-9]+\]$")
-
-
-#: The parts of one stored field, in the order `KWARGS` declares them.
-_KWARG_PARTS: tuple[str, ...] = ("tag", "key", "value", "trans", "namespace", "comp")
+#: The scalar reading of `FixCodec`'s own rule, compiled from its source: an
+#: entry of a repeating group is what carries a subscript, and everything else
+#: in front of a name is a namespace. One declaration, two engines.
+_GROUP_ENTRY = re.compile(GROUP_ENTRY)
 
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
@@ -915,13 +1194,13 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 def _stored_entry(entry: Any) -> dict[str, Any]:
     """One stored field, filled out from however the caller spelled it.
 
-    A `(key, value)` pair is accepted as itself, so a caller writing a `Log` by
+    A `(key, value)` pair is accepted as itself, so a caller writing a `FixMessage` by
     hand need not spell the whole struct out: a numeric key is the tag it
     already is, and a name gives up whatever stood in front of it to `comp` or
     `namespace` the same way `FixCodec.transcribe` splits a parsed one.
     """
     if isinstance(entry, Mapping):
-        filled = {name: entry.get(name) for name in _KWARG_PARTS}
+        filled = {name: entry.get(name) for name in KWARG_PARTS}
         return {**filled, "tag": int(filled["tag"] or 0), "key": str(entry["key"])}
     key, value = entry
     tag, spelling = (int(key), str(key)) if isinstance(key, int) else (0, str(key))
@@ -931,7 +1210,6 @@ def _stored_entry(entry: Any) -> dict[str, Any]:
         "tag": tag,
         "key": name or spelling,
         "value": None if value is None else str(value),
-        "trans": None,
         "namespace": lead if lead and not inside else None,
         "comp": lead if inside else None,
     }
@@ -967,7 +1245,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     columns, read off `tag` instead of off which column an entry sat in.
 
     A plain `(key, value)` tuple is accepted as itself, so a caller writing a
-    `Log` by hand need not spell the whole struct out.
+    `FixMessage` by hand need not spell the whole struct out.
     """
     for entry in entries or ():
         if not isinstance(entry, Mapping):
@@ -980,3 +1258,42 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
         lead = entry.get("namespace") or entry.get("comp")
         name = entry["key"]
         yield (f"{lead}.{name}" if lead else name), entry.get("value")
+
+
+def _digest_text(column: Any, rows: int) -> pyarrow.Array:
+    """One column as the text its digest is taken over.
+
+    Text for every member, so the tuple hashes the same way whatever Arrow
+    type each column happens to be -- and a stored list of fields hashes as
+    the fields it holds, in order, rather than as an address.
+    """
+    compute = pyarrow.compute
+    if column is None:
+        return pyarrow.repeat("", rows)
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if pyarrow.types.is_list(column.type):
+        return _stored_text(column, rows)
+    return compute.fill_null(column.cast(pyarrow.string(), safe=False), "")
+
+
+def _stored_text(column: Any, rows: int) -> pyarrow.Array:
+    """A `KWARGS` column as one string per row: every field, in wire order."""
+    compute = pyarrow.compute
+    entries = compute.list_flatten(column)
+    spelled = compute.binary_join_element_wise(
+        compute.fill_null(compute.struct_field(entries, "tag").cast(pyarrow.string()), ""),
+        compute.fill_null(compute.struct_field(entries, "comp"), ""),
+        compute.fill_null(compute.struct_field(entries, "namespace"), ""),
+        compute.fill_null(compute.struct_field(entries, "key"), ""),
+        compute.fill_null(compute.struct_field(entries, "value"), ""),
+        "\x1f",
+    )
+    lengths = compute.fill_null(compute.list_value_length(column), 0).cast(pyarrow.int32())
+    offsets = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    listed = pyarrow.ListArray.from_arrays(offsets, spelled)
+    joined = compute.binary_join(listed, "\x1e")
+    del rows
+    return compute.fill_null(joined, "")

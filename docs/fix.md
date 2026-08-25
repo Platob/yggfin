@@ -4,9 +4,9 @@
 unknown source data.
 
 ```python
-from rekep.fix import FixMessage, FixRegistry
+from rekep.fix import FixPairs, FixRegistry
 
-message = FixMessage.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
+message = FixPairs.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
 message.msg_type  # 'D'
 message.get(55)  # 'IBM'
 message.pairs  # ordered entries
@@ -370,11 +370,53 @@ with it. Readings that *disagree* are left where they were: two values under
 one key is a repeating group, or an enrichment that rewrote something, and
 picking between them would be a guess.
 
+## Reading a field
+
+`FieldAccess` (`rekep.fix.access`) is the one way in. A caller holds a field
+one of four ways, and every one of them resolves to the same reading:
+
+| how it is named | example |
+| --- | --- |
+| numeric tag | `770` |
+| canonical name | `TrdRegTimestampType` |
+| component path | `NoTrdRegTimestamps[0].TrdRegTimestamp` |
+| namespace-qualified key | `TECH.CLIENTID` |
+
+```python
+from rekep.fix import FieldAccess, FixRegistry
+
+access = FieldAccess.of(FixRegistry.from_builtin())
+found = access.reading(row.kwargs, "OrderQty")
+found.raw    # '125', the text the line carried
+found.value  # 125.0, what the dictionary makes of it
+```
+
+`Reading.meaning` is the third thing one call answers: what the value means
+where its field enumerates its values (`Side=1` is "Buy"). Derived, never
+stored -- it is a fact about the dictionary, not about the row.
+
+One call answers every half, so no call site picks an accessor by which one
+it wants. The typed reading applies the dictionary's own `translate` before
+the cast, so a value spelled by its meaning (`Side=Buy`) resolves without the
+call site knowing there was anything to resolve.
+
+A group entry answers a bare name -- `PartyID` finds `NoPartyIDs[0].PartyID`,
+because the group is *where* the field sits and not what it is -- while a
+vendor namespace does not: `TECH.CLIENTID` is its own field, and reading it as
+`CLIENTID` would file an enrichment value under a standard field.
+
+The rules are declared once and executed twice. `TagIndex` resolves whole
+columns in Arrow kernels and `TagIndex.resolve_key` reads the same index one
+key at a time, off the same value sets and the same pattern sources, so the
+scalar and the vectorized paths cannot answer differently for one input.
+`FixPairs.get` and `FixMessage.get` are both this accessor: the wire model
+reads through it with no dictionary, which resolves by spelling alone.
+
 ## Parsed-log projection
 
-Common fields are promoted once into `Log`. Residual `kwargs` keeps everything
-not promoted -- resolved or not, in wire order, with the tag, the name, the
-container or namespace it sat in, and what its value means. A later market
+Common fields are promoted once into `FixMessage`. Residual `kwargs` keeps everything
+not promoted -- resolved or not, in wire order, with the tag, the name, and the
+container or namespace it sat in. A later market
 conversion rebuilds a `FixEvents` view from those typed columns and that one
 residual list instead of tokenizing the raw message again.
 

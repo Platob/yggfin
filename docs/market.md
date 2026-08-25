@@ -33,10 +33,107 @@ declared and supplies `BBB` as the price currency when that is absent.
 
 A new market log symbol creates a synthetic minimal instrument; later facts
 enrich that symbol's lifecycle. Changed versions and hourly snapshots first
-travel as normalized rows in `logs.market`, then the flattening notebook
+travel as normalized rows in `fixmessage.market`, then the flattening notebook
 projects them unchanged into the Instrument table.
 
 There is no separate reference model or contract.
+
+## When it happened
+
+`unix` is when the transaction happened, not when somebody wrote it down.
+`rekep.market.transacted` resolves it, and it is one resolver read by both
+layers -- the parse stage fills the column over a whole batch in kernels, and
+the translation layer reads one message at a time -- so the two cannot
+disagree about when a row happened.
+
+The chain, best first:
+
+| rung | what it is |
+| --- | --- |
+| `TrdRegTimestamps` | the regulatory record, per `PREFERRED` below |
+| `SideTrdRegTS` | the same, stated per side |
+| `TransactTime <60>` | what the message claims about its own business event |
+| `MDEntryDate <272>` + `MDEntryTime <273>` | a market-data entry's own instant |
+| `OrigTime <42>` | time of message origination, for a relayed message |
+| `OrigSendingTime <122>` | on a resend, when it first went out |
+| `SendingTime <52>` | transmission, and the last FIX clock there is |
+
+Below all of them is the clock that *recorded* the line, which is not in the
+table because it is not something the message said. It is `runix`, and it is
+where the log header's own stamp now lives on every row.
+
+`unix_source` says which rung answered -- `TrdRegTimestamps=1`,
+`TransactTime`, `recorded`, or empty for a row carrying no clock at all.
+Without it nothing downstream can tell a real transaction time from a print
+time, and that distinction is the whole point of resolving one.
+
+### Which regulatory stamp is the transaction
+
+A regulatory group carries several instants and they are not interchangeable,
+so which one counts depends on what the row asserts. `PREFERRED` declares it
+once, keyed by `EventType`:
+
+| event | preferred `TrdRegTimestampType <770>`, best first |
+| --- | --- |
+| execution | `1` execution, `5` broker execution, `2` time in |
+| order | `10` order submission, `9` orderbook entry, `2` time in, `4` broker receipt, `6` desk receipt |
+| quote | `10`, `9`, `2`, `4` |
+| book | `9` orderbook entry, `2` time in, `1` execution |
+
+An execution happened when it executed; an order happened when it arrived.
+One group on two kinds of row therefore gives two answers, which is what the
+table exists for -- reading either as "the group's first entry" would stamp
+one of them with the other's instant. A group carrying none of the preferred
+types still answers, with its first entry: a regulatory stamp nobody ranked
+is still nearer the transaction than a transmission clock.
+
+`9` and `10` are later extension-pack codes the packaged dictionary does not
+enumerate. They are ranked anyway, because a venue that sends one is not
+sending a code this package should refuse.
+
+### What this moves
+
+Transaction time is not monotonic in file order -- a resend or a late
+regulatory stamp lands behind rows already read -- so:
+
+- `unix_hour` is recomputed from the resolved `unix`, and rows move between
+  partitions accordingly. The partition stays a function of the column it is
+  derived from, which is what keeps a partition-ordered read globally sorted.
+- The book fold already asks the storage engine for
+  `order_by=("unix", "msg_seq_num", "hash")`, so it gets an explicit sort pass
+  rather than trusting file order. That was incidental before and is
+  load-bearing now; no bounded reorder window is needed, because the sort is
+  the storage engine's and not the stream's.
+- `hash` changes for every row whose `unix` moved, since `unix` is part of a
+  version's identity. Existing tables cannot be appended to and are rebuilt.
+
+## How market rows are laid out
+
+`unix_hour` is the only partition, and `instrument_code` is deliberately not a
+second one. The case for bucketing it is real -- the hour prunes time and not
+instrument, so a scan for one instrument across a week opens every hour's
+files -- so it was measured rather than argued.
+
+144,000 rows across 72 hours and 40 instruments, one instrument's whole week
+against one hour, best of five:
+
+| layout | files | mean file | one instrument, one week | one hour |
+| --- | ---: | ---: | ---: | ---: |
+| `unix_hour` alone | 72 | 76.0 KiB | 632 ms | 24 ms |
+| `unix_hour` + `bucket[8]` | 576 | 28.5 KiB | 650 ms | 165 ms |
+| `unix_hour` + `bucket[16]` | 1,152 | 25.0 KiB | 671 ms | 320 ms |
+
+Bucketing loses on the query it was meant to win. The reason is that a bucket
+prunes files *inside* an hour, and a scan across N hours still opens at least
+one file per hour -- so the work does not fall, while the file count
+multiplies by the bucket width and the hourly read every consumer writes gets
+seven to thirteen times slower.
+
+A narrower bucket, or a `truncate` transform on the code's prefix, moves the
+numbers but not the shape of the argument: the cost being paid is per file
+per hour, and no transform on the instrument reduces the number of hours. If
+one-instrument scans ever do need to be fast, the answer is a sort order or a
+secondary table keyed on the instrument, not a partition on it.
 
 ## Orders and executions
 
@@ -58,7 +155,7 @@ Missing or non-finite price/quantity cannot mutate the book.
 
 ## Books
 
-`BookIterator` consumes sorted `Log` records, translates their already-parsed
+`BookIterator` consumes sorted `FixMessage` records, translates their already-parsed
 FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
 because order state is sequential.

@@ -16,7 +16,7 @@ from rekep.fields import (
     StructField,
     scalar,
 )
-from rekep.fix import FixMessage, FixRegistry
+from rekep.fix import FixPairs, FixRegistry
 from rekep.market import (
     Book,
     Event,
@@ -27,7 +27,7 @@ from rekep.market import (
     Order,
 )
 from rekep.tasks import Task
-from rekep.text import Log, TextFile, TextFiles
+from rekep.text import FixMessage, TextFile, TextFiles
 from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
@@ -44,6 +44,7 @@ __all__ = [
     "FieldBuilder",
     "FixEvents",
     "FixMessage",
+    "FixPairs",
     "FixRegistry",
     "FixedSizeListField",
     "Instrument",
@@ -51,7 +52,6 @@ __all__ = [
     "LargeListViewField",
     "ListField",
     "ListViewField",
-    "Log",
     "MapField",
     "MarketEvent",
     "MarketKind",

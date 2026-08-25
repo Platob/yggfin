@@ -372,10 +372,20 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         order_by: str | Sequence[str] | None = None,
     ) -> pyarrow.RecordBatchReader:
-        """Stream the table, optionally merging files on lexicographic sort keys."""
+        """Stream the table, optionally merging files on lexicographic sort keys.
+
+        A table that was never written reads as no rows, not as a failure: on
+        the first interval of a fresh catalog every stage reads an upstream
+        that its own upstream has not created yet, and "nothing there" is the
+        true answer to that -- so it is answered once here rather than by an
+        `exists` guard at each call site. A source root under `TextFiles`
+        refuses instead, because nothing in the pipeline creates one.
+        """
         ordering = (order_by,) if isinstance(order_by, str) else tuple(order_by or ())
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
+        if not self.exists:
+            return self._empty_reader(target, columns)
         table = self.iceberg_table
         # Pinned *before* the projection is chosen: a scan on a ref or a
         # snapshot id projects under that snapshot's schema, so which names it
@@ -413,6 +423,21 @@ class IcebergDataset(Dataset):
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
 
+    def _empty_reader(
+        self, target: StructField | None, columns: Sequence[str] | None
+    ) -> pyarrow.RecordBatchReader:
+        """No rows, under the shape the caller asked to read.
+
+        With neither a schema nor a declared shape there is nothing to answer
+        with, and loading the absent table raises what that deserves.
+        """
+        if target is None:
+            target = self.target_field()
+        arrow = target.into_arrow_schema()
+        if columns:
+            arrow = pyarrow.schema([arrow.field(name) for name in columns])
+        return pyarrow.RecordBatchReader.from_batches(arrow, iter(()))
+
     def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
         """The branch a read follows, or None when a snapshot id decides instead."""
         if snapshot_id is None:
@@ -441,39 +466,64 @@ class IcebergDataset(Dataset):
 
     # -- writing ------------------------------------------------------------
 
-    def write_arrow_reader(
+    def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
-        """Write a stream into the table, one commit per chunk."""
+        """Replaces the rows whose keys match and inserts the rest, one commit per chunk."""
         # An upsert or an unconditional append can put a key beyond an
         # insert-only writer's known maximum. Its cheap monotonic proof is no
         # longer complete after either operation.
         self.__dict__.pop("_insert_upper", None)
-        table = self.get_or_create_table()
+        self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
         join = self.merge_columns(merge_by)
+        if not join:
+            raise ValueError(
+                f"merge_by={merge_by!r} names nothing to match on, and an overwrite "
+                "replaces the rows whose keys match -- pass True for the primary key "
+                "or the columns to match on, or use append_arrow_* to add rows blindly"
+            )
         reference = branch or self.branch or MAIN
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
         for chunk in arrow_chunks(reader, rows):
             chunk = self.sorted(chunk)
-            if not join:
-                table.append(chunk, snapshot_properties=properties or {}, branch=reference)
-            elif self.plan_merges:
+            if self.plan_merges:
                 self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
             else:
-                table.upsert(
+                self.iceberg_table.upsert(
                     chunk,
                     join_cols=join,
                     branch=reference,
                     snapshot_properties=properties or {},
                 )
+        if self.auto_optimize:
+            self.maybe_optimize(branch=branch)
+
+    def _append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+    ) -> None:
+        """Add every row, matching nothing: one Iceberg append per chunk."""
+        self.__dict__.pop("_insert_upper", None)
+        table = self.get_or_create_table()
+        reader = self.target_field(schema).cast_arrow_reader(source)
+        reference = branch or self.branch or MAIN
+        rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        snapshot = properties or {}
+        for chunk in arrow_chunks(reader, rows):
+            table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
         if self.auto_optimize:
             self.maybe_optimize(branch=branch)
 
@@ -630,8 +680,8 @@ class IcebergDataset(Dataset):
                     inserted += batch.num_rows
                     yield batch
 
-            self.write_arrow_reader(
-                counted(), schema, None, commit_row_size, branch=branch, properties=properties
+            self._append_arrow_reader(
+                counted(), schema, commit_row_size, branch=branch, properties=properties
             )
             return inserted
         self.get_or_create_table()

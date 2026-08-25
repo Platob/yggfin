@@ -15,6 +15,7 @@ from rekep.enums import (
     MIC,
     AssetKind,
     Currency,
+    EventType,
     IdSource,
     MarketKind,
     OptionKind,
@@ -24,8 +25,10 @@ from rekep.enums import (
 )
 from rekep.fields import StructField
 from rekep.fix import infer_version_from_pairs
+from rekep.fix.access import FieldAccess
+from rekep.fix.entries import translation_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
-from rekep.fix.message import FixMessage
+from rekep.fix.message import FixPairs
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -37,6 +40,7 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import SYMBOL_CODE, MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
+from rekep.market.transacted import TRANSACTED, Transacted, resolve
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -110,29 +114,14 @@ CARRIED_FIELDS: tuple[str, ...] = (
 #: Encoding fields, omitted from market metadata; BeginString remains evidence.
 FRAMING_FIELDS = frozenset({"BodyLength", "CheckSum"})
 
-#: Where `MarketEvent.unix` comes from, **best first**, and why each is where
-#: it is. Every one is a real FIX field, and the order is the standard's own
-#: definitions rather than a preference:
-#:
-#: 1. `TransactTime <60>` -- "timestamp when the business transaction
-#:    represented by the message occurred". The thing being asked for.
-#: 2. `MDEntryDate <272>` + `MDEntryTime <273>` -- a market-data entry's own
-#:    instant, split across two fields because that is how FIX carries it.
-#:    Read per *entry*, so two entries of one refresh keep their own times.
-#: 3. `OrigTime <42>` -- "time of message origination", which for a relayed
-#:    or republished message is nearer the transaction than the relay's own
-#:    transmission.
-#: 4. `OrigSendingTime <122>` -- on a `PossDupFlag <43>` resend, when the
-#:    message *first* went out. Still transmission, but the original one.
-#: 5. `SendingTime <52>` -- transmission. Last, and only because a row with
-#:    no time at all sorts nowhere: it is the recording clock, and it is what
-#:    `runix` holds regardless.
-TRANSACTED: tuple[Any, ...] = (
-    "TransactTime",
-    ("MDEntryDate", "MDEntryTime"),
-    "OrigTime",
-    "OrigSendingTime",
-    "SendingTime",
+#: Which repeating group each structured regulatory column is read out of,
+#: for the translation layer -- which holds a message rather than the typed
+#: columns the parse layer has.
+_REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
+    {
+        "trd_reg_timestamps": "NoTrdRegTimestamps",
+        "side_trd_reg_timestamps": "NoSideTrdRegTS",
+    }
 )
 
 #: MsgType <35> values that carry an order, and the state each *asserts* when
@@ -195,11 +184,21 @@ INSTRUMENT_MESSAGE_FIELDS: frozenset[str] = INSTRUMENT_FIELDS | frozenset(
         "NoQuoteEntries",
         "QuoteSetID",
         "QuoteEntryID",
-        *(
-            field
-            for source in TRANSACTED
-            for field in (source if isinstance(source, tuple) else (source,))
-        ),
+        *(field for rung in TRANSACTED for field in rung.fields),
+    }
+)
+
+#: What kind of event each MsgType <35> is about to become. Read before an
+#: event exists, because it is what ranks the regulatory stamps that decide
+#: the event's own `unix` -- so it cannot be asked of the built event.
+MESSAGE_EVENTS: Mapping[str, EventType] = types.MappingProxyType(
+    {
+        **{kind: EventType.BOOK for kind in ENTRIED},
+        **{kind: EventType.QUOTE for kind in QUOTED},
+        "i": EventType.QUOTE,
+        "8": EventType.EXECUTION,
+        "AE": EventType.EXECUTION,
+        **{kind: EventType.ORDER for kind in ORDERED},
     }
 )
 
@@ -347,32 +346,6 @@ def _standard_market_tags() -> Mapping[str, int]:
 
 
 @functools.cache
-def market_tags_by_name(
-    registry: FixRegistry | None = None, version: str | None = None
-) -> Mapping[str, int]:
-    """`market_tags` under folded spellings, built once per dictionary version.
-
-    Per version and not per message: a dictionary has a couple of thousand
-    names, and folding all of them again for every line a capture carries was
-    most of what reading one line by name cost.
-    """
-    return types.MappingProxyType(
-        {_field_key(name): tag for name, tag in market_tags(registry, version).items()}
-    )
-
-
-@functools.cache
-def wire_tags(registry: FixRegistry | None = None, version: str | None = None) -> dict[str, str]:
-    """The wire tag each field spelling resolves to, filled in as it is asked.
-
-    Shared by every message read under one dictionary version, because that is
-    what the answer depends on: a feed asks for the same few dozen fields on
-    every line, and resolving one is two lookups and a fold.
-    """
-    return {}
-
-
-@functools.cache
 def market_tags(
     registry: FixRegistry | None = None, version: str | None = None
 ) -> Mapping[str, int]:
@@ -405,31 +378,6 @@ def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
             _declared_tags(member, into)
 
 
-@functools.lru_cache(maxsize=8192)
-def _folded_key(text: str) -> str:
-    """One already-string name folded, remembered because the names recur.
-
-    A translation reads the same few dozen field names off every message it
-    converts, and folding one costs a pass over its characters -- so the pass
-    is paid once per distinct spelling for the life of the process rather than
-    once per message per key.
-    """
-    return "".join(character.lower() for character in text if character.isalnum())
-
-
-def _field_key(value: Any) -> str:
-    """A FIX name in the spelling used by registry and rendered keys."""
-    return _folded_key(value if type(value) is str else str(value))
-
-
-def _version_key(value: Any) -> str:
-    """A BeginString or registry version in one comparison spelling."""
-    text = str(value).strip().upper()
-    if text.startswith("FIX."):
-        text = text[4:]
-    return "".join(character for character in text if character.isalnum())
-
-
 @dataclasses.dataclass
 class FixEvents(Convertible):
     """The market events one FIX message carries, in the order it carries them."""
@@ -440,7 +388,7 @@ class FixEvents(Convertible):
         """Conversions inferred for a FIX event translator."""
         return types.MappingProxyType({**super().into_redirects(), str: "text"})
 
-    message: FixMessage = dataclasses.field(default_factory=FixMessage)
+    message: FixPairs = dataclasses.field(default_factory=FixPairs)
     """The message being read."""
 
     venue: str | None = None
@@ -463,7 +411,7 @@ class FixEvents(Convertible):
     @classmethod
     def from_text(cls, text: str | bytes, **carried: Any) -> FixEvents:
         """Events out of one log line, however it spells its separator."""
-        return cls(message=FixMessage.from_text(text), **carried)
+        return cls(message=FixPairs.from_text(text), **carried)
 
     @classmethod
     def from_pairs(
@@ -476,7 +424,7 @@ class FixEvents(Convertible):
         # With no explicit mapping, keep names until the instance can infer the
         # message version and apply its registry. Resolving newest-first here
         # would silently use the wrong tag for an older/custom version.
-        return cls(message=FixMessage.from_pairs(pairs, names), **carried)
+        return cls(message=FixPairs.from_pairs(pairs, names), **carried)
 
     # -- reading ------------------------------------------------------------
 
@@ -498,12 +446,9 @@ class FixEvents(Convertible):
         return market_tags(self.registry, self.version)
 
     @functools.cached_property
-    def _tags_by_name(self) -> Mapping[str, int]:
-        return market_tags_by_name(self.registry, self.version)
-
-    @functools.cached_property
-    def _wire_tags(self) -> dict[str, str]:
-        return wire_tags(self.registry, self.version)
+    def access(self) -> FieldAccess:
+        """The one field accessor (fix/access.py), scoped to this message's dictionary."""
+        return FieldAccess.of(self.registry or FixRegistry.from_builtin(), self.version)
 
     @functools.cached_property
     def _names_by_tag(self) -> Mapping[str, str]:
@@ -516,31 +461,30 @@ class FixEvents(Convertible):
         )
 
     def tag_of(self, field: int | str) -> str:
-        """A canonical field name or numeric tag as the selected wire tag."""
+        """A canonical field name or numeric tag as the selected wire tag.
+
+        Resolution is the accessor's; this only spells the answer the way a
+        wire message keys it.
+        """
         text = field if type(field) is str else str(field)
-        resolved = self._wire_tags
-        found = resolved.get(text)
-        if found is not None:
-            return found
         if text.isascii() and text.isdigit():
-            resolved[text] = text
             return text
-        tag = self.tags.get(text)
-        if tag is None:
-            tag = self._tags_by_name.get(_field_key(text))
-        found = resolved[text] = str(tag) if tag is not None else text
-        return found
+        return self.access.tag_text(text)
 
     @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
-        """The message as one value per key, first occurrence winning."""
+        """The message as one value per key, first occurrence winning.
+
+        The accessor's prepared execution: each named key resolves once
+        through the shared rule table, and every later read is a dict probe.
+        """
         pairs = self.message.pairs
         if any(not (key.isascii() and key.isdigit()) for key, _ in pairs):
             # Only a message that actually spells a key as a name pays for the
             # resolution. A wire message is already all tags, which is most of
             # a feed, and running the pass over it re-resolved eighteen keys
             # to themselves -- 29% of the conversion, for nothing.
-            pairs = FixMessage.from_pairs(pairs, self.tags).pairs
+            pairs = self.access.tagged_pairs(pairs)
         found: dict[str, Any] = {}
         for key, value in pairs:
             found.setdefault(key, value)
@@ -552,11 +496,12 @@ class FixEvents(Convertible):
 
         Built once per message rather than walked per miss: a translation asks
         for several dozen fields a message does not carry, and each of those
-        used to re-fold every key the message did.
+        used to re-fold every key the message did. The fold is
+        `translation_key`, the same last-tier rule the accessor matches by.
         """
         found: dict[str, Any] = {}
         for key, value in self.by_tag.items():
-            found.setdefault(_field_key(key), value)
+            found.setdefault(translation_key(key), value)
         return found
 
     def get(self, field: int | str) -> Any:
@@ -565,7 +510,7 @@ class FixEvents(Convertible):
         found = self.by_tag.get(wanted)
         if found is not None or wanted in self.by_tag:
             return found
-        return self.by_folded_tag.get(_field_key(field))
+        return self.by_folded_tag.get(translation_key(str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""
@@ -670,7 +615,7 @@ class FixEvents(Convertible):
     def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
         """A repeating-group entry completed by its message header."""
         inside = FixEvents(
-            message=FixMessage(pairs=entry),
+            message=FixPairs(pairs=entry),
             venue=self.venue,
             mic=self.mic,
             runix=self.runix,
@@ -679,6 +624,7 @@ class FixEvents(Convertible):
         )
         inside.__dict__["version"] = self.version
         inside.__dict__["tags"] = self.tags
+        inside.__dict__["access"] = self.access
         own = inside.by_tag
         if all(inside.get(field) is None for field in INSTRUMENT_FIELDS):
             inside.__dict__["instrument"] = self.instrument
@@ -850,7 +796,7 @@ class FixEvents(Convertible):
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                eunix=_unix_value(get("ValidUntilTime")),
+                eunix=unix_value(get("ValidUntilTime")),
                 state=state,
                 side=side,
                 px=px,
@@ -1041,7 +987,7 @@ class FixEvents(Convertible):
         found = []
         for entry in self._group_entries(name):
             resolved: dict[str, str] = {}
-            for key, value in FixMessage.from_pairs(entry, self.tags).pairs:
+            for key, value in self.access.tagged_pairs(entry):
                 resolved.setdefault(self._names_by_tag.get(key, key), value)
             found.append(resolved)
         return found
@@ -1050,25 +996,61 @@ class FixEvents(Convertible):
 
     @property
     def unix(self) -> int:
-        """When the transaction happened, by `TRANSACTED` -- not when it was sent.
+        """When the transaction happened, by `TRANSACTED` -- not when it was sent."""
+        return self.transacted.unix
 
-        Falls back to the log's `runix` when the message carries no FIX clock.
+    @functools.cached_property
+    def transacted(self) -> Transacted:
+        """The resolved transaction time and the rung of the chain that gave it.
+
+        The chain itself is `rekep.market.transacted`, called from here and
+        from the parse layer alike: which clock a row happened at is one
+        answer, and two copies of it would be two answers that agreed until
+        they did not.
         """
-        get = self.get
-        recorded = _unix_value(get("SendingTime"))
-        if recorded is None:
-            recorded = self.runix or None
-        for source in TRANSACTED:
-            if isinstance(source, tuple):
-                date, time = source
-                found = _unix_value(get(date))
-                clock = _unix_value(get(time), day=found if found is not None else recorded)
-                found = clock if clock is not None else found
-            else:
-                found = _unix_value(get(source))
-            if found is not None:
-                return found
-        return recorded or 0
+        recorded = unix_value(self.get("SendingTime")) or self.runix or None
+        return resolve(
+            self._clock,
+            self._stamps,
+            etype=self._event_type,
+            recorded=recorded,
+            member=self._stamp_member,
+        )
+
+    def _clock(self, name: str, day: int | None = None) -> int | None:
+        """One FIX clock this message carries, in epoch nanoseconds."""
+        return unix_value(self.get(name), day=day)
+
+    def _stamps(self, column: str) -> Sequence[Any]:
+        """One regulatory group's entries, out of the message's own pairs.
+
+        The translation layer holds a message rather than typed columns, so
+        the entries are read back out of the group the wire carried -- under
+        the count tag the dictionary gives it, which is what `_group` does for
+        every other component here.
+        """
+        group = _REGULATORY_GROUPS.get(column)
+        return self._group_entries(group) if group else []
+
+    def _stamp_member(self, entry: Any, name: str) -> Any:
+        """One member of a regulatory entry, however the wire keyed it.
+
+        Through the one accessor, because that is the whole of what it is
+        for: a group's members arrive keyed by tag on a wire message and by
+        name on a rendered one, and the rung declares neither spelling in
+        particular -- it declares the field.
+        """
+        return self.access.reading(entry, name).raw
+
+    @property
+    def _event_type(self) -> EventType | None:
+        """What kind of event this reader is about to build, for the ranking.
+
+        Read off `MsgType <35>` rather than from a built event, because the
+        ranking decides the event's own `unix` and so must be settled before
+        one exists.
+        """
+        return MESSAGE_EVENTS.get(self._message_kind)
 
     def _expires(self, tif: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
@@ -1157,9 +1139,7 @@ class FixEvents(Convertible):
         audited = frozenset(self.tag_of(field) for field in RAW_METADATA_FIELDS)
         return {
             key: (
-                value
-                if isinstance(value, str)
-                else FixMessage.from_pairs([(key, value)]).pairs[0][1]
+                value if isinstance(value, str) else FixPairs.from_pairs([(key, value)]).pairs[0][1]
             )
             for key, value in self.by_tag.items()
             if key not in claimed or key in audited
@@ -1327,7 +1307,7 @@ def _month_year(text: str | None) -> datetime.date | None:
         return None
 
 
-def _unix_value(value: Any, day: int | None = None) -> int | None:
+def unix_value(value: Any, day: int | None = None) -> int | None:
     """FIX text or a typed parsed-log clock as epoch nanoseconds."""
     if isinstance(value, datetime.datetime):
         if value.tzinfo is not None:

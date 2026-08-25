@@ -1,0 +1,40 @@
+name: parse_messages
+notebook: parse_messages.ipynb
+parameters:
+  project_root: .
+  # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
+  source: data/capture
+  pattern: "*.log*"
+  recursive: true
+  timezone: Europe/Paris
+  start: null
+  end: null
+  # The version list alone is read here -- no field, no component, no value.
+  fix_dictionary: data/fix
+  null_values: ["", "null", "<null>", "n/a"]
+  rules: null
+  protocols: null
+  # AWS Glue with an S3 warehouse (replace the active local block):
+  # catalog: rekep-production
+  # catalog_properties:
+  #   type: glue
+  #   warehouse: s3://example-bucket/rekep/warehouse
+  #   glue.region: eu-west-1
+  #   s3.region: eu-west-1
+  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
+  # Credentials come from the standard AWS environment or workload role.
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  # Retained, not transient: `parse_fix` re-reads it whenever the dictionary
+  # or the rules change, which is what the split is for.
+  target: text.messages
+  static_values:
+    bridge: bridge-1
+    environment: prod
+  merge_by: true
+  batch_row_size: 65536
+  commit_row_size: 250000
+  limit: null

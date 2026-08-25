@@ -20,7 +20,7 @@ from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
 from rekep.fix.transcribe import FixCodec
-from rekep.text.log import LogRules, MessageCodec
+from rekep.text.fixmessage import FixMessageRules, MessageCodec
 from rekep.text.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
@@ -109,12 +109,17 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: What decides each line's `etype`, handed to every file the set opens --
     #: a folder of one capture is one log format, so the rules belong to the
     #: set and not to each file in it.
-    rules: LogRules = dataclass_field(default_factory=LogRules)
+    rules: FixMessageRules = dataclass_field(default_factory=FixMessageRules)
 
     #: What turns a message into the columns a row carries, for the same reason
     #: and in the same way: one capture is one set of message formats, so the
     #: codec belongs to the set and every file it opens is handed this one.
     codec: MessageCodec = dataclass_field(default_factory=FixCodec)
+
+    #: Whether the files this set opens resolve their fields against the
+    #: dictionary, or only structure them. Belongs to the set for the same
+    #: reason the codec does: a folder is read at one stage, not file by file.
+    resolved: bool = True
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -247,16 +252,20 @@ class TextFiles(Dataset, io.BufferedIOBase):
         anti-join against them, which here means parsing the whole capture
         before failing on the write it cannot do.
         """
-        self.write_arrow_reader(source, *args, **kwargs)
+        self._refuse()
 
-    def write_arrow_reader(
+    def _append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Refused, for the reason a write is."""
+        self._refuse()
+
+    def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
     ) -> None:
-        """Refused: a set of files has no one file to append to.
+        """Refused: a set of files has no one file to write into.
 
         Reading many logs as one stream is well defined; writing back into
         them is not -- the rows would have to be cut across files by a rule
@@ -264,6 +273,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
         was captured. Write one file with `TextFile`, or a store that owns its
         own files (`IcebergDataset`).
         """
+        self._refuse()
+
+    def _refuse(self) -> None:
+        """The one refusal every write here raises."""
         raise NotImplementedError(
             f"{type(self).__name__} reads a set of logs and cannot write one: nothing here says "
             "which file a row belongs in; write a file with TextFile, or a dataset that owns its "
@@ -316,6 +329,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 static_values=self.static_values,
                 rules=self.rules,
                 codec=self.codec,
+                resolved=self.resolved,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:

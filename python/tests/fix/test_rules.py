@@ -9,11 +9,11 @@ import pytest
 
 from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, NO_PROTOCOL, Rule, Rules
 from rekep.fix.rules import (
+    CODEC_KEYS,
     DEFAULT_RULES,
     MARKET_CATEGORY,
     MISC,
     MISC_CATEGORY,
-    NAMED,
     OTHER,
     UL,
     UL_WIRE,
@@ -258,8 +258,8 @@ def test_a_rule_naming_a_plugin_with_no_plugin_column_does_not_match() -> None:
 
 
 def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
-    assert NAMED[DEFAULT.rule("FIX").codec] is False
-    assert NAMED[DEFAULT.rule("UL").codec] is True
+    assert CODEC_KEYS[DEFAULT.rule("FIX").codec] is False
+    assert CODEC_KEYS[DEFAULT.rule("UL").codec] is True
     assert DEFAULT.rule(NO_PROTOCOL).named is None, "and OTHER is not read at all"
 
 

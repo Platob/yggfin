@@ -8,7 +8,7 @@ pip install "rekep[all]"
 ```
 
 ```python
-from rekep import Log, TextFiles
+from rekep import FixMessage, TextFiles
 
 capture = TextFiles.from_folder(
     "s3://bucket/logs/2026-08-14",
@@ -16,7 +16,7 @@ capture = TextFiles.from_folder(
     static_values={"source": "bridge-1"},
 )
 
-for batch in capture.read_arrow_reader(schema=Log.into_field()):
+for batch in capture.read_arrow_reader(schema=FixMessage.into_field()):
     consume(batch)
 ```
 
@@ -28,9 +28,9 @@ structured components.
 The project workflow is intentionally outside the package:
 
 ```text
-parse_logs -> parse_market -> flatten_orders
-     |             `-------> flatten_executions
-     `------------> flatten_instruments
+parse_messages -> parse_fix -> parse_market -> flatten_orders
+                      |             `-------> flatten_executions
+                      `------------> flatten_instruments
 ```
 
 Each step is a notebook under `tasks/<step>/` with an adjacent YAML config.

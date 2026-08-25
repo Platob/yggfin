@@ -1,5 +1,6 @@
 """FIX: messages out of log lines, and the dictionary that says what they mean."""
 
+from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.classify import (
     KeyCount,
     KeyCounts,
@@ -9,7 +10,16 @@ from rekep.fix.classify import (
     count_files,
     count_reader,
 )
-from rekep.fix.columns import COMMON, FLAT, KWARGS, NAMED, QUOTE, SESSION, TAG, named_columns
+from rekep.fix.columns import (
+    COMMON,
+    FLAT,
+    KWARGS,
+    NAMESPACE_COLUMNS,
+    QUOTE,
+    SESSION,
+    TAG,
+    named_columns,
+)
 from rekep.fix.components import (
     PARTIES,
     TRD_REG_TIMESTAMPS,
@@ -43,7 +53,7 @@ from rekep.fix.message import (
     BRIDGE_WIRE,
     MARKER,
     SOH,
-    FixMessage,
+    FixPairs,
     detect_entry_separator,
     detect_separator,
     message_bodies,
@@ -67,6 +77,7 @@ from rekep.fix.quickfix import (
 )
 from rekep.fix.registry import BASE_URL, CACHE_DIRECTORY, FixRegistry
 from rekep.fix.rules import (
+    CODEC_KEYS,
     CODECS,
     MARKET_CATEGORY,
     MISC_CATEGORY,
@@ -98,16 +109,19 @@ __all__ = [
     "BRIDGE_WIRE",
     "CACHE_DIRECTORY",
     "CODECS",
+    "CODEC_KEYS",
     "COMMON",
     "COMPONENTS",
     "ComponentEntry",
+    "Entry",
     "ConflictReport",
     "FIELDS",
     "FIX_SCALARS",
     "FLAT",
+    "FieldAccess",
     "FieldEntry",
     "FixCodec",
-    "FixMessage",
+    "FixPairs",
     "FixRegistry",
     "KWARGS",
     "KeyCount",
@@ -116,7 +130,7 @@ __all__ = [
     "MARKER",
     "MARKET_CATEGORY",
     "MISC_CATEGORY",
-    "NAMED",
+    "NAMESPACE_COLUMNS",
     "NAMESPACE",
     "NO_PROTOCOL",
     "NULL_VALUES",
@@ -128,6 +142,7 @@ __all__ = [
     "TrdRegTimestamp",
     "TrdRegTimestamps",
     "QUICKFIX_URL",
+    "Reading",
     "QUOTE",
     "Rule",
     "Rules",

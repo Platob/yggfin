@@ -12,7 +12,8 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
-import rekep.enums._ascii as enum_module
+import rekep.enums
+import rekep.enums.ranged as enum_module
 from rekep.enums import (
     MIC,
     AssetKind,
@@ -38,8 +39,9 @@ RANGED = (
 PACKED = (Side, TimeInForce)
 
 
-def test_each_public_enum_is_defined_in_its_own_root_module() -> None:
-    declared = (
+def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
+    """Two modules: `ranged` is what a code is built on, `codes` is the codes."""
+    codes = (
         MIC,
         AssetKind,
         Currency,
@@ -47,24 +49,18 @@ def test_each_public_enum_is_defined_in_its_own_root_module() -> None:
         IdSource,
         MarketKind,
         OptionKind,
-        Ranged,
         Side,
         State,
         TimeInForce,
     )
-    assert tuple(kind.__module__ for kind in declared) == (
-        "rekep.enums.mic",
-        "rekep.enums.asset_kind",
-        "rekep.enums.currency",
-        "rekep.enums.event_type",
-        "rekep.enums.id_source",
-        "rekep.enums.market_kind",
-        "rekep.enums.option_kind",
-        "rekep.enums.ranged",
-        "rekep.enums.side",
-        "rekep.enums.state",
-        "rekep.enums.time_in_force",
-    )
+    assert {kind.__module__ for kind in codes} == {"rekep.enums.codes"}
+    assert Ranged.__module__ == "rekep.enums.ranged"
+    assert {name for name in dir(rekep.enums) if not name.startswith("_")} == {
+        *(kind.__name__ for kind in codes),
+        "Ranged",
+        "codes",
+        "ranged",
+    }
 
 
 def test_a_mic_is_exactly_its_four_ascii_bytes_in_int32() -> None:

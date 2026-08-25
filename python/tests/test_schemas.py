@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from rekep import Field, Log
+from rekep import Field, FixMessage
 from rekep.market import Book, Execution, Instrument, Order
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -12,7 +12,7 @@ CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
 PUBLISHED = {
-    "log.yaml": Log,
+    "fixmessage.yaml": FixMessage,
     "instrument.yaml": Instrument,
     "book.yaml": Book,
     "order.yaml": Order,
@@ -30,7 +30,7 @@ def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
     contract = Field.from_(str(path))
     assert Field.from_dict(contract.into_dict()) == contract
     assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == "1"
+    assert contract.metadata["version"] == ("2" if path.name == "fixmessage.yaml" else "1")
 
 
 @pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))
@@ -44,7 +44,7 @@ def test_contract_matches_its_declaration(name: str, shape: type) -> None:
 
 
 def test_log_contract_keeps_time_keys() -> None:
-    log = Field.from_yaml(str(SCHEMAS / "rekep" / "log.yaml"))
+    log = Field.from_yaml(str(SCHEMAS / "rekep" / "fixmessage.yaml"))
     assert log.primary_keys() == ["unix", "hash"]
     assert log.partition_keys() == {"unix_hour": "identity"}
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-import json
 import re
 from collections.abc import Iterable, Mapping
 from functools import cached_property
@@ -19,10 +18,22 @@ from rekep.fields import Field
 from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
-from rekep.fix.columns import KWARGS, QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE, TAG, named_columns
-from rekep.fix.columns import NAMED as NAMED_COLUMNS
+from rekep.fix.columns import (
+    KWARG_PARTS,
+    KWARGS,
+    NAMESPACE_COLUMNS,
+    QUOTE_GROUP_COUNTS,
+    QUOTE_GROUP_STRUCTURE,
+    TAG,
+    named_columns,
+)
 from rekep.fix.columns import TYPES as FLAT_TYPES
-from rekep.fix.components import ComponentGroup, Parties, TrdRegTimestamps
+from rekep.fix.components import (
+    ComponentGroup,
+    Parties,
+    SideTrdRegTimestamps,
+    TrdRegTimestamps,
+)
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
@@ -78,11 +89,25 @@ _CONTAINED_KEY = r"(?s)^(?:.*\.)?(?P<inner>[^.]*?)(?:\[[0-9]+\])?\.[^.]*$"
 #: the *last* dot is the cut and a deeper path keeps its depth.
 _NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
 
+#: The one thing in front of a name that is a container and not a namespace
+#: without a dictionary to ask: an entry of a repeating group, which is what
+#: every FIX renderer writes with a subscript. Everything else in front of a
+#: name is a vendor's own prefix, which is what `rekep.kind` is. The message
+#: stage splits on this alone, and `_stored_entry` reads it scalar-wise.
+GROUP_ENTRY = r"\[[0-9]+\]$"
+
 #: A key that is already a tag: digits, and few enough of them to be one.
 #: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
 #: the guard -- an epoch-millis key is not a tag, and letting it through would
 #: turn a resolution into an Arrow overflow long after the decision was made.
 _IS_TAG = r"^[0-9]{1,9}$"
+
+#: The scalar compilations of the vectorized key rules, from the same source
+#: strings, so `TagIndex.resolve_key` and `TagIndex.resolve_with_match` cannot
+#: disagree on what a key means. `re.ASCII` because RE2's classes are.
+_IS_TAG_SCALAR = re.compile(_IS_TAG, re.ASCII)
+_CONTAINED_KEY_SCALAR = re.compile(_CONTAINED_KEY, re.ASCII)
+_MEMBER_NAME_SCALAR = re.compile(_MEMBER_NAME_VECTOR, re.ASCII)
 
 #: Value spellings that mean **there is no value**. A bridge that has nothing
 #: to say for a field says it in whichever of these its renderer prefers, and
@@ -146,6 +171,54 @@ class TagIndex:
             tags=pyarrow.array(list(tags.values()), TAG),
             containers=pyarrow.array(list(inside), pyarrow.string()),
         )
+
+    # -- the same rules, one key at a time ------------------------------------
+    #
+    # `resolve_with_match` is the rule table; these read it scalar-wise off the
+    # same data and the same pattern sources, so the two executions cannot
+    # drift. `FieldAccess` (fix/access.py) is the caller.
+
+    @functools.cached_property
+    def _tags_by_lower_name(self) -> Mapping[str, int]:
+        """The vectorized value sets as one scalar lookup, built once."""
+        return MappingProxyType(
+            {
+                name.lower(): tag
+                for name, tag in zip(self.names.to_pylist(), self.tags.to_pylist(), strict=True)
+            }
+        )
+
+    @functools.cached_property
+    def _tag_set(self) -> frozenset[int]:
+        return frozenset(self.tags.to_pylist())
+
+    @functools.cached_property
+    def _container_set(self) -> frozenset[str]:
+        return frozenset(self.containers.to_pylist())
+
+    def resolve_key(self, key: str) -> tuple[int | None, bool, str, bool]:
+        """One key under `resolve_with_match`'s rules: (tag, hit, name, contained)."""
+        if _IS_TAG_SCALAR.match(key) is not None:
+            tag = int(key)
+            return tag, tag in self._tag_set, key, True
+        member = _MEMBER_NAME_SCALAR.search(key)
+        reduced = member.group("name") if member is not None else ""
+        contained = self._contained_key(key)
+        if not contained:
+            reduced = key
+        if _IS_TAG_SCALAR.match(reduced) is not None:
+            tag = int(reduced)
+            return tag, tag in self._tag_set, reduced, contained
+        tag = self._tags_by_lower_name.get(reduced.lower())
+        return tag, tag is not None, reduced, contained
+
+    def _contained_key(self, key: str) -> bool:
+        """`_contained`, one key at a time: the immediate container decides."""
+        found = _CONTAINED_KEY_SCALAR.match(key)
+        inner = found.group("inner") if found is not None else None
+        if not inner:
+            return True
+        return inner.lower() in self._container_set
 
     def resolve(self, keys: Any) -> pyarrow.Array:
         """A key column as tag numbers, null where no reading finds one."""
@@ -436,8 +509,8 @@ class FixCodec(Convertible):
 
     def transcribe(
         self, keys: Any, values: Any, version: str | None = None
-    ) -> tuple[Any, Any, Any, Any, Any, Any]:
-        """`(tag, key, value, trans, namespace, comp)` for a run of parsed fields.
+    ) -> tuple[Any, Any, Any, Any, Any]:
+        """`(tag, key, value, namespace, comp)` for a run of parsed fields.
 
         The whole of what the dictionary adds to a field, in kernels and in one
         place, so nothing downstream resolves a name or reads an enumeration a
@@ -446,51 +519,230 @@ class FixCodec(Convertible):
         and to `namespace` where it does not.
         """
         compute = pyarrow.compute
-        tags, _, reduced, contained = self.index_of(version).resolve_with_match(keys)
-        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
-        # Kept whole, entry index and all, so `lead.key` is the rendered key
-        # back again and `NoPartyIDs[0]` stays a different place from `[1]`.
-        lead = compute.struct_field(parts, "namespace")
-        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
-        nothing = pyarrow.scalar(None, pyarrow.string())
+        tags, _, _, _ = self.index_of(version).resolve_with_match(keys)
+        # The split is `structure`'s, not a second rule: where a field stood is
+        # a fact about the spelling, so the message stage settles it and the
+        # dictionary never revises it. What the dictionary adds is the tag.
+        _, key, _, namespace, comp = self.structure(keys, values)
         return (
             compute.fill_null(tags, pyarrow.scalar(0, TAG)),
-            compute.fill_null(compute.struct_field(parts, "key"), keys),
+            key,
             values,
-            self.transcribed(tags, reduced, values, version),
-            compute.if_else(compute.and_(led, compute.invert(contained)), lead, nothing),
-            compute.if_else(compute.and_(led, contained), lead, nothing),
+            namespace,
+            comp,
         )
 
-    def transcribed(self, tags: Any, names: Any, values: Any, version: str | None = None) -> Any:
-        """What each value means, where the field that carries it enumerates them.
+    # -- the message stage ----------------------------------------------------
+    #
+    # Structuration without the dictionary: what a line spells, cut into the
+    # same struct the resolved rows use. `parse_fix` completes the same column
+    # in place rather than converting a shape.
 
-        One composite lookup rather than one pass per enumerated tag: a version
-        has hundreds of them, and a batch would otherwise pay a kernel for
-        every one it does not carry.
+    def into_message_kwargs(self, pairs: Any) -> Any:
+        """Every field a message carried, structured but not resolved.
+
+        The same `KWARGS` struct at its unresolved fill level: `key`, `value`,
+        `namespace` and `comp` are what the line spells, and `tag` is the
+        number only where the line spelled one -- `0` otherwise, which is what
+        says an entry is unresolved. No name is looked up and no value is
+        translated, so this needs no dictionary at all.
+        """
+        rows = len(pairs)
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            parts = [self.into_message_kwargs(chunk) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=KWARGS)
+        if not rows or pairs.null_count == rows:
+            return pyarrow.nulls(rows, KWARGS)
+        lengths, keys, values = _entries_of(pairs)
+        return _kwargs(
+            pairs,
+            lengths,
+            pyarrow.repeat(True, len(keys)),
+            *self.structure(keys, values),
+        )
+
+    def structure(self, keys: Any, values: Any) -> tuple[Any, Any, Any, Any, Any]:
+        """`(tag, key, value, namespace, comp)` from the spelling alone.
+
+        The dictionary-free half of `transcribe`, and the same split: whatever
+        the line wrote in front of a name goes to `comp` when it is a group
+        entry and to `namespace` when it is not. Telling those apart needs no
+        dictionary either -- an entry of a repeating group is what carries a
+        subscript, which is what `_GROUP_ENTRY` matches, and everything else in
+        front of a name is a vendor's own prefix.
         """
         compute = pyarrow.compute
-        spelled, meanings = self.meanings(version)
-        if not len(spelled):
-            return pyarrow.nulls(len(values), pyarrow.string())
-        # Keyed on the tag where there is one and on the name where there is
-        # not, so a field FIX never numbered enumerates like any other.
-        numbered = compute.fill_null(compute.greater(tags, 0), False)
-        owner = compute.if_else(
-            numbered,
-            compute.fill_null(tags, 0).cast(pyarrow.string()),
-            compute.utf8_lower(compute.fill_null(names, "")),
+        numeric = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
+        tags = compute.if_else(numeric, keys, pyarrow.scalar("0")).cast(TAG)
+        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
+        lead = compute.struct_field(parts, "namespace")
+        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
+        entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
+        nothing = pyarrow.scalar(None, pyarrow.string())
+        return (
+            tags,
+            compute.fill_null(compute.struct_field(parts, "key"), keys),
+            values,
+            compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing),
+            compute.if_else(compute.and_(led, entry), lead, nothing),
         )
-        composite = compute.binary_join_element_wise(owner, values, "\x00")
-        return compute.take(meanings, compute.index_in(composite, value_set=spelled))
 
-    def meanings(self, version: str | None = None) -> tuple[Any, Any]:
-        """`(tag-or-name and value, what it means)` for one version, built once."""
-        if version not in self._meanings:
-            self._meanings[version] = _meanings(self.registry, version)
-        return self._meanings[version]
+    def into_message_columns(self, messages: Any, plugins: Any = None) -> dict[str, Any]:
+        """What a line carries, before any of it is resolved.
 
-    def into_log_columns(
+        The message stage in one call: which protocol the line is, its fields
+        structured into the stored struct, the protocol version and where that
+        came from, and `MsgType <35>` -- which is one tag off the front of a
+        message and wants no registry to find.
+        """
+        # At the call, because `fix.access` reads this module's own `TagIndex`:
+        # the accessor is built on the transcription, so the transcription
+        # reaches back into it here rather than at import.
+        from rekep.fix.access import first_named
+
+        compute = pyarrow.compute
+        protocols = self.categorise(messages, plugins)
+        rows = len(messages)
+        parts, positions = [], []
+        for name, where in groups_of(protocols):
+            slice_ = messages if len(where) == rows else compute.take(messages, where)
+            pairs = self.into_pairs(slice_, name.as_py())
+            parts.append(self.into_message_kwargs(pairs))
+            positions.append(where)
+        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
+        version, source = self.versions_of_kwargs(kwargs)
+        return {
+            "protocol_code": protocols,
+            "kwargs": kwargs,
+            "protocol_version": version,
+            "protocol_version_source": source,
+            "msg_type": first_named(kwargs, 35, "MsgType", rows),
+        }
+
+    def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
+        """`(version, where it came from)` per row, off the structured fields.
+
+        Off `kwargs` rather than off the message, because by this point the
+        message has been split once and splitting it again is the work this
+        stage exists to stop paying twice. Reads only `registry.versions` --
+        the version list -- and no field, component or enumerated value.
+        """
+        from rekep.fix.access import first_named
+
+        rows = len(kwargs)
+        if not rows:
+            empty = pyarrow.array([], pyarrow.string())
+            return empty, empty
+        begins = first_named(kwargs, 8, "BeginString", rows)
+        application = first_named(kwargs, 1128, "ApplVerID", rows)
+        default = first_named(kwargs, 1137, "DefaultApplVerID", rows)
+        spellings = self._spellings
+        versions: list[str | None] = []
+        sources: list[str] = []
+        # One reading per *distinct* evidence triple rather than per row: a
+        # capture is one session and answers the same way on every line.
+        seen: dict[tuple[Any, Any, Any], tuple[str | None, str]] = {}
+        for evidence in zip(
+            begins.to_pylist(), application.to_pylist(), default.to_pylist(), strict=True
+        ):
+            found = seen.get(evidence)
+            if found is None:
+                found = seen[evidence] = _version_from_evidence(*evidence, spellings)
+            versions.append(found[0])
+            sources.append(found[1])
+        return (
+            pyarrow.array(versions, pyarrow.string()),
+            pyarrow.array(sources, pyarrow.string()),
+        )
+
+    def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
+        """A message-stage `kwargs` column, resolved the rest of the way.
+
+        Three members are filled and nothing else is touched: `tag` for a key
+        the dictionary answers for, `key` canonicalized to the registry's own
+        spelling, and `value` translated where its field enumerates its values.
+        `namespace` and `comp` come through byte-identical, because where a
+        field stood was settled from the spelling alone and a dictionary has
+        nothing to add to it.
+
+        Not a shape conversion: the column already has the right type, and
+        this is a fill.
+        """
+        rows = len(kwargs)
+        if isinstance(kwargs, pyarrow.ChunkedArray):
+            parts = [self.complete_kwargs(chunk, version) for chunk in kwargs.chunks]
+            return pyarrow.chunked_array(parts, type=KWARGS)
+        if not rows or kwargs.null_count == rows or version is None:
+            return kwargs
+        compute = pyarrow.compute
+        lengths, _, entries = _flattened(kwargs)
+        stored = compute.struct_field(entries, "tag")
+        keys = compute.struct_field(entries, "key")
+        values = compute.struct_field(entries, "value")
+        namespace = compute.struct_field(entries, "namespace")
+        comp = compute.struct_field(entries, "comp")
+        # A stored key is the field's own name with its container beside it, so
+        # the container goes back in front before it is resolved: that is the
+        # spelling `resolve_with_match` reads, and `TECH.CLIENTID` must not
+        # resolve as `CLIENTID`.
+        lead = compute.coalesce(namespace, comp)
+        whole = compute.if_else(
+            compute.is_valid(lead),
+            compute.binary_join_element_wise(compute.fill_null(lead, ""), keys, "."),
+            keys,
+        )
+        tags, matched, _, _ = self.index_of(version).resolve_with_match(whole)
+        # Only an unresolved entry is filled: one the message stage already
+        # numbered was numbered off the wire, and the wire is the authority.
+        fill = compute.and_(compute.equal(stored, 0), compute.fill_null(matched, False))
+        tags = compute.if_else(fill, compute.fill_null(tags, pyarrow.scalar(0, TAG)), stored)
+        return _kwargs(
+            kwargs,
+            lengths,
+            pyarrow.repeat(True, len(keys)),
+            tags,
+            self._canonical(keys, tags, version),
+            self._translated(tags, values, version),
+            namespace,
+            comp,
+        )
+
+    def _canonical(self, keys: Any, tags: Any, version: str | None) -> Any:
+        """Each key as the registry spells it, where the registry answers for it."""
+        compute = pyarrow.compute
+        spelled, named = self._canonical_names(version)
+        if not len(spelled):
+            return keys
+        found = compute.take(named, compute.index_in(tags, value_set=spelled))
+        return compute.if_else(compute.is_valid(found), found, keys)
+
+    def _translated(self, tags: Any, values: Any, version: str | None) -> Any:
+        """Each value as the dictionary reads its spelling, where it enumerates any."""
+        compute = pyarrow.compute
+        spelled, resolved = self._translations(version)
+        if not len(spelled):
+            return values
+        composite = compute.binary_join_element_wise(
+            compute.fill_null(tags, 0).cast(pyarrow.string()),
+            compute.utf8_lower(compute.fill_null(values, "")),
+            "\x00",
+        )
+        found = compute.take(resolved, compute.index_in(composite, value_set=spelled))
+        return compute.if_else(compute.is_valid(found), found, values)
+
+    def _canonical_names(self, version: str | None) -> tuple[Any, Any]:
+        """`(tag, the registry's spelling of it)` for one version, built once."""
+        if version not in self._canonicals:
+            self._canonicals[version] = _canonical_names(self.registry, version)
+        return self._canonicals[version]
+
+    def _translations(self, version: str | None) -> tuple[Any, Any]:
+        """`(tag and folded spelling, the value it names)` for one version."""
+        if version not in self._translated_values:
+            self._translated_values[version] = _translations(self.registry, version)
+        return self._translated_values[version]
+
+    def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """One parsed pair column as the fields a log keeps and the columns it lifts."""
@@ -577,7 +829,13 @@ class FixCodec(Convertible):
         In order and against what the last one left: a member lifted into one
         component's entries cannot also be lifted into another's.
         """
-        return MappingProxyType({"parties": Parties, "trd_reg_timestamps": TrdRegTimestamps})
+        return MappingProxyType(
+            {
+                "parties": Parties,
+                "trd_reg_timestamps": TrdRegTimestamps,
+                "side_trd_reg_timestamps": SideTrdRegTimestamps,
+            }
+        )
 
     def into_component_columns(
         self, kwargs: Any, version: str | None = None
@@ -724,7 +982,7 @@ class FixCodec(Convertible):
             try:
                 self._named = named_columns(self.registry)
             except (OSError, ValueError):
-                self._named = NAMED_COLUMNS
+                self._named = NAMESPACE_COLUMNS
         return self._named
 
     def parties_of(self, version: str | None = None) -> Parties:
@@ -767,14 +1025,18 @@ class FixCodec(Convertible):
     def _components(self) -> dict[tuple[str, str | None], ComponentGroup]:
         return {}
 
-    @cached_property
-    def _meanings(self) -> dict[str | None, tuple[Any, Any]]:
-        return {}
-
     _named: Mapping[str, Field] | None = None
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
+        return {}
+
+    @cached_property
+    def _canonicals(self) -> dict[str | None, tuple[Any, Any]]:
+        return {}
+
+    @cached_property
+    def _translated_values(self) -> dict[str | None, tuple[Any, Any]]:
         return {}
 
     @cached_property
@@ -1130,10 +1392,6 @@ def _row_totals(pairs: Any, lengths: Any, counts: Any) -> Any:
     return compute.subtract(ends.slice(1), ends.slice(0, len(ends) - 1)).cast(pyarrow.int32())
 
 
-#: The parts of one stored field, in the order `KWARGS` declares them.
-_PARTS: tuple[str, ...] = ("tag", "key", "value", "trans", "namespace", "comp")
-
-
 def _kwargs(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
     """A `KWARGS` column out of the entries `keep` admits, in the source's rows.
 
@@ -1144,9 +1402,9 @@ def _kwargs(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
     entries = pyarrow.StructArray.from_arrays(
         [
             part.cast(KWARGS.value_type.field(name).type, safe=False)
-            for name, part in zip(_PARTS, parts, strict=True)
+            for name, part in zip(KWARG_PARTS, parts, strict=True)
         ],
-        fields=[KWARGS.value_type.field(name) for name in _PARTS],
+        fields=[KWARGS.value_type.field(name) for name in KWARG_PARTS],
     )
     return pyarrow.ListArray.from_arrays(
         _selected_offsets(source, lengths, keep), entries, type=KWARGS
@@ -1167,7 +1425,7 @@ def _flattened(kwargs: Any) -> tuple[Any, Any, Any]:
 def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
     """The children of the entries a mask keeps, in declaration order."""
     compute = pyarrow.compute
-    return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in _PARTS)
+    return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in KWARG_PARTS)
 
 
 def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
@@ -1181,43 +1439,50 @@ def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:
     return pyarrow.array(sorted(fields), TAG)
 
 
-def _meanings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
-    """`(owner and value, what it means)` for every enumeration one version has.
+def _canonical_names(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+    """`(tag, canonical spelling)` for every field one version numbers.
 
-    The owner is the tag where a field has one and its folded name where it
-    does not, so a field FIX never numbered enumerates like any other. Prose
-    over symbol: `Side <54>` value `1` is "Buy" for a person and `BUY` for a
-    program, and a log column is read by people.
+    What `parse_fix` canonicalizes a key to: a bridge writes `PARTYID` and the
+    registry spells it `PartyID`, and a stored column read by a person should
+    say what the standard says.
+    """
+    tags: list[int] = []
+    names: list[str] = []
+    if version is not None:
+        try:
+            members = registry.fields(version)
+        except (KeyError, OSError, ValueError):
+            members = []
+        for member in members:
+            tag = member.fix.get("tag")
+            if tag:
+                tags.append(int(tag))
+                names.append(member.name)
+    return pyarrow.array(tags, TAG), pyarrow.array(names, pyarrow.string())
+
+
+def _translations(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+    """`(tag and folded spelling, the value it names)` for one version.
+
+    The dictionary's own `translations`, as the value set one kernel probes:
+    `Side=Buy` and `Side=BUY` both reach `1`, and a spelling two values share
+    reaches neither -- which is the record's rule, applied here rather than
+    reimplemented.
     """
     spelled: list[str] = []
-    meanings: list[str] = []
-    if version is None:
-        return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(meanings, pyarrow.string())
-    try:
-        members = registry.fields(version)
-    except (KeyError, OSError, ValueError):
-        members = []
-    for member in members:
-        tag = member.fix.get("tag")
-        owner = tag if tag else member.name.lower()
-        found = _json_mapping(member.fix.get("values")) or _json_mapping(
-            member.fix.get("value_names")
-        )
-        for value, meaning in found.items():
-            spelled.append(f"{owner}\x00{value}")
-            meanings.append(meaning)
-    return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(meanings, pyarrow.string())
-
-
-def _json_mapping(value: str | None) -> dict[str, str]:
-    """One `fix:` metadata mapping, or nothing for anything that is not one."""
-    try:
-        decoded = json.loads(value or "{}")
-    except (TypeError, ValueError):  # pragma: no cover - the registry writes these
-        return {}
-    return (
-        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
-    )
+    resolved: list[str] = []
+    if version is not None:
+        try:
+            entries = registry.field_entries()
+        except (KeyError, OSError, ValueError):
+            entries = {}
+        for entry in entries.values():
+            if entry.tag is None or not entry.translations or not entry.declares(version):
+                continue
+            for spelling, value in entry.translations.items():
+                spelled.append(f"{entry.tag}\x00{spelling}")
+                resolved.append(value)
+    return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
 
 
 def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:

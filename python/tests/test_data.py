@@ -23,7 +23,7 @@ from rekep.fix.columns import _ORDER
 from rekep.fix.entries import ANY_VERSION, RECORD_KEYS
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
-    LOG_FIELDS,
+    FIXMESSAGE_FIELDS,
     MARKET_FIELDS,
     NAMESPACE_FIELDS,
     PROJECTED,
@@ -77,7 +77,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
 EXPECTED_FIELD_RECORDS = 6072
-EXPECTED_COMPONENT_FILES = 729
+EXPECTED_COMPONENT_FILES = 730
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"
@@ -325,8 +325,8 @@ def test_the_builtin_projection_matches_the_published_versions(
     # records, because `FutSettDate` and `SettlDate` are one tag under two
     # spellings and the collapse keeps the older one as an alias. One of the
     # 170 is the vendor field, which `tags()` cannot map because it has no tag.
-    assert len(builtin.tags()) == 169
-    assert len(builtin.field_entries()) == 170
+    assert len(builtin.tags()) == 173
+    assert len(builtin.field_entries()) == 174
     assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
     selected = {
         int(tag)
@@ -375,9 +375,9 @@ def test_the_builtin_projection_answers_every_key_the_package_looks_up(
     silence as a name nobody has ever seen, and reads as one downstream.
     """
     assert not missing_from(registry, PROJECTED), "the dictionary answers for every key"
-    assert set(LOG_FIELDS) == set(_ORDER)
+    assert set(FIXMESSAGE_FIELDS) == set(_ORDER)
     assert set(PROJECTED) >= set(CARRIED_FIELDS)
-    assert set(MARKET_FIELDS).isdisjoint(LOG_FIELDS), "each name declared once"
+    assert set(MARKET_FIELDS).isdisjoint(FIXMESSAGE_FIELDS), "each name declared once"
     builtin = FixRegistry.from_builtin()
     assert not missing_from(builtin, PROJECTED)
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"

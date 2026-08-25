@@ -7,12 +7,14 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log
+from rekep import Dataset, Field, FixMessage
 from rekep.fix import FixCodec, FixRegistry
 from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STAMPS
 from rekep.market import MIC, Event
 from rekep.market.event import HOUR
 from rekep.text import HEADER_PATTERN, TextFile
+from rekep.text.text_file import _local_micros
+from rekep.times import unix_of
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -177,7 +179,7 @@ def test_a_written_batch_reparses_to_the_same_instants(tmp_path: Path) -> None:
         rows = log.read_arrow_table()
     copy = tmp_path / "copy.txt"
     out = TextFile.from_path(copy)
-    out.write_arrow(rows)
+    out.append_arrow(rows)
     with TextFile.from_path(copy) as again:
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == rows.column("unix").to_pylist()
@@ -187,9 +189,78 @@ def test_a_written_batch_reparses_to_the_same_instants(tmp_path: Path) -> None:
     }, "micros, with the separator, whichever spelling came in"
 
 
-def test_a_fraction_the_pattern_does_not_admit_is_a_continuation(tmp_path: Path) -> None:
-    """Nanoseconds are not a spelling here, and a line that is not a record folds."""
-    assert HEADER_PATTERN.match(b"2026-08-14 00:05:01.147250123 [t] [d] (INFO) x") is None
+def test_a_fraction_is_one_to_nine_digits_or_none_at_all() -> None:
+    """The fraction is one group of up to nine digits, in every shape.
+
+    Nanoseconds are a spelling: a logger that prints them is not writing a
+    continuation line. What is still not a header is a fraction wider than the
+    finest instant there is.
+    """
+    for stamp in (
+        b"2026-08-14 00:05:01.1",
+        b"2026-08-14 00:05:01.147",
+        b"2026-08-14 00:05:01.147250",
+        b"2026-08-14 00:05:01.147_250",
+        b"2026-08-14 00:05:01.147250123",
+        b"2026-08-14 00:05:01",
+    ):
+        assert HEADER_PATTERN.match(stamp + b" [t] [d] (INFO) x") is not None, stamp
+    assert HEADER_PATTERN.match(b"2026-08-14 00:05:01.1472501234 [t] [d] (INFO) x") is None
+
+
+def test_the_other_two_shapes_open_a_header_too() -> None:
+    """FIX's own spelling and a compact one, beside the rendered ISO."""
+    for stamp in (
+        b"20260824-10:00:01.123",
+        b"20260824-10:00:01",
+        b"20260824100001123",
+        b"20260824100001",
+        b"20260824100001123456789",
+    ):
+        found = HEADER_PATTERN.match(stamp + b" [t] [d] (INFO) x")
+        assert found is not None, stamp
+        assert found.group("timestamp") == stamp
+        assert found.group("message") == b"x"
+
+
+def test_two_shapes_of_one_width_in_one_batch_read_as_themselves() -> None:
+    """Three widths are shared by two shapes, and a width alone must not decide.
+
+    `20260824-10:00:01` is a FIX stamp and `20260824100001123` a compact one,
+    and both are seventeen characters. Sliced as the wrong shape either reads
+    into a *plausible* instant off by hours -- so a batch carrying both is
+    grouped rather than sliced as whichever shape was tried last.
+    """
+    shared = (
+        (b"20260824-10:00:01", b"20260824100001123"),
+        (b"2026-08-14 00:05:01.147", b"20260814000501147250123"),
+        (b"2026-08-14 00:05:01.147_250", b"20260814-00:05:01.147250123"),
+    )
+    for pair in shared:
+        assert len(pair[0]) == len(pair[1]), pair
+        found = _local_micros(list(pair)).to_pylist()
+        for spelled, got in zip(pair, found, strict=True):
+            assert unix_of(got) == unix_of(spelled.decode()), (spelled, got)
+
+
+def test_the_reader_and_the_window_accept_the_same_spellings() -> None:
+    """One declaration, two executions: `times` reads a window, this reads a column.
+
+    A shape one accepted and the other did not would be a stamp a window
+    could not name -- or a header the parser folded into the line above it.
+    """
+    for stamp in (
+        b"2026-08-14 00:05:01.147",
+        b"2026-08-14 00:05:01.147_250",
+        b"2026-08-14 00:05:01",
+        b"20260824-10:00:01.123",
+        b"20260824100001123",
+        b"20260824100001",
+    ):
+        text = stamp.decode()
+        assert HEADER_PATTERN.match(stamp + b" [t] [d] x") is not None, text
+        found = _local_micros([stamp])[0].as_py()
+        assert unix_of(found) == unix_of(text), text
 
 
 # -- construction -----------------------------------------------------------
@@ -308,11 +379,15 @@ LINE_COLUMNS = [
     "thread_name",
     "plugin_code",
     "message",
-    "protocol",
+    "protocol_code",
+    "unix_source",
+    "protocol_version",
+    "protocol_version_source",
     "msg_seq_num",
     "kwargs",
     "parties",
     "trd_reg_timestamps",
+    "side_trd_reg_timestamps",
     "isincode",
     "begin_string",
     "body_length",
@@ -393,13 +468,13 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 87
-EXPECTED_LOG_COLUMNS = 105
+EXPECTED_LINE_COLUMNS = 91
+EXPECTED_LOG_COLUMNS = 109
 
 
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.names == Log.into_field().into_arrow_schema().names
+    assert schema.names == FixMessage.into_field().into_arrow_schema().names
     assert len(schema.names) == EXPECTED_LOG_COLUMNS
     assert schema.names[:3] == ["unix", "unix_hour", "etype"], "the envelope leads"
     assert len(LINE_COLUMNS) == EXPECTED_LINE_COLUMNS
@@ -409,11 +484,11 @@ def test_schema(plain: Path) -> None:
     assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
-    assert schema.field("protocol").type == pyarrow.string()
+    assert schema.field("protocol_code").type == pyarrow.string()
 
 
 def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
-    """`rekep.fix.columns` names the tags and the column each lands in, `Log`
+    """`rekep.fix.columns` names the tags and the column each lands in, `FixMessage`
     declares the type, and the list pinned above is derived from neither -- so a
     field added on one side only is either a tag lifted out of `kwargs` into a
     column nothing declares, or a column no message can ever fill.
@@ -561,7 +636,7 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(
     ], "`OrigClOrdID <41>` before `ClOrdID <11>`: a lifecycle survives its amendments"
     assert table.column("security_id").to_pylist()[4] == "SEC-1"
     assert table.column("xhash").to_pylist()[:5] == [
-        Log.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
+        FixMessage.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
     ]
     assert table.column("parties")[0].as_py() == [
         {
@@ -600,7 +675,7 @@ def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(
 ) -> None:
     """`43=Y` is a boolean and `44=41.25` is a number, so a reader filters on
     the value rather than on the spelling the wire happened to use. Which type
-    each decodes to is `Log`'s declaration, pinned against the published
+    each decodes to is `FixMessage`'s declaration, pinned against the published
     dictionary in `tests/text/test_log.py`.
     """
     table = TextFile.from_path(wire, codec=codec).read_arrow_table()
@@ -846,8 +921,6 @@ def test_a_timestamp_is_read_not_sliced_at_another_width(stamp: bytes, microseco
     One character short, the same slices land on other digits and cast
     happily: `.167520` came back as `.167200`, silently.
     """
-    from rekep.text.text_file import _local_micros
-
     assert _local_micros([stamp])[0].as_py().microsecond == microsecond
 
 
@@ -890,9 +963,9 @@ def test_a_write_is_visible_to_the_next_read_of_the_same_object(tmp_path: Path) 
     grown = tmp_path / "out.txt"
     rows = TextFile.from_path(source).read_arrow_table()
     writer = TextFile.from_path(grown)
-    writer.write_arrow(rows)
+    writer.append_arrow(rows)
     assert writer.read_arrow_table().num_rows == 1
-    writer.write_arrow(rows)
+    writer.append_arrow(rows)
     assert writer.read_arrow_table().num_rows == 2
 
 
@@ -905,7 +978,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     """
     rows = TextFile.from_url(plain.as_uri(), timezone=zone).read_arrow_table()
     written = tmp_path / "written.txt"
-    TextFile.from_url(written.as_uri(), timezone=zone).write_arrow(rows)
+    TextFile.from_url(written.as_uri(), timezone=zone).append_arrow(rows)
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
     # Not `hash`: it is the digest of the *raw* line, and a rendered line is
     # the header regex read backwards, not the bytes that were parsed -- the
@@ -1013,7 +1086,10 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     crlf.write_bytes(SAMPLE_BYTES.replace(b"\n", b"\r\n"))
     with TextFile(url=plain.as_uri()) as a, TextFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
-    assert left.drop_columns("source_url").equals(right.drop_columns("source_url"))
+    # `hash` and `xhash` name where the line was read, so two paths give two
+    # digests on purpose -- what this pins is that nothing else moved.
+    told = ["source_url", "hash", "xhash"]
+    assert left.drop_columns(told).equals(right.drop_columns(told))
 
 
 # -- timezone: the wall clock is local, the instant is not ----------------
@@ -1108,10 +1184,10 @@ def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
     the hour *after* the one containing it."""
     import pyarrow
 
-    from rekep.text.text_file import _hour_nanos
+    from rekep.market.event import hour_arrow
 
     before = pyarrow.array([-1, -HOUR - 1, 0, HOUR, 3 * HOUR + 5], type=pyarrow.int64())
-    assert _hour_nanos(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
+    assert hour_arrow(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
 
 
 # -- static values ----------------------------------------------------------
@@ -1122,7 +1198,7 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
     log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
     table = log.read_arrow_table()
     assert table.schema.names[-2:] == ["bridge", "shard"]
-    assert table.schema.names[:-2] == Log.into_field().into_arrow_schema().names
+    assert table.schema.names[:-2] == FixMessage.into_field().into_arrow_schema().names
     assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
     assert table.column("shard").to_pylist() == [7] * table.num_rows
 
@@ -1130,12 +1206,12 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
 def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
     """No column is hardcoded: a capture says what it is, or says nothing."""
     assert TextFile.from_path(plain).read_arrow_table().schema.names == (
-        Log.into_field().into_arrow_schema().names
+        FixMessage.into_field().into_arrow_schema().names
     )
 
 
 def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
-    # Not `text`, which `Log` declares for `Text <58>`: a static column of that
+    # Not `text`, which `FixMessage` declares for `Text <58>`: a static column of that
     # name is a second column of that name, and the schema then answers neither.
     log = TextFile.from_path(
         plain, static_values={"label": "a", "count": 2, "ratio": 0.5, "flag": True}
@@ -1193,7 +1269,7 @@ def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: 
     """A line is what the header says; a constant column is not in it."""
     rows = TextFile.from_path(plain, static_values={"bridge": "bridge-1"}).read_arrow_table()
     out = TextFile.from_path(tmp_path / "copy.txt")
-    out.write_arrow(rows)
+    out.append_arrow(rows)
     assert out.read_arrow_table().num_rows == rows.num_rows
 
 
@@ -1204,7 +1280,7 @@ def test_a_text_file_is_a_dataset(plain: Path) -> None:
     log = TextFile.from_path(plain)
     assert isinstance(log, Dataset)
     assert log.exists
-    assert log.into_struct_field() is Log.into_field()
+    assert log.into_struct_field() is FixMessage.into_field()
     assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
 
 
@@ -1214,7 +1290,7 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(plain: Path) -> None:
     log = TextFile.from_path(plain)
-    assert log.read_arrow_reader().schema.equals(Log.into_field().into_arrow_schema())
+    assert log.read_arrow_reader().schema.equals(FixMessage.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("message", pyarrow.large_string())])
     assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
 
@@ -1223,7 +1299,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
     """The renderer is the header regex read backwards; the proof is a round trip."""
     source = TextFile.from_path(plain).read_arrow_table()
     written = TextFile.from_path(tmp_path / "written.txt")
-    written.write_arrow(source)
+    written.append_arrow(source)
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
@@ -1235,22 +1311,22 @@ def test_a_write_creates_the_file(tmp_path: Path) -> None:
     target = tmp_path / "fresh.txt"
     log = TextFile.from_path(target)
     assert not log.exists
-    log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table())
+    log.append_arrow(TextFile.from_path(SAMPLE).read_arrow_table())
     assert log.exists and target.stat().st_size > 0
 
 
 def test_writes_append_rather_than_replace(plain: Path, tmp_path: Path) -> None:
     rows = TextFile.from_path(plain).read_arrow_table()
     target = TextFile.from_path(tmp_path / "appended.txt")
-    target.write_arrow(rows)
-    target.write_arrow(rows)
+    target.append_arrow(rows)
+    target.append_arrow(rows)
     assert target.read_arrow_table().num_rows == 2 * rows.num_rows
 
 
 def test_commit_row_size_writes_in_chunks(plain: Path, tmp_path: Path) -> None:
     rows = TextFile.from_path(plain).read_arrow_table()
     target = TextFile.from_path(tmp_path / "chunked.txt")
-    target.write_arrow_reader(rows.to_reader(max_chunksize=5), commit_row_size=5)
+    target.append_arrow_reader(rows.to_reader(max_chunksize=5), commit_row_size=5)
     assert target.read_arrow_table().num_rows == rows.num_rows
 
 
@@ -1265,7 +1341,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
         }
     )
     target = TextFile.from_path(tmp_path / "cast.txt")
-    target.write_arrow(batch)
+    target.append_arrow(batch)
     parsed = target.read_arrow_table()
     assert parsed.column("message").to_pylist() == ["hello"]
     assert parsed.column("plugin_code").to_pylist() == ["d"]
@@ -1274,12 +1350,12 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:
     log = TextFile.from_path(tmp_path / "merge.txt")
     with pytest.raises(ValueError, match="cannot merge"):
-        log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table(), merge_by=True)
+        log.append_arrow(TextFile.from_path(SAMPLE).read_arrow_table(), merge_by=True)
 
 
 def test_an_empty_write_leaves_an_empty_file(tmp_path: Path) -> None:
     log = TextFile.from_path(tmp_path / "empty.txt")
-    log.write_arrow_reader(iter(()))
+    log.append_arrow_reader(iter(()))
     assert log.exists
     assert log.read_arrow_table().num_rows == 0
 

@@ -28,7 +28,6 @@ def _tags(*rows: object) -> pyarrow.Array:
                     "tag": tag,
                     "key": str(tag),
                     "value": value,
-                    "trans": None,
                     "namespace": None,
                 }
                 for tag, value in row

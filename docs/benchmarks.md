@@ -7,7 +7,7 @@ fixture and current measurements.
 | page | implementation | command |
 | --- | --- | --- |
 | [Types](types.md) | Recursive Arrow casts | `bench_cast.py` |
-| [Logs](logs.md) | Text files, folders, and parsing stages | `bench_text_file.py` |
+| [FixMessage](fixmessage.md) | Text files, folders, and parsing stages | `bench_text_file.py` |
 | [FIX](fix.md) | Parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
 | [Market](market.md) | Identities, conversion, and book folding | `bench_market.py` |
 | [Iceberg](iceberg.md) | Reads, writes, merges, and maintenance | `bench_iceberg.py` |
@@ -43,7 +43,7 @@ figures are directional; the scripts assert their outputs before timing them.
 | Text log, plain | 50,000 rows | 89,098 rows/s |
 | Text log, gzip | 50,000 rows | 100,677 rows/s |
 | FIX wire parser | 10,000 rows | 92,628–198,324 rows/s |
-| Normalized Instrument Log decode | 500 rows | 912 → 17,544 rows/s; 19.2x |
+| Normalized Instrument FixMessage decode | 500 rows | 912 → 17,544 rows/s; 19.2x |
 | Recursive Arrow reshape | 50,000 rows | 109.8M rows/s |
 | Book summary, 10 levels/side | 200 books | 99,640 books/s |
 | Stateful book fold | 10,000 events | 1.958 s; 5,105 books/s |

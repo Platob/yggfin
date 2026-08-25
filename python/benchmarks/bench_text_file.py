@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import collections
 import contextlib
 import gzip
@@ -18,12 +17,17 @@ import warnings
 
 import pyarrow
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import parser  # noqa: E402
 
 from rekep.fix import (  # noqa: E402
     SOH,
     FixCodec,
-    FixMessage,
+    FixPairs,
     FixRegistry,
     Rules,
     parse_arrow_array,
@@ -150,30 +154,28 @@ def variants(rows: int, repeat: int) -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
-        cases: list[tuple[str, pathlib.Path, dict, bool]] = []
+        cases: list[tuple[str, pathlib.Path, dict]] = []
         densities = (("no stack traces", 0), ("a trace every 200", 200), ("half traces", 2))
         for label, every in densities:
             path = root / f"traces-{every}.txt"
             generate(path, rows, every)
-            cases.append((label, path, {}, False))
+            cases.append((label, path, {}))
         plain = root / "traces-200.txt"
-        cases.append(("no folding", plain, {"fold_continuations": False}, False))
-        cases.append(("64 KiB reads", plain, {"read_byte_size": 1 << 16}, False))
-        cases.append(("64 MiB reads", plain, {"read_byte_size": 1 << 26}, False))
-        cases.append(("blake2b line hash", plain, {}, True))  # what xxh3 replaced
+        cases.append(("no folding", plain, {"fold_continuations": False}))
+        cases.append(("64 KiB reads", plain, {"read_byte_size": 1 << 16}))
+        cases.append(("64 MiB reads", plain, {"read_byte_size": 1 << 26}))
 
         gz = root / "traces-200.txt.gz"
         gz.write_bytes(gzip.compress(plain.read_bytes(), compresslevel=1))
-        cases.append(("gzip", gz, {}, False))
+        cases.append(("gzip", gz, {}))
 
-        for label, path, options, blake in cases:
+        for label, path, options in cases:
             nbytes = path.stat().st_size
             fastest = float("inf")
             for _ in range(repeat):
-                with _hashing(blake):
-                    started = time.perf_counter()
-                    TextFile.from_path(path).read_arrow_reader(**options).read_all()
-                    fastest = min(fastest, time.perf_counter() - started)
+                started = time.perf_counter()
+                TextFile.from_path(path).read_arrow_reader(**options).read_all()
+                fastest = min(fastest, time.perf_counter() - started)
             print(
                 f"{label:>28} {nbytes / 2**20:>7.1f} {fastest:>9.3f} "
                 f"{rows / fastest:>12,.0f} {nbytes / 2**20 / fastest:>8.1f}"
@@ -339,35 +341,6 @@ def _listing(folder: pathlib.Path, repeat: int) -> None:
         counted = sum(1 for _ in files.into_urls())
         fastest = min(fastest, time.perf_counter() - started)
     print(f"\nwalking {counted:,} paths: {fastest * 1000:.1f} ms")
-
-
-@contextlib.contextmanager
-def _hashing(blake: bool):
-    """Run the body with blake2b as the line hash instead of xxh3.
-
-    Not a switch anyone can flip: the digest is the low half of every row id,
-    so `xxhash` is a hard dependency and the hash is part of the data's
-    identity. This is here to price that decision -- what the parser would cost
-    if the id's hash were the one this package used before it had ids.
-    """
-    import hashlib
-
-    from rekep.text import text_file
-
-    if not blake:
-        yield
-        return
-
-    def fallback(raw: bytes) -> int:
-        digest = hashlib.blake2b(raw, digest_size=8).digest()
-        return int.from_bytes(digest, "little", signed=True)
-
-    original = text_file.hash_bytes
-    text_file.hash_bytes = fallback
-    try:
-        yield
-    finally:
-        text_file.hash_bytes = original
 
 
 # -- the message layer -------------------------------------------------------
@@ -578,11 +551,11 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     print(f"    {header[0]:>9} {header[1]:>26} {header[2]:>12} {header[3]:>12} {header[4]:>10}")
     for name, column in columns.items():
         reference = [
-            FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
+            FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
         ]
         pairs = sum(len(one) for one in reference)
         candidates: list[tuple[str, object]] = [
-            ("FixMessage.from_text", lambda c=column: _scalar_pairs(c)),
+            ("FixPairs.from_text", lambda c=column: _scalar_pairs(c)),
             ("parse_arrow_array", lambda c=column: parse_arrow_array(c, CAPTURE_SEPARATOR)),
             ("numpy over the buffers", lambda c=column: _numpy_pairs(c)),
             ("polars", lambda c=column: _polars_pairs(c)),
@@ -604,11 +577,21 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
 
 
 class _NotApplicable(Exception):
-    """An implementation that has nothing to replace on this column."""
+    """An implementation that cannot run here, or has nothing to replace."""
+
+
+def _optional(name: str) -> object:
+    """The module, or `_NotApplicable` -- a race one runner cannot enter is not a failure."""
+    import importlib
+
+    try:
+        return importlib.import_module(name)
+    except ImportError as error:
+        raise _NotApplicable(f"no {name}") from error
 
 
 def _scalar_pairs(column: pyarrow.Array) -> list[list[tuple[str, str]]]:
-    return [FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
+    return [FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
 
 
 def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
@@ -620,7 +603,7 @@ def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
     `bench_fix.py`, and it only agrees where the tokens carry no padding. The
     assertion above is what keeps that honest.
     """
-    import numpy
+    numpy = _optional("numpy")
 
     compute = pyarrow.compute
     values = column.cast(pyarrow.string(), safe=False)
@@ -709,7 +692,7 @@ def _polars_pairs(column: pyarrow.Array) -> object:
     line left with no pairs comes back as an empty list, which is what the map
     column holds for it.
     """
-    import polars
+    polars = _optional("polars")
 
     named, entry_separator = _column_style(column)[1:]
     if entry_separator is not None:
@@ -863,7 +846,7 @@ def _index_in_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Arr
 
 
 def _polars_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:
-    import polars
+    polars = _optional("polars")
 
     frame = polars.DataFrame({"key": polars.from_arrow(lowered)})
     table = polars.DataFrame(
@@ -937,15 +920,57 @@ def _mib(peak: int) -> str:
     return f"{peak / 2**20:.1f}" if peak > 0 else "n/a"
 
 
+def stamps(rows: int, repeat: int) -> None:
+    """Reading a column of header timestamps, per shape a capture may write.
+
+    The one stage the accepted-spelling set decides. Every shape is sliced
+    from the offsets its declaration gives, so what this measures is whether
+    admitting three shapes rather than one costs the common case anything --
+    and what a batch mixing them costs, which is the case that used to be read
+    a row at a time.
+    """
+    from rekep.text.text_file import _local_micros
+    from rekep.times import unix_of
+
+    shaped = {
+        "iso millis": "2026-08-14 00:05:01.147",
+        "iso micros": "2026-08-14 00:05:01.147250",
+        "iso split": "2026-08-14 00:05:01.147_250",
+        "iso nanos": "2026-08-14 00:05:01.147250123",
+        "iso seconds": "2026-08-14 00:05:01",
+        "fix millis": "20260814-00:05:01.147",
+        "compact millis": "20260814000501147",
+        "compact seconds": "20260814000501",
+    }
+    print(f"\n{rows:,} header stamps, best of {repeat}")
+    columns = ("shape", "seconds", "stamps/s")
+    print(" ".join(f"{c:>{w}}" for c, w in zip(columns, (16, 9, 12), strict=True)))
+    for name, spelled in shaped.items():
+        column = [spelled.encode()] * rows
+        # Verified before it is timed: a fast path that answers wrongly is not
+        # a fast path. The scalar reader is the reference.
+        expected = unix_of(spelled)
+        found = _local_micros(column[:1])[0].as_py()
+        assert unix_of(found) == expected, f"{name} reads {found}, not {spelled}"
+        seconds, _ = _best_of(lambda column=column: (_local_micros(column), rows)[1], repeat)
+        print(f"{name:>16} {seconds:>9.3f} {rows / seconds:>12,.0f}")
+    mixed = [spelled.encode() for spelled in shaped.values()] * (rows // len(shaped))
+    found = _local_micros(mixed)
+    assert [unix_of(one.as_py()) for one in found[: len(shaped)]] == [
+        unix_of(spelled) for spelled in shaped.values()
+    ], "a mixed column reads every shape as itself"
+    seconds, _ = _best_of(lambda: (_local_micros(mixed), len(mixed))[1], repeat)
+    print(f"{'all eight mixed':>16} {seconds:>9.3f} {len(mixed) / seconds:>12,.0f}")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=200_000)
-    parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--repeat", type=int, default=3)
-    parser.add_argument(
-        "--only", choices=("sweep", "variants", "folders", "messages"), default=None
+    options = parser(__doc__, rows=200_000, repeat=3)
+    options.add_argument(
+        "--only",
+        choices=("sweep", "variants", "folders", "messages", "stamps"),
+        default=None,
     )
-    arguments = parser.parse_args()
+    arguments = options.parse_args()
     rows = 50_000 if arguments.quick else arguments.rows
     repeat = 1 if arguments.quick else arguments.repeat
     if arguments.only in (None, "sweep"):
@@ -954,6 +979,8 @@ def main() -> int:
         variants(rows, repeat)
     if arguments.only in (None, "folders"):
         folders(rows, repeat)
+    if arguments.only in (None, "stamps"):
+        stamps(rows, repeat)
     if arguments.only in (None, "messages"):
         messages(rows, repeat, arguments.quick)
     return 0

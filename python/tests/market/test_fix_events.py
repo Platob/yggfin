@@ -10,7 +10,7 @@ import datetime
 
 import pytest
 
-from rekep.fix import FixMessage, FixRegistry, fix_field
+from rekep.fix import FixPairs, FixRegistry, fix_field
 from rekep.market import (
     MIC,
     AssetKind,
@@ -42,8 +42,13 @@ FILLED = (
 
 
 def events(line: str, **carried: object) -> list[object]:
+    return list(reader(line, **carried))
+
+
+def reader(line: str, **carried: object) -> FixEvents:
+    """One message as the translator reads it, under a pinned dictionary version."""
     carried.setdefault("fix_version", "4.4")
-    return list(FixEvents.from_text(line, **carried))
+    return FixEvents.from_text(line, **carried)
 
 
 # -- when it happened --------------------------------------------------------
@@ -147,13 +152,69 @@ def test_a_message_with_no_fix_clock_uses_the_recorded_log_instant() -> None:
 def test_the_declared_order_is_the_one_the_reader_uses() -> None:
     """Pinned, because the rule *is* the constant: a reordering here is a silent
     change of which clock every downstream row is stamped with."""
-    assert TRANSACTED == (
+    assert tuple(rung.name for rung in TRANSACTED) == (
+        "TrdRegTimestamps",
+        "SideTrdRegTS",
         "TransactTime",
-        ("MDEntryDate", "MDEntryTime"),
+        "MDEntry",
         "OrigTime",
         "OrigSendingTime",
         "SendingTime",
     )
+    regulatory = [rung for rung in TRANSACTED if rung.is_column]
+    assert [rung.column for rung in regulatory] == [
+        "trd_reg_timestamps",
+        "side_trd_reg_timestamps",
+    ], "the regulatory record leads, because it is the strongest claim in the message"
+    assert [rung.fields for rung in TRANSACTED if not rung.is_column] == [
+        ("TransactTime",),
+        ("MDEntryDate", "MDEntryTime"),
+        ("OrigTime",),
+        ("OrigSendingTime",),
+        ("SendingTime",),
+    ]
+
+
+def test_a_regulatory_stamp_outranks_the_messages_own_claim() -> None:
+    """`TransactTime <60>` is what the message says; the group is what was recorded."""
+    header = "35=D|55=AAPL|11=CL-1|60=20260821-10:00:00|"
+    group = "768=1|769=20260821-09:00:00|770=2|"
+    order = events(header + group)[0]
+    assert order.unix == unix_of("20260821-09:00:00")
+
+
+def test_which_regulatory_stamp_counts_depends_on_what_the_row_is() -> None:
+    """One group, two kinds of row, two answers -- which is why the table exists.
+
+    An order happened when it arrived (`TIME_IN <2>`); an execution happened
+    when it executed (`EXECUTION_TIME <1>`). Reading either as "the group's
+    first entry" would stamp one of them with the other's instant.
+    """
+    group = "768=2|769=20260821-09:00:00|770=1|769=20260821-08:00:00|770=2|"
+    ordered = events("35=D|55=AAPL|11=CL-1|" + group)[0]
+    assert ordered.unix == unix_of("20260821-08:00:00"), "an order takes TIME_IN"
+    reported = events("35=8|55=AAPL|11=CL-1|17=E1|150=F|39=2|" + group)[0]
+    assert reported.unix == unix_of("20260821-09:00:00"), "a report takes EXECUTION_TIME"
+
+
+def test_a_group_carrying_no_ranked_type_still_answers() -> None:
+    """A regulatory stamp nobody ranked is still nearer than a transmission clock."""
+    order = events("35=D|55=AAPL|11=CL-1|52=20260821-11:00:00|768=1|769=20260821-09:00:00|770=3|")[
+        0
+    ]
+    assert order.unix == unix_of("20260821-09:00:00")
+
+
+def test_the_rung_that_answered_is_recorded() -> None:
+    """Without it nothing downstream tells a transaction time from a print time."""
+    header = "35=D|55=AAPL|11=CL-1|"
+    assert reader(header + "768=1|769=20260821-09:00:00|770=2|").transacted.source == (
+        "TrdRegTimestamps=2"
+    )
+    assert reader(header + "60=20260821-10:00:00").transacted.source == "TransactTime"
+    assert reader(header + "52=20260821-11:00:00").transacted.source == "SendingTime"
+    assert reader(header, runix=unix_of("20260821-10:30:00")).transacted.source == "recorded"
+    assert reader(header).transacted.source == "", "no clock anywhere"
 
 
 # -- an execution report is two events ---------------------------------------
@@ -676,14 +737,14 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
     """A decoder that only works on complete headers is no use on a log."""
     (order,) = list(
         FixEvents(
-            message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]),
+            message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]),
             fix_version="4.4",
         )
     )
     assert isinstance(order, Order)
     reported = list(
         FixEvents(
-            message=FixMessage.from_pairs([("17", "EX-1"), ("150", "F")]),
+            message=FixPairs.from_pairs([("17", "EX-1"), ("150", "F")]),
             fix_version="4.4",
         )
     )
@@ -693,7 +754,7 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
 
 
 def test_a_fragment_with_no_version_remains_raw() -> None:
-    reader = FixEvents(message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]))
+    reader = FixEvents(message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]))
     assert reader.version is None
     assert list(reader) == []
     assert list(reader.into_instruments()) == []

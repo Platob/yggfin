@@ -19,7 +19,7 @@ import rekep
 import rekep.fix.columns
 import rekep.fix.rules
 import rekep.market.fix
-from rekep import Field, Log, scalar
+from rekep import Field, FixMessage, scalar
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
     BASE_URL,
@@ -125,17 +125,17 @@ def test_every_codec_a_rule_may_name_is_one_the_parser_reads() -> None:
     added to the parser would leave the published list short -- and a rule
     document naming the new one would validate against a list that never grew.
     """
-    assert set(CODECS) == set(rekep.fix.rules.NAMED)
+    assert set(CODECS) == set(rekep.fix.rules.CODEC_KEYS)
     assert {rule.codec for rule in Rules().rules} <= set(CODECS)
 
 
 def test_the_name_for_no_protocol_is_one_constant_and_not_three() -> None:
     """`OTHER` is the fall-through rule's protocol, a parsed line's default and
-    the value the `protocol` column holds for most of a capture. Spelled out at
+    the value the `protocol_code` column holds for most of a capture. Spelled out at
     each of those it would be three constants, and only one of them published.
     """
     assert Rule().protocol == NO_PROTOCOL
-    assert Log().protocol == NO_PROTOCOL
+    assert FixMessage().protocol_code == NO_PROTOCOL
     assert Rules().rule("nothing declares this").protocol == NO_PROTOCOL
 
 

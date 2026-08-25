@@ -10,7 +10,9 @@ import pytest
 
 from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules
 from rekep.fix.columns import COLUMNS
-from rekep.text import HEADER_PATTERN, TextFile, TextFiles
+from rekep.market.event import HOUR
+from rekep.text import HEADER_PATTERN, FixMessage, TextFile, TextFiles
+from rekep.times import unix_of
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_messages_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -133,13 +135,13 @@ def table(codec: FixCodec) -> pyarrow.Table:
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("protocol").to_pylist() == EXPECTED_PROTOCOLS
+    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
 
 
 def test_the_column_and_the_line_agree_on_every_row(table: pyarrow.Table) -> None:
     """Scalar and vectorised, row for row, on the capture itself."""
     scalar = [Rules.into_default().categorise(one) for one in table.column("message").to_pylist()]
-    assert [rule.protocol for rule in scalar] == table.column("protocol").to_pylist()
+    assert [rule.protocol for rule in scalar] == table.column("protocol_code").to_pylist()
 
 
 # -- what a line carries -----------------------------------------------------
@@ -378,7 +380,12 @@ def test_a_stamp_lands_as_the_microsecond_utc_instant_it_spells(table: pyarrow.T
     sending = table.column("sending_time")[PIPED].as_py()
     assert sending == datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC)
     sending_ns = int(sending.timestamp()) * 1_000_000_000 + sending.microsecond * 1000
-    assert table.column("unix")[PIPED].as_py() - sending_ns == 1_000_000
+    # `unix` is when the transaction happened, and this line's only FIX clock
+    # is its `SendingTime <52>` -- so that is the rung that answered, and the
+    # header's own stamp is a millisecond later in `runix`.
+    assert table.column("unix")[PIPED].as_py() == sending_ns
+    assert table.column("unix_source")[PIPED].as_py() == "SendingTime"
+    assert table.column("runix")[PIPED].as_py() - sending_ns == 1_000_000
 
 
 def test_a_field_the_message_never_sent_is_null_and_never_a_default(table: pyarrow.Table) -> None:
@@ -500,11 +507,12 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
 
 
 def test_both_stamp_widths_read_as_the_instants_they_spell(table: pyarrow.Table) -> None:
-    unix = table.column("unix").to_pylist()
-    assert unix[0] == 1_786_665_901_147_250_000, "micros, with a separator"
-    assert unix[1] == 1_786_665_901_147_000_000, "millis only"
-    assert unix[PIPED] == 1_786_665_901_148_000_000, "millis, comma-separated"
-    assert unix[0] > unix[1], "a padded 147 is 147 ms, not 147 us -- and so is earlier"
+    """The header's own clock, which is `runix` now that `unix` is the transaction."""
+    recorded = table.column("runix").to_pylist()
+    assert recorded[0] == 1_786_665_901_147_250_000, "micros, with a separator"
+    assert recorded[1] == 1_786_665_901_147_000_000, "millis only"
+    assert recorded[PIPED] == 1_786_665_901_148_000_000, "millis, comma-separated"
+    assert recorded[0] > recorded[1], "a padded 147 is 147 ms, not 147 us -- and so is earlier"
 
 
 def test_the_capture_reparses_to_the_same_instants(
@@ -512,11 +520,11 @@ def test_the_capture_reparses_to_the_same_instants(
 ) -> None:
     """Written back out and read again under the same codec, column for column."""
     copy = tmp_path / "copy.txt"
-    TextFile.from_path(copy).write_arrow(table)
+    TextFile.from_path(copy).append_arrow(table)
     with TextFile.from_path(copy, codec=codec) as again:
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
-    assert written.column("protocol").to_pylist() == EXPECTED_PROTOCOLS
+    assert written.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
     # Named rather than left to a `KeyError` from the loop below: a column the
     # flat layer declares and the shape does not is a missing column, and it
     # should fail as one.
@@ -539,7 +547,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path))
     with TextFile.from_path(SAMPLE, codec=own) as log:
         table = log.read_arrow_table()
-    found = table.column("protocol").to_pylist()
+    found = table.column("protocol_code").to_pylist()
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
@@ -552,7 +560,7 @@ def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) 
     quiet = FixCodec(registry=codec.registry, rules=Rules(rules=[]))
     with TextFile.from_path(SAMPLE, codec=quiet) as log:
         table = log.read_arrow_table()
-    assert table.column("protocol").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
+    assert table.column("protocol_code").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
     assert table.column("kwargs").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("parties").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("symbol").to_pylist() == [None] * EXPECTED_RECORDS
@@ -675,7 +683,7 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     files = TextFiles.from_folder(tmp_path, codec=codec, static_values={"bridge": "bridge-1"})
     table = files.read_arrow_table()
     assert table.num_rows == EXPECTED_RECORDS * 2
-    assert table.column("protocol").to_pylist() == EXPECTED_PROTOCOLS * 2
+    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS * 2
     assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _named(table.column("kwargs")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
@@ -728,9 +736,19 @@ def _lifted(table: pyarrow.Table, row: int) -> int:
     return sum(table.column(name)[row].as_py() is not None for name in FLAT_NAMES)
 
 
+def _semantic_floor(table: pyarrow.Table, row: int) -> int:
+    """What a row fills before any dictionary is consulted: `MsgType <35>`, or nothing."""
+    return 1 if table.column("msg_type")[row].as_py() is not None else 0
+
+
 def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
-    """Unknown-version rows retain pairs without publishing interpreted values."""
-    assert _lifted(table, row) == 0
+    """Unknown-version rows retain pairs without publishing interpreted values.
+
+    `msg_type` is the one column such a row may still fill: it is one tag off
+    the front of a message, found without a dictionary, and a row whose
+    version nothing resolved still knows what kind of message it is.
+    """
+    assert _lifted(table, row) == _semantic_floor(table, row)
     assert _component_fields(table, row) == 0
     assert table.column("parties")[row].as_py() is None
 
@@ -793,3 +811,320 @@ def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pya
 def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow.Table:
     """One synthesised log line through the whole parser, as the row it lands as."""
     return _lines(path, codec, plugin, [message])
+
+
+# -- when the transaction happened -------------------------------------------
+
+#: One capture where every rung of the chain answers for a different row, and
+#: where the regulatory group and the message's own claim *disagree* -- which
+#: is the case the ranking exists for.
+TRANSACTED_LINES = (
+    # An execution whose group says it executed at 09:29 and whose
+    # TransactTime claims 09:30. The group wins, and takes EXECUTION_TIME <1>
+    # rather than the BROKER_RECEIPT <4> beside it.
+    "2026-08-14 00:05:01.147 [t] [d] (INFO) 8=FIX.4.4|35=8|17=E1|54=1|150=F|32=10|31=9.5|"
+    "55=IBM|60=20260814-09:30:00.000|768=2|769=20260814-09:29:00.000|770=1|"
+    "769=20260814-09:28:00.000|770=4|10=000\n"
+    # The same group shape on an *order*, which prefers TIME_IN <2>: one group,
+    # two kinds of row, two answers.
+    "2026-08-14 00:05:02.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C1|54=1|55=IBM|"
+    "60=20260814-09:30:00.000|768=2|769=20260814-09:29:00.000|770=1|"
+    "769=20260814-09:27:00.000|770=2|10=000\n"
+    # No group, so the message's own claim answers.
+    "2026-08-14 00:05:03.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C2|54=1|55=IBM|"
+    "60=20260814-09:26:00.000|10=000\n"
+    # No claim either, so the last FIX clock there is.
+    "2026-08-14 00:05:04.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C3|54=1|55=IBM|"
+    "52=20260814-09:31:00.000|10=000\n"
+    # Not a message at all: only the clock that recorded it.
+    "2026-08-14 00:05:05.147 [t] [d] (INFO) heartbeat\n"
+)
+
+TRANSACTED_SOURCES = [
+    "TrdRegTimestamps=1",
+    "TrdRegTimestamps=2",
+    "TransactTime",
+    "SendingTime",
+    "recorded",
+]
+
+
+@pytest.fixture
+def transacted(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    path = tmp_path / "transacted.txt"
+    path.write_text(TRANSACTED_LINES)
+    with TextFile.from_path(path, codec=codec) as log:
+        return log.read_arrow_table()
+
+
+def test_unix_is_the_transaction_time_and_runix_is_when_it_was_recorded(
+    transacted: pyarrow.Table,
+) -> None:
+    """The whole point: a row's `unix` is when it happened, not when it printed."""
+    assert transacted.column("unix_source").to_pylist() == TRANSACTED_SOURCES
+    unix = transacted.column("unix").to_pylist()
+    assert unix[0] == unix_of("20260814-09:29:00.000"), "the group, not TransactTime"
+    assert unix[1] == unix_of("20260814-09:27:00.000"), "an order takes TIME_IN"
+    assert unix[2] == unix_of("20260814-09:26:00.000")
+    assert unix[3] == unix_of("20260814-09:31:00.000")
+    recorded = transacted.column("runix").to_pylist()
+    assert recorded == [
+        unix_of(f"2026-08-14 00:05:0{index + 1}.147") for index in range(len(recorded))
+    ], "the header clock is preserved, row for row"
+    assert unix[4] == recorded[4], "a line carrying no message happened when it was written"
+
+
+def test_the_group_and_transact_time_disagreeing_is_decided_by_the_chain(
+    transacted: pyarrow.Table,
+) -> None:
+    """Both rows carry `TransactTime <60>` at 09:30 and neither is stamped with it."""
+    claimed = transacted.column("transact_time").to_pylist()[:2]
+    assert all(one is not None for one in claimed), "the claim is still stored"
+    unix = transacted.column("unix").to_pylist()[:2]
+    assert all(one != unix_of("20260814-09:30:00.000") for one in unix)
+
+
+def test_unix_hour_follows_the_resolved_time_and_not_the_header(
+    transacted: pyarrow.Table,
+) -> None:
+    """A row moves partition with its transaction time, or a sorted read breaks."""
+    for unix, hour in zip(
+        transacted.column("unix").to_pylist(),
+        transacted.column("unix_hour").to_pylist(),
+        strict=True,
+    ):
+        assert hour == unix - unix % HOUR
+
+
+def test_the_parse_and_the_translation_resolve_one_row_alike(
+    transacted: pyarrow.Table,
+) -> None:
+    """One resolver, two executions: a column of rows and one message at a time."""
+    rows = [FixMessage.from_dict(row) for row in transacted.to_pylist()]
+    for row in rows:
+        found = row.into_fix_events().transacted
+        if not row.message or "8=FIX" not in row.message:
+            continue
+        assert (found.unix, found.source) == (row.unix, row.unix_source), row.message
+
+
+# -- the two stages ----------------------------------------------------------
+
+#: One capture reaching all three destinations, in every spelling that matters:
+#: a wire message, a rendered one, recognised operational traffic, and a line
+#: whose transport nothing recognises.
+STAGED_LINES = (
+    "2026-08-14 00:05:01.147 [t] [FixSession_XPAR] (INFO) 8=FIX.4.4|35=D|11=C1|54=1|55=IBM|"
+    "453=1|448=BUYSIDE|447=D|452=1|60=20260814-09:30:00.000|10=000\n"
+    "2026-08-14 00:05:02.147 [t] [ULBridge] (INFO) toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|"
+    "#SIDE=Buy|#SYMBOL=TTF|#NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42\n"
+    "2026-08-14 00:05:03.147 [t] [HealthMonitor] (INFO) heartbeat sent on session 3\n"
+    "2026-08-14 00:05:04.147 [t] [ExperimentalAdapter] (INFO) opaque payload nobody reads\n"
+)
+
+
+@pytest.fixture
+def staged(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    """What `parse_messages` writes: structured, and resolved against nothing."""
+    path = tmp_path / "staged.txt"
+    path.write_text(STAGED_LINES)
+    with TextFile.from_path(path, codec=codec, resolved=False) as log:
+        return log.read_arrow_table()
+
+
+@pytest.fixture
+def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
+    """What `parse_fix` makes of it, off the stored columns alone."""
+    return pyarrow.Table.from_batches(
+        [FixMessage.resolve_arrow_batch(batch, codec) for batch in staged.to_batches()]
+    )
+
+
+@pytest.fixture
+def whole(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    """What reading the very same capture in one pass produces instead.
+
+    The same path as `staged`, because where a line was read is part of its
+    identity: two fixtures over two paths would differ for a good reason and
+    hide the bad one.
+    """
+    path = tmp_path / "staged.txt"
+    path.write_text(STAGED_LINES)
+    with TextFile.from_path(path, codec=codec, resolved=True) as log:
+        return log.read_arrow_table()
+
+
+def test_one_pass_and_two_stages_agree_on_every_stored_column(
+    whole: pyarrow.Table, resolved: pyarrow.Table
+) -> None:
+    """The route a capture took must not change the row it becomes.
+
+    `hash` is what every merge upserts on, so two routes disagreeing about it
+    write one line twice or collapse two lines into one.
+    """
+    assert whole.schema.equals(resolved.schema)
+    for name in whole.schema.names:
+        assert whole.column(name).to_pylist() == resolved.column(name).to_pylist(), name
+
+
+def test_two_identical_lines_in_two_captures_stay_two_rows(tmp_path: Path, codec: FixCodec) -> None:
+    """Where a line was read is part of its identity, so a copy is not the same row."""
+    digests = []
+    for name in ("first.txt", "second.txt"):
+        path = tmp_path / name
+        path.write_text(STAGED_LINES)
+        with TextFile.from_path(path, codec=codec, resolved=False) as log:
+            digests.append(log.read_arrow_table().column("hash").to_pylist())
+    assert len(digests[0]) == len(STAGED_LINES.splitlines())
+    assert not set(digests[0]) & set(digests[1]), "one capture copied is not one capture"
+
+
+def test_the_message_stage_structures_without_resolving(staged: pyarrow.Table) -> None:
+    """`tag == 0` is what says an entry is unresolved, and it is NOT NULL."""
+    assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    assert staged.column("protocol_version").to_pylist() == ["4.4", "4.4", None, None]
+    assert staged.column("protocol_version_source").to_pylist() == [
+        "begin_string",
+        "begin_string",
+        "none",
+        "none",
+    ]
+    assert staged.column("msg_type").to_pylist() == ["D", "D", None, None]
+    rendered = staged.column("kwargs").to_pylist()[1]
+    assert [entry["tag"] for entry in rendered] == [0] * len(rendered), "nothing resolved a name"
+    assert staged.column("side").to_pylist() == [None] * 4, "and nothing was lifted"
+
+
+def test_the_two_fill_levels_are_one_struct(staged: pyarrow.Table, resolved: pyarrow.Table) -> None:
+    """`parse_fix` fills the same column; it does not convert a shape."""
+    assert staged.schema.field("kwargs").type == resolved.schema.field("kwargs").type
+
+
+def test_resolution_changes_only_the_tag_the_key_and_the_value(
+    staged: pyarrow.Table, resolved: pyarrow.Table
+) -> None:
+    """Where a field stood is settled at the message stage and never revised."""
+    for before, after in zip(
+        staged.column("kwargs").to_pylist(), resolved.column("kwargs").to_pylist(), strict=True
+    ):
+        if before is None:
+            continue
+        placed = {(entry["key"], entry["namespace"], entry["comp"]) for entry in before}
+        for entry in after or ():
+            match = [
+                one for one in placed if one[0].lower() in {entry["key"].lower(), one[0].lower()}
+            ]
+            assert match, entry
+        kept = [(entry["namespace"], entry["comp"]) for entry in before]
+        # Every entry `parse_fix` still holds stands where the message stage
+        # put it: resolution reorders nothing and re-places nothing.
+        for entry in after or ():
+            assert (entry["namespace"], entry["comp"]) in kept, entry
+
+
+def test_resolution_reads_the_stored_column_and_never_the_raw_line(
+    staged: pyarrow.Table, codec: FixCodec
+) -> None:
+    """A row with its `message` blanked resolves to exactly the same thing."""
+    at = staged.schema.get_field_index("message")
+    columns = list(staged.columns)
+    columns[at] = pyarrow.nulls(staged.num_rows, staged.schema.field(at).type)
+    blanked = pyarrow.Table.from_arrays(columns, schema=staged.schema)
+    whole = FixMessage.resolve_arrow_batch(staged.to_batches()[0], codec)
+    without = FixMessage.resolve_arrow_batch(blanked.to_batches()[0], codec)
+    for name in ("kwargs", "side", "symbol", "msg_type", "protocol_version", "unix"):
+        assert whole.column(name).to_pylist() == without.column(name).to_pylist(), name
+
+
+def test_the_redirection_sends_one_input_to_all_three_tables(
+    resolved: pyarrow.Table,
+) -> None:
+    """One condition, one place: what `etype` the rules made of the line.
+
+    The second row is the interesting one. It resolves against the dictionary
+    perfectly well -- `#MSGTYPE=D` becomes tag 35 -- and still lands in
+    `misc`, because the event rules read the *raw text* and a bridge spelling
+    its type as a named key matches neither `35=D` nor `NewOrderSingle`. What
+    routes a row is what kind of event it is, not whether its fields resolved,
+    and those are different questions.
+    """
+    rules = Rules()
+    categories = rules.into_arrow_category_array(
+        resolved.column("protocol_code").combine_chunks(),
+        resolved.column("etype").combine_chunks(),
+    )
+    assert categories.to_pylist() == ["market", "misc", "misc", "unknown"]
+
+
+def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:
+    """The one stored shape: two content columns, and which is filled where."""
+    market = FixMessage(unix=1, hash=1, message=None, kwargs=[])
+    misc = FixMessage(unix=2, hash=2, message="heartbeat", kwargs=None)
+    assert market.message is None and market.kwargs == []
+    assert misc.message == "heartbeat"
+    field = FixMessage.into_field()
+    assert field.field("message").nullable, "a market row leaves it null"
+
+
+def test_protocol_version_agrees_with_the_columns_it_derives_from(
+    resolved: pyarrow.Table,
+) -> None:
+    """A row where the stored version and its own evidence disagree is corrupt."""
+    for version, begin, appl in zip(
+        resolved.column("protocol_version").to_pylist(),
+        resolved.column("begin_string").to_pylist(),
+        resolved.column("appl_ver_id").to_pylist(),
+        strict=True,
+    ):
+        if begin is None:
+            continue
+        if str(begin).upper().startswith("FIXT"):
+            assert appl is None or version is not None
+            continue
+        assert version is not None, begin
+        assert version.replace(".", "") in str(begin).replace(".", ""), (version, begin)
+
+
+def test_a_version_nothing_infers_stays_null_and_says_why(codec: FixCodec) -> None:
+    """Null because the message carried none, told apart from null because nothing tried."""
+    messages = pyarrow.array(
+        ["8=FIXT.1.1|35=D|11=C1|10=000", "nothing about this line is a message"],
+        pyarrow.string(),
+    )
+    columns = codec.into_message_columns(messages)
+    assert columns["protocol_version"].to_pylist() == [None, None]
+    assert columns["protocol_version_source"].to_pylist() == ["none", "none"], (
+        "a FIXT header with no ApplVerID resolves nothing, and neither does a non-message"
+    )
+
+
+def test_a_fixt_message_resolves_through_its_application_version(codec: FixCodec) -> None:
+    """FIXT is the transport; `ApplVerID <1128>` says which application version."""
+    messages = pyarrow.array(["8=FIXT.1.1|35=D|1128=9|11=C1|10=000"], pyarrow.string())
+    columns = codec.into_message_columns(messages)
+    assert columns["protocol_version"].to_pylist() == ["5.0.SP2"]
+    assert columns["protocol_version_source"].to_pylist() == ["application_version"]
+
+
+def test_wire_order_survives_both_stages(codec: FixCodec) -> None:
+    """Order is the identity: repeating-group entries are told apart by position."""
+    line = "8=FIX.4.4|35=D|453=3|448=ONE|448=TWO|448=THREE|10=000"
+    columns = codec.into_message_columns(pyarrow.array([line], pyarrow.string()))
+    staged = [entry["value"] for entry in columns["kwargs"].to_pylist()[0] if entry["tag"] == 448]
+    assert staged == ["ONE", "TWO", "THREE"], "the sequence, not the set"
+    done = codec.complete_kwargs(columns["kwargs"], "4.4").to_pylist()[0]
+    assert [entry["value"] for entry in done if entry["tag"] == 448] == ["ONE", "TWO", "THREE"]
+
+
+def test_the_split_key_still_spells_what_the_line_wrote(codec: FixCodec) -> None:
+    """`namespace`/`comp` joined to `key` is the rendered key, at both fill levels."""
+    line = "send #NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42"
+    columns = codec.into_message_columns(pyarrow.array([line], pyarrow.string()))
+    for level in (columns["kwargs"], codec.complete_kwargs(columns["kwargs"], "4.4")):
+        rebuilt = [
+            ".".join(
+                part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part
+            ).upper()
+            for entry in level.to_pylist()[0]
+        ]
+        assert rebuilt == ["NOPARTYIDS[0].PARTYID", "TECH.CLIENTID"]

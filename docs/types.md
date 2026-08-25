@@ -54,11 +54,11 @@ The one-line member literal becomes the column description. State units,
 source, derivation, or null meaning; omit anything already obvious from the
 name and type.
 
-Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `Log`,
+Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `FixMessage`,
 `Instrument`, `Leg`, `Order`, `Execution`, `Book`, and `Level` therefore have
 no per-instance `__dict__`; transient private slots remain excluded from Arrow
 and document conversion. Shallow instance storage fell from 3,376 to 904 bytes
-for `Log`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
+for `FixMessage`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
 for `Order` and `Execution` on the measured Python 3.12 runtime.
 
 ## Reading an instant
@@ -81,6 +81,35 @@ Anything that names no instant is `None` and never a guess -- a day-first
 date like `03/04/2026` is refused rather than silently moved a month. Every
 task notebook takes its window through this, so a window written one way in
 one job means the same instant in the next.
+
+### The shapes a stamp is written in
+
+`rekep.times.SHAPES` declares the three spellings that carry a date, a clock
+and a fraction, and every one of them takes a fraction of one to nine digits
+or none at all:
+
+| shape | example | widths sliced |
+| --- | --- | --- |
+| `ISO` | `2026-08-14 00:05:01.147_250` | 19, 23, 26, 27, 29 |
+| `FIX` | `20260824-10:00:01.123` | 17, 21, 24, 27 |
+| `COMPACT` | `20260824100001123` | 14, 17, 20, 23 |
+
+One declaration, because the set of accepted spellings is one behavior even
+where the execution is two: this module reads a configuration value with
+`Stamp.read`, once per job, and `rekep.text.text_file` reads a column of
+log-line stamps in Arrow kernels, once per line. The fast path cannot use
+`strptime` -- and `strptime` cannot read a compact stamp's fraction at all,
+having no separator to anchor `%f` to -- so both read the components off the
+same declared offsets instead. `HEADER_PATTERN` is built from the same
+shapes, so a stamp a window can name is a stamp a header may open with.
+
+Three widths are shared by two shapes: 17 is a FIX stamp and a compact one
+with milliseconds, 23 an ISO stamp with milliseconds and a compact one with
+nanoseconds, 27 an ISO stamp with a split fraction and a FIX one with
+nanoseconds. A width therefore never decides which shape a stamp is; the
+separators do, and a batch mixing two shapes of one width is grouped rather
+than sliced as either. A fraction finer than a microsecond is truncated,
+which is what the microsecond column stores.
 
 ## Optional dependencies
 

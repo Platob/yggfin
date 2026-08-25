@@ -6,7 +6,7 @@
 book.yaml
 execution.yaml
 instrument.yaml
-log.yaml
+fixmessage.yaml
 order.yaml
 ```
 
@@ -16,7 +16,7 @@ keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
 ```python
 from rekep import Field
 
-shape = Field.from_yaml("schemas/rekep/log.yaml")
+shape = Field.from_yaml("schemas/rekep/fixmessage.yaml")
 reader = shape.cast_arrow(reader)
 ```
 

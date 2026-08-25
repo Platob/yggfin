@@ -5,7 +5,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log, TextFile, TextFiles
+from rekep import Dataset, Field, FixMessage, TextFile, TextFiles
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
 
@@ -199,7 +199,7 @@ def test_an_empty_set_reads_as_no_rows() -> None:
     assert files.exists is False
     table = files.into_arrow_table()
     assert table.num_rows == 0
-    assert table.schema.equals(Log.into_field().into_arrow_schema())
+    assert table.schema.equals(FixMessage.into_field().into_arrow_schema())
 
 
 def test_a_folder_with_no_logs_does_not_exist_yet(tmp_path: Path) -> None:
@@ -255,7 +255,7 @@ def test_the_declaration_reaches_every_file(capture: Path) -> None:
 def test_a_set_is_a_dataset(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert isinstance(files, Dataset)
-    assert files.into_struct_field() is Log.into_field()
+    assert files.into_struct_field() is FixMessage.into_field()
     assert files.read_arrow_table().num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
 
 
@@ -307,7 +307,7 @@ def test_static_values_are_the_sets_and_reach_every_file(capture: Path) -> None:
 def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
     table = TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
-    assert table.schema.equals(Log.into_field().into_arrow_schema())
+    assert table.schema.equals(FixMessage.into_field().into_arrow_schema())
 
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
@@ -399,7 +399,7 @@ def test_continuations_do_not_fold_across_two_files(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt")
-    assert files.read_arrow_reader().schema.equals(Log.into_field().into_arrow_schema())
+    assert files.read_arrow_reader().schema.equals(FixMessage.into_field().into_arrow_schema())
     narrow = Field.from_arrow_schema(
         pyarrow.schema([("message", pyarrow.large_string())]), "Narrow"
     )
@@ -607,7 +607,7 @@ def test_writing_a_set_is_refused(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     batch = files.into_arrow_table().to_batches()[0]
     with pytest.raises(NotImplementedError, match="TextFile"):
-        files.write_arrow(batch)
+        files.overwrite_arrow(batch)
 
 
 def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> None:

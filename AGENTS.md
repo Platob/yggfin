@@ -97,8 +97,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 - Primary APIs use `RecordBatchReader`; table helpers explicitly require data
   to fit in memory.
-- Writes append and create missing tables. `merge_by=True` uses declared keys;
-  append skips stored keys while write upserts.
+- `overwrite_*` replaces the rows whose keys match and inserts the rest;
+  `append_*` inserts, skipping stored keys when `merge_by` names them. Both
+  create a missing table. `merge_by=True` means the declared primary key, and
+  an overwrite has no keyless mode.
 - Accumulate `commit_row_size`; an input batch is not a storage commit.
 - Push filters, projections, limits, and ordering to the storage engine.
 - File sets open one naturally sorted path at a time and combine short batches.
@@ -134,7 +136,7 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   versions. Hard-code only normalization rules the registry cannot express.
 - Generic `Event` owns snapshot and idle-expiry behavior. Finished states do
   not keep producing snapshots.
-- `BookIterator` consumes time-sorted parsed `Log` records and emits only
+- `BookIterator` consumes time-sorted parsed `FixMessage` records and emits only
   `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
   decides whether orders still resting when the stream ends are expired.
 - A structured FIX component is a `ComponentGroup` subclass naming its
@@ -152,13 +154,13 @@ configuration. Airflow executes the notebooks through its Papermill provider.
 The supported graph is:
 
 ```text
-parse_logs -> parse_market -> flatten_orders
-     |             `-------> flatten_executions
-     `------------> flatten_instruments
+parse_messages -> parse_fix -> parse_market -> flatten_orders
+                      |             `-------> flatten_executions
+                      `------------> flatten_instruments
 ```
 
-Inputs are text files. Persisted outputs are log, instrument, book, order, and
-execution tables.
+Inputs are text files. Persisted outputs are the structured message table,
+the three FixMessage tables, and instrument, book, order and execution tables.
 
 ## Tests and benchmarks
 
@@ -183,7 +185,7 @@ python/src/rekep/
   enums/        one persisted market enum per file
   market/       event, instrument, order, execution, and book logic
   iceberg/      catalog, dataset, schema bridge, and Arrow FileIO
-  text/         Log plus streamed text files
+  text/         FixMessage plus streamed text files
   tasks/        notebook configuration only
   console.py    terminal styling: colour, boxes, tables, spinners
   times.py      one reading of "an instant", whatever spelled it

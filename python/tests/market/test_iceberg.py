@@ -106,7 +106,9 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         field=shape.into_field(),
     )
     given = batch(shape, 3)
-    dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
+    # `append_`, not `overwrite_`: the fixture rows share a key, and what this
+    # pins is the Arrow types surviving a round trip, not how rows are matched.
+    dataset.append_arrow_table(pyarrow.Table.from_batches([given]))
     read = dataset.read_arrow_table()
 
     assert read.num_rows == 3
@@ -132,7 +134,9 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     given = Book.summarise_arrow_batch(
         batch(Book, 2, sunix=[1, 2], bid_levels=levels, ask_levels=levels)
     )
-    dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
+    # `append_`, not `overwrite_`: the fixture rows share a key, and what this
+    # pins is the Arrow types surviving a round trip, not how rows are matched.
+    dataset.append_arrow_table(pyarrow.Table.from_batches([given]))
     read = dataset.read_arrow_table()
 
     assert read.num_rows == 2

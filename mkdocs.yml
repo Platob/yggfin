@@ -37,14 +37,15 @@ nav:
       - Schema contracts: contracts.md
   - Guides:
       - Types: types.md
-      - Logs: logs.md
+      - FixMessage: fixmessage.md
       - FIX: fix.md
       - Market: market.md
       - Iceberg: iceberg.md
       - Notebook workflow:
           - Overview: tasks.md
           - End-to-end run: workflow-run.md
-          - Parse logs: tasks/parse-logs.md
+          - Parse messages: tasks/parse-messages.md
+          - Parse FIX: tasks/parse-fix.md
           - Flatten instruments: tasks/flatten-instruments.md
           - Parse market: tasks/parse-market.md
           - Flatten orders: tasks/flatten-orders.md

@@ -1,10 +1,12 @@
-# Logs
+# FixMessage
 
-`TextFile` streams one log; `TextFiles` streams naturally sorted rotations with
-one file open at a time. Local paths and any `pyarrow.fs` URI share the API.
+`FixMessage` is the one stored row a parsed log line becomes, whatever the line
+carried. `TextFile` streams one log; `TextFiles` streams naturally sorted
+rotations with one file open at a time. Local paths and any `pyarrow.fs` URI
+share the API.
 
 ```python
-from rekep import Log, TextFiles
+from rekep import FixMessage, TextFiles
 
 source = TextFiles.from_folder(
     "s3://bucket/capture",
@@ -14,7 +16,7 @@ source = TextFiles.from_folder(
 )
 
 reader = source.read_arrow_reader(
-    schema=Log.into_field(),
+    schema=FixMessage.into_field(),
     batch_row_size=65_536,
     read_byte_size=4 << 20,
 )
@@ -28,7 +30,7 @@ header sat on, so a folded continuation does not shift the rows after it.
 
 ## Parsed record
 
-`Log` reuses the generic `Event` envelope. The raw-line digest is its stable
+`FixMessage` reuses the generic `Event` envelope. The raw-line digest is its stable
 version identity. When a protocol key exists, `code` and `xhash` provide
 readable and hashed correlation without changing the raw digest.
 
@@ -44,7 +46,7 @@ Important FIX fields are promoted to snake-case columns. Their metadata keeps
 the canonical registry name, tag, datatype, description, version, and values.
 Examples include:
 
-- `msg_seq_num` / `MsgSeqNum`, retained only on the raw Log;
+- `msg_seq_num` / `MsgSeqNum`, retained only on the raw FixMessage;
 - `msg_type` / `MsgType`;
 - `orig_cl_ord_id` / `OrigClOrdID`;
 - `transact_time` / `TransactTime`;
@@ -60,7 +62,6 @@ than being guessed.
   - `tag`: what the dictionary answers for the key, or `0` where nothing does.
   - `key`: the field's own name, and nothing else.
   - `value`: what the line wrote for it.
-  - `trans`: what that value means, where the field enumerates its values.
   - `comp`: the FIX component or repeating-group entry it sat in, where the
     dictionary declares that container -- `NoPartyIDs[0]`.
   - `namespace`: whatever stood in front of the name where it does not, which
@@ -76,11 +77,39 @@ These are lists, not maps, because repeated keys and wire order are data. At
 most one of `comp` and `namespace` is set, and either one joined to `key` by a
 dot is the key exactly as the line rendered it, so the split loses nothing.
 
+What a value *means* is not stored beside it. It is a fact about the
+dictionary and the value rather than about the row, so it is derived at read
+time -- `FieldAccess(...).reading(row.kwargs, 54).meaning` is `"Buy"` -- and a
+row read under a newer dictionary says what that dictionary says.
+
 ## Categorization
 
 Rules accept several regex patterns and use first match wins. Trading messages
-share the `market` log table; known operational protocols use `misc_logs`; an
-unmatched protocol lands in `unknown_logs`. No parsed line is dropped.
+share the `market` table; known operational protocols use `misc`; an
+unmatched protocol lands in `unknown`. No parsed line is dropped.
+
+## One stored shape
+
+`fixmessage.market`, `fixmessage.misc` and `fixmessage.unknown` hold the same
+`FixMessage` class under one contract: a reader unions the three tables with
+one schema and no cast. A row that could not be used as a FIX message is the
+same `FixMessage` with the FIX columns null -- not a second model. The content
+lives in two columns, and one of them has two fill levels:
+
+| column | what it holds | `market` | `misc` / `unknown` |
+| --- | --- | --- | --- |
+| `message` | the raw line, unsplit | null | populated |
+| `kwargs` | `tag`, `key`, `value`, `namespace`, `comp` per field, in wire order | populated, resolved | populated, unresolved |
+
+There is no separate column for the message-level split: the unresolved and the
+FIX-resolved form are the same struct at two fill levels. `tag` is `NOT NULL`
+and `tag == 0` is what says an entry is unresolved -- the line did not spell a
+tag and no dictionary answered for its key. On `market` rows `kwargs` carries
+everything the raw line held, so `message` is null there; on `misc` and
+`unknown` rows the raw string is still the content of record, so `message` is
+populated and `kwargs` stays at its unresolved fill level. An all-null
+`message` column run-length and dictionary encodes to nothing on disk, which
+is what makes the single shape affordable.
 
 ## Benchmark
 

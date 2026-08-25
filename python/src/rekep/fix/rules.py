@@ -18,8 +18,11 @@ from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE
 #: Read wire tags, rendered names, or no message.
 CODECS: tuple[str, ...] = ("fix", "ul", "none")
 
-#: `codec` -> `parse_arrow_array`'s named mode; None skips parsing.
-NAMED: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
+#: `codec` -> `parse_arrow_array`'s named mode; None skips parsing. Named for
+#: what it maps rather than for the word it maps to: three unrelated `NAMED`
+#: constants meant three things, and an import of one read as an import of
+#: another.
+CODEC_KEYS: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
 
 #: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
@@ -27,8 +30,8 @@ NO_PROTOCOL = "OTHER"
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
 MARKET_CATEGORY = "market"
-MISC_CATEGORY = "misc_logs"
-UNKNOWN_CATEGORY = "unknown_logs"
+MISC_CATEGORY = "misc"
+UNKNOWN_CATEGORY = "unknown"
 
 
 @scalar
@@ -64,7 +67,7 @@ class Rule(Convertible):
     @property
     def named(self) -> bool | None:
         """What `parse_arrow_array`'s `named` is for this rule; None is "no message"."""
-        return NAMED.get(self.codec)
+        return CODEC_KEYS.get(self.codec)
 
     def matches(self, message: str | None, plugin: str | None = None) -> bool:
         """Whether one line matches; unavailable message or plugin data does not."""
@@ -93,7 +96,7 @@ UL = Rule(protocol="UL", pattern=BRIDGE, codec="ul")
 UL_WIRE = Rule(protocol="UL", pattern=BRIDGE_WIRE, codec="ul")
 
 #: Operational lines whose vocabulary is understood but which carry no market
-#: message. Keeping these known lines out of `unknown_logs` makes that table a
+#: message. Keeping these known lines out of `unknown` makes that table a
 #: useful signal that a genuinely new log format arrived.
 MISC = Rule(
     protocol="MISC",

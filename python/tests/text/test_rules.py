@@ -6,7 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.market import EventType
-from rekep.text.log import DEFAULT_RULES, Log, LogRule, LogRules
+from rekep.text.fixmessage import DEFAULT_RULES, FixMessage, FixMessageRule, FixMessageRules
 
 #: One line per kind the default rules know, in both spellings a log uses.
 WIRE = {
@@ -50,10 +50,10 @@ NOTHING = [
 ]
 
 
-def codes(messages: list[str | None], rules: LogRules | None = None) -> list[int]:
+def codes(messages: list[str | None], rules: FixMessageRules | None = None) -> list[int]:
     """The codes `rules` gives `messages`. `is None`, never `or`: an empty rule
     set is a real answer and must not fall through to the default one."""
-    using = LogRules() if rules is None else rules
+    using = FixMessageRules() if rules is None else rules
     return using.etype_arrow(pyarrow.array(messages, type=pyarrow.string())).to_pylist()
 
 
@@ -79,22 +79,22 @@ def test_a_null_message_is_unknown_and_not_null() -> None:
 
 
 def test_an_empty_pattern_matches_empty_text_but_not_a_null_message() -> None:
-    rules = LogRules(rules=[LogRule("", EventType.ORDER)])
+    rules = FixMessageRules(rules=[FixMessageRule("", EventType.ORDER)])
     assert codes([None, ""], rules) == [int(EventType.UNKNOWN), int(EventType.ORDER)]
 
 
 def test_the_first_rule_that_matches_wins() -> None:
     """Which is what lets a specific rule sit in front of a general one."""
-    rules = LogRules(
+    rules = FixMessageRules(
         rules=[
-            LogRule(r"URGENT", EventType.EXECUTION),
-            LogRule(r"order", EventType.ORDER),
+            FixMessageRule(r"URGENT", EventType.EXECUTION),
+            FixMessageRule(r"order", EventType.ORDER),
         ]
     )
     assert codes(["URGENT order"], rules) == [int(EventType.EXECUTION)]
     assert codes(["ordinary order"], rules) == [int(EventType.ORDER)]
 
-    reversed_rules = LogRules(rules=list(reversed(rules.rules)))
+    reversed_rules = FixMessageRules(rules=list(reversed(rules.rules)))
     assert codes(["URGENT order"], reversed_rules) == [int(EventType.ORDER)], "order decides"
 
 
@@ -104,25 +104,25 @@ def test_a_line_naming_two_kinds_takes_the_more_specific_one() -> None:
 
 
 def test_no_rules_leaves_everything_unknown_without_running_anything() -> None:
-    empty = LogRules(rules=[])
+    empty = FixMessageRules(rules=[])
     assert not empty.rules
     assert codes(list(WIRE), empty) == [0] * len(WIRE)
 
 
 def test_no_rows_is_no_rows() -> None:
-    built = LogRules().etype_arrow(pyarrow.array([], type=pyarrow.string()))
+    built = FixMessageRules().etype_arrow(pyarrow.array([], type=pyarrow.string()))
     assert len(built) == 0 and built.type == pyarrow.int32()
 
 
 def test_the_codes_are_the_type_the_column_is() -> None:
-    built = LogRules().etype_arrow(pyarrow.array(["35=8|"], type=pyarrow.string()))
-    assert built.type == Log.into_field().field("etype").arrow_type == pyarrow.int32()
+    built = FixMessageRules().etype_arrow(pyarrow.array(["35=8|"], type=pyarrow.string()))
+    assert built.type == FixMessage.into_field().field("etype").arrow_type == pyarrow.int32()
 
 
 def test_the_default_rules_are_read_by_a_wide_column_too() -> None:
     """pyiceberg hands strings back as `large_string`, which is a different type."""
     wide = pyarrow.array(list(WIRE), type=pyarrow.large_string())
-    assert LogRules().etype_arrow(wide).to_pylist() == [int(kind) for kind in WIRE.values()]
+    assert FixMessageRules().etype_arrow(wide).to_pylist() == [int(kind) for kind in WIRE.values()]
 
 
 def test_every_default_rule_says_what_it_is_for() -> None:
@@ -132,7 +132,7 @@ def test_every_default_rule_says_what_it_is_for() -> None:
 
 
 def test_default_log_rules_and_pattern_lists_are_isolated() -> None:
-    first, second = LogRules(), LogRules()
+    first, second = FixMessageRules(), FixMessageRules()
     first.rules[0].patterns.append("first only")
     assert "first only" not in second.rules[0].patterns
     assert first.rules[0] is not second.rules[0]
@@ -141,12 +141,12 @@ def test_default_log_rules_and_pattern_lists_are_isolated() -> None:
 
 def test_rules_round_trip_as_a_document() -> None:
     """The whole point of them being data: a desk writes its own in a file."""
-    rules = LogRules(rules=[LogRule(r"\bboom\b", EventType.EXECUTION, "a fill")])
-    assert LogRules.from_json(rules.into_json()) == rules
+    rules = FixMessageRules(rules=[FixMessageRule(r"\bboom\b", EventType.EXECUTION, "a fill")])
+    assert FixMessageRules.from_json(rules.into_json()) == rules
 
 
 def test_a_rule_names_its_event_type_rather_than_numbering_it() -> None:
     """`etype: ORDER` in a configuration, not `etype: 110`."""
-    loaded = LogRules.from_dict({"rules": [{"pattern": "x", "etype": "ORDER"}]})
+    loaded = FixMessageRules.from_dict({"rules": [{"pattern": "x", "etype": "ORDER"}]})
     assert loaded.rules[0].etype is EventType.ORDER
-    assert LogRules.from_dict({"rules": [{"pattern": "x", "etype": 110}]}) == loaded
+    assert FixMessageRules.from_dict({"rules": [{"pattern": "x", "etype": 110}]}) == loaded

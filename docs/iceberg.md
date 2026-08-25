@@ -15,7 +15,7 @@ logs = IcebergDataset(
         "uri": "sqlite:///catalog.db",
         "warehouse": "file:///warehouse",
     },
-    field=Log.into_field(),
+    field=FixMessage.into_field(),
 )
 ```
 
@@ -37,11 +37,22 @@ the declared in-file sort order. This bounds merge state and preserves event
 order without materializing the table. Unordered reads remain the store's
 native stream.
 
+A table that was never written reads as no rows under the shape asked for,
+rather than raising: on the first interval of a fresh catalog every stage
+reads an upstream its own upstream has not created yet. With neither a schema
+nor a declared shape there is nothing to answer with, and the read raises.
+
 ## Write
 
 ```python
+logs.overwrite_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 logs.append_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 ```
+
+`overwrite_*` replaces the rows whose keys match and inserts the rest, and has
+no keyless mode: replacing rows means knowing which rows. `append_*` inserts,
+skipping the keys already stored when `merge_by` names them and inserting
+everything when it does not.
 
 Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested
@@ -49,7 +60,7 @@ commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
-event fields, and the Log sequence rename need an explicit table migration or
+event fields, and the FixMessage sequence rename need an explicit table migration or
 recreation. Dataset writes do not guess missing lineage or keep retired columns
 alive.
 

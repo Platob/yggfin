@@ -13,6 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.fields import Field
+from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
 #: FIX datatype -> Arrow type, keyed lowercase because the spellings drift
 #: across versions (`Boolean`/`boolean`, `MultipleValueString` before FIX 4.4,
@@ -176,9 +177,10 @@ STAMP_PATTERN = (
 )
 _STAMP = re.compile(STAMP_PATTERN, re.ASCII)
 
-#: `datetime.date(1970, 1, 1).toordinal()`: the epoch, in the proleptic
-#: Gregorian day count Python counts from.
-EPOCH_ORDINAL = 719163
+#: The epoch as a proleptic Gregorian ordinal, from the one module that
+#: declares it. Re-exported here because a reader of a FIX date reaches for it
+#: beside the datatypes rather than beside the configuration windows.
+EPOCH_ORDINAL = _EPOCH_ORDINAL
 
 NANOS = 1_000_000_000
 SECONDS_A_DAY = 86_400

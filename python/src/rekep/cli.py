@@ -18,6 +18,7 @@ from rekep.fix.publish import beyond_baseline
 from rekep.fix.registry import BOOTSTRAP_DURATION, BOOTSTRAP_PAGES, FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import field_document
+from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
 #: is the document and nothing else -- the styling never lands in the payload.
@@ -118,7 +119,7 @@ def _imported(spec: str) -> Any:
     if not module_name or not attribute:
         raise ValueError(
             f"{spec!r} does not name a class: write it as module:Attribute, "
-            "for instance rekep.text.log:Log"
+            "for instance rekep.text.fixmessage:FixMessage"
         )
     module = importlib.import_module(module_name)
     try:
@@ -315,9 +316,79 @@ def apply_keys(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def run_task(arguments: argparse.Namespace) -> int:
+    """Execute one task document's notebook, through Papermill.
+
+    The one reproducible command a local run is: the same YAML Airflow hands
+    to `PapermillOperator`, the same notebook, the same parameters -- so a run
+    on a laptop and a run on a worker differ in nothing but the machine.
+    """
+    try:
+        import papermill
+    except ImportError as error:  # pragma: no cover - papermill is a dev tool
+        raise ImportError(
+            "running a task needs papermill: uv run --with papermill rekep task run ..."
+        ) from error
+
+    document = pathlib.Path(arguments.document).resolve()
+    task = Task.from_yaml(str(document))
+    parameters = dict(task.parameters)
+    for spelled in arguments.parameter or ():
+        name, _, value = spelled.partition("=")
+        if not _:
+            raise ValueError(f"a parameter is name=value, not {spelled!r}")
+        parameters[name] = _parameter(value)
+    target = arguments.output or f"{task.name}.executed.ipynb"
+    CONSOLE.warn(f"{task.name} {CONSOLE.glyph('arrow')} {target}")
+    executed = papermill.execute_notebook(
+        str(task.into_notebook_path(document)),
+        target,
+        parameters=parameters,
+        kernel_name=arguments.kernel,
+        progress_bar=False,
+    )
+    for cell in executed.get("cells", []):
+        for output in cell.get("outputs", []):
+            text = output.get("data", {}).get("text/plain")
+            if text and cell is executed["cells"][-1]:
+                print(text)
+    CONSOLE.ok(task.name)
+    return 0
+
+
+def _parameter(value: str) -> Any:
+    """One command-line parameter as the value it spells.
+
+    JSON first, so `--parameter limit=100` is a number and
+    `--parameter static_values={"bridge":"b1"}` is a mapping; anything JSON
+    refuses is the string it already was, which is what a path or a table
+    name is.
+    """
+    try:
+        return json.loads(value)
+    except ValueError:
+        return value
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rekep", description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
+
+    tasks = commands.add_parser("task", help="the notebook jobs under tasks/")
+    running = tasks.add_subparsers(dest="action", required=True).add_parser(
+        "run", help="execute one task document's notebook"
+    )
+    running.add_argument("document", help="path to a task YAML under tasks/")
+    running.add_argument(
+        "--parameter",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="override one parameter; repeatable, values read as JSON then as text",
+    )
+    running.add_argument("--output", default=None, help="where to write the executed notebook")
+    running.add_argument("--kernel", default="python3", help="Jupyter kernel to execute under")
+    running.set_defaults(run=run_task)
 
     fields = commands.add_parser("fields", help="declarations and the documents they publish")
     actions = fields.add_subparsers(dest="action", required=True)
@@ -326,7 +397,7 @@ def _parser() -> argparse.ArgumentParser:
     dumping.add_argument(
         "--pyclass",
         required=True,
-        help="the class to dump, as module:Attribute (rekep.text.log:Log)",
+        help="the class to dump, as module:Attribute (rekep.text.fixmessage:FixMessage)",
     )
     dumping.add_argument(
         "--format",
