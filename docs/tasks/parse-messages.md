@@ -10,19 +10,20 @@ Each `Message` row contains:
 - `source_url` and the 1-based physical `source_rownum`;
 - `thread_name` and `plugin_code` from the configured header;
 - the unsplit payload in `message`;
+- ordered `kwargs` parsed from key/value syntax, with repeated keys retained;
 - `hash`, the stable identity of that source row.
 
-FIX tags, field names, protocol versions, event categories, components and
-typed values do not belong to this stage. A payload beginning with `8=FIX` is
-stored exactly like any other payload. `parse_fix` owns the first protocol
-read.
+Registry names, protocol versions, event categories, components and typed
+values do not belong to this stage. Numeric keys remain the numbers the line
+wrote, named keys retain their spelling, and values remain text. `parse_fix`
+owns the first protocol interpretation.
 
 ## Why the table is retained
 
 `logs.messages` is the protocol-neutral source for later parsers. A dictionary,
 field rule or protocol rule can change without reopening compressed logs or
-listing the source object-store prefix again. Re-running a protocol parser does
-read `message` again because this table deliberately stores no partial parse.
+listing the source object-store prefix again. Re-running a protocol parser
+uses the retained `kwargs`; it does not split `message` again.
 
 The row identity includes its source location and row number, so identical
 payloads in two captures remain two source records. The table is sorted by

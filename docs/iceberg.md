@@ -62,7 +62,8 @@ commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
-event fields, the FixMsg sequence rename, and renaming `unix_hour` to
+event fields, the required generic `Message.kwargs`, required nested argument
+values, the FixMsg sequence rename, and renaming `unix_hour` to
 `unix_partition` while changing its values from epoch-nanosecond `long` to
 epoch-second `int` need an explicit table migration or recreation. Recreate or
 rewrite every table using one of the six pipeline contracts, on every retained

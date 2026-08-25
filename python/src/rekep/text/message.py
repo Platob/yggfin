@@ -15,14 +15,15 @@ from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import scalar
 from rekep.market.event import Event
+from rekep.text.kwargs import Kwarg
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _EVENT_CODE = pyarrow.int32()
 
 
 @scalar(slots=True)
 class Message(Event):
-    """One log header, its provenance, and its uninterpreted payload."""
+    """One log header, its provenance, and its protocol-neutral payload."""
 
     @classmethod
     @functools.cache
@@ -44,6 +45,18 @@ class Message(Event):
 
     message: str = ""
     """Payload after the fixed log header, with continuation lines folded in."""
+
+    kwargs: list[Kwarg] = dataclasses.field(default_factory=list)
+    """Ordered arguments parsed from the payload without protocol interpretation."""
+
+    def __post_init__(self) -> None:
+        """Normalize argument spellings once for typed access."""
+        Event.__post_init__(self)
+        if self.kwargs is None:
+            self.kwargs = []
+        if not self.kwargs and self.message:
+            self.kwargs = Kwarg.parse_arrow(pyarrow.array([self.message])).to_pylist()[0]
+        self.kwargs = [Kwarg.from_stored(entry) for entry in self.kwargs]
 
     def identify(self) -> Self:
         """Give this raw row its provenance-scoped content identity."""

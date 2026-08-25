@@ -144,10 +144,12 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
     assert not {
         "protocol_code",
         "protocol_version",
-        "kwargs",
         "MsgType",
         "Parties",
     } & set(raw_table.schema.names)
+    assert _keys(raw_table.column("kwargs")[PIPED]) == [
+        token.split("=", 1)[0] for token in WIRE.strip("|").split("|")
+    ]
 
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
@@ -810,7 +812,7 @@ def _keys(scalar: pyarrow.Scalar) -> list[str]:
 
 def _key(entry: dict[str, object]) -> str:
     """One stored field's rendered key: its name under whatever led it."""
-    lead = entry["namespace"] or entry["comp"]
+    lead = entry.get("namespace") or entry.get("comp")
     return f"{lead}.{entry['key']}" if lead else str(entry["key"])
 
 
@@ -981,11 +983,19 @@ def test_two_identical_lines_in_two_captures_stay_two_rows(tmp_path: Path) -> No
     assert not set(digests[0]) & set(digests[1]), "one capture copied is not one capture"
 
 
-def test_the_message_stage_keeps_only_raw_source_facts(staged: pyarrow.Table) -> None:
+def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
+    staged: pyarrow.Table,
+) -> None:
     assert staged.schema.names == Message.into_field().names
     expected = [line.split("(INFO) ", 1)[1] for line in STAGED_LINES.splitlines()]
     assert staged.column("message").to_pylist() == expected
-    assert not {"protocol_code", "kwargs", "MsgType", "Side", "Parties"} & set(staged.schema.names)
+    assert "kwargs" in staged.schema.names
+    assert not {"protocol_code", "MsgType", "Side", "Parties"} & set(staged.schema.names)
+    assert [entry["value"] for entry in staged.column("kwargs")[0].as_py()[:3]] == [
+        "FIX.4.4",
+        "D",
+        "C1",
+    ]
 
 
 def test_fix_conversion_adds_the_canonical_fix_contract(
@@ -998,7 +1008,9 @@ def test_fix_conversion_adds_the_canonical_fix_contract(
     assert resolved.column("Parties")[0].as_py()[0]["PartyID"] == "BUYSIDE"
 
 
-def test_fix_conversion_parses_each_message_once(staged: pyarrow.Table, codec: FixCodec) -> None:
+def test_fix_conversion_never_parses_the_raw_message_again(
+    staged: pyarrow.Table, codec: FixCodec
+) -> None:
     class CountingCodec(FixCodec):
         parsed_rows = 0
 
@@ -1010,7 +1022,7 @@ def test_fix_conversion_parses_each_message_once(staged: pyarrow.Table, codec: F
     parsed = _parsed(staged, counting)
 
     assert parsed.num_rows == staged.num_rows
-    assert counting.parsed_rows == staged.num_rows
+    assert counting.parsed_rows == 0
 
 
 def test_the_redirection_sends_one_input_to_all_three_tables(

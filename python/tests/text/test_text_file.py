@@ -351,6 +351,7 @@ MESSAGE_COLUMNS = [
     "thread_name",
     "plugin_code",
     "message",
+    "kwargs",
 ]
 
 FIX_COLUMNS = {
@@ -364,7 +365,6 @@ FIX_COLUMNS = {
     "sender_comp_id",
     "target_comp_id",
     "symbol",
-    "kwargs",
 }
 
 
@@ -381,7 +381,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("message").type == pyarrow.string()
 
 
-def test_fix_looking_payloads_stay_uninterpreted(wire: Path) -> None:
+def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> None:
     table = TextFile.from_path(wire).read_arrow_table()
     payloads = [line.split(" (INFO) ", 1)[1] for line in WIRE.splitlines()]
 
@@ -391,6 +391,12 @@ def test_fix_looking_payloads_stay_uninterpreted(wire: Path) -> None:
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
+    assert [entry["value"] for entry in table.column("kwargs")[0].as_py()[:3]] == [
+        "FIX.4.2",
+        "176",
+        "D",
+    ]
+    assert table.column("kwargs")[2].as_py() == []
 
 
 def test_text_file_has_no_protocol_codec_option(wire: Path) -> None:

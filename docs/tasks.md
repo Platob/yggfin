@@ -41,10 +41,11 @@ Text files -> parse_messages -> logs.messages -> parse_fix -> fix.market
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` writes protocol-neutral `Message` rows. `parse_fix` owns the
-complete FIX read -- classification, tokenisation, dictionary resolution and
-routing. The retained message table lets a dictionary change rerun FIX parsing
-without reopening the source logs.
+`parse_messages` writes protocol-neutral `Message` rows and tokenizes generic
+key/value syntax once. `parse_fix` owns classification, dictionary resolution
+and routing from those ordered arguments. The retained message table lets a
+dictionary change rerun FIX resolution without reopening the source logs or
+splitting the payload again.
 
 `parse_fix` resumes Instrument lifecycles from the prior completed Instrument
 table. The current run has no dependency cycle: both downstream notebooks read

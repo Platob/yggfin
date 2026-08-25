@@ -586,7 +586,12 @@ def parse_arrow_array(
         entry_separator = sampled[2] if entry_separator is None else entry_separator
     if isinstance(column, pyarrow.ChunkedArray):
         parsed = [
-            parse_arrow_array(chunk, separator, named=named, entry_separator=entry_separator)
+            parse_arrow_array(
+                chunk,
+                separator,
+                named=named,
+                entry_separator=entry_separator,
+            )
             for chunk in column.chunks
         ]
         # The explicit type is for the zero-chunk column, which is legal and
@@ -655,6 +660,103 @@ def parse_arrow_array(
         )
         offsets = pyarrow.concat_arrays([head, offsets.slice(len(values))])
     return pyarrow.MapArray.from_arrays(offsets, tags, entries)
+
+
+def parse_kwargs_array(
+    kwargs: Any,
+    *,
+    named: bool,
+    entry_separator: str | None = None,
+) -> Any:
+    """Apply FIX token rules to generic ordered key/value arguments."""
+    if isinstance(kwargs, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array(
+            [
+                parse_kwargs_array(chunk, named=named, entry_separator=entry_separator)
+                for chunk in kwargs.chunks
+            ],
+            type=pyarrow.map_(pyarrow.string(), pyarrow.string()),
+        )
+    compute = pyarrow.compute
+    rows = len(kwargs)
+    if not rows:
+        return pyarrow.array([], type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
+
+    entries = compute.list_flatten(kwargs)
+    raw_keys = compute.struct_field(entries, "key")
+    raw_values = compute.fill_null(compute.struct_field(entries, "value"), "")
+    if named:
+        rendered = compute.binary_join_element_wise(raw_keys, "=", raw_values, "")
+        parsed = compute.extract_regex(rendered, _TOKEN_VECTOR)
+        matched = compute.fill_null(compute.is_valid(compute.struct_field(parsed, "key")), False)
+        keys, values, expansion = _named_pairs(compute.filter(parsed, matched), entry_separator)
+    else:
+        matched = compute.fill_null(
+            compute.match_substring_regex(raw_keys, rf"^{_WS}*\d+{_WS}*$"), False
+        )
+        keys = compute.utf8_trim_whitespace(compute.filter(raw_keys, matched))
+        values = compute.utf8_trim_whitespace(compute.filter(raw_values, matched))
+        expansion = None
+
+    weights = matched.cast(pyarrow.int32())
+    parents = compute.filter(compute.list_parent_indices(kwargs), matched)
+    if expansion is not None:
+        counts, taken = expansion
+        weights = compute.replace_with_mask(weights, matched, counts)
+        parents = compute.take(parents, taken)
+    counted = compute.cumulative_sum(weights)
+    bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
+    lengths = compute.fill_null(compute.list_value_length(kwargs), 0).cast(pyarrow.int32())
+    source_offsets = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    offsets = compute.take(bounds, source_offsets)
+    keys, values, offsets = _until_checksum(keys, values, offsets, parents, named)
+    if kwargs.null_count:
+        head = compute.if_else(
+            compute.is_null(kwargs),
+            pyarrow.scalar(None, pyarrow.int32()),
+            offsets.slice(0, rows),
+        )
+        offsets = pyarrow.concat_arrays([head, offsets.slice(rows)])
+    return pyarrow.MapArray.from_arrays(offsets, keys, values)
+
+
+def kwargs_entry_separators(kwargs: Any) -> pyarrow.Array:
+    """Detect each row's indexed-entry separator from generic arguments."""
+    if isinstance(kwargs, pyarrow.ChunkedArray):
+        kwargs = kwargs.combine_chunks()
+    compute = pyarrow.compute
+    rows = len(kwargs)
+    if not rows:
+        return pyarrow.array([], pyarrow.string())
+    entries = compute.list_flatten(kwargs)
+    if not len(entries):
+        return pyarrow.repeat("", rows)
+    keys = compute.struct_field(entries, "key")
+    values = compute.struct_field(entries, "value")
+    indexed = compute.fill_null(compute.match_substring_regex(keys, rf"^#?{_NAME}\[\d+\]$"), False)
+    nothing = pyarrow.scalar(None, pyarrow.string())
+    separators = compute.coalesce(
+        *(
+            compute.if_else(
+                compute.and_(
+                    indexed,
+                    compute.fill_null(compute.match_substring(values, separator), False),
+                ),
+                pyarrow.scalar(separator),
+                nothing,
+            )
+            for separator in SEPARATORS
+        )
+    )
+    valid = compute.is_valid(separators)
+    if not compute.any(valid, min_count=0).as_py():
+        return pyarrow.repeat("", rows)
+    parents = compute.filter(compute.list_parent_indices(kwargs), valid)
+    candidates = compute.filter(separators, valid)
+    positions = compute.index_in(sequence(rows), value_set=parents)
+    return compute.fill_null(compute.take(candidates, positions), "")
 
 
 @functools.lru_cache(maxsize=len(SEPARATORS) + 1)
@@ -874,8 +976,15 @@ def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, st
         if isinstance(text, bytes):
             text = text.decode("utf-8", "replace")
         if text:
+            begin = _BEGIN.search(text)
+            reading = begin is None if named is None else named
+            if begin is not None:
+                text = text[begin.start() :]
+            elif reading:
+                bridge = _BRIDGE.search(text)
+                if bridge is not None:
+                    text = text[bridge.start() :]
             separator = detect_separator(text)
-            reading = _BEGIN.search(text) is None if named is None else named
             entry = detect_entry_separator(text, separator) if reading else None
             return separator, reading, entry
     return SOH, False if named is None else named, None

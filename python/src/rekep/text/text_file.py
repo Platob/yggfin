@@ -24,6 +24,7 @@ from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
+from rekep.text.kwargs import Kwarg
 from rekep.text.message import Message
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
@@ -453,7 +454,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         rownums: list[int],
         excluded_plugins: pyarrow.Array | None = None,
     ) -> pyarrow.RecordBatch:
-        """One batch of parsed headers and uninterpreted payloads.
+        """One batch of parsed headers and protocol-neutral payloads.
 
         Assembled **by name** and then ordered by the schema, rather than as a
         positional list: a column added to `Message` then fails here by its own
@@ -486,6 +487,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "thread_name": pyarrow.compute.fill_null(_utf8(threads), ""),
             "plugin_code": pyarrow.compute.fill_null(_utf8(plugins), ""),
             "message": message,
+            "kwargs": Kwarg.parse_arrow(message),
         }
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns

@@ -18,6 +18,7 @@ from rekep.fix.columns import (
     QUOTE,
     SESSION,
     TAG,
+    FixKwarg,
     named_columns,
 )
 from rekep.fix.components import (
@@ -129,6 +130,7 @@ __all__ = [
     "FixPairs",
     "FixRegistry",
     "KWARGS",
+    "FixKwarg",
     "KeyCount",
     "KeyCounts",
     "KeyReport",

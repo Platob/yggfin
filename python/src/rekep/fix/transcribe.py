@@ -19,12 +19,16 @@ from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
+    IS_TAG as _IS_TAG,
+)
+from rekep.fix.columns import (
     KWARG_PARTS,
     KWARGS,
     NAMESPACE_COLUMNS,
     QUOTE_GROUP_COUNTS,
     QUOTE_GROUP_STRUCTURE,
     TAG,
+    FixKwarg,
     named_columns,
 )
 from rekep.fix.columns import TYPES as FLAT_TYPES
@@ -43,7 +47,9 @@ from rekep.fix.message import (
     SEPARATOR_VECTOR,
     SEPARATORS,
     SOH,
+    kwargs_entry_separators,
     parse_arrow_array,
+    parse_kwargs_array,
 )
 from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
@@ -82,25 +88,6 @@ _RAW_PAIRS: pyarrow.DataType = pyarrow.map_(
 #: dropped: `Instrument.NoLegs[0].LegSymbol` sits in `NoLegs`, `TECH.CLIENTID`
 #: in `TECH`, and `Side` in nothing at all.
 _CONTAINED_KEY = r"(?s)^(?:.*\.)?(?P<inner>[^.]*?)(?:\[[0-9]+\])?\.[^.]*$"
-
-#: A rendered key cut into the name it ends with and whatever stood in front:
-#: `NoPartyIDs[0].PartyID` is `PartyID` under `NoPartyIDs[0]`, `TECH.CLIENTID`
-#: is `CLIENTID` under `TECH`, and `Side` is `Side` under nothing. Greedy, so
-#: the *last* dot is the cut and a deeper path keeps its depth.
-_NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
-
-#: The one thing in front of a name that is a container and not a namespace
-#: without a dictionary to ask: an entry of a repeating group, which is what
-#: every FIX renderer writes with a subscript. Everything else in front of a
-#: name is a vendor's own prefix, which is what `rekep.kind` is. The message
-#: stage splits on this alone, and `_stored_entry` reads it scalar-wise.
-GROUP_ENTRY = r"\[[0-9]+\]$"
-
-#: A key that is already a tag: digits, and few enough of them to be one.
-#: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
-#: the guard -- an epoch-millis key is not a tag, and letting it through would
-#: turn a resolution into an Arrow overflow long after the decision was made.
-_IS_TAG = r"^[0-9]{1,9}$"
 
 #: The scalar compilations of the vectorized key rules, from the same source
 #: strings, so `TagIndex.resolve_key` and `TagIndex.resolve_with_match` cannot
@@ -352,9 +339,42 @@ class FixCodec(Convertible):
 
     def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
-        return self.into_payload_pairs(
-            self.drop_null_values(self.into_raw_pairs(messages, protocol))
+        return self.drop_null_values(
+            self.into_payload_pairs(self.into_raw_pairs(messages, protocol))
         )
+
+    def into_pairs_from_kwargs(self, kwargs: Any, protocol: str = NO_PROTOCOL) -> Any:
+        """Apply one protocol rule to generic arguments without reading text again."""
+        rows = len(kwargs)
+        rule = self.rules.rule(protocol)
+        if rule.named is None:
+            return pyarrow.nulls(rows, _RAW_PAIRS)
+        if rule.entry_separator is not None:
+            return parse_kwargs_array(
+                kwargs,
+                named=rule.named,
+                entry_separator=rule.entry_separator,
+            ).cast(_RAW_PAIRS)
+
+        groups = list(groups_of(kwargs_entry_separators(kwargs))) if rule.named else []
+        if len(groups) <= 1:
+            entry_separator = groups[0][0].as_py() or None if groups else None
+            return parse_kwargs_array(
+                kwargs,
+                named=rule.named,
+                entry_separator=entry_separator,
+            ).cast(_RAW_PAIRS)
+        parts, positions = [], []
+        for entry_separator, where in groups:
+            parts.append(
+                parse_kwargs_array(
+                    pyarrow.compute.take(kwargs, where),
+                    named=rule.named,
+                    entry_separator=entry_separator.as_py() or None,
+                ).cast(_RAW_PAIRS)
+            )
+            positions.append(where)
+        return scattered(parts, positions)
 
     def into_payload_pairs(self, pairs: Any) -> Any:
         """`XmlData <213>` read as the message it carries, where it carries one.
@@ -491,7 +511,7 @@ class FixCodec(Convertible):
                 value_set=pyarrow.array(sorted(self.null_values), pyarrow.string()),
             )
             keep = compute.and_(keep, compute.invert(compute.fill_null(absent, False)))
-        if compute.all(keep, min_count=0).as_py():
+        if compute.all(keep, min_count=0).as_py() and pyarrow.types.is_map(pairs.type):
             return pairs.cast(_RAW_PAIRS)
         return _mapped(
             pairs,
@@ -543,11 +563,11 @@ class FixCodec(Convertible):
         # The split is `structure`'s, not a second rule: where a field stood is
         # a fact about the spelling, so the message stage settles it and the
         # dictionary never revises it. What the dictionary adds is the tag.
-        _, key, _, namespace, comp = self.structure(keys, values)
+        _, key, value, namespace, comp = self.structure(keys, values)
         return (
             compute.fill_null(tags, pyarrow.scalar(0, TAG)),
             key,
-            values,
+            value,
             namespace,
             comp,
         )
@@ -588,35 +608,10 @@ class FixCodec(Convertible):
         the line wrote in front of a name goes to `comp` when it is a group
         entry and to `namespace` when it is not. Telling those apart needs no
         dictionary either -- an entry of a repeating group is what carries a
-        subscript, which is what `_GROUP_ENTRY` matches, and everything else in
+        subscript, which is what `FixKwarg.structure_arrow` matches, and everything else in
         front of a name is a vendor's own prefix.
         """
-        # Read once per **distinct** spelling and taken back across the
-        # entries. A message keys its fields out of a bounded vocabulary --
-        # tags, or the names a bridge renders -- so a batch of a hundred
-        # thousand entries carries a few dozen spellings, and three regex
-        # passes over the entries were three passes over the same handful of
-        # strings repeated. 10x on a captured wire batch and 18x on a bridge
-        # one (benchmarks/bench_text_file.py).
-        compute = pyarrow.compute
-        encoded = keys.dictionary_encode()
-        spellings, indices = encoded.dictionary, encoded.indices
-        numeric = compute.fill_null(compute.match_substring_regex(spellings, _IS_TAG), False)
-        tags = compute.if_else(numeric, spellings, pyarrow.scalar("0")).cast(TAG)
-        parts = compute.extract_regex(spellings, _NAMESPACED_KEY)
-        lead = compute.struct_field(parts, "namespace")
-        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
-        entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
-        nothing = pyarrow.scalar(None, pyarrow.string())
-        return (
-            compute.take(tags, indices),
-            compute.take(compute.fill_null(compute.struct_field(parts, "key"), spellings), indices),
-            values,
-            compute.take(
-                compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing), indices
-            ),
-            compute.take(compute.if_else(compute.and_(led, entry), lead, nothing), indices),
-        )
+        return FixKwarg.structure_arrow(keys, values)
 
     def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
@@ -1610,7 +1605,17 @@ def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
     listed = _listed(pairs)
     lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
     entries = compute.list_flatten(listed)
-    return lengths, compute.struct_field(entries, 0), compute.struct_field(entries, 1)
+    keys = compute.struct_field(entries, "key")
+    if entries.type.get_field_index("namespace") >= 0:
+        lead = compute.coalesce(
+            compute.struct_field(entries, "namespace"), compute.struct_field(entries, "comp")
+        )
+        keys = compute.if_else(
+            compute.is_valid(lead),
+            compute.binary_join_element_wise(compute.fill_null(lead, ""), keys, "."),
+            keys,
+        )
+    return lengths, keys, compute.struct_field(entries, "value")
 
 
 def _mapped(

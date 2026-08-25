@@ -1,9 +1,9 @@
 # Configuring a parse
 
 Everything a capture differs by is a document, not a code change. The message
-stage owns only the log header and timezone. The FIX stage owns which payloads
-are FIX, how they are spelled, what their fields mean, and what counts as
-absent.
+stage owns the log header, timezone, and protocol-neutral key/value split. The
+FIX stage owns which payloads are FIX, which key spellings its rules admit,
+what their fields mean, and what counts as absent.
 
 ```mermaid
 flowchart LR
@@ -143,6 +143,8 @@ null_values: ["", "null", "<null>", "n/a"]
 | `fields` | `FixCodec.fields` | `parse_fix` |
 | `fix_dictionary` | `FixRegistry.cache_dir` | `parse_fix` |
 
-`parse_messages` retains the unsplit payload. A change to `fields`, protocol
-rules or the dictionary reruns `parse_fix` without reopening the source logs;
-the retained payload is parsed again under the new declaration.
+`parse_messages` retains both the unsplit payload and its ordered generic
+arguments. A change to `fields`, protocol classification or the dictionary
+reruns `parse_fix` without reopening the source logs or tokenizing the payload
+again. Field boundaries are detected before protocol classification, so a
+separator change requires rebuilding `logs.messages`.

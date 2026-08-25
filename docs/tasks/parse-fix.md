@@ -6,7 +6,7 @@ they are FIX, and routes the resulting `FixMsg` rows.
 
 This is the first stage that opens the FIX dictionary. For each Arrow batch it:
 
-1. classifies each raw `message` and splits it into ordered pairs;
+1. classifies each raw `message` and selects its stored ordered `kwargs`;
 2. infers the FIX application version;
 3. resolves names, tags, types and configured value spellings;
 4. lifts declared fields and structured components;
@@ -50,4 +50,4 @@ The adjacent `parse_fix.yml` owns every FIX setting: `fix_dictionary`,
 `null_values`, event `rules`, protocol rules, and declared `fields`. It also
 selects the catalog, branch, source interval, static columns and batch sizes.
 A dictionary or rule change reruns this stage against retained `Message` rows;
-the raw payload is parsed again under the new declaration.
+the stored arguments are resolved again without tokenizing the raw payload.

@@ -17,7 +17,7 @@ from pyiceberg.conversions import from_bytes
 from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.expressions import EqualTo
 
-from rekep import Convertible, Field, FixMsg, StructField, scalar
+from rekep import Convertible, Field, FixMsg, Kwarg, Message, StructField, scalar
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
@@ -781,6 +781,39 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert row["Price"] is None, "a field this message never carried"
 
 
+def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path) -> None:
+    target = IcebergDataset(
+        name="trading.messages",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        field=Message.into_field(),
+        auto_compact=False,
+    )
+    row = Message(
+        unix=1,
+        source_url="capture.log",
+        source_rownum=7,
+        message="opaque",
+        kwargs=[
+            Kwarg(key="Empty", value=""),
+            Kwarg(key="55", value="TTF"),
+        ],
+    ).identify()
+
+    target.append_arrow_table(Message.into_arrow_reader([row]).read_all())
+
+    reopened = IcebergDataset(
+        name=target.name,
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+    )
+    shape = reopened.into_struct_field().field("kwargs")
+    stored = reopened.read_arrow_table(Message.into_field()).column("kwargs").to_pylist()
+    assert shape.nullable is False and not shape.item.nullable
+    assert shape.item.field("value").nullable is False
+    assert stored == [[dataclasses.asdict(entry) for entry in row.kwargs]]
+
+
 def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     logs: IcebergDataset,
 ) -> None:
@@ -807,7 +840,7 @@ def test_the_stored_fields_keep_their_required_members(
     shape = found.into_struct_field().field("kwargs")
     assert shape.nullable and not shape.item.nullable
     required = {member.name for member in shape.item.fields if not member.nullable}
-    assert required == {"tag", "key"}
+    assert required == {"tag", "key", "value"}
 
 
 def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:

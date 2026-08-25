@@ -817,6 +817,7 @@ def test_a_stored_field_names_itself_and_never_nothing() -> None:
     assert KWARGS.value_field.nullable is False
     assert KWARGS.value_type.field("tag").nullable is False
     assert KWARGS.value_type.field("key").nullable is False
+    assert KWARGS.value_type.field("value").nullable is False
     assert [KWARGS.value_type.field(i).name for i in range(KWARGS.value_type.num_fields)] == [
         "tag",
         "key",
@@ -827,6 +828,15 @@ def test_a_stored_field_names_itself_and_never_nothing() -> None:
     assert KWARG_PARTS == ("tag", "key", "value", "namespace", "comp"), (
         "one declaration of the members, read off the type itself"
     )
+
+
+def test_structuring_a_nullable_pair_fills_its_required_value(codec: FixCodec) -> None:
+    pairs = pyarrow.array([[("55", None)]], type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
+
+    stored = codec.into_message_kwargs(pairs)
+
+    values = pyarrow.compute.struct_field(pyarrow.compute.list_flatten(stored), "value")
+    assert values.to_pylist() == [""]
 
 
 def test_the_stored_members_are_declared_once_and_nowhere_else() -> None:

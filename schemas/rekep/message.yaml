@@ -1,9 +1,9 @@
 name: Message
 type: struct
-description: One log header, its provenance, and its uninterpreted payload.
+description: One log header, its provenance, and its protocol-neutral payload.
 metadata:
   namespace: rekep.text.message
-  version: '1'
+  version: '2'
 fields:
 - name: unix
   type: int64
@@ -144,3 +144,15 @@ fields:
   type: string
   description: Payload after the fixed log header, with continuation lines folded
     in.
+- name: kwargs
+  type: list
+  description: Ordered arguments parsed from the payload without protocol interpretation.
+  item:
+    type: struct
+    fields:
+    - name: key
+      type: string
+      description: Key exactly as written, including any leading marker.
+    - name: value
+      type: string
+      description: Text after the first equals sign; an empty value is empty text.

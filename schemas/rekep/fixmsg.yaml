@@ -3,7 +3,7 @@ type: struct
 description: One raw message transcribed under the FIX registry.
 metadata:
   namespace: rekep.text.fixmsg
-  version: '3'
+  version: '4'
 fields:
 - name: unix
   type: int64
@@ -145,6 +145,32 @@ fields:
   nullable: true
   description: Payload with the header and level stripped; null where `kwargs` holds
     it all.
+- name: kwargs
+  type: list
+  nullable: true
+  description: Every field the message carried and no column took, as the dictionary
+    read it.
+  item:
+    type: struct
+    fields:
+    - name: tag
+      type: int32
+      description: Numeric key written or resolved; zero while unresolved.
+    - name: key
+      type: string
+      description: Terminal spelling, canonicalized when resolved.
+    - name: value
+      type: string
+      description: Text at the current transcription level; an empty value is empty
+        text.
+    - name: namespace
+      type: string
+      nullable: true
+      description: Prefix outside an indexed container.
+    - name: comp
+      type: string
+      nullable: true
+      description: Indexed container prefix.
 - name: protocol_code
   type: string
   description: Which protocol the line carries; OTHER is a line that carries none.
@@ -172,27 +198,6 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: MsgSeqNum
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: kwargs
-  type: list
-  nullable: true
-  description: Every field the message carried and no column took, as the dictionary
-    read it.
-  item:
-    type: struct
-    fields:
-    - name: tag
-      type: int32
-    - name: key
-      type: string
-    - name: value
-      type: string
-      nullable: true
-    - name: namespace
-      type: string
-      nullable: true
-    - name: comp
-      type: string
-      nullable: true
 - name: Parties
   type: list
   nullable: true

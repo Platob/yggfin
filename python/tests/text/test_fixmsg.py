@@ -7,7 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message
-from rekep.fix import NO_PROTOCOL, FixRegistry, Party
+from rekep.fix import NO_PROTOCOL, FixKwarg, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.market import MIC, Event, EventType
 from rekep.market.event import HOUR, SECOND
@@ -38,14 +38,13 @@ ENVELOPE = [
     "reason",
 ]
 SOURCE: list[str] = []
-LINE = ["source_url", "source_rownum", "thread_name", "plugin_code", "message"]
+LINE = ["source_url", "source_rownum", "thread_name", "plugin_code", "message", "kwargs"]
 MESSAGE = [
     "protocol_code",
     "unix_source",
     "protocol_version",
     "protocol_version_source",
     "MsgSeqNum",
-    "kwargs",
     "Parties",
     "TrdRegTimestamps",
     "SideTrdRegTS",
@@ -84,7 +83,7 @@ def test_a_log_line_is_an_event() -> None:
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
-    assert FixMsg.into_field_metadata() == {"version": "3"}
+    assert FixMsg.into_field_metadata() == {"version": "4"}
     with pytest.raises(TypeError):
         FixMsg.into_field_metadata()["version"] = "2"
 
@@ -105,8 +104,8 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     """
     field = FixMsg.into_field()
     for name in LINE:
-        if name == "message":
-            assert field.field(name).nullable, "a market row leaves the raw line null"
+        if name in {"message", "kwargs"}:
+            assert field.field(name).nullable, f"a row may leave {name} null"
             continue
         assert not field.field(name).nullable, name
 
@@ -126,6 +125,12 @@ def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
     assert FixMsg().kwargs is None
 
 
+def test_an_explicit_empty_parsed_argument_list_is_not_reparsed() -> None:
+    parsed = FixMsg(message="8=FIX.4.4|35=D|10=000|", kwargs=[])
+
+    assert parsed.kwargs == []
+
+
 def test_a_stored_field_always_says_what_it_is() -> None:
     """`tag` and `key` are how a consumer addresses a field, so neither is null:
     a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
@@ -134,9 +139,11 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     assert member.item.nullable is False
     assert member.item.field("tag").nullable is False
     assert member.item.field("key").nullable is False
-    for name in ("value", "namespace", "comp"):
+    assert member.item.field("value").nullable is False
+    for name in ("namespace", "comp"):
         assert member.item.field(name).nullable is True, name
         assert member.item.field(name).arrow_type == pyarrow.string(), name
+    assert all(isinstance(entry, FixKwarg) for entry in FixMsg(kwargs=[(55, "IBM")]).kwargs or ())
 
 
 def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
@@ -169,9 +176,9 @@ def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> No
 
 def test_malformed_stored_field_entries_are_not_silently_dropped() -> None:
     with pytest.raises(KeyError, match="key"):
-        FixMsg(kwargs=[{"value": "x"}]).into_fix_events()
+        FixMsg(kwargs=[{"value": "x"}])
     with pytest.raises(ValueError, match="not enough values"):
-        FixMsg(kwargs=[["OnlyKey"]]).into_fix_events()
+        FixMsg(kwargs=[["OnlyKey"]])
 
 
 def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
@@ -309,27 +316,27 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
 ) -> None:
     raw = _raw_batch(
         Message(
-            source_url="capture.log",
-            source_rownum=1,
-            plugin_code="fix",
             message=(
                 "8=FIX.4.4|35=D|34=7|41=ROOT|55=IBM|461=EXXXXX|6=12.5|"
                 "453=1|448=BUYSIDE|447=D|452=1|10=000|"
             ),
+            source_url="capture.log",
+            source_rownum=1,
+            plugin_code="fix",
         ),
         Message(
-            source_url="capture.log",
-            source_rownum=2,
-            plugin_code="ULBridge",
             message=(
                 "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=8|#ORIGCLORDID=OLD|#ISINCODE=XX0000084733|"
             ),
+            source_url="capture.log",
+            source_rownum=2,
+            plugin_code="ULBridge",
         ),
         Message(
+            message="plain text",
             source_url="capture.log",
             source_rownum=3,
             plugin_code="misc",
-            message="plain text",
         ),
     )
 
@@ -385,6 +392,93 @@ def test_fixmsg_conversion_preserves_static_extra_columns(
     assert parsed.schema.names == [*FixMsg.into_field().names, "capture_id"]
     assert parsed.schema.field("capture_id") == static
     assert parsed.column("capture_id").to_pylist() == ["day-1"]
+
+
+def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
+    registry: FixRegistry,
+) -> None:
+    raw = _raw_batch(Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"))
+    assert raw.column("kwargs")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
+
+    parsed = FixMsg.from_message_arrow_batch(
+        raw,
+        FixCodec(registry=registry),
+        FixMsg.into_message_rules(),
+    )
+
+    assert parsed.column("Symbol").to_pylist() == [None]
+    assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("kwargs")[0].as_py())
+
+
+def test_fixmsg_consumes_a_hash_delimited_wire_message(registry: FixRegistry) -> None:
+    raw = _raw_batch(Message(message="8=FIX.4.4#35=D#55=TTF#10=000"))
+
+    parsed = FixMsg.from_message_arrow_batch(
+        raw, FixCodec(registry=registry), FixMsg.into_message_rules()
+    )
+
+    assert parsed.column("MsgType").to_pylist() == ["D"]
+    assert parsed.column("Symbol").to_pylist() == ["TTF"]
+
+
+def test_staged_groups_preserve_malformed_continuations(registry: FixRegistry) -> None:
+    line = "toBridge #NOPARTYIDS[0]=PARTYID=x\x01garbage|#SIDE=1"
+    raw = _raw_batch(Message(message=line))
+    codec = FixCodec(registry=registry)
+
+    staged = codec.into_pairs_from_kwargs(raw.column("kwargs"), "UL")
+    direct = codec.into_pairs(pyarrow.array([line]), "UL")
+
+    assert (
+        staged.to_pylist()
+        == direct.to_pylist()
+        == [
+            [
+                ("NOPARTYIDS[0].PARTYID", "x"),
+                ("NOPARTYIDS[0]", "garbage"),
+                ("SIDE", "1"),
+            ]
+        ]
+    )
+
+
+def test_staged_wire_conversion_matches_wire_named_and_marker_rules(
+    registry: FixRegistry,
+) -> None:
+    lines = [
+        "8=FIX.4.2|SIDE=1|55=TTF|10=000|",
+        "8=FIX.4.2|#54=2|55=IBM|10=000|",
+    ]
+    raw = _raw_batch(*(Message(message=line) for line in lines))
+    codec = FixCodec(registry=registry)
+    expected_kwargs, expected_columns = codec.into_fixmsg_columns(
+        codec.into_pairs(pyarrow.array(lines), "FIX"), "4.2"
+    )
+
+    parsed = FixMsg.from_message_arrow_batch(raw, codec, FixMsg.into_message_rules())
+
+    assert [entry["key"] for entry in raw.column("kwargs")[0].as_py()] == [
+        "8",
+        "SIDE",
+        "55",
+        "10",
+    ]
+    assert [entry["key"] for entry in raw.column("kwargs")[1].as_py()] == [
+        "8",
+        "#54",
+        "55",
+        "10",
+    ]
+    assert (
+        parsed.column("Side").to_pylist()
+        == expected_columns["Side"].to_pylist()
+        == [
+            None,
+            None,
+        ]
+    )
+    assert parsed.column("Symbol").to_pylist() == expected_columns["Symbol"].to_pylist()
+    assert parsed.column("kwargs").to_pylist() == expected_kwargs.to_pylist()
 
 
 def test_a_static_column_cannot_shadow_a_fix_field(registry: FixRegistry) -> None:
