@@ -369,7 +369,7 @@ class FixPairs(Convertible):
         names: Mapping[str, int | str] | None = None,
     ) -> FixPairs:
         """A message out of `(key, value)` pairs, where a key is a tag *or* a name."""
-        folded = _folded(names)
+        folded = _Names.of(names).keys
         built: list[tuple[str, str]] = []
         for key, value in pairs:
             if value is None:
@@ -918,6 +918,64 @@ def _boundaries(tokens: Any) -> Any:
 # -- tag numbers -------------------------------------------------------------
 
 
+class _Names:
+    """One caller's `{name: tag}` mapping, folded once and held by identity.
+
+    Both readings a parse asks of a dictionary come off the same fold: the
+    stored key a rendered name resolves to (`from_pairs`), and the tag number
+    a whole column of keys resolves to (`tag_arrow_array`). Folding it per
+    call was most of what either cost -- a FIX dictionary is six thousand
+    names, and a batch resolves a few hundred distinct spellings against it.
+    """
+
+    def __init__(self, names: Mapping[str, int | str]) -> None:
+        self.source = names
+        self.size = len(names)
+        #: Folded name to the tag as a key is spelled.
+        self.keys = {str(name).strip().lower(): str(tag) for name, tag in names.items()}
+
+    @functools.cached_property
+    def tags(self) -> dict[str, int]:
+        """The same fold as numbers, for a column resolved to an Arrow tag type.
+
+        Derived rather than built beside `keys`, because a caller that only
+        resolves spellings never pays for it -- and a mapping whose tags are
+        not numbers is usable for one reading and not the other.
+        """
+        return {name: int(tag) for name, tag in self.keys.items()}
+
+    @classmethod
+    def of(cls, names: Mapping[str, int | str] | None) -> _Names:
+        """`names` folded, out of the last few folded, matched by **identity**.
+
+        Tiny and strongly held: a few mappings of a few thousand entries is
+        nothing, and holding them is what keeps an id from being recycled onto
+        a different object.
+        """
+        if not names:
+            return _NO_NAMES
+        for held in _FOLDED:
+            if held.source is names and held.size == len(names):
+                return held
+        held = cls(names)
+        _FOLDED.insert(0, held)
+        del _FOLDED[_FOLDED_KEPT:]
+        return held
+
+
+#: How much of a key column is cast before the rest of it is. Every message
+#: keys its fields one way, so a column that carries a rendered name carries
+#: one within a message or two of its start.
+_TAG_PROBE = 64
+
+#: The last few dictionaries folded, newest first.
+_FOLDED: list[_Names] = []
+_FOLDED_KEPT = 4
+
+#: What a caller resolving against no dictionary at all reads through.
+_NO_NAMES = _Names({})
+
+
 def tag_arrow_array(
     maps: Any,
     key_type: pyarrow.DataType | None = None,
@@ -980,15 +1038,20 @@ def tag_arrow_array(
 def _tag_numbers(keys: Any, names: Mapping[str, int | str] | None, key_type: Any) -> Any:
     """A key column as tag numbers, null where no reading finds one.
 
-    The cast is *attempted* first because it is the whole cost of the common
-    case; only a column that actually carries rendered names pays for the
-    dictionary encoding, and then only once per distinct spelling.
+    The cast is the cheapest reading a column of wire tags has and the most
+    expensive failure a column of names has -- pyarrow converts the whole
+    column before it raises -- so the head is cast first and only a head that
+    reads as tags is worth casting the rest of. A column of names then
+    resolves through its *distinct* spellings, once each, and is `take`n back
+    across the rows: twelve times what a failed full cast then cost
+    (benchmarks/bench_text_file.py).
     """
     try:
+        keys.slice(0, _TAG_PROBE).cast(key_type)
         return keys.cast(key_type)
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError):
         pass
-    lookup = {str(name).strip().lower(): int(tag) for name, tag in (names or {}).items()}
+    lookup = _Names.of(names).tags
     encoded = keys.dictionary_encode()
     resolved = pyarrow.array(
         [_tag_number(spelled, lookup, key_type) for spelled in encoded.dictionary.to_pylist()],
@@ -1028,27 +1091,6 @@ def _tag_number(spelled: str | None, lookup: Mapping[str, int], key_type: Any) -
 
 
 # -- pairs -------------------------------------------------------------------
-
-
-#: The last few dictionaries folded, newest first, matched by **identity**.
-#: Tiny and strongly held: a few mappings of a few thousand entries is
-#: nothing, and holding them is what keeps an id from being recycled onto a
-#: different object.
-_FOLDED: list[tuple[Any, int, dict[str, str]]] = []
-_FOLDED_KEPT = 4
-
-
-def _folded(names: Mapping[str, int | str] | None) -> dict[str, str]:
-    """`names` as a fold-keyed lookup; empty when there is nothing to resolve."""
-    if not names:
-        return {}
-    for source, size, built in _FOLDED:
-        if source is names and size == len(names):
-            return built
-    built = {str(name).lower(): str(tag) for name, tag in names.items()}
-    _FOLDED.insert(0, (names, len(names), built))
-    del _FOLDED[_FOLDED_KEPT:]
-    return built
 
 
 def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
