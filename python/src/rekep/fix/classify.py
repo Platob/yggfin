@@ -518,10 +518,13 @@ def count_files(
     files = TextFiles.from_folder(source, pattern=pattern, recursive=recursive)
     counted = counts if counts is not None else KeyCounts()
     for opened in files.into_files():
-        for batch in opened.into_arrow_batches(batch_row_size=batch_row_size):
-            counted = count_reader(batch, counted, source=_source_of(opened.url), plugins=plugins)
-            if limit is not None and counted.lines >= limit:
-                return counted
+        with opened:
+            for batch in opened.into_arrow_batches(batch_row_size=batch_row_size):
+                counted = count_reader(
+                    batch, counted, source=_source_of(opened.url), plugins=plugins
+                )
+                if limit is not None and counted.lines >= limit:
+                    return counted
     return counted
 
 

@@ -18,7 +18,6 @@ from rekep.dataset import (
     SOURCE_INDEX,
     TARGET_INDEX,
     Dataset,
-    anti_join,
     arrow_chunks,
     first_rows,
     keys_of,
@@ -393,8 +392,18 @@ class IcebergDataset(Dataset):
         ordering = (order_by,) if isinstance(order_by, str) else tuple(order_by or ())
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
+        if columns and target is not None:
+            selected = [target.field(name) for name in columns if name in target.names]
+            if not selected:
+                raise ValueError(f"columns={list(columns)!r} shares no columns with `schema`")
+            target = Field.from_arrow_schema(
+                pyarrow.schema(
+                    [field.into_arrow_field() for field in selected],
+                    metadata=target.into_arrow_schema().metadata,
+                )
+            )
         if not self.exists:
-            return self._empty_reader(target, columns)
+            return self._empty_reader(target, None if target is not None else columns)
         table = self.iceberg_table
         # Pinned *before* the projection is chosen: a scan on a ref or a
         # snapshot id projects under that snapshot's schema, so which names it
@@ -409,7 +418,10 @@ class IcebergDataset(Dataset):
         if reference:
             scan = scan.use_ref(reference)
         found: dict[str, str] = {}
-        if columns:
+        if columns and target is not None:
+            found = self._selected(target, scan)
+            scan = scan.select(*found)
+        elif columns:
             scan = scan.select(*columns)
         elif target is not None:
             found = self._selected(target, scan)
@@ -546,30 +558,6 @@ class IcebergDataset(Dataset):
         if committed:
             self._finish_write(reference)
 
-    def _append_arrow_reader(
-        self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-        schema: Any = None,
-        commit_row_size: int | None = None,
-        *,
-        branch: str | None = None,
-        properties: dict[str, str] | None = None,
-    ) -> None:
-        """Add every row, matching nothing: one Iceberg append per chunk."""
-        self.__dict__.pop("_insert_upper", None)
-        table = self.get_or_create_table()
-        reader = self.target_field(schema).cast_arrow_reader(source)
-        reference = self._branch_name(branch)
-        self._branch_head(table, reference)
-        rows = self.commit_row_size if commit_row_size is None else commit_row_size
-        snapshot = properties or {}
-        committed = False
-        for chunk in arrow_chunks(reader, rows):
-            table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
-            committed = True
-        if committed:
-            self._finish_write(reference)
-
     def merge_arrow_table(
         self,
         chunk: pyarrow.Table,
@@ -592,6 +580,7 @@ class IcebergDataset(Dataset):
             raise ValueError(
                 f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
             )
+        chunk = normalised_keys(chunk, join)
         if upsert_util.has_duplicate_rows(chunk, join):
             raise ValueError(
                 "Duplicate rows found in source dataset based on the key columns. "
@@ -629,7 +618,6 @@ class IcebergDataset(Dataset):
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
-        chunk = normalised_keys(chunk, join)
         shape = Field.from_(chunk.schema)
         reference = self._branch_name(branch)
         derived = self.derived_columns()
@@ -645,34 +633,50 @@ class IcebergDataset(Dataset):
             # this exists for -- lands every chunk here.
             table.append(chunk, snapshot_properties=properties or {}, branch=reference)
             return 0, chunk.num_rows
-        # The batch reader, not `to_arrow()`: the two read paths disagree about
-        # string widths -- `to_arrow()` hands back `string` where the reader
-        # hands back the `large_string` the table itself reports -- and this one
-        # streams, which is what a merge of an arbitrary chunk needs.
-        matched = _under_current_names(table, _planned_reader(scan, tasks).read_all())
-        if matched.num_rows == 0:
-            # Files overlapped the ranges but held none of the keys: the same
-            # append, minus the casts and joins that would narrow nothing.
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
-            return 0, chunk.num_rows
-        matched = shape.cast_arrow_table(matched)
-        # The scan filter is a *superset* -- a range covers stored keys the
-        # chunk never mentions -- so the rows it brought back are narrowed to
-        # the ones the chunk actually references before anything looks at them.
-        # Without this, a duplicate key stored anywhere inside the chunk's key
-        # range aborts a merge that has nothing to do with it.
-        matched = semi_join(matched, chunk, join)
-        if matched.num_rows == 0:
+        # The scan filter is a superset, so consume its partition-ordered
+        # reader batchwise. Keep only compact positions into the source chunk:
+        # neither the ranged rows nor even their exact stored matches collect.
+        matched_positions: list[pyarrow.Array] = []
+        changed_positions: list[pyarrow.Array] = []
+        matched_count = 0
+        with _planned_reader(scan, tasks, group_size=1) as planned:
+            for batch in _under_current_names(table, planned):
+                candidate = pyarrow.Table.from_batches([batch])
+                candidate = _align_keys(candidate, chunk, join)
+                candidate = semi_join(candidate, chunk, join)
+                if not candidate.num_rows:
+                    continue
+                candidate = shape.cast_arrow_table(candidate)
+                positions = _matching_positions(chunk, candidate, join)
+                if len(positions) != candidate.num_rows:
+                    raise ValueError("Target table has duplicate rows, aborting upsert")
+                matched_count += len(positions)
+                if matched_count > chunk.num_rows:
+                    raise ValueError("Target table has duplicate rows, aborting upsert")
+                matched_positions.append(positions)
+                source = chunk.take(positions)
+                changed = _changed(source, candidate, join)
+                if changed.num_rows:
+                    local = _matching_positions(source, changed, join)
+                    changed_positions.append(positions.take(local))
+        if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
             table.append(chunk, snapshot_properties=properties or {}, branch=reference)
             return 0, chunk.num_rows
 
-        # An Arrow join hands back nullable columns whatever it was given, and
-        # pyiceberg checks a write against the table's own requiredness -- so
-        # both halves go back onto the stored shape before they are committed.
-        updates = shape.cast_arrow_table(_changed(chunk, matched, join))
-        inserts = shape.cast_arrow_table(anti_join(chunk, matched, join))
+        matched = pyarrow.concat_arrays(matched_positions)
+        if len(pyarrow.compute.unique(matched)) != len(matched):
+            raise ValueError("Target table has duplicate rows, aborting upsert")
+        keep = pyarrow.compute.invert(
+            pyarrow.compute.is_in(arrays.sequence(chunk.num_rows), value_set=matched)
+        )
+        inserts = chunk.filter(keep)
+        updates = (
+            chunk.take(pyarrow.compute.sort_indices(pyarrow.concat_arrays(changed_positions)))
+            if changed_positions
+            else chunk.slice(0, 0)
+        )
         if len(updates) == 0 and len(inserts) == 0:
             return 0, 0
         with table.transaction() as transaction:
@@ -713,23 +717,21 @@ class IcebergDataset(Dataset):
     ) -> int:
         """Append a stream, inserting only the keys the table does not hold yet."""
         join = self.merge_columns(merge_by)
-        if not join:
-            inserted = 0
-
-            def counted() -> Iterator[pyarrow.RecordBatch]:
-                nonlocal inserted
-                for batch in source:
-                    inserted += batch.num_rows
-                    yield batch
-
-            self._append_arrow_reader(
-                counted(), schema, commit_row_size, branch=branch, properties=properties
-            )
-            return inserted
-        self.get_or_create_table()
+        table = self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
         reference = self._branch_name(branch)
+        self._branch_head(table, reference)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        snapshot = properties or {}
+        if not join:
+            self.__dict__.pop("_insert_upper", None)
+            inserted = 0
+            for chunk in arrow_chunks(reader, rows):
+                table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
+                inserted += chunk.num_rows
+            if inserted:
+                self._finish_write(reference)
+            return inserted
         inserted = 0
         for chunk in arrow_chunks(reader, rows):
             inserted += self.insert_arrow_table(
@@ -792,23 +794,26 @@ class IcebergDataset(Dataset):
             table.append(chunk, snapshot_properties=properties or {}, branch=reference)
             return chunk.num_rows
         scan = scan.select(*wanted)
-        # Planned once, like a merge: no overlapping file, or overlapping files
-        # with none of the keys, means every row is new and nothing needs the
-        # anti-join -- the replayed stream pays a plan, the fresh one an append.
+        # Planned once, like a merge. Each streamed key batch removes the rows
+        # it already holds; no stored key table is accumulated, and a complete
+        # replay stops opening later partitions as soon as nothing remains.
         tasks = list(scan.plan_files())
-        matched = (
-            _under_current_names(table, _planned_reader(scan, tasks).read_all()) if tasks else None
-        )
-        if matched is None or matched.num_rows == 0:
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
-            self._remember_inserted(span, table, establish=empty)
-            return chunk.num_rows
-        # Onto the chunk's own key columns, so the anti-join can run: a scan
-        # hands back `large_string` where the chunk carries `string`.
-        fresh = anti_join(chunk, keys.cast_arrow_table(matched), join)
+        fresh = keys_of(chunk, join, SOURCE_INDEX)
+        if tasks:
+            with _planned_reader(scan, tasks, group_size=1) as planned:
+                for batch in _under_current_names(table, planned):
+                    stored = pyarrow.Table.from_batches([keys.cast_arrow_batch(batch)])
+                    fresh = fresh.join(
+                        stored.select(list(join)), keys=list(join), join_type="left anti"
+                    )
+                    if not fresh.num_rows:
+                        break
+        if fresh.num_rows:
+            positions = fresh.column(SOURCE_INDEX).combine_chunks()
+            fresh = chunk.take(positions.take(pyarrow.compute.sort_indices(positions)))
         if fresh.num_rows:
             table.append(fresh, snapshot_properties=properties or {}, branch=reference)
-            self._remember_inserted(span, table)
+            self._remember_inserted(span, table, establish=empty)
         return fresh.num_rows
 
     def _insert_span(
@@ -1608,8 +1613,34 @@ def _reader_limit(reader: pyarrow.RecordBatchReader, limit: int) -> pyarrow.Reco
     return pyarrow.RecordBatchReader.from_batches(schema, batches()).cast(schema)
 
 
-def _planned_reader(scan: Any, tasks: Iterable[Any]) -> pyarrow.RecordBatchReader:
+def _planned_reader(
+    scan: Any, tasks: Iterable[Any], *, group_size: int | None = None
+) -> pyarrow.RecordBatchReader:
     """Read a planned stream one partition at a time with bounded read-ahead."""
+
+    def groups() -> Iterator[Sequence[Any]]:
+        for _, partition in _partition_tasks(scan, tasks):
+            # ArrowScan loads delete files per call. Keep a partition sharing
+            # one together unless a memory-sensitive caller explicitly asks
+            # for one file at a time and accepts reopening that delete file.
+            if group_size is None and any(task.delete_files for task in partition):
+                yield partition
+            else:
+                yield from _grouped(partition, group_size or _read_ahead())
+
+    return _scan_reader(scan, groups())
+
+
+def _unordered_reader(
+    scan: Any, tasks: Iterable[Any], *, group_size: int | None = None
+) -> pyarrow.RecordBatchReader:
+    """Read plan order lazily, with one file in flight while a limit is unresolved."""
+    size = group_size or (_read_ahead() if scan.limit is None else 1)
+    return _scan_reader(scan, _stream_groups(tasks, size))
+
+
+def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBatchReader:
+    """Read bounded task groups under one global scan limit."""
     from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
 
     target = schema_to_pyarrow(scan.projection())
@@ -1626,23 +1657,14 @@ def _planned_reader(scan: Any, tasks: Iterable[Any]) -> pyarrow.RecordBatchReade
 
     def generate() -> Iterator[pyarrow.RecordBatch]:
         taken = 0
-        for _, partition in _partition_tasks(scan, tasks):
-            # ArrowScan loads delete files per call. Keep a partition sharing
-            # one together so its delete file is not reopened per read-ahead group.
-            groups = (
-                (partition,)
-                if any(task.delete_files for task in partition)
-                else _grouped(partition, _read_ahead())
-            )
-            for group in groups:
-                # The limit is what is left globally, not once per partition.
-                for batch in arrow(
-                    None if scan.limit is None else scan.limit - taken
-                ).to_record_batches(group):
-                    yield batch
-                    taken += batch.num_rows
-                if scan.limit is not None and taken >= scan.limit:
-                    return
+        for group in groups:
+            for batch in arrow(
+                None if scan.limit is None else scan.limit - taken
+            ).to_record_batches(group):
+                yield batch
+                taken += batch.num_rows
+            if scan.limit is not None and taken >= scan.limit:
+                return
 
     return pyarrow.RecordBatchReader.from_batches(target, generate()).cast(target)
 
@@ -1691,6 +1713,13 @@ def _grouped(tasks: Sequence[Any], size: int) -> Iterator[Sequence[Any]]:
         yield tasks[start : start + size]
 
 
+def _stream_groups(tasks: Iterable[Any], size: int) -> Iterator[tuple[Any, ...]]:
+    """A lazy plan in bounded groups, without first collecting or sorting it."""
+    planned = iter(tasks)
+    while group := tuple(itertools.islice(planned, size)):
+        yield group
+
+
 def _read_ahead() -> int:
     """How many planned files a read has in flight, from the pool's own width.
 
@@ -1707,21 +1736,27 @@ def _read_ahead() -> int:
 
 def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
     """`scan`'s reader, opening only the files the `limit` can need."""
-    tasks, _ = _ordered_partition_tasks(scan, scan.plan_files())
+    tasks = iter(scan.plan_files())
     if limit is None:
-        return _planned_reader(scan, tasks)
+        return _unordered_reader(scan, tasks)
     exact = _always_true()
     filtered = getattr(scan, "row_filter", exact) != exact
     taken, rows = [], 0
-    for task in tasks:
-        if rows >= limit:
+    while rows < limit:
+        try:
+            task = next(tasks)
+        except StopIteration:
             break
-        if (
-            task.delete_files
-            or task.residual != exact
-            or (filtered and _null_partition(task.file.partition))
-        ):
-            return _planned_reader(scan, tasks)
+        remaining = itertools.chain(taken, (task,), tasks)
+        if task.delete_files or (filtered and _null_partition(task.file.partition)):
+            # Deletes may be shared by several files in a partition, and a
+            # null partition can disagree with Arrow's three-valued filter.
+            # Keep both on the partition-aware path whose grouping is exact.
+            return _planned_reader(scan, remaining)
+        if task.residual != exact:
+            # The file has to answer the predicate before its contribution is
+            # known. Read one at a time until enough matching rows arrive.
+            return _unordered_reader(scan, remaining, group_size=1)
         taken.append(task)
         rows += task.file.record_count
     return _planned_reader(scan, taken)
@@ -2117,6 +2152,19 @@ def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str
             index, matched.schema.field(index).with_type(wanted), matched.column(name).cast(wanted)
         )
     return matched
+
+
+def _matching_positions(
+    chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]
+) -> pyarrow.Array:
+    """Positions in `chunk` whose key occurs in `matched`, in source order."""
+    found = keys_of(chunk, join, SOURCE_INDEX).join(
+        keys_of(matched, join, TARGET_INDEX).select(list(join)),
+        keys=list(join),
+        join_type="left semi",
+    )
+    positions = found.column(SOURCE_INDEX).combine_chunks()
+    return positions.take(pyarrow.compute.sort_indices(positions))
 
 
 def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:

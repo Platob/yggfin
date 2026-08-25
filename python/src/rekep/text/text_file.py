@@ -7,7 +7,7 @@ import io
 import os
 import re
 from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from dataclasses import field as dataclass_field
 from functools import cache, cached_property
 from types import MappingProxyType
@@ -21,7 +21,7 @@ from rekep.dataset import Dataset, arrow_chunks
 from rekep.enums import EventType
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
-from rekep.filesystems import resolve
+from rekep.filesystems import ArrowFileIO, resolve
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.kwargs import Kwarg
@@ -181,11 +181,25 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: is also the only way to say "null, of this type".
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
-    def __post_init__(self) -> None:
-        """Compile a configured header, resolve the filesystem, rewrite `url` on it."""
+    #: Runtime owner for the input handle. An InitVar keeps native handles and
+    #: temporary paths out of Dataset serialization; __post_init__ publishes
+    #: the normalized owner as `self.fileio`.
+    fileio: InitVar[ArrowFileIO | None] = None
+
+    def __post_init__(self, fileio: ArrowFileIO | None) -> None:
+        """Compile the header and bind one lazy Arrow input owner."""
         self.header_pattern = compiled_header(self.header_pattern)
-        if self.filesystem is None:
+        if fileio is None and self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
+        if fileio is None:
+            fileio = ArrowFileIO.from_location(self.url, self.filesystem)
+        elif fileio.opened is None:
+            fileio = fileio.at(self.url, self.filesystem)
+        if self.filesystem is None:
+            self.filesystem = fileio.filesystem
+            if self.filesystem is not None and fileio.path is not None:
+                self.url = fileio.path
+        self.fileio = fileio
 
     # -- building -----------------------------------------------------------
 
@@ -196,6 +210,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
+        fileio: ArrowFileIO | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a URI, or from a path when `filesystem` is given.
@@ -203,7 +218,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         Anything else the file declares -- `static_values`, `row`,
         `header_pattern` -- is a keyword here, so a call reads as one shape.
         """
-        return cls(url=url, filesystem=filesystem, timezone=timezone, **declared)
+        return cls(url=url, filesystem=filesystem, timezone=timezone, fileio=fileio, **declared)
 
     @classmethod
     def from_path(
@@ -212,6 +227,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
+        fileio: ArrowFileIO | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a local path, absolute or relative.
@@ -221,8 +237,19 @@ class TextFile(Dataset, io.BufferedIOBase):
         example that raised `TypeError`.
         """
         if filesystem is not None:
-            return cls(url=os.fspath(path), filesystem=filesystem, timezone=timezone, **declared)
-        return cls(url=Url.from_path(path).into_string(), timezone=timezone, **declared)
+            return cls(
+                url=os.fspath(path),
+                filesystem=filesystem,
+                timezone=timezone,
+                fileio=fileio,
+                **declared,
+            )
+        return cls(
+            url=Url.from_path(path).into_string(),
+            timezone=timezone,
+            fileio=fileio,
+            **declared,
+        )
 
     # -- the dataset ---------------------------------------------------------
 
@@ -261,7 +288,10 @@ class TextFile(Dataset, io.BufferedIOBase):
     @property
     def exists(self) -> bool:
         """Whether the file is there yet."""
-        return self.filesystem.get_file_info(self.url).type != pyarrow.fs.FileType.NotFound
+        if self.filesystem is not None:
+            return self.filesystem.get_file_info(self.url).type != pyarrow.fs.FileType.NotFound
+        opened = self.fileio.opened
+        return bool(opened is not None and getattr(opened, "exists", lambda: True)())
 
     def create_with_field(self, field: StructField, **kwargs: Any) -> TextFile:
         """Adopt `field` as this file's shape and make sure the file is there.
@@ -271,8 +301,11 @@ class TextFile(Dataset, io.BufferedIOBase):
         are cast onto.
         """
         self.row = field
+        filesystem = self.filesystem
+        if filesystem is None:
+            raise NotImplementedError("an injected input stream cannot create a text file")
         if not self.exists:
-            with self.filesystem.open_output_stream(self.url) as stream:
+            with filesystem.open_output_stream(self.url) as stream:
                 stream.write(b"")
         return self
 
@@ -321,34 +354,23 @@ class TextFile(Dataset, io.BufferedIOBase):
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
-        """Add lines to the file, and refuse to skip the ones it already holds.
-
-        The generic insert-only append reads the stored keys to anti-join
-        against them, which here means parsing the whole capture on every
-        write -- and a log has no key by which a line is the same line.
-        """
+        """Add every line, or refuse a key lookup a text sequence cannot answer."""
         if merge_by:
             raise ValueError(
                 f"{type(self).__name__} appends lines and cannot merge on {merge_by!r}; "
                 "append to a dataset that can, or drop merge_by"
             )
-        return super().append_arrow_reader(source, schema, merge_by, commit_row_size, **kwargs)
-
-    def _append_arrow_reader(
-        self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-        schema: Any = None,
-        commit_row_size: int | None = None,
-    ) -> None:
-        """Add every row to the file, one write per chunk, as text."""
         self.get_or_create()
         # With no schema named, the rendered columns are the only shape a write
         # has to satisfy: casting onto the whole row first would demand the
         # very columns reading derives.
         stream = source if schema is None else self.target_field(schema).cast_arrow_reader(source)
         reader = self.rendered_field.cast_arrow_reader(stream)
+        inserted = 0
         for chunk in arrow_chunks(reader, commit_row_size):
             self._append(_rendered(chunk, self.timezone))
+            inserted += chunk.num_rows
+        return inserted
 
     def _append(self, payload: bytes) -> None:
         """Add already-rendered bytes to the end of the file.
@@ -362,10 +384,14 @@ class TextFile(Dataset, io.BufferedIOBase):
         if not payload:
             return
         try:
-            stream = self.filesystem.open_append_stream(self.url)
+            filesystem = self.filesystem
+            if filesystem is None:
+                raise pyarrow.ArrowNotImplementedError("an injected input stream cannot append")
+            stream = filesystem.open_append_stream(self.url)
         except pyarrow.ArrowNotImplementedError as error:
             raise NotImplementedError(
-                f"{self.filesystem.type_name} cannot append, and a log is written by appending; "
+                f"{getattr(self.filesystem, 'type_name', 'input stream')} cannot append, and a "
+                "log is written by appending; "
                 "write to a local path and upload the file, or write to a dataset that owns its "
                 "own files (IcebergDataset)"
             ) from error
@@ -384,7 +410,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     ) -> pyarrow.RecordBatchReader:
         """Stream the log as Arrow record batches, omitting exact plugin codes."""
         self._check_open()
-        self.__dict__.pop("_stream", None)
+        self._close_stream()
         return pyarrow.RecordBatchReader.from_batches(
             self.schema,
             self.into_arrow_batches(
@@ -411,7 +437,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         columnar happens once per batch in `_batch`. Plugin exclusions are
         exact and case-sensitive.
         """
-        excluded = _excluded_plugins(exclude_plugins)
+        excluded = frozenset(code.encode() for code in _exclude_plugin_codes(exclude_plugins))
         groups = self.header_pattern.groupindex
         indices = tuple(
             groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
@@ -422,16 +448,22 @@ class TextFile(Dataset, io.BufferedIOBase):
         rownums: list[int] = []
         rownum = 0
         match_header = self.header_pattern.match
+        suppressed = False
 
         for line in self._iter_lines(read_byte_size):
             rownum += 1
             match = match_header(line)
             if match is None:
-                if fold_continuations and rows:
+                if fold_continuations and rows and not suppressed:
                     timestamp, thread, plugin, message = rows[-1]
                     rows[-1] = (timestamp, thread, plugin, (message or b"") + b"\n" + line)
                 continue
-            rows.append(match.group(*indices))
+            found = match.group(*indices)
+            if (found[2] or b"") in excluded:
+                suppressed = True
+                continue
+            suppressed = False
+            rows.append(found)
             rownums.append(rownum)
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
@@ -439,12 +471,12 @@ class TextFile(Dataset, io.BufferedIOBase):
             # that happens to land on the boundary would be dropped, silently,
             # at any batch size -- including the default one.
             if len(rows) > batch_row_size:
-                batch = self._batch(rows[:batch_row_size], rownums[:batch_row_size], excluded)
+                batch = self._batch(rows[:batch_row_size], rownums[:batch_row_size])
                 if batch.num_rows:
                     yield batch
                 del rows[:batch_row_size], rownums[:batch_row_size]
         if rows:
-            batch = self._batch(rows, rownums, excluded)
+            batch = self._batch(rows, rownums)
             if batch.num_rows:
                 yield batch
 
@@ -452,7 +484,6 @@ class TextFile(Dataset, io.BufferedIOBase):
         self,
         rows: list[tuple],
         rownums: list[int],
-        excluded_plugins: pyarrow.Array | None = None,
     ) -> pyarrow.RecordBatch:
         """One batch of parsed headers and protocol-neutral payloads.
 
@@ -492,14 +523,6 @@ class TextFile(Dataset, io.BufferedIOBase):
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
-        if excluded_plugins is not None:
-            keep = pyarrow.compute.invert(
-                pyarrow.compute.is_in(columns["plugin_code"], value_set=excluded_plugins)
-            )
-            columns = {
-                name: pyarrow.compute.filter(column, keep) for name, column in columns.items()
-            }
-            count = len(columns["plugin_code"])
         schema = self.schema
         if not count:
             return pyarrow.RecordBatch.from_arrays(
@@ -529,13 +552,18 @@ class TextFile(Dataset, io.BufferedIOBase):
         identically to an LF one; a carriage return anywhere else is payload.
         """
         tail = b""
-        while chunk := self.read(read_byte_size):
-            lines = (tail + chunk).split(b"\n")
-            tail = lines.pop()
-            for line in lines:
-                yield line.removesuffix(b"\r")
-        if tail:
-            yield tail.removesuffix(b"\r")
+        try:
+            while chunk := self.read(read_byte_size):
+                lines = (tail + chunk).split(b"\n")
+                tail = lines.pop()
+                for line in lines:
+                    yield line.removesuffix(b"\r")
+            if tail:
+                yield tail.removesuffix(b"\r")
+        finally:
+            # The decoder closes before the owning temporary ArrowFileIO, so
+            # Windows can remove the raw compressed spill immediately.
+            self._close_stream()
 
     # -- opening ------------------------------------------------------------
 
@@ -543,15 +571,16 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Open a new Arrow stream over `url`.
 
         Plain logs go through `open_input_file` because it is the only opener
-        that yields a seekable handle; compressed ones must go through
-        `open_input_stream`, which is the only one that decodes.
+        that yields a seekable handle. A remote compressed object is spilled as
+        raw bytes once, then Arrow streams its decoding from local disk.
         """
-        filesystem = self.filesystem
-        if filesystem is None:  # pragma: no cover - established in __post_init__
-            raise RuntimeError("filesystem was not resolved")
-        if self._codec is None:
-            return filesystem.open_input_file(self.url)
-        return filesystem.open_input_stream(self.url, compression=self._codec)
+        active = self.fileio
+        if self._codec is not None:
+            active = active.spill(temporary=True)
+        if active is None:
+            raise FileNotFoundError(f"compressed source does not exist: {self.url}")
+        self.__dict__["_active_fileio"] = active
+        return active.open(seekable=self._codec is None, compression=self._codec)
 
     @cached_property
     def _codec(self) -> str | None:
@@ -603,10 +632,17 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     def close(self) -> None:
         """Close the stream if one was ever opened, without opening one."""
+        self._close_stream()
+        super().close()
+
+    def _close_stream(self) -> None:
+        """Close and forget the lazily opened stream without opening it."""
         stream = self.__dict__.pop("_stream", None)
         if stream is not None:
             stream.close()
-        super().close()
+        active = self.__dict__.pop("_active_fileio", None)
+        if active is not None:
+            active.close()
 
     def _check_open(self) -> None:
         if self.closed:
@@ -692,12 +728,6 @@ def _scalar(name: str, value: Any) -> pyarrow.Scalar:
 def _nbytes(size: int | None) -> int | None:
     """Translate the io convention for "read everything" to Arrow's."""
     return None if size is None or size < 0 else size
-
-
-def _excluded_plugins(values: Sequence[str]) -> pyarrow.Array | None:
-    """Exact plugin codes a reader omits, as one Arrow lookup set."""
-    values = _exclude_plugin_codes(values)
-    return pyarrow.array(values, type=pyarrow.string()) if values else None
 
 
 def _exclude_plugin_codes(values: Sequence[str]) -> tuple[str, ...]:

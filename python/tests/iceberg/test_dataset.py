@@ -7,7 +7,7 @@ import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.fs
@@ -1710,6 +1710,94 @@ def opened(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
     return counts
 
 
+class _StreamOnly:
+    """A planned reader whose batches are usable but whose collecting API is not."""
+
+    def __init__(self, reader: pyarrow.RecordBatchReader) -> None:
+        self.reader = reader
+        self.schema = reader.schema
+
+    def __iter__(self):
+        return iter(self.reader)
+
+    def __enter__(self) -> "_StreamOnly":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.reader.close()
+
+    def read_all(self) -> None:
+        pytest.fail("a planned Iceberg write scan must stay streamed")
+
+
+def _forbid_planned_collect(monkeypatch: pytest.MonkeyPatch) -> None:
+    from rekep.iceberg import dataset as module
+
+    original = module._planned_reader
+    monkeypatch.setattr(
+        module,
+        "_planned_reader",
+        lambda scan, tasks, **kwargs: _StreamOnly(original(scan, tasks, **kwargs)),
+    )
+
+
+def test_a_merge_consumes_its_planned_scan_without_collecting(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dataset.append_arrow_table(quotes(3))
+    _forbid_planned_collect(monkeypatch)
+    assert dataset.merge_arrow_table(quotes(3, "XETR")) == (3, 0)
+
+
+def test_an_insert_consumes_its_key_scan_without_collecting(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dataset.append_arrow_table(quotes(3))
+    _forbid_planned_collect(monkeypatch)
+    assert dataset.insert_arrow_table(quotes(3, "XETR")) == 0
+
+
+def test_a_streamed_merge_plans_only_the_partition_named_by_its_chunk(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    today = quotes(3)
+    tomorrow = today.set_column(
+        today.schema.get_field_index("day"),
+        today.schema.field("day"),
+        pyarrow.array([datetime.date(2026, 8, 15)] * today.num_rows),
+    ).set_column(
+        today.schema.get_field_index("venue"),
+        today.schema.field("venue"),
+        pyarrow.array(["tomorrow"] * today.num_rows),
+    )
+    dataset.append_arrow_table(today)
+    dataset.append_arrow_table(tomorrow)
+
+    from rekep.iceberg import dataset as module
+
+    planned: list[Any] = []
+    original = module._planned_reader
+
+    def capture(scan: Any, tasks: Any, **kwargs: Any) -> pyarrow.RecordBatchReader:
+        tasks = list(tasks)
+        planned.extend(tasks)
+        return original(scan, tasks, **kwargs)
+
+    monkeypatch.setattr(module, "_planned_reader", capture)
+    changed = today.set_column(
+        today.schema.get_field_index("venue"),
+        today.schema.field("venue"),
+        pyarrow.array(["changed"] * today.num_rows),
+    )
+    assert dataset.merge_arrow_table(changed, ["symbol", "day"]) == (3, 0)
+    assert len(planned) == 1, "the other identity partition never reaches the reader"
+    held = dataset.read_arrow_table().to_pylist()
+    assert {row["venue"] for row in held if row["day"] == datetime.date(2026, 8, 14)} == {"changed"}
+    assert {row["venue"] for row in held if row["day"] == datetime.date(2026, 8, 15)} == {
+        "tomorrow"
+    }
+
+
 def test_a_merge_of_disjoint_keys_opens_no_data_file(
     dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
@@ -1751,9 +1839,9 @@ def test_a_merge_with_overlapping_bounds_and_no_exact_key_is_one_append(
     )
 
     def unnecessary(*args: object, **kwargs: object) -> None:
-        pytest.fail("no exact match leaves nothing to anti-join")
+        pytest.fail("no exact match leaves nothing to compare")
 
-    monkeypatch.setattr(module, "anti_join", unnecessary)
+    monkeypatch.setattr(module, "_changed", unnecessary)
     assert dataset.merge_arrow_table(spaced(1)) == (0, count)
     assert dataset.read_arrow_table().num_rows == 2 * count
     assert (
@@ -1949,17 +2037,18 @@ def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -
     assert trades.read_arrow_table(row_filter=row_filter).num_rows == 10
 
 
-def test_a_limit_under_a_filter_the_files_answer_reads_the_whole_plan(
+def test_a_limit_under_a_filter_opens_one_file_at_a_time_until_satisfied(
     dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
     """`size >= 3` is not a partition, so the residual survives planning: how
-    many rows a file contributes is only known once it is read."""
+    many rows a file contributes is only known once it is read. A one-file
+    group keeps the unread third file closed once two matches have arrived."""
     for _ in range(3):
         dataset.append_arrow_table(quotes(4))
     opened.clear()
     found = dataset.read_arrow_reader(row_filter="size >= 3", limit=2).read_all()
     assert found.num_rows == 2, "the cap on the rows is still pyiceberg's"
-    assert opened.get("data", 0) == 3, "and every planned file was opened to apply it"
+    assert opened.get("data", 0) == 2
 
 
 def test_a_limit_of_zero_opens_nothing(dataset: IcebergDataset, opened: dict[str, int]) -> None:
@@ -2009,15 +2098,28 @@ def test_a_limit_over_delete_files_reads_the_whole_plan(
     assert _trimmed_to(monkeypatch, tasks, 1) == tasks
 
 
-def test_a_limit_over_a_surviving_residual_reads_the_whole_plan(
+def test_a_limit_over_a_surviving_residual_streams_the_plan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The other half of pyiceberg's own exactness rule: a residual the file
-    still has to answer says nothing about how many of its rows match."""
+    """A residual keeps the plan lazy and reduces read-ahead to one file."""
+    import types
+
     from pyiceberg.expressions import GreaterThan
 
+    from rekep.iceberg import dataset as module
+
     tasks = [_task(5, residual=GreaterThan("size", 3)), _task(5)]
-    assert _trimmed_to(monkeypatch, tasks, 1) == tasks
+    handed: dict[str, Any] = {}
+
+    def capture(scan: object, planned: object, *, group_size: int | None = None) -> str:
+        handed["tasks"] = list(planned)
+        handed["group_size"] = group_size
+        return "reader"
+
+    monkeypatch.setattr(module, "_unordered_reader", capture)
+    scan = types.SimpleNamespace(plan_files=lambda: iter(tasks))
+    assert module._limited_reader(scan, 1) == "reader"
+    assert handed == {"tasks": tasks, "group_size": 1}
 
 
 def test_a_bare_limit_cuts_the_plan_at_the_records_it_needs(
@@ -2025,6 +2127,60 @@ def test_a_bare_limit_cuts_the_plan_at_the_records_it_needs(
 ) -> None:
     tasks = [_task(5) for _ in range(4)]
     assert _trimmed_to(monkeypatch, tasks, 7) == tasks[:2], "five rows are not seven; ten are"
+
+
+def test_a_bare_limit_does_not_consume_the_rest_of_a_lazy_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import types
+
+    from rekep.iceberg import dataset as module
+
+    tasks = [_task(5) for _ in range(4)]
+    consumed: list[object] = []
+
+    def planned():
+        for task in tasks:
+            consumed.append(task)
+            yield task
+
+    handed: list[object] = []
+    monkeypatch.setattr(
+        module, "_planned_reader", lambda scan, selected: (handed.extend(selected), "reader")[1]
+    )
+    scan = types.SimpleNamespace(plan_files=planned)
+    assert module._limited_reader(scan, 7) == "reader"
+    assert consumed == tasks[:2]
+    assert handed == tasks[:2]
+
+
+def test_an_unlimited_unordered_read_hands_the_plan_through_lazily(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import types
+
+    from rekep.iceberg import dataset as module
+
+    tasks = [_task(5) for _ in range(3)]
+    consumed: list[object] = []
+
+    def planned():
+        for task in tasks:
+            consumed.append(task)
+            yield task
+
+    handed: dict[str, Any] = {}
+
+    def capture(scan: object, selected: object) -> str:
+        handed["tasks"] = selected
+        return "reader"
+
+    monkeypatch.setattr(module, "_unordered_reader", capture)
+    scan = types.SimpleNamespace(plan_files=planned)
+    assert module._limited_reader(scan, None) == "reader"
+    assert consumed == []
+    assert next(handed["tasks"]) is tasks[0]
+    assert consumed == tasks[:1]
 
 
 def test_a_limit_of_zero_takes_no_file_however_the_plan_starts(

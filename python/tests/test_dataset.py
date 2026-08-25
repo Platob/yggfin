@@ -9,7 +9,14 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Dataset, Field, StructField, scalar
-from rekep.dataset import _needs_compatible_polars_arrow, _polars_table, arrow_chunks
+from rekep.dataset import (
+    _needs_compatible_polars_arrow,
+    _polars_table,
+    anti_join,
+    arrow_chunks,
+    first_rows,
+    normalised_keys,
+)
 
 
 @scalar
@@ -67,17 +74,57 @@ class MemoryDataset(Dataset):
         # The commits are kept as they arrive rather than actually replaced:
         # what the tests below pin is the streaming, chunking and casting the
         # contract owes every store, not how one store finds a matching row.
-        self._append_arrow_reader(source, schema, commit_row_size)
+        self._commit(source, schema, commit_row_size)
 
-    def _append_arrow_reader(
+    def append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> int:
+        join = self.merge_columns(merge_by)
+        target = self.target_field(schema)
+        reader = target.cast_arrow_reader(source)
+        if not join:
+            return self._commit(reader, target, commit_row_size)
+        key_field = Field.from_arrow_schema(
+            pyarrow.schema([target.field(name).into_arrow_field() for name in join]), target.name
+        )
+        seen = (
+            self.read_arrow_table(key_field)
+            if self.exists
+            else key_field.arrow_schema.empty_table()
+        )
+        seen = normalised_keys(seen, join)
+        inserted = 0
+        for chunk in arrow_chunks(reader, commit_row_size):
+            for name in join:
+                if chunk.column(name).null_count:
+                    raise ValueError(f"column {name!r} is a merge key and cannot be null")
+            fresh = first_rows(normalised_keys(chunk, join), join)
+            if seen.num_rows:
+                fresh = anti_join(fresh, seen, join)
+            if not fresh.num_rows:
+                continue
+            inserted += self._commit(fresh.to_reader(), target, None)
+            seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
+        return inserted
+
+    def _commit(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
         commit_row_size: int | None = None,
-    ) -> None:
+    ) -> int:
         self.get_or_create()  # a write appends, and appending to nothing is a create
         reader = self.target_field(schema).cast_arrow_reader(source)
-        self.commits.extend(arrow_chunks(reader, commit_row_size))
+        inserted = 0
+        for chunk in arrow_chunks(reader, commit_row_size):
+            self.commits.append(chunk)
+            inserted += chunk.num_rows
+        return inserted
 
 
 @pytest.fixture
@@ -118,6 +165,15 @@ def test_an_incomplete_implementation_cannot_be_built() -> None:
 
     with pytest.raises(TypeError, match="abstract"):
         Half()
+
+
+def test_only_public_reader_methods_are_required_for_writes() -> None:
+    required = {
+        name
+        for name in Dataset.__abstractmethods__
+        if name.startswith("append_") or name.startswith("overwrite_")
+    }
+    assert required == {"append_arrow_reader", "overwrite_arrow_reader"}
 
 
 # -- merging ----------------------------------------------------------------

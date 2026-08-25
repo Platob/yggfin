@@ -247,10 +247,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
         """
         self._refuse()
 
-    def _append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> None:
-        """Refused, for the reason a write is."""
-        self._refuse()
-
     def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],

@@ -1,5 +1,4 @@
-"""Arrow's FileIO, taught three things: Windows drive letters, S3 endpoints, and not to fetch the
-same immutable file twice."""
+"""Arrow FileIO with portable locations, remote spills, and immutable-content caching."""
 
 from __future__ import annotations
 
@@ -11,9 +10,10 @@ from typing import Any
 
 import pyarrow
 from pyiceberg.io import InputFile, InputStream, OutputFile, OutputStream
-from pyiceberg.io.pyarrow import PyArrowFileIO
+from pyiceberg.io.pyarrow import PyArrowFile, PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
+from rekep.filesystems import ArrowFileIO as OpenedArrowFileIO
 from rekep.urls import S3, Url, properties_of, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
@@ -266,12 +266,20 @@ def inferred_properties(properties: Properties) -> Properties:
     return {**environment, **inferred, **normalized}
 
 
-class ArrowFileIO(PyArrowFileIO):
+class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
     """`PyArrowFileIO` whose locations are read the way this package reads every location, and
     whose immutable metadata is fetched once."""
 
-    def __init__(self, properties: Properties = EMPTY_DICT) -> None:
-        super().__init__(properties=inferred_properties(properties))
+    def __init__(
+        self,
+        properties: Properties = EMPTY_DICT,
+        *,
+        location: str | os.PathLike[str] | None = None,
+        filesystem: pyarrow.fs.FileSystem | None = None,
+        opened: InputFile | None = None,
+        temporary: bool = False,
+    ) -> None:
+        PyArrowFileIO.__init__(self, properties=inferred_properties(properties))
         budget = properties.get(CACHE_BYTES_PROPERTY)
         self._content_cache: ContentCache | None = CONTENT_CACHE
         if budget is not None:
@@ -279,6 +287,13 @@ class ArrowFileIO(PyArrowFileIO):
                 self._content_cache = None
             else:
                 CONTENT_CACHE.resize(int(budget))
+        OpenedArrowFileIO.__init__(
+            self,
+            location=location,
+            filesystem=filesystem,
+            opened=opened,
+            temporary=temporary,
+        )
 
     @staticmethod
     def parse_location(location: str, properties: Properties = EMPTY_DICT) -> tuple[str, str, str]:
@@ -289,6 +304,31 @@ class ArrowFileIO(PyArrowFileIO):
         if url.scheme in S3:
             return url.scheme, url.bucket, url.store_path
         return PyArrowFileIO.parse_location(location, properties)
+
+    def _new_openable(
+        self, location: str, filesystem: pyarrow.fs.FileSystem | None = None
+    ) -> InputFile:
+        if filesystem is not None:
+            return PyArrowFile(location=location, path=location, fs=filesystem)
+        return self.new_input(location)
+
+    def _spawn(self, opened: InputFile, *, temporary: bool) -> ArrowFileIO:
+        return type(self)(self.properties, opened=opened, temporary=temporary)
+
+    def _local_openable(self, target: str) -> PyArrowFile:
+        return PyArrowFile(location=target, path=target, fs=pyarrow.fs.LocalFileSystem())
+
+    def _spill_identity(self, path: str, filesystem: pyarrow.fs.FileSystem) -> str | None:
+        opened = self.opened
+        if opened is not None:
+            location = str(opened.location)
+            url = Url.from_string(location)
+            scheme = url.scheme
+            if scheme:
+                canonical_scheme = "s3" if scheme in S3 else scheme
+                endpoint = str(self.properties.get("s3.endpoint", "")) if scheme in S3 else ""
+                return "\0".join((canonical_scheme, endpoint, url.bucket, path))
+        return None
 
     def new_input(self, location: str) -> InputFile:
         inner = super().new_input(location)

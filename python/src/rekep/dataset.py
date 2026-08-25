@@ -304,21 +304,6 @@ class Dataset(Convertible, abc.ABC):
     # -- appending -----------------------------------------------------------
 
     @abc.abstractmethod
-    def _append_arrow_reader(
-        self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-        schema: Any = None,
-        commit_row_size: int | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Add every row, matching nothing against what is stored.
-
-        What the `append_arrow_*` family writes through once it has decided
-        which rows are new. Not public: a caller who wants rows added says so
-        with `append_arrow_*`, and one who wants rows replaced says so with
-        `overwrite_arrow_*`.
-        """
-
     def append_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
@@ -327,40 +312,13 @@ class Dataset(Convertible, abc.ABC):
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
-        """Append a stream and return how many rows were inserted."""
-        join = self.merge_columns(merge_by)
-        if not join:
-            inserted = 0
+        """Append a stream and return how many rows were inserted.
 
-            def counted() -> Iterator[pyarrow.RecordBatch]:
-                nonlocal inserted
-                for batch in source:
-                    inserted += batch.num_rows
-                    yield batch
-
-            self._append_arrow_reader(counted(), schema, commit_row_size, **kwargs)
-            return inserted
-        target = self.target_field(schema)
-        key_field = _key_field(target, join)
-        reader = target.cast_arrow_reader(source)
-        seen = (
-            self.read_arrow_table(key_field)
-            if self.exists
-            else key_field.arrow_schema.empty_table()
-        )
-        seen = normalised_keys(seen, join)
-        inserted = 0
-        for chunk in arrow_chunks(reader, commit_row_size):
-            _refuse_null_keys(chunk, join)
-            fresh = first_rows(normalised_keys(chunk, join), join)
-            if seen.num_rows:
-                fresh = anti_join(fresh, seen, join)
-            if fresh.num_rows == 0:
-                continue
-            self._append_arrow_reader(fresh.to_reader(), target, None, **kwargs)
-            inserted += fresh.num_rows
-            seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
-        return inserted
+        A false `merge_by` blindly appends every row. True inserts only rows
+        whose declared primary key is absent; a sequence names alternate key
+        columns. Implementations keep lookup beside their storage engine so it
+        can be pushed down instead of collecting stored keys here.
+        """
 
     def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
         """Append the inferred Arrow shape and return rows inserted."""
@@ -597,21 +555,3 @@ def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
         return table
     indices = firsts.column(f"{SOURCE_INDEX}_min").combine_chunks()
     return table.take(indices.take(pyarrow.compute.sort_indices(indices)))
-
-
-def _key_field(target: StructField, join: Sequence[str]) -> StructField:
-    """The key columns of `target` as a shape of their own, to read and cast onto."""
-    return Field.from_arrow_schema(
-        pyarrow.schema([target.field(name).into_arrow_field() for name in join]),
-        target.name,
-    )
-
-
-def _refuse_null_keys(chunk: pyarrow.Table, join: Sequence[str]) -> None:
-    """A null merge key matches nothing, so appending on it would duplicate rows."""
-    for name in join:
-        if chunk.column(name).null_count:
-            raise ValueError(
-                f"column {name!r} is a merge key and cannot be null; "
-                "a null key matches nothing, so appending on it would duplicate rows"
-            )

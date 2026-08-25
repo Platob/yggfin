@@ -1,4 +1,4 @@
-"""`ArrowFileIO`: location parsing on both hosts, and the content cache.
+"""`ArrowFileIO`: location parsing on both hosts, spilling, and the content cache.
 
 The Windows branch is data (`_WINDOWS`), so a POSIX runner can pin what a
 Windows one would do and the other way round -- the whole point of the class
@@ -6,8 +6,10 @@ is behaviour CI's two legs do not share. The cache tests count real opens
 below it, because "served from memory" is the whole claim.
 """
 
+import gzip
 from pathlib import Path
 
+import pyarrow.fs
 import pytest
 from pyiceberg.io.pyarrow import PyArrowFile
 
@@ -207,6 +209,145 @@ def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
     settings = filesystem.__reduce__()[1][0]
     assert settings["endpoint_override"] == "http://minio:9000"
     assert settings["access_key"] == "key"
+
+
+# -- remote spills ----------------------------------------------------------
+
+
+def test_spilling_a_local_input_returns_the_same_input(tmp_path: Path) -> None:
+    path = tmp_path / "capture.txt.gz"
+    path.write_bytes(gzip.compress(b"local"))
+    source = ArrowFileIO().new_input(path.as_uri())
+    bound = ArrowFileIO(opened=source)
+    cache = tmp_path / "unused"
+
+    assert bound.spill(local=cache) is bound
+    assert not cache.exists()
+
+
+def test_spilling_an_input_on_a_local_subtree_returns_it_unchanged(tmp_path: Path) -> None:
+    root = tmp_path / "mounted"
+    root.mkdir()
+    path = root / "capture.txt.gz"
+    path.write_bytes(gzip.compress(b"local"))
+    filesystem = pyarrow.fs.SubTreeFileSystem(root.as_posix(), pyarrow.fs.LocalFileSystem())
+    source = PyArrowFile(
+        location="mounted:capture.txt.gz",
+        path="capture.txt.gz",
+        fs=filesystem,
+    )
+    bound = ArrowFileIO(opened=source)
+    cache = tmp_path / "unused"
+
+    assert bound.spill(local=cache) is bound
+    assert not cache.exists()
+
+
+def test_a_remote_spill_is_deterministic_reused_and_refreshed_by_size(tmp_path: Path) -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("bucket/logs", recursive=True)
+    remote_path = "bucket/logs/capture.txt.gz"
+    location = f"s3://{remote_path}"
+    first_payload = gzip.compress(b"first")
+    with store.open_output_stream(remote_path, compression=None) as stream:
+        stream.write(first_payload)
+    io = ArrowFileIO()
+    io.fs_by_scheme = lambda *_: store
+    source = io.at(location)
+
+    first = source.spill(tmp_path)
+    assert first is not None
+    assert isinstance(first, ArrowFileIO)
+    assert isinstance(first.opened, PyArrowFile)
+    assert isinstance(first.filesystem, pyarrow.fs.LocalFileSystem)
+    target = Path(first.location)
+    assert target.parent == tmp_path
+    assert target.suffix == ".gz"
+    assert target.read_bytes() == first_payload
+
+    same_size = b"x" * len(first_payload)
+    target.write_bytes(same_size)
+    reused = source.spill(tmp_path)
+    assert reused is not None
+    assert reused.location == first.location
+    assert target.read_bytes() == same_size, "equal remote size costs no second GET"
+
+    second_payload = gzip.compress(b"a different and longer capture")
+    assert len(second_payload) != len(first_payload)
+    with store.open_output_stream(remote_path, compression=None) as stream:
+        stream.write(second_payload)
+    refreshed = source.spill(tmp_path)
+    assert refreshed is not None
+    assert refreshed.location == first.location
+    assert target.read_bytes() == second_payload
+
+    store.delete_file(remote_path)
+    assert source.spill(tmp_path) is None
+    assert target.read_bytes() == second_payload, "a missing remote never serves the stale spill"
+
+
+def test_default_spills_are_deterministic_and_distinct_by_remote_path() -> None:
+    store = pyarrow.fs._MockFileSystem()
+    for path in ("bucket/one/capture.zst", "bucket/two/capture.zst"):
+        store.create_dir(path.rpartition("/")[0], recursive=True)
+        with store.open_output_stream(path, compression=None) as stream:
+            stream.write(path.encode())
+    io = ArrowFileIO()
+    io.fs_by_scheme = lambda *_: store
+
+    first = io.at("s3://bucket/one/capture.zst").spill()
+    again = io.at("s3a://bucket/one/capture.zst").spill()
+    other = io.at("s3://bucket/two/capture.zst").spill()
+
+    assert first is not None and again is not None and other is not None
+    assert first.location == again.location, "S3 aliases name one deterministic spill"
+    assert first.location != other.location
+    assert Path(first.location).suffix == ".zst"
+
+    second_store = pyarrow.fs._MockFileSystem()
+    second_store.create_dir("bucket/one", recursive=True)
+    with second_store.open_output_stream("bucket/one/capture.zst", compression=None) as stream:
+        stream.write(b"another store")
+    second_io = ArrowFileIO({"s3.endpoint": "http://other-store:9000"})
+    second_io.fs_by_scheme = lambda *_: second_store
+    elsewhere = second_io.at("s3://bucket/one/capture.zst").spill()
+    assert elsewhere is not None
+    assert elsewhere.location != first.location, "equal paths on two stores cannot share bytes"
+
+    rotated = ArrowFileIO(
+        {
+            "s3.access-key-id": "rotated",
+            "s3.secret-access-key": "new-secret",
+        }
+    )
+    rotated.fs_by_scheme = lambda *_: store
+    after_rotation = rotated.at("s3://bucket/one/capture.zst").spill()
+    assert after_rotation is not None
+    assert after_rotation.location == first.location, "credentials do not identify stored bytes"
+
+
+def test_a_temporary_spill_is_owned_until_close_and_never_shared(tmp_path: Path) -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("bucket")
+    with store.open_output_stream("bucket/capture.gz", compression=None) as stream:
+        stream.write(gzip.compress(b"capture"))
+    io = ArrowFileIO()
+    io.fs_by_scheme = lambda *_: store
+    source = io.at("s3://bucket/capture.gz")
+
+    first = source.spill(tmp_path, temporary=True)
+    second = source.spill(tmp_path, temporary=True)
+
+    assert first is not None and second is not None
+    assert first.temporary and second.temporary
+    assert first.location != second.location
+    assert Path(first.location).exists() and Path(second.location).exists()
+    first.close()
+    first.close()
+    assert not Path(first.location).exists()
+    assert Path(second.location).exists(), "one reader cannot purge another reader's spill"
+    second.close()
+    assert not Path(second.location).exists()
 
 
 # -- the immutable-content cache --------------------------------------------

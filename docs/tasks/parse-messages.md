@@ -30,6 +30,13 @@ payloads in two captures remain two source records. The table is sorted by
 `(unix, hash)` and partitioned from the recording time; a later parser may move
 its own event time without changing which source interval owns the row.
 
+Remote compressed captures are copied as raw compressed bytes to a uniquely
+owned temporary spill, then decoded locally as an Arrow stream. The spill is
+deleted when that stream finishes; the expanded capture is never written or
+collected in memory. Plain remote captures stream directly, and local captures
+are never copied. Callers that explicitly request a persistent spill get its
+deterministic, remote-size-validated cache behavior instead.
+
 ## Configuration
 
 The adjacent `parse_messages.yml` selects the source, filename pattern, header

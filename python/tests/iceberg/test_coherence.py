@@ -315,6 +315,19 @@ def test_a_projection_does_not_read_the_columns_it_drops(stored) -> None:
     )
 
 
+def test_explicit_columns_narrow_the_requested_schema(stored) -> None:
+    """`columns` intersects the cast shape instead of only narrowing its scan."""
+    narrow = Field.from_arrow_schema(
+        pyarrow.schema(
+            [Quote.into_field().into_arrow_schema().field(name) for name in ("seq", "size")]
+        ),
+        "Narrow",
+    )
+    rows = stored.read_arrow_table(narrow, columns=["venue", "size", "seq"])
+    assert rows.column_names == ["size", "seq"]
+    assert sorted_rows(rows) == sorted_rows(stored.read_arrow_table().select(["size", "seq"]))
+
+
 @pytest.mark.parametrize("pin", ["snapshot", "branch"])
 def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     tmp_path: Path, pin: str
@@ -973,6 +986,32 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     rows = dataset.refresh().read_arrow_table()
     assert rows.num_rows == keys, "one row per price, not two for the zero"
     assert set(rows.column("size").to_pylist()) == {2}, "and every one of them updated"
+
+
+def test_signed_zero_source_keys_are_duplicates(tmp_path: Path) -> None:
+    """Normalisation happens before duplicate validation because the two zeros compare equal."""
+
+    @scalar
+    class Level(Convertible):
+        """A price level."""
+
+        price: float
+        """The key, deliberately a float."""
+
+        size: int
+        """Quantity."""
+
+    rows = pyarrow.Table.from_pydict(
+        {"price": [0.0, -0.0], "size": [1, 2]}, schema=Level.into_field().into_arrow_schema()
+    )
+    catalog = IcebergCatalog(
+        name="zero-source", properties=catalog_properties(tmp_path, "zero-source")
+    )
+    dataset = catalog.dataset("trading.levels", field=Level.into_field())
+
+    with pytest.raises(ValueError, match="Duplicate rows found in source dataset"):
+        dataset.overwrite_arrow(rows, merge_by=["price"], commit_row_size=0)
+    assert dataset.read_arrow_table().num_rows == 0
 
 
 def test_a_null_merge_key_is_refused(stored) -> None:

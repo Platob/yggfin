@@ -60,6 +60,18 @@ Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested
 commit size. Schema additions are nullable and additive.
 
+Keyed writes push safe key ranges, including declared derived partition
+columns, into Iceberg planning. Stored candidates are then consumed one
+partition and record batch at a time. Overwrite retains only compact positions
+into the current commit chunk, while insert progressively removes stored keys
+and stops once none remain; neither path collects the planned table rows.
+
+The supported stable PyIceberg commit API still requires an Arrow `Table`, and
+its newer reader write path does not support partitioned tables. Consequently,
+one `commit_row_size` chunk is the only intentional write materialization;
+the default is 1,000,000 rows. Passing `0` or `None` explicitly requests one
+whole-stream commit and therefore requires that stream to fit in memory.
+
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
 event fields, the required generic `Message.kwargs`, required nested argument
@@ -84,6 +96,18 @@ endpoint, bucket, and path are parsed once by `Url`; explicit catalog
 properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
 same Arrow S3 filesystem as `s3://`. Recorded and listed paths are compared
 only after the same resolver normalizes them.
+
+`ArrowFileIO.spill(local=None, temporary=False)` returns a local `ArrowFileIO`;
+an already-local bound input returns itself. Persistent spills
+use a deterministic name, are pulled again when the remote byte size changes,
+and never serve stale bytes after the remote disappears. Temporary spills are
+uniquely owned and deleted on `close`, after their open stream is closed.
+
+`TextFile` holds that owner directly. A compressed remote log is copied as raw
+compressed bytes in 4 MiB chunks, decoded incrementally by Arrow, and purged
+when the reader finishes. Its disk use is the compressed object size and its
+memory use stays bounded by the copy/read chunk and one parsed record batch;
+the expanded capture is never materialized as a file or Arrow table.
 
 S3-compatible stores can be configured once per process. `S3_ENDPOINT_URL`,
 `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and `S3_REGION`
