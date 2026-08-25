@@ -46,7 +46,7 @@ from rekep.fix.message import (  # noqa: E402
     _tag_numbers,
     _until_checksum,
 )
-from rekep.text import TextFile, TextFiles  # noqa: E402
+from rekep.text import FixMsg, TextFile, TextFiles  # noqa: E402
 from rekep.text.text_file import (  # noqa: E402
     DEFAULT_BATCH_ROW_SIZE,
     HEADER_PATTERN,
@@ -545,7 +545,7 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
 
 
 def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> None:
-    """Stage one: a whole capture through the parser, with the layer on and off.
+    """Stage one: a whole capture through FIX parsing, with rules on and off.
 
     Timed here rather than carried over from the tables above because the
     fixture is a different one -- 40% of these lines are messages, and they are
@@ -553,10 +553,11 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
     off another fixture is not a baseline.
 
     Two rows, because the interesting number is the **difference**: what
-    reading every message costs against not reading any. A rule set with no
-    rules in it reads every line as OTHER, which parses nothing, so the
-    second row is this parser with the message layer switched off -- and it is
-    also the configuration a caller gets by asking for it.
+    reading every FIX message costs against not reading any. Both read the same
+    raw `Message` batches before crossing the `FixMsg` boundary. A rule set
+    with no rules in it reads every line as OTHER, which parses nothing, so the
+    second row is FIX parsing switched off -- and it is also the configuration
+    a caller gets by asking for it.
     """
     print("\n  a whole capture, streamed")
     print(f"    {'configuration':>34} {'rows/s':>12} {'MB/s':>8} {'peak RSS':>10}")
@@ -571,9 +572,12 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
             with _peak_rss() as sampled:
                 started = time.perf_counter()
                 seen = 0
-                with TextFile.from_path(path, codec=codec) as log:
+                with TextFile.from_path(path) as log:
                     for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-                        seen += batch.num_rows
+                        parsed = FixMsg.from_message_arrow_batch(
+                            batch, codec, FixMsg.into_message_rules()
+                        )
+                        seen += parsed.num_rows
                 elapsed = time.perf_counter() - started
             assert seen == rows, f"{seen} rows parsed out of {rows}"
             fastest, peak = min(fastest, elapsed), max(peak, sampled() - before)

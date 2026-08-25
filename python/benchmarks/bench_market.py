@@ -267,7 +267,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     assert instrument is not None
     # The registry leg is deliberately FIX.4.4; protocol reads never infer a
     # version when neither BeginString nor FIXT application-version tags exist.
-    log = instrument.into_fixmsg(begin_string="FIX.4.4")
+    log = instrument.into_fixmsg(BeginString="FIX.4.4")
     source = next(
         iter(FixMsg.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
     )
