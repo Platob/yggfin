@@ -35,40 +35,59 @@ memory.
 
 ## Latest quick run
 
-Measured 2026-08-23 on Windows 11, Python 3.12.13, and PyArrow 25.0.1. These
-figures are directional; the scripts assert their outputs before timing them.
+Measured 2026-08-25 on Linux 6.18, Python 3.12.3, and PyArrow 25.0.1, with
+`--quick` on every script. These figures are directional and not comparable
+across machines; the scripts assert their outputs before timing them.
 
 | path | fixture | result |
 | --- | ---: | ---: |
-| Text log, plain | 50,000 rows | 89,098 rows/s |
-| Text log, gzip | 50,000 rows | 100,677 rows/s |
-| FIX wire parser | 10,000 rows | 92,628–198,324 rows/s |
-| Normalized Instrument FixMessage decode | 500 rows | 912 → 17,544 rows/s; 19.2x |
-| Recursive Arrow reshape | 50,000 rows | 109.8M rows/s |
-| Book summary, 10 levels/side | 200 books | 99,640 books/s |
-| Stateful book fold | 10,000 events | 1.958 s; 5,105 books/s |
-| Replay shape matrix | 1,000-2,000 events | 3,950-5,297 events/s |
-| Large replay, 100 levels x 10 orders | 10K / 100K / 1M events | 4,815 / 4,330 / 4,504 events/s |
-| Snapshot / recovery | 2,000 orders, 100 levels | 54.2 ms / 15.6 ms |
-| Iceberg append | 5,000 rows, 4 partitions | 15,097–18,490 rows/s |
-| Iceberg merge, all new | 5,000 rows | 12,301–13,387 rows/s |
-| Iceberg merge, half stored | 5,000 rows | 410–412 rows/s |
+| Text log, plain | 50,000 rows | 52,607 rows/s |
+| Text log, gzip | 50,000 rows | 102,483 rows/s |
+| Mixed capture, message layer on | 50,000 rows | 27,744 rows/s |
+| Mixed capture, no rules at all | 50,000 rows | 103,949 rows/s |
+| Wire parse, vectorised | 10,000 rows | 230,364–511,920 rows/s |
+| Rendered parse, vectorised | 10,000 rows | 120,751–214,143 rows/s |
+| Key column to tags, named keys | 112,500 keys, 6,071 names | 51.3M keys/s |
+| Recursive Arrow reshape | 50,000 rows | 315.7M rows/s |
+| Wire line to market events | 100 messages of each shape | 8,179 / 5,525 / 2,281 rows/s |
+| Normalized Instrument FixMessage decode | 500 rows | 389.7 µs/row |
+| Generic Instrument reconstruction | 500 rows | 271.8 µs/row |
+| Book summary, 10 levels/side | 200 books | 404,040 books/s |
+| Stateful book fold | 200 events | 17,832 books/s |
+| Replay shape matrix | 1,000–2,000 events | 5,941–11,803 events/s |
+| Snapshot / recovery | 2,000 orders, 100 levels | 16.7 ms / 4.4 ms |
+| Iceberg append | 5,000 rows, 4 partitions | 37,332–37,819 rows/s |
+| Iceberg merge, all new | 5,000 rows | 21,936–22,186 rows/s |
+| Iceberg merge, half stored | 5,000 rows | 984–992 rows/s |
 
 The complete text parser clears the 50k rows/s first-layer target. Exact
 half-stored Iceberg upserts remain the clearest scale-up target; append and
 monotonic insert should be preferred when their semantics fit.
 
-Package-authored instrument rows now decode their promoted fields and ordered
-pair buffer directly. External and legacy rows still use the FIX registry;
-the measured normalized path fell from 1,095.9 to 57.0 µs/row.
+A key column resolves through its **distinct** spellings, not its rows: the
+head is cast first, so a column of wire tags takes the whole-column cast and a
+column of names never pays for one that was going to raise. `_tag_numbers` is
+now the fastest of the four implementations `bench_text_file.py` races it
+against, ahead of a bare `pyarrow.compute.index_in` over the same keys.
 
-On the same 10,000-event fold, replay improved from 9.762 s (1,024 books/s) to
-1.958 s (5,105 books/s), about 5.0x. A changed bid now rebuilds only bid levels
-and bid summaries; ask values are carried from the preceding Book before
-cross-side prices are derived. The same optimization applies in the other
-direction. Book identity now additionally includes every ordered live Order
-hash, so dense-book throughput also measures that required linear identity
-input; duplicate-event shortcuts avoid the walk when no Book is emitted.
+Everything a translation needs from a dictionary -- a name's wire tag, the tags
+the shapes already store, the ones kept for audit -- is resolved once per
+`(registry, version)` and read by every message (`MarketTags`,
+`FieldAccess.tag_text`). Rebuilding those a message at a time was a third of
+what converting one cost.
+
+Package-authored instrument rows decode their promoted fields and ordered pair
+buffer directly, and external or legacy rows still use the FIX registry.
+Neither path is the faster one on this fixture: the direct decode reads about
+thirty fields by name against one row's entries, and the registry path builds
+the message once and translates it.
+
+A changed bid rebuilds only bid levels and bid summaries; ask values are
+carried from the preceding Book before cross-side prices are derived, and the
+same applies in the other direction. Book identity includes every ordered live
+Order hash, so dense-book throughput also measures that required linear
+identity input; duplicate-event shortcuts avoid the walk when no Book is
+emitted.
 
 The [notebook smoke run](workflow-run.md) exercises all five stages, all three
 log routes, registry-backed instrument enrichment, book recovery rows,

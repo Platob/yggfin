@@ -335,11 +335,6 @@ _EXPOSURE_UNIT_NS = types.MappingProxyType(
 )
 
 
-#: What a probe of a message's fields returns for a key it does not carry --
-#: distinct from a key it carries as null, which is a value.
-_ABSENT = object()
-
-
 @dataclasses.dataclass(frozen=True)
 class MarketTags:
     """One FIX dictionary as the market layer reads it: names as wire tags.
@@ -369,8 +364,8 @@ class MarketTags:
             cls._declared(shape.into_field(), found)
         return types.MappingProxyType(found)
 
-    @staticmethod
-    def _declared(struct: StructField, into: dict[str, int]) -> None:
+    @classmethod
+    def _declared(cls, struct: StructField, into: dict[str, int]) -> None:
         """Every `fix:` tag under `struct`, nested members included."""
         for member in struct.fields:
             tag = member.fix.get("tag")
@@ -378,17 +373,18 @@ class MarketTags:
             if tag and name:
                 into.setdefault(str(name), int(tag))
             if member.fields:
-                MarketTags._declared(member, into)
+                cls._declared(member, into)
 
     @functools.cached_property
     def tags(self) -> Mapping[str, int]:
         """Market field names to tags, overridden by the selected version."""
         standard = self.standard()
-        if self.version is None:
+        registry = self.access.registry
+        if self.version is None or registry is None:
             return standard
         try:
-            configured = self.access.registry.tags(self.version)
-        except (AttributeError, KeyError, OSError, ValueError):
+            configured = registry.tags(self.version)
+        except (KeyError, OSError, ValueError):
             return standard
         found = dict(standard)
         for name in tuple(found):
@@ -429,6 +425,11 @@ def market_tags(
 ) -> Mapping[str, int]:
     """Market field names to tags, overridden by a selected registry version."""
     return MarketTags.of(registry, version).tags
+
+
+#: What a probe of a message's fields answers for a key it does not carry --
+#: distinct from a key it carries as null, which is a value.
+_ABSENT = object()
 
 
 @dataclasses.dataclass
