@@ -357,16 +357,11 @@ class FixCodec(Convertible):
     def into_payload_pairs(self, pairs: Any) -> Any:
         """`XmlData <213>` read as the message it carries, where it carries one.
 
-        The standard calls tag 213 an XML data stream. Real bridge traffic puts
-        a `key=value` message in it instead -- in every sampled line of a
-        capture, with no counterexample -- and read as one opaque blob its
-        fields are neither resolvable nor queryable. So a payload that reads as
-        pairs becomes pairs, under `XmlData.<key>`, in the place the tag sat;
-        one that reads as XML, or as nothing, stays exactly as it was.
-
-        `XmlData.ClOrdID` then resolves like any other nested key -- a rendered
-        `NoPartyIDs.PartyID` already does -- and a payload contradicting the
-        message around it lifts neither, which is what `_liftable` is for.
+        The standard calls tag 213 an XML data stream; real bridge traffic puts
+        a `key=value` message in it. A payload that reads as pairs becomes
+        pairs under `XmlData.<key>`, in the place the tag sat, and resolves
+        like any other nested key; one that reads as XML, or as nothing, stays
+        exactly as it was.
         """
         if isinstance(pairs, pyarrow.ChunkedArray):
             parts = [self.into_payload_pairs(chunk) for chunk in pairs.chunks]
@@ -508,15 +503,10 @@ class FixCodec(Convertible):
     def into_kwargs(self, pairs: Any, version: str | None = None) -> Any:
         """Every field a message carried, as the one entry a parsed log stores.
 
-        The transcription, in one place. A field arrives as the log spelled it
-        and leaves carrying what the dictionary makes of it: the tag behind its
-        name (`0` when nothing answers for it), the name itself, the namespace
-        or component path in front of it, and -- where the field enumerates its
-        values -- what the value means.
-
-        One column, whatever the dictionary made of the field: a consumer that
-        wants "the fields of this line" reads one column in wire order, and one
-        that wants only the resolved ones filters on `tag`.
+        One column whatever the dictionary made of the field, so a consumer
+        that wants "the fields of this line" reads it in wire order and one
+        that wants only the resolved ones filters on `tag` -- `0` where
+        nothing answered for the name.
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
@@ -697,15 +687,11 @@ class FixCodec(Convertible):
     def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
         """A message-stage `kwargs` column, resolved the rest of the way.
 
-        Three members are filled and nothing else is touched: `tag` for a key
-        the dictionary answers for, `key` canonicalized to the registry's own
-        spelling, and `value` translated where its field enumerates its values.
-        `namespace` and `comp` come through byte-identical, because where a
-        field stood was settled from the spelling alone and a dictionary has
-        nothing to add to it.
-
-        Not a shape conversion: the column already has the right type, and
-        this is a fill.
+        A fill and not a shape conversion. Three members are filled -- `tag`,
+        `key` canonicalized to the registry's spelling, `value` translated
+        where its field enumerates its values -- and `namespace` and `comp`
+        come through byte-identical, because where a field stood was settled
+        from the spelling alone.
         """
         rows = len(kwargs)
         if isinstance(kwargs, pyarrow.ChunkedArray):
@@ -818,8 +804,7 @@ class FixCodec(Convertible):
 
         Both kinds in one pass, because they are one question asked of one
         column: a numbered tag the log declares a column for, and a rendered
-        name it does. They were two passes over two columns only because the
-        two kinds were stored apart.
+        name it does.
         """
         rows = len(kwargs)
         declared = self.named_fields()
@@ -1340,27 +1325,11 @@ def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
 def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
     """`(every entry of a liftable key, the one that becomes the column)`.
 
-    Both, because a key is lifted or it is not, and every entry of a lifted key
-    leaves the residual pairs with it -- otherwise a line that wrote the same
-    fact twice keeps a copy of what was already promoted.
-
-    Which entries are the only *reading* of their key in their row.
-
-    One composite key per entry -- the row shifted above the tag, so no pair of
-    them can collide -- counted in a single `value_counts`. Per entry and not
-    per tag, because a batch carries thirty-odd liftable tags and one pass over
-    the child array answers for all of them at once.
-
-    The reading and not the entry, because a bridge writes the same fact twice
-    on purpose. A rendered line carries two namespaces -- `#Side` as it arrived
-    and `Side` after enrichment -- and on a third to a half of the lines in a
-    real capture some fields appear in both. Refusing to lift a key that
-    repeats dropped every one of those out of its typed column and into the
-    residual pairs, silently, on lines that agreed with themselves.
-
-    Repeats that *disagree* are still refused: two different values under one
-    key is a group, or an enrichment that rewrote something, and picking
-    between them would be a guess.
+    A key repeated in one row still lifts where its entries **agree**: a
+    bridge writes the same fact twice on purpose -- `#Side` as it arrived and
+    `Side` after enrichment -- on a third to a half of a real capture's lines.
+    Repeats that disagree lift neither: that is a group, or an enrichment that
+    rewrote something, and picking between them would be a guess.
     """
     compute = pyarrow.compute
     if pyarrow.types.is_integer(keys.type):

@@ -666,27 +666,10 @@ class FixMessage(Event):
         """What a stored row's `hash` is taken over, in this order.
 
         The **parsed** values and never the raw line, so a message reformatted
-        but not changed hashes alike -- a bridge that rewrites its separator
-        or pads a fraction has not produced a second version of anything.
-
-        The tuple is the identity, so each member earns its place:
-
-        - `unix` and `unix_source`, because a row is a version of something
-          *at an instant*, and a re-parse that resolves the instant from a
-          different rung has genuinely learnt something new about the row.
-          Item 6's resolved time is deliberately in the digest for that
-          reason: two rows agreeing on content but not on when they happened
-          are two versions, not one.
-        - `source_url` and `source_rownum`, which are where the line was, and
-          together are unique across a capture -- so two identical lines in
-          one file stay two rows rather than collapsing into one.
-        - `protocol_code`, `protocol_version` and `msg_type`, which are what
-          the row was read *as*: the same bytes read under a different
-          dictionary is a different reading and deserves a different version.
-        - `kwargs`, which is the parsed content itself, in wire order.
-
-        `runix` is not here, and neither is `message`: when a line was written
-        down is not what it says, and the raw text is a spelling of `kwargs`.
+        but not changed hashes alike. `runix` is deliberately out and `unix`
+        deliberately in: when a line was written down is not what it says, and
+        a re-parse that resolves the instant from a different rung has learnt
+        something new about the row.
         """
         return (
             "unix",
@@ -1254,12 +1237,9 @@ def _id_source(value: Any) -> str:
 def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     """Stored fields as the pairs a FIX reader addresses them by.
 
-    The tag where the dictionary found one and the rendered key -- name, and
-    whatever stood in front of it, joined back -- where it did not. That is the
-    same two-shaped answer the tag-keyed and name-keyed columns gave from two
-    columns, read off `tag` instead of off which column an entry sat in.
-
-    A plain `(key, value)` tuple is accepted as itself, so a caller writing a
+    The tag where the dictionary found one, and the rendered key -- name with
+    whatever stood in front of it joined back -- where it did not. A plain
+    `(key, value)` tuple is accepted as itself, so a caller writing a
     `FixMessage` by hand need not spell the whole struct out.
     """
     for entry in entries or ():

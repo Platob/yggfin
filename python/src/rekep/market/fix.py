@@ -533,8 +533,7 @@ class FixEvents(Convertible):
         """The same values under folded keys, so a name miss is still a lookup.
 
         Built once per message rather than walked per miss: a translation asks
-        for several dozen fields a message does not carry, and each of those
-        used to re-fold every key the message did. The fold is
+        for several dozen fields a message does not carry. The fold is
         `translation_key`, the same last-tier rule the accessor matches by.
         """
         found: dict[str, Any] = {}

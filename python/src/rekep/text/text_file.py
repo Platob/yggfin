@@ -178,8 +178,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: file pipeline.
     #:
     #: A codec whose rule set is empty categorises every line OTHER, which
-    #: parses nothing -- so a file that declares no rules reads exactly as it
-    #: did before any of this existed.
+    #: parses nothing.
     codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
     #: Whether to resolve the fields a message carries against the dictionary,
@@ -540,15 +539,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
         """What a message fills: which protocol it is, its fields, its columns.
 
-        Two stages, and the second is optional. Structuration always runs --
-        which protocol the line is, its fields cut into the stored struct, its
-        protocol version and `MsgType <35>` -- and `resolved` decides whether
-        the dictionary is then applied. Reading a capture whole runs both;
-        `parse_messages` runs only the first and lets `parse_fix` run the
-        second later, off the stored column, so a re-parse tokenises nothing
-        twice.
-
-        The resolution is `FixMessage.resolved_columns`, which is also what
+        Structuration always runs and `resolved` decides whether the dictionary
+        is then applied, through the same `FixMessage.resolved_columns` that
         `parse_fix` calls -- so reading a capture in one pass and reading it in
         two cannot disagree about what a line says.
         """

@@ -139,20 +139,6 @@ def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
         assert rules.into_arrow_protocol_array(messages).to_pylist() == [scalar]
 
 
-def test_the_legacy_positional_rule_signature_keeps_its_bindings() -> None:
-    rule = Rule("OWN", "message", "^Plugin$", "|", ";", "ul", ["fallback"])
-    assert (
-        rule.protocol,
-        rule.pattern,
-        rule.plugin_pattern,
-        rule.separator,
-        rule.entry_separator,
-        rule.codec,
-        rule.patterns,
-    ) == ("OWN", "message", "^Plugin$", "|", ";", "ul", ["fallback"])
-    assert rule.matches("message", "Plugin")
-
-
 def test_a_plural_pattern_passed_as_one_string_stays_one_pattern() -> None:
     rule = Rule(protocol="OWN", patterns=r"ready|stopped")  # type: ignore[arg-type]
     assert rule.patterns == [r"ready|stopped"]

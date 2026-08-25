@@ -221,5 +221,5 @@ and per message -- rather than recomputed for every line.
 `python/benchmarks/bench_market.py --quick` verifies identity, FIX translation,
 book derivations, focused state transitions, the whole parsed-row-to-books
 generator, and a small replay-shape matrix before timing them. The full run
-expands the event and live-order matrix and reports operation counters beside
+replays at `--rows` events a shape and reports operation counters beside
 throughput.

@@ -683,32 +683,14 @@ def bench_snapshot(rows: int, repeat: int) -> None:
     report("snapshot recovery", recovery_seconds, live)
 
 
-def bench_replay_matrix(rows: int, repeat: int, *, quick: bool, full: bool) -> None:
+def bench_replay_matrix(rows: int, repeat: int, *, quick: bool) -> None:
     """Replay throughput across selected event counts and live-book shapes."""
     if quick:
-        configurations = (
-            (1_000, 10, 1),
-            (2_000, 100, 1),
-            (2_000, 100, 10),
-        )
-        matrix_repeat = 1
-    elif full:
-        # A useful cross-section of the requested axes without a 27-run Cartesian
-        # product whose repeated million-event legs obscure the profile.
-        configurations = tuple(
-            (events, levels, per_level)
-            for events in (10_000, 100_000, 1_000_000)
-            for levels, per_level in ((10, 100), (100, 10), (1_000, 1), (10_000, 1))
-            if levels * per_level <= events
-        )
+        configurations = ((1_000, 10, 1), (2_000, 100, 1), (2_000, 100, 10))
         matrix_repeat = 1
     else:
         events = max(rows, 10_000)
-        configurations = (
-            (events, 10, 100),
-            (events, 100, 10),
-            (events, 1_000, 1),
-        )
+        configurations = ((events, 10, 100), (events, 100, 10), (events, 1_000, 1))
         matrix_repeat = min(repeat, 2)
 
     print("\nReplay matrix -- events; live levels; orders/level")
@@ -1012,13 +994,7 @@ def bench_fold(events: int, repeat: int) -> None:
 
 
 def main() -> None:
-    options = parser(__doc__, rows=20_000)
-    options.add_argument(
-        "--matrix",
-        action="store_true",
-        help="run the selected 10K/100K/1M replay matrix (quick keeps its small matrix)",
-    )
-    parsed = options.parse_args()
+    parsed = parser(__doc__, rows=20_000).parse_args()
     rows = 2_000 if parsed.quick else parsed.rows
     repeat = 1 if parsed.quick else parsed.repeat
 
@@ -1045,7 +1021,7 @@ def main() -> None:
     bench_from_logs(rows // 20, repeat)
     bench_operation_counts(rows)
     bench_snapshot(rows, repeat)
-    bench_replay_matrix(rows, repeat, quick=parsed.quick, full=parsed.matrix)
+    bench_replay_matrix(rows, repeat, quick=parsed.quick)
 
 
 if __name__ == "__main__":

@@ -26,9 +26,8 @@ reader pays for—planned files, manifests, requests, and rows—beside elapsed
 time. Raw workflow warehouses are temporary; the compact measured fixture is
 recorded on [End-to-end run](workflow-run.md).
 
-The market benchmark keeps its quick replay matrix small. Pass `--matrix` for
-the selected 10K/100K/1M event cross-section over 10 to 10K live levels and 1,
-10, or 100 orders per level. Its representative fold also reports identity
+The market benchmark replays three book shapes -- deep, wide, and one order a
+level -- at `--rows` events each. Its representative fold also reports identity
 calls, copies, standing probes, heap operations, sorting, snapshot
 materializations, skipped expiry scans, emitted payloads, and peak traced
 memory.

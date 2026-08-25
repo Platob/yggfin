@@ -501,15 +501,9 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
     """A column of log lines cut down to the messages inside them.
 
     `(bodies, wire)`: what each line carries, and whether it was found by its
-    BeginString. The scalar rule in one kernel -- a line with a message inside
-    it starts at its `8=FIX`, so the log's own prefix never glues onto the
-    first tag. RE2 has no lookbehind, so the non-digit guard rides outside the
-    capture, and `(?s)`, or a message holding a newline would end at it here
-    where the scalar slice keeps it.
-
-    Shared, rather than repeated, because anything reading a line's tokens has
-    to start where the parser starts: a reading that began one character
-    earlier would count `toBridge #ISINCODE` as a key.
+    BeginString. Shared rather than repeated, because anything reading a
+    line's tokens has to start where the parser starts -- a reading that began
+    one character earlier would count `toBridge #ISINCODE` as a key.
     """
     compute = pyarrow.compute
     values = column.cast(pyarrow.string(), safe=False)
@@ -552,12 +546,8 @@ def rendered_keys(
 
     What a capture *spells*, which a parse deliberately does not keep: named
     mode sheds the `#`, and the two namespaces a bridge writes -- `#Side`
-    before enrichment and `Side` after -- are then indistinguishable. A tool
-    counting key names needs both, and needs them to be the parser's own
-    notion of a token rather than a second one.
-
-    A group index is dropped from the key, because `NOPARTYIDS[0]` and
-    `NOPARTYIDS[1]` are one name written twice.
+    before enrichment and `Side` after -- are then indistinguishable. A group
+    index is dropped, because `NOPARTYIDS[0]` and `[1]` are one name twice.
     """
     compute = pyarrow.compute
     if isinstance(column, pyarrow.ChunkedArray):
