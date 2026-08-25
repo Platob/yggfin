@@ -31,7 +31,7 @@ jobs:
       run:
         working-directory: python
     steps:
-      # Comment events point at main, so test the base repository's PR merge ref.
+      # Comment events point at the default branch, so test the repository's PR merge ref.
       - uses: actions/checkout@v4
         with:
           ref: >-

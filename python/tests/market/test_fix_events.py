@@ -164,8 +164,8 @@ def test_the_declared_order_is_the_one_the_reader_uses() -> None:
     )
     regulatory = [rung for rung in TRANSACTED if rung.is_column]
     assert [rung.column for rung in regulatory] == [
-        "trd_reg_timestamps",
-        "side_trd_reg_timestamps",
+        "TrdRegTimestamps",
+        "SideTrdRegTS",
     ], "the regulatory record leads, because it is the strongest claim in the message"
     assert [rung.fields for rung in TRANSACTED if not rung.is_column] == [
         ("TransactTime",),

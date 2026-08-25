@@ -47,6 +47,7 @@ def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None
     assert ArrowFileIO.parse_location("file:///data/t") == ("file", "", "/data/t")
     assert ArrowFileIO.parse_location("file:/data/t") == ("file", "", "/data/t")
     assert ArrowFileIO.parse_location("s3://bucket/t") == ("s3", "bucket", "bucket/t")
+    assert ArrowFileIO.parse_location("s3a://bucket/t") == ("s3a", "bucket", "bucket/t")
 
 
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
@@ -100,10 +101,12 @@ def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> 
     }
 
 
-def test_a_warehouse_url_configures_the_filesystem_it_names() -> None:
+@pytest.mark.parametrize("scheme", ("s3", "s3a"))
+def test_a_warehouse_url_configures_the_filesystem_it_names(scheme: str) -> None:
     """Said once as a location, rather than again as three settings."""
-    assert inferred_properties({"warehouse": "s3://key:sec:ret@minio:9000/wh"}) == {
-        "warehouse": "s3://key:sec:ret@minio:9000/wh",
+    location = f"{scheme}://key:sec:ret@minio:9000/wh"
+    assert inferred_properties({"warehouse": location}) == {
+        "warehouse": location,
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "sec:ret",
@@ -138,6 +141,51 @@ def test_what_the_caller_set_wins_over_what_the_location_says() -> None:
     )
     assert inferred["s3.access-key-id"] == "other"
     assert inferred["s3.endpoint"] == "http://minio:9000"
+
+
+def test_s3_process_defaults_are_below_locations_and_catalog_properties(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://environment:9000")
+    monkeypatch.setenv("S3_ACCESS_KEY_ID", "environment-key")
+    monkeypatch.setenv("S3_SECRET_ACCESS_KEY", "environment-secret")
+    monkeypatch.setenv("S3_SESSION_TOKEN", "environment-token")
+    monkeypatch.setenv("S3_REGION", "us-east-1")
+    inferred = inferred_properties(
+        {
+            "warehouse": "s3://url-key:url-secret@minio:9000/wh?region=eu-west-1",
+            "s3.secret-access-key": "catalog-secret",
+        }
+    )
+    assert inferred["s3.endpoint"] == "http://minio:9000"
+    assert inferred["s3.access-key-id"] == "url-key"
+    assert inferred["s3.secret-access-key"] == "catalog-secret"
+    assert "s3.session-token" not in inferred
+    assert inferred["s3.region"] == "eu-west-1"
+
+
+def test_an_aws_location_suppresses_a_compatible_store_process_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000")
+    monkeypatch.setenv("S3_REGION", "us-east-1")
+    location = "s3://logs.s3.eu-west-1.amazonaws.com/wh"
+    assert inferred_properties({"warehouse": location}) == {
+        "warehouse": location,
+        "s3.region": "eu-west-1",
+    }
+
+
+def test_s3_process_defaults_exist_before_a_table_location_is_known(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000")
+    monkeypatch.setenv("S3_REGION", "eu-west-1")
+    assert inferred_properties({"vendor.option": "kept"}) == {
+        "s3.endpoint": "http://minio:9000",
+        "s3.region": "eu-west-1",
+        "vendor.option": "kept",
+    }
 
 
 def test_a_location_that_says_nothing_adds_nothing() -> None:

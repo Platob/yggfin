@@ -1,13 +1,12 @@
-"""`FixMessage`'s own contract; the parser that fills it is tested beside it."""
+"""`FixMsg`'s own contract; the parser that fills it is tested beside it."""
 
 import datetime
-import re
 from pathlib import Path
 
 import pyarrow
 import pytest
 
-from rekep import Field, FixMessage
+from rekep import Field, FixCodec, FixMsg, Message
 from rekep.fix import NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.market import MIC, Event, EventType
@@ -45,16 +44,16 @@ MESSAGE = [
     "unix_source",
     "protocol_version",
     "protocol_version_source",
-    "msg_seq_num",
+    "MsgSeqNum",
     "kwargs",
-    "parties",
-    "trd_reg_timestamps",
-    "side_trd_reg_timestamps",
-    "isincode",
+    "Parties",
+    "TrdRegTimestamps",
+    "SideTrdRegTS",
+    "ISINCODE",
 ]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
-RAW_TAGS = {55: "symbol", 34: "msg_seq_num"}
+RAW_TAGS = {55: "Symbol", 34: "MsgSeqNum"}
 
 #: The flattened message layer, derived from the module that names it and
 #: pinned below -- so a column renamed in one file and not in the other fails
@@ -77,16 +76,17 @@ def registry() -> FixRegistry:
 
 def test_a_log_line_is_an_event() -> None:
     """Which is what lets a parsed log be read beside the orders it describes."""
-    assert issubclass(FixMessage, Event)
+    assert issubclass(FixMsg, Event)
     assert (
-        FixMessage.into_field().into_arrow_schema().names
+        FixMsg.into_field().into_arrow_schema().names
         == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS
     )
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
+    assert FixMsg.into_field_metadata() == {"version": "3"}
     with pytest.raises(TypeError):
-        FixMessage.into_field_metadata()["version"] = "2"
+        FixMsg.into_field_metadata()["version"] = "2"
 
 
 def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
@@ -97,13 +97,13 @@ def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
 def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     """A line always has a file, a thread and a plugin, even an empty one.
 
-    `message` is the exception, and deliberately: on `fixmessage.market`
+    `message` is the exception, and deliberately: on `fix.market`
     `kwargs` carries every field the line held, so the raw string is dropped
     rather than stored a second time. An all-null column costs nothing on
     disk, which is what makes one stored shape across the three tables
     affordable.
     """
-    field = FixMessage.into_field()
+    field = FixMsg.into_field()
     for name in LINE:
         if name == "message":
             assert field.field(name).nullable, "a market row leaves the raw line null"
@@ -114,22 +114,22 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
 def test_a_line_always_says_which_protocol_it_carries() -> None:
     """`OTHER` is an answer and not a missing one -- it is most of a capture --
     so the column is NOT NULL and the fall-through is what a line starts as."""
-    assert not FixMessage.into_field().field("protocol_code").nullable
-    assert FixMessage.into_field().field("protocol_code").arrow_type == pyarrow.string()
-    assert FixMessage().protocol_code == NO_PROTOCOL
+    assert not FixMsg.into_field().field("protocol_code").nullable
+    assert FixMsg.into_field().field("protocol_code").arrow_type == pyarrow.string()
+    assert FixMsg().protocol_code == NO_PROTOCOL
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
     """Null is not an empty list: a bridge that sent an empty payload and a stack
     trace that never was a message have to stay tellable apart."""
-    assert FixMessage.into_field().field("kwargs").nullable
-    assert FixMessage().kwargs is None
+    assert FixMsg.into_field().field("kwargs").nullable
+    assert FixMsg().kwargs is None
 
 
 def test_a_stored_field_always_says_what_it_is() -> None:
     """`tag` and `key` are how a consumer addresses a field, so neither is null:
     a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
-    member = FixMessage.into_field().field("kwargs")
+    member = FixMsg.into_field().field("kwargs")
     assert pyarrow.types.is_list(member.arrow_type)
     assert member.item.nullable is False
     assert member.item.field("tag").nullable is False
@@ -140,8 +140,8 @@ def test_a_stored_field_always_says_what_it_is() -> None:
 
 
 def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
-    reader = FixMessage(
-        msg_type="D",
+    reader = FixMsg(
+        MsgType="D",
         kwargs=[
             (55, "A"),
             [55, "B"],
@@ -169,18 +169,18 @@ def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> No
 
 def test_malformed_stored_field_entries_are_not_silently_dropped() -> None:
     with pytest.raises(KeyError, match="key"):
-        FixMessage(kwargs=[{"value": "x"}]).into_fix_events()
+        FixMsg(kwargs=[{"value": "x"}]).into_fix_events()
     with pytest.raises(ValueError, match="not enough values"):
-        FixMessage(kwargs=[["OnlyKey"]]).into_fix_events()
+        FixMsg(kwargs=[["OnlyKey"]]).into_fix_events()
 
 
 def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
     registry: FixRegistry,
 ) -> None:
-    parties = FixMessage.into_field().field("parties")
+    parties = FixMsg.into_field().field("Parties")
     assert parties.nullable and not parties.item.nullable
     assert parties.metadata["fix:component"] == "Parties"
-    for tag, name in ((448, "party_id"), (447, "party_id_source"), (452, "party_role")):
+    for tag, name in ((448, "PartyID"), (447, "PartyIDSource"), (452, "PartyRole")):
         expected = registry.scalar(tag)
         actual = Party.into_field().field(name)
         assert actual.fix["name"] == expected.name
@@ -193,28 +193,28 @@ def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
 
 
 def test_every_column_is_documented() -> None:
-    for member in FixMessage.into_field().fields:
+    for member in FixMsg.into_field().fields:
         assert member.description, f"{member.name} has no description"
         assert "\n" not in member.description, f"{member.name} description is not one line"
 
 
 def test_the_key_is_the_moment_and_the_line() -> None:
     """Two columns: a hash identifies the line, the time is what an engine prunes on."""
-    assert FixMessage.into_field().primary_keys() == ["unix", "hash"]
+    assert FixMsg.into_field().primary_keys() == ["unix", "hash"]
 
 
 def test_the_partition_is_the_hour_the_line_falls_in() -> None:
     """An identity partition on an integer, so every engine below reads it alike."""
-    assert FixMessage.into_field().partition_keys() == {"unix_partition": "identity"}
-    assert FixMessage.into_field().field("unix_partition").arrow_type == pyarrow.int32()
+    assert FixMsg.into_field().partition_keys() == {"unix_partition": "identity"}
+    assert FixMsg.into_field().field("unix_partition").arrow_type == pyarrow.int32()
 
 
 def test_every_unix_column_declares_its_unit() -> None:
     for name in ("unix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
-        metadata = FixMessage.into_field().field(name).metadata
+        metadata = FixMsg.into_field().field(name).metadata
         assert metadata["unit"] == "nanosecond", name
         assert metadata["epoch"] == "1970-01-01", name
-    partition_metadata = FixMessage.into_field().field("unix_partition").metadata
+    partition_metadata = FixMsg.into_field().field("unix_partition").metadata
     assert partition_metadata["unit"] == "second"
     assert partition_metadata["epoch"] == "1970-01-01"
 
@@ -224,39 +224,39 @@ def test_the_line_digest_is_an_int64_like_every_other_identifier() -> None:
     is `(unix, hash)` -- so two digests only meet if they also share a
     nanosecond."""
     for name in ("hash", "xhash"):
-        assert FixMessage.into_field().field(name).arrow_type == pyarrow.int64(), name
-    assert FixMessage.into_field().field("unix").arrow_type == pyarrow.int64()
+        assert FixMsg.into_field().field(name).arrow_type == pyarrow.int64(), name
+    assert FixMsg.into_field().field("unix").arrow_type == pyarrow.int64()
 
 
 def test_a_line_is_unclassified_until_something_classifies_it() -> None:
     """The fallback the rules fall back to, on the class rather than in the parser."""
-    assert FixMessage.into_event_type() is EventType.UNKNOWN
-    assert FixMessage().etype is EventType.UNKNOWN
+    assert FixMsg.into_event_type() is EventType.UNKNOWN
+    assert FixMsg().etype is EventType.UNKNOWN
 
 
 def test_the_hour_is_derived_from_the_instant() -> None:
-    built = FixMessage(unix=3 * HOUR + 5)
+    built = FixMsg(unix=3 * HOUR + 5)
     hour_seconds = HOUR // SECOND
     assert built.unix_partition == 3 * hour_seconds
-    assert FixMessage(unix=-1).unix_partition == -hour_seconds, (
+    assert FixMsg(unix=-1).unix_partition == -hour_seconds, (
         "and it floors, either side of the epoch"
     )
 
 
 def test_the_schema_says_which_class_it_came_from() -> None:
-    schema = FixMessage.into_field().into_arrow_schema()
-    assert schema.metadata[b"name"] == b"FixMessage"
-    assert Field.from_arrow_schema(schema) == FixMessage.into_field()
+    schema = FixMsg.into_field().into_arrow_schema()
+    assert schema.metadata[b"name"] == b"FixMsg"
+    assert Field.from_arrow_schema(schema) == FixMsg.into_field()
 
 
 def _stored(tag: int, key: str, value: str) -> dict[str, object]:
-    """One stored field in the whole spelling `FixMessage.into_dict` writes."""
+    """One stored field in the whole spelling `FixMsg.into_dict` writes."""
     return {"tag": tag, "key": key, "value": value, "namespace": None, "comp": None}
 
 
 def test_a_row_round_trips_as_a_document() -> None:
     """The message layer preserves checksums and repeated ordered pairs."""
-    row = FixMessage(
+    row = FixMsg(
         source_url="a.txt",
         unix=2,
         hash=3,
@@ -269,19 +269,19 @@ def test_a_row_round_trips_as_a_document() -> None:
         kwargs=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
         + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
-        msg_seq_num=7,
-        symbol="TTF",
-        sending_time=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
-        poss_dup_flag=True,
-        check_sum="010",
+        MsgSeqNum=7,
+        Symbol="TTF",
+        SendingTime=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
+        PossDupFlag=True,
+        CheckSum="010",
         mic=MIC.from_str("XPAR"),
         reason="test reject",
     )
-    assert FixMessage.from_json(row.into_json()) == row
+    assert FixMsg.from_json(row.into_json()) == row
 
 
 def test_mic_is_a_lossless_optional_int32_code() -> None:
-    member = FixMessage.into_field().field("mic")
+    member = FixMsg.into_field().field("mic")
     assert member.nullable and member.arrow_type == pyarrow.int32()
     assert member.metadata["enum:encoding"] == "ascii-big-endian"
     assert member.metadata["enum:pattern"] == "[A-Z0-9]{4}"
@@ -292,6 +292,123 @@ def test_reason_is_generic_optional_text_on_every_event() -> None:
     member = Event.into_field().field("reason")
     assert member.nullable and member.arrow_type == pyarrow.string()
     assert "fix:tag" not in member.metadata
+
+
+# -- the raw-message boundary -------------------------------------------------
+
+
+def _raw_batch(*messages: Message) -> pyarrow.RecordBatch:
+    """One raw-message batch, including the zero-row shape."""
+    if not messages:
+        return pyarrow.RecordBatch.from_pylist([], schema=Message.into_field().into_arrow_schema())
+    return next(iter(Message.into_arrow_reader(messages)))
+
+
+def test_fixmsg_conversion_is_the_layer_that_parses_fix(
+    registry: FixRegistry,
+) -> None:
+    raw = _raw_batch(
+        Message(
+            source_url="capture.log",
+            source_rownum=1,
+            plugin_code="fix",
+            message=(
+                "8=FIX.4.4|35=D|34=7|41=ROOT|55=IBM|461=EXXXXX|6=12.5|"
+                "453=1|448=BUYSIDE|447=D|452=1|10=000|"
+            ),
+        ),
+        Message(
+            source_url="capture.log",
+            source_rownum=2,
+            plugin_code="ULBridge",
+            message=(
+                "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=8|#ORIGCLORDID=OLD|#ISINCODE=XX0000084733|"
+            ),
+        ),
+        Message(
+            source_url="capture.log",
+            source_rownum=3,
+            plugin_code="misc",
+            message="plain text",
+        ),
+    )
+
+    assert raw.schema.names == Message.into_field().names
+    assert not {"protocol_code", "MsgType", "OrigClOrdID"} & set(raw.schema.names)
+
+    parsed = FixMsg.from_message_arrow_batch(
+        raw,
+        FixCodec(registry=registry),
+        FixMsg.into_message_rules(),
+    )
+
+    assert parsed.column("protocol_code").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert parsed.column("protocol_version").to_pylist() == ["4.4", "4.4", None]
+    assert parsed.column("MsgType").to_pylist() == ["D", "8", None]
+    assert parsed.column("MsgSeqNum").to_pylist() == [7, None, None]
+    assert parsed.column("OrigClOrdID").to_pylist() == ["ROOT", "OLD", None]
+    assert parsed.column("CFICode").to_pylist() == ["EXXXXX", None, None]
+    assert parsed.column("AvgPx").to_pylist() == [12.5, None, None]
+    assert parsed.column("ISINCODE").to_pylist() == [None, "XX0000084733", None]
+    assert parsed.column("Parties").to_pylist()[0] == [
+        {
+            "PartyID": "BUYSIDE",
+            "PartyIDSource": "D",
+            "PartyRole": 1,
+            "buffer": None,
+        }
+    ]
+    assert parsed.column("codes").to_pylist()[0] == [
+        ("orig_cl_ord_id", "ROOT"),
+        ("symbol", "IBM"),
+    ]
+
+
+def test_fixmsg_conversion_preserves_static_extra_columns(
+    registry: FixRegistry,
+) -> None:
+    raw = _raw_batch(Message(message="8=FIX.4.4|35=D|11=A|10=000|"))
+    static = pyarrow.field(
+        "capture_id",
+        pyarrow.string(),
+        nullable=False,
+        metadata={b"source": b"static"},
+    )
+    raw = raw.append_column(static, pyarrow.array(["day-1"]))
+
+    parsed = FixMsg.from_message_arrow_batch(
+        raw,
+        FixCodec(registry=registry),
+        FixMsg.into_message_rules(),
+    )
+
+    assert parsed.schema.names == [*FixMsg.into_field().names, "capture_id"]
+    assert parsed.schema.field("capture_id") == static
+    assert parsed.column("capture_id").to_pylist() == ["day-1"]
+
+
+def test_a_static_column_cannot_shadow_a_fix_field(registry: FixRegistry) -> None:
+    raw = _raw_batch(Message(message="plain text")).append_column(
+        "MsgType", pyarrow.array(["caller-value"])
+    )
+
+    with pytest.raises(ValueError, match="collide.*MsgType"):
+        FixMsg.from_message_arrow_batch(
+            raw, FixCodec(registry=registry), FixMsg.into_message_rules()
+        )
+
+
+def test_fixmsg_conversion_keeps_the_empty_contract(
+    registry: FixRegistry,
+) -> None:
+    parsed = FixMsg.from_message_arrow_batch(
+        _raw_batch(),
+        FixCodec(registry=registry),
+        FixMsg.into_message_rules(),
+    )
+
+    assert parsed.num_rows == 0
+    assert parsed.schema == FixMsg.into_field().into_arrow_schema()
 
 
 # -- the message layer, flattened ---------------------------------------------
@@ -305,35 +422,36 @@ def test_the_flat_layer_is_the_session_layer_and_what_a_trading_log_is_made_of()
     assert len(COMMON) == EXPECTED_COMMON_COLUMNS
     assert len(FLAT) == len(COLUMNS) == EXPECTED_FLAT_COLUMNS
     assert len(set(FLAT_COLUMNS)) == EXPECTED_FLAT_COLUMNS
-    assert len(FixMessage.into_field().fields) == EXPECTED_LOG_COLUMNS
+    assert len(FixMsg.into_field().fields) == EXPECTED_LOG_COLUMNS
 
 
-def test_snake_fix_names_do_not_alias_the_generic_event_envelope() -> None:
+def test_fix_names_do_not_alias_the_generic_event_envelope() -> None:
     assert {tag: COLUMNS[tag] for tag in RAW_TAGS} == RAW_TAGS
     assert set(RAW_TAGS.values()).isdisjoint(Event.into_field().names)
-    assert {"code", *RAW_TAGS.values()} <= set(FixMessage.into_field().names)
-    assert FixMessage.into_field().field("msg_seq_num").fix["tag"] == "34"
+    assert {"code", *RAW_TAGS.values()} <= set(FixMsg.into_field().names)
+    assert FixMsg.into_field().field("MsgSeqNum").fix["tag"] == "34"
 
 
-def test_every_promoted_name_is_snake_case_with_acronyms_split() -> None:
+def test_every_promoted_name_is_the_registrys_exact_spelling() -> None:
     names = [field.name for field in DECLARATIONS.values()]
     assert len(names) == 92
-    assert all(re.fullmatch(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*", name) for name in names)
-    assert {tag: COLUMNS[tag] for tag in (35, 41, 461)} == {
-        35: "msg_type",
-        41: "orig_cl_ord_id",
-        461: "cfi_code",
+    assert all(field.name == field.fix["name"] for field in DECLARATIONS.values())
+    assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
+        6: "AvgPx",
+        35: "MsgType",
+        41: "OrigClOrdID",
+        461: "CFICode",
     }
     assert {tag: DECLARATIONS[tag].name for tag in (453, 802)} == {
-        453: "no_party_ids",
-        802: "no_party_sub_ids",
+        453: "NoPartyIDs",
+        802: "NoPartySubIDs",
     }
-    assert Party.into_field().names == ["party_id", "party_id_source", "party_role", "buffer"]
+    assert Party.into_field().names == ["PartyID", "PartyIDSource", "PartyRole", "buffer"]
 
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
     """Raw protocol fields and the generic envelope have separate names."""
-    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == {"msg_seq_num"}
+    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == {"MsgSeqNum"}
 
 
 def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(
@@ -346,7 +464,7 @@ def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(
     for tag, column in FLAT:
         if tag in STAMPS:
             continue
-        assert FixMessage.into_field().field(column).arrow_type == registry.field(tag).arrow_type, (
+        assert FixMsg.into_field().field(column).arrow_type == registry.field(tag).arrow_type, (
             column
         )
 
@@ -360,7 +478,7 @@ def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
     }
     assert dictated == set(STAMPS)
     for tag in STAMPS:
-        assert FixMessage.into_field().field(COLUMNS[tag]).arrow_type == pyarrow.timestamp(
+        assert FixMsg.into_field().field(COLUMNS[tag]).arrow_type == pyarrow.timestamp(
             "us", tz="UTC"
         ), tag
 
@@ -382,9 +500,9 @@ def test_timestamp_projection_is_naive_until_the_fix_documentation_says_utc() ->
 
 def test_every_flat_column_admits_absence() -> None:
     """Whether a FIX field is required belongs to the message that carries it."""
-    blank = FixMessage()
+    blank = FixMsg()
     for column in FLAT_COLUMNS:
-        assert FixMessage.into_field().field(column).nullable, column
+        assert FixMsg.into_field().field(column).nullable, column
         assert getattr(blank, column) is None, column
 
 
@@ -393,13 +511,13 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
 ) -> None:
     for tag, column in FLAT:
         expected = registry.scalar(tag)
-        actual = FixMessage.into_field().field(column)
+        actual = FixMsg.into_field().field(column)
         assert actual.fix["name"] == expected.name, column
         assert actual.metadata == expected.metadata, column
         assert actual.description == expected.description, column
 
 
 def test_rendered_isincode_keeps_its_source_identity() -> None:
-    field = FixMessage.into_field().field("isincode")
+    field = FixMsg.into_field().field("ISINCODE")
     assert field.arrow_type == pyarrow.string()
     assert field.fix == {"name": "ISINCODE", "type": "String"}

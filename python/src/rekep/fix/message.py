@@ -412,16 +412,6 @@ class FixPairs(Convertible):
 
         return FieldAccess.spelling_only()
 
-    @property
-    def begin_string(self) -> str | None:
-        """The protocol the message claims: BeginString <8>."""
-        return self.get(8)
-
-    @property
-    def msg_type(self) -> str | None:
-        """MsgType <35>, when the message carries one."""
-        return self.get(35)
-
     def __len__(self) -> int:
         return len(self.pairs)
 

@@ -216,13 +216,13 @@ def test_the_wire_model_reads_through_the_same_accessor() -> None:
 
 def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None:
     """A lifted fact and a residual one answer the same way on a stored row."""
-    from rekep.text import FixMessage
+    from rekep.text import FixMsg
 
-    row = FixMessage(
+    row = FixMsg(
         unix=1,
         hash=1,
-        side="1",
-        order_qty=125.0,
+        Side="1",
+        OrderQty=125.0,
         kwargs=[
             {
                 "tag": 448,

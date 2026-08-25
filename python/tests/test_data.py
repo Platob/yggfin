@@ -23,7 +23,7 @@ from rekep.fix.columns import _ORDER
 from rekep.fix.entries import ANY_VERSION, RECORD_KEYS
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
-    FIXMESSAGE_FIELDS,
+    FIXMSG_FIELDS,
     MARKET_FIELDS,
     NAMESPACE_FIELDS,
     PROJECTED,
@@ -167,7 +167,7 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         tags.add(record["tag"])
         assert set(record["versions"]) <= set(VERSIONS), key
     assert vendor == 1, "ISINCODE, and every other one the log gives a column"
-    assert held["ISINCODE"]["column"] == "isincode"
+    assert held["ISINCODE"]["column"] == "ISINCODE"
     assert [alias["name"] for alias in held["ISINCODE"]["aliases"]] == ["AMON.ISINCODE"]
 
 
@@ -375,9 +375,9 @@ def test_the_builtin_projection_answers_every_key_the_package_looks_up(
     silence as a name nobody has ever seen, and reads as one downstream.
     """
     assert not missing_from(registry, PROJECTED), "the dictionary answers for every key"
-    assert set(FIXMESSAGE_FIELDS) == set(_ORDER)
+    assert set(FIXMSG_FIELDS) == set(_ORDER)
     assert set(PROJECTED) >= set(CARRIED_FIELDS)
-    assert set(MARKET_FIELDS).isdisjoint(FIXMESSAGE_FIELDS), "each name declared once"
+    assert set(MARKET_FIELDS).isdisjoint(FIXMSG_FIELDS), "each name declared once"
     builtin = FixRegistry.from_builtin()
     assert not missing_from(builtin, PROJECTED)
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"

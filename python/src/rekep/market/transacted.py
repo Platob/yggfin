@@ -20,7 +20,6 @@ import pyarrow.compute
 
 from rekep.enums import EventType
 from rekep.fields.arrays import sequence
-from rekep.fix.entries import snake_of
 from rekep.fix.fields import cast_arrow_fix
 
 #: `TrdRegTimestampType <770>`, and `SideTrdRegTimestampType <1013>`, which
@@ -66,9 +65,7 @@ class Stamped:
 
     #: The structured column this rung reads, and the two members of an entry
     #: it reads: the one holding the instant and the one saying which instant
-    #: it is. Named as FIX names them -- the column's own member spelling is
-    #: `snake_of` that, which is the rule the parsed columns are named by, so
-    #: one declaration answers for both ways an entry may be held.
+    #: it is. These are the exact names in the FIX registry and parsed schema.
     column: str = ""
     instant: str = ""
     kind: str = ""
@@ -135,17 +132,10 @@ class Stamped:
 
     @staticmethod
     def member(entry: Any, name: str) -> Any:
-        """One member of a typed entry: the column spelling of its FIX name.
-
-        A parsed row holds these as a typed column whose members are `snake_of`
-        the FIX name the rung declares. A caller holding the group some other
-        way -- a translation holds whatever the wire keyed it by -- passes its
-        own reader, which is what `resolve`'s `member` is for.
-        """
-        spelled = snake_of(name)
+        """One member of a typed entry, spelled as the FIX registry names it."""
         if isinstance(entry, Mapping):
-            return entry.get(spelled)
-        return getattr(entry, spelled, None)
+            return entry.get(name)
+        return getattr(entry, name, None)
 
     @staticmethod
     def _as_instant(found: Any) -> int | None:
@@ -178,7 +168,7 @@ class Stamped:
 
     def _arrow_fields(self, columns: Mapping[str, Any], rows: int) -> Any:
         """One field rung over a whole batch, as epoch nanoseconds."""
-        read = [columns.get(snake_of(name)) for name in self.fields]
+        read = [columns.get(name) for name in self.fields]
         if any(column is None for column in read):
             return None
         if len(read) == 1:
@@ -202,10 +192,8 @@ class Stamped:
             return None, None
         parents = compute.list_parent_indices(column).cast(pyarrow.int64())
         entries = compute.list_flatten(column)
-        instants = self._arrow_nanos(
-            compute.struct_field(entries, snake_of(self.instant)), len(parents)
-        )
-        kinds = compute.struct_field(entries, snake_of(self.kind))
+        instants = self._arrow_nanos(compute.struct_field(entries, self.instant), len(parents))
+        kinds = compute.struct_field(entries, self.kind)
         told = compute.is_valid(instants)
         rank = self._arrow_rank(kinds, etypes, parents, rows)
         # The best-ranked entry of each row, in one stable sort: the row and
@@ -300,13 +288,13 @@ class Stamped:
 TRANSACTED: tuple[Stamped, ...] = (
     Stamped(
         name="TrdRegTimestamps",
-        column="trd_reg_timestamps",
+        column="TrdRegTimestamps",
         instant="TrdRegTimestamp",
         kind="TrdRegTimestampType",
     ),
     Stamped(
         name="SideTrdRegTS",
-        column="side_trd_reg_timestamps",
+        column="SideTrdRegTS",
         instant="SideTrdRegTimestamp",
         kind="SideTrdRegTimestampType",
     ),

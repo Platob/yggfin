@@ -24,7 +24,7 @@ from rekep.market import (
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.identity import NIL
-from rekep.text import FixMessage
+from rekep.text import FixMsg
 
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
 BASE = (1_787_000_000_000_000_000 // HOUR) * HOUR
@@ -88,20 +88,20 @@ def test_instrument_versioning_is_owned_outside_the_book_fold() -> None:
 
 
 def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None:
-    log = FixMessage(
+    log = FixMsg(
         unix=BASE,
-        msg_type="D",
-        symbol="BTC-USD",
-        cl_ord_id="B1",
-        side="1",
-        ord_type="2",
-        price=100.0,
-        order_qty=2.0,
-        begin_string="FIX.4.4",
+        MsgType="D",
+        Symbol="BTC-USD",
+        ClOrdID="B1",
+        Side="1",
+        OrdType="2",
+        Price=100.0,
+        OrderQty=2.0,
+        BeginString="FIX.4.4",
     )
 
-    (instrument,) = Instrument.from_fixmessages([log], snapshot_every=0)
-    (book,) = BookIterator(logs=[instrument.into_fixmessage(), log], snapshot_every=0)
+    (instrument,) = Instrument.from_fixmsgs([log], snapshot_every=0)
+    (book,) = BookIterator(logs=[instrument.into_fixmsg(), log], snapshot_every=0)
 
     assert instrument.symbol == book.code == "BTC-USD"
     assert book.instrument_xhash == instrument.xhash
@@ -110,11 +110,11 @@ def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None
 
 def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
     columns = {
-        "symbol": pyarrow.array(["AAPL", None, None]),
-        "security_id": pyarrow.array(["ignored", "US0378331005", None]),
-        "isincode": pyarrow.array([None, "ignored", "FR0000120271"]),
+        "Symbol": pyarrow.array(["AAPL", None, None]),
+        "SecurityID": pyarrow.array(["ignored", "US0378331005", None]),
+        "ISINCODE": pyarrow.array([None, "ignored", "FR0000120271"]),
     }
-    assert FixMessage.symbol_arrow(columns, 3).to_pylist() == [
+    assert FixMsg.symbol_arrow(columns, 3).to_pylist() == [
         "AAPL",
         "US0378331005",
         "FR0000120271",
@@ -123,15 +123,15 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
 
 def test_log_codes_retain_all_parsed_identifiers_in_lookup_order() -> None:
     columns = {
-        "order_id": pyarrow.array(["ORD-1", None]),
-        "orig_cl_ord_id": pyarrow.array(["CL-0", None]),
-        "cl_ord_id": pyarrow.array(["CL-1", "CL-2"]),
-        "exec_id": pyarrow.array(["EX-1", None]),
-        "quote_set_id": pyarrow.array([None, "SET-1"]),
-        "symbol": pyarrow.array(["AAPL", "MSFT"]),
+        "OrderID": pyarrow.array(["ORD-1", None]),
+        "OrigClOrdID": pyarrow.array(["CL-0", None]),
+        "ClOrdID": pyarrow.array(["CL-1", "CL-2"]),
+        "ExecID": pyarrow.array(["EX-1", None]),
+        "QuoteSetID": pyarrow.array([None, "SET-1"]),
+        "Symbol": pyarrow.array(["AAPL", "MSFT"]),
     }
 
-    codes = FixMessage.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+    codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
     assert list(codes[0].items()) == [
         ("order_id", "ORD-1"),
@@ -148,7 +148,7 @@ def test_log_codes_retain_all_parsed_identifiers_in_lookup_order() -> None:
 
 
 def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
-    log = FixMessage(
+    log = FixMsg(
         kwargs=[
             (198, "ORD-SECONDARY"),
             (526, "CL-SECONDARY"),
@@ -161,10 +161,10 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
         ]
     )
     batch = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMessage.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -181,17 +181,17 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
 
 
 def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
-    log = FixMessage(
+    log = FixMsg(
         kwargs=[
             ("SecondaryExecID", "EXEC-NAMED"),
             ("MDEntryRefID", "MD-NAMED"),
         ]
     )
     batch = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMessage.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -203,16 +203,16 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
 
 def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
     logs = [
-        FixMessage(kwargs=[(37, "ORDER-RESIDUAL")]),
-        FixMessage(order_id="ORDER-PROMOTED", kwargs=[(37, "ORDER-IGNORED")]),
+        FixMsg(kwargs=[(37, "ORDER-RESIDUAL")]),
+        FixMsg(OrderID="ORDER-PROMOTED", kwargs=[(37, "ORDER-IGNORED")]),
     ]
     table = pyarrow.Table.from_pylist(
         [log.into_dict() for log in logs],
-        schema=FixMessage.into_field().into_arrow_schema(),
+        schema=FixMsg.into_field().into_arrow_schema(),
     )
     columns = {name: table.column(name) for name in table.schema.names}
 
-    codes = FixMessage.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+    codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
     assert [row["order_id"] for row in codes] == [
         "ORDER-RESIDUAL",
@@ -221,13 +221,13 @@ def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None
 
 
 def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
-    def message(offset: int, msg_type: str, **given) -> FixMessage:
-        return FixMessage(
+    def message(offset: int, message_type: str, **given) -> FixMsg:
+        return FixMsg(
             unix=BASE + offset,
             unix_source="TransactTime",
-            begin_string="FIX.4.4",
-            msg_type=msg_type,
-            symbol="BTC-USD",
+            BeginString="FIX.4.4",
+            MsgType=message_type,
+            Symbol="BTC-USD",
             mic=MIC.from_str("XCME"),
             **given,
         )
@@ -236,40 +236,40 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             1,
             "D",
-            cl_ord_id="CL-1",
-            side="1",
-            ord_type="2",
-            order_qty=5.0,
-            price=100.0,
+            ClOrdID="CL-1",
+            Side="1",
+            OrdType="2",
+            OrderQty=5.0,
+            Price=100.0,
             kwargs=[(9999, "order-meta")],
             reason="order reason",
         ),
         message(
             2,
             "8",
-            order_id="ORD-1",
-            cl_ord_id="CL-1",
-            exec_id="EXEC-1",
-            side="1",
-            ord_type="2",
-            ord_status="1",
-            exec_type="F",
-            order_qty=5.0,
-            price=100.0,
-            last_px=100.5,
-            last_qty=2.0,
-            cum_qty=2.0,
-            leaves_qty=3.0,
-            vwap=100.5,
+            OrderID="ORD-1",
+            ClOrdID="CL-1",
+            ExecID="EXEC-1",
+            Side="1",
+            OrdType="2",
+            OrdStatus="1",
+            ExecType="F",
+            OrderQty=5.0,
+            Price=100.0,
+            LastPx=100.5,
+            LastQty=2.0,
+            CumQty=2.0,
+            LeavesQty=3.0,
+            AvgPx=100.5,
             kwargs=[(1003, "TRADE-1"), (9998, "report-meta")],
         ),
         message(
             3,
             "AE",
-            exec_id="EXEC-2",
-            side="2",
-            last_px=101.0,
-            last_qty=1.0,
+            ExecID="EXEC-2",
+            Side="2",
+            LastPx=101.0,
+            LastQty=1.0,
             kwargs=[(1003, "TRADE-2")],
         ),
         message(4, "0"),
@@ -297,11 +297,11 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             6,
             "S",
-            quote_id="QUOTE-1",
-            bid_px=99.0,
-            bid_size=3.0,
-            offer_px=102.0,
-            offer_size=4.0,
+            QuoteID="QUOTE-1",
+            BidPx=99.0,
+            BidSize=3.0,
+            OfferPx=102.0,
+            OfferSize=4.0,
         ),
         message(
             7,
@@ -323,10 +323,10 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             ],
         ),
     ]
-    schema = FixMessage.into_field().into_arrow_schema()
+    schema = FixMsg.into_field().into_arrow_schema()
     source = pyarrow.Table.from_pylist([log.into_dict() for log in logs], schema=schema)
     source_batches = source.to_batches(max_chunksize=2)
-    stored = list(FixMessage.from_arrow_reader(source_batches))
+    stored = list(FixMsg.from_arrow_reader(source_batches))
     expected = {Order: [], Execution: []}
     for log in stored:
         for event in log.into_market_events():
@@ -334,14 +334,14 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
 
     found = {Order: [], Execution: []}
     reader = pyarrow.RecordBatchReader.from_batches(schema, source_batches)
-    for event_type, batch in FixMessage.into_market_arrow_batches(reader, batch_row_size=2):
+    for event_type, batch in FixMsg.into_market_arrow_batches(reader, batch_row_size=2):
         assert batch.schema.equals(event_type.into_field().into_arrow_schema(), check_metadata=True)
         found[event_type].append(batch)
 
     assert [batch.num_rows for batch in found[Order]] == [2, 2, 2, 2, 2]
     assert [batch.num_rows for batch in found[Execution]] == [2, 1]
     atomic = list(
-        FixMessage.into_market_arrow_batches(
+        FixMsg.into_market_arrow_batches(
             pyarrow.RecordBatchReader.from_batches(schema, source_batches),
             batch_row_size=None,
         )
@@ -368,12 +368,12 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
 
 
 def test_an_empty_market_arrow_batch_emits_nothing() -> None:
-    schema = FixMessage.into_field().into_arrow_schema()
+    schema = FixMsg.into_field().into_arrow_schema()
     empty = pyarrow.RecordBatch.from_arrays(
         [pyarrow.array([], field.type) for field in schema], schema=schema
     )
 
-    assert list(FixMessage.into_market_arrow_batches(empty)) == []
+    assert list(FixMsg.into_market_arrow_batches(empty)) == []
 
 
 def test_reference_input_is_read_only_and_books_remain_the_only_output() -> None:

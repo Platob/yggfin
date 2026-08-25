@@ -122,7 +122,7 @@ class Resolved:
     #: -- with a dictionary -- the canonical name and its recorded aliases.
     names: frozenset[str] = frozenset()
     #: The separator-blind reading of the tail, `translation_key`'s rule: the
-    #: last tier, so `msg_type` still reaches `MsgType` without an alias.
+    #: last tier, so registry-exact `MsgType` remains directly addressable.
     norm: str = ""
     lead: str | None = None
     index: int | None = None

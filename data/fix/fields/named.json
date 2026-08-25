@@ -2,7 +2,7 @@
  "ISINCODE": {
   "name": "ISINCODE",
   "kind": "namespace",
-  "column": "isincode",
+  "column": "ISINCODE",
   "type": "String",
   "description": "ISIN carried by the rendered ISINCODE field.",
   "versions": [

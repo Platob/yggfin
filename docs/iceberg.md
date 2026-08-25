@@ -5,17 +5,18 @@ schema ids, snapshots, and commits; rekep supplies recursive casting,
 filesystem normalization, commit grouping, and maintenance policy.
 
 ```python
+from rekep import FixMsg
 from rekep.iceberg import IcebergDataset
 
 logs = IcebergDataset(
-    name="market.logs",
+    name="fix.market",
     catalog="local",
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
         "warehouse": "file:///warehouse",
     },
-    field=FixMessage.into_field(),
+    field=FixMsg.into_field(),
     branch="root",
 )
 ```
@@ -25,8 +26,8 @@ logs = IcebergDataset(
 ```python
 reader = logs.read_arrow_reader(
     row_filter=filter,
-    columns=["unix", "hash", "symbol"],
-    order_by=["unix", "msg_seq_num", "hash"],
+    columns=["unix", "hash", "Symbol"],
+    order_by=["unix", "MsgSeqNum", "hash"],
     snapshot_id=None,
     branch="root",
 )
@@ -61,10 +62,10 @@ commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
-event fields, the FixMessage sequence rename, and renaming `unix_hour` to
+event fields, the FixMsg sequence rename, and renaming `unix_hour` to
 `unix_partition` while changing its values from epoch-nanosecond `long` to
 epoch-second `int` need an explicit table migration or recreation. Recreate or
-rewrite every table using one of the five market contracts, on every retained
+rewrite every table using one of the six pipeline contracts, on every retained
 branch, before appending: an ordinary merge cannot migrate the renamed,
 rescaled, narrowed partition field. Dataset writes do not guess missing lineage
 or keep retired columns alive.
@@ -79,8 +80,18 @@ contract that already carries ids keeps them.
 
 Local and object-store locations resolve through `pyarrow.fs`. Credentials,
 endpoint, bucket, and path are parsed once by `Url`; explicit catalog
-properties win. Recorded and listed paths are compared only after the same
-resolver normalizes them.
+properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
+same Arrow S3 filesystem as `s3://`. Recorded and listed paths are compared
+only after the same resolver normalizes them.
+
+S3-compatible stores can be configured once per process. `S3_ENDPOINT_URL`,
+`S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and `S3_REGION`
+become Iceberg S3 defaults and also configure direct Arrow access. An explicit
+catalog property wins over a value in a location URL, which wins over the
+environment. For the endpoint only, `AWS_ENDPOINT_URL_S3` and then
+`AWS_ENDPOINT_URL` are lower-priority fallbacks. When the portable variables
+are absent, Arrow still uses the standard AWS profile, workload-role, and
+credential environment chain.
 
 ## Maintenance
 

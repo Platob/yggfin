@@ -120,8 +120,8 @@ FRAMING_FIELDS = frozenset({"BodyLength", "CheckSum"})
 #: columns the parse layer has.
 _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
     {
-        "trd_reg_timestamps": "NoTrdRegTimestamps",
-        "side_trd_reg_timestamps": "NoSideTrdRegTS",
+        "TrdRegTimestamps": "NoTrdRegTimestamps",
+        "SideTrdRegTS": "NoSideTrdRegTS",
     }
 )
 

@@ -27,7 +27,7 @@ from rekep.market import (
     Order,
 )
 from rekep.tasks import Task
-from rekep.text import FixMessage, TextFile, TextFiles
+from rekep.text import FixMsg, Message, TextFile, TextFiles
 from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
@@ -43,7 +43,7 @@ __all__ = [
     "Field",
     "FieldBuilder",
     "FixEvents",
-    "FixMessage",
+    "FixMsg",
     "FixPairs",
     "FieldRule",
     "FieldRules",
@@ -59,6 +59,7 @@ __all__ = [
     "MapField",
     "MarketEvent",
     "MarketKind",
+    "Message",
     "Order",
     "ProtocolMetadata",
     "Ranged",

@@ -13,7 +13,7 @@ import rekep.market.instrument as instrument_module
 from rekep.fix import FixRegistry
 from rekep.market import AssetKind, Currency, Instrument, Leg, OptionKind, Side
 from rekep.market.identity import NIL, hash_of
-from rekep.text import FixMessage
+from rekep.text import FixMsg
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
@@ -104,17 +104,17 @@ def test_explicit_pair_classification_and_currency_are_preserved() -> None:
 def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    log = FixMessage(
+    log = FixMsg(
         unix=1,
-        begin_string="FIX.4.4",
-        msg_type="d",
-        symbol="FAKE-SYM",
+        BeginString="FIX.4.4",
+        MsgType="d",
+        Symbol="FAKE-SYM",
         kwargs=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     )
-    log = FixMessage.from_dict(table.to_pylist()[0])
+    log = FixMsg.from_dict(table.to_pylist()[0])
     assert [(entry["tag"], entry["value"]) for entry in log.kwargs] == [
         (969, "0.01"),
         (561, "100"),
@@ -122,15 +122,15 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     ], "an Arrow round trip keeps every stored field, in wire order"
     registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
     transcription = {}
-    into_instruments = FixMessage.into_instruments
+    into_instruments = FixMsg.into_instruments
 
-    def captured(self: FixMessage, **declared: object):
+    def captured(self: FixMsg, **declared: object):
         transcription.update(declared)
         return into_instruments(self, **declared)
 
-    monkeypatch.setattr(FixMessage, "into_instruments", captured)
+    monkeypatch.setattr(FixMsg, "into_instruments", captured)
 
-    (instrument,) = Instrument.from_fixmessages(
+    (instrument,) = Instrument.from_fixmsgs(
         [log],
         registry=registry,
         snapshot_every=0,
@@ -174,16 +174,16 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
     ).with_previous(None)
     assert instrument is not None
 
-    log = instrument.into_fixmessage()
+    log = instrument.into_fixmsg()
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     )
-    stored = FixMessage.from_dict(table.to_pylist()[0])
+    stored = FixMsg.from_dict(table.to_pylist()[0])
 
     def unexpected_fix_decode(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("normalized rows must not rebuild FIX state")
 
-    monkeypatch.setattr(FixMessage, "into_fix_events", unexpected_fix_decode)
+    monkeypatch.setattr(FixMsg, "into_fix_events", unexpected_fix_decode)
     restored = stored.into_instrument()
 
     assert restored is not None
@@ -228,29 +228,29 @@ def test_normalized_instrument_batches_decode_without_python_rows(
         ).identify(),
         Instrument(unix=2_000, cunix=2_000, runix=2_000, symbol="CASH").identify(),
     ]
-    messages = [FixMessage.from_instrument(one) for one in instruments]
+    messages = [FixMsg.from_instrument(one) for one in instruments]
     source = pyarrow.Table.from_pylist(
         [one.into_dict() for one in messages],
-        schema=FixMessage.into_field().into_arrow_schema(),
+        schema=FixMsg.into_field().into_arrow_schema(),
     ).to_batches()[0]
     expected = pyarrow.Table.from_pylist(
         [dataclasses.asdict(one) for one in instruments],
         schema=Instrument.into_field().into_arrow_schema(),
     ).to_batches()[0]
 
-    monkeypatch.setattr(FixMessage, "into_instrument", lambda *_args, **_kwargs: pytest.fail())
-    found = FixMessage.into_instrument_arrow_batch(source)
+    monkeypatch.setattr(FixMsg, "into_instrument", lambda *_args, **_kwargs: pytest.fail())
+    found = FixMsg.into_instrument_arrow_batch(source)
 
     assert found.schema.equals(expected.schema, check_metadata=True)
     assert found.equals(expected)
 
 
 def test_an_empty_normalized_instrument_batch_keeps_the_target_schema() -> None:
-    schema = FixMessage.into_field().into_arrow_schema()
+    schema = FixMsg.into_field().into_arrow_schema()
     empty = pyarrow.RecordBatch.from_arrays(
         [pyarrow.array([], field.type) for field in schema], schema=schema
     )
-    found = FixMessage.into_instrument_arrow_batch(empty)
+    found = FixMsg.into_instrument_arrow_batch(empty)
     assert found.num_rows == 0
     assert found.schema.equals(Instrument.into_field().into_arrow_schema(), check_metadata=True)
 

@@ -1,4 +1,4 @@
-"""FIX fields promoted from parsed pairs to typed FixMessage columns."""
+"""FIX fields promoted from parsed pairs to typed FixMsg columns."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from types import MappingProxyType
 import pyarrow
 
 from rekep.fields import Field
-from rekep.fix.entries import snake_of
 from rekep.fix.registry import FixRegistry
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
@@ -144,11 +143,6 @@ _STAMP_FIELDS: tuple[str, ...] = (
     "ValidUntilTime",
 )
 
-# Public analytical names may clarify a protocol term while `fix:name` keeps
-# its exact registry spelling. These overrides are part of the log contract.
-_NAMES: Mapping[str, str] = MappingProxyType({"AvgPx": "vwap"})
-
-
 #: What a resolved key is: the tag number, as the `int32` every other code
 #: column here is.
 TAG: pyarrow.DataType = pyarrow.int32()
@@ -210,7 +204,7 @@ def _declaration(member: Field) -> Field:
     metadata = dict(member.metadata)
     metadata["fix:name"] = member.name
     return Field(
-        name=_NAMES.get(member.name, snake_of(member.name)),
+        name=member.name,
         arrow_type=_physical_type(member),
         nullable=True,
         metadata=metadata,
@@ -240,12 +234,12 @@ _IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
     ("md_entry_id", "MDEntryID"),
     ("md_entry_ref_id", "MDEntryRefID"),
     ("security_id", "SecurityID"),
-    ("isincode", "ISINCode"),
+    ("isincode", "ISINCODE"),
     ("symbol", "Symbol"),
 )
 # The rendered ISIN has no wire tag; the bundled cross-version index omits 280
 # even though its version documents carry it, so those two cannot be derived here.
-_IDENTIFIER_FALLBACK_TAGS = MappingProxyType({"MDEntryRefID": 280, "ISINCode": 0})
+_IDENTIFIER_FALLBACK_TAGS = MappingProxyType({"MDEntryRefID": 280, "ISINCODE": 0})
 IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
     (
         stored,
@@ -261,13 +255,13 @@ IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
 
 _ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
-FIXMESSAGE_FIELDS: Mapping[int, Field] = MappingProxyType(
+FIXMSG_FIELDS: Mapping[int, Field] = MappingProxyType(
     {int(member.fix["tag"]): member for member in _FIELDS}
 )
-if len(FIXMESSAGE_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
+if len(FIXMSG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
     raise ValueError("the bundled FIX fields do not have unique tags")
 DECLARATIONS: Mapping[int, Field] = MappingProxyType(
-    {tag: _declaration(member) for tag, member in FIXMESSAGE_FIELDS.items()}
+    {tag: _declaration(member) for tag, member in FIXMSG_FIELDS.items()}
 )
 
 _TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
@@ -379,6 +373,6 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
 NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
-#: The one the parsed log declares by name, kept as a name so `FixMessage.isincode`
+#: The one the parsed log declares by name, kept as a name so `FixMsg.ISINCODE`
 #: can annotate itself with it.
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]

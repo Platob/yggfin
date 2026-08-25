@@ -10,25 +10,10 @@ parameters:
   header: null
   recursive: true
   timezone: Europe/Paris
+  # Exact, case-sensitive plugin codes omitted before message identities are built.
+  exclude_plugins: []
   start: null
   end: null
-  # The version list alone is read here -- no field, no component, no value.
-  fix_dictionary: data/fix
-  null_values: ["", "null", "<null>", "n/a"]
-  rules: null
-  protocols: null
-  # How named fields read, where a job says what the dictionary cannot: a
-  # vendor tag that carries an instant, a value spelling only this estate
-  # uses. `type` is an Arrow type (`date32[day]`, `timestamp[us, tz=UTC]`) or
-  # a FIX datatype; `values` maps what a feed writes to what it means.
-  #
-  # fields:
-  #   rules:
-  #     - field: "9999"
-  #       type: timestamp[us, tz=UTC]
-  #     - field: Side
-  #       values: {BUYSIDE: "1", SELLSIDE: "2"}
-  fields: null
   # AWS Glue with an S3 warehouse (replace the active local block):
   # catalog: rekep-production
   # catalog_properties:
@@ -37,7 +22,7 @@ parameters:
   #   glue.region: eu-west-1
   #   s3.region: eu-west-1
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # Credentials come from the standard AWS environment or workload role.
+  # S3_* process defaults and the standard AWS credential chain are supported.
   catalog: rekep
   catalog_properties:
     type: sql
@@ -45,9 +30,8 @@ parameters:
     warehouse: file://data/warehouse
   # root, main, and master name the same Iceberg root branch.
   branch: root
-  # Retained, not transient: `parse_fix` re-reads it whenever the dictionary
-  # or the rules change, which is what the split is for.
-  target: text.messages
+  # Retained so protocol parsers can be rerun without reading the source files.
+  target: logs.messages
   static_values:
     bridge: bridge-1
     environment: prod

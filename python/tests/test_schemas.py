@@ -1,10 +1,10 @@
-"""The five persisted contracts must match their owning declarations."""
+"""The six persisted contracts must match their owning declarations."""
 
 from pathlib import Path
 
 import pytest
 
-from rekep import Field, FixMessage
+from rekep import Field, FixMsg, Message
 from rekep.market import Book, Execution, Instrument, Order
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -12,7 +12,8 @@ CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
 PUBLISHED = {
-    "fixmessage.yaml": FixMessage,
+    "fixmsg.yaml": FixMsg,
+    "message.yaml": Message,
     "instrument.yaml": Instrument,
     "book.yaml": Book,
     "order.yaml": Order,
@@ -21,7 +22,7 @@ PUBLISHED = {
 
 
 def test_only_pipeline_outputs_are_published() -> None:
-    assert len(CONTRACTS) == 5
+    assert len(CONTRACTS) == 6
     assert {path.name for path in CONTRACTS} == set(PUBLISHED)
 
 
@@ -30,7 +31,7 @@ def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
     contract = Field.from_(str(path))
     assert Field.from_dict(contract.into_dict()) == contract
     assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == ("2" if path.name == "fixmessage.yaml" else "1")
+    assert contract.metadata["version"] == ("3" if path.name == "fixmsg.yaml" else "1")
 
 
 @pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))
@@ -43,10 +44,11 @@ def test_contract_matches_its_declaration(name: str, shape: type) -> None:
     assert published.partition_keys() == declared.partition_keys()
 
 
-def test_log_contract_keeps_time_keys() -> None:
-    log = Field.from_yaml(str(SCHEMAS / "rekep" / "fixmessage.yaml"))
-    assert log.primary_keys() == ["unix", "hash"]
-    assert log.partition_keys() == {"unix_partition": "identity"}
+@pytest.mark.parametrize("name", ["message.yaml", "fixmsg.yaml"])
+def test_message_contracts_keep_time_keys(name: str) -> None:
+    message = Field.from_yaml(str(SCHEMAS / "rekep" / name))
+    assert message.primary_keys() == ["unix", "hash"]
+    assert message.partition_keys() == {"unix_partition": "identity"}
 
 
 def test_market_contract_keeps_protocol_metadata() -> None:

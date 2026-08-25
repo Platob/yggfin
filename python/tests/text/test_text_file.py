@@ -7,10 +7,8 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, FixMessage
-from rekep.fix import FixCodec, FixRegistry
-from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STAMPS
-from rekep.market import MIC, Event
+from rekep import Dataset, Field, Message
+from rekep.enums import EventType
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
 from rekep.text import HEADER_PATTERN, TextFile
 from rekep.text.text_file import _local_micros
@@ -18,7 +16,6 @@ from rekep.times import unix_of
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
-DICTIONARY = Path(__file__).resolve().parents[3] / "data" / "fix"
 
 #: Expectations are derived from the sample, then pinned, so that a regression
 #: in HEADER_PATTERN cannot quietly move both sides of an assertion together.
@@ -59,15 +56,8 @@ def zstandard(tmp_path: Path) -> Path:
     return path
 
 
-#: Two wire messages and a line that is not one. The sample above carries no
-#: FIX, and every tag here is spelled as a number, so no name has to be looked
-#: up to read one: what these three lines pin is the seam itself -- which tags
-#: lift, which stay, and where the lifted ones land. A dictionary is still what
-#: says a tag *may* lift, so these are read under `codec` like every other
-#: parse below, and never under whatever `~/.config/fix` happens to hold.
-#:
-#: The second message is a multi-leg quote -- `55` names two legs and `555`
-#: counts them twice -- which is the row that must keep everything it said.
+#: Two FIX-looking payloads and one ordinary payload. Text ingestion keeps all
+#: three opaque; the protocol parser owns every tag-level interpretation.
 WIRE = (
     "2026-08-14 00:05:01.147_250 [t] [d] (INFO) "
     "8=FIX.4.2|9=176|35=D|34=7|49=BUY|50=DESK1|56=XPAR|115=CLIENTA|43=Y|"
@@ -84,19 +74,6 @@ def wire(tmp_path: Path) -> Path:
     path = tmp_path / "wire.txt"
     path.write_text(WIRE)
     return path
-
-
-@pytest.fixture(scope="module")
-def codec() -> FixCodec:
-    """The dictionary this repository publishes, which is the one a test may read.
-
-    `FixCodec()` would default to the *user's* cache (`~/.config/fix`), so a
-    test that took it would assert against whatever the machine running it had
-    scraped before -- passing where that cache is warm and failing on a fresh
-    checkout, which is every machine CI ever parses on. Every test below that
-    expects a tag to reach its column names this dictionary instead.
-    """
-    return FixCodec(registry=FixRegistry(cache_dir=DICTIONARY, offline=True))
 
 
 # -- header pattern ---------------------------------------------------------
@@ -368,334 +345,57 @@ def test_reads_whole_log_whatever_the_encoding(
 # -- schema -----------------------------------------------------------------
 
 
-#: What a parsed line adds to the `Event` envelope, in declaration order: the
-#: line itself, the two ordered pair lists, then the FIX fields
-#: flattened out of them. Written out whole rather than counted, because this
-#: tail is what a reader selects by name and a column that was renamed, moved
-#: or quietly dropped is invisible to a count.
-LINE_COLUMNS = [
+MESSAGE_COLUMNS = [
     "source_url",
     "source_rownum",
     "thread_name",
     "plugin_code",
     "message",
-    "protocol_code",
-    "unix_source",
-    "protocol_version",
-    "protocol_version_source",
-    "msg_seq_num",
-    "kwargs",
-    "parties",
-    "trd_reg_timestamps",
-    "side_trd_reg_timestamps",
-    "isincode",
-    "begin_string",
-    "body_length",
-    "msg_type",
-    "check_sum",
-    "sender_comp_id",
-    "sender_sub_id",
-    "sender_location_id",
-    "target_comp_id",
-    "target_sub_id",
-    "target_location_id",
-    "on_behalf_of_comp_id",
-    "on_behalf_of_sub_id",
-    "on_behalf_of_location_id",
-    "deliver_to_comp_id",
-    "deliver_to_sub_id",
-    "deliver_to_location_id",
-    "last_msg_seq_num_processed",
-    "poss_dup_flag",
-    "poss_resend",
-    "sending_time",
-    "orig_sending_time",
-    "on_behalf_of_sending_time",
-    "appl_ver_id",
-    "cstm_appl_ver_id",
-    "appl_ext_id",
-    "message_encoding",
-    "xml_data_len",
-    "xml_data",
-    "secure_data_len",
-    "secure_data",
-    "signature_length",
-    "signature",
-    "symbol",
-    "security_id",
-    "security_id_source",
-    "security_type",
-    "cfi_code",
-    "security_exchange",
-    "currency",
-    "account",
-    "cl_ord_id",
-    "orig_cl_ord_id",
-    "order_id",
-    "exec_id",
-    "side",
-    "ord_type",
-    "time_in_force",
-    "ord_status",
-    "exec_type",
-    "order_qty",
-    "price",
-    "vwap",
-    "cum_qty",
-    "leaves_qty",
-    "last_px",
-    "last_qty",
-    "transact_time",
-    "text",
-    "quote_id",
-    "quote_req_id",
-    "quote_type",
-    "quote_status",
-    "quote_reject_reason",
-    "quote_resp_type",
-    "quote_cancel_type",
-    "bid_px",
-    "offer_px",
-    "bid_size",
-    "offer_size",
-    "def_bid_size",
-    "def_offer_size",
-    "valid_until_time",
-    "no_quote_sets",
-    "no_quote_entries",
-    "quote_set_id",
-    "quote_entry_id",
 ]
 
-EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 91
-EXPECTED_LOG_COLUMNS = 109
+FIX_COLUMNS = {
+    "BeginString",
+    "MsgType",
+    "SenderCompID",
+    "TargetCompID",
+    "Symbol",
+    "begin_string",
+    "msg_type",
+    "sender_comp_id",
+    "target_comp_id",
+    "symbol",
+    "kwargs",
+}
 
 
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.names == FixMessage.into_field().into_arrow_schema().names
-    assert len(schema.names) == EXPECTED_LOG_COLUMNS
+    assert schema.equals(Message.into_field().into_arrow_schema())
     assert schema.names[:3] == ["unix", "unix_partition", "etype"], "the envelope leads"
-    assert len(LINE_COLUMNS) == EXPECTED_LINE_COLUMNS
-    assert schema.names[-len(LINE_COLUMNS) :] == LINE_COLUMNS
+    assert schema.names[-len(MESSAGE_COLUMNS) :] == MESSAGE_COLUMNS
+    assert FIX_COLUMNS.isdisjoint(schema.names)
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unix_partition").type == pyarrow.int32()
     assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
-    assert schema.field("protocol_code").type == pyarrow.string()
 
 
-def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
-    """`rekep.fix.columns` names the tags and the column each lands in, `FixMessage`
-    declares the type, and the list pinned above is derived from neither -- so a
-    field added on one side only is either a tag lifted out of `kwargs` into a
-    column nothing declares, or a column no message can ever fill.
+def test_fix_looking_payloads_stay_uninterpreted(wire: Path) -> None:
+    table = TextFile.from_path(wire).read_arrow_table()
+    payloads = [line.split(" (INFO) ", 1)[1] for line in WIRE.splitlines()]
 
-    Every promoted field retains its canonical FIX name in metadata.
-    """
-    assert FLAT == SESSION + COMMON + QUOTE, "session, common market fields, then quotes"
-    assert [column for _, column in FLAT] == list(COLUMNS.values())
-    assert len(COLUMNS) == EXPECTED_FLAT_COLUMNS
-    added = [
-        name for name in COLUMNS.values() if name not in {*Event.into_field().names, "msg_seq_num"}
-    ]
-    assert LINE_COLUMNS[-len(added) :] == added
+    assert table.schema.names == Message.into_field().names
+    assert table.column("message").to_pylist() == payloads
+    assert table.column("etype").to_pylist() == [int(EventType.UNKNOWN)] * 3
+    assert table.column("mic").to_pylist() == [None] * 3
+    assert table.column("code").to_pylist() == [""] * 3
+    assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
 
 
-def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> None:
-    """Lifted out of the pairs and decoded, so a reader filters on
-    the value and not on its spelling: `9=176` is a number, `43=Y` is a boolean,
-    and `38=1200` is a quantity. `CheckSum` is the one that stays text, because
-    `010` read as `10` no longer verifies.
-    """
-    schema = TextFile(url=plain.as_uri()).schema
-    declared = {
-        "begin_string": pyarrow.string(),
-        "body_length": pyarrow.int64(),
-        "msg_type": pyarrow.string(),
-        "msg_seq_num": pyarrow.int64(),
-        "poss_dup_flag": pyarrow.bool_(),
-        "secure_data": pyarrow.binary(),
-        "order_qty": pyarrow.float64(),
-        "check_sum": pyarrow.string(),
-    }
-    assert {name: schema.field(name).type for name in declared} == declared
-    assert all(schema.field(column).nullable for _, column in FLAT)
-    assert not schema.field("code").nullable and not schema.field("code").nullable
-
-
-def test_an_instant_a_message_carries_is_a_microsecond_utc_timestamp(plain: Path) -> None:
-    schema = TextFile(url=plain.as_uri()).schema
-    stamps = sorted(COLUMNS[tag] for tag in STAMPS)
-    assert stamps == [
-        "on_behalf_of_sending_time",
-        "orig_sending_time",
-        "sending_time",
-        "transact_time",
-        "valid_until_time",
-    ]
-    for column in stamps:
-        assert schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
-
-
-def _tagged(scalar: pyarrow.Scalar) -> list[tuple[int, str]]:
-    """One row of `kwargs` as the `(tag, value)` pairs the dictionary resolved."""
-    return [(entry["tag"], entry["value"]) for entry in scalar.as_py() or () if entry["tag"]]
-
-
-def test_the_stored_fields_are_nullable_and_their_members_are_not(plain: Path) -> None:
-    """A list preserves duplicate keys; null and empty keep distinct meanings."""
-    schema = TextFile(url=plain.as_uri()).schema
-    assert schema.field("kwargs").type == KWARGS
-    assert schema.field("kwargs").nullable
-
-
-# -- what a message fills ---------------------------------------------------
-
-
-def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path, codec: FixCodec) -> None:
-    """Snake columns keep FIX identity while generic identifiers are derived."""
-    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
-    assert table.column("symbol").to_pylist() == ["TTF", None, None]
-    assert table.column("msg_seq_num").to_pylist() == [7, 8, None]
-    assert table.column("code").to_pylist() == ["ORD-1", "", ""]
-    assert table.column("code").to_pylist() == ["ORD-1", "", ""]
-    assert table.column("msg_type").to_pylist() == ["D", "AB", None]
-    assert table.column("check_sum").to_pylist() == ["203", "011", None]
-    assert table.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2 + [None]
-    assert table.column("reason").to_pylist() == ["ok", None, None]
-
-
-def test_session_direction_selects_the_venue_side_when_both_ids_look_like_mics(
-    tmp_path: Path, codec: FixCodec
-) -> None:
-    path = tmp_path / "direction.txt"
-    path.write_text(
-        "2026-08-14 00:05:01.147 [t] [d] sending 8=FIX.4.4|35=D|49=BUY1|56=XPAR|\n"
-        "2026-08-14 00:05:02.147 [t] [d] received 8=FIX.4.4|35=8|49=XPAR|56=BUY1|\n"
-    )
-    rows = TextFile.from_path(path, codec=codec).read_arrow_table()
-    assert rows.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2
-
-
-def test_explicit_market_ids_keep_precedence_and_wire_order(
-    tmp_path: Path, codec: FixCodec
-) -> None:
-    path = tmp_path / "markets.txt"
-    path.write_text(
-        "2026-08-14 00:05:01.147 [t] [d] "
-        "8=FIX.4.4|35=D|30=XAMS|100=XPAR|275=XEUR|1301=XNAS|30=XLON|10=1|\n"
-        "2026-08-14 00:05:02.147 [t] [d] 8=FIX.4.4|35=D|100=XPAR|10=2|\n"
-    )
-    rows = TextFile.from_path(path, codec=codec).read_arrow_table()
-
-    assert rows.column("mic").to_pylist() == [
-        int(MIC.from_str("XAMS")),
-        int(MIC.from_str("XPAR")),
-    ]
-    assert _tagged(rows.column("kwargs")[0]) == [
-        (30, "XAMS"),
-        (100, "XPAR"),
-        (275, "XEUR"),
-        (1301, "XNAS"),
-        (30, "XLON"),
-    ]
-
-
-def test_generic_codes_follow_the_parsed_identifier_fallbacks(
-    tmp_path: Path, codec: FixCodec
-) -> None:
-    path = tmp_path / "keys.txt"
-    messages = [
-        "8=FIX.4.4|35=8|37=VENUE|11=CURRENT|41=ORIGINAL|17=EXEC|"
-        "453=1|448=BUYSIDE|447=D|452=1|10=1|",
-        "8=FIX.4.4|35=G|11=CURRENT|41=ORIGINAL|17=EXEC|10=2|",
-        "8=FIX.4.4|35=8|17=EXEC|10=3|",
-        "8=FIX.4.4|35=X|55=TTF|10=4|",
-        "8=FIX.4.4|35=d|37=   |11=<null>|48=SEC-1|55=|10=5|",
-        "heartbeat",
-    ]
-    path.write_text(
-        "".join(
-            f"2026-08-14 00:05:0{index}.147 [t] [d] (INFO) {message}\n"
-            for index, message in enumerate(messages)
-        )
-    )
-
-    table = TextFile.from_path(path, codec=codec).read_arrow_table()
-
-    assert table.column("code").to_pylist() == [
-        "VENUE",
-        "ORIGINAL",
-        "EXEC",
-        "TTF",
-        "SEC-1",
-        "",
-    ], "`OrigClOrdID <41>` before `ClOrdID <11>`: a lifecycle survives its amendments"
-    assert table.column("security_id").to_pylist()[4] == "SEC-1"
-    assert table.column("xhash").to_pylist()[:5] == [
-        FixMessage.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
-    ]
-    assert table.column("parties")[0].as_py() == [
-        {
-            "party_id": "BUYSIDE",
-            "party_id_source": "D",
-            "party_role": 1,
-            "buffer": None,
-        }
-    ]
-    assert table.column("xhash")[-1].as_py() == table.column("hash")[-1].as_py()
-
-
-def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path, codec: FixCodec) -> None:
-    """Lifting the first `55` of a multi-leg quote would answer "the symbol"
-    with whichever leg came first -- a wrong answer that looks like a right one.
-
-    So that row keeps every pair of the tags that repeat, `555` included, and
-    its `Symbol` stays null; the tags occurring once on the *same*
-    line still lift, which is what makes this a per-tag rule and not a per-row
-    one. The last line carries no message at all, so its pair list is null and not
-    empty.
-    """
-    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
-    assert [_tagged(one) for one in table.column("kwargs")] == [
-        [],
-        [(555, "2"), (600, "TTF"), (55, "SPREAD"), (555, "2"), (55, "OTHER")],
-        [],
-    ]
-    assert table.column("kwargs")[2].as_py() is None, "and that last row is null, not empty"
-    assert table.column("symbol").to_pylist()[1] is None
-    assert table.column("sender_comp_id").to_pylist() == ["BUY", "BUY", None], "49 lifted on both"
-
-
-def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(
-    wire: Path, codec: FixCodec
-) -> None:
-    """`43=Y` is a boolean and `44=41.25` is a number, so a reader filters on
-    the value rather than on the spelling the wire happened to use. Which type
-    each decodes to is `FixMessage`'s declaration, pinned against the published
-    dictionary in `tests/text/test_log.py`.
-    """
-    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
-    assert table.column("poss_dup_flag").to_pylist() == [True, None, None]
-    assert table.column("order_qty").to_pylist() == [1200.0, None, None]
-    assert table.column("price").to_pylist() == [41.25, None, None]
-    assert table.column("side").to_pylist() == ["1", None, None]
-    assert table.column("text").to_pylist() == ["ok", None, None]
-
-
-def test_a_stamp_a_message_carries_lands_on_the_instant_it_spells(
-    wire: Path, codec: FixCodec
-) -> None:
-    """Nanosecond wire fractions truncate to the declared microsecond width."""
-    sent = datetime.datetime(2026, 8, 14, 9, 30, 0, 123456, tzinfo=datetime.UTC)
-    traded = datetime.datetime(2026, 8, 14, 9, 29, 59, 500_000, tzinfo=datetime.UTC)
-
-    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
-    assert table.column("sending_time").to_pylist() == [sent, None, None]
-    assert table.column("transact_time").to_pylist() == [traded, None, None]
+def test_text_file_has_no_protocol_codec_option(wire: Path) -> None:
+    with pytest.raises(TypeError, match="codec"):
+        TextFile.from_path(wire, codec=object())
 
 
 # -- arrow reader -----------------------------------------------------------
@@ -716,6 +416,51 @@ def test_reader_returns_a_record_batch_reader(plain: Path) -> None:
         assert isinstance(reader, pyarrow.RecordBatchReader)
         assert reader.schema == log.schema
         reader.read_all()
+
+
+def test_reader_excludes_exact_plugin_codes_before_projection(tmp_path: Path) -> None:
+    path = tmp_path / "plugins.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.000 [t] [drop] (INFO) lower\n"
+        "2026-08-14 00:05:02.000 [t] [DROP] (INFO) upper\n"
+        "2026-08-14 00:05:03.000 [t] [] (INFO) unnamed\n"
+        "2026-08-14 00:05:04.000 [t] [keep] (INFO) kept\n"
+    )
+    log = TextFile.from_path(path)
+
+    table = log.read_arrow_table(exclude_plugins=("drop", ""))
+    assert table.column("plugin_code").to_pylist() == ["DROP", "keep"]
+    assert table.column("source_rownum").to_pylist() == [2, 4]
+
+    projected = log.read_arrow_table(
+        pyarrow.schema([("message", pyarrow.string())]), exclude_plugins=("drop", "")
+    )
+    assert projected.to_pydict() == {"message": ["upper", "kept"]}
+
+
+def test_an_excluded_plugins_continuation_is_excluded_with_it(tmp_path: Path) -> None:
+    path = tmp_path / "continuation.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.000 [t] [keep] (INFO) first\n"
+        "2026-08-14 00:05:02.000 [t] [drop] (INFO) hidden\n"
+        "\tat hidden.Trace.call(Trace.java:1)\n"
+        "2026-08-14 00:05:03.000 [t] [keep] (INFO) last\n"
+    )
+
+    table = TextFile.from_path(path).read_arrow_table(exclude_plugins=("drop",))
+    assert table.column("message").to_pylist() == ["first", "last"]
+    assert table.column("source_rownum").to_pylist() == [1, 4]
+
+
+def test_excluding_every_plugin_emits_no_batches_and_a_string_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "only-drop.txt"
+    path.write_text("2026-08-14 00:05:01.000 [t] [drop] (INFO) hidden\n")
+
+    with TextFile.from_path(path) as log:
+        assert list(log.into_arrow_batches(exclude_plugins=("drop",))) == []
+    with TextFile.from_path(path) as log:
+        with pytest.raises(TypeError, match="sequence of plugin codes"):
+            log.into_arrow_reader(exclude_plugins="drop").read_all()
 
 
 def test_first_row(plain: Path) -> None:
@@ -1218,7 +963,7 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
     log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
     table = log.read_arrow_table()
     assert table.schema.names[-2:] == ["bridge", "shard"]
-    assert table.schema.names[:-2] == FixMessage.into_field().into_arrow_schema().names
+    assert table.schema.names[:-2] == Message.into_field().into_arrow_schema().names
     assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
     assert table.column("shard").to_pylist() == [7] * table.num_rows
 
@@ -1226,13 +971,13 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
 def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
     """No column is hardcoded: a capture says what it is, or says nothing."""
     assert TextFile.from_path(plain).read_arrow_table().schema.names == (
-        FixMessage.into_field().into_arrow_schema().names
+        Message.into_field().into_arrow_schema().names
     )
 
 
 def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
-    # Not `text`, which `FixMessage` declares for `Text <58>`: a static column of that
-    # name is a second column of that name, and the schema then answers neither.
+    # Not `message`, which the raw contract already declares: a static column of that
+    # name would be a second column of that name, and the schema could answer neither.
     log = TextFile.from_path(
         plain, static_values={"label": "a", "count": 2, "ratio": 0.5, "flag": True}
     )
@@ -1268,20 +1013,15 @@ def test_a_static_value_of_none_is_refused(plain: Path) -> None:
 
 
 def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path) -> None:
-    """A duplicate column reads as an absent one, which is the worst way to find out.
-
-    The shape carries a column per lifted FIX field now, so `text`, `account`,
-    `side` and `price` are all names a caller would plausibly reach for -- and
-    appending a second `text` gave a schema with two of them, where the next
-    `schema.field("text")` raised `KeyError: Column text does not exist`.
-    """
-    for taken in ("text", "account", "side", "price", "symbol", "message"):
+    """A duplicate raw-message column is refused before Arrow sees it."""
+    for taken in ("unix", "hash", "code", "source_url", "message"):
         log = TextFile.from_path(plain, static_values={taken: "x"})
         with pytest.raises(ValueError, match=f"static value '{taken}' is already a column"):
             log.into_struct_field()
-    # And a name the shape does not have is still perfectly fine.
-    assert TextFile.from_path(plain, static_values={"desk": "x"}).into_struct_field().names[-1] == (
-        "desk"
+    # A protocol field is ordinary caller metadata until a protocol parser owns it.
+    assert (
+        TextFile.from_path(plain, static_values={"MsgType": "D"}).into_struct_field().names[-1]
+        == "MsgType"
     )
 
 
@@ -1300,7 +1040,7 @@ def test_a_text_file_is_a_dataset(plain: Path) -> None:
     log = TextFile.from_path(plain)
     assert isinstance(log, Dataset)
     assert log.exists
-    assert log.into_struct_field() is FixMessage.into_field()
+    assert log.into_struct_field() is Message.into_field()
     assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
 
 
@@ -1310,7 +1050,7 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(plain: Path) -> None:
     log = TextFile.from_path(plain)
-    assert log.read_arrow_reader().schema.equals(FixMessage.into_field().into_arrow_schema())
+    assert log.read_arrow_reader().schema.equals(Message.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("message", pyarrow.large_string())])
     assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
 

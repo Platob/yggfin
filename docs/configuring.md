@@ -1,19 +1,19 @@
 # Configuring a parse
 
-Everything a capture differs by is a document, not a code change: what a line's
-header looks like, which lines carry a message and how it is spelled, what a
-field's values mean, and what counts as absent. A job hands the four of them to
-`TextFile`/`TextFiles`, and every notebook under `tasks/` takes them as
-parameters.
+Everything a capture differs by is a document, not a code change. The message
+stage owns only the log header and timezone. The FIX stage owns which payloads
+are FIX, how they are spelled, what their fields mean, and what counts as
+absent.
 
 ```mermaid
 flowchart LR
-    H[header] --> T[TextFile]
+    H[header] --> T[TextFile / TextFiles]
+    T --> M[(logs.messages<br/>Message)]
     N[null_values] --> C[FixCodec]
     P[protocols<br/><i>Rules</i>] --> C
     F[fields<br/><i>FieldRules</i>] --> C
-    C --> T
-    T --> R[(text.messages)]
+    M --> C
+    C --> R[(fix.*<br/>FixMsg)]
 ```
 
 ## The header a line opens with
@@ -61,6 +61,22 @@ protocols:
 `Rules.into_default()` reads a FIX trading log: a wrapped bridge message, a
 wire message, a bridge message, known operational traffic, then everything
 else.
+
+## Which event a payload represents
+
+`MessageRules` assigns an `EventType` by the first matching payload pattern.
+It is protocol-neutral and has no defaults. `FixMsg.into_message_rules()`
+returns a fresh copy of the standard FIX message rules; `parse_fix` uses those
+when `rules` is null.
+
+```yaml
+rules:
+  rules:
+    - pattern: '35=8(?:\D|$)'
+      patterns: [ExecutionReport]
+      etype: EXECUTION
+      label: a fill
+```
 
 ## What a field's values mean
 
@@ -121,12 +137,12 @@ null_values: ["", "null", "<null>", "n/a"]
 | --- | --- | --- |
 | `header` | `TextFile.header_pattern` | `parse_messages` |
 | `timezone` | `TextFile.timezone` | `parse_messages` |
-| `protocols` | `FixCodec.rules` | `parse_messages` |
-| `null_values` | `FixCodec.null_values` | `parse_messages` |
-| `rules` | `FixMessageRules` (which `etype` a line is) | `parse_messages` |
-| `fields` | `FixCodec.fields` | `parse_messages`, `parse_fix` |
-| `fix_dictionary` | `FixRegistry.cache_dir` | `parse_messages`, `parse_fix` |
+| `protocols` | `FixCodec.rules` | `parse_fix` |
+| `null_values` | `FixCodec.null_values` | `parse_fix` |
+| `rules` | `MessageRules` (which `etype` a payload is) | `parse_fix` |
+| `fields` | `FixCodec.fields` | `parse_fix` |
+| `fix_dictionary` | `FixRegistry.cache_dir` | `parse_fix` |
 
-`parse_messages` structures a line and `parse_fix` resolves it, so a change to
-`fields` or to the dictionary is a re-run of `parse_fix` alone: nothing
-re-tokenises a line that was already split.
+`parse_messages` retains the unsplit payload. A change to `fields`, protocol
+rules or the dictionary reruns `parse_fix` without reopening the source logs;
+the retained payload is parsed again under the new declaration.

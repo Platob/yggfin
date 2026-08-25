@@ -14,6 +14,14 @@ def _workflow(name: str) -> dict:
     )
 
 
+def _trusted_push_branch(workflow: dict) -> str:
+    branches = workflow["on"]["push"]["branches"]
+    assert len(branches) == 1
+    branch = branches[0]
+    assert branch and not any(character in branch for character in "*+?[]!")
+    return branch
+
+
 def test_pull_request_ci_selects_the_fast_suite() -> None:
     workflow = _workflow("ci.yml")
     steps = workflow["jobs"]["test"]["steps"]
@@ -24,7 +32,7 @@ def test_pull_request_ci_selects_the_fast_suite() -> None:
 def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     workflow = _workflow("integration.yml")
     assert workflow["permissions"] == {"contents": "read"}
-    assert workflow["on"]["push"]["branches"] == ["main"]
+    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("ci.yml"))
     assert workflow["on"]["issue_comment"]["types"] == ["created"]
 
     job = workflow["jobs"]["test"]

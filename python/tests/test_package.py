@@ -19,7 +19,7 @@ import rekep
 import rekep.fix.columns
 import rekep.fix.rules
 import rekep.market.fix
-from rekep import Field, FixMessage, scalar
+from rekep import Field, FixMsg, scalar
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
     BASE_URL,
@@ -135,7 +135,7 @@ def test_the_name_for_no_protocol_is_one_constant_and_not_three() -> None:
     each of those it would be three constants, and only one of them published.
     """
     assert Rule().protocol == NO_PROTOCOL
-    assert FixMessage().protocol_code == NO_PROTOCOL
+    assert FixMsg().protocol_code == NO_PROTOCOL
     assert Rules().rule("nothing declares this").protocol == NO_PROTOCOL
 
 

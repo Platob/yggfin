@@ -14,7 +14,7 @@ import pytest
 
 from rekep import Url, urls
 from rekep.filesystems import resolve
-from rekep.urls import properties_of
+from rekep.urls import S3, properties_of, s3_environment
 
 
 @pytest.fixture
@@ -39,6 +39,7 @@ def posix_path(relative: str) -> str:
     ("text", "expected"),
     [
         ("s3://bucket/key/deep.txt", ("s3", None, None, "bucket", None, "key/deep.txt")),
+        ("s3a://bucket/key/deep.txt", ("s3a", None, None, "bucket", None, "key/deep.txt")),
         ("s3://key:secret@bucket/k", ("s3", "key", "secret", "bucket", None, "k")),
         (
             "s3://key:secret@minio:9000/logs/a.txt",
@@ -405,6 +406,82 @@ def test_an_endpoint_reaches_the_s3_filesystem() -> None:
     assert (settings["access_key"], settings["secret_key"]) == ("key", "sec:ret")
 
 
+def test_portable_s3_environment_reaches_the_filesystem(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One process configuration serves `s3`, `s3a`, Iceberg, and direct Arrow."""
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000/")
+    monkeypatch.setenv("S3_ACCESS_KEY_ID", "environment-key")
+    monkeypatch.setenv("S3_SECRET_ACCESS_KEY", "environment-secret")
+    monkeypatch.setenv("S3_SESSION_TOKEN", "environment-token")
+    monkeypatch.setenv("S3_REGION", "eu-west-1")
+    filesystem, path = Url.from_string("s3a://bucket/logs/a.txt").into_filesystem()
+    settings = settings_of(filesystem)
+    assert path == "bucket/logs/a.txt"
+    assert settings["endpoint_override"] == "minio:9000"
+    assert settings["scheme"] == "http"
+    assert settings["access_key"] == "environment-key"
+    assert settings["secret_key"] == "environment-secret"
+    assert settings["session_token"] == "environment-token"
+    assert settings["region"] == "eu-west-1"
+
+
+def test_location_s3_settings_win_over_process_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "https://environment.example.com")
+    monkeypatch.setenv("S3_ACCESS_KEY_ID", "environment-key")
+    monkeypatch.setenv("S3_SECRET_ACCESS_KEY", "environment-secret")
+    monkeypatch.setenv("S3_SESSION_TOKEN", "environment-token")
+    monkeypatch.setenv("S3_REGION", "us-east-1")
+    filesystem, _ = Url.from_string(
+        "s3://url-key:url-secret@minio:9000/b?region=eu-west-1"
+    ).into_filesystem()
+    settings = settings_of(filesystem)
+    assert settings["endpoint_override"] == "minio:9000"
+    assert settings["scheme"] == "http"
+    assert settings["access_key"] == "url-key"
+    assert settings["secret_key"] == "url-secret"
+    assert not settings["session_token"]
+    assert settings["region"] == "eu-west-1"
+
+
+def test_an_aws_location_does_not_inherit_a_compatible_store_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000")
+    monkeypatch.setenv("S3_REGION", "us-east-1")
+    filesystem, path = Url.from_string(
+        "s3://logs.s3.eu-west-1.amazonaws.com/a.txt"
+    ).into_filesystem()
+    settings = settings_of(filesystem)
+    assert path == "logs/a.txt"
+    assert not settings["endpoint_override"]
+    assert settings["scheme"] == "https"
+    assert settings["region"] == "eu-west-1"
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_every_s3_scheme_reaches_arrows_native_s3_parser(
+    scheme: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Hadoop's `s3a` spelling is transport syntax, not another object store."""
+    seen = {}
+    native = object()
+
+    class FileSystem:
+        @staticmethod
+        def from_uri(location: str) -> tuple[object, str]:
+            seen["location"] = location
+            return native, "bucket/logs/a.txt"
+
+    monkeypatch.setattr(urls.pyarrow.fs, "FileSystem", FileSystem)
+    url = Url.from_string(f"{scheme}://bucket/logs/a.txt?region=eu-west-1")
+    filesystem, path = url.into_filesystem()
+    assert filesystem is native
+    assert path == "bucket/logs/a.txt"
+    assert seen["location"] == "s3://bucket/logs/a.txt?region=eu-west-1"
+    assert url.into_string() == f"{scheme}://bucket/logs/a.txt?region=eu-west-1"
+
+
 def test_a_plain_endpoint_is_read_as_http_and_a_real_host_as_https() -> None:
     """A container or a laptop has no certificate; anything with a domain might."""
     local = Url.from_string("s3://k:s@minio:9000/b").into_filesystem()[0]
@@ -513,3 +590,30 @@ def test_a_hosted_endpoint_reaches_a_catalog_with_the_scheme_it_is_served_on() -
 
 def test_a_location_that_says_nothing_configures_nothing() -> None:
     assert properties_of(Url.from_string("s3://bucket/key")) == {}
+
+
+def test_s3_environment_translates_portable_defaults_and_endpoint_fallbacks() -> None:
+    environment = {
+        "S3_ACCESS_KEY_ID": "key",
+        "S3_SECRET_ACCESS_KEY": "secret",
+        "S3_SESSION_TOKEN": "token",
+        "S3_REGION": "eu-west-1",
+        "S3_ENDPOINT_URL": "http://portable:9000",
+        "AWS_ENDPOINT_URL_S3": "http://service:9000",
+        "AWS_ENDPOINT_URL": "http://global:9000",
+    }
+    assert s3_environment(environment) == {
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "secret",
+        "s3.session-token": "token",
+        "s3.region": "eu-west-1",
+        "s3.endpoint": "http://portable:9000",
+    }
+    environment["S3_ENDPOINT_URL"] = ""
+    assert s3_environment(environment)["s3.endpoint"] == "http://service:9000"
+    environment["AWS_ENDPOINT_URL_S3"] = ""
+    assert s3_environment(environment)["s3.endpoint"] == "http://global:9000"
+
+
+def test_empty_s3_environment_values_are_not_configuration() -> None:
+    assert s3_environment({name: "" for name, _ in urls.S3_ENVIRONMENT}) == {}

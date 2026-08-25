@@ -1,0 +1,146 @@
+name: Message
+type: struct
+description: One log header, its provenance, and its uninterpreted payload.
+metadata:
+  namespace: rekep.text.message
+  version: '1'
+fields:
+- name: unix
+  type: int64
+  description: When the event happened, in whole nanoseconds since the epoch.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+    iceberg:primary_key: 'true'
+    iceberg:sort_key: asc
+- name: unix_partition
+  type: int32
+  description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
+  metadata:
+    unit: second
+    epoch: '1970-01-01'
+    iceberg:partition_key: identity
+    iceberg:derived_from: unix
+- name: etype
+  type: int32
+  description: Which kind of event this is -- the one column a union of the tables
+    needs.
+  metadata:
+    enum:name: EventType
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+- name: cunix
+  type: int64
+  description: When the event was created, upstream of anything that carried it.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: runix
+  type: int64
+  description: When the event was written down here; deliberately not part of `hash`.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: eunix
+  type: int64
+  nullable: true
+  description: When the event stops being true -- an order's expiry, a quote's staleness.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: sunix
+  type: int64
+  nullable: true
+  description: '`unix` of the event this is a snapshot of; null when it is not one.'
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: hash
+  type: int64
+  description: 'Digest of this version''s content: the same version, twice, is one
+    row.'
+  metadata:
+    iceberg:primary_key: 'true'
+- name: xhash
+  type: int64
+  description: Identity of the thing across every version of it -- the lifecycle.
+- name: linked_events
+  type: list
+  description: Related event times and lifecycle identities, primary match first.
+  item:
+    type: struct
+    fields:
+    - name: unix
+      type: int64
+    - name: xhash
+      type: int64
+- name: version
+  type: int64
+  description: Which version of `xhash` this is, counting up from the first.
+- name: state
+  type: int32
+  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
+    is over.'
+  metadata:
+    enum:name: State
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+- name: code
+  type: string
+  description: Readable identifier of this lifecycle, shared by every version of it.
+- name: codes
+  type: map
+  description: Every other identifier the source spelled, by the name that carried
+    it.
+  key:
+    type: string
+  value:
+    type: string
+- name: prev_unix
+  type: int64
+  nullable: true
+  description: When the previous version happened, so dwell time is a subtraction.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: parent_hash
+  type: list
+  nullable: true
+  description: Every event this one was built from, in the order they were combined.
+  item:
+    type: int64
+- name: mic
+  type: int32
+  nullable: true
+  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
+  metadata:
+    enum:name: MIC
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
+    enum:encoding: ascii-big-endian
+    enum:max_bytes: '4'
+    enum:pattern: '[A-Z0-9]{4}'
+- name: reason
+  type: string
+  nullable: true
+  description: Why this event was rejected or could not be interpreted, when known.
+- name: source_url
+  type: string
+  description: Path of the log the row came from, as its filesystem addresses it.
+- name: source_rownum
+  type: int64
+  description: 1-based physical line number of the header; 0 when not read from a
+    file.
+- name: thread_name
+  type: string
+  description: Contents of the first bracketed header field.
+- name: plugin_code
+  type: string
+  description: Contents of the second bracketed header field.
+- name: message
+  type: string
+  description: Payload after the fixed log header, with continuation lines folded
+    in.

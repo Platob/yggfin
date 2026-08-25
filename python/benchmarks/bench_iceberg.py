@@ -22,7 +22,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import parser, timed  # noqa: E402
 
-from rekep import Convertible, Field, FixMessage, TextFile, scalar  # noqa: E402
+from rekep import Convertible, Field, FixMsg, TextFile, scalar  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
@@ -135,7 +135,7 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
 
 def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
     """A fresh table, partitioned by day or not at all."""
-    field = FixMessage.into_field()
+    field = FixMsg.into_field()
     if not partitioned:
         field = field.into_dataclass("Flat").into_field()
         field.field("unix_partition").is_partition_key = False
@@ -545,7 +545,7 @@ def sweep_fs(rows: int, days: int) -> None:
         }
         catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
         return catalog.dataset(
-            "bench.logs", field=FixMessage.into_field(), table_properties=OPTIMISED
+            "bench.logs", field=FixMsg.into_field(), table_properties=OPTIMISED
         ).create_with()
 
     def report(label: str, seconds: float) -> None:
@@ -919,7 +919,7 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     cannot address parts of it has to settle as a whole too. When it did not,
     every run read the table back and wrote it out again, forever.
     """
-    field = FixMessage.into_field().into_dataclass("Daily").into_field()
+    field = FixMsg.into_field().into_dataclass("Daily").into_field()
     # `bucket[8]`, because `unix_partition` is a signed integer and Iceberg's `day`
     # transform is for dates. The point is unchanged: a transform, not the value itself.
     field.field("unix_partition").is_partition_key = "bucket[8]"
@@ -947,7 +947,7 @@ def narrow_field() -> Any:
     """Three of the eight columns, as a declared shape rather than a column list."""
     from rekep.fields import Field
 
-    schema = FixMessage.into_field().into_arrow_schema()
+    schema = FixMsg.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema([schema.field(name) for name in ("unix", "plugin_code", "message")]),
         "Narrow",

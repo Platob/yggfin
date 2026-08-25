@@ -36,9 +36,9 @@ CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
     }
 )
 
-#: Session and application fields the parsed FixMessage lifts into its own columns.
+#: Session and application fields the parsed FixMsg lifts into its own columns.
 #: `rekep.fix.columns` is the authority; a test holds this list to it.
-FIXMESSAGE_FIELDS: tuple[str, ...] = (
+FIXMSG_FIELDS: tuple[str, ...] = (
     "BeginString",
     "BodyLength",
     "MsgType",
@@ -235,7 +235,7 @@ NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE",)
 
 #: Every key the packaged projection selects, in declaration order.
 PROJECTED: tuple[str, ...] = tuple(
-    dict.fromkeys((*FIXMESSAGE_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
+    dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )
 
 

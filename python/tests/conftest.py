@@ -10,6 +10,16 @@ import pytest
 @pytest.fixture(autouse=True)
 def _keep_aws_discovery_off_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """Give Arrow inert credentials so unit tests never probe EC2 metadata."""
+    for name in (
+        "S3_ENDPOINT_URL",
+        "S3_ACCESS_KEY_ID",
+        "S3_SECRET_ACCESS_KEY",
+        "S3_SESSION_TOKEN",
+        "S3_REGION",
+        "AWS_ENDPOINT_URL_S3",
+        "AWS_ENDPOINT_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "rekep-test")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "rekep-test")
     monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")

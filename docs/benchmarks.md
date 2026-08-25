@@ -7,7 +7,7 @@ fixture and current measurements.
 | page | implementation | command |
 | --- | --- | --- |
 | [Types](types.md) | Recursive Arrow casts | `bench_cast.py` |
-| [FixMessage](fixmessage.md) | Text files, folders, and parsing stages | `bench_text_file.py` |
+| [FixMsg](fixmsg.md) | Text files, Message rows, and FIX parsing | `bench_text_file.py` |
 | [FIX](fix.md) | Parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
 | [Market](market.md) | Identities, conversion, and book folding | `bench_market.py` |
 | [Iceberg](iceberg.md) | Reads, writes, merges, and maintenance | `bench_iceberg.py` |
@@ -40,19 +40,13 @@ across machines; the scripts assert their outputs before timing them.
 
 | path | fixture | result |
 | --- | ---: | ---: |
-| Text log, plain | 50,000 rows | 52,607 rows/s |
-| Text log, gzip | 50,000 rows | 102,483 rows/s |
-| Mixed capture, message layer on | 50,000 rows | 38,307 rows/s |
-| Mixed capture, no rules at all | 50,000 rows | 81,097 rows/s |
 | Line to header columns | 50,000 lines | 798,965 lines/s |
 | Wire parse, vectorised | 10,000 rows | 230,364–511,920 rows/s |
 | Rendered parse, vectorised | 10,000 rows | 120,751–214,143 rows/s |
 | Key column to tags, named keys | 112,500 keys, 6,071 names | 51.3M keys/s |
-| `parse_messages`, whole capture | 50,000 rows | 67,397 rows/s |
-| `parse_fix`, over stored rows | 50,000 rows | 161,682 rows/s |
 | Recursive Arrow reshape | 50,000 rows | 315.7M rows/s |
 | Wire line to market events | 100 messages of each shape | 8,179 / 5,525 / 2,281 rows/s |
-| Normalized Instrument FixMessage decode | 500 rows | 389.7 µs/row |
+| Normalized Instrument FixMsg decode | 500 rows | 389.7 µs/row |
 | Generic Instrument reconstruction | 500 rows | 271.8 µs/row |
 | Book summary, 10 levels/side | 200 books | 404,040 books/s |
 | Stateful book fold | 200 events | 17,832 books/s |
@@ -62,9 +56,9 @@ across machines; the scripts assert their outputs before timing them.
 | Iceberg merge, all new | 5,000 rows | 21,936–22,186 rows/s |
 | Iceberg merge, half stored | 5,000 rows | 984–992 rows/s |
 
-The complete text parser clears the 50k rows/s first-layer target. Exact
-half-stored Iceberg upserts remain the clearest scale-up target; append and
-monotonic insert should be preferred when their semantics fit.
+Exact half-stored Iceberg upserts remain the clearest scale-up target; append
+and monotonic insert should be preferred when their semantics fit. Message and
+FIX stage rates are omitted until the protocol-neutral boundary is remeasured.
 
 A key column is read through its **distinct** spellings, not its rows. A
 message keys its fields out of a bounded vocabulary, so a batch of a hundred
@@ -102,7 +96,7 @@ Order hash, so dense-book throughput also measures that required linear
 identity input; duplicate-event shortcuts avoid the walk when no Book is
 emitted.
 
-The [notebook smoke run](workflow-run.md) exercises all five stages, all three
+The [notebook smoke run](workflow-run.md) exercises all six jobs, all three
 log routes, registry-backed instrument enrichment, book recovery rows,
 auditable rejection, and a zero-write replay. The bounded market benchmark
 separately rejected 10 of 200 malformed events and emitted 70 auditable

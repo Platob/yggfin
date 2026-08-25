@@ -19,13 +19,12 @@ import pyarrow.fs
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
-from rekep.fix.transcribe import FixCodec
-from rekep.text.fixmessage import FixMessageRules, MessageCodec
 from rekep.text.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
+    _exclude_plugin_codes,
     compiled_header,
     parsed_field_of,
     static_columns_of,
@@ -107,21 +106,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: passed to every file the walk opens, so a set is one shape and not one
     #: per file.
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
-
-    #: What decides each line's `etype`, handed to every file the set opens --
-    #: a folder of one capture is one log format, so the rules belong to the
-    #: set and not to each file in it.
-    rules: FixMessageRules = dataclass_field(default_factory=FixMessageRules)
-
-    #: What turns a message into the columns a row carries, for the same reason
-    #: and in the same way: one capture is one set of message formats, so the
-    #: codec belongs to the set and every file it opens is handed this one.
-    codec: MessageCodec = dataclass_field(default_factory=FixCodec)
-
-    #: Whether the files this set opens resolve their fields against the
-    #: dictionary, or only structure them. Belongs to the set for the same
-    #: reason the codec does: a folder is read at one stage, not file by file.
-    resolved: bool = True
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -236,13 +220,19 @@ class TextFiles(Dataset, io.BufferedIOBase):
         self.row = field
         return self
 
-    def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
+    def read_arrow_reader(
+        self,
+        schema: Any = None,
+        *,
+        exclude_plugins: Sequence[str] = (),
+        **kwargs: Any,
+    ) -> pyarrow.RecordBatchReader:
         """Parse every log in order, cast onto `schema` when one is asked for.
 
         With none, the reader is the parser's own -- see `into_arrow_reader`
         for the parsing options, which are passed straight through.
         """
-        reader = self.into_arrow_reader(**kwargs)
+        reader = self.into_arrow_reader(exclude_plugins=exclude_plugins, **kwargs)
         target = self.target_field(schema)
         if target.arrow_schema.equals(reader.schema):
             return reader
@@ -330,9 +320,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 row=self.row,
                 timezone=self.timezone,
                 static_values=self.static_values,
-                rules=self.rules,
-                codec=self.codec,
-                resolved=self.resolved,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:
@@ -367,9 +354,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
 
     # -- converting ---------------------------------------------------------
 
-    def into_arrow_reader(self, **kwargs: Any) -> pyarrow.RecordBatchReader:
+    def into_arrow_reader(
+        self, *, exclude_plugins: Sequence[str] = (), **kwargs: Any
+    ) -> pyarrow.RecordBatchReader:
         """Stream the whole set as Arrow record batches, one file open at a time."""
-        batches = self.into_arrow_batches(**kwargs)
+        batches = self.into_arrow_batches(exclude_plugins=exclude_plugins, **kwargs)
         return pyarrow.RecordBatchReader.from_batches(self.schema, batches)
 
     def into_arrow_table(self, **kwargs: Any) -> pyarrow.Table:
@@ -381,14 +370,21 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
+        exclude_plugins: Sequence[str] = (),
     ) -> Iterator[pyarrow.RecordBatch]:
         """Parse every log in order, in batches that do not end at a file."""
         self._check_open()
+        exclude_plugins = _exclude_plugin_codes(exclude_plugins)
         pending: list[pyarrow.RecordBatch] = []
         rows = 0
         for log in self.into_files():
             with log:
-                batches = log.into_arrow_batches(batch_row_size, read_byte_size, fold_continuations)
+                batches = log.into_arrow_batches(
+                    batch_row_size,
+                    read_byte_size,
+                    fold_continuations,
+                    exclude_plugins,
+                )
                 for batch in batches:
                     pending.append(batch)
                     rows += batch.num_rows

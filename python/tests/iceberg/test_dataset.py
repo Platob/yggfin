@@ -17,7 +17,7 @@ from pyiceberg.conversions import from_bytes
 from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.expressions import EqualTo
 
-from rekep import Convertible, Field, FixMessage, StructField, scalar
+from rekep import Convertible, Field, FixMsg, StructField, scalar
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
@@ -89,7 +89,7 @@ def logs(tmp_path: Path) -> IcebergDataset:
         name="trading.logs",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        field=FixMessage.into_field(),
+        field=FixMsg.into_field(),
         auto_compact=False,
     )
 
@@ -97,7 +97,7 @@ def logs(tmp_path: Path) -> IcebergDataset:
 #: One wire FIX order as the parser lands it: the session layer and the fields
 #: the message carries once flattened into columns of their own, and the party
 #: repeating party group extracted as a list of structured entries.
-FIX_LINE = FixMessage(
+FIX_LINE = FixMsg(
     source_url="a.txt",
     unix=1_786_665_901_167_520_000,
     hash=3,
@@ -109,33 +109,33 @@ FIX_LINE = FixMessage(
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
     protocol_code="FIX",
     kwargs=[],
-    parties=[
-        Party(party_id="BUYSIDE", party_id_source="D", party_role=1),
-        Party(party_id="XPAR", party_id_source="G", party_role=17),
+    Parties=[
+        Party(PartyID="BUYSIDE", PartyIDSource="D", PartyRole=1),
+        Party(PartyID="XPAR", PartyIDSource="G", PartyRole=17),
     ],
-    begin_string="FIX.4.2",
-    body_length=176,
-    msg_type="D",
-    msg_seq_num=7,
-    sender_comp_id="BUYSIDE",
-    target_comp_id="XPAR",
-    sending_time=datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
-    poss_dup_flag=True,
-    signature=b"\x00sealed",
-    check_sum="203",
-    symbol="TTF",
-    cl_ord_id="ORD-1",
-    side="1",
-    order_qty=1200.0,
-    transact_time=datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC),
-    text="all good",
+    BeginString="FIX.4.2",
+    BodyLength=176,
+    MsgType="D",
+    MsgSeqNum=7,
+    SenderCompID="BUYSIDE",
+    TargetCompID="XPAR",
+    SendingTime=datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
+    PossDupFlag=True,
+    Signature=b"\x00sealed",
+    CheckSum="203",
+    Symbol="TTF",
+    ClOrdID="ORD-1",
+    Side="1",
+    OrderQty=1200.0,
+    TransactTime=datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC),
+    Text="all good",
 )
 
 
-def log_table(*rows: FixMessage) -> pyarrow.Table:
+def log_table(*rows: FixMsg) -> pyarrow.Table:
     """Lines in the Python shape Arrow storage expects."""
     return pyarrow.Table.from_pylist(
-        [dataclasses.asdict(row) for row in rows], FixMessage.into_field().into_arrow_schema()
+        [dataclasses.asdict(row) for row in rows], FixMsg.into_field().into_arrow_schema()
     )
 
 
@@ -760,44 +760,42 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMessage.into_field().names) == 109
+    assert len(FixMsg.into_field().names) == 109
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
-    assert [one.name for one in logs.iceberg_table.schema().fields] == FixMessage.into_field().names
-    stored = logs.read_arrow_table(FixMessage.into_field())
+    assert [one.name for one in logs.iceberg_table.schema().fields] == FixMsg.into_field().names
+    stored = logs.read_arrow_table(FixMsg.into_field())
     assert stored.num_rows == 1, "the same line upserts onto itself"
     row = stored.to_pylist()[0]
     assert row["protocol_code"] == "FIX"
     assert row["kwargs"] == []
-    assert [party["party_id"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
-    assert row["msg_seq_num"] == 7 and row["sender_comp_id"] == "BUYSIDE"
-    assert row["symbol"] == "TTF" and row["cl_ord_id"] == "ORD-1"
-    assert row["order_qty"] == 1200.0
-    assert row["poss_dup_flag"] is True
-    assert row["signature"] == b"\x00sealed", "binary keeps its leading zero byte"
-    assert row["sending_time"] == FIX_LINE.sending_time
-    assert row["check_sum"] == "203", "text keeps checksum leading zeros"
-    assert row["price"] is None, "a field this message never carried"
+    assert [party["PartyID"] for party in row["Parties"]] == ["BUYSIDE", "XPAR"]
+    assert row["MsgSeqNum"] == 7 and row["SenderCompID"] == "BUYSIDE"
+    assert row["Symbol"] == "TTF" and row["ClOrdID"] == "ORD-1"
+    assert row["OrderQty"] == 1200.0
+    assert row["PossDupFlag"] is True
+    assert row["Signature"] == b"\x00sealed", "binary keeps its leading zero byte"
+    assert row["SendingTime"] == FIX_LINE.SendingTime
+    assert row["CheckSum"] == "203", "text keeps checksum leading zeros"
+    assert row["Price"] is None, "a field this message never carried"
 
 
 def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     logs: IcebergDataset,
 ) -> None:
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
-    quiet = FixMessage(unix=1, hash=1, xhash=1, message="heartbeat emitted")
-    bridged = FixMessage(
-        unix=2, hash=2, xhash=2, message="toBridge #", protocol_code="UL", kwargs=[]
-    )
+    quiet = FixMsg(unix=1, hash=1, xhash=1, message="heartbeat emitted")
+    bridged = FixMsg(unix=2, hash=2, xhash=2, message="toBridge #", protocol_code="UL", kwargs=[])
     logs.append_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
-    stored = logs.read_arrow_table(FixMessage.into_field()).sort_by("unix")
+    stored = logs.read_arrow_table(FixMsg.into_field()).sort_by("unix")
     assert stored.column("protocol_code").to_pylist() == ["OTHER", "UL", "FIX"]
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
     # parser-level contract still pins null versus empty before this boundary.
     assert stored.column("kwargs").to_pylist() == [[], [], []]
-    assert stored.column("parties").to_pylist()[0:2] == [[], []]
+    assert stored.column("Parties").to_pylist()[0:2] == [[], []]
 
 
 def test_the_stored_fields_keep_their_required_members(
@@ -823,14 +821,14 @@ def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset
     The count is pinned against the declaration rather than derived from it, so
     that a shape growing past the `MAX_INFERRED` ceiling is caught here, where
     the budget is reasoned about, and not as a tail of columns that quietly
-    stopped pruning. `text` is the last leaf this row fills, and a bound is
+    stopped pruning. `Text` is the last leaf this row fills, and a bound is
     recorded only for a column that carries a value.
     """
     logs.append_arrow_table(log_table(FIX_LINE))
-    leaves = FixMessage.into_field().leaf_names()
+    leaves = FixMsg.into_field().leaf_names()
     assert len(leaves) == 127
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
-    last = logs.iceberg_table.schema().find_field("text").field_id
+    last = logs.iceberg_table.schema().find_field("Text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
     assert written, "a write landed a file"
     assert all(last in one.lower_bounds for one in written), "the last column still prunes"

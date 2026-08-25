@@ -32,8 +32,8 @@ class ClassBuilder:
         """One class, one member per field, in declaration order.
 
         A field this package built carries its class name and module, and the
-        generated class takes that identity back -- so a clone of `FixMessage` *is*
-        named FixMessage, in its module. An explicit `name` wins; a field without the
+        generated class takes that identity back -- so a clone of `FixMsg` *is*
+        named FixMsg, in its module. An explicit `name` wins; a field without the
         metadata falls back to its own name, then to `ArrowFields`.
         """
         annotations: dict[str, Any] = {}

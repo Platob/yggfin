@@ -1,14 +1,14 @@
 # End-to-end run
 
-Measured on 2026-08-23, this run executed the code cells from all five task
+Measured on 2026-08-23, this run executed the code cells from all six task
 notebooks against a fresh local Iceberg warehouse, then replayed the same
 interval. It is a correctness fixture; the larger focused measurements remain
 on [Benchmarks](benchmarks.md).
 
 ![End-to-end execution architecture](assets/workflow-run.svg)
 
-Only `fixmessage.market` continues into market readers. `fixmessage.misc` and
-`fixmessage.unknown` remain complete terminal Iceberg tables.
+Only `fix.market` continues into market readers. `fix.misc` and
+`fix.unknown` remain complete terminal Iceberg tables.
 
 ## Run context
 
@@ -65,9 +65,9 @@ deterministically reconstructed Instrument lifecycle rows.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
-| `fixmessage.market` | 27 | 7 |
-| `fixmessage.misc` | 1 | 1 |
-| `fixmessage.unknown` | 1 | 1 |
+| `fix.market` | 27 | 7 |
+| `fix.misc` | 1 | 1 |
+| `fix.unknown` | 1 | 1 |
 | `market.instruments` | 16 | 4 |
 | `market.books` | 17 | 5 |
 | `market.orders` | 15 | 4 |
@@ -103,7 +103,7 @@ the short 1.5 s test bound; the normal workflow default is one day.
 The raw Security Definition remains lossless. `parse_fix` infers 4.4 from its
 `BeginString`, prepares that registry once, versions the Instrument, and stores
 the normalized result beside the raw line. `flatten_instruments` then performs
-only the exact `FixMessage` to `Instrument` projection.
+only the exact `FixMsg` to `Instrument` projection.
 
 ### Instruments
 
@@ -149,13 +149,14 @@ and orders.
 
 ![Schema lineage from logs to instruments, books, orders, and executions](assets/schema-lineage.svg)
 
-| Contract | Fields | Primary key | Partitions | Nested payloads |
-| --- | ---: | --- | --- | --- |
-| `FixMessage` | 105 | `unix, hash` | `unix_partition` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
-| `Instrument` | 36 | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
-| `Book` | 53 | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
-| `Order` | 40 | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
-| `Execution` | 42 | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
+| Contract | Primary key | Partitions | Nested payloads |
+| --- | --- | --- | --- |
+| `Message` | `unix, hash` | `unix_partition` | standard event lineage and `codes` |
+| `FixMsg` | `unix, hash` | `unix_partition` | `kwargs`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `codes` |
+| `Instrument` | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
+| `Book` | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
+| `Order` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
+| `Execution` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
 
 The hour is the only partition. An instrument identity is a 64-bit hash, so
 bucketing it multiplies the files inside each hour without pruning a read the

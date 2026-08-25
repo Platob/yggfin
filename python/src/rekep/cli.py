@@ -119,7 +119,7 @@ def _imported(spec: str) -> Any:
     if not module_name or not attribute:
         raise ValueError(
             f"{spec!r} does not name a class: write it as module:Attribute, "
-            "for instance rekep.text.fixmessage:FixMessage"
+            "for instance rekep.text.fixmsg:FixMsg"
         )
     module = importlib.import_module(module_name)
     try:
@@ -397,7 +397,7 @@ def _parser() -> argparse.ArgumentParser:
     dumping.add_argument(
         "--pyclass",
         required=True,
-        help="the class to dump, as module:Attribute (rekep.text.fixmessage:FixMessage)",
+        help="the class to dump, as module:Attribute (rekep.text.fixmsg:FixMsg)",
     )
     dumping.add_argument(
         "--format",

@@ -336,7 +336,7 @@ def test_isincode_is_lifted_from_rendered_names_without_losing_repeats(
         ]
     )
     columns, rest = codec.into_lifted_columns(kwargs, "4.4")
-    assert columns["isincode"].to_pylist() == ["XX0000084733", None, None]
+    assert columns["ISINCODE"].to_pylist() == ["XX0000084733", None, None]
     assert _named(rest, 0) == [("OTHER", "x")]
     assert _named(rest, 1) == [("isincode", "A"), ("ISINCODE", "B")]
     assert _kwargs(rest, 2) is None
@@ -346,10 +346,10 @@ def test_no_version_keeps_every_field_raw(codec: FixCodec) -> None:
     """Nothing resolves and nothing lifts, but the fields are all still there."""
     parsed = parse_arrow_array(pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True)
 
-    kwargs, columns = codec.into_fixmessage_columns(parsed)
+    kwargs, columns = codec.into_fixmsg_columns(parsed)
 
     assert _kwargs(kwargs) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
-    assert columns["isincode"].to_pylist() == [None]
+    assert columns["ISINCODE"].to_pylist() == [None]
 
 
 def test_wire_tags_resolve_without_any_dictionary_at_all(codec: FixCodec) -> None:
@@ -641,7 +641,7 @@ def test_versionless_parties_stay_raw(codec: FixCodec) -> None:
 
     columns, residual = bare.into_component_columns(tags)
 
-    assert columns["parties"].to_pylist() == [None]
+    assert columns["Parties"].to_pylist() == [None]
     assert residual is tags
 
 
@@ -1232,7 +1232,7 @@ def packaged() -> FixCodec:
 def _party_rows(codec: FixCodec, message: str, version: str) -> list[dict[str, object]] | None:
     tags = codec.into_kwargs(codec.into_pairs(pyarrow.array([message]), "FIX"), version)
     columns, _ = codec.into_component_columns(tags, version)
-    return columns["parties"].to_pylist()[0]
+    return columns["Parties"].to_pylist()[0]
 
 
 def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCodec) -> None:
@@ -1249,9 +1249,9 @@ def test_the_packaged_registry_extracts_parties_from_a_wire_message(
     """The consequence, end to end: this answered `[None]` before the fix."""
     parties = _party_rows(packaged, PARTIES_WIRE, "4.4")
     assert parties is not None, "a version was named, so the group must be read"
-    assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
-    assert [party["party_role"] for party in parties] == [1, 11]
-    assert [party["party_id_source"] for party in parties] == ["D", "D"]
+    assert [party["PartyID"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
+    assert [party["PartyRole"] for party in parties] == [1, 11]
+    assert [party["PartyIDSource"] for party in parties] == ["D", "D"]
     assert dict(parties[0]["buffer"]) == {
         "NoPartySubIDs": "1",
         "NoPartySubIDs[0].PartySubID": "SUB-TEST-A",
@@ -1320,13 +1320,13 @@ def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
             "#ORDERQTY=100",
         ]
     )
-    tags, columns = packaged.into_fixmessage_columns(
+    tags, columns = packaged.into_fixmsg_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
     lifted = {name: column.to_pylist()[0] for name, column in columns.items()}
-    assert lifted["side"] == "1"
-    assert lifted["cl_ord_id"] == "ORD-TEST-01"
-    assert lifted["order_qty"] == 100.0
+    assert lifted["Side"] == "1"
+    assert lifted["ClOrdID"] == "ORD-TEST-01"
+    assert lifted["OrderQty"] == 100.0
     assert _tags(tags) == [], "and both copies left with the fact they carried"
 
 
@@ -1335,10 +1335,10 @@ def test_two_readings_that_disagree_are_still_left_where_they_were(
 ) -> None:
     """Two values under one key is a group or a rewrite, and picking is a guess."""
     line = "toBridge #BEGINSTRING=FIX.4.4|#SIDE=1|SIDE=2"
-    tags, columns = packaged.into_fixmessage_columns(
+    tags, columns = packaged.into_fixmsg_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
-    assert columns["side"].to_pylist() == [None]
+    assert columns["Side"].to_pylist() == [None]
     assert _tags(tags) == [(54, "1"), (54, "2")]
 
 
@@ -1349,11 +1349,11 @@ def test_a_repeated_group_member_is_untouched_by_any_of_this(
     message = SOH.join(
         ["8=FIX.4.4", "35=8", "295=2", "299=Q-TEST-1", "132=1.0", "299=Q-TEST-2", "132=2.0"]
     )
-    tags, columns = packaged.into_fixmessage_columns(
+    tags, columns = packaged.into_fixmsg_columns(
         packaged.into_pairs(pyarrow.array([message + SOH]), "FIX"), "4.4"
     )
-    assert columns["quote_entry_id"].to_pylist() == [None]
-    assert columns["bid_px"].to_pylist() == [None]
+    assert columns["QuoteEntryID"].to_pylist() == [None]
+    assert columns["BidPx"].to_pylist() == [None]
     assert [tag for tag, _ in _tags(tags)] == [295, 299, 132, 299, 132]
 
 
@@ -1441,12 +1441,12 @@ def test_a_payload_field_lands_in_the_column_its_name_earns(packaged: FixCodec) 
         )
         + SOH
     )
-    tags, columns = packaged.into_fixmessage_columns(
+    tags, columns = packaged.into_fixmsg_columns(
         packaged.into_pairs(pyarrow.array([message]), "FIX"), "4.4"
     )
-    assert columns["cl_ord_id"].to_pylist() == ["ORD-TEST-01"]
-    assert columns["side"].to_pylist() == ["1"]
-    assert columns["account"].to_pylist() == ["ACCT-TEST-01"]
+    assert columns["ClOrdID"].to_pylist() == ["ORD-TEST-01"]
+    assert columns["Side"].to_pylist() == ["1"]
+    assert columns["Account"].to_pylist() == ["ACCT-TEST-01"]
     assert _kwargs(tags) == [], "the payload's fields all found a column"
 
 

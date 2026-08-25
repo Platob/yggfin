@@ -1,99 +1,53 @@
 # Parse FIX
 
-`tasks/parse_fix/parse_fix.ipynb` reads `text.messages` -- the structured,
-unresolved rows `parse_messages` wrote -- resolves them against the FIX
-dictionary, and routes each one to a table.
+`tasks/parse_fix/parse_fix.ipynb` reads protocol-neutral `Message` rows from
+`logs.messages`, parses their payloads as FIX where the configured rules say
+they are FIX, and routes the resulting `FixMsg` rows.
 
-It never reads `message` on a row it resolves. Everything comes from the
-stored `kwargs`, `protocol_code` and `protocol_version`, which is what makes a
-re-parse cheap: the batch splits by a stored value rather than by
-re-categorising and re-splitting every line.
+This is the first stage that opens the FIX dictionary. For each Arrow batch it:
 
-## What it fills
+1. classifies each raw `message` and splits it into ordered pairs;
+2. infers the FIX application version;
+3. resolves names, tags, types and configured value spellings;
+4. lifts declared fields and structured components;
+5. derives the event category, venue, transaction time and identities.
 
-The same `kwargs` column, three members further along:
+Repeated tags and wire order remain in `kwargs`. A resolved entry records the
+canonical FIX key, its numeric tag, its value, and either its component path or
+vendor namespace. Fields promoted for filtering use the registry spelling as
+their physical column name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`,
+`TransactTime`, and so on.
 
-- `tag`, for a key the dictionary answers for;
-- `key`, canonicalized to the registry's own spelling (`PARTYID` becomes
-  `PartyID`);
-- `value`, resolved through the dictionary's translations (`Side=Buy` becomes
-  `1`).
+## Routing
 
-`namespace` and `comp` are byte-identical before and after: where a field
-stood is a fact about the spelling, settled at the message stage, and a
-dictionary has nothing to add to it. Nothing is rewritten from scratch --
-`FixMessage` to `FixMessage` is a fill, not a shape conversion.
+`Rules.into_arrow_category_array` selects one destination per parsed row:
 
-Then the fields that earn a column of their own are lifted out of `kwargs`,
-the structured components are built, the transaction time is resolved now that
-those columns exist (see [Market](../market.md#when-it-happened)), and the
-digest is taken over the parsed values.
-
-## The redirection test
-
-One condition, applied in one place, decides where a row goes:
-
-> A row is usable as a FIX message when its `etype` is anything other than
-> `UNKNOWN` -- that is, when the event rules recognised what the line is.
-
-`Rules.into_arrow_category_array` is that condition, and it runs once per
-batch:
-
-| table | the row |
+| Table | Rows |
 | --- | --- |
-| `fixmessage.market` | resolved as FIX: order, quote, execution, book or instrument traffic |
-| `fixmessage.misc` | not usable as FIX, but its protocol is one the rules recognise |
-| `fixmessage.unknown` | not usable as FIX, and its protocol is not recognised either |
+| `fix.market` | Orders, quotes, executions, books and instruments. |
+| `fix.misc` | Recognized operational traffic that is not a market event. |
+| `fix.unknown` | Payloads no configured protocol recognizes. |
 
-All three hold the same `FixMessage` class under one contract, so a reader
-unions them with one schema and no cast.
+All destinations use the same `FixMsg` contract. A market row may drop
+the raw `message` after the ordered resolved fields carry its content; misc and
+unknown rows retain the raw payload as the content of record.
 
-## What is guaranteed non-null
-
-| column | `market` | `misc` | `unknown` |
-| --- | --- | --- | --- |
-| `unix`, `unix_partition`, `hash`, `etype`, `runix` | yes | yes | yes |
-| `source_url`, `source_rownum`, `protocol_code` | yes | yes | yes |
-| `message` | **null** | yes | yes |
-| `kwargs` | yes, resolved | as the line split | as the line split |
-| `protocol_version` | where one resolved | where one resolved | usually null |
-| `msg_type` | where the message carried one | usually null | usually null |
-
-`message` is null on `market` rows because `kwargs` carries everything it
-held; an all-null column run-length and dictionary encodes to nothing on
-disk. On a redirected row the raw string is still the content of record, so it
-stays.
-
-A redirected row's `kwargs` is *not* empty in the general case: a `misc` line
-that split into pairs keeps them, structured, so it is queryable by key and
-value without ever having been FIX. It is only null where the line split into
-nothing at all.
-
-## What a redirected row's `unix` holds
-
-A redirected row has no transaction time for the chain to resolve -- it
-carries no FIX clock at all -- so `unix` is the recording clock and
-`unix_source` says `recorded`. `runix` holds the same instant. The two agree
-on such a row, and that agreement is the signal: a row whose `unix` equals its
-`runix` and whose `unix_source` is `recorded` was never dated by anything but
-the log itself.
+The source interval is filtered on `Message.unix`, the recording clock. The
+resulting `FixMsg.unix` may instead come from a regulatory timestamp,
+`TransactTime`, market-data entry time, sending time, or finally the recording
+clock. Output tables are sorted by `(unix, MsgSeqNum, hash)`.
 
 ## Instruments
 
-After the routing, the notebook reads the prior interval's latest
-`market.instruments` snapshots and the newly sorted `fixmessage.market` slice.
-It versions and snapshots instrument facts once, then appends them to
-`fixmessage.market` as normalized rows carrying `MsgType` `U1` -- a
-user-defined type of this package's own, so a synthesized instrument is
-distinguishable from a `SecurityDefinition <d>` a real bridge sent, by the
-message alone.
+After routing, the notebook resumes recent Instrument state and derives new
+versions from the sorted market stream. Normalized Instrument rows are written
+back to `fix.market` with the package-owned user-defined `MsgType` `U1`,
+then `flatten_instruments` writes the Instrument table.
 
-The adjacent `parse_fix.yml` selects the message table, the offline FIX
-registry, the catalog, batch and commit sizes, and an optional `[start, end)`
-interval. That interval is read against the recording clock, because that is
-what the message stage partitioned on: `unix` moves when a transaction time
-resolves, so filtering on it here would drop rows the interval owns.
+## Configuration
 
-A dictionary change or a new [field declaration](../configuring.md#what-a-fields-values-mean)
-is a re-run of this stage alone: nothing re-tokenises a line that was already
-split.
+The adjacent `parse_fix.yml` owns every FIX setting: `fix_dictionary`,
+`null_values`, event `rules`, protocol rules, and declared `fields`. It also
+selects the catalog, branch, source interval, static columns and batch sizes.
+A dictionary or rule change reruns this stage against retained `Message` rows;
+the raw payload is parsed again under the new declaration.

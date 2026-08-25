@@ -63,6 +63,25 @@ def test_s3_location_settings_are_normalized_before_the_catalog_uses_them(
     assert seen["s3.endpoint"] == "http://minio:9000"
 
 
+def test_s3_process_defaults_reach_the_catalog_before_a_table_location(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pyiceberg.catalog
+
+    seen = {}
+
+    def loaded(name: str, **properties: str) -> object:
+        seen.update(properties)
+        return object()
+
+    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
+    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000")
+    monkeypatch.setenv("S3_REGION", "eu-west-1")
+    _ = IcebergCatalog(properties={"type": "in-memory"}).catalog
+    assert seen["s3.endpoint"] == "http://minio:9000"
+    assert seen["s3.region"] == "eu-west-1"
+
+
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
     named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
     assert named.properties["py-io-impl"] == "x.Y"

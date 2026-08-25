@@ -1,7 +1,7 @@
 # rekep
 
-`rekep` streams trading logs through Arrow into five Iceberg contracts: logs,
-instruments, books, orders, and executions.
+`rekep` streams trading logs through Arrow into six Iceberg contracts: source
+messages, FIX messages, instruments, books, orders, and executions.
 
 ![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](docs/assets/arrow-hub.svg)
 
@@ -10,7 +10,7 @@ pip install "rekep[all]"
 ```
 
 ```python
-from rekep import FixMessage, TextFiles
+from rekep import TextFiles
 
 capture = TextFiles.from_folder(
     "s3://bucket/logs/2026-08-14",
@@ -18,8 +18,8 @@ capture = TextFiles.from_folder(
     static_values={"source": "bridge-1"},
 )
 
-for batch in capture.read_arrow_reader(schema=FixMessage.into_field()):
-    consume(batch)
+for messages in capture.read_arrow_reader():
+    consume(messages)
 ```
 
 Arrow is the boundary between every stage. `@scalar` declarations define the
@@ -52,7 +52,7 @@ Core properties:
 - stable cross-language XXH3 `int64` identities;
 - immutable event, instrument, order, execution, and book histories;
 - deterministic partition-aware Iceberg reads and bounded writes;
-- five checked contracts under `schemas/rekep/`.
+- six checked contracts under `schemas/rekep/`.
 
 See the [documentation](https://platob.github.io/rekep/) or the local
 [architecture overview](docs/index.md).

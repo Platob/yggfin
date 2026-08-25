@@ -618,38 +618,6 @@ class FixCodec(Convertible):
             compute.take(compute.if_else(compute.and_(led, entry), lead, nothing), indices),
         )
 
-    def into_message_columns(self, messages: Any, plugins: Any = None) -> dict[str, Any]:
-        """What a line carries, before any of it is resolved.
-
-        The message stage in one call: which protocol the line is, its fields
-        structured into the stored struct, the protocol version and where that
-        came from, and `MsgType <35>` -- which is one tag off the front of a
-        message and wants no registry to find.
-        """
-        # At the call, because `fix.access` reads this module's own `TagIndex`:
-        # the accessor is built on the transcription, so the transcription
-        # reaches back into it here rather than at import.
-        from rekep.fix.access import FieldAccess
-
-        compute = pyarrow.compute
-        protocols = self.categorise(messages, plugins)
-        rows = len(messages)
-        parts, positions = [], []
-        for name, where in groups_of(protocols):
-            slice_ = messages if len(where) == rows else compute.take(messages, where)
-            pairs = self.into_pairs(slice_, name.as_py())
-            parts.append(self.into_message_kwargs(pairs))
-            positions.append(where)
-        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
-        version, source = self.versions_of_kwargs(kwargs)
-        return {
-            "protocol_code": protocols,
-            "kwargs": kwargs,
-            "protocol_version": version,
-            "protocol_version_source": source,
-            "msg_type": FieldAccess.first_named(kwargs, 35, "MsgType", rows),
-        }
-
     def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
@@ -802,7 +770,7 @@ class FixCodec(Convertible):
             for spelling, value in rule.values.items()
         ]
 
-    def into_fixmessage_columns(
+    def into_fixmsg_columns(
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """One parsed pair column as the fields a log keeps and the columns it lifts."""
@@ -902,9 +870,9 @@ class FixCodec(Convertible):
         """
         return MappingProxyType(
             {
-                "parties": Parties,
-                "trd_reg_timestamps": TrdRegTimestamps,
-                "side_trd_reg_timestamps": SideTrdRegTimestamps,
+                "Parties": Parties,
+                "TrdRegTimestamps": TrdRegTimestamps,
+                "SideTrdRegTS": SideTrdRegTimestamps,
             }
         )
 
@@ -1079,7 +1047,7 @@ class FixCodec(Convertible):
 
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
-        return self.component_of("parties", version)  # type: ignore[return-value]
+        return self.component_of("Parties", version)  # type: ignore[return-value]
 
     def component_of(self, column: str, version: str | None = None) -> ComponentGroup:
         """Version-aware extractor for one structured component, cached per version."""

@@ -85,11 +85,11 @@ def _stamps(**declared: object) -> TrdRegTimestamps:
 
 
 def test_party_is_the_exact_fix_named_shape() -> None:
-    assert Party.into_field().names == ["party_id", "party_id_source", "party_role", "buffer"]
-    assert Party.into_field().field("party_id").metadata["fix:tag"] == "448"
-    assert Party.into_field().field("party_id_source").metadata["fix:tag"] == "447"
-    assert Party.into_field().field("party_role").metadata["fix:tag"] == "452"
-    assert Party.into_field().field("party_role").arrow_type == pyarrow.int64()
+    assert Party.into_field().names == ["PartyID", "PartyIDSource", "PartyRole", "buffer"]
+    assert Party.into_field().field("PartyID").metadata["fix:tag"] == "448"
+    assert Party.into_field().field("PartyIDSource").metadata["fix:tag"] == "447"
+    assert Party.into_field().field("PartyRole").metadata["fix:tag"] == "452"
+    assert Party.into_field().field("PartyRole").arrow_type == pyarrow.int64()
     assert Party.into_field().field("buffer").arrow_type == pyarrow.map_(
         pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
     )
@@ -116,15 +116,15 @@ def test_counted_parties_are_lifted_and_every_other_tag_keeps_its_order() -> Non
     assert parties.to_pylist() == [
         [
             {
-                "party_id": "BUYSIDE",
-                "party_id_source": "D",
-                "party_role": 1,
+                "PartyID": "BUYSIDE",
+                "PartyIDSource": "D",
+                "PartyRole": 1,
                 "buffer": None,
             },
             {
-                "party_id": "XPAR",
-                "party_id_source": "G",
-                "party_role": 17,
+                "PartyID": "XPAR",
+                "PartyIDSource": "G",
+                "PartyRole": 17,
                 "buffer": None,
             },
         ]
@@ -149,8 +149,8 @@ def test_a_resolved_rendered_sequence_needs_no_count_field() -> None:
 
     parties, residual = _parties().into_arrow_arrays(source)
 
-    assert [party["party_id"] for party in parties.to_pylist()[0]] == ["BUYSIDE", "XPAR"]
-    assert [party["party_role"] for party in parties.to_pylist()[0]] == [1, 17]
+    assert [party["PartyID"] for party in parties.to_pylist()[0]] == ["BUYSIDE", "XPAR"]
+    assert [party["PartyRole"] for party in parties.to_pylist()[0]] == [1, 17]
     assert _pairs(residual.to_pylist()[0]) == [(55, "TTF")]
 
 
@@ -328,9 +328,9 @@ def test_an_invalid_role_is_retained_instead_of_becoming_null_data() -> None:
     assert parties.to_pylist() == [
         [
             {
-                "party_id": "BUYSIDE",
-                "party_id_source": None,
-                "party_role": None,
+                "PartyID": "BUYSIDE",
+                "PartyIDSource": None,
+                "PartyRole": None,
                 "buffer": [("PartyRole", "dealer")],
             }
         ]
@@ -343,7 +343,7 @@ def test_a_leading_plus_in_party_role_is_read_as_an_integer() -> None:
         _tags([(453, "1"), (448, "BUYSIDE"), (452, "+1")])
     )
 
-    assert parties.to_pylist()[0][0]["party_role"] == 1
+    assert parties.to_pylist()[0][0]["PartyRole"] == 1
     assert residual.to_pylist() == [[]]
 
 
@@ -378,7 +378,7 @@ def test_unrelated_transport_components_do_not_disable_parties() -> None:
         _tags([(453, "1"), (448, "BUYSIDE"), (452, "1")])
     )
 
-    assert parties.to_pylist()[0][0]["party_id"] == "BUYSIDE"
+    assert parties.to_pylist()[0][0]["PartyID"] == "BUYSIDE"
     assert residual.to_pylist() == [[]]
 
 
@@ -405,7 +405,7 @@ def test_a_slice_keeps_group_state_inside_each_message() -> None:
 
     parties, residual = _parties().into_arrow_arrays(source)
 
-    assert [[party["party_id"] for party in row] for row in parties.to_pylist()] == [
+    assert [[party["PartyID"] for party in row] for row in parties.to_pylist()] == [
         ["A"],
         ["B"],
     ]
@@ -469,14 +469,14 @@ def test_another_group_splits_exactly_as_parties_does() -> None:
     found, rest = extractor.into_arrow_arrays(source)
     entries = found.to_pylist()[0]
     assert len(entries) == 2, "the count said two, and two delimiters opened"
-    # Its own projection: the delimiter lands in `trd_reg_timestamp` and the
+    # Its own projection: the delimiter lands in `TrdRegTimestamp` and the
     # two members it declares in their own columns, with nothing left over.
-    assert [entry["trd_reg_timestamp"].isoformat()[:19] for entry in entries] == [
+    assert [entry["TrdRegTimestamp"].isoformat()[:19] for entry in entries] == [
         "2026-01-01T00:00:00",
         "2026-01-01T00:00:01",
     ]
-    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
-    assert [entry["trd_reg_timestamp_origin"] for entry in entries] == ["FAKE-ORIGIN", None]
+    assert [entry["TrdRegTimestampType"] for entry in entries] == [1, 2]
+    assert [entry["TrdRegTimestampOrigin"] for entry in entries] == ["FAKE-ORIGIN", None]
     assert [entry["buffer"] for entry in entries] == [None, None]
     assert _pairs(rest.to_pylist()[0]) == [
         (8, "FIX.4.4"),
@@ -510,8 +510,8 @@ def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
     # which the stamp column cannot hold, so that column stays null while the
     # member declared for 770 takes it.
     assert len(entries) == 2
-    assert [entry["trd_reg_timestamp"] for entry in entries] == [None, None], "770 is no stamp"
-    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
+    assert [entry["TrdRegTimestamp"] for entry in entries] == [None, None], "770 is no stamp"
+    assert [entry["TrdRegTimestampType"] for entry in entries] == [1, 2]
 
 
 def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> None:
@@ -526,15 +526,15 @@ def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> Non
 def test_a_regulatory_stamp_is_the_exact_fix_named_shape() -> None:
     names = TrdRegTimestamp.into_field().names
     assert names == [
-        "trd_reg_timestamp",
-        "trd_reg_timestamp_type",
-        "trd_reg_timestamp_origin",
+        "TrdRegTimestamp",
+        "TrdRegTimestampType",
+        "TrdRegTimestampOrigin",
         "buffer",
     ]
     field = TrdRegTimestamp.into_field()
-    assert field.field("trd_reg_timestamp").metadata["fix:tag"] == "769"
-    assert field.field("trd_reg_timestamp_type").metadata["fix:tag"] == "770"
-    assert field.field("trd_reg_timestamp_origin").metadata["fix:tag"] == "771"
+    assert field.field("TrdRegTimestamp").metadata["fix:tag"] == "769"
+    assert field.field("TrdRegTimestampType").metadata["fix:tag"] == "770"
+    assert field.field("TrdRegTimestampOrigin").metadata["fix:tag"] == "771"
 
 
 def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
@@ -554,9 +554,9 @@ def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
     stamps, residual = _stamps().into_arrow_arrays(source)
     assert stamps.type == TRD_REG_TIMESTAMPS
     entries = stamps.to_pylist()[0]
-    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
-    assert [entry["trd_reg_timestamp_origin"] for entry in entries] == ["venue", None]
-    assert entries[0]["trd_reg_timestamp"].isoformat().startswith("2026-08-14T09:30:00.123")
+    assert [entry["TrdRegTimestampType"] for entry in entries] == [1, 2]
+    assert [entry["TrdRegTimestampOrigin"] for entry in entries] == ["venue", None]
+    assert entries[0]["TrdRegTimestamp"].isoformat().startswith("2026-08-14T09:30:00.123")
     assert _pairs(residual.to_pylist()[0]) == [(35, "8"), (10, "000")]
 
 
@@ -565,8 +565,8 @@ def test_a_malformed_stamp_is_kept_as_text_rather_than_becoming_null() -> None:
     source = _tags([(768, "1"), (769, "not-a-stamp"), (770, "1")])
     stamps, residual = _stamps().into_arrow_arrays(source)
     (entry,) = stamps.to_pylist()[0]
-    assert entry["trd_reg_timestamp"] is None
-    assert entry["trd_reg_timestamp_type"] == 1
+    assert entry["TrdRegTimestamp"] is None
+    assert entry["TrdRegTimestampType"] == 1
     assert dict(entry["buffer"]) == {"TrdRegTimestamp": "not-a-stamp"}
     assert _pairs(residual.to_pylist()[0]) == []
 

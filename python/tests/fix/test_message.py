@@ -54,7 +54,7 @@ def test_tag_18_never_reads_as_a_beginstring() -> None:
 @pytest.mark.parametrize("line", [PIPE, SOHED, CARET])
 def test_the_two_spellings_parse_identically(line: str) -> None:
     parsed = FixPairs.from_text(line)
-    assert parsed.begin_string.startswith("FIX")
+    assert parsed.get(8).startswith("FIX")
     assert parsed.get(9) in {"2058", "100"}
 
 

@@ -14,7 +14,7 @@ from pyiceberg.io import InputFile, InputStream, OutputFile, OutputStream
 from pyiceberg.io.pyarrow import PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
-from rekep.urls import S3, Url, properties_of
+from rekep.urls import S3, Url, properties_of, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
 #: UUID and the suffix. A name *without* the UUID -- `v3.metadata.json`, which
@@ -232,9 +232,11 @@ class _TeeStream:
 
 
 def inferred_properties(properties: Properties) -> Properties:
-    """`properties`, plus S3 settings carried by its locations."""
+    """`properties`, plus S3 process and location defaults."""
+    environment = s3_environment()
     inferred: dict[str, str] = {}
     normalized = dict(properties)
+    endpoint_decided = False
     for name in LOCATION_PROPERTIES:
         location = properties.get(name)
         if not location:
@@ -242,15 +244,26 @@ def inferred_properties(properties: Properties) -> Properties:
         url = Url.from_string(str(location))
         if url.scheme not in S3:
             continue
-        for key, value in properties_of(url).items():
+        location_defaults = dict(properties_of(url))
+        if endpoint_decided:
+            location_defaults.pop("s3.endpoint", None)
+        for key, value in location_defaults.items():
             inferred.setdefault(key, value)
+        if url.endpoint is not None:
+            endpoint_decided = True
+        if url.user is not None:
+            # A session token belongs to its access-key pair; never combine a
+            # portable token with credentials explicitly carried by the URL.
+            environment.pop("s3.session-token", None)
         if url.query:
             clean = url.copy()
             clean.query.clear()
             normalized[name] = clean.into_string()
-    if not inferred and normalized == properties:
+    if endpoint_decided and "s3.endpoint" not in inferred:
+        environment.pop("s3.endpoint", None)
+    if not environment and not inferred and normalized == properties:
         return properties
-    return {**inferred, **normalized}
+    return {**environment, **inferred, **normalized}
 
 
 class ArrowFileIO(PyArrowFileIO):

@@ -4,7 +4,7 @@ Market tables store immutable event versions. `hash` identifies one version;
 `xhash` identifies its lifecycle; `linked_events` stores ordered `(unix,
 xhash)` relations between order, execution, and book lifecycles. Links are
 deduplicated and never point to the event's own lifecycle. Parsed logs retain
-FIX wire order as `msg_seq_num`; normalized market events do not repeat it.
+FIX wire order as `MsgSeqNum`; normalized market events do not repeat it.
 
 `MarketEvent` adds `instrument_xhash` and its readable `instrument_code`,
 kind, side, price, quantity, notional,
@@ -41,7 +41,7 @@ declared and supplies `BBB` as the price currency when that is absent.
 
 A new market log symbol creates a synthetic minimal instrument; later facts
 enrich that symbol's lifecycle. Changed versions and hourly snapshots first
-travel as normalized rows in `fixmessage.market`, then the flattening notebook
+travel as normalized rows in `fix.market`, then the flattening notebook
 projects them unchanged into the Instrument table.
 
 There is no separate reference model or contract.
@@ -116,7 +116,7 @@ regulatory stamp lands behind rows already read -- so:
   partitions accordingly. The partition stays a function of the column it is
   derived from, which is what keeps a partition-ordered read globally sorted.
 - The book fold already asks the storage engine for
-  `order_by=("unix", "msg_seq_num", "hash")`, so it gets an explicit sort pass
+  `order_by=("unix", "MsgSeqNum", "hash")`, so it gets an explicit sort pass
   rather than trusting file order. That was incidental before and is
   load-bearing now; no bounded reorder window is needed, because the sort is
   the storage engine's and not the stream's.
@@ -184,7 +184,7 @@ for book in BookIterator.from_events(events, purge_alive=True):
     print(book.unix, book.bid_px, book.ask_px)
 ```
 
-`BookIterator` consumes sorted `FixMessage` records, translates their already-parsed
+`BookIterator` consumes sorted `FixMsg` records, translates their already-parsed
 FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
 because order state is sequential.

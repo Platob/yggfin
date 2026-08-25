@@ -136,7 +136,7 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   versions. Hard-code only normalization rules the registry cannot express.
 - Generic `Event` owns snapshot and idle-expiry behavior. Finished states do
   not keep producing snapshots.
-- `BookIterator` consumes time-sorted parsed `FixMessage` records and emits only
+- `BookIterator` consumes time-sorted parsed `FixMsg` records and emits only
   `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
   decides whether orders still resting when the stream ends are expired.
 - A structured FIX component is a `ComponentGroup` subclass naming its
@@ -163,8 +163,9 @@ With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten
 tasks are skipped by the Airflow result route.
 
-Inputs are text files. Persisted outputs are the structured message table,
-the three FixMessage tables, and instrument, book, order and execution tables.
+Inputs are text files. Persisted outputs are `logs.messages`, the three
+`fix.*` tables, and the `market.*` instrument, book, order and execution
+tables.
 
 ## Tests and benchmarks
 
@@ -189,7 +190,7 @@ python/src/rekep/
   enums/        one persisted market enum per file
   market/       event, instrument, order, execution, and book logic
   iceberg/      catalog, dataset, schema bridge, and Arrow FileIO
-  text/         FixMessage plus streamed text files
+  text/         FixMsg plus streamed text files
   tasks/        notebook configuration only
   console.py    terminal styling: colour, boxes, tables, spinners
   times.py      one reading of "an instant", whatever spelled it

@@ -11,11 +11,11 @@ import pytest
 
 from rekep.fields import Field
 from rekep.market import Book, Event, Execution, Instrument, Level, MarketEvent, Order
-from rekep.text import FixMessage
+from rekep.text import FixMsg
 
 EVENTS = (Order, Execution, Book)
 SHAPES = (*EVENTS, Instrument, Level)
-HOT_ROWS = (Event, MarketEvent, FixMessage, Instrument, Order, Execution, Book, Level)
+HOT_ROWS = (Event, MarketEvent, FixMsg, Instrument, Order, Execution, Book, Level)
 
 #: The envelope every event carries, in the order it carries it. Pinned, because
 #: a column inserted in the middle moves every one after it -- and a reader that

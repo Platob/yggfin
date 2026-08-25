@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. One FixMessage contract is stored in three Iceberg tables, but only fixmessage.market continues. Normalized Instrument FixMessage rows independently project to the Instrument table. BookIterator consumes those rows inline from fixmessage.market while folding the same sorted FixMessage stream into Books. Book order and execution lists flatten into their own tables.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues. Normalized Instrument FixMsg rows independently project to the Instrument table. BookIterator consumes those rows inline from fix.market while folding the same sorted FixMsg stream into Books. Book order and execution lists flatten into their own tables.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#315f96"/>
@@ -26,7 +26,7 @@
   <image href="logos/github-mark.svg" x="67" y="49" width="50" height="50"/>
   <text class="label" x="275" y="63">Repository declarations</text>
   <text class="small" x="275" y="88">schemas/rekep/*.yaml + @scalar classes</text>
-  <text class="small" x="275" y="108">five persisted contracts</text>
+  <text class="small" x="275" y="108">six persisted contracts</text>
 
   <rect class="hub" x="540" y="30" width="510" height="90" rx="14"/>
   <image href="logos/apache-arrow.svg" x="567" y="52" width="48" height="42"/>
@@ -41,16 +41,23 @@
   <text class="small" x="1345" y="108">state | reason | parent_hash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
-  <rect class="contract" x="45" y="245" width="355" height="240" rx="15"/>
-  <text class="label" x="223" y="278">FixMessage contract</text>
-  <text class="small" x="223" y="304">symbol | code | codes | parsed FIX fields</text>
-  <text class="small" x="223" y="326">raw lines + normalized Instrument versions</text>
-  <rect class="chip-live" x="78" y="350" width="290" height="36" rx="9"/>
-  <text class="tiny" x="223" y="373">fixmessage.market → continues through Arrow</text>
-  <rect class="chip-stop" x="78" y="399" width="290" height="32" rx="9"/>
-  <text class="tiny" x="223" y="420">fixmessage.misc → retained terminal table</text>
-  <rect class="chip-stop" x="78" y="442" width="290" height="32" rx="9"/>
-  <text class="tiny" x="223" y="463">fixmessage.unknown → retained terminal table</text>
+  <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
+  <text class="label" x="223" y="180">Message contract</text>
+  <text class="small" x="223" y="205">logs.messages | raw payload | no FIX fields</text>
+
+  <rect class="contract" x="45" y="265" width="355" height="240" rx="15"/>
+  <text class="label" x="223" y="298">FixMsg contract</text>
+  <text class="small" x="223" y="324">Symbol | code | codes | canonical FIX fields</text>
+  <text class="small" x="223" y="346">parsed messages + normalized Instrument versions</text>
+  <rect class="chip-live" x="78" y="370" width="290" height="36" rx="9"/>
+  <text class="tiny" x="223" y="393">fix.market → continues through Arrow</text>
+  <rect class="chip-stop" x="78" y="419" width="290" height="32" rx="9"/>
+  <text class="tiny" x="223" y="440">fix.misc → retained terminal table</text>
+  <rect class="chip-stop" x="78" y="462" width="290" height="32" rx="9"/>
+  <text class="tiny" x="223" y="483">fix.unknown → retained terminal table</text>
+
+  <path class="flow" d="M223 222 V265"/>
+  <text class="edge-label" x="282" y="247">parse FIX</text>
 
   <rect class="market" x="525" y="175" width="345" height="175" rx="15"/>
   <text class="label" x="698" y="208">Instrument contract</text>
@@ -83,10 +90,10 @@
   <image href="logos/apache-iceberg.svg" x="1370" y="493" width="94" height="26"/>
   <text class="small" x="1485" y="532">market.executions</text>
 
-  <path class="flow" d="M400 310 C455 270 475 250 525 250"/>
+  <path class="flow" d="M400 330 C455 290 475 250 525 250"/>
   <text class="edge-label" x="465" y="230">project Instrument rows</text>
 
-  <path class="flow" d="M400 390 C475 420 475 540 525 555"/>
+  <path class="flow" d="M400 410 C475 440 475 540 525 555"/>
   <text class="edge-label" x="440" y="468">BookIterator consumes rows by etype</text>
 
   <path class="flow" d="M620 670 V715 H780 V670"/>
@@ -98,7 +105,7 @@
   <path class="flow" d="M870 575 C1010 660 1240 650 1330 500"/>
   <text class="edge-label" x="1115" y="665">executions + timed order links</text>
 
-  <path class="inherit" d="M1345 120 V145 H223 V245"/>
+  <path class="inherit" d="M1345 120 V135 H223 V150"/>
   <path class="inherit" d="M1345 145 H698 V175"/>
   <path class="inherit" d="M1345 145 H900 V610 H870"/>
   <path class="inherit" d="M1345 145 H1163 V350"/>

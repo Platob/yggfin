@@ -1,13 +1,13 @@
 # Parse market
 
 `tasks/parse_market/parse_market.ipynb` reads
-`fixmessage.market` in `(unix, msg_seq_num, hash)` order. With the default
+`fix.market` in `(unix, MsgSeqNum, hash)` order. With the default
 `books: true`, it folds that stream through `BookIterator`, writes only
 `market.books`, and leaves the two flatten notebooks to publish orders and
 executions.
 
 With `books: false`, it does not construct or write Books.
-`FixMessage.into_market_arrow_batches()` adapts the input stream into bounded,
+`FixMsg.into_market_arrow_batches()` adapts the input stream into bounded,
 typed Order and Execution batches for `order_target` and `execution_target`.
 The Arrow boundary is bounded adaptation rather than a second FIX translator:
 the scalar `FixEvents` reader still owns repeating groups, normalization, and
@@ -26,7 +26,7 @@ plus 15 minutes. In book mode, prior Book snapshots use that recovery history
 to restore live orders.
 
 `parse_market` never reads `market.instruments`. Normalized instrument
-lifecycle rows already share the sorted `fixmessage.market` input; `BookIterator`
+lifecycle rows already share the sorted `fix.market` input; `BookIterator`
 indexes them by `etype` and folds the remaining rows. Snapshot generation,
 terminal-state handling, one-day inactivity expiry, and internal rejection
 reasons belong to the shared event and book models rather than the notebook.

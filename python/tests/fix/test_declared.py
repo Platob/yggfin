@@ -10,7 +10,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FieldRule, FieldRules, FixCodec, FixRegistry
-from rekep.text import TextFile
+from rekep.text import FixMsg, TextFile
 
 #: One order, spelled the way a bridge prints one, with a vendor tag on it.
 LINE = (
@@ -33,13 +33,14 @@ def codec_of(registry: FixRegistry, declared: dict | None = None) -> FixCodec:
 
 def lifted(codec: FixCodec, line: str = LINE) -> dict:
     column = pyarrow.array([line])
-    _, columns = codec.into_fixmessage_columns(codec.into_pairs(column, "FIX"), "4.4")
+    _, columns = codec.into_fixmsg_columns(codec.into_pairs(column, "FIX"), "4.4")
     return columns
 
 
 def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
     column = pyarrow.array([line])
-    done = codec.complete_kwargs(codec.into_message_columns(column)["kwargs"], "4.4")
+    kwargs = codec.into_message_kwargs(codec.into_pairs(column, "FIX"))
+    done = codec.complete_kwargs(kwargs, "4.4")
     return [(one["tag"], one["value"]) for one in done.to_pylist()[0]]
 
 
@@ -48,17 +49,17 @@ def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
 
 def test_a_declared_type_changes_how_the_text_is_read(registry: FixRegistry) -> None:
     """`TransactTime` read as a day is that day's midnight, not its clock."""
-    plain = lifted(codec_of(registry))["transact_time"].to_pylist()[0]
+    plain = lifted(codec_of(registry))["TransactTime"].to_pylist()[0]
     assert plain.hour == 10
     declared = {"rules": [{"field": "TransactTime", "type": "date32[day]"}]}
-    dated = lifted(codec_of(registry, declared))["transact_time"].to_pylist()[0]
+    dated = lifted(codec_of(registry, declared))["TransactTime"].to_pylist()[0]
     assert (dated.hour, dated.minute, dated.day) == (0, 0, 21)
 
 
 def test_a_rule_may_name_its_field_by_tag_or_by_name(registry: FixRegistry) -> None:
     by_tag = codec_of(registry, {"rules": [{"field": "60", "type": "date32[day]"}]})
     by_name = codec_of(registry, {"rules": [{"field": "TransactTime", "type": "date32[day]"}]})
-    assert lifted(by_tag)["transact_time"] == lifted(by_name)["transact_time"]
+    assert lifted(by_tag)["TransactTime"] == lifted(by_name)["TransactTime"]
 
 
 def test_a_declared_reading_that_leaves_text_still_lands_in_its_column(
@@ -66,7 +67,7 @@ def test_a_declared_reading_that_leaves_text_still_lands_in_its_column(
 ) -> None:
     """The column keeps its contract type, so the second cast must not raise."""
     declared = {"rules": [{"field": "60", "type": "string"}]}
-    found = lifted(codec_of(registry, declared))["transact_time"]
+    found = lifted(codec_of(registry, declared))["TransactTime"]
     assert found.to_pylist()[0].hour == 10
 
 
@@ -146,19 +147,26 @@ VENDOR_HEADER = (
 )
 
 
-def test_a_job_may_declare_the_header_its_capture_writes(tmp_path) -> None:
+def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: FixRegistry) -> None:
     path = tmp_path / "vendor.log"
     path.write_text(f"20260821-10:00:00.123|t-1|VendorBridge|{LINE}\n")
-    with TextFile.from_path(path, header_pattern=VENDOR_HEADER, resolved=False) as log:
-        rows = log.into_arrow_table()
-    assert rows.num_rows == 1
-    assert rows.column("plugin_code").to_pylist() == ["VendorBridge"]
-    assert rows.column("msg_type").to_pylist() == ["D"]
+    with TextFile.from_path(path, header_pattern=VENDOR_HEADER) as log:
+        messages = log.into_arrow_table()
+    rows = pyarrow.Table.from_batches(
+        [
+            FixMsg.from_message_arrow_batch(batch, codec_of(registry), FixMsg.into_message_rules())
+            for batch in messages.to_batches()
+        ]
+    )
+    assert messages.num_rows == 1
+    assert messages.column("plugin_code").to_pylist() == ["VendorBridge"]
+    assert "MsgType" not in messages.schema.names
+    assert rows.column("MsgType").to_pylist() == ["D"]
 
 
 def test_the_shipped_header_reads_that_capture_as_no_row_at_all(tmp_path) -> None:
     """Which is what makes the declaration load-bearing rather than decoration."""
     path = tmp_path / "vendor.log"
     path.write_text(f"20260821-10:00:00.123|t-1|VendorBridge|{LINE}\n")
-    with TextFile.from_path(path, resolved=False) as log:
+    with TextFile.from_path(path) as log:
         assert log.into_arrow_table().num_rows == 0

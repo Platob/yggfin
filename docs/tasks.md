@@ -31,7 +31,7 @@ papermill.execute_notebook(
 ## Flow
 
 ```text
-Text files -> parse_messages -> text.messages -> parse_fix -> fixmessage.market
+Text files -> parse_messages -> logs.messages -> parse_fix -> fix.market
                                                                   |
                        +------------------------------------------+
                        |
@@ -41,14 +41,14 @@ Text files -> parse_messages -> text.messages -> parse_fix -> fixmessage.market
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` structures a line and resolves its protocol version;
-`parse_fix` resolves its fields against the dictionary and routes it. The
-split is what makes a re-parse after a dictionary change skip the tokenising
-it already paid for.
+`parse_messages` writes protocol-neutral `Message` rows. `parse_fix` owns the
+complete FIX read -- classification, tokenisation, dictionary resolution and
+routing. The retained message table lets a dictionary change rerun FIX parsing
+without reopening the source logs.
 
 `parse_fix` resumes Instrument lifecycles from the prior completed Instrument
 table. The current run has no dependency cycle: both downstream notebooks read
-the normalized Instrument rows already committed inside `fixmessage.market`.
+the normalized Instrument rows already committed inside `fix.market`.
 
 The default market path folds books and then flattens their deltas. With
 `books: false`, `parse_market` skips the fold and writes only the Order and
@@ -56,9 +56,9 @@ Execution events carried by each FIX message. This path deliberately
 does not create snapshots, synthetic expiries, book validation changes, or a
 carrying `Book.hash` parent.
 
-The persisted products are only categorized `FixMessage` tables plus `Instrument`,
-`Book`, `Order`, and `Execution`. Arrow readers carry each stream; Iceberg
-stores the boundaries.
+The persisted products are protocol-neutral `Message` rows, categorized
+`FixMsg` tables, and `Instrument`, `Book`, `Order`, and `Execution`. Arrow
+readers carry each stream; Iceberg stores the boundaries.
 
 - [Parse messages](tasks/parse-messages.md)
 - [Parse FIX](tasks/parse-fix.md)

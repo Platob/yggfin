@@ -7,7 +7,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import Field, FixMessage, StructField, cli
+from rekep import Field, FixMsg, StructField, cli
 from rekep.fix import registry as registry_module
 from rekep.fix.entries import Alias, FieldEntry
 from rekep.fix.fields import fix_field
@@ -27,15 +27,15 @@ def run(*argv: str) -> int:
 
 
 def test_dump_writes_the_declaration_to_stdout(capsysbinary: pytest.CaptureFixture) -> None:
-    assert run("fields", "dump", "--pyclass", "rekep.text.fixmessage:FixMessage") == 0
+    assert run("fields", "dump", "--pyclass", "rekep.text.fixmsg:FixMsg") == 0
     written = capsysbinary.readouterr().out
-    assert Field.from_yaml(written) == FixMessage.into_field()
+    assert Field.from_yaml(written) == FixMsg.into_field()
 
 
 def test_dump_takes_a_dotted_class_too(capsysbinary: pytest.CaptureFixture) -> None:
     """`module:Attribute` is what an entry point writes; the dot is what a docstring does."""
-    assert run("fields", "dump", "--pyclass", "rekep.text.fixmessage.FixMessage") == 0
-    assert Field.from_yaml(capsysbinary.readouterr().out) == FixMessage.into_field()
+    assert run("fields", "dump", "--pyclass", "rekep.text.fixmsg.FixMsg") == 0
+    assert Field.from_yaml(capsysbinary.readouterr().out) == FixMsg.into_field()
 
 
 @pytest.mark.parametrize(
@@ -48,21 +48,21 @@ def test_dump_infers_the_format_from_the_target(tmp_path: Path, suffix: str, rea
             "fields",
             "dump",
             "--pyclass",
-            "rekep.text.fixmessage:FixMessage",
+            "rekep.text.fixmsg:FixMsg",
             "--target",
             str(target),
         )
         == 0
     )
-    assert reader(str(target)) == FixMessage.into_field()
+    assert reader(str(target)) == FixMsg.into_field()
 
 
 def test_dump_format_wins_over_the_extension(tmp_path: Path) -> None:
     """It was typed; the extension was merely there."""
-    target = tmp_path / "fixmessage.yaml"
-    argv = ("fields", "dump", "--pyclass", "rekep.text.fixmessage:FixMessage", "--format", "json")
+    target = tmp_path / "fixmsg.yaml"
+    argv = ("fields", "dump", "--pyclass", "rekep.text.fixmsg:FixMsg", "--format", "json")
     assert run(*argv, "--target", str(target)) == 0
-    assert json.loads(target.read_text())["name"] == "FixMessage"
+    assert json.loads(target.read_text())["name"] == "FixMsg"
 
 
 def test_dump_writes_toml_when_asked(tmp_path: Path) -> None:
@@ -72,24 +72,24 @@ def test_dump_writes_toml_when_asked(tmp_path: Path) -> None:
             "fields",
             "dump",
             "--pyclass",
-            "rekep.text.fixmessage:FixMessage",
+            "rekep.text.fixmsg:FixMsg",
             "--target",
             str(target),
         )
         == 0
     )
-    assert Field.from_toml(str(target)) == FixMessage.into_field()
+    assert Field.from_toml(str(target)) == FixMsg.into_field()
 
 
 def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     """So a dump with no target pipes, and one with a target says where it went."""
-    target = tmp_path / "fixmessage.yaml"
+    target = tmp_path / "fixmsg.yaml"
     assert (
         run(
             "fields",
             "dump",
             "--pyclass",
-            "rekep.text.fixmessage:FixMessage",
+            "rekep.text.fixmsg:FixMsg",
             "--target",
             str(target),
         )
@@ -122,17 +122,17 @@ def test_a_class_that_is_not_a_shape_is_refused(capsys: pytest.CaptureFixture) -
 
 
 def test_a_missing_attribute_names_the_module(capsys: pytest.CaptureFixture) -> None:
-    assert run("fields", "dump", "--pyclass", "rekep.text.fixmessage:Nothing") == 1
+    assert run("fields", "dump", "--pyclass", "rekep.text.fixmsg:Nothing") == 1
     assert "has no 'Nothing'" in capsys.readouterr().err
 
 
 def test_a_missing_module_is_reported(capsys: pytest.CaptureFixture) -> None:
-    assert run("fields", "dump", "--pyclass", "nowhere.at.all:FixMessage") == 1
+    assert run("fields", "dump", "--pyclass", "nowhere.at.all:FixMsg") == 1
     assert "nowhere" in capsys.readouterr().err
 
 
 def test_a_spec_that_names_no_class_says_how_to_write_one(capsys: pytest.CaptureFixture) -> None:
-    assert run("fields", "dump", "--pyclass", "FixMessage") == 1
+    assert run("fields", "dump", "--pyclass", "FixMsg") == 1
     assert "module:Attribute" in capsys.readouterr().err
 
 
@@ -144,12 +144,12 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     the contract cannot take the printed number quietly with it.
 
     `kwargs` is the one line the renderer has to spell out of a nested type,
-    and `check_sum` pins the public naming, so together they cover the shape.
+    and `CheckSum` pins registry-exact FIX naming, so together they cover the shape.
     """
-    assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmessage.yaml")) == 0
+    assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(FixMessage.into_field().names) == 109
-    assert "FixMessage: 109 columns, builds" in printed
+    assert len(FixMsg.into_field().names) == 109
+    assert "FixMsg: 109 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_partition: int32  [partition identity]" in printed
     assert (
@@ -157,8 +157,8 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
         "value: string, namespace: string, comp: string> not null>"
         "  [nullable]"
     ) in printed
-    assert "parties: list<item: struct<party_id: string" in printed
-    assert "check_sum: string  [nullable]" in printed
+    assert "Parties: list<item: struct<PartyID: string" in printed
+    assert "CheckSum: string  [nullable]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 
 
@@ -195,7 +195,7 @@ def test_an_extension_nobody_reads_names_the_ones_that_are(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
     unknown = tmp_path / "log.txt"
-    unknown.write_text("name: FixMessage\n")
+    unknown.write_text("name: FixMsg\n")
     assert run("fields", "load", "--target", str(unknown)) == 1
     message = capsys.readouterr().err
     assert ".json" in message and ".yaml" in message and ".toml" in message
@@ -213,20 +213,20 @@ def test_dump_then_load_is_the_contract_workflow(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
     """What CI runs: publish the declaration, then check the file builds."""
-    target = tmp_path / "fixmessage.yaml"
+    target = tmp_path / "fixmsg.yaml"
     assert (
         run(
             "fields",
             "dump",
             "--pyclass",
-            "rekep.text.fixmessage:FixMessage",
+            "rekep.text.fixmsg:FixMsg",
             "--target",
             str(target),
         )
         == 0
     )
     assert run("fields", "load", "--target", str(target)) == 0
-    assert Field.from_file(str(target)) == FixMessage.into_field()
+    assert Field.from_file(str(target)) == FixMsg.into_field()
     assert "builds" in capsys.readouterr().out
 
 

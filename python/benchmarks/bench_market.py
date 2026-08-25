@@ -239,7 +239,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     """Decode package-authored instrument rows directly and through generic FIX."""
     from rekep.enums import AssetKind, Currency, Side
     from rekep.market import Leg
-    from rekep.text import FixMessage
+    from rekep.text import FixMsg
 
     sample = min(rows, 500)
     instrument = Instrument(
@@ -267,9 +267,9 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     assert instrument is not None
     # The registry leg is deliberately FIX.4.4; protocol reads never infer a
     # version when neither BeginString nor FIXT application-version tags exist.
-    log = instrument.into_fixmessage(begin_string="FIX.4.4")
+    log = instrument.into_fixmsg(begin_string="FIX.4.4")
     source = next(
-        iter(FixMessage.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
+        iter(FixMsg.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
     )
 
     def through_registry() -> list[Instrument]:
@@ -280,7 +280,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
         return built
 
     def direct() -> pyarrow.RecordBatch:
-        return FixMessage.into_instrument_arrow_batch(source)
+        return FixMsg.into_instrument_arrow_batch(source)
 
     registry, generic = timed(through_registry, repeat)
     normalized, decoded = timed(direct, repeat)
@@ -290,7 +290,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
         == instrument.into_dict()
     )
 
-    print(f"\nInstrument <-> normalized FixMessage -- {sample:,} rows")
+    print(f"\nInstrument <-> normalized FixMsg -- {sample:,} rows")
     report("generic FIX/registry reconstruction", registry, sample)
     report("batch normalized-row projection", normalized, sample, against=registry)
 
@@ -929,14 +929,14 @@ def bench_ceiling(rows: int, repeat: int) -> None:
 
 
 def log_stream(rows: int) -> list[object]:
-    """One instrument's feed as the parsed log rows `Book.from_fixmessages` reads.
+    """One instrument's feed as the parsed log rows `Book.from_fixmsgs` reads.
 
-    Built as `FixMessage` rows carrying wire tags rather than through a text file, so
+    Built as `FixMsg` rows carrying wire tags rather than through a text file, so
     what is measured is the two halves of the generator -- translating a parsed
     row back into market events, and folding those into books -- and not the
     tokenizer in front of them, which `bench_fix_parser` prices on its own.
     """
-    from rekep import FixMessage
+    from rekep import FixMsg
 
     base = 1_786_665_901_000_000_000
     # The order and the fill, and not the market-data shape beside them: its
@@ -952,7 +952,7 @@ def log_stream(rows: int) -> list[object]:
         stamp = _fix_stamp(base + index * 1_000_000)
         renamed = {"52": stamp, "60": stamp, "11": f"CL-{index}", "17": f"EX-{index}"}
         built.append(
-            FixMessage(
+            FixMsg(
                 unix=base + index * 1_000_000,
                 protocol_code="FIX",
                 kwargs=[
@@ -973,7 +973,7 @@ def bench_from_logs(rows: int, repeat: int) -> None:
     """The whole generator: parsed log rows in, books out."""
     from rekep.market import BookIterator
 
-    print(f"\nBook.from_fixmessages -- {rows:,} parsed rows, one instrument")
+    print(f"\nBook.from_fixmsgs -- {rows:,} parsed rows, one instrument")
     logs = log_stream(rows)
 
     def translate() -> int:

@@ -1,9 +1,9 @@
-name: FixMessage
+name: FixMsg
 type: struct
-description: One parsed line of a trading log.
+description: One raw message transcribed under the FIX registry.
 metadata:
-  namespace: rekep.text.fixmessage
-  version: '2'
+  namespace: rekep.text.fixmsg
+  version: '3'
 fields:
 - name: unix
   type: int64
@@ -129,17 +129,17 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: source_url
   type: string
-  description: Path of the log the line came from, as its filesystem addresses it.
+  description: Path of the log the row came from, as its filesystem addresses it.
 - name: source_rownum
   type: int64
-  description: 1-based line number of this row's header line in `source_url`; 0 when
-    unread.
+  description: 1-based physical line number of the header; 0 when not read from a
+    file.
 - name: thread_name
   type: string
-  description: Contents of the first bracketed field.
+  description: Contents of the first bracketed header field.
 - name: plugin_code
   type: string
-  description: Contents of the second bracketed field -- the emitting module.
+  description: Contents of the second bracketed header field.
 - name: message
   type: string
   nullable: true
@@ -161,7 +161,7 @@ fields:
   type: string
   description: 'What resolved `protocol_version`: a BeginString, an application version,
     or nothing.'
-- name: msg_seq_num
+- name: MsgSeqNum
   type: int64
   nullable: true
   description: Integer message sequence number.
@@ -193,7 +193,7 @@ fields:
     - name: comp
       type: string
       nullable: true
-- name: parties
+- name: Parties
   type: list
   nullable: true
   description: FIX Parties entries; null when the component is absent.
@@ -202,7 +202,7 @@ fields:
   item:
     type: struct
     fields:
-    - name: party_id
+    - name: PartyID
       type: string
       nullable: true
       description: 'Party identifier/code. See PartyIDSource <447> and PartyRole <452>
@@ -214,7 +214,7 @@ fields:
         fix:components: '["Parties","PartyDetail"]'
         fix:name: PartyID
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    - name: party_id_source
+    - name: PartyIDSource
       type: string
       nullable: true
       description: 'Identifies class or source of the PartyID <448> value. Required
@@ -242,7 +242,7 @@ fields:
         fix:components: '["Parties","PartyDetail"]'
         fix:name: PartyIDSource
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    - name: party_role
+    - name: PartyRole
       type: int64
       nullable: true
       description: Identifies the type or role of the PartyID <448> specified. See
@@ -297,7 +297,7 @@ fields:
         type: string
       value:
         type: string
-- name: trd_reg_timestamps
+- name: TrdRegTimestamps
   type: list
   nullable: true
   description: FIX TrdRegTimestamps entries; null when the component is absent.
@@ -306,7 +306,7 @@ fields:
   item:
     type: struct
     fields:
-    - name: trd_reg_timestamp
+    - name: TrdRegTimestamp
       type: timestamp[us, tz=UTC]
       nullable: true
       description: Traded / Regulatory timestamp value. Use to store time information
@@ -319,7 +319,7 @@ fields:
         fix:components: '["TrdRegTimestamps"]'
         fix:name: TrdRegTimestamp
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-    - name: trd_reg_timestamp_type
+    - name: TrdRegTimestampType
       type: int64
       nullable: true
       description: 'Traded / Regulatory timestamp type. Note of Applicability: values
@@ -335,7 +335,7 @@ fields:
         fix:components: '["TrdRegTimestamps"]'
         fix:name: TrdRegTimestampType
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-    - name: trd_reg_timestamp_origin
+    - name: TrdRegTimestampOrigin
       type: string
       nullable: true
       description: Text which identifies the "origin" (i.e. system which was used
@@ -355,7 +355,7 @@ fields:
         type: string
       value:
         type: string
-- name: side_trd_reg_timestamps
+- name: SideTrdRegTS
   type: list
   nullable: true
   description: FIX SideTrdRegTS entries -- the per-side regulatory clock; null when
@@ -365,7 +365,7 @@ fields:
   item:
     type: struct
     fields:
-    - name: side_trd_reg_timestamp
+    - name: SideTrdRegTimestamp
       type: timestamp[us, tz=UTC]
       nullable: true
       description: Will be used in a multi-sided message. Traded Regulatory timestamp
@@ -378,7 +378,7 @@ fields:
         fix:components: '["SideTrdRegTS"]'
         fix:name: SideTrdRegTimestamp
         fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
-    - name: side_trd_reg_timestamp_type
+    - name: SideTrdRegTimestampType
       type: int64
       nullable: true
       description: Same as TrdRegTimeStampType <770>
@@ -389,7 +389,7 @@ fields:
         fix:components: '["SideTrdRegTS"]'
         fix:name: SideTrdRegTimestampType
         fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
-    - name: side_trd_reg_timestamp_src
+    - name: SideTrdRegTimestampSrc
       type: string
       nullable: true
       description: Same as TrdRegTimestampOrigin <771> Text which identifies the origin
@@ -410,14 +410,14 @@ fields:
         type: string
       value:
         type: string
-- name: isincode
+- name: ISINCODE
   type: string
   nullable: true
   description: ISIN carried by the rendered ISINCODE field.
   metadata:
     fix:name: ISINCODE
     fix:type: String
-- name: begin_string
+- name: BeginString
   type: string
   nullable: true
   description: Identifies beginning of new message and protocol version. ALWAYS FIRST
@@ -430,7 +430,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: BeginString
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: body_length
+- name: BodyLength
   type: int64
   nullable: true
   description: Message length, in bytes, forward to the CheckSum <10> field. ALWAYS
@@ -442,7 +442,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: BodyLength
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: msg_type
+- name: MsgType
   type: string
   nullable: true
   description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
@@ -498,7 +498,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: MsgType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: check_sum
+- name: CheckSum
   type: string
   nullable: true
   description: 'Three byte, simple checksum (see FIXT.1.1: "CheckSum Calculation"
@@ -512,7 +512,7 @@ fields:
     fix:components: '["StandardTrailer"]'
     fix:name: CheckSum
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: sender_comp_id
+- name: SenderCompID
   type: string
   nullable: true
   description: Assigned value used to identify firm sending message.
@@ -523,7 +523,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SenderCompID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: sender_sub_id
+- name: SenderSubID
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator (desk,
@@ -535,7 +535,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SenderSubID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: sender_location_id
+- name: SenderLocationID
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator’s location
@@ -547,7 +547,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SenderLocationID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-- name: target_comp_id
+- name: TargetCompID
   type: string
   nullable: true
   description: Assigned value used to identify receiving firm.
@@ -558,7 +558,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: TargetCompID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: target_sub_id
+- name: TargetSubID
   type: string
   nullable: true
   description: Assigned value used to identify specific individual or unit intended
@@ -571,7 +571,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: TargetSubID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: target_location_id
+- name: TargetLocationID
   type: string
   nullable: true
   description: Assigned value used to identify specific message destination’s location
@@ -583,7 +583,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: TargetLocationID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-- name: on_behalf_of_comp_id
+- name: OnBehalfOfCompID
   type: string
   nullable: true
   description: Assigned value used to identify firm originating message if the message
@@ -596,7 +596,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: OnBehalfOfCompID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: on_behalf_of_sub_id
+- name: OnBehalfOfSubID
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator (i.e. trader)
@@ -608,7 +608,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: OnBehalfOfSubID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: on_behalf_of_location_id
+- name: OnBehalfOfLocationID
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator’s location
@@ -621,7 +621,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: OnBehalfOfLocationID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-- name: deliver_to_comp_id
+- name: DeliverToCompID
   type: string
   nullable: true
   description: Assigned value used to identify the firm targeted to receive the message
@@ -635,7 +635,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: DeliverToCompID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: deliver_to_sub_id
+- name: DeliverToSubID
   type: string
   nullable: true
   description: Assigned value used to identify specific message recipient (i.e. trader)
@@ -647,7 +647,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: DeliverToSubID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: deliver_to_location_id
+- name: DeliverToLocationID
   type: string
   nullable: true
   description: Assigned value used to identify specific message recipient’s location
@@ -660,7 +660,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: DeliverToLocationID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-- name: last_msg_seq_num_processed
+- name: LastMsgSeqNumProcessed
   type: int64
   nullable: true
   description: The last MsgSeqNum <34> value received by the FIX engine and processed
@@ -673,7 +673,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: LastMsgSeqNumProcessed
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-- name: poss_dup_flag
+- name: PossDupFlag
   type: bool
   nullable: true
   description: Indicates possible retransmission of message with this sequence number
@@ -686,7 +686,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: PossDupFlag
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: poss_resend
+- name: PossResend
   type: bool
   nullable: true
   description: Indicates that message may contain information that has been sent under
@@ -700,7 +700,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: PossResend
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: sending_time
+- name: SendingTime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Time of message transmission (always expressed in UTC (Universal Time
@@ -712,7 +712,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SendingTime
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: orig_sending_time
+- name: OrigSendingTime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Original time of message transmission (always expressed in UTC (Universal
@@ -725,7 +725,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: OrigSendingTime
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: on_behalf_of_sending_time
+- name: OnBehalfOfSendingTime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: 'Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field:
@@ -743,7 +743,7 @@ fields:
     fix:name: OnBehalfOfSendingTime
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:aliases: '[{"name":"OnBehalfOfSendingTime(Deprecated)","source":"4.3","occurrences":0}]'
-- name: appl_ver_id
+- name: ApplVerID
   type: string
   nullable: true
   description: Specifies the service pack release being applied at message level.
@@ -757,7 +757,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: ApplVerID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
-- name: cstm_appl_ver_id
+- name: CstmApplVerID
   type: string
   nullable: true
   description: Specifies a custom extension to a message being applied at the message
@@ -769,7 +769,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: CstmApplVerID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
-- name: appl_ext_id
+- name: ApplExtID
   type: int64
   nullable: true
   description: The extension pack number associated with an application message.
@@ -780,7 +780,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: ApplExtID
     fix:versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]'
-- name: message_encoding
+- name: MessageEncoding
   type: string
   nullable: true
   description: Type of message encoding (non-ASCII (non-English) characters) used
@@ -793,7 +793,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: MessageEncoding
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-- name: xml_data_len
+- name: XmlDataLen
   type: int64
   nullable: true
   description: Length of the XmlData <213> data block.
@@ -804,7 +804,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: XmlDataLen
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-- name: xml_data
+- name: XmlData
   type: binary
   nullable: true
   description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference
@@ -816,7 +816,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: XmlData
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-- name: secure_data_len
+- name: SecureDataLen
   type: int64
   nullable: true
   description: Deprecated in FIXT 1.1 Length of encrypted message
@@ -827,7 +827,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SecureDataLen
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: secure_data
+- name: SecureData
   type: binary
   nullable: true
   description: Deprecated in FIXT 1.1 Actual encrypted data stream
@@ -838,7 +838,7 @@ fields:
     fix:components: '["StandardHeader"]'
     fix:name: SecureData
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: signature_length
+- name: SignatureLength
   type: int64
   nullable: true
   description: Deprecated in FIXT 1.1 Number of bytes in signature field
@@ -849,7 +849,7 @@ fields:
     fix:components: '["StandardTrailer"]'
     fix:name: SignatureLength
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: signature
+- name: Signature
   type: binary
   nullable: true
   description: Deprecated in FIXT 1.1 Electronic signature
@@ -860,7 +860,7 @@ fields:
     fix:components: '["StandardTrailer"]'
     fix:name: Signature
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: symbol
+- name: Symbol
   type: string
   nullable: true
   description: Ticker symbol. Common, "human understood" representation of the security.
@@ -881,7 +881,7 @@ fields:
     fix:components: '["Instrument"]'
     fix:name: Symbol
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: security_id
+- name: SecurityID
   type: string
   nullable: true
   description: Security identifier value of SecurityIDSource <22> type (e.g. CUSIP,
@@ -900,7 +900,7 @@ fields:
     fix:components: '["Instrument"]'
     fix:name: SecurityID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: security_id_source
+- name: SecurityIDSource
   type: string
   nullable: true
   description: Identifies class or source of the SecurityID <48> value. Required if
@@ -929,7 +929,7 @@ fields:
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:aliases: '[{"name":"IDSource","source":"4.0","occurrences":0},{"name":"IDSource
       prior to FIX 4.3)","source":"4.3","occurrences":0}]'
-- name: security_type
+- name: SecurityType
   type: string
   nullable: true
   description: 'Indicates type of security. Security type enumerations are grouped
@@ -999,7 +999,7 @@ fields:
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
     fix:name: SecurityType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-- name: cfi_code
+- name: CFICode
   type: string
   nullable: true
   description: Indicates the type of security using ISO 10962 standard, Classification
@@ -1019,7 +1019,7 @@ fields:
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
     fix:name: CFICode
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-- name: security_exchange
+- name: SecurityExchange
   type: string
   nullable: true
   description: Market used to help identify a security.
@@ -1038,7 +1038,7 @@ fields:
     fix:components: '["Instrument","TrdSessLstGrp"]'
     fix:name: SecurityExchange
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-- name: currency
+- name: Currency
   type: string
   nullable: true
   description: 'Identifies currency used for price. Absence of this field is interpreted
@@ -1067,7 +1067,7 @@ fields:
     fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:name: Currency
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: account
+- name: Account
   type: string
   nullable: true
   description: Account mnemonic as agreed between buy and sell sides, e.g. broker
@@ -1092,7 +1092,7 @@ fields:
     fix:components: '["BidCompReqGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
     fix:name: Account
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: cl_ord_id
+- name: ClOrdID
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution,
@@ -1120,7 +1120,7 @@ fields:
     fix:components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:name: ClOrdID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: orig_cl_ord_id
+- name: OrigClOrdID
   type: string
   nullable: true
   description: ClOrdID <11> of the previous order (NOT the initial order of the day)
@@ -1137,7 +1137,7 @@ fields:
     fix:components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]'
     fix:name: OrigClOrdID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: order_id
+- name: OrderID
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange,
@@ -1160,7 +1160,7 @@ fields:
     fix:components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
     fix:name: OrderID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: exec_id
+- name: ExecID
   type: string
   nullable: true
   description: Unique identifier of execution message as assigned by sell-side (broker,
@@ -1181,7 +1181,7 @@ fields:
     fix:components: '["ExecAllocGrp","ExecCollGrp","ExecsGrp"]'
     fix:name: ExecID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: side
+- name: Side
   type: string
   nullable: true
   description: Side of order.
@@ -1214,7 +1214,7 @@ fields:
     fix:components: '["BidCompReqGrp","BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SettlInstGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:name: Side
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: ord_type
+- name: OrdType
   type: string
   nullable: true
   description: Order type.
@@ -1246,7 +1246,7 @@ fields:
     fix:components: '["ListOrdGrp","MDFullGrp","MDIncGrp","OrdTypeRules","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
     fix:name: OrdType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: time_in_force
+- name: TimeInForce
   type: string
   nullable: true
   description: Specifies how long the order remains in effect. Absence of this field
@@ -1269,7 +1269,7 @@ fields:
     fix:components: '["ListOrdGrp","MDFullGrp","MDIncGrp","TimeInForceRules","TradeReportOrderDetail"]'
     fix:name: TimeInForce
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: ord_status
+- name: OrdStatus
   type: string
   nullable: true
   description: Identifies current status of order.
@@ -1288,7 +1288,7 @@ fields:
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
     fix:name: OrdStatus
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: exec_type
+- name: ExecType
   type: string
   nullable: true
   description: Describes the specific Execution Report (i.e. Pending Cancel) while
@@ -1312,7 +1312,7 @@ fields:
       Report Ack"]'
     fix:name: ExecType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-- name: order_qty
+- name: OrderQty
   type: double
   nullable: true
   description: Quantity ordered. This represents the number of shares for equities
@@ -1329,7 +1329,7 @@ fields:
     fix:components: '["OrdAllocGrp","OrderQtyData"]'
     fix:name: OrderQty
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: price
+- name: Price
   type: double
   nullable: true
   description: Price per unit of quantity (e.g. per share)
@@ -1349,7 +1349,7 @@ fields:
     fix:components: '["BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","UndInstrmtStrkPxGrp"]'
     fix:name: Price
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: vwap
+- name: AvgPx
   type: double
   nullable: true
   description: Calculated average price of all fills on this order. For Fixed Income
@@ -1366,7 +1366,7 @@ fields:
     fix:components: '["OrdListStatGrp"]'
     fix:name: AvgPx
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: cum_qty
+- name: CumQty
   type: double
   nullable: true
   description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this
@@ -1380,7 +1380,7 @@ fields:
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
     fix:name: CumQty
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: leaves_qty
+- name: LeavesQty
   type: double
   nullable: true
   description: Quantity open for further execution. If the OrdStatus <39> is 'Canceled',
@@ -1395,7 +1395,7 @@ fields:
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
     fix:name: LeavesQty
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-- name: last_px
+- name: LastPx
   type: double
   nullable: true
   description: Price of this (last) fill.
@@ -1409,7 +1409,7 @@ fields:
     fix:components: '["ExecAllocGrp","MDFullGrp","MDIncGrp"]'
     fix:name: LastPx
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: last_qty
+- name: LastQty
   type: double
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX
@@ -1426,7 +1426,7 @@ fields:
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:aliases: '[{"name":"LastShares","source":"4.0","occurrences":0},{"name":"LastShares
       prior to FIX 4.3)","source":"4.3","occurrences":0}]'
-- name: transact_time
+- name: TransactTime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Timestamp when the business transaction represented by the message
@@ -1453,7 +1453,7 @@ fields:
     fix:components: '["ListOrdGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","SecTypesGrp","TrdCapDtGrp","TrdSessLstGrp"]'
     fix:name: TransactTime
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: text
+- name: Text
   type: string
   nullable: true
   description: 'Free format text string (Note: this field does not have a specified
@@ -1488,7 +1488,7 @@ fields:
     fix:components: '["BidCompRspGrp","InstrmtStrkPxGrp","LinesOfTextGrp","ListOrdGrp","MDFullGrp","MDIncGrp","OrdListStatGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","StrmAsgnRptInstrmtGrp","TrdCapRptSideGrp","TrdSessLstGrp","UndInstrmtStrkPxGrp"]'
     fix:name: Text
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-- name: quote_id
+- name: QuoteID
   type: string
   nullable: true
   description: Unique identifier for quote
@@ -1505,7 +1505,7 @@ fields:
     fix:components: '["ListOrdGrp"]'
     fix:name: QuoteID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: quote_req_id
+- name: QuoteReqID
   type: string
   nullable: true
   description: Unique identifier for quote request
@@ -1518,7 +1518,7 @@ fields:
       Request","Quote Cancel","Quote Acknowledgement"]'
     fix:name: QuoteReqID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: quote_type
+- name: QuoteType
   type: int64
   nullable: true
   description: 'An indicative quote is used to inform a counterparty of a market.
@@ -1543,7 +1543,7 @@ fields:
     fix:components: '["InstrmtMDReqGrp","QuotReqGrp","QuotReqRjctGrp","RFQReqGrp"]'
     fix:name: QuoteType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-- name: quote_status
+- name: QuoteStatus
   type: int64
   nullable: true
   description: Identifies the status of the quote acknowledgement.
@@ -1565,7 +1565,7 @@ fields:
     fix:name: QuoteStatus
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:aliases: '[{"name":"QuoteAckStatus prior to FIX 4.3)","source":"4.3","occurrences":0}]'
-- name: quote_reject_reason
+- name: QuoteRejectReason
   type: int64
   nullable: true
   description: 'Reason Quote was rejected:'
@@ -1584,7 +1584,7 @@ fields:
       Acknowledgement"]'
     fix:name: QuoteRejectReason
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: quote_resp_type
+- name: QuoteRespType
   type: int64
   nullable: true
   description: Identifies the type of Quote Response <AJ> .
@@ -1598,7 +1598,7 @@ fields:
     fix:used_in: '["QuoteResponse","Quote Response"]'
     fix:name: QuoteRespType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-- name: quote_cancel_type
+- name: QuoteCancelType
   type: int64
   nullable: true
   description: Identifies the type of quote cancel.
@@ -1615,7 +1615,7 @@ fields:
       Cancel"]'
     fix:name: QuoteCancelType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: bid_px
+- name: BidPx
   type: double
   nullable: true
   description: Bid price/rate
@@ -1628,7 +1628,7 @@ fields:
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: BidPx
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: offer_px
+- name: OfferPx
   type: double
   nullable: true
   description: Offer price/rate
@@ -1641,7 +1641,7 @@ fields:
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: OfferPx
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: bid_size
+- name: BidSize
   type: double
   nullable: true
   description: Quantity of bid (Prior to FIX 4.2 this field was of type int)
@@ -1654,7 +1654,7 @@ fields:
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: BidSize
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: offer_size
+- name: OfferSize
   type: double
   nullable: true
   description: Quantity of offer (Prior to FIX 4.2 this field was of type int)
@@ -1667,7 +1667,7 @@ fields:
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: OfferSize
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: def_bid_size
+- name: DefBidSize
   type: double
   nullable: true
   description: Default Bid Size.
@@ -1678,7 +1678,7 @@ fields:
     fix:used_in: '["MassQuote","Mass Quote"]'
     fix:name: DefBidSize
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: def_offer_size
+- name: DefOfferSize
   type: double
   nullable: true
   description: The number of quote entries for a QuoteSet.
@@ -1689,7 +1689,7 @@ fields:
     fix:used_in: '["MassQuote","Mass Quote"]'
     fix:name: DefOfferSize
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: valid_until_time
+- name: ValidUntilTime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Indicates expiration time of indication message (always expressed in
@@ -1704,7 +1704,7 @@ fields:
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp"]'
     fix:name: ValidUntilTime
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-- name: no_quote_sets
+- name: NoQuoteSets
   type: int64
   nullable: true
   description: The number of sets of quotes in the message.
@@ -1716,7 +1716,7 @@ fields:
     fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
     fix:name: NoQuoteSets
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: no_quote_entries
+- name: NoQuoteEntries
   type: int64
   nullable: true
   description: The number of quote entries for a QuoteSet.
@@ -1729,7 +1729,7 @@ fields:
     fix:components: '["QuotCxlEntriesGrp","QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: NoQuoteEntries
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: quote_set_id
+- name: QuoteSetID
   type: string
   nullable: true
   description: Unique id for the Quote Set.
@@ -1741,7 +1741,7 @@ fields:
     fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
     fix:name: QuoteSetID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-- name: quote_entry_id
+- name: QuoteEntryID
   type: string
   nullable: true
   description: Unique identifier for a quote. The QuoteEntryID stays with the quote

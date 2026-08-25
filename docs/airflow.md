@@ -89,12 +89,27 @@ Install `pyiceberg[glue]` for this catalog and provide AWS credentials through
 the worker's workload role or standard environment. Do not store credentials
 in the YAML.
 
+For MinIO or another S3-compatible store, configure every scheduler and worker
+with the same portable defaults instead:
+
+```bash
+export S3_ENDPOINT_URL=http://minio:9000
+export S3_ACCESS_KEY_ID=change-me
+export S3_SECRET_ACCESS_KEY=change-me
+export S3_REGION=us-east-1
+# S3_SESSION_TOKEN is also read when temporary credentials require it.
+```
+
+Location URL values override these defaults, and explicit `s3.*` catalog
+properties override both. Standard AWS profiles and workload roles continue to
+work when the portable variables are absent.
+
 Keep the table wiring aligned across the documents:
 
 | Producer | Target | Consumer source |
 | --- | --- | --- |
-| `parse_messages` | `text.messages` | `parse_fix` |
-| `parse_fix` | `fixmessage.market` | `flatten_instruments`, `parse_market` |
+| `parse_messages` | `logs.messages` | `parse_fix` |
+| `parse_fix` | `fix.market` | `flatten_instruments`, `parse_market` |
 | `flatten_instruments` | `market.instruments` | `parse_fix.instrument_source` |
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |

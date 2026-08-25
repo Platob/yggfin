@@ -38,7 +38,7 @@ nav:
       - Schema contracts: contracts.md
       - Binary identities: identity.md
   - Parsing:
-      - FixMessage: fixmessage.md
+      - FixMsg: fixmsg.md
       - FIX: fix.md
       - Configuring a parse: configuring.md
   - Market: market.md

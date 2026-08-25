@@ -7,7 +7,7 @@ unknown source data.
 from rekep.fix import FixPairs, FixRegistry
 
 message = FixPairs.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
-message.msg_type  # 'D'
+message.get(35)  # 'D'
 message.get(55)  # 'IBM'
 message.pairs  # ordered entries
 
@@ -316,13 +316,13 @@ class TrdRegTimestamps(ComponentGroup):
     @cache
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
         return (
-            ("trd_reg_timestamp", "TrdRegTimestamp"),
-            ("trd_reg_timestamp_type", "TrdRegTimestampType"),
-            ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
+            ("TrdRegTimestamp", "TrdRegTimestamp"),
+            ("TrdRegTimestampType", "TrdRegTimestampType"),
+            ("TrdRegTimestampOrigin", "TrdRegTimestampOrigin"),
         )
 ```
 
-The parsed log carries two of them, `parties` and `trd_reg_timestamps`.
+The parsed message carries `Parties`, `TrdRegTimestamps`, and `SideTrdRegTS`.
 `FixCodec.into_components()` maps each column to its extractor and applies them
 in order against what the last one left, so a member lifted into one
 component's entries cannot also be lifted into another's. There are no fallback
@@ -409,12 +409,12 @@ The rules are declared once and executed twice. `TagIndex` resolves whole
 columns in Arrow kernels and `TagIndex.resolve_key` reads the same index one
 key at a time, off the same value sets and the same pattern sources, so the
 scalar and the vectorized paths cannot answer differently for one input.
-`FixPairs.get` and `FixMessage.get` are both this accessor: the wire model
+`FixPairs.get` and `FixMsg.get` are both this accessor: the wire model
 reads through it with no dictionary, which resolves by spelling alone.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `FixMessage`. Residual `kwargs` keeps everything
+Common fields are promoted once into `FixMsg`. Residual `kwargs` keeps everything
 not promoted -- resolved or not, in wire order, with the tag, the name, and the
 container or namespace it sat in. A later market
 conversion rebuilds a `FixEvents` view from those typed columns and that one

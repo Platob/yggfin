@@ -8,13 +8,13 @@ import functools
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import Annotated, Any, Protocol, runtime_checkable
+from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.enums import EventType, IdSource, OptionKind, Side
+from rekep.enums import MIC, EventType, IdSource, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -47,9 +47,10 @@ from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import GROUP_ENTRY, NO_SOURCE
 from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
 from rekep.market.identity import NIL
+from rekep.text.message import Message, MessageRule, MessageRules
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "3"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 
@@ -72,8 +73,8 @@ def _row_access() -> FieldAccess:
 
 
 @scalar(slots=True)
-class FixMessage(Event):
-    """One parsed line of a trading log."""
+class FixMsg(Message):
+    """One raw message transcribed under the FIX registry."""
 
     @classmethod
     @functools.cache
@@ -99,6 +100,15 @@ class FixMessage(Event):
         """`MsgType <35>` a synthesized instrument row carries."""
         return _INSTRUMENT_MSG_TYPE
 
+    @classmethod
+    def into_message_rules(cls) -> MessageRules:
+        """Fresh event rules for FIX wire and rendered message names."""
+        return MessageRules(
+            rules=[
+                dataclasses.replace(rule, patterns=list(rule.patterns)) for rule in DEFAULT_RULES
+            ]
+        )
+
     xhash: int = NIL
     """Digest of `code`, or the raw-line digest when no correlation code exists."""
 
@@ -116,16 +126,16 @@ class FixMessage(Event):
     def into_code_columns(cls) -> tuple[str, ...]:
         """Parsed columns tried for a lifecycle identifier, best first."""
         return (
-            "order_id",
-            "orig_cl_ord_id",
-            "cl_ord_id",
-            "exec_id",
-            "quote_entry_id",
-            "quote_id",
-            "quote_req_id",
-            "security_id",
-            "isincode",
-            "symbol",
+            "OrderID",
+            "OrigClOrdID",
+            "ClOrdID",
+            "ExecID",
+            "QuoteEntryID",
+            "QuoteID",
+            "QuoteReqID",
+            "SecurityID",
+            "ISINCODE",
+            "Symbol",
         )
 
     @classmethod
@@ -138,25 +148,13 @@ class FixMessage(Event):
     @functools.cache
     def into_symbol_columns(cls) -> tuple[str, ...]:
         """Instrument identifiers used when FIX omits `Symbol <55>`."""
-        return ("symbol", "security_id", "isincode")
+        return ("Symbol", "SecurityID", "ISINCODE")
 
-    source_url: str = ""
-    """Path of the log the line came from, as its filesystem addresses it."""
+    def identify(self) -> FixMsg:
+        """Give the parsed event its lifecycle and version identities."""
+        return Event.identify(self)
 
-    # Where in that file, so a parsed row points back at the text it was read
-    # from: `sed -n '<source_rownum>p' <source_url>` is the line. Counted over
-    # physical lines rather than parsed rows, so a folded continuation does not
-    # shift every row after it.
-    source_rownum: int = 0
-    """1-based line number of this row's header line in `source_url`; 0 when unread."""
-
-    thread_name: str = ""
-    """Contents of the first bracketed field."""
-
-    plugin_code: str = ""
-    """Contents of the second bracketed field -- the emitting module."""
-
-    # Nullable, and null on `fixmessage.market`: there `kwargs` carries every
+    # Nullable, and null on `fix.market`: there `kwargs` carries every
     # field the line held, so keeping the raw string beside it would store the
     # same content twice. An all-null column run-length and dictionary encodes
     # to nothing on disk, which is what makes one stored shape across the
@@ -187,7 +185,7 @@ class FixMessage(Event):
     protocol_version_source: str = NO_SOURCE
     """What resolved `protocol_version`: a BeginString, an application version, or nothing."""
 
-    msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
+    MsgSeqNum: Annotated[int | None, DECLARATIONS[34]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
     # A list preserves repeated keys and wire order. Null means no parsed
@@ -195,7 +193,7 @@ class FixMessage(Event):
     kwargs: Annotated[list[Any] | None, Field(arrow_type=KWARGS)] = None
     """Every field the message carried and no column took, as the dictionary read it."""
 
-    parties: Annotated[
+    Parties: Annotated[
         list[Party] | None,
         Field(
             arrow_type=PARTIES,
@@ -204,7 +202,7 @@ class FixMessage(Event):
     ] = None
     """FIX Parties entries; null when the component is absent."""
 
-    trd_reg_timestamps: Annotated[
+    TrdRegTimestamps: Annotated[
         list[TrdRegTimestamp] | None,
         Field(
             arrow_type=TRD_REG_TIMESTAMPS,
@@ -213,7 +211,7 @@ class FixMessage(Event):
     ] = None
     """FIX TrdRegTimestamps entries; null when the component is absent."""
 
-    side_trd_reg_timestamps: Annotated[
+    SideTrdRegTS: Annotated[
         list[SideTrdRegTimestamp] | None,
         Field(
             arrow_type=SIDE_TRD_REG_TIMESTAMPS,
@@ -222,7 +220,7 @@ class FixMessage(Event):
     ] = None
     """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
-    isincode: Annotated[str | None, ISIN_CODE] = None
+    ISINCODE: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
 
     # -- what a message says, flattened ---------------------------------------
@@ -232,265 +230,265 @@ class FixMessage(Event):
 
     # The envelope itself.
 
-    begin_string: Annotated[str | None, DECLARATIONS[8]] = None
+    BeginString: Annotated[str | None, DECLARATIONS[8]] = None
     """`BeginString <8>`: which FIX version the message says it is."""
 
-    body_length: Annotated[int | None, DECLARATIONS[9]] = None
+    BodyLength: Annotated[int | None, DECLARATIONS[9]] = None
     """`BodyLength <9>`, as the message counted it."""
 
-    msg_type: Annotated[str | None, DECLARATIONS[35]] = None
+    MsgType: Annotated[str | None, DECLARATIONS[35]] = None
     """`MsgType <35>`: what the message is, on the wire."""
 
-    check_sum: Annotated[str | None, DECLARATIONS[10]] = None
+    CheckSum: Annotated[str | None, DECLARATIONS[10]] = None
     """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
 
     # Who sent it, and to whom.
 
-    sender_comp_id: Annotated[str | None, DECLARATIONS[49]] = None
+    SenderCompID: Annotated[str | None, DECLARATIONS[49]] = None
     """`SenderCompID <49>`: who sent it."""
 
-    sender_sub_id: Annotated[str | None, DECLARATIONS[50]] = None
+    SenderSubID: Annotated[str | None, DECLARATIONS[50]] = None
     """`SenderSubID <50>`: which desk of theirs."""
 
-    sender_location_id: Annotated[str | None, DECLARATIONS[142]] = None
+    SenderLocationID: Annotated[str | None, DECLARATIONS[142]] = None
     """`SenderLocationID <142>`."""
 
-    target_comp_id: Annotated[str | None, DECLARATIONS[56]] = None
+    TargetCompID: Annotated[str | None, DECLARATIONS[56]] = None
     """`TargetCompID <56>`: who it was sent to."""
 
-    target_sub_id: Annotated[str | None, DECLARATIONS[57]] = None
+    TargetSubID: Annotated[str | None, DECLARATIONS[57]] = None
     """`TargetSubID <57>`."""
 
-    target_location_id: Annotated[str | None, DECLARATIONS[143]] = None
+    TargetLocationID: Annotated[str | None, DECLARATIONS[143]] = None
     """`TargetLocationID <143>`."""
 
     # And on whose behalf, when a hub relayed it.
 
-    on_behalf_of_comp_id: Annotated[str | None, DECLARATIONS[115]] = None
+    OnBehalfOfCompID: Annotated[str | None, DECLARATIONS[115]] = None
     """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
 
-    on_behalf_of_sub_id: Annotated[str | None, DECLARATIONS[116]] = None
+    OnBehalfOfSubID: Annotated[str | None, DECLARATIONS[116]] = None
     """`OnBehalfOfSubID <116>`."""
 
-    on_behalf_of_location_id: Annotated[str | None, DECLARATIONS[144]] = None
+    OnBehalfOfLocationID: Annotated[str | None, DECLARATIONS[144]] = None
     """`OnBehalfOfLocationID <144>`."""
 
-    deliver_to_comp_id: Annotated[str | None, DECLARATIONS[128]] = None
+    DeliverToCompID: Annotated[str | None, DECLARATIONS[128]] = None
     """`DeliverToCompID <128>`: who it is ultimately for."""
 
-    deliver_to_sub_id: Annotated[str | None, DECLARATIONS[129]] = None
+    DeliverToSubID: Annotated[str | None, DECLARATIONS[129]] = None
     """`DeliverToSubID <129>`."""
 
-    deliver_to_location_id: Annotated[str | None, DECLARATIONS[145]] = None
+    DeliverToLocationID: Annotated[str | None, DECLARATIONS[145]] = None
     """`DeliverToLocationID <145>`."""
 
     # Where it sits in the session's stream, and whether it is a repeat.
 
-    last_msg_seq_num_processed: Annotated[int | None, DECLARATIONS[369]] = None
+    LastMsgSeqNumProcessed: Annotated[int | None, DECLARATIONS[369]] = None
     """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
 
-    poss_dup_flag: Annotated[bool | None, DECLARATIONS[43]] = None
+    PossDupFlag: Annotated[bool | None, DECLARATIONS[43]] = None
     """`PossDupFlag <43>`: a retransmission of a message already sent."""
 
-    poss_resend: Annotated[bool | None, DECLARATIONS[97]] = None
+    PossResend: Annotated[bool | None, DECLARATIONS[97]] = None
     """`PossResend <97>`: the same business content under a new sequence."""
 
     # FIX documents these instants as UTC; microseconds are Iceberg-compatible.
 
-    sending_time: Annotated[datetime.datetime | None, DECLARATIONS[52]] = None
+    SendingTime: Annotated[datetime.datetime | None, DECLARATIONS[52]] = None
     """`SendingTime <52>`: when it was transmitted."""
 
-    orig_sending_time: Annotated[datetime.datetime | None, DECLARATIONS[122]] = None
+    OrigSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[122]] = None
     """`OrigSendingTime <122>`: the original transmission, on a resend."""
 
-    on_behalf_of_sending_time: Annotated[datetime.datetime | None, DECLARATIONS[370]] = None
+    OnBehalfOfSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[370]] = None
     """`OnBehalfOfSendingTime <370>`."""
 
     # Which application version speaks, under FIXT.
 
-    appl_ver_id: Annotated[str | None, DECLARATIONS[1128]] = None
+    ApplVerID: Annotated[str | None, DECLARATIONS[1128]] = None
     """`ApplVerID <1128>`."""
 
-    cstm_appl_ver_id: Annotated[str | None, DECLARATIONS[1129]] = None
+    CstmApplVerID: Annotated[str | None, DECLARATIONS[1129]] = None
     """`CstmApplVerID <1129>`."""
 
-    appl_ext_id: Annotated[int | None, DECLARATIONS[1156]] = None
+    ApplExtID: Annotated[int | None, DECLARATIONS[1156]] = None
     """`ApplExtID <1156>`."""
 
     # How the payload is written, when it is not plain ASCII.
 
-    message_encoding: Annotated[str | None, DECLARATIONS[347]] = None
+    MessageEncoding: Annotated[str | None, DECLARATIONS[347]] = None
     """`MessageEncoding <347>`."""
 
-    xml_data_len: Annotated[int | None, DECLARATIONS[212]] = None
+    XmlDataLen: Annotated[int | None, DECLARATIONS[212]] = None
     """`XmlDataLen <212>`."""
 
-    xml_data: Annotated[bytes | None, DECLARATIONS[213]] = None
+    XmlData: Annotated[bytes | None, DECLARATIONS[213]] = None
     """`XmlData <213>`, as the bytes it is."""
 
     # And how it is sealed.
 
-    secure_data_len: Annotated[int | None, DECLARATIONS[90]] = None
+    SecureDataLen: Annotated[int | None, DECLARATIONS[90]] = None
     """`SecureDataLen <90>`."""
 
-    secure_data: Annotated[bytes | None, DECLARATIONS[91]] = None
+    SecureData: Annotated[bytes | None, DECLARATIONS[91]] = None
     """`SecureData <91>`, as the bytes it is."""
 
-    signature_length: Annotated[int | None, DECLARATIONS[93]] = None
+    SignatureLength: Annotated[int | None, DECLARATIONS[93]] = None
     """`SignatureLength <93>`."""
 
-    signature: Annotated[bytes | None, DECLARATIONS[89]] = None
+    Signature: Annotated[bytes | None, DECLARATIONS[89]] = None
     """`Signature <89>`, as the bytes it is."""
 
     # What was traded.
 
-    symbol: Annotated[str | None, DECLARATIONS[55]] = None
+    Symbol: Annotated[str | None, DECLARATIONS[55]] = None
     """`Symbol <55>`: ticker symbol."""
 
-    security_id: Annotated[str | None, DECLARATIONS[48]] = None
+    SecurityID: Annotated[str | None, DECLARATIONS[48]] = None
     """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
 
-    security_id_source: Annotated[str | None, DECLARATIONS[22]] = None
+    SecurityIDSource: Annotated[str | None, DECLARATIONS[22]] = None
     """`SecurityIDSource <22>`: which scheme `SecurityID` is in -- `4` is ISIN."""
 
-    security_type: Annotated[str | None, DECLARATIONS[167]] = None
+    SecurityType: Annotated[str | None, DECLARATIONS[167]] = None
     """`SecurityType <167>`."""
 
-    cfi_code: Annotated[str | None, DECLARATIONS[461]] = None
+    CFICode: Annotated[str | None, DECLARATIONS[461]] = None
     """`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells it."""
 
-    security_exchange: Annotated[str | None, DECLARATIONS[207]] = None
+    SecurityExchange: Annotated[str | None, DECLARATIONS[207]] = None
     """`SecurityExchange <207>`: the market the instrument is listed on."""
 
-    currency: Annotated[str | None, DECLARATIONS[15]] = None
+    Currency: Annotated[str | None, DECLARATIONS[15]] = None
     """`Currency <15>`, which is what the prices below are in."""
 
     # Who asked, and under which identifiers.
 
-    account: Annotated[str | None, DECLARATIONS[1]] = None
+    Account: Annotated[str | None, DECLARATIONS[1]] = None
     """`Account <1>`."""
 
-    cl_ord_id: Annotated[str | None, DECLARATIONS[11]] = None
+    ClOrdID: Annotated[str | None, DECLARATIONS[11]] = None
     """`ClOrdID <11>`: the client's own identifier for the order."""
 
-    orig_cl_ord_id: Annotated[str | None, DECLARATIONS[41]] = None
+    OrigClOrdID: Annotated[str | None, DECLARATIONS[41]] = None
     """`OrigClOrdID <41>`: which order an amendment or cancel is about."""
 
-    order_id: Annotated[str | None, DECLARATIONS[37]] = None
+    OrderID: Annotated[str | None, DECLARATIONS[37]] = None
     """`OrderID <37>`: the venue's identifier for it."""
 
-    exec_id: Annotated[str | None, DECLARATIONS[17]] = None
+    ExecID: Annotated[str | None, DECLARATIONS[17]] = None
     """`ExecID <17>`: the venue's identifier for this execution report."""
 
     # On what terms.
 
-    side: Annotated[str | None, DECLARATIONS[54]] = None
+    Side: Annotated[str | None, DECLARATIONS[54]] = None
     """`Side <54>`: `1` buy, `2` sell, and the rest of the standard's codes."""
 
-    ord_type: Annotated[str | None, DECLARATIONS[40]] = None
+    OrdType: Annotated[str | None, DECLARATIONS[40]] = None
     """`OrdType <40>`: `1` market, `2` limit, ..."""
 
-    time_in_force: Annotated[str | None, DECLARATIONS[59]] = None
+    TimeInForce: Annotated[str | None, DECLARATIONS[59]] = None
     """`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ..."""
 
     # Where it stands.
 
-    ord_status: Annotated[str | None, DECLARATIONS[39]] = None
+    OrdStatus: Annotated[str | None, DECLARATIONS[39]] = None
     """`OrdStatus <39>`: where the order stands."""
 
-    exec_type: Annotated[str | None, DECLARATIONS[150]] = None
+    ExecType: Annotated[str | None, DECLARATIONS[150]] = None
     """`ExecType <150>`: what this report is reporting."""
 
     # For how much, at what price.
 
-    order_qty: Annotated[float | None, DECLARATIONS[38]] = None
+    OrderQty: Annotated[float | None, DECLARATIONS[38]] = None
     """`OrderQty <38>`: how much was asked for."""
 
-    price: Annotated[float | None, DECLARATIONS[44]] = None
+    Price: Annotated[float | None, DECLARATIONS[44]] = None
     """`Price <44>`: the limit, when there is one."""
 
-    vwap: Annotated[float | None, DECLARATIONS[6]] = None
+    AvgPx: Annotated[float | None, DECLARATIONS[6]] = None
     """`AvgPx <6>`: the average of what has filled so far."""
 
-    cum_qty: Annotated[float | None, DECLARATIONS[14]] = None
+    CumQty: Annotated[float | None, DECLARATIONS[14]] = None
     """`CumQty <14>`: how much has filled."""
 
-    leaves_qty: Annotated[float | None, DECLARATIONS[151]] = None
+    LeavesQty: Annotated[float | None, DECLARATIONS[151]] = None
     """`LeavesQty <151>`: how much is still working."""
 
-    last_px: Annotated[float | None, DECLARATIONS[31]] = None
+    LastPx: Annotated[float | None, DECLARATIONS[31]] = None
     """`LastPx <31>`: the price of this fill."""
 
-    last_qty: Annotated[float | None, DECLARATIONS[32]] = None
+    LastQty: Annotated[float | None, DECLARATIONS[32]] = None
     """`LastQty <32>`: the size of this fill."""
 
     # When it happened, and whatever was said about it.
 
-    transact_time: Annotated[datetime.datetime | None, DECLARATIONS[60]] = None
+    TransactTime: Annotated[datetime.datetime | None, DECLARATIONS[60]] = None
     """`TransactTime <60>`: when the business event happened, in UTC."""
 
-    text: Annotated[str | None, DECLARATIONS[58]] = None
+    Text: Annotated[str | None, DECLARATIONS[58]] = None
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
     # in `kwargs`; a value is lifted only when it occurs once on the line.
 
-    quote_id: Annotated[str | None, DECLARATIONS[117]] = None
+    QuoteID: Annotated[str | None, DECLARATIONS[117]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
 
-    quote_req_id: Annotated[str | None, DECLARATIONS[131]] = None
+    QuoteReqID: Annotated[str | None, DECLARATIONS[131]] = None
     """`QuoteReqID <131>`: request this quote answers."""
 
-    quote_type: Annotated[int | None, DECLARATIONS[537]] = None
+    QuoteType: Annotated[int | None, DECLARATIONS[537]] = None
     """`QuoteType <537>`: indicative, tradeable or restricted quote kind."""
 
-    quote_status: Annotated[int | None, DECLARATIONS[297]] = None
+    QuoteStatus: Annotated[int | None, DECLARATIONS[297]] = None
     """`QuoteStatus <297>`: quote acknowledgement state."""
 
-    quote_reject_reason: Annotated[int | None, DECLARATIONS[300]] = None
+    QuoteRejectReason: Annotated[int | None, DECLARATIONS[300]] = None
     """`QuoteRejectReason <300>` when a quote is rejected."""
 
-    quote_resp_type: Annotated[int | None, DECLARATIONS[694]] = None
+    QuoteRespType: Annotated[int | None, DECLARATIONS[694]] = None
     """`QuoteRespType <694>`: quote response action."""
 
-    quote_cancel_type: Annotated[int | None, DECLARATIONS[298]] = None
+    QuoteCancelType: Annotated[int | None, DECLARATIONS[298]] = None
     """`QuoteCancelType <298>`: scope of a quote cancellation."""
 
-    bid_px: Annotated[float | None, DECLARATIONS[132]] = None
+    BidPx: Annotated[float | None, DECLARATIONS[132]] = None
     """`BidPx <132>`: quoted bid price."""
 
-    offer_px: Annotated[float | None, DECLARATIONS[133]] = None
+    OfferPx: Annotated[float | None, DECLARATIONS[133]] = None
     """`OfferPx <133>`: quoted offer price."""
 
-    bid_size: Annotated[float | None, DECLARATIONS[134]] = None
+    BidSize: Annotated[float | None, DECLARATIONS[134]] = None
     """`BidSize <134>`: quoted bid quantity."""
 
-    offer_size: Annotated[float | None, DECLARATIONS[135]] = None
+    OfferSize: Annotated[float | None, DECLARATIONS[135]] = None
     """`OfferSize <135>`: quoted offer quantity."""
 
-    def_bid_size: Annotated[float | None, DECLARATIONS[293]] = None
+    DefBidSize: Annotated[float | None, DECLARATIONS[293]] = None
     """`DefBidSize <293>`: default bid quantity for a quote set."""
 
-    def_offer_size: Annotated[float | None, DECLARATIONS[294]] = None
+    DefOfferSize: Annotated[float | None, DECLARATIONS[294]] = None
     """`DefOfferSize <294>`: default offer quantity for a quote set."""
 
-    valid_until_time: Annotated[datetime.datetime | None, DECLARATIONS[62]] = None
+    ValidUntilTime: Annotated[datetime.datetime | None, DECLARATIONS[62]] = None
     """`ValidUntilTime <62>`: quote expiry in UTC."""
 
-    no_quote_sets: Annotated[int | None, DECLARATIONS[296]] = None
+    NoQuoteSets: Annotated[int | None, DECLARATIONS[296]] = None
     """`NoQuoteSets <296>`: quote-set group count."""
 
-    no_quote_entries: Annotated[int | None, DECLARATIONS[295]] = None
+    NoQuoteEntries: Annotated[int | None, DECLARATIONS[295]] = None
     """`NoQuoteEntries <295>`: quote-entry group count."""
 
-    quote_set_id: Annotated[str | None, DECLARATIONS[302]] = None
+    QuoteSetID: Annotated[str | None, DECLARATIONS[302]] = None
     """`QuoteSetID <302>`: quote-set identifier."""
 
-    quote_entry_id: Annotated[str | None, DECLARATIONS[299]] = None
+    QuoteEntryID: Annotated[str | None, DECLARATIONS[299]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
     @classmethod
-    def from_instrument(cls, instrument: Any, **declared: Any) -> FixMessage:
+    def from_instrument(cls, instrument: Any, **declared: Any) -> FixMsg:
         """Carry one normalized instrument version in the parsed-log stream."""
         from rekep.market.instrument import Instrument
 
@@ -510,15 +508,15 @@ class FixMessage(Event):
                 # would be the same content twice -- and there was no line.
                 "message": None,
                 "protocol_code": cls.into_instrument_protocol(),
-                "msg_type": cls.into_instrument_msg_type(),
-                "symbol": known.symbol or None,
-                "security_id": known.security_id,
-                "security_id_source": known.security_id_source,
-                "isincode": known.isin_code,
-                "security_type": known.security_type,
-                "cfi_code": known.cfi,
-                "security_exchange": known.exchange,
-                "currency": None if known.currency is None else known.currency.into_fix(),
+                "MsgType": cls.into_instrument_msg_type(),
+                "Symbol": known.symbol or None,
+                "SecurityID": known.security_id,
+                "SecurityIDSource": known.security_id_source,
+                "ISINCODE": known.isin_code,
+                "SecurityType": known.security_type,
+                "CFICode": known.cfi,
+                "SecurityExchange": known.exchange,
+                "Currency": None if known.currency is None else known.currency.into_fix(),
                 "kwargs": _stored_entries(_instrument_pairs(known)),
             }
         )
@@ -585,38 +583,68 @@ class FixMessage(Event):
         are reinjected as FIX, and a consumer holding only the message has no
         `etype` to dispatch on. `MsgType <35>` survives that round trip.
         """
-        return self.msg_type == type(self).into_instrument_msg_type()
+        return self.MsgType == type(self).into_instrument_msg_type()
 
     # -- the FIX stage --------------------------------------------------------
 
     @classmethod
-    def resolve_arrow_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
-        """One batch of message-stage rows, resolved against the dictionary.
-
-        What `parse_fix` does to what `parse_messages` stored: the same
-        `kwargs` column filled the rest of the way, the fields that earn a
-        column lifted out of it, the structured components built, the
-        transaction time resolved now that those exist, and the digest taken
-        over the parsed values. `message` is never re-read -- everything comes
-        from the stored column, which is what makes a re-parse cheap.
-        """
+    def from_message_arrow_batch(
+        cls, batch: pyarrow.RecordBatch, codec: Any, rules: MessageRules
+    ) -> pyarrow.RecordBatch:
+        """Transcribe one raw `Message` batch under a FIX codec and event rules."""
+        if not isinstance(batch, pyarrow.RecordBatch):
+            raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
         rows = batch.num_rows
-        if not rows:
-            return batch
         columns = {name: batch.column(name) for name in batch.schema.names}
-        columns.update(cls.resolved_columns(columns, codec, rows))
-        return cls.identified(columns, batch.schema, rows)
+        messages = columns["message"]
+        protocols = codec.categorise(messages, columns.get("plugin_code"))
+        parts, positions = [], []
+        for protocol, where in groups_of(protocols):
+            sliced = messages if len(where) == rows else pyarrow.compute.take(messages, where)
+            pairs = codec.into_pairs(sliced, protocol.as_py())
+            parts.append(codec.into_message_kwargs(pairs))
+            positions.append(where)
+        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
+        protocol_version, protocol_version_source = codec.versions_of_kwargs(kwargs)
+        columns.update(
+            {
+                "etype": rules.etype_arrow(messages),
+                "protocol_code": protocols,
+                "protocol_version": protocol_version,
+                "protocol_version_source": protocol_version_source,
+                "kwargs": kwargs,
+                # MsgType is the one field a versionless message can still
+                # state unambiguously: tag 35 names itself on the wire.
+                "MsgType": FieldAccess.first_named(kwargs, 35, "MsgType", rows),
+            }
+        )
+        schema = cls._message_schema(batch.schema)
+        for field in schema:
+            columns.setdefault(field.name, pyarrow.nulls(rows, field.type))
+        columns.update(cls._resolved_batch_columns(columns, codec, rows))
+        columns["mic"] = _mic_arrow(columns, messages, rows)
+        return cls.identified(columns, schema, rows)
 
     @classmethod
-    def resolved_columns(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> dict[str, Any]:
-        """Message-stage columns, resolved -- the one implementation of that.
+    def _message_schema(cls, source: pyarrow.Schema) -> pyarrow.Schema:
+        """The FixMsg contract followed by caller-declared raw columns."""
+        schema = cls.into_field().into_arrow_schema()
+        own = set(schema.names)
+        raw = set(Message.into_field().names)
+        collisions = [name for name in source.names if name in own and name not in raw]
+        if collisions:
+            raise ValueError(
+                f"raw message columns collide with FixMsg fields {collisions}; "
+                "rename the caller-declared columns"
+            )
+        extra = [field for field in source if field.name not in own]
+        return pyarrow.schema([*schema, *extra], metadata=schema.metadata)
 
-        Called from both stages: the parser runs it straight after
-        structuration when it is reading a capture whole, and `parse_fix` runs
-        it over stored rows. Split by the *stored* `protocol_version` rather
-        than by re-deriving one, which is the whole saving -- a batch carries
-        several dictionary versions and each slice is homogeneous.
-        """
+    @classmethod
+    def _resolved_batch_columns(
+        cls, columns: Mapping[str, Any], codec: Any, rows: int
+    ) -> dict[str, Any]:
+        """Resolve each version-homogeneous slice and restore batch order."""
         compute = pyarrow.compute
         versions = compute.fill_null(columns["protocol_version"], "")
         parts, positions = [], []
@@ -640,8 +668,8 @@ class FixMessage(Event):
         components, kwargs = codec.into_component_columns(kwargs, version)
         lifted, kwargs = codec.into_lifted_columns(kwargs, version)
         found: dict[str, Any] = {"kwargs": kwargs, **components, **lifted}
-        # A lifted value only fills a column the message stage left empty:
-        # `msg_type` is read off the front of the message before any of this,
+        # A lifted value only fills a column already read directly where it is empty:
+        # `MsgType` is read off the front of the message before any of this,
         # and the wire is the authority on what it says.
         for name, column in found.items():
             stored = columns.get(name)
@@ -655,18 +683,16 @@ class FixMessage(Event):
     ) -> pyarrow.RecordBatch:
         """The envelope a row earns: its instrument, its time, its identity.
 
-        Both parse paths end here -- the parser reading a capture whole and
-        `parse_fix` reading stored message rows -- because `hash` is what a
-        merge upserts on, and two routes that disagree about it write the same
-        line twice or collapse two lines into one.
+        The FIX conversion ends here so `hash`, transaction time and lifecycle
+        identifiers are derived only after the full registry projection exists.
         """
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
-        columns["symbol"] = cls.symbol_arrow(columns, rows)
+        columns["Symbol"] = cls.symbol_arrow(columns, rows)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["codes"] = cls.codes_arrow(columns, rows)
-        columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
+        columns["reason"] = compute.coalesce(columns.get("Text"), columns["reason"])
         columns["unix"], columns["unix_source"] = resolve_arrow(columns, columns["runix"], rows)
         columns["unix_partition"] = unix_partition_arrow(columns["unix"])
         columns["cunix"] = columns["unix"]
@@ -699,7 +725,7 @@ class FixMessage(Event):
             "source_rownum",
             "protocol_code",
             "protocol_version",
-            "msg_type",
+            "MsgType",
             "kwargs",
         )
 
@@ -747,7 +773,7 @@ class FixMessage(Event):
         )
         available = []
         for stored, field, _ in IDENTIFIER_FIELDS:
-            promoted = columns.get(stored)
+            promoted = columns.get(field)
             fallback = residual.get(field)
             if promoted is None and fallback is None:
                 continue
@@ -944,16 +970,16 @@ class FixMessage(Event):
                 "etype": pyarrow.repeat(
                     pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE), batch.num_rows
                 ),
-                "symbol": pyarrow.compute.fill_null(batch.column("symbol"), ""),
+                "symbol": pyarrow.compute.fill_null(batch.column("Symbol"), ""),
                 "kind": _stored_code(normalized.first(_INSTRUMENT_KIND)),
-                "security_id": batch.column("security_id"),
-                "security_id_source": batch.column("security_id_source"),
-                "isin_code": batch.column("isincode"),
+                "security_id": batch.column("SecurityID"),
+                "security_id_source": batch.column("SecurityIDSource"),
+                "isin_code": batch.column("ISINCODE"),
                 "alt_ids": normalized.alt_ids(target.field("alt_ids").arrow_type),
-                "security_type": batch.column("security_type"),
-                "cfi": batch.column("cfi_code"),
-                "exchange": batch.column("security_exchange"),
-                "currency": _currency_arrow(batch.column("currency")),
+                "security_type": batch.column("SecurityType"),
+                "cfi": batch.column("CFICode"),
+                "exchange": batch.column("SecurityExchange"),
+                "currency": _currency_arrow(batch.column("Currency")),
                 "multiplier": cast_arrow_fix(
                     normalized.first("ContractMultiplier"), pyarrow.float64()
                 ),
@@ -975,18 +1001,18 @@ class FixMessage(Event):
         """Build only the instrument facts already promoted on this row."""
         from rekep.market.instrument import Instrument
 
-        symbol = self.symbol or self.security_id or self.isincode or ""
+        symbol = self.Symbol or self.SecurityID or self.ISINCODE or ""
         if not symbol:
             return None
         return Instrument(
             symbol=symbol,
-            security_id=self.security_id,
-            security_id_source=self.security_id_source,
-            isin_code=self.isincode,
-            security_type=self.security_type,
-            cfi=self.cfi_code,
-            exchange=self.security_exchange,
-            currency=self.currency,
+            security_id=self.SecurityID,
+            security_id_source=self.SecurityIDSource,
+            isin_code=self.ISINCODE,
+            security_type=self.SecurityType,
+            cfi=self.CFICode,
+            exchange=self.SecurityExchange,
+            currency=self.Currency,
         )
 
     def _normalized_instrument(self) -> Any:
@@ -998,7 +1024,7 @@ class FixMessage(Event):
         return Instrument.from_dict(row)
 
     def _instrument_version(self, instrument: Any) -> Any:
-        """Put decoded facts back on the lifecycle envelope this FixMessage carries."""
+        """Put decoded facts back on the lifecycle envelope this FixMsg carries."""
         return dataclasses.replace(
             instrument,
             unix=self.unix,
@@ -1022,103 +1048,37 @@ class FixMessage(Event):
         )
 
 
-@runtime_checkable
-class MessageCodec(Protocol):
-    """What a source calls to turn a message column into the columns a row carries."""
-
-    def categorise(self, messages: Any, plugins: Any = None) -> Any:
-        """One `protocol` name per row."""
-        ...
-
-    def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
-        """Ordered key/value pairs per row, as the line spells them.
-
-        Addressed by the name `categorise` gave the row, because that is what
-        the batch carries. Null, not an empty list, for a protocol that reads
-        nothing.
-        """
-        ...
-
-    def version_of(
-        self, message: str | None, protocol: str = NO_PROTOCOL
-    ) -> tuple[str | None, str]:
-        """Which protocol version a message is read under, and where that came from.
-
-        The one a protocol without versions answers `(None, "none")` to. Here
-        rather than inside the projection so one resolved version is handed
-        down to each homogeneous slice.
-        """
-        ...
-
-    def versions_of_pairs(self, pairs: Any, protocol: str = NO_PROTOCOL) -> Any:
-        """One resolved version per parsed row, so a mixed batch can be split."""
-        ...
-
-    def into_fixmessage_columns(
-        self, pairs: Any, version: str | None = None
-    ) -> tuple[Any, dict[str, Any]]:
-        """`(kwargs, {column: array})`: what a log keeps, and what it lifts.
-
-        Every field the message carried is in `kwargs`; the ones the log gives
-        a column of their own are in the mapping and gone from `kwargs`. A
-        protocol with nothing to lift answers `(kwargs, {})`.
-        """
-        ...
-
-
-@dataclasses.dataclass
-class FixMessageRule(Convertible):
-    """One pattern, and the kind of event a line matching it is."""
-
-    pattern: str = ""
-    """RE2 regular expression, matched anywhere in the message."""
-
-    etype: EventType = EventType.UNKNOWN
-    """What a line matching `pattern` is; readable by name in a configuration."""
-
-    label: str = ""
-    """What the rule is for, when the pattern does not say it plainly."""
-
-    patterns: list[str] = dataclasses.field(default_factory=list)
-    """Additional regexes; matching any message pattern satisfies the rule."""
-
-    @property
-    def message_patterns(self) -> tuple[str, ...]:
-        """All nonempty patterns, in declaration order."""
-        return tuple(filter(None, (self.pattern, *self.patterns)))
-
-
 #: What a FIX-carrying trading log is made of, by the two spellings every one
 #: of them uses: the wire `35=` message type, and the name a rendered log
 #: prints. Ordered most specific first, because the first match wins and a
 #: single line can name more than one of them -- an execution report quoting
 #: the order it fills says `ExecutionReport` *and* `NewOrderSingle`.
-DEFAULT_RULES: tuple[FixMessageRule, ...] = (
-    FixMessageRule(
+DEFAULT_RULES: tuple[MessageRule, ...] = (
+    MessageRule(
         r"35=8(\D|$)",
         EventType.EXECUTION,
         "a fill, or a report of one",
         [r"ExecutionReport"],
     ),
-    FixMessageRule(
+    MessageRule(
         r"35=[DFG](\D|$)",
         EventType.ORDER,
         "an order, or an amendment to one",
         [r"NewOrderSingle", r"OrderCancel(Request|Replace)"],
     ),
-    FixMessageRule(
+    MessageRule(
         r"35=X(\D|$)",
         EventType.BOOK,
         "an incremental book update",
         [r"MarketDataIncrementalRefresh"],
     ),
-    FixMessageRule(
+    MessageRule(
         r"35=W(\D|$)",
         EventType.BOOK,
         "a full book snapshot",
         [r"MarketDataSnapshot"],
     ),
-    FixMessageRule(
+    MessageRule(
         r"35=(?:AG|AH|AI|AJ|[RSZabi])(?:[^A-Za-z0-9]|$)",
         EventType.QUOTE,
         "a quote lifecycle message",
@@ -1127,49 +1087,13 @@ DEFAULT_RULES: tuple[FixMessageRule, ...] = (
             r"StatusReport|Response|Cancel|Request)?|RFQRequest)\b"
         ],
     ),
-    FixMessageRule(
+    MessageRule(
         r"35=d(\D|$)",
         EventType.INSTRUMENT,
         "reference data",
         [r"SecurityDefinition"],
     ),
 )
-
-
-def _default_log_rules() -> list[FixMessageRule]:
-    """Fresh default rules, including their mutable pattern lists."""
-    return [dataclasses.replace(rule, patterns=list(rule.patterns)) for rule in DEFAULT_RULES]
-
-
-@dataclasses.dataclass
-class FixMessageRules(Convertible):
-    """Which `EventType` each line of a log is, by the first pattern that matches."""
-
-    #: Rules in the order they are tried. The default reads a FIX trading log.
-    rules: list[FixMessageRule] = dataclasses.field(default_factory=_default_log_rules)
-
-    def etype_arrow(self, messages: Any) -> pyarrow.Array:
-        """One `etype` per message: the first rule that matches, else `UNKNOWN`."""
-        compute = pyarrow.compute
-        rows = len(messages)
-        found: Any = pyarrow.repeat(pyarrow.scalar(int(EventType.UNKNOWN), _EVENT_CODE), rows)
-        if not rows:
-            return found
-        text = messages.cast(pyarrow.string(), safe=False)
-        for rule in reversed(self.rules):
-            hit = _log_rule_hit(rule, text)
-            found = compute.if_else(hit, pyarrow.scalar(int(rule.etype), _EVENT_CODE), found)
-        return found.cast(_EVENT_CODE, safe=False)
-
-
-def _log_rule_hit(rule: FixMessageRule, text: Any) -> Any:
-    """One log rule's any-pattern mask."""
-    compute = pyarrow.compute
-    mask = None
-    for pattern in rule.message_patterns:
-        matched = compute.fill_null(compute.match_substring_regex(text, pattern), False)
-        mask = matched if mask is None else compute.or_(mask, matched)
-    return pyarrow.compute.is_valid(text) if mask is None else mask
 
 
 def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> pyarrow.Array:
@@ -1192,13 +1116,64 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
     return compute.fill_null(found, "")
 
 
+def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> pyarrow.Array:
+    """ISO exchange fields, then direction-aware FIX session endpoints."""
+    compute = pyarrow.compute
+    missing = pyarrow.nulls(rows, pyarrow.string())
+    stored = columns.get("kwargs")
+    tags = (
+        FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
+        if stored is not None
+        else {}
+    )
+    explicit = [
+        tags.get(30, missing),
+        columns.get("SecurityExchange", missing),
+        tags.get(100, missing),
+        tags.get(275, missing),
+        tags.get(1301, missing),
+    ]
+    explicit = [value for value in explicit if value.null_count < rows]
+    venue = MIC.arrow_from_strings(*explicit) if explicit else pyarrow.nulls(rows, pyarrow.int32())
+    sender_source = columns.get("SenderCompID", missing)
+    target_source = columns.get("TargetCompID", missing)
+    sender = (
+        MIC.arrow_from_strings(sender_source)
+        if sender_source.null_count < rows
+        else pyarrow.nulls(rows, pyarrow.int32())
+    )
+    target = (
+        MIC.arrow_from_strings(target_source)
+        if target_source.null_count < rows
+        else pyarrow.nulls(rows, pyarrow.int32())
+    )
+    if sender.null_count == rows:
+        return compute.coalesce(venue, target)
+    if target.null_count == rows:
+        return compute.coalesce(venue, sender)
+    text = messages.cast(pyarrow.string(), safe=False)
+    outbound = compute.fill_null(
+        compute.match_substring_regex(text, r"(?i)\b(?:send|sending|sent|outbound)\b"), False
+    )
+    inbound = compute.fill_null(
+        compute.match_substring_regex(text, r"(?i)\b(?:recv|receive|received|receiving|inbound)\b"),
+        False,
+    )
+    directed = compute.if_else(
+        outbound,
+        target,
+        compute.if_else(inbound, sender, pyarrow.nulls(rows, pyarrow.int32())),
+    )
+    return compute.coalesce(venue, directed, target, sender)
+
+
 _NORMALIZED_GROUP = re.compile(r"^(?P<group>NoLegs|NoSecurityAltID)\[(?P<index>[0-9]+)\]")
 _GROUP_STRIDE = 1 << 32
 
 
 @dataclasses.dataclass(frozen=True)
 class _NormalizedInstrumentFields:
-    """Column views over the normalized fields stored in `FixMessage.kwargs`."""
+    """Column views over the normalized fields stored in `FixMsg.kwargs`."""
 
     rows: int
     parents: pyarrow.Array
@@ -1409,7 +1384,7 @@ def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
-    """Registry-shaped fields not already promoted on a normalized FixMessage."""
+    """Registry-shaped fields not already promoted on a normalized FixMsg."""
     values = (
         (_INSTRUMENT_KIND, int(instrument.kind)),
         ("ContractMultiplier", instrument.multiplier),
@@ -1482,7 +1457,7 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 def _stored_entry(entry: Any) -> dict[str, Any]:
     """One stored field, filled out from however the caller spelled it.
 
-    A `(key, value)` pair is accepted as itself, so a caller writing a `FixMessage` by
+    A `(key, value)` pair is accepted as itself, so a caller writing a `FixMsg` by
     hand need not spell the whole struct out: a numeric key is the tag it
     already is, and a name gives up whatever stood in front of it to `comp` or
     `namespace` the same way `FixCodec.transcribe` splits a parsed one.
@@ -1530,7 +1505,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     The tag where the dictionary found one, and the rendered key -- name with
     whatever stood in front of it joined back -- where it did not. A plain
     `(key, value)` tuple is accepted as itself, so a caller writing a
-    `FixMessage` by hand need not spell the whole struct out.
+    `FixMsg` by hand need not spell the whole struct out.
     """
     for entry in entries or ():
         if not isinstance(entry, Mapping):

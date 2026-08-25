@@ -15,7 +15,7 @@ parameters:
   #   glue.region: eu-west-1
   #   s3.region: eu-west-1
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # Credentials come from the standard AWS environment or workload role.
+  # S3_* process defaults and the standard AWS credential chain are supported.
   catalog: rekep
   catalog_properties:
     type: sql

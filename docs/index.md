@@ -1,7 +1,8 @@
 # rekep
 
-`rekep` turns ordered text logs into Arrow records and writes five Iceberg
-products: FIX messages, instruments, books, orders, and executions.
+`rekep` turns ordered text logs into Arrow records and writes six portable
+shapes: source messages, FIX messages, instruments, books, orders, and
+executions.
 
 ![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](assets/arrow-hub.svg)
 
@@ -17,14 +18,14 @@ details and the limits of zero-copy exchange.
 ```mermaid
 flowchart TD
     L[TextFile / TextFiles] --> PM[parse_messages]
-    PM --> M[(text.messages)]
+    PM --> M[(logs.messages)]
     M --> PF[parse_fix]
-    PF --> FM[(fixmessage.market<br/>misc, unknown)]
-    FM --> FI[flatten_instruments] --> I[(instrument)]
+    PF --> FM[(fix.market<br/>fix.misc<br/>fix.unknown)]
+    FM --> FI[flatten_instruments] --> I[(market.instruments)]
     FM --> PK[parse_market]
-    PK -->|books: true| B[(book)]
-    B --> FO[flatten_orders] --> O[(order)]
-    B --> FE[flatten_executions] --> E[(execution)]
+    PK -->|books: true| B[(market.books)]
+    B --> FO[flatten_orders] --> O[(market.orders)]
+    B --> FE[flatten_executions] --> E[(market.executions)]
     PK -->|books: false| O
     PK -->|books: false| E
 ```
@@ -40,12 +41,12 @@ it does not own deployment-specific jobs.
 - [Why Arrow](arrow.md): storage, database, and compute interoperability.
 - [Design](design.md): boundaries and maintenance rules.
 - [Types](types.md): `@scalar`, fields, and recursive casts.
-- [Contracts](contracts.md): the five portable schemas.
+- [Contracts](contracts.md): the six portable schemas.
 - [Identity](identity.md): cross-language binary hashing.
 
 **Parsing**
 
-- [FixMessage](fixmessage.md): streamed text parsing and routing.
+- [FixMsg](fixmsg.md): streamed text parsing and routing.
 - [FIX](fix.md): registry-driven transcription.
 - [Configuring a parse](configuring.md): headers, rules, field readings.
 
@@ -67,10 +68,13 @@ pip install "rekep[all]"       # all package extras
 ```
 
 ```python
-from rekep import FixMessage, TextFiles
+from rekep import FixCodec, FixMsg, TextFiles
 
 source = TextFiles.from_folder("logs", pattern="*.log*")
-reader = source.read_arrow_reader(schema=FixMessage.into_field())
+for messages in source.read_arrow_reader():
+    parsed = FixMsg.from_message_arrow_batch(
+        messages, FixCodec(), FixMsg.into_message_rules()
+    )
 ```
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices
@@ -79,8 +83,8 @@ for data known to fit in memory.
 ## Command line
 
 ```bash
-rekep fields dump --pyclass rekep.text.fixmessage:FixMessage --target fixmessage.yaml
-rekep fields load --target fixmessage.yaml
+rekep fields dump --pyclass rekep.text.fixmsg:FixMsg --target fixmsg.yaml
+rekep fields load --target fixmsg.yaml
 rekep fix shell --store data/fix
 ```
 

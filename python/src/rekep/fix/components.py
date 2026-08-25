@@ -28,13 +28,13 @@ from rekep.fix.quickfix import (
 class Party:
     """One entry of FIX's Parties component."""
 
-    party_id: Annotated[str | None, DECLARATIONS[448]] = None
+    PartyID: Annotated[str | None, DECLARATIONS[448]] = None
     """Party identifier."""
 
-    party_id_source: Annotated[str | None, DECLARATIONS[447]] = None
+    PartyIDSource: Annotated[str | None, DECLARATIONS[447]] = None
     """Scheme or class of `PartyID`."""
 
-    party_role: Annotated[int | None, DECLARATIONS[452]] = None
+    PartyRole: Annotated[int | None, DECLARATIONS[452]] = None
     """Role the party has in the transaction."""
 
     buffer: dict[str, str] | None = None
@@ -45,13 +45,13 @@ class Party:
 class TrdRegTimestamp:
     """One entry of FIX's TrdRegTimestamps component."""
 
-    trd_reg_timestamp: Annotated[datetime.datetime | None, DECLARATIONS[769]] = None
+    TrdRegTimestamp: Annotated[datetime.datetime | None, DECLARATIONS[769]] = None
     """The regulatory instant itself."""
 
-    trd_reg_timestamp_type: Annotated[int | None, DECLARATIONS[770]] = None
+    TrdRegTimestampType: Annotated[int | None, DECLARATIONS[770]] = None
     """Which regulatory instant it is."""
 
-    trd_reg_timestamp_origin: Annotated[str | None, DECLARATIONS[771]] = None
+    TrdRegTimestampOrigin: Annotated[str | None, DECLARATIONS[771]] = None
     """Who or what stamped it."""
 
     buffer: dict[str, str] | None = None
@@ -69,13 +69,13 @@ class SideTrdRegTimestamp:
     preference table reads both.
     """
 
-    side_trd_reg_timestamp: Annotated[datetime.datetime | None, DECLARATIONS[1012]] = None
+    SideTrdRegTimestamp: Annotated[datetime.datetime | None, DECLARATIONS[1012]] = None
     """The regulatory instant for this side."""
 
-    side_trd_reg_timestamp_type: Annotated[int | None, DECLARATIONS[1013]] = None
+    SideTrdRegTimestampType: Annotated[int | None, DECLARATIONS[1013]] = None
     """Which regulatory instant it is, in `TrdRegTimestampType`'s codes."""
 
-    side_trd_reg_timestamp_src: Annotated[str | None, DECLARATIONS[1014]] = None
+    SideTrdRegTimestampSrc: Annotated[str | None, DECLARATIONS[1014]] = None
     """Who or what stamped it."""
 
     buffer: dict[str, str] | None = None
@@ -591,9 +591,9 @@ class Parties(ComponentGroup):
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
         """`PartyID` opens an entry; the scheme and the role earn columns too."""
         return (
-            ("party_id", "PartyID"),
-            ("party_id_source", "PartyIDSource"),
-            ("party_role", "PartyRole"),
+            ("PartyID", "PartyID"),
+            ("PartyIDSource", "PartyIDSource"),
+            ("PartyRole", "PartyRole"),
         )
 
 
@@ -622,9 +622,9 @@ class TrdRegTimestamps(ComponentGroup):
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
         """`TrdRegTimestamp` opens an entry; its type and origin qualify it."""
         return (
-            ("trd_reg_timestamp", "TrdRegTimestamp"),
-            ("trd_reg_timestamp_type", "TrdRegTimestampType"),
-            ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
+            ("TrdRegTimestamp", "TrdRegTimestamp"),
+            ("TrdRegTimestampType", "TrdRegTimestampType"),
+            ("TrdRegTimestampOrigin", "TrdRegTimestampOrigin"),
         )
 
 
@@ -652,9 +652,9 @@ class SideTrdRegTimestamps(ComponentGroup):
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
         """`SideTrdRegTimestamp` opens an entry; its type and source qualify it."""
         return (
-            ("side_trd_reg_timestamp", "SideTrdRegTimestamp"),
-            ("side_trd_reg_timestamp_type", "SideTrdRegTimestampType"),
-            ("side_trd_reg_timestamp_src", "SideTrdRegTimestampSrc"),
+            ("SideTrdRegTimestamp", "SideTrdRegTimestamp"),
+            ("SideTrdRegTimestampType", "SideTrdRegTimestampType"),
+            ("SideTrdRegTimestampSrc", "SideTrdRegTimestampSrc"),
         )
 
 

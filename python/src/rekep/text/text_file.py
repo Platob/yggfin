@@ -18,16 +18,13 @@ import pyarrow.compute
 import pyarrow.fs
 
 from rekep.dataset import Dataset, arrow_chunks
-from rekep.enums import MIC
+from rekep.enums import EventType
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
-from rekep.fix.access import FieldAccess
-from rekep.fix.fields import cast_arrow_fix
-from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
-from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
+from rekep.text.message import Message
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
 
@@ -143,9 +140,9 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     @classmethod
     @cache
-    def into_row(cls) -> type[FixMessage]:
+    def into_row(cls) -> type[Message]:
         """Class whose declaration defines parsed rows."""
-        return FixMessage
+        return Message
 
     @classmethod
     @cache
@@ -166,28 +163,6 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
     #: fills -- and anything else is cast onto on the way out and in.
     row: StructField | None = None
-
-    #: What decides each line's `etype`, tried in order, `UNKNOWN` when nothing
-    #: matches. The default reads a FIX trading log; an empty `FixMessageRules(rules=[])`
-    #: skips the matching entirely and leaves every line `UNKNOWN`.
-    rules: FixMessageRules = dataclass_field(default_factory=FixMessageRules)
-
-    #: What turns a message into the columns a row carries: which category it
-    #: is, its pairs, and the tags behind them. `FixCodec` reads a FIX-carrying
-    #: trading log; another `MessageCodec` can plug in without changing the
-    #: file pipeline.
-    #:
-    #: A codec whose rule set is empty categorises every line OTHER, which
-    #: parses nothing.
-    codec: MessageCodec = dataclass_field(default_factory=FixCodec)
-
-    #: Whether to resolve the fields a message carries against the dictionary,
-    #: or only to structure them. Off is the message stage: a line is split
-    #: into the same `kwargs` struct at its unresolved fill level, with the
-    #: protocol, its version and `MsgType <35>` beside it, and no field, no
-    #: component and no enumerated value looked up. `parse_fix` completes the
-    #: same column later, so a re-parse tokenises nothing twice.
-    resolved: bool = True
 
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
@@ -225,8 +200,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Build from a URI, or from a path when `filesystem` is given.
 
         Anything else the file declares -- `static_values`, `row`,
-        `header_pattern`, `rules` -- is a keyword here, so a call reads as one
-        shape.
+        `header_pattern` -- is a keyword here, so a call reads as one shape.
         """
         return cls(url=url, filesystem=filesystem, timezone=timezone, **declared)
 
@@ -301,13 +275,19 @@ class TextFile(Dataset, io.BufferedIOBase):
                 stream.write(b"")
         return self
 
-    def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
+    def read_arrow_reader(
+        self,
+        schema: Any = None,
+        *,
+        exclude_plugins: Sequence[str] = (),
+        **kwargs: Any,
+    ) -> pyarrow.RecordBatchReader:
         """Parse the file, cast onto `schema` when one is asked for.
 
         With none, the reader is the parser's own -- see `into_arrow_reader`
         for the parsing options, which are passed straight through.
         """
-        reader = self.into_arrow_reader(**kwargs)
+        reader = self.into_arrow_reader(exclude_plugins=exclude_plugins, **kwargs)
         target = self.target_field(schema)
         if target.arrow_schema.equals(reader.schema):
             return reader
@@ -399,13 +379,16 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
+        exclude_plugins: Sequence[str] = (),
     ) -> pyarrow.RecordBatchReader:
-        """Stream the log as Arrow record batches."""
+        """Stream the log as Arrow record batches, omitting exact plugin codes."""
         self._check_open()
         self.__dict__.pop("_stream", None)
         return pyarrow.RecordBatchReader.from_batches(
             self.schema,
-            self.into_arrow_batches(batch_row_size, read_byte_size, fold_continuations),
+            self.into_arrow_batches(
+                batch_row_size, read_byte_size, fold_continuations, exclude_plugins
+            ),
         )
 
     def into_arrow_table(self, **kwargs: object) -> pyarrow.Table:
@@ -417,14 +400,17 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
+        exclude_plugins: Sequence[str] = (),
     ) -> Iterator[pyarrow.RecordBatch]:
         """Yield one record batch per `batch_row_size` parsed lines.
 
         The row loop is deliberately spartan -- profiling puts it, not Arrow,
         on the critical path. Groups come out in one `group(...)` call against
         indices resolved once, and land as one tuple append; everything
-        columnar happens once per batch in `_batch`.
+        columnar happens once per batch in `_batch`. Plugin exclusions are
+        exact and case-sensitive.
         """
+        excluded = _excluded_plugins(exclude_plugins)
         groups = self.header_pattern.groupindex
         indices = tuple(
             groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
@@ -452,38 +438,37 @@ class TextFile(Dataset, io.BufferedIOBase):
             # that happens to land on the boundary would be dropped, silently,
             # at any batch size -- including the default one.
             if len(rows) > batch_row_size:
-                yield self._batch(rows[:batch_row_size], rownums[:batch_row_size])
+                batch = self._batch(rows[:batch_row_size], rownums[:batch_row_size], excluded)
+                if batch.num_rows:
+                    yield batch
                 del rows[:batch_row_size], rownums[:batch_row_size]
         if rows:
-            yield self._batch(rows, rownums)
+            batch = self._batch(rows, rownums, excluded)
+            if batch.num_rows:
+                yield batch
 
-    def _batch(self, rows: list[tuple], rownums: list[int]) -> pyarrow.RecordBatch:
-        """One batch of parsed lines, as the `Event` columns a `FixMessage` is.
+    def _batch(
+        self,
+        rows: list[tuple],
+        rownums: list[int],
+        excluded_plugins: pyarrow.Array | None = None,
+    ) -> pyarrow.RecordBatch:
+        """One batch of parsed headers and uninterpreted payloads.
 
         Assembled **by name** and then ordered by the schema, rather than as a
-        positional list: a column added to `FixMessage` then fails here by its own
+        positional list: a column added to `Message` then fails here by its own
         name instead of silently shifting every column after it into the wrong
-        one. The dict costs twenty-odd entries per batch against sixty-five
-        thousand rows.
+        one.
         """
         timestamps, threads, plugins, messages = zip(*rows, strict=True)
         count = len(rows)
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
-        message = _utf8(messages)
+        message = pyarrow.compute.fill_null(_utf8(messages), "")
         columns: dict[str, Any] = {
-            # Filled below, once the message columns are read: `unix` is the
-            # transaction time the message states, and the header clock is
-            # what *recorded* it. Seeded with the header clock so a row whose
-            # message says nothing about time still sorts where it was read.
             "unix": unix,
             "unix_partition": unix_partition_arrow(unix),
-            "etype": self.rules.etype_arrow(message),
-            # A line is created when it is stamped. `runix` is when somebody
-            # wrote it down *here*, which for a captured log is exactly what
-            # the header stamped -- so it is the header clock, and never a
-            # clock read at parse time, which would make the same file parse
-            # into different rows every run.
+            "etype": pyarrow.repeat(pyarrow.scalar(int(EventType.UNKNOWN), pyarrow.int32()), count),
             "cunix": unix,
             "runix": unix,
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
@@ -498,25 +483,28 @@ class TextFile(Dataset, io.BufferedIOBase):
             "reason": pyarrow.nulls(count, pyarrow.string()),
             "source_url": pyarrow.repeat(self.url, count),
             "source_rownum": pyarrow.array(rownums, type=pyarrow.int64()),
-            "thread_name": _utf8(threads),
-            "plugin_code": _utf8(plugins),
+            "thread_name": pyarrow.compute.fill_null(_utf8(threads), ""),
+            "plugin_code": pyarrow.compute.fill_null(_utf8(plugins), ""),
             "message": message,
         }
-        for name, column in self._message_columns(message, columns["plugin_code"], count).items():
-            if name in columns:
-                column = pyarrow.compute.coalesce(
-                    cast_arrow_fix(column, columns[name].type), columns[name]
-                )
-            columns[name] = column
-        columns["mic"] = _mic_arrow(columns, message, count)
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
+        if excluded_plugins is not None:
+            keep = pyarrow.compute.invert(
+                pyarrow.compute.is_in(columns["plugin_code"], value_set=excluded_plugins)
+            )
+            columns = {
+                name: pyarrow.compute.filter(column, keep) for name, column in columns.items()
+            }
+            count = len(columns["plugin_code"])
         schema = self.schema
-        # `FixMessage.identified` fills these once every other column is here.
-        # Seeded so the check below reads what the *parser* owes the schema,
-        # which is none of them.
-        for name in ("hash", "xhash", "unix_source"):
+        if not count:
+            return pyarrow.RecordBatch.from_arrays(
+                [pyarrow.nulls(0, field.type) for field in schema], schema=schema
+            )
+        # `Message.identified` fills these once every raw column is here.
+        for name in ("hash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
         linked_events = schema.field("linked_events")
         columns.setdefault(
@@ -530,24 +518,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         for field in schema:
             if field.name not in columns:
                 columns[field.name] = pyarrow.nulls(count, field.type)
-        # The instrument, the transaction time and the digest are the stored
-        # row's to decide, and `parse_fix` lands on the very same call over the
-        # very same columns -- so a capture read in one pass and a capture read
-        # in two agree on `hash`, which is what every merge upserts on.
         return self.into_row().identified(columns, schema, count)
-
-    def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
-        """What a message fills: which protocol it is, its fields, its columns.
-
-        Structuration always runs and `resolved` decides whether the dictionary
-        is then applied, through the same `FixMessage.resolved_columns` that
-        `parse_fix` calls -- so reading a capture in one pass and reading it in
-        two cannot disagree about what a line says.
-        """
-        staged = self.codec.into_message_columns(messages, plugins)
-        if not self.resolved:
-            return staged
-        return {**staged, **self.into_row().resolved_columns(staged, self.codec, count)}
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -719,6 +690,19 @@ def _scalar(name: str, value: Any) -> pyarrow.Scalar:
 def _nbytes(size: int | None) -> int | None:
     """Translate the io convention for "read everything" to Arrow's."""
     return None if size is None or size < 0 else size
+
+
+def _excluded_plugins(values: Sequence[str]) -> pyarrow.Array | None:
+    """Exact plugin codes a reader omits, as one Arrow lookup set."""
+    values = _exclude_plugin_codes(values)
+    return pyarrow.array(values, type=pyarrow.string()) if values else None
+
+
+def _exclude_plugin_codes(values: Sequence[str]) -> tuple[str, ...]:
+    """One unambiguous sequence of exact plugin codes."""
+    if isinstance(values, str):
+        raise TypeError("exclude_plugins must be a sequence of plugin codes, not a string")
+    return tuple(values)
 
 
 def _utf8(values: Sequence[bytes | None]) -> pyarrow.Array:
@@ -958,57 +942,6 @@ def _datetime_micros(value: datetime.datetime) -> int:
     """A naive datetime as exact microseconds since the Unix epoch."""
     delta = value - datetime.datetime(1970, 1, 1)
     return (delta.days * 86_400 + delta.seconds) * 1_000_000 + delta.microseconds
-
-
-def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
-    """ISO exchange fields, then direction-aware FIX session endpoints."""
-    compute = pyarrow.compute
-    missing = pyarrow.nulls(rows, pyarrow.string())
-    stored = columns.get("kwargs")
-    tags = (
-        FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
-        if stored is not None
-        else {}
-    )
-    explicit = [
-        tags.get(30, missing),
-        columns.get("security_exchange", missing),
-        tags.get(100, missing),
-        tags.get(275, missing),
-        tags.get(1301, missing),
-    ]
-    explicit = [value for value in explicit if value.null_count < rows]
-    venue = MIC.arrow_from_strings(*explicit) if explicit else pyarrow.nulls(rows, pyarrow.int32())
-    sender_source = columns.get("sender_comp_id", missing)
-    target_source = columns.get("target_comp_id", missing)
-    sender = (
-        MIC.arrow_from_strings(sender_source)
-        if sender_source.null_count < rows
-        else pyarrow.nulls(rows, pyarrow.int32())
-    )
-    target = (
-        MIC.arrow_from_strings(target_source)
-        if target_source.null_count < rows
-        else pyarrow.nulls(rows, pyarrow.int32())
-    )
-    if sender.null_count == rows:
-        return compute.coalesce(venue, target)
-    if target.null_count == rows:
-        return compute.coalesce(venue, sender)
-    text = messages.cast(pyarrow.string(), safe=False)
-    outbound = compute.fill_null(
-        compute.match_substring_regex(text, r"(?i)\b(?:send|sending|sent|outbound)\b"), False
-    )
-    inbound = compute.fill_null(
-        compute.match_substring_regex(text, r"(?i)\b(?:recv|receive|received|receiving|inbound)\b"),
-        False,
-    )
-    directed = compute.if_else(
-        outbound,
-        target,
-        compute.if_else(inbound, sender, pyarrow.nulls(rows, pyarrow.int32())),
-    )
-    return compute.coalesce(venue, directed, target, sender)
 
 
 def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:

@@ -47,6 +47,19 @@ S3 = frozenset({"s3", "s3a", "s3n"})
 #: is left in `query` for whoever put it there.
 S3_SETTINGS = ("region", "scheme", "endpoint_override", "allow_bucket_creation")
 
+#: Portable process defaults and their Iceberg property suffixes. AWS
+#: credentials stay in Arrow's provider chain; these names are the explicit
+#: S3-compatible-store layer above it.
+S3_ENVIRONMENT = (
+    ("S3_ACCESS_KEY_ID", "access-key-id"),
+    ("S3_SECRET_ACCESS_KEY", "secret-access-key"),
+    ("S3_SESSION_TOKEN", "session-token"),
+    ("S3_REGION", "region"),
+)
+
+#: Endpoint defaults, from the store-specific spelling to AWS's global one.
+S3_ENDPOINT_ENVIRONMENT = ("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")
+
 #: A netloc that is a *hostname* rather than a bucket name. A bucket may carry
 #: dots -- `my.logs.2026` is a legal name -- so a dot decides nothing; what
 #: decides is the last label, because a name ending in a public suffix is
@@ -303,28 +316,63 @@ class Url:
         """The `pyarrow.fs` handle for this location, and the path on it."""
         if self.scheme in LOCAL:
             return pyarrow.fs.LocalFileSystem(), self._local_path()
-        if self.scheme in S3 and (self.endpoint is not None or self.user is not None):
-            return self._s3_filesystem(), self.store_path
-        filesystem, path = pyarrow.fs.FileSystem.from_uri(self.into_string())
+        environment = s3_environment() if self.scheme in S3 else {}
+        if self.scheme in S3 and (
+            self.endpoint is not None or self.user is not None or environment
+        ):
+            return self._s3_filesystem(environment), self.store_path
+        location = self.into_string()
+        if self.scheme in S3:
+            # Arrow's native parser accepts `s3`, not Hadoop's `s3a`/`s3n` aliases.
+            location = f"s3:{location.partition(':')[2]}"
+        filesystem, path = pyarrow.fs.FileSystem.from_uri(location)
         return filesystem, path
 
-    def _s3_filesystem(self) -> pyarrow.fs.FileSystem:
-        """`S3FileSystem` configured from the parts of the location itself."""
+    def _s3_filesystem(self, environment: Mapping[str, str]) -> pyarrow.fs.FileSystem:
+        """`S3FileSystem` configured from process defaults and this location."""
+        arguments = (
+            ("access_key", "s3.access-key-id"),
+            ("secret_key", "s3.secret-access-key"),
+            ("session_token", "s3.session-token"),
+            ("region", "s3.region"),
+        )
         settings: dict[str, Any] = {
-            key: self.query[key] for key in S3_SETTINGS if key in self.query
+            argument: environment[property_name]
+            for argument, property_name in arguments
+            if property_name in environment
         }
-        settings.pop("endpoint_override", None)
+        environment_endpoint = environment.get("s3.endpoint")
+        if environment_endpoint:
+            settings["scheme"], settings["endpoint_override"] = _endpoint_parts(
+                environment_endpoint
+            )
+        settings.update(
+            {
+                key: self.query[key]
+                for key in S3_SETTINGS
+                if key in self.query and key != "endpoint_override"
+            }
+        )
         if self.user is not None:
             settings["access_key"] = self.user
             settings["secret_key"] = self.password or ""
+            settings.pop("session_token", None)
         region = self.region
         if region is not None:
-            settings.setdefault("region", region)
+            settings["region"] = region
         endpoint = self.endpoint
-        if endpoint is not None and not _amazon(_bare(endpoint))[0]:
-            settings["endpoint_override"] = endpoint
-            settings.setdefault("scheme", "http" if _plain(endpoint) else "https")
-        elif "region" not in settings:
+        if endpoint is not None:
+            if not _amazon(_bare(endpoint))[0]:
+                settings["endpoint_override"] = endpoint
+                if "scheme" not in self.query:
+                    settings["scheme"] = "http" if _plain(endpoint) else "https"
+            else:
+                # Naming AWS in the location is an explicit store choice, so
+                # a process-wide compatible-store endpoint cannot survive it.
+                settings.pop("endpoint_override", None)
+                if "scheme" not in self.query:
+                    settings.pop("scheme", None)
+        if "endpoint_override" not in settings and "region" not in settings:
             settings["region"] = _region_of(self.bucket)
             if settings["region"] is None:
                 settings.pop("region")
@@ -473,6 +521,14 @@ def _plain(endpoint: str) -> bool:
     return "." not in host or host.startswith("127.") or host == "localhost"
 
 
+def _endpoint_parts(endpoint: str) -> tuple[str, str]:
+    """An endpoint URL as Arrow's separate transport and connect string."""
+    parsed = urllib.parse.urlsplit(endpoint)
+    if parsed.scheme in HTTP and parsed.netloc:
+        return parsed.scheme, f"{parsed.netloc}{parsed.path}".rstrip("/")
+    return ("http" if _plain(endpoint) else "https"), endpoint.rstrip("/")
+
+
 @functools.lru_cache(maxsize=64)
 def _region_of(bucket: str) -> str | None:
     """The region a bucket lives in, when Arrow can be asked and knows.
@@ -489,6 +545,21 @@ def _region_of(bucket: str) -> str | None:
         return pyarrow.fs.resolve_s3_region(bucket)
     except Exception:  # noqa: BLE001 - any failure means "nobody knows", not "refuse"
         return None
+
+
+def s3_environment(environ: Mapping[str, str] = os.environ, prefix: str = "s3") -> dict[str, str]:
+    """Portable S3 process defaults in Iceberg catalog spelling."""
+    settings = {
+        f"{prefix}.{suffix}": value
+        for name, suffix in S3_ENVIRONMENT
+        if (value := environ.get(name))
+    }
+    endpoint = next(
+        (value for name in S3_ENDPOINT_ENVIRONMENT if (value := environ.get(name))), None
+    )
+    if endpoint:
+        settings[f"{prefix}.endpoint"] = endpoint
+    return settings
 
 
 def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
