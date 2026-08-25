@@ -11,6 +11,14 @@ kind, side, price, quantity, notional,
 currency, and their previous values. Protocol spelling stays in metadata while
 the stored fields use common semantics.
 
+```python
+from rekep.market.fix import FixEvents
+
+# One wire line, as the events it carries.
+for event in FixEvents.from_text(line, fix_version="4.4"):
+    print(type(event).__name__, event.state.name, event.unix, event.xhash)
+```
+
 ## State
 
 `State` is one ordered integer vocabulary. Pending, live, partial, terminal,
@@ -37,6 +45,14 @@ travel as normalized rows in `fixmessage.market`, then the flattening notebook
 projects them unchanged into the Instrument table.
 
 There is no separate reference model or contract.
+
+```python
+from rekep.enums import State
+
+# Bands make "still live" and "finished" range predicates rather than lists:
+# every open state sorts inside `OPEN`, every finished one inside `DONE`.
+resting = State.OPEN <= state < State.DONE
+```
 
 ## When it happened
 
@@ -155,6 +171,14 @@ Missing or non-finite price/quantity cannot mutate the book.
 
 ## Books
 
+```python
+from rekep.market import BookIterator
+
+# One ordered stream of translated events in, `Book` rows out.
+for book in BookIterator.from_events(events, purge_alive=True):
+    print(book.unix, book.bid_px, book.ask_px)
+```
+
 `BookIterator` consumes sorted `FixMessage` records, translates their already-parsed
 FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
@@ -221,5 +245,5 @@ and per message -- rather than recomputed for every line.
 `python/benchmarks/bench_market.py --quick` verifies identity, FIX translation,
 book derivations, focused state transitions, the whole parsed-row-to-books
 generator, and a small replay-shape matrix before timing them. The full run
-expands the event and live-order matrix and reports operation counters beside
+replays at `--rows` events a shape and reports operation counters beside
 throughput.

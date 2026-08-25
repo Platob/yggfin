@@ -41,9 +41,12 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
+    FieldRule,
+    FieldRules,
     arrow_type_of,
     cast_arrow_bool,
     cast_arrow_fix,
+    declared_arrow_type,
     fix_field,
     unix_of,
 )
@@ -120,6 +123,8 @@ __all__ = [
     "FLAT",
     "FieldAccess",
     "FieldEntry",
+    "FieldRule",
+    "FieldRules",
     "FixCodec",
     "FixPairs",
     "FixRegistry",
@@ -164,6 +169,7 @@ __all__ = [
     "arrow_type_of",
     "cast_arrow_bool",
     "cast_arrow_fix",
+    "declared_arrow_type",
     "classify",
     "count_files",
     "count_reader",

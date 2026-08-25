@@ -16,6 +16,7 @@ tags, rather than living in a second incompatible mapping.
 from __future__ import annotations
 
 import dataclasses
+import functools
 import json
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -152,11 +153,16 @@ def newest_rank(version: str) -> tuple[int, ...]:
     return (1 - transport, *numbers)
 
 
+@functools.lru_cache(maxsize=4096)
 def translation_key(text: str) -> str:
     """A value or its name as `translations` keys it: casefolded, letters and digits.
 
     `ORDER_SUBMISSION_TIME`, `Order Submission Time` and `ordersubmissiontime`
     are one key; plain lowercasing leaves three.
+
+    Memoized because a feed asks the same few hundred spellings of it on every
+    single message -- a hundred thousand calls over two thousand lines, of
+    which two hundred were distinct (benchmarks/bench_market.py).
     """
     return _TRANSLATION_DROP.sub("", str(text).casefold())
 

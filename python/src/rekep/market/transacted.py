@@ -15,8 +15,13 @@ from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any
 
+import pyarrow
+import pyarrow.compute
+
 from rekep.enums import EventType
+from rekep.fields.arrays import sequence
 from rekep.fix.entries import snake_of
+from rekep.fix.fields import cast_arrow_fix
 
 #: `TrdRegTimestampType <770>`, and `SideTrdRegTimestampType <1013>`, which
 #: FIX gives the same meanings. Named rather than spelled at the ranking
@@ -39,12 +44,17 @@ ORDER_SUBMISSION_TIME = 10
 
 @dataclasses.dataclass(frozen=True)
 class Stamped:
-    """One rung of the precedence chain: where a time may come from.
+    """One rung of the precedence chain: where a time may come from, and how.
 
     A flat tuple of names could not say "the entry of a regulatory group whose
     type is one of these", which is what the head of the chain now is -- so the
     rung is a small record rather than a string, and every rung is one kind of
     thing.
+
+    Both readings of a rung are here: `transacted` answers for one row a
+    caller holds as a message, `arrow` for a whole batch it holds as columns.
+    Two executions of one declaration, on the declaration, so neither can
+    drift into being a second rule.
     """
 
     #: What names this rung where a reading is recorded, and in the docs.
@@ -67,6 +77,197 @@ class Stamped:
     def is_column(self) -> bool:
         """Whether this rung reads a typed column rather than a pair of fields."""
         return bool(self.column)
+
+    # -- one row --------------------------------------------------------------
+
+    def transacted(
+        self,
+        read: Callable[[str], Any],
+        entries: Callable[[str], Sequence[Any]],
+        etype: EventType | int | None,
+        recorded: int | None,
+        member: Callable[[Any, str], Any],
+    ) -> Transacted | None:
+        """What this rung says one row's transaction time is, or None."""
+        if self.is_column:
+            found, kind = self._entry(entries(self.column), etype, member)
+            if found is None:
+                return None
+            return Transacted(found, f"{self.name}={kind}" if kind is not None else self.name)
+        found = read(self.fields[0]) if len(self.fields) == 1 else self._dated(read, recorded)
+        return None if found is None else Transacted(found, self.name)
+
+    def _dated(self, read: Callable[[str], Any], recorded: int | None) -> int | None:
+        """A rung FIX splits across a date field and a time field."""
+        date, clock = self.fields
+        found = read(date)
+        on = read(clock, found if found is not None else recorded)  # type: ignore[call-arg]
+        return on if on is not None else found
+
+    def _entry(
+        self,
+        entries: Sequence[Any],
+        etype: EventType | int | None,
+        member: Callable[[Any, str], Any],
+    ) -> tuple[int | None, int | None]:
+        """The preferred entry of one regulatory group, and which type it was.
+
+        Ranked, not first-wins: a group carries several instants and only one
+        of them is when the thing happened. A group that carries none of the
+        preferred types still answers -- with its first entry, because a
+        regulatory stamp nobody ranked is still nearer the transaction than a
+        transmission clock -- and says which type that was, so a reader can
+        tell the two apart.
+        """
+        readings = [
+            (self._as_kind(member(entry, self.kind)), self._as_instant(member(entry, self.instant)))
+            for entry in entries or ()
+        ]
+        readings = [(kind, found) for kind, found in readings if found is not None]
+        if not readings:
+            return None, None
+        for wanted in preferred_types(etype):
+            for kind, found in readings:
+                if kind == wanted:
+                    return found, kind
+        kind, found = readings[0]
+        return found, kind
+
+    @staticmethod
+    def member(entry: Any, name: str) -> Any:
+        """One member of a typed entry: the column spelling of its FIX name.
+
+        A parsed row holds these as a typed column whose members are `snake_of`
+        the FIX name the rung declares. A caller holding the group some other
+        way -- a translation holds whatever the wire keyed it by -- passes its
+        own reader, which is what `resolve`'s `member` is for.
+        """
+        spelled = snake_of(name)
+        if isinstance(entry, Mapping):
+            return entry.get(spelled)
+        return getattr(entry, spelled, None)
+
+    @staticmethod
+    def _as_instant(found: Any) -> int | None:
+        """One entry's instant, in the epoch nanoseconds a `*unix` column holds."""
+        from rekep.market.fix import unix_value
+
+        return unix_value(found)
+
+    @staticmethod
+    def _as_kind(found: Any) -> int | None:
+        """One entry's regulatory type, where it states one."""
+        if found is None:
+            return None
+        try:
+            return int(found)
+        except (TypeError, ValueError):
+            return None
+
+    # -- whole columns --------------------------------------------------------
+
+    def arrow(self, columns: Mapping[str, Any], etypes: Any, rows: int) -> tuple[Any, Any]:
+        """`(instant, kind)` per row for this rung, over a batch of parsed rows.
+
+        `kind` is None for a rung that reads fields, which have no type to
+        name; both are None where the batch does not carry this rung at all.
+        """
+        if self.is_column:
+            return self._arrow_entry(columns.get(self.column), etypes, rows)
+        return self._arrow_fields(columns, rows), None
+
+    def _arrow_fields(self, columns: Mapping[str, Any], rows: int) -> Any:
+        """One field rung over a whole batch, as epoch nanoseconds."""
+        read = [columns.get(snake_of(name)) for name in self.fields]
+        if any(column is None for column in read):
+            return None
+        if len(read) == 1:
+            return self._arrow_nanos(read[0], rows)
+        date, clock = (self._arrow_nanos(column, rows) for column in read)
+        return pyarrow.compute.coalesce(clock, date)
+
+    def _arrow_entry(self, column: Any, etypes: Any, rows: int) -> tuple[Any, Any]:
+        """The preferred entry of one regulatory group, per row, in kernels.
+
+        Ranked exactly as `_entry` ranks: a row takes the first of its own
+        kind's preferred types that its group carries, and its group's first
+        entry where it carries none of them.
+        """
+        compute = pyarrow.compute
+        if column is None or not rows:
+            return None, None
+        if isinstance(column, pyarrow.ChunkedArray):
+            column = column.combine_chunks()
+        if column.null_count == rows:
+            return None, None
+        parents = compute.list_parent_indices(column).cast(pyarrow.int64())
+        entries = compute.list_flatten(column)
+        instants = self._arrow_nanos(
+            compute.struct_field(entries, snake_of(self.instant)), len(parents)
+        )
+        kinds = compute.struct_field(entries, snake_of(self.kind))
+        told = compute.is_valid(instants)
+        rank = self._arrow_rank(kinds, etypes, parents, rows)
+        # The best-ranked entry of each row, in one stable sort: the row and
+        # the rank pack into one integer -- ranks are far below `_RANK_STRIDE`
+        # -- and a stable order then breaks a tie by where the entry sat, which
+        # is wire order. `index_in` takes the first occurrence of each row, so
+        # the entry each row keeps is its best-ranked and earliest.
+        keyed = compute.add(
+            compute.multiply(parents, pyarrow.scalar(_RANK_STRIDE, pyarrow.int64())),
+            rank.cast(pyarrow.int64()),
+        )
+        order = compute.array_sort_indices(keyed)
+        order = compute.filter(order, compute.fill_null(compute.take(told, order), False))
+        first = compute.index_in(sequence(rows), value_set=compute.take(parents, order))
+        chosen = compute.take(order, first)
+        return compute.take(instants, chosen), compute.take(kinds, chosen)
+
+    @classmethod
+    def _arrow_rank(cls, kinds: Any, etypes: Any, parents: Any, rows: int) -> Any:
+        """How good each entry is for the row it belongs to: lower is better.
+
+        One pass per distinct `EventType` in the batch, because the ranking is
+        a property of the kind of row and a batch carries a handful of kinds.
+        An entry of a type nobody ranked sorts after every ranked one, so it is
+        taken only where a row has nothing better -- which is `_entry`'s rule.
+        """
+        compute = pyarrow.compute
+        unranked = pyarrow.scalar(len(PREFERRED) + 64, pyarrow.int32())
+        if etypes is None:
+            return cls._arrow_rank_of(kinds, preferred_types(None), unranked)
+        codes = compute.take(
+            compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0), parents
+        )
+        rank = pyarrow.repeat(unranked, len(parents))
+        for code in compute.unique(codes).to_pylist():
+            at = compute.equal(codes, code)
+            rank = compute.if_else(
+                at, cls._arrow_rank_of(kinds, preferred_types(code), unranked), rank
+            )
+        return rank
+
+    @staticmethod
+    def _arrow_rank_of(kinds: Any, wanted: Sequence[int], unranked: Any) -> Any:
+        """One ranking applied to a whole child array."""
+        compute = pyarrow.compute
+        rank = pyarrow.repeat(unranked, len(kinds))
+        for position, code in reversed(list(enumerate(wanted))):
+            at = compute.fill_null(compute.equal(kinds, code), False)
+            rank = compute.if_else(at, pyarrow.scalar(position, pyarrow.int32()), rank)
+        return rank
+
+    @staticmethod
+    def _arrow_nanos(column: Any, rows: int) -> Any:
+        """One clock column as the epoch nanoseconds a `*unix` column holds."""
+        if column is None:
+            return pyarrow.nulls(rows, pyarrow.int64())
+        if isinstance(column, pyarrow.ChunkedArray):
+            column = column.combine_chunks()
+        if not pyarrow.types.is_timestamp(column.type):
+            column = cast_arrow_fix(column, pyarrow.timestamp("us", tz="UTC"))
+        micros = column.cast(pyarrow.timestamp("us"), safe=False).cast(pyarrow.int64())
+        return pyarrow.compute.multiply(micros, pyarrow.scalar(1000, pyarrow.int64()))
 
 
 #: Where `unix` comes from, **best first**, and why each is where it is.
@@ -209,87 +410,14 @@ def resolve(
     one has a parsed message and the other has typed columns -- while the
     chain they walk is the same one.
     """
-    reader = member or _member
+    reader = member or Stamped.member
     for rung in TRANSACTED:
-        if rung.is_column:
-            found, kind = _typed(entries(rung.column), rung, etype, reader)
-            if found is not None:
-                return Transacted(found, f"{rung.name}={kind}" if kind is not None else rung.name)
-            continue
-        found = read(rung.fields[0]) if len(rung.fields) == 1 else _dated(read, rung, recorded)
+        found = rung.transacted(read, entries, etype, recorded, reader)
         if found is not None:
-            return Transacted(found, rung.name)
+            return found
     if recorded:
         return Transacted(recorded, RECORDED)
     return Transacted()
-
-
-def _dated(read: Callable[[str], Any], rung: Stamped, recorded: int | None) -> int | None:
-    """A rung FIX splits across a date field and a time field."""
-    date, clock = rung.fields
-    found = read(date)
-    on = read(clock, found if found is not None else recorded)  # type: ignore[call-arg]
-    return on if on is not None else found
-
-
-def _typed(
-    entries: Sequence[Any],
-    rung: Stamped,
-    etype: EventType | int | None,
-    member: Callable[[Any, str], Any],
-) -> tuple[int | None, int | None]:
-    """The preferred entry of one regulatory group, and which type it was.
-
-    Ranked, not first-wins: a group carries several instants and only one of
-    them is when the thing happened. A group that carries none of the preferred
-    types still answers -- with its first entry, because a regulatory stamp
-    nobody ranked is still nearer the transaction than a transmission clock --
-    and says which type that was, so a reader can tell the two apart.
-    """
-    readings = [
-        (_kind_of(member(entry, rung.kind)), _instant_of(member(entry, rung.instant)))
-        for entry in entries or ()
-    ]
-    readings = [(kind, found) for kind, found in readings if found is not None]
-    if not readings:
-        return None, None
-    for wanted in preferred_types(etype):
-        for kind, found in readings:
-            if kind == wanted:
-                return found, kind
-    kind, found = readings[0]
-    return found, kind
-
-
-def _instant_of(found: Any) -> int | None:
-    """One entry's instant, in the epoch nanoseconds a `*unix` column holds."""
-    from rekep.market.fix import unix_value
-
-    return unix_value(found)
-
-
-def _kind_of(found: Any) -> int | None:
-    """One entry's regulatory type, where it states one."""
-    if found is None:
-        return None
-    try:
-        return int(found)
-    except (TypeError, ValueError):
-        return None
-
-
-def _member(entry: Any, name: str) -> Any:
-    """One member of a typed entry: the column spelling of its FIX name.
-
-    A parsed row holds these as a typed column whose members are `snake_of`
-    the FIX name the rung declares. A caller holding the group some other way
-    -- a translation holds whatever the wire keyed it by -- passes its own
-    reader, which is what `member` is for.
-    """
-    spelled = snake_of(name)
-    if isinstance(entry, Mapping):
-        return entry.get(spelled)
-    return getattr(entry, spelled, None)
 
 
 # -- whole columns ------------------------------------------------------------
@@ -305,9 +433,6 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
     the scalar reading walks -- this is the second execution of them, not a
     second table.
     """
-    import pyarrow
-    import pyarrow.compute
-
     compute = pyarrow.compute
     found = pyarrow.nulls(rows, pyarrow.int64())
     source = pyarrow.nulls(rows, pyarrow.string())
@@ -315,10 +440,7 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
     for rung in TRANSACTED:
         if compute.all(compute.is_valid(found), min_count=0).as_py() and rows:
             break
-        if rung.is_column:
-            reading, kinds = _arrow_typed(columns.get(rung.column), rung, etypes, rows)
-        else:
-            reading, kinds = _arrow_fields(columns, rung, rows), None
+        reading, kinds = rung.arrow(columns, etypes, rows)
         if reading is None:
             continue
         fill = compute.and_(compute.is_null(found), compute.is_valid(reading))
@@ -340,115 +462,3 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
         compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64())),
         compute.fill_null(source, pyarrow.scalar(NO_CLOCK)),
     )
-
-
-def _arrow_fields(columns: Mapping[str, Any], rung: Stamped, rows: int) -> Any:
-    """One field rung over a whole batch, as epoch nanoseconds."""
-    import pyarrow
-
-    from rekep.fix.entries import snake_of
-
-    read = [columns.get(snake_of(name)) for name in rung.fields]
-    if any(column is None for column in read):
-        return None
-    if len(read) == 1:
-        return _arrow_nanos(read[0], rows)
-    date, clock = (_arrow_nanos(column, rows) for column in read)
-    return pyarrow.compute.coalesce(clock, date)
-
-
-def _arrow_typed(column: Any, rung: Stamped, etypes: Any, rows: int) -> tuple[Any, Any]:
-    """The preferred entry of one regulatory group, per row, in kernels.
-
-    Ranked exactly as `_typed` ranks: a row takes the first of its own kind's
-    preferred types that its group carries, and its group's first entry where
-    it carries none of them.
-    """
-    import pyarrow
-    import pyarrow.compute
-
-    from rekep.fields.arrays import sequence
-    from rekep.fix.entries import snake_of
-
-    compute = pyarrow.compute
-    if column is None or not rows:
-        return None, None
-    if isinstance(column, pyarrow.ChunkedArray):
-        column = column.combine_chunks()
-    if column.null_count == rows:
-        return None, None
-    parents = compute.list_parent_indices(column).cast(pyarrow.int64())
-    entries = compute.list_flatten(column)
-    instants = _arrow_nanos(compute.struct_field(entries, snake_of(rung.instant)), len(parents))
-    kinds = compute.struct_field(entries, snake_of(rung.kind))
-    told = compute.is_valid(instants)
-    rank = _arrow_rank(kinds, etypes, parents, rows)
-    # The best-ranked entry of each row, in one stable sort: the row and the
-    # rank pack into one integer -- ranks are far below `_RANK_STRIDE` -- and a
-    # stable order then breaks a tie by where the entry sat, which is wire
-    # order. `index_in` takes the first occurrence of each row, so the entry
-    # each row keeps is its best-ranked and earliest.
-    keyed = compute.add(
-        compute.multiply(parents, pyarrow.scalar(_RANK_STRIDE, pyarrow.int64())),
-        rank.cast(pyarrow.int64()),
-    )
-    order = compute.array_sort_indices(keyed)
-    order = compute.filter(order, compute.fill_null(compute.take(told, order), False))
-    first = compute.index_in(sequence(rows), value_set=compute.take(parents, order))
-    chosen = compute.take(order, first)
-    return compute.take(instants, chosen), compute.take(kinds, chosen)
-
-
-def _arrow_rank(kinds: Any, etypes: Any, parents: Any, rows: int) -> Any:
-    """How good each entry is for the row it belongs to: lower is better.
-
-    One pass per distinct `EventType` in the batch, because the ranking is a
-    property of the kind of row and a batch carries a handful of kinds. An
-    entry of a type nobody ranked sorts after every ranked one, so it is taken
-    only where a row has nothing better -- which is `_typed`'s rule.
-    """
-    import pyarrow
-    import pyarrow.compute
-
-    compute = pyarrow.compute
-    unranked = pyarrow.scalar(len(PREFERRED) + 64, pyarrow.int32())
-    if etypes is None:
-        return _arrow_rank_of(kinds, preferred_types(None), unranked)
-    codes = compute.take(compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0), parents)
-    rank = pyarrow.repeat(unranked, len(parents))
-    for code in compute.unique(codes).to_pylist():
-        wanted = preferred_types(code)
-        at = compute.equal(codes, code)
-        rank = compute.if_else(at, _arrow_rank_of(kinds, wanted, unranked), rank)
-    return rank
-
-
-def _arrow_rank_of(kinds: Any, wanted: Sequence[int], unranked: Any) -> Any:
-    """One ranking applied to a whole child array."""
-    import pyarrow
-    import pyarrow.compute
-
-    compute = pyarrow.compute
-    rank = pyarrow.repeat(unranked, len(kinds))
-    for position, code in reversed(list(enumerate(wanted))):
-        at = compute.fill_null(compute.equal(kinds, code), False)
-        rank = compute.if_else(at, pyarrow.scalar(position, pyarrow.int32()), rank)
-    return rank
-
-
-def _arrow_nanos(column: Any, rows: int) -> Any:
-    """One clock column as the epoch nanoseconds a `*unix` column holds."""
-    import pyarrow
-    import pyarrow.compute
-
-    from rekep.fix.fields import cast_arrow_fix
-
-    compute = pyarrow.compute
-    if column is None:
-        return pyarrow.nulls(rows, pyarrow.int64())
-    if isinstance(column, pyarrow.ChunkedArray):
-        column = column.combine_chunks()
-    if not pyarrow.types.is_timestamp(column.type):
-        column = cast_arrow_fix(column, pyarrow.timestamp("us", tz="UTC"))
-    micros = column.cast(pyarrow.timestamp("us"), safe=False).cast(pyarrow.int64())
-    return compute.multiply(micros, pyarrow.scalar(1000, pyarrow.int64()))

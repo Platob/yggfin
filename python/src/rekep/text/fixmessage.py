@@ -525,17 +525,27 @@ class FixMessage(Event):
         """Every value of `field` on this row, in stored order."""
         return _row_access().readings(self._field_entries(), field)
 
-    def _field_entries(self) -> Iterator[Any]:
-        """What the accessor scans: lifted columns in schema order, then `kwargs`."""
-        for name, tag in type(self).into_tagged_columns():
-            value = getattr(self, name, None)
-            if value is not None:
-                yield Entry(tag=int(tag), name=name, value=value)
-        for name, spelled in type(self).into_named_columns():
-            value = getattr(self, name, None)
-            if value is not None:
-                yield Entry(name=spelled, value=value)
-        yield from self.kwargs or ()
+    def _field_entries(self) -> list[Entry]:
+        """What the accessor scans: lifted columns in schema order, then `kwargs`.
+
+        A list of ready `Entry` views, so a caller reading several dozen
+        fields off one row builds them once: `entries_of` passes a ready entry
+        straight through, and rebuilding the row per ask was the whole cost of
+        decoding a normalized instrument (benchmarks/bench_market.py).
+        """
+        own = type(self)
+        entries = [
+            Entry(tag=int(tag), name=name, value=value)
+            for name, tag in own.into_tagged_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
+        entries += [
+            Entry(name=spelled, value=value)
+            for name, spelled in own.into_named_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
+        entries += [Entry.from_stored(stored) for stored in self.kwargs or ()]
+        return entries
 
     @classmethod
     @functools.cache
@@ -656,27 +666,10 @@ class FixMessage(Event):
         """What a stored row's `hash` is taken over, in this order.
 
         The **parsed** values and never the raw line, so a message reformatted
-        but not changed hashes alike -- a bridge that rewrites its separator
-        or pads a fraction has not produced a second version of anything.
-
-        The tuple is the identity, so each member earns its place:
-
-        - `unix` and `unix_source`, because a row is a version of something
-          *at an instant*, and a re-parse that resolves the instant from a
-          different rung has genuinely learnt something new about the row.
-          Item 6's resolved time is deliberately in the digest for that
-          reason: two rows agreeing on content but not on when they happened
-          are two versions, not one.
-        - `source_url` and `source_rownum`, which are where the line was, and
-          together are unique across a capture -- so two identical lines in
-          one file stay two rows rather than collapsing into one.
-        - `protocol_code`, `protocol_version` and `msg_type`, which are what
-          the row was read *as*: the same bytes read under a different
-          dictionary is a different reading and deserves a different version.
-        - `kwargs`, which is the parsed content itself, in wire order.
-
-        `runix` is not here, and neither is `message`: when a line was written
-        down is not what it says, and the raw text is a spelling of `kwargs`.
+        but not changed hashes alike. `runix` is deliberately out and `unix`
+        deliberately in: when a line was written down is not what it says, and
+        a re-parse that resolves the instant from a different rung has learnt
+        something new about the row.
         """
         return (
             "unix",
@@ -831,8 +824,13 @@ class FixMessage(Event):
         from rekep.enums import AssetKind, IdSource, OptionKind, Side
         from rekep.market.instrument import Instrument, Leg
 
+        # One reading of the row for every field below, rather than one per
+        # field: the accessor rescans what it is handed, and this decodes
+        # around thirty of them.
+        entries, access = self._field_entries(), _row_access()
+
         def read(spelling: str) -> str | None:
-            return self.get(spelling).raw
+            return access.reading(entries, spelling).raw
 
         alternatives: dict[str, str] = {}
         for index in range(max(_pair_int(read("NoSecurityAltID")), 0)):
@@ -1239,12 +1237,9 @@ def _id_source(value: Any) -> str:
 def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     """Stored fields as the pairs a FIX reader addresses them by.
 
-    The tag where the dictionary found one and the rendered key -- name, and
-    whatever stood in front of it, joined back -- where it did not. That is the
-    same two-shaped answer the tag-keyed and name-keyed columns gave from two
-    columns, read off `tag` instead of off which column an entry sat in.
-
-    A plain `(key, value)` tuple is accepted as itself, so a caller writing a
+    The tag where the dictionary found one, and the rendered key -- name with
+    whatever stood in front of it joined back -- where it did not. A plain
+    `(key, value)` tuple is accepted as itself, so a caller writing a
     `FixMessage` by hand need not spell the whole struct out.
     """
     for entry in entries or ():

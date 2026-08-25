@@ -233,7 +233,7 @@ def test_a_vendor_namespace_is_not_read_as_the_field_its_tail_names(
     """
     assert _row(report, "TECH.CLIENTID").kind == NAMESPACE
     assert _row(report, "TECH.CLIENTID").resolved == ""
-    assert _row(report, "PICTET.SOURCE").kind == NAMESPACE
+    assert _row(report, "VENDOR.SOURCE").kind == NAMESPACE
 
 
 def test_a_name_nothing_here_has_is_a_vendor_field(report: KeyReport) -> None:

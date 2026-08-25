@@ -25,7 +25,7 @@ import pyarrow.fs
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
-from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold
+from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, newest_rank
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -373,7 +373,7 @@ class FixRegistry(Convertible):
         page = self._fetch(f"{self.base_url}.html")
         found = dict.fromkeys(_VERSION_LINK.findall(page))
         found.pop("latest", None)
-        versions = tuple(sorted(found, key=_version_key, reverse=True))
+        versions = tuple(sorted(found, key=newest_rank, reverse=True))
         if not versions:
             raise ValueError(f"{self.base_url}.html lists no FIX versions; is the layout new?")
         return versions
@@ -1178,7 +1178,7 @@ class FixRegistry(Convertible):
         """
         seen: set[str] = set()
         unique: list[str] = []
-        for candidate in sorted(self._stored_spellings(), key=_version_key, reverse=True):
+        for candidate in sorted(self._stored_spellings(), key=newest_rank, reverse=True):
             if candidate.lower() not in seen:
                 seen.add(candidate.lower())
                 unique.append(candidate)
@@ -1543,18 +1543,6 @@ def _used_in(markup: str, kind: str = MESSAGE_LINK) -> list[str]:
 
 
 # -- ordering and matching ---------------------------------------------------
-
-
-def _version_key(version: str) -> tuple[int, ...]:
-    """A sortable reading of `4.4`, `5.0.SP2`, `FIXT1.1`.
-
-    Application versions rank above the transport (`FIXT1.1`): the session
-    layer defines a handful of fields the application versions redefine, so
-    "newest first" should hand back the application's reading.
-    """
-    transport = 0 if version.upper().startswith("FIXT") else 1
-    numbers = tuple(int(part) for part in re.findall(r"\d+", version))
-    return (transport, *numbers)
 
 
 def _tier(entry: FieldEntry, tier: str) -> tuple[str, ...]:

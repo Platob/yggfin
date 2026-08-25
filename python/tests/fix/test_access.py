@@ -6,7 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FixPairs, FixRegistry
-from rekep.fix.access import Entry, FieldAccess, entries_of
+from rekep.fix.access import Entry, FieldAccess
 from rekep.fix.transcribe import FixCodec
 
 #: The four ways a caller has a field in hand, for one field that is all four:
@@ -242,9 +242,9 @@ def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None
 
 def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
     """One `Entry` view over the three shapes a row is held in."""
-    pair = next(entries_of([("NoPartyIDs[0].PartyID", "A")]))
+    pair = next(FieldAccess.entries_of([("NoPartyIDs[0].PartyID", "A")]))
     stored = next(
-        entries_of(
+        FieldAccess.entries_of(
             [
                 {
                     "tag": 448,
@@ -269,4 +269,21 @@ def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
         "A",
     )
     ready = Entry(tag=54, name="Side", value="1")
-    assert next(entries_of([ready])) is ready
+    assert next(FieldAccess.entries_of([ready])) is ready
+
+
+def test_a_field_resolves_to_one_wire_tag_however_it_is_spelled(access: FieldAccess) -> None:
+    """`tag_text` is memoized per spelling, so the answer must not depend on it."""
+    assert access.tag_text("TrdRegTimestamp") == "769"
+    assert access.tag_text(769) == "769"
+    assert access.tag_text("TrdRegTimestamp") == "769", "the memo answers the same"
+    # A key already spelled in digits is the tag, and keeps its own spelling:
+    # a wire message keys `007` that way and reading it back must find it.
+    assert access.tag_text("007") == "007"
+    assert access.tag_text("NoSuchFieldAnywhere") == "NoSuchFieldAnywhere"
+
+
+def test_one_accessor_answers_for_one_dictionary(registry: FixRegistry) -> None:
+    """Its memos are the point: a second accessor would resolve everything twice."""
+    assert FieldAccess.of(registry, None) is FieldAccess.of(registry, None)
+    assert FieldAccess.of(registry, None) is not FieldAccess.of(registry, "4.4")

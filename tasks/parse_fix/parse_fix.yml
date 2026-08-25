@@ -10,6 +10,8 @@ parameters:
   fix_dictionary: data/fix
   rules: null
   protocols: null
+  # Declared field readings; see parse_messages.yml for the shape.
+  fields: null
   # AWS Glue with an S3 warehouse (replace the active local block):
   # catalog: rekep-production
   # catalog_properties:

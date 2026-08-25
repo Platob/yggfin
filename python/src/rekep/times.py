@@ -1,10 +1,7 @@
 """One reading of "an instant", whatever spelled it.
 
-Every job takes a window, and every job was reading it for itself: five
-notebooks each carried the same twelve lines turning `start` and `end` into
-nanoseconds, and each accepted a slightly different set of spellings. This is
-that reading, once -- so a window written `2026-08-14`, `20260814-09:30:00.123`
-or `utcnow` means the same instant wherever it is configured.
+A window written `2026-08-14`, `20260814-09:30:00.123` or `utcnow` means the
+same instant wherever it is configured.
 """
 
 from __future__ import annotations
@@ -17,11 +14,10 @@ from typing import Any
 
 UTC = datetime.UTC
 
-#: The epoch, in the three shapes a caller needs it in -- and only here. It
-#: had been declared in four modules in four types, which is four places for
-#: one of them to be wrong: an aware instant to subtract from, the day a
-#: `*unix` of zero falls on, and the proleptic Gregorian ordinal of that day,
-#: which is what a date arithmetic that avoids `datetime` counts from.
+#: The epoch in the three shapes a caller needs it in, and only here: an aware
+#: instant to subtract from, the day a `*unix` of zero falls on, and the
+#: proleptic Gregorian ordinal a date arithmetic that avoids `datetime` counts
+#: from.
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 EPOCH_DATE = EPOCH.date()
 EPOCH_ORDINAL = EPOCH_DATE.toordinal()

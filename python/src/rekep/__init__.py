@@ -16,7 +16,7 @@ from rekep.fields import (
     StructField,
     scalar,
 )
-from rekep.fix import FixPairs, FixRegistry
+from rekep.fix import FieldRule, FieldRules, FixCodec, FixPairs, FixRegistry, Rules
 from rekep.market import (
     Book,
     Event,
@@ -45,7 +45,11 @@ __all__ = [
     "FixEvents",
     "FixMessage",
     "FixPairs",
+    "FieldRule",
+    "FieldRules",
+    "FixCodec",
     "FixRegistry",
+    "Rules",
     "FixedSizeListField",
     "Instrument",
     "LargeListField",

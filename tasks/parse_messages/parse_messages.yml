@@ -5,6 +5,9 @@ parameters:
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
   source: data/capture
   pattern: "*.log*"
+  # The fixed header every line opens with, as a regex naming `timestamp`,
+  # `thread_name`, `plugin_code` and `message`. Null reads the shipped one.
+  header: null
   recursive: true
   timezone: Europe/Paris
   start: null
@@ -14,6 +17,18 @@ parameters:
   null_values: ["", "null", "<null>", "n/a"]
   rules: null
   protocols: null
+  # How named fields read, where a job says what the dictionary cannot: a
+  # vendor tag that carries an instant, a value spelling only this estate
+  # uses. `type` is an Arrow type (`date32[day]`, `timestamp[us, tz=UTC]`) or
+  # a FIX datatype; `values` maps what a feed writes to what it means.
+  #
+  # fields:
+  #   rules:
+  #     - field: "9999"
+  #       type: timestamp[us, tz=UTC]
+  #     - field: Side
+  #       values: {BUYSIDE: "1", SELLSIDE: "2"}
+  fields: null
   # AWS Glue with an S3 warehouse (replace the active local block):
   # catalog: rekep-production
   # catalog_properties:

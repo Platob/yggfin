@@ -22,7 +22,7 @@ from rekep.enums import MIC
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
-from rekep.fix.access import first_arrow_tags
+from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, hour_arrow
@@ -112,6 +112,17 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 _RENDERED = ("unix", "thread_name", "plugin_code", "message")
 
 
+def compiled_header(source: re.Pattern[bytes] | str | bytes) -> re.Pattern[bytes]:
+    """A header pattern however a job spelled it: compiled, or already compiled.
+
+    Bytes, because a line is classified before it is decoded -- a `str` source
+    is a document's spelling of the same pattern and is encoded here.
+    """
+    if isinstance(source, re.Pattern):
+        return source
+    return re.compile(source.encode() if isinstance(source, str) else source, re.DOTALL)
+
+
 @dataclass(eq=False)
 class TextFile(Dataset, io.BufferedIOBase):
     """A text log addressed by URI: a dataset, and a readable binary stream."""
@@ -144,7 +155,13 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     url: str
     filesystem: pyarrow.fs.FileSystem | None = None
-    header_pattern: re.Pattern[bytes] = HEADER_PATTERN
+
+    #: What a line's fixed header is, as `HEADER_PATTERN` documents one. A job
+    #: configures its own by handing over the pattern source: a `str` or
+    #: `bytes` is compiled here, so a log whose header this package has never
+    #: seen is a document change and not a code change. It must name the same
+    #: groups -- `timestamp`, `thread_name`, `plugin_code`, `message`.
+    header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
     #: fills -- and anything else is cast onto on the way out and in.
@@ -161,8 +178,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: file pipeline.
     #:
     #: A codec whose rule set is empty categorises every line OTHER, which
-    #: parses nothing -- so a file that declares no rules reads exactly as it
-    #: did before any of this existed.
+    #: parses nothing.
     codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
     #: Whether to resolve the fields a message carries against the dictionary,
@@ -190,7 +206,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Resolve the filesystem, and rewrite `url` as a path on it."""
+        """Compile a configured header, resolve the filesystem, rewrite `url` on it."""
+        self.header_pattern = compiled_header(self.header_pattern)
         if self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
 
@@ -522,15 +539,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
         """What a message fills: which protocol it is, its fields, its columns.
 
-        Two stages, and the second is optional. Structuration always runs --
-        which protocol the line is, its fields cut into the stored struct, its
-        protocol version and `MsgType <35>` -- and `resolved` decides whether
-        the dictionary is then applied. Reading a capture whole runs both;
-        `parse_messages` runs only the first and lets `parse_fix` run the
-        second later, off the stored column, so a re-parse tokenises nothing
-        twice.
-
-        The resolution is `FixMessage.resolved_columns`, which is also what
+        Structuration always runs and `resolved` decides whether the dictionary
+        is then applied, through the same `FixMessage.resolved_columns` that
         `parse_fix` calls -- so reading a capture in one pass and reading it in
         two cannot disagree about what a line says.
         """
@@ -955,7 +965,11 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
     stored = columns.get("kwargs")
-    tags = first_arrow_tags(stored, (30, 100, 275, 1301), rows) if stored is not None else {}
+    tags = (
+        FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
+        if stored is not None
+        else {}
+    )
     explicit = [
         tags.get(30, missing),
         columns.get("security_exchange", missing),

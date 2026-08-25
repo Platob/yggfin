@@ -34,7 +34,7 @@ from rekep.fix.components import (
     SideTrdRegTimestamps,
     TrdRegTimestamps,
 )
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
     BRIDGE_SEPARATOR_VECTOR,
@@ -232,7 +232,24 @@ class TagIndex:
         resolved and whether what stands in front of it is a component or a
         namespace, and computing it twice would read the same column
         through the same regex twice.
+
+        Scanned once per **distinct** spelling and taken back across the
+        entries: a message keys its fields out of a bounded vocabulary, so a
+        batch of a hundred thousand entries carries a few dozen spellings. 25x
+        on a captured bridge batch, where every key is a name and none of the
+        fast paths below fire (benchmarks/bench_text_file.py).
         """
+        compute = pyarrow.compute
+        if isinstance(keys, pyarrow.ChunkedArray):
+            keys = keys.combine_chunks()
+        encoded = keys.dictionary_encode()
+        indices = encoded.indices
+        return tuple(
+            compute.take(one, indices) for one in self._resolve_distinct(encoded.dictionary)
+        )
+
+    def _resolve_distinct(self, keys: Any) -> tuple[Any, Any, Any, Any]:
+        """`resolve_with_match` over one column of distinct spellings."""
         compute = pyarrow.compute
         plain = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
         if compute.all(plain, min_count=0).as_py():
@@ -294,6 +311,10 @@ class TagIndex:
         return compute.or_(plain, known)
 
 
+#: What `field_rules` answers for a codec no job declared anything for.
+_NO_RULES: Mapping[int, FieldRule] = MappingProxyType({})
+
+
 @dataclasses.dataclass(eq=False)
 class FixCodec(Convertible):
     """A log line read as FIX: which protocol it is, its pairs, and its tags."""
@@ -314,6 +335,13 @@ class FixCodec(Convertible):
     #: anything else looks at them. Empty keeps every pair.
     null_values: frozenset[str] = NULL_VALUES
 
+    #: How named fields read, where a job says something the dictionary does
+    #: not: a vendor tag that carries an instant, a date a feed writes as text,
+    #: a value spelling only this estate uses. One declaration reaches every
+    #: reading of that field, because every one of them resolves through
+    #: `tag_field` and casts through `cast_arrow_fix`.
+    fields: FieldRules = dataclasses.field(default_factory=FieldRules)
+
     # -- the seam -----------------------------------------------------------
 
     def categorise(self, messages: Any, plugins: Any = None) -> Any:
@@ -329,16 +357,11 @@ class FixCodec(Convertible):
     def into_payload_pairs(self, pairs: Any) -> Any:
         """`XmlData <213>` read as the message it carries, where it carries one.
 
-        The standard calls tag 213 an XML data stream. Real bridge traffic puts
-        a `key=value` message in it instead -- in every sampled line of a
-        capture, with no counterexample -- and read as one opaque blob its
-        fields are neither resolvable nor queryable. So a payload that reads as
-        pairs becomes pairs, under `XmlData.<key>`, in the place the tag sat;
-        one that reads as XML, or as nothing, stays exactly as it was.
-
-        `XmlData.ClOrdID` then resolves like any other nested key -- a rendered
-        `NoPartyIDs.PartyID` already does -- and a payload contradicting the
-        message around it lifts neither, which is what `_liftable` is for.
+        The standard calls tag 213 an XML data stream; real bridge traffic puts
+        a `key=value` message in it. A payload that reads as pairs becomes
+        pairs under `XmlData.<key>`, in the place the tag sat, and resolves
+        like any other nested key; one that reads as XML, or as nothing, stays
+        exactly as it was.
         """
         if isinstance(pairs, pyarrow.ChunkedArray):
             parts = [self.into_payload_pairs(chunk) for chunk in pairs.chunks]
@@ -480,15 +503,10 @@ class FixCodec(Convertible):
     def into_kwargs(self, pairs: Any, version: str | None = None) -> Any:
         """Every field a message carried, as the one entry a parsed log stores.
 
-        The transcription, in one place. A field arrives as the log spelled it
-        and leaves carrying what the dictionary makes of it: the tag behind its
-        name (`0` when nothing answers for it), the name itself, the namespace
-        or component path in front of it, and -- where the field enumerates its
-        values -- what the value means.
-
-        One column, whatever the dictionary made of the field: a consumer that
-        wants "the fields of this line" reads one column in wire order, and one
-        that wants only the resolved ones filters on `tag`.
+        One column whatever the dictionary made of the field, so a consumer
+        that wants "the fields of this line" reads it in wire order and one
+        that wants only the resolved ones filters on `tag` -- `0` where
+        nothing answered for the name.
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
@@ -571,20 +589,31 @@ class FixCodec(Convertible):
         subscript, which is what `_GROUP_ENTRY` matches, and everything else in
         front of a name is a vendor's own prefix.
         """
+        # Read once per **distinct** spelling and taken back across the
+        # entries. A message keys its fields out of a bounded vocabulary --
+        # tags, or the names a bridge renders -- so a batch of a hundred
+        # thousand entries carries a few dozen spellings, and three regex
+        # passes over the entries were three passes over the same handful of
+        # strings repeated. 10x on a captured wire batch and 18x on a bridge
+        # one (benchmarks/bench_text_file.py).
         compute = pyarrow.compute
-        numeric = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
-        tags = compute.if_else(numeric, keys, pyarrow.scalar("0")).cast(TAG)
-        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
+        encoded = keys.dictionary_encode()
+        spellings, indices = encoded.dictionary, encoded.indices
+        numeric = compute.fill_null(compute.match_substring_regex(spellings, _IS_TAG), False)
+        tags = compute.if_else(numeric, spellings, pyarrow.scalar("0")).cast(TAG)
+        parts = compute.extract_regex(spellings, _NAMESPACED_KEY)
         lead = compute.struct_field(parts, "namespace")
         led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
         entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
         nothing = pyarrow.scalar(None, pyarrow.string())
         return (
-            tags,
-            compute.fill_null(compute.struct_field(parts, "key"), keys),
+            compute.take(tags, indices),
+            compute.take(compute.fill_null(compute.struct_field(parts, "key"), spellings), indices),
             values,
-            compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing),
-            compute.if_else(compute.and_(led, entry), lead, nothing),
+            compute.take(
+                compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing), indices
+            ),
+            compute.take(compute.if_else(compute.and_(led, entry), lead, nothing), indices),
         )
 
     def into_message_columns(self, messages: Any, plugins: Any = None) -> dict[str, Any]:
@@ -598,7 +627,7 @@ class FixCodec(Convertible):
         # At the call, because `fix.access` reads this module's own `TagIndex`:
         # the accessor is built on the transcription, so the transcription
         # reaches back into it here rather than at import.
-        from rekep.fix.access import first_named
+        from rekep.fix.access import FieldAccess
 
         compute = pyarrow.compute
         protocols = self.categorise(messages, plugins)
@@ -616,7 +645,7 @@ class FixCodec(Convertible):
             "kwargs": kwargs,
             "protocol_version": version,
             "protocol_version_source": source,
-            "msg_type": first_named(kwargs, 35, "MsgType", rows),
+            "msg_type": FieldAccess.first_named(kwargs, 35, "MsgType", rows),
         }
 
     def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
@@ -627,15 +656,15 @@ class FixCodec(Convertible):
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
         """
-        from rekep.fix.access import first_named
+        from rekep.fix.access import FieldAccess
 
         rows = len(kwargs)
         if not rows:
             empty = pyarrow.array([], pyarrow.string())
             return empty, empty
-        begins = first_named(kwargs, 8, "BeginString", rows)
-        application = first_named(kwargs, 1128, "ApplVerID", rows)
-        default = first_named(kwargs, 1137, "DefaultApplVerID", rows)
+        begins = FieldAccess.first_named(kwargs, 8, "BeginString", rows)
+        application = FieldAccess.first_named(kwargs, 1128, "ApplVerID", rows)
+        default = FieldAccess.first_named(kwargs, 1137, "DefaultApplVerID", rows)
         spellings = self._spellings
         versions: list[str | None] = []
         sources: list[str] = []
@@ -658,15 +687,11 @@ class FixCodec(Convertible):
     def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
         """A message-stage `kwargs` column, resolved the rest of the way.
 
-        Three members are filled and nothing else is touched: `tag` for a key
-        the dictionary answers for, `key` canonicalized to the registry's own
-        spelling, and `value` translated where its field enumerates its values.
-        `namespace` and `comp` come through byte-identical, because where a
-        field stood was settled from the spelling alone and a dictionary has
-        nothing to add to it.
-
-        Not a shape conversion: the column already has the right type, and
-        this is a fill.
+        A fill and not a shape conversion. Three members are filled -- `tag`,
+        `key` canonicalized to the registry's spelling, `value` translated
+        where its field enumerates its values -- and `namespace` and `comp`
+        come through byte-identical, because where a field stood was settled
+        from the spelling alone.
         """
         rows = len(kwargs)
         if isinstance(kwargs, pyarrow.ChunkedArray):
@@ -737,10 +762,31 @@ class FixCodec(Convertible):
         return self._canonicals[version]
 
     def _translations(self, version: str | None) -> tuple[Any, Any]:
-        """`(tag and folded spelling, the value it names)` for one version."""
+        """`(tag and folded spelling, the value it names)` for one version.
+
+        The job's own declared spellings lead the dictionary's, so a rule wins
+        a collision: `index_in` takes the first occurrence of a value.
+        """
         if version not in self._translated_values:
-            self._translated_values[version] = _translations(self.registry, version)
+            spelled, resolved = _translations(self.registry, version)
+            declared = self._declared_translations(version)
+            if declared:
+                spelled = pyarrow.concat_arrays(
+                    [pyarrow.array([one for one, _ in declared], pyarrow.string()), spelled]
+                )
+                resolved = pyarrow.concat_arrays(
+                    [pyarrow.array([one for _, one in declared], pyarrow.string()), resolved]
+                )
+            self._translated_values[version] = (spelled, resolved)
         return self._translated_values[version]
+
+    def _declared_translations(self, version: str | None) -> list[tuple[str, str]]:
+        """`(tag and folded spelling, value)` for every rule that translates one."""
+        return [
+            (f"{tag}\x00{spelling.strip().lower()}", str(value))
+            for tag, rule in self.field_rules(version).items()
+            for spelling, value in rule.values.items()
+        ]
 
     def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
@@ -758,8 +804,7 @@ class FixCodec(Convertible):
 
         Both kinds in one pass, because they are one question asked of one
         column: a numbered tag the log declares a column for, and a rendered
-        name it does. They were two passes over two columns only because the
-        two kinds were stored apart.
+        name it does.
         """
         rows = len(kwargs)
         declared = self.named_fields()
@@ -801,17 +846,29 @@ class FixCodec(Convertible):
         agreed, chosen = _liftable(parents, code, values)
         lift = compute.and_(wanted, agreed)
         taken = compute.and_(wanted, chosen)
-        found = compute.filter(code, taken)
-        where = compute.filter(parents, taken)
-        selected_values = compute.filter(values, taken)
+        # Sorted once by which column an entry belongs to, so each column is a
+        # *slice* of the run rather than two filters over the whole of it: a
+        # filter per column walks every lifted entry once per column, which
+        # is sixty passes over the batch where this is one sort and sixty
+        # zero-copy slices -- 2.7x on a captured batch
+        # (benchmarks/bench_text_file.py). The sort is stable, so parents stay
+        # row ordered inside a column, which is what the shortcut below reads.
+        order = compute.array_sort_indices(compute.filter(code, taken))
+        codes = compute.take(compute.filter(code, taken), order)
+        where = compute.take(compute.filter(parents, taken), order)
+        selected_values = compute.take(compute.filter(values, taken), order)
         row_ids = sequence(rows)
-        for one in compute.unique(found).to_pylist():
-            at = compute.equal(found, one)
-            column = compute.filter(selected_values, at)
-            column_rows = compute.filter(where, at)
+        # `value_counts` answers in first-appearance order, and a sorted
+        # column's first appearances are its groups, in order.
+        at = 0
+        for counted in compute.value_counts(codes).to_pylist():
+            one, run = counted["values"], counted["counts"]
+            column = selected_values.slice(at, run)
+            column_rows = where.slice(at, run)
+            at += run
             # Parent indices are row ordered and `_liftable` chose at most one
             # value per row, so covering every row already is the column.
-            if len(column_rows) != rows:
+            if run != rows:
                 column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
             if one >= 0:
                 columns[FLAT_COLUMNS[one]] = _cast(column, fields[one], FLAT_TYPES[one])
@@ -946,13 +1003,17 @@ class FixCodec(Convertible):
         return self._indexes[version]
 
     def tag_field(self, tag: int, version: str | None = None) -> Field | None:
-        """The dictionary's own declaration of one tag, or None when it has none."""
-        if version is None:
-            return None
-        try:
-            return self.registry.field(tag, version)
-        except (KeyError, OSError, ValueError):
-            return None
+        """One tag's declaration: the job's own where it has one, else the dictionary's."""
+        declared = None
+        if version is not None:
+            try:
+                declared = self.registry.field(tag, version)
+            except (KeyError, OSError, ValueError):
+                declared = None
+        rule = self.field_rules(version).get(tag)
+        if rule is None:
+            return declared
+        return rule.applied(declared, declared.name if declared else str(tag))
 
     def flat_fields(self, version: str | None = None) -> dict[int, Field]:
         """Promoted registry fields, with contract fallbacks only for a cold registry."""
@@ -960,7 +1021,13 @@ class FixCodec(Convertible):
             if version is None:
                 self._flat_fields[version] = {}
             elif not self.registry.fields_available(version):
-                self._flat_fields[version] = {tag: FLAT_DEFAULTS[tag] for tag in FLAT_COLUMNS}
+                rules = self.field_rules(version)
+                self._flat_fields[version] = {
+                    tag: rule.applied(FLAT_DEFAULTS[tag], FLAT_COLUMNS[tag])
+                    if (rule := rules.get(tag)) is not None
+                    else FLAT_DEFAULTS[tag]
+                    for tag in FLAT_COLUMNS
+                }
             else:
                 self._flat_fields[version] = {
                     tag: field
@@ -980,9 +1047,20 @@ class FixCodec(Convertible):
         """
         if self._named is None:
             try:
-                self._named = named_columns(self.registry)
+                built = named_columns(self.registry)
             except (OSError, ValueError):
-                self._named = NAMESPACE_COLUMNS
+                built = NAMESPACE_COLUMNS
+            named = self._named_rules
+            self._named = (
+                built
+                if not named
+                else {
+                    spelling: rule.applied(field, field.name)
+                    if (rule := named.get(spelling.lower())) is not None
+                    else field
+                    for spelling, field in built.items()
+                }
+            )
         return self._named
 
     def parties_of(self, version: str | None = None) -> Parties:
@@ -1031,6 +1109,43 @@ class FixCodec(Convertible):
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
         return {}
 
+    # -- what a job declares ---------------------------------------------------
+
+    def field_rules(self, version: str | None = None) -> Mapping[int, FieldRule]:
+        """The declared readings this version numbers, by tag.
+
+        Resolved through the same `TagIndex` a key resolves through, so a rule
+        may name its field however the log does -- `60`, `TransactTime`, or a
+        rendered key -- and mean the same field either way. Built once per
+        version: a rule set is a handful of entries and a batch is thousands.
+        """
+        if not self.fields:
+            return _NO_RULES
+        if version not in self._field_rules:
+            self._field_rules[version] = self._resolved_rules(version)
+        return self._field_rules[version]
+
+    def _resolved_rules(self, version: str | None) -> dict[int, FieldRule]:
+        index = self.index_of(version)
+        found: dict[int, FieldRule] = {}
+        for rule in self.fields:
+            tag = rule.tag
+            if tag is None:
+                tag, hit, _, _ = index.resolve_key(rule.field)
+                if not hit or tag is None:
+                    continue
+            found.setdefault(int(tag), rule)
+        return found
+
+    @cached_property
+    def _named_rules(self) -> Mapping[str, FieldRule]:
+        """Declared readings by folded spelling, for the fields FIX never numbered."""
+        return {rule.folded: rule for rule in self.fields if rule.tag is None}
+
+    @cached_property
+    def _field_rules(self) -> dict[str | None, dict[int, FieldRule]]:
+        return {}
+
     @cached_property
     def _canonicals(self) -> dict[str | None, tuple[Any, Any]]:
         return {}
@@ -1072,34 +1187,53 @@ def version_spellings(registry: FixRegistry) -> Mapping[str, str]:
         return {}
 
 
+#: The three fields that say which version a message speaks, under every
+#: spelling one of them arrives as. A constant because it was a dict literal
+#: rebuilt once per key of every message.
+_VERSION_EVIDENCE: Mapping[str, str] = MappingProxyType(
+    {
+        "8": "begin",
+        "beginstring": "begin",
+        "1128": "application",
+        "applverid": "application",
+        "1137": "default",
+        "defaultapplverid": "default",
+    }
+)
+
+#: Where the header stops: CheckSum <10> ends the message, so nothing after it
+#: is evidence of anything.
+_CHECKSUM_KEYS = frozenset({"10", "checksum"})
+
+
 def infer_version_from_pairs(
     pairs: Iterable[tuple[Any, Any]], registry: FixRegistry | None = None
 ) -> tuple[str | None, str]:
     """Infer one FIX application version from tags 8, 1128 and 1137."""
     evidence: dict[str, str] = {}
     for key, value in pairs:
-        text = str(key)
-        member = re.search(_MEMBER_NAME_VECTOR, text, re.ASCII)
-        name = member.group("name").lower() if member is not None else text.lower()
-        if name in {"10", "checksum"}:
+        text = key if type(key) is str else str(key)
+        # A key already spelled in digits *is* its own tail, which is every
+        # key of a wire message: the tail pattern only earns its call on a
+        # rendered, dotted or indexed one.
+        if text.isdigit():
+            name = text
+        else:
+            member = _MEMBER_NAME_SCALAR.search(text)
+            name = member["name"].lower() if member is not None else text.lower()
+        if name in _CHECKSUM_KEYS:
             break
-        selected = {
-            "8": "begin",
-            "beginstring": "begin",
-            "1128": "application",
-            "applverid": "application",
-            "1137": "default",
-            "defaultapplverid": "default",
-        }.get(name)
-        rendered = str(value).strip() if value is not None else ""
-        if selected is not None and rendered:
+        selected = _VERSION_EVIDENCE.get(name)
+        if selected is None or value is None:
+            continue
+        rendered = str(value).strip()
+        if rendered:
             evidence.setdefault(selected, rendered)
-    selected_registry = registry or FixRegistry.from_builtin()
     return _version_from_evidence(
         evidence.get("begin"),
         evidence.get("application"),
         evidence.get("default"),
-        version_spellings(selected_registry),
+        version_spellings(registry or FixRegistry.from_builtin()),
     )
 
 
@@ -1191,27 +1325,11 @@ def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
 def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
     """`(every entry of a liftable key, the one that becomes the column)`.
 
-    Both, because a key is lifted or it is not, and every entry of a lifted key
-    leaves the residual pairs with it -- otherwise a line that wrote the same
-    fact twice keeps a copy of what was already promoted.
-
-    Which entries are the only *reading* of their key in their row.
-
-    One composite key per entry -- the row shifted above the tag, so no pair of
-    them can collide -- counted in a single `value_counts`. Per entry and not
-    per tag, because a batch carries thirty-odd liftable tags and one pass over
-    the child array answers for all of them at once.
-
-    The reading and not the entry, because a bridge writes the same fact twice
-    on purpose. A rendered line carries two namespaces -- `#Side` as it arrived
-    and `Side` after enrichment -- and on a third to a half of the lines in a
-    real capture some fields appear in both. Refusing to lift a key that
-    repeats dropped every one of those out of its typed column and into the
-    residual pairs, silently, on lines that agreed with themselves.
-
-    Repeats that *disagree* are still refused: two different values under one
-    key is a group, or an enrichment that rewrote something, and picking
-    between them would be a guess.
+    A key repeated in one row still lifts where its entries **agree**: a
+    bridge writes the same fact twice on purpose -- `#Side` as it arrived and
+    `Side` after enrichment -- on a third to a half of a real capture's lines.
+    Repeats that disagree lift neither: that is a group, or an enrichment that
+    rewrote something, and picking between them would be a guess.
     """
     compute = pyarrow.compute
     if pyarrow.types.is_integer(keys.type):
@@ -1429,9 +1547,20 @@ def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
 
 
 def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
-    """One lifted column at the width its log column stores."""
+    """One lifted column at the width its log column stores.
+
+    Both steps go through `cast_arrow_fix` where the first left text, because
+    that is the one reading of FIX text that answers null instead of raising:
+    a declared reading of `20260821-10:00:00` as a string still has to land in
+    a timestamp column, and a raw cast of it would take the batch with it.
+    """
     read = cast_arrow_fix(column, field.arrow_type)
-    return read if read.type.equals(arrow_type) else read.cast(arrow_type, safe=False)
+    if read.type.equals(arrow_type):
+        return read
+    kinds = pyarrow.types
+    if kinds.is_string(read.type) or kinds.is_large_string(read.type):
+        return cast_arrow_fix(read, arrow_type)
+    return read.cast(arrow_type, safe=False)
 
 
 def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:

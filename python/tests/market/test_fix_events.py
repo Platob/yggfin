@@ -28,6 +28,7 @@ from rekep.market.fix import (
     FIX_STATES,
     TRANSACTED,
     FixEvents,
+    MarketTags,
     market_tags,
     unix_of,
 )
@@ -715,6 +716,19 @@ def test_the_tag_mapping_comes_from_the_declarations_rather_than_a_list() -> Non
     assert tags["Side"] == 54 and tags["ExecType"] == 150 and tags["LastPx"] == 31
     assert tags["Symbol"] == 55, "a nested member of `instrument` counts too"
     assert set(CARRIED_FIELDS) <= set(tags)
+
+
+def test_one_reading_of_a_dictionary_serves_every_message_that_uses_it() -> None:
+    """Nothing on `MarketTags` is a fact about a message, so nothing is per message."""
+    held = MarketTags.of(None, "4.4")
+    assert MarketTags.of(None, "4.4") is held
+    assert MarketTags.of(None, None) is not held
+    assert held.names_by_tag["54"] == "Side"
+    assert "54" in held.claimed, "a field with a column of its own is not metadata"
+    assert "9" in held.claimed and "10" in held.claimed, "framing is not data"
+    assert held.tags["Side"] == 54
+    order = events(FILLED)[0]
+    assert "54" not in order.metadata
 
 
 def test_every_carried_tag_comes_from_the_builtin_registry() -> None:

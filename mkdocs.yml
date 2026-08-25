@@ -31,25 +31,26 @@ theme:
 
 nav:
   - Home: index.md
-  - Architecture:
+  - Declaring data:
       - Design rules: design.md
-      - Binary identities: identity.md
-      - Schema contracts: contracts.md
-  - Guides:
       - Types: types.md
+      - Schema contracts: contracts.md
+      - Binary identities: identity.md
+  - Parsing:
       - FixMessage: fixmessage.md
       - FIX: fix.md
-      - Market: market.md
-      - Iceberg: iceberg.md
-      - Notebook workflow:
-          - Overview: tasks.md
-          - End-to-end run: workflow-run.md
-          - Parse messages: tasks/parse-messages.md
-          - Parse FIX: tasks/parse-fix.md
-          - Flatten instruments: tasks/flatten-instruments.md
-          - Parse market: tasks/parse-market.md
-          - Flatten orders: tasks/flatten-orders.md
-          - Flatten executions: tasks/flatten-executions.md
+      - Configuring a parse: configuring.md
+  - Market: market.md
+  - Storage: iceberg.md
+  - Pipeline:
+      - Overview: tasks.md
+      - End-to-end run: workflow-run.md
+      - Parse messages: tasks/parse-messages.md
+      - Parse FIX: tasks/parse-fix.md
+      - Flatten instruments: tasks/flatten-instruments.md
+      - Parse market: tasks/parse-market.md
+      - Flatten orders: tasks/flatten-orders.md
+      - Flatten executions: tasks/flatten-executions.md
   - Benchmarks: benchmarks.md
 
 # Every page carries its own measurements, so the links into them are anchors
@@ -71,7 +72,13 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        # Diagrams live in the page as text, so a change to a stage is a
+        # change to the paragraph beside it and never to a binary asset.
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
       slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}

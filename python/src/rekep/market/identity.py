@@ -273,18 +273,32 @@ def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
 
 
 def _digested(joined: pyarrow.Array) -> pyarrow.Array:
-    """One xxh3-64 per row of a binary column, straight out of its buffers."""
+    """One xxh3-64 per row of a binary column, straight out of its buffers.
+
+    The row loop is the whole cost, so it does the least a row can be: the
+    offsets are read once into a list, each row's end is the next row's begin,
+    and the digest is stored through a `Q` view of the output rather than
+    packed into it. Native byte order, which `hash_arrow` has already refused
+    to be anything but little -- and `from_buffers` reads the result natively
+    too, so a forced `<Q` here would only disagree with it. 1.8x the packed
+    loop it replaces, with no copy of the data buffer (benchmarks/bench_market.py).
+    """
     digest = xxhash.xxh3_64_intdigest
     rows = len(joined)
     out = bytearray(8 * rows)
     if rows:
         _, offset_buffer, data_buffer = joined.buffers()[:3]
         wide = pyarrow.types.is_large_binary(joined.type)
-        offsets = memoryview(offset_buffer).cast("q" if wide else "i")
-        data = memoryview(data_buffer).cast("B")
         start = joined.offset
-        pack_into = struct.pack_into
+        offsets = (
+            memoryview(offset_buffer).cast("q" if wide else "i")[start : start + rows + 1].tolist()
+        )
+        data = memoryview(data_buffer)
+        view = memoryview(out).cast("Q")
+        begin = offsets[0]
         for row in range(rows):
-            begin, end = offsets[start + row], offsets[start + row + 1]
-            pack_into("<Q", out, row * 8, digest(data[begin:end]))
+            end = offsets[row + 1]
+            view[row] = digest(data[begin:end])
+            begin = end
+        view.release()
     return pyarrow.Int64Array.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])

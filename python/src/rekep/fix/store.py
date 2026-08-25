@@ -36,6 +36,7 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    _json_mapping,
     fold,
     newest_of,
     newest_rank,
@@ -1279,14 +1280,3 @@ def slug_collisions(names: Iterable[str]) -> dict[str, list[str]]:
     for name in names:
         found.setdefault(slug_of(name), []).append(name)
     return {slug: shared for slug, shared in found.items() if len(shared) > 1}
-
-
-def _json_mapping(value: str | None) -> dict[str, str]:
-    """One `fix:` metadata mapping, or nothing for anything that is not one."""
-    try:
-        decoded = json.loads(value or "{}")
-    except (TypeError, ValueError):  # pragma: no cover - the registry writes these
-        return {}
-    return (
-        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
-    )

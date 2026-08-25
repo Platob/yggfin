@@ -21,6 +21,7 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 
+from rekep.fields.arrays import sequence
 from rekep.fix.entries import FieldEntry, fold, translation_key
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.registry import FixRegistry
@@ -58,6 +59,20 @@ class Entry:
     #: entry (`NoPartyIDs[0]`) and for a stored `comp`, false for a namespace.
     entry_lead: bool = False
     value: Any = None
+
+    @cached_property
+    def folded(self) -> str:
+        """`name` as `Resolved.matches` compares it: folded once per entry.
+
+        Once and not once per compare, because reading several dozen fields
+        off one row compares every entry against every ask.
+        """
+        return fold(self.name)
+
+    @cached_property
+    def folded_lead(self) -> str:
+        """`lead` folded, empty where the entry carries none."""
+        return fold(self.lead or "")
 
     @classmethod
     def from_pair(cls, key: Any, value: Any) -> Entry:
@@ -97,18 +112,6 @@ class Entry:
         )
 
 
-def entries_of(fields: Iterable[Any]) -> Iterator[Entry]:
-    """`Entry` views over pairs, stored `kwargs` structs, or ready entries."""
-    for field in fields or ():
-        if isinstance(field, Entry):
-            yield field
-        elif isinstance(field, Mapping):
-            yield Entry.from_stored(field)
-        else:
-            key, value = field
-            yield Entry.from_pair(key, value)
-
-
 @dataclasses.dataclass(frozen=True)
 class Resolved:
     """What one asked-for field is, whichever of the four ways it was named."""
@@ -124,10 +127,15 @@ class Resolved:
     lead: str | None = None
     index: int | None = None
 
+    @cached_property
+    def folded_lead(self) -> str:
+        """The asked-for `lead`, folded once rather than once per entry."""
+        return fold(self.lead or "")
+
     def matches(self, entry: Entry) -> bool:
         """Whether `entry` answers for this field -- the one matching rule."""
         if self.lead is not None:
-            if fold(entry.lead or "") != fold(self.lead):
+            if entry.folded_lead != self.folded_lead:
                 return False
             return self._named(entry) or (self.tag is not None and entry.tag == self.tag)
         if self.tag is not None and entry.tag and entry.tag == self.tag:
@@ -139,8 +147,7 @@ class Resolved:
         return self._named(entry)
 
     def _named(self, entry: Entry) -> bool:
-        folded = fold(entry.name)
-        if folded in self.names:
+        if entry.folded in self.names:
             return True
         return bool(self.norm) and translation_key(entry.name) == self.norm
 
@@ -316,7 +323,7 @@ class FieldAccess:
     def reading(self, fields: Iterable[Any], field: int | str) -> Reading:
         """The first value of `field` in wire order, with its typed reading."""
         resolved = self.resolve(field)
-        for entry in entries_of(fields):
+        for entry in self.entries_of(fields):
             if resolved.matches(entry):
                 return self._reading(entry)
         return _ABSENT
@@ -324,18 +331,40 @@ class FieldAccess:
     def readings(self, fields: Iterable[Any], field: int | str) -> list[Reading]:
         """Every value of `field`, in wire order -- what a repeating tag is."""
         resolved = self.resolve(field)
-        return [self._reading(entry) for entry in entries_of(fields) if resolved.matches(entry)]
+        return [
+            self._reading(entry) for entry in self.entries_of(fields) if resolved.matches(entry)
+        ]
 
     def _reading(self, entry: Entry) -> Reading:
         key = entry.name if entry.lead is None else f"{entry.lead}.{entry.name}"
         return Reading(found=True, raw=entry.value, tag=entry.tag, key=key, access=self)
 
+    @cached_property
+    def _tag_texts(self) -> dict[Any, str]:
+        return {}
+
     def tag_text(self, field: int | str) -> str:
-        """A field as the wire tag it resolves to, or the spelling itself."""
+        """A field as the wire tag it resolves to, or the spelling itself.
+
+        Memoized per asked-for spelling, and not only per resolution: a
+        translation asks for the same few hundred names on every message, and
+        the digit test, the `Resolved` probe and the `str()` of its tag were
+        together a third of a conversion (benchmarks/bench_market.py).
+
+        A key already spelled in digits *is* the tag, and keeps its own
+        spelling: `007` names tag 7 and a wire message keys it `007`.
+        """
+        found = self._tag_texts.get(field)
+        if found is None:
+            found = self._tag_texts[field] = self._tag_text(field)
+        return found
+
+    def _tag_text(self, field: int | str) -> str:
+        text = field if type(field) is str else str(field)
+        if text.isascii() and text.isdigit():
+            return text
         resolved = self.resolve(field)
-        if resolved.tag is not None:
-            return str(resolved.tag)
-        return resolved.spelling
+        return str(resolved.tag) if resolved.tag is not None else resolved.spelling
 
     def tagged_pairs(self, pairs: Iterable[tuple[Any, Any]]) -> list[tuple[str, Any]]:
         """`pairs` with each resolvable name replaced by its tag, order kept.
@@ -409,6 +438,99 @@ class FieldAccess:
             self._arrow_types[record.key] = found
         return self._arrow_types[record.key]
 
+    # -- whole columns --------------------------------------------------------
+    #
+    # The columnar execution of `reading`: one scan of a stored column, where a
+    # per-row loop over `reading` would answer the same thing a row at a time.
+    # On the class the scalar reading lives on, because they are one rule.
+
+    @staticmethod
+    def entries_of(fields: Iterable[Any]) -> Iterator[Entry]:
+        """`Entry` views over pairs, stored `kwargs` structs, or ready entries."""
+        for field in fields or ():
+            if isinstance(field, Entry):
+                yield field
+            elif isinstance(field, Mapping):
+                yield Entry.from_stored(field)
+            else:
+                key, value = field
+                yield Entry.from_pair(key, value)
+
+    @classmethod
+    def first_named(cls, stored: Any, tag: int, name: str, rows: int) -> Any:
+        """First value of one field per row, by its tag *or* by its name.
+
+        What the message stage reads a field with, before anything has resolved
+        a name: a wire message spells the key `35` and a rendered one spells it
+        `MsgType`, and both are the same field. Two comparisons over the child
+        array, and no dictionary -- which is the point, since this runs before
+        one is consulted.
+        """
+        flattened = cls._flattened(stored, rows)
+        if flattened is None:
+            return pyarrow.nulls(rows, pyarrow.string())
+        parents, entries, values = flattened
+        compute = pyarrow.compute
+        numbered = compute.fill_null(
+            compute.equal(compute.struct_field(entries, "tag"), tag), False
+        )
+        named = compute.fill_null(
+            compute.equal(compute.utf8_lower(compute.struct_field(entries, "key")), name.lower()),
+            False,
+        )
+        matches = compute.or_(numbered, named)
+        if not compute.any(matches, min_count=0).as_py():
+            return pyarrow.nulls(rows, pyarrow.string())
+        return cls._first_per_row(
+            compute.filter(values, matches), compute.filter(parents, matches), sequence(rows)
+        )
+
+    @classmethod
+    def first_arrow_tags(cls, stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
+        """First value of each wanted tag out of a stored `kwargs` column."""
+        flattened = cls._flattened(stored, rows)
+        if flattened is None:
+            return {}
+        parents, entries, values = flattened
+        compute = pyarrow.compute
+        keys = compute.struct_field(entries, "tag")
+        matches = compute.fill_null(
+            compute.is_in(keys, value_set=pyarrow.array(wanted, keys.type)), False
+        )
+        if not compute.any(matches, min_count=0).as_py():
+            return {}
+        matched_keys = compute.filter(keys, matches)
+        matched_parents = compute.filter(parents, matches)
+        matched_values = compute.filter(values, matches)
+        row_ids = sequence(rows)
+        found = {}
+        for tag in compute.unique(matched_keys).to_pylist():
+            at = compute.equal(matched_keys, tag)
+            found[tag] = cls._first_per_row(
+                compute.filter(matched_values, at), compute.filter(matched_parents, at), row_ids
+            )
+        return found
+
+    @staticmethod
+    def _flattened(stored: Any, rows: int) -> tuple[Any, Any, Any] | None:
+        """`(parents, entries, values)` of a stored column; None where it holds none."""
+        if isinstance(stored, pyarrow.ChunkedArray):
+            stored = stored.combine_chunks()
+        if not rows or stored is None or stored.null_count == rows:
+            return None
+        compute = pyarrow.compute
+        entries = compute.list_flatten(stored)
+        return (
+            compute.list_parent_indices(stored).cast(pyarrow.int32()),
+            entries,
+            compute.struct_field(entries, "value"),
+        )
+
+    @staticmethod
+    def _first_per_row(values: Any, parents: Any, row_ids: pyarrow.Array) -> Any:
+        """One value per row out of entries already cut down to the matches."""
+        return pyarrow.compute.take(values, pyarrow.compute.index_in(row_ids, value_set=parents))
+
 
 def _KEY_TAIL(spelling: str) -> str | int:
     """The name segment a dictionary record is asked for, index stripped."""
@@ -416,75 +538,3 @@ def _KEY_TAIL(spelling: str) -> str | int:
     if match is None:
         return spelling
     return match.group("name") or spelling
-
-
-# -- whole columns ------------------------------------------------------------
-
-
-def first_named(stored: Any, tag: int, name: str, rows: int) -> Any:
-    """First value of one field per row, by its tag *or* by its name.
-
-    What the message stage reads a field with, before anything has resolved a
-    name: a wire message spells the key `35` and a rendered one spells it
-    `MsgType`, and both are the same field. Two comparisons over the child
-    array, and no dictionary -- which is the point, since this runs before one
-    is consulted.
-    """
-    import pyarrow
-
-    compute = pyarrow.compute
-    if isinstance(stored, pyarrow.ChunkedArray):
-        stored = stored.combine_chunks()
-    if not rows or stored is None or stored.null_count == rows:
-        return pyarrow.nulls(rows, pyarrow.string())
-    from rekep.fields.arrays import sequence
-
-    parents = compute.list_parent_indices(stored).cast(pyarrow.int32())
-    entries = compute.list_flatten(stored)
-    values = compute.struct_field(entries, "value")
-    numbered = compute.fill_null(compute.equal(compute.struct_field(entries, "tag"), tag), False)
-    named = compute.fill_null(
-        compute.equal(compute.utf8_lower(compute.struct_field(entries, "key")), name.lower()),
-        False,
-    )
-    matches = compute.or_(numbered, named)
-    if not compute.any(matches, min_count=0).as_py():
-        return pyarrow.nulls(rows, pyarrow.string())
-    where = compute.filter(parents, matches)
-    found = compute.filter(values, matches)
-    return compute.take(found, compute.index_in(sequence(rows), value_set=where))
-
-
-def first_arrow_tags(stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
-    """First value of each wanted tag out of a stored `kwargs` column.
-
-    The columnar execution of `reading` for the tag-numbered case, in one
-    list scan -- what a per-row loop over `reading` would answer, batched.
-    """
-    from rekep.fields.arrays import sequence
-
-    if isinstance(stored, pyarrow.ChunkedArray):
-        stored = stored.combine_chunks()
-    if not rows or stored.null_count == rows:
-        return {}
-    compute = pyarrow.compute
-    parents = compute.list_parent_indices(stored).cast(pyarrow.int32())
-    entries = compute.list_flatten(stored)
-    keys = compute.struct_field(entries, "tag")
-    values = compute.struct_field(entries, "value")
-    matches = compute.fill_null(
-        compute.is_in(keys, value_set=pyarrow.array(wanted, keys.type)), False
-    )
-    if not compute.any(matches, min_count=0).as_py():
-        return {}
-    matched_keys = compute.filter(keys, matches)
-    matched_parents = compute.filter(parents, matches)
-    matched_values = compute.filter(values, matches)
-    row_ids = sequence(rows)
-    found = {}
-    for tag in compute.unique(matched_keys).to_pylist():
-        at = compute.equal(matched_keys, tag)
-        where = compute.filter(matched_parents, at)
-        chosen = compute.filter(matched_values, at)
-        found[tag] = compute.take(chosen, compute.index_in(row_ids, value_set=where))
-    return found

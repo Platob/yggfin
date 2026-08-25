@@ -22,7 +22,7 @@ from rekep.fix import (  # noqa: E402
     parse_arrow_array,
     tag_arrow_array,
 )
-from rekep.fix.message import _folded, _resolved_key  # noqa: E402
+from rekep.fix.message import _Names, _resolved_key  # noqa: E402
 
 NOISE = "2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) sent "
 
@@ -295,7 +295,7 @@ def _race_keys(keys: list[str], names: dict[str, int], repeat: int) -> None:
     racing the half against the whole is how a regex wins a benchmark it would
     lose in production.
     """
-    folded = _folded(names)
+    folded = _Names.of(names).keys
     lowered = {name.lower(): str(tag) for name, tag in names.items()}
     alternation = re.compile(
         r"^(?:" + "|".join(sorted(map(re.escape, names), key=len, reverse=True)) + r")$",

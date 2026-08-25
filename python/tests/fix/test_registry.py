@@ -26,8 +26,9 @@ import pytest
 
 from rekep.fields import Field
 from rekep.fix import FixRegistry
+from rekep.fix.entries import newest_rank
 from rekep.fix.fields import fix_field
-from rekep.fix.registry import _is_transient, _levenshtein, _version_key, _wait_for
+from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
 
 from .conftest import FIXTURES, fixture_page
 
@@ -145,7 +146,7 @@ def test_the_latest_alias_is_not_a_version(registry: FixtureRegistry) -> None:
 
 
 def test_version_ordering_reads_the_sp_suffix() -> None:
-    ordered = sorted(["4.0", "5.0.SP2", "FIXT1.1", "5.0", "4.4"], key=_version_key, reverse=True)
+    ordered = sorted(["4.0", "5.0.SP2", "FIXT1.1", "5.0", "4.4"], key=newest_rank, reverse=True)
     assert ordered == ["5.0.SP2", "5.0", "4.4", "4.0", "FIXT1.1"]
 
 
