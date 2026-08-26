@@ -3,17 +3,17 @@
   <desc id="desc">One cached scalar declaration produces Arrow, portable contracts, Iceberg, and compatible consumers.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#ff8a00"/>
+      <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
     </marker>
     <style>
-      .root{fill:#291617;stroke:#f23b3b;stroke-width:3;rx:16}
-      .node{fill:#171719;stroke:#ff8a00;stroke-width:2;rx:12}
-      .edge{fill:none;stroke:#ff8a00;stroke-width:2.4;marker-end:url(#arrow)}
-      .title{font:600 18px system-ui,sans-serif;fill:#f7f3e8;text-anchor:middle}
-      .text{font:14px system-ui,sans-serif;fill:#bdb9b0;text-anchor:middle}
+      .root{fill:#111113;stroke:#f97316;stroke-width:2.5;rx:16}
+      .node{fill:#111113;stroke:#3f3f46;stroke-width:2;rx:12}
+      .edge{fill:none;stroke:#71717a;stroke-width:2.4;marker-end:url(#arrow)}
+      .title{font:600 18px system-ui,sans-serif;fill:#fafafa;text-anchor:middle}
+      .text{font:14px system-ui,sans-serif;fill:#a1a1aa;text-anchor:middle}
     </style>
   </defs>
-  <rect width="1200" height="620" fill="#09090b"/>
+  <rect width="1200" height="620" fill="#050505"/>
   <rect class="root" x="410" y="25" width="380" height="88"/>
   <text class="title" x="600" y="61">@scalar class.into_field()</text>
   <text class="text" x="600" y="87">one cached declaration</text>

@@ -10,8 +10,7 @@
     </nav>
   </div>
   <figure class="rkp-hero__mark">
-    <img src="assets/rkp-logo.svg" alt="RKP, the rekep project trigram" width="420" height="280">
-    <figcaption>RKP · ordered logs to portable tables</figcaption>
+    <img src="assets/rkp-logo.svg" alt="RKP, the rekep project trigram" width="420" height="230">
   </figure>
 </section>
 

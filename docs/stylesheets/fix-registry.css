@@ -1,34 +1,29 @@
 .fix-registry {
   --registry-orange: var(--rekep-orange);
   --registry-red: var(--rekep-red);
-  --registry-yellow: var(--rekep-yellow);
   --registry-muted: var(--rekep-muted);
-  --registry-border: color-mix(in srgb, var(--registry-orange) 32%, transparent);
-  --registry-panel: color-mix(
-    in srgb,
-    var(--md-default-bg-color) 94%,
-    var(--md-default-fg-color)
-  );
+  --registry-border: var(--rekep-border);
+  --registry-panel: var(--rekep-card);
   margin-top: 1.5rem;
 }
 
 [data-md-color-scheme="default"] .fix-registry {
-  --registry-orange: #8f3f00;
-  --registry-red: #a52d25;
-  --registry-yellow: #6c5100;
+  --registry-orange: #c2410c;
+  --registry-red: #dc2626;
   --registry-muted: #625f59;
 }
 
 .fix-registry__status {
   padding: 1rem;
-  border-left: 0.18rem solid var(--registry-orange);
-  background: color-mix(in srgb, var(--registry-panel) 88%, transparent);
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius);
+  background: var(--registry-panel);
   color: var(--registry-muted);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 }
 
 .fix-registry__status[data-error] {
-  border-left-color: var(--registry-red);
+  border-color: color-mix(in srgb, var(--registry-red) 58%, var(--registry-border));
   color: var(--registry-red);
 }
 
@@ -36,7 +31,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid var(--registry-border);
-  background: var(--rekep-panel);
+  border-radius: var(--rekep-radius);
+  overflow: hidden;
+  background: var(--registry-panel);
 }
 
 .fix-registry__coverage {
@@ -45,15 +42,13 @@
 
 .fix-registry__coverage > summary {
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-weight: 650;
 }
 
 .fix-registry__coverage[open] > summary {
   margin-bottom: 0.6rem;
-  color: var(--registry-orange);
+  color: var(--md-default-fg-color);
 }
 
 .fix-registry__summary > div {
@@ -69,19 +64,18 @@
 }
 
 .fix-registry__summary strong {
-  color: var(--rekep-yellow);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  color: var(--md-default-fg-color);
   font-size: 1.25rem;
+  font-weight: 700;
   line-height: 1;
 }
 
 .fix-registry__summary span,
 .fix-registry__eyebrow {
   color: var(--rekep-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.58rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.015em;
 }
 
 .fix-registry__summary span {
@@ -98,26 +92,26 @@
 .fix-registry__pager button,
 .fix-registry__filters button {
   display: inline-flex;
-  min-height: 2.75rem;
+  min-height: 2rem;
   padding: 0.42rem 0.7rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--registry-border);
-  border-radius: 0;
-  background: transparent;
+  border-radius: var(--rekep-radius-sm);
+  background: var(--registry-panel);
   color: var(--md-default-fg-color);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
-  text-transform: uppercase;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .fix-registry__jump a:hover,
 .fix-registry__pager button:hover:not(:disabled),
 .fix-registry__filters button:hover {
   border-color: var(--registry-orange);
-  color: var(--registry-orange);
+  background: color-mix(in srgb, var(--md-default-fg-color) 4%, transparent);
+  color: var(--md-default-fg-color);
   cursor: pointer;
 }
 
@@ -126,7 +120,7 @@
 .fix-registry__filters button:focus-visible,
 .fix-registry__name:focus-visible,
 .fix-registry__detail-close:focus-visible {
-  outline: 2px solid var(--registry-yellow);
+  outline: 2px solid color-mix(in srgb, var(--registry-orange) 68%, transparent);
   outline-offset: 2px;
 }
 
@@ -147,25 +141,25 @@
 
 .fix-registry__section > header h2 {
   margin-top: 0.1rem;
-  color: var(--registry-orange);
+  color: var(--md-default-fg-color);
 }
 
 .fix-registry__section h2:focus {
-  outline: 2px solid var(--registry-yellow);
+  outline: 2px solid color-mix(in srgb, var(--registry-orange) 68%, transparent);
   outline-offset: 0.2rem;
 }
 
 .fix-registry__section > header output {
   margin-bottom: 0.45rem;
-  color: var(--md-typeset-a-color);
+  color: var(--registry-muted);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.68rem;
 }
 
 .fix-registry__eyebrow {
   margin: 0;
-  color: var(--registry-red);
-  font-weight: 800;
+  color: var(--registry-orange);
+  font-weight: 700;
 }
 
 .fix-registry__filters {
@@ -176,7 +170,8 @@
   margin: 0.8rem 0;
   padding: 0.8rem;
   border: 1px solid var(--registry-border);
-  background: color-mix(in srgb, var(--registry-panel) 88%, transparent);
+  border-radius: var(--rekep-radius);
+  background: var(--registry-panel);
 }
 
 [data-component-filters] {
@@ -192,36 +187,35 @@
 
 .fix-registry__filters label > span {
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .fix-registry__filters input,
 .fix-registry__filters select {
   width: 100%;
-  min-height: 2.75rem;
+  min-height: 2rem;
   padding: 0 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--registry-muted) 45%, transparent);
-  border-radius: 0;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
   outline: 0;
-  background: var(--md-default-bg-color);
+  background: var(--rekep-panel);
   color: var(--md-default-fg-color);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.75rem;
 }
 
 .fix-registry__filters input:focus,
 .fix-registry__filters select:focus {
   border-color: var(--registry-orange);
-  box-shadow: 0 0 0 1px var(--registry-orange);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--registry-orange) 20%, transparent);
 }
 
 .fix-registry__table-wrap {
   overflow-x: auto;
   border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius);
+  background: var(--registry-panel);
 }
 
 .md-typeset .fix-registry__table {
@@ -244,12 +238,11 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #171719;
-  color: var(--rekep-yellow);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  background: var(--rekep-elevated);
+  color: var(--md-default-fg-color);
   font-size: 0.58rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .md-typeset .fix-registry__table tr:last-child td {
@@ -257,14 +250,14 @@
 }
 
 .md-typeset .fix-registry__table tbody tr:hover {
-  background: color-mix(in srgb, var(--registry-orange) 8%, transparent);
+  background: color-mix(in srgb, var(--md-default-fg-color) 4%, transparent);
 }
 
 .md-typeset .fix-registry__name {
   display: inline-flex;
-  min-height: 2.75rem;
+  min-height: 2rem;
   align-items: center;
-  color: var(--md-typeset-a-color);
+  color: var(--md-default-fg-color);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-weight: 700;
 }
@@ -303,7 +296,7 @@
 }
 
 .fix-registry__tag {
-  color: var(--registry-yellow);
+  color: var(--registry-muted);
   white-space: nowrap;
 }
 
@@ -316,7 +309,8 @@
   display: inline-block;
   margin: 0.08rem 0.16rem 0.08rem 0;
   padding: 0.08rem 0.3rem;
-  border: 1px solid color-mix(in srgb, var(--registry-muted) 34%, transparent);
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
   color: var(--md-default-fg-color);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.56rem;
@@ -325,9 +319,7 @@
 }
 
 .fix-registry__badge {
-  border-color: color-mix(in srgb, var(--registry-orange) 48%, transparent);
-  color: var(--registry-orange);
-  text-transform: uppercase;
+  color: var(--registry-muted);
 }
 
 .fix-registry__badge--required {
@@ -372,8 +364,8 @@
   padding: 1rem;
   scroll-margin-top: 5rem;
   border: 1px solid var(--registry-border);
-  border-left: 0.2rem solid var(--registry-red);
-  background: color-mix(in srgb, var(--registry-panel) 91%, transparent);
+  border-radius: var(--rekep-radius);
+  background: var(--registry-panel);
 }
 
 .fix-registry__detail:focus {
@@ -399,9 +391,9 @@
 
 .fix-registry__detail h4 {
   margin: 1.2rem 0 0.35rem;
-  color: var(--registry-orange);
+  color: var(--md-default-fg-color);
   font-size: 0.72rem;
-  text-transform: uppercase;
+  font-weight: 650;
 }
 
 .fix-registry__detail dl {
@@ -413,9 +405,8 @@
 
 .fix-registry__detail dt {
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.59rem;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .fix-registry__detail dd {
@@ -425,12 +416,10 @@
 
 .md-typeset .fix-registry__detail-close {
   display: inline-flex;
-  min-height: 2.75rem;
+  min-height: 2rem;
   align-items: center;
   color: var(--registry-muted) !important;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.62rem;
-  text-transform: uppercase;
 }
 
 .fix-registry__tree,
@@ -451,7 +440,7 @@
   top: 0.65em;
   left: 0;
   width: 0.4rem;
-  border-top: 1px solid var(--registry-orange);
+  border-top: 1px solid var(--registry-border);
   content: "";
 }
 
@@ -480,13 +469,11 @@
 .fix-registry__source {
   display: inline-block;
   margin-top: 0.8rem;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.62rem;
-  text-transform: uppercase;
 }
 
 .md-typeset .fix-registry__source {
-  color: var(--md-typeset-a-color);
+  color: var(--md-default-fg-color);
 }
 
 @media screen and (max-width: 70rem) {

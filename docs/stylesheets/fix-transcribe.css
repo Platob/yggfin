@@ -1,18 +1,12 @@
 .fix-transcribe {
-  --transcribe-surface: color-mix(
-    in srgb,
-    var(--md-default-bg-color) 91%,
-    var(--md-default-fg-color)
-  );
+  --transcribe-surface: var(--rekep-card);
 }
 
 .fix-transcribe__registry-count {
   margin-left: auto;
   align-self: center;
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.62rem;
-  text-transform: uppercase;
 }
 
 .fix-transcribe__section > p {
@@ -38,33 +32,29 @@
   min-height: 1.7rem;
   padding: 0.2rem 0.45rem;
   align-items: center;
-  border: 1px solid var(--registry-orange);
-  background: color-mix(in srgb, var(--registry-orange) 10%, transparent);
-  color: var(--registry-orange);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
+  background: var(--rekep-elevated);
+  color: var(--registry-muted);
   font-size: 0.56rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   line-height: 1;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .fix-transcribe__protocol[data-protocol="fix"] {
-  border-color: var(--registry-red);
-  background: color-mix(in srgb, var(--registry-red) 10%, transparent);
-  color: var(--registry-red);
+  border-color: color-mix(in srgb, var(--registry-orange) 45%, var(--registry-border));
+  color: var(--md-default-fg-color);
 }
 
 .fix-transcribe__protocol[data-protocol="ul"] {
-  border-color: var(--registry-yellow);
-  background: color-mix(in srgb, var(--registry-yellow) 10%, transparent);
-  color: var(--registry-yellow);
+  color: var(--md-default-fg-color);
 }
 
 .fix-transcribe__form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 0.8rem;
   margin: 0.8rem 0;
 }
@@ -74,6 +64,7 @@
   min-width: 0;
   padding: 0.8rem;
   border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius);
   background: var(--transcribe-surface);
 }
 
@@ -81,21 +72,19 @@
 .fix-transcribe__output-head > span {
   display: block;
   margin-bottom: 0.35rem;
-  color: var(--registry-yellow);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  color: var(--registry-muted);
   font-size: 0.61rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .fix-transcribe textarea,
 .fix-transcribe select {
   width: 100%;
-  border: 1px solid color-mix(in srgb, var(--registry-muted) 45%, transparent);
-  border-radius: 0;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
   outline: 0;
-  background: var(--md-default-bg-color);
+  background: var(--rekep-panel);
   color: var(--md-default-fg-color);
 }
 
@@ -113,7 +102,7 @@
 .fix-transcribe textarea:focus,
 .fix-transcribe select:focus {
   border-color: var(--registry-orange);
-  box-shadow: 0 0 0 1px var(--registry-orange);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--registry-orange) 20%, transparent);
 }
 
 .fix-transcribe__controls {
@@ -136,17 +125,14 @@
 
 .fix-transcribe__controls label > span {
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.54rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .fix-transcribe select {
   min-height: 2.5rem;
   padding: 0 0.5rem;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.68rem;
 }
 
@@ -172,15 +158,13 @@
 .fix-transcribe__samples > span {
   margin-right: 0.15rem;
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.54rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .fix-transcribe__samples button {
-  min-height: 1.85rem;
+  min-height: 1.65rem;
   padding: 0.2rem 0.5rem;
   border-color: color-mix(in srgb, var(--registry-muted) 38%, transparent);
   font-size: 0.54rem;
@@ -188,37 +172,43 @@
 
 .fix-transcribe button {
   display: inline-flex;
-  min-height: 2.5rem;
+  min-height: 2rem;
   padding: 0.38rem 0.7rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--registry-border);
-  border-radius: 0;
-  background: transparent;
+  border-radius: var(--rekep-radius-sm);
+  background: var(--registry-panel);
   color: var(--md-default-fg-color);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.62rem;
-  font-weight: 750;
-  text-transform: uppercase;
+  font-weight: 650;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .fix-transcribe button[type="submit"] {
-  border-color: var(--registry-orange);
-  background: color-mix(in srgb, var(--registry-orange) 14%, transparent);
-  color: var(--registry-orange);
+  border-color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color);
+  color: var(--md-default-bg-color);
 }
 
 .fix-transcribe button:hover {
-  border-color: var(--registry-yellow);
-  color: var(--registry-yellow);
+  border-color: var(--registry-orange);
+  background: color-mix(in srgb, var(--md-default-fg-color) 5%, transparent);
+  color: var(--md-default-fg-color);
   cursor: pointer;
+}
+
+.fix-transcribe button[type="submit"]:hover {
+  border-color: var(--md-default-fg-color);
+  background: color-mix(in srgb, var(--md-default-fg-color) 88%, var(--md-default-bg-color));
+  color: var(--md-default-bg-color);
 }
 
 .fix-transcribe button:focus-visible,
 .fix-transcribe textarea:focus-visible,
 .fix-transcribe select:focus-visible,
 .fix-transcribe summary:focus-visible {
-  outline: 2px solid var(--registry-yellow);
+  outline: 2px solid color-mix(in srgb, var(--registry-orange) 68%, transparent);
   outline-offset: 2px;
 }
 
@@ -228,7 +218,7 @@
 }
 
 .fix-transcribe__output-head {
-  min-height: 2.5rem;
+  min-height: 2rem;
   justify-content: space-between;
 }
 
@@ -237,7 +227,7 @@
 }
 
 .fix-transcribe__output-head button {
-  min-height: 2rem;
+  min-height: 1.65rem;
   padding: 0.25rem 0.55rem;
 }
 
@@ -247,10 +237,9 @@
   margin: 0;
   padding: 0.75rem;
   overflow: auto;
-  border: 1px solid color-mix(in srgb, var(--registry-orange) 32%, transparent);
-  border-left: 0.18rem solid var(--registry-orange);
-  border-radius: 0;
-  background: #101012;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
+  background: #0c0c0e;
   color: var(--rekep-white);
   font-size: 0.7rem;
   line-height: 1.55;
@@ -277,9 +266,8 @@
   margin: 0.8rem 0;
   padding: 0.8rem;
   border: 1px solid var(--registry-border);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--registry-orange) 5%, transparent), transparent 42%),
-    var(--transcribe-surface);
+  border-radius: var(--rekep-radius);
+  background: var(--transcribe-surface);
 }
 
 .fix-transcribe__structure > header,
@@ -326,7 +314,8 @@
   padding: 0.45rem;
   align-items: center;
   gap: 0.45rem;
-  border-left: 0.15rem solid var(--registry-orange);
+  border: 1px solid color-mix(in srgb, var(--registry-orange) 34%, var(--registry-border));
+  border-radius: var(--rekep-radius-sm);
   background: color-mix(in srgb, var(--registry-orange) 7%, transparent);
   color: var(--registry-muted);
   font-size: 0.62rem;
@@ -334,7 +323,7 @@
 
 .fix-transcribe__components {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: 0.65rem;
   margin-top: 0.7rem;
 }
@@ -342,8 +331,9 @@
 .fix-transcribe__component {
   min-width: 0;
   padding: 0.65rem;
-  border: 1px solid color-mix(in srgb, var(--registry-muted) 34%, transparent);
-  background: var(--md-default-bg-color);
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius);
+  background: var(--rekep-panel);
 }
 
 .fix-transcribe__component > header {
@@ -355,43 +345,40 @@
 .fix-transcribe__group > header span:first-child {
   display: block;
   color: var(--registry-muted);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.5rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .fix-transcribe__component h4 {
-  color: var(--registry-yellow);
+  color: var(--md-default-fg-color);
   font-size: 0.78rem;
 }
 
 .fix-transcribe__component > header a {
-  color: var(--registry-orange);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  color: var(--registry-muted);
   font-size: 0.54rem;
-  text-transform: uppercase;
 }
 
 .fix-transcribe a.fix-registry__name {
-  color: var(--registry-orange);
+  color: var(--md-default-fg-color);
 }
 
 .fix-transcribe__component > header a:hover,
 .fix-transcribe a.fix-registry__name:hover {
-  color: var(--registry-yellow);
+  color: var(--registry-orange);
 }
 
 .fix-transcribe__group {
   margin-top: 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--registry-orange) 36%, transparent);
-  border-left: 0.16rem solid var(--registry-orange);
+  overflow: hidden;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
 }
 
 .fix-transcribe__group > header {
   padding: 0.5rem 0.55rem;
-  background: color-mix(in srgb, var(--registry-orange) 7%, transparent);
+  background: var(--rekep-elevated);
 }
 
 .fix-transcribe__group h5 {
@@ -433,11 +420,9 @@
   margin-bottom: 0.35rem;
   justify-content: space-between;
   gap: 0.6rem;
-  color: var(--registry-orange);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  color: var(--registry-muted);
   font-size: 0.53rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 650;
 }
 
 .fix-transcribe__entry-head span:last-child {
@@ -488,7 +473,7 @@
 .fix-transcribe__member code {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--registry-yellow);
+  color: var(--md-default-fg-color);
   font-size: 0.6rem;
 }
 
@@ -509,19 +494,19 @@
   display: inline-block;
   padding: 0.08rem 0.3rem;
   border: 1px solid color-mix(in srgb, var(--registry-muted) 44%, transparent);
+  border-radius: var(--rekep-radius-sm);
   color: var(--registry-muted);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.55rem;
   line-height: 1.35;
   white-space: nowrap;
-  text-transform: uppercase;
 }
 
 .fix-transcribe__state--resolved,
 .fix-transcribe__state--encoded,
 .fix-transcribe__state--inferred {
-  border-color: color-mix(in srgb, var(--registry-yellow) 52%, transparent);
-  color: var(--registry-yellow);
+  border-color: var(--registry-border);
+  color: var(--md-default-fg-color);
 }
 
 .fix-transcribe__state--unknown-value,
@@ -551,11 +536,9 @@
 .fix-transcribe__issues summary,
 .fix-transcribe__debug summary,
 .fix-transcribe__rules summary {
-  color: var(--registry-orange);
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  color: var(--md-default-fg-color);
   font-size: 0.64rem;
-  font-weight: 750;
-  text-transform: uppercase;
+  font-weight: 650;
 }
 
 .fix-transcribe__rules p {
@@ -570,6 +553,10 @@
 .md-typeset .fix-transcribe__debug pre {
   min-height: 8rem;
   max-height: 32rem;
+}
+
+.fix-transcribe .fix-transcribe__samples button {
+  min-height: 1.65rem;
 }
 
 @media screen and (max-width: 46rem) {

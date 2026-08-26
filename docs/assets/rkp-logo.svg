@@ -1,61 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="420" height="280" viewBox="0 0 420 280" role="img" aria-labelledby="rkp-title rkp-desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="230" viewBox="0 0 420 230" role="img" aria-labelledby="rkp-title rkp-desc">
   <title id="rkp-title">RKP</title>
-  <desc id="rkp-desc">RKP beside a segmented market orbit and rising price path.</desc>
+  <desc id="rkp-desc">A bold geometric RKP trading wordmark above an ordered market-data signal.</desc>
   <defs>
-    <linearGradient id="rkp-flow" x1="40" y1="100" x2="205" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f23b3b"/>
-      <stop offset="0.52" stop-color="#ff8a00"/>
-      <stop offset="1" stop-color="#ffd43b"/>
-    </linearGradient>
     <style>
-      .rkp-orbit,.rkp-market,.rkp-depth,.rkp-word{fill:none;stroke-linecap:round;stroke-linejoin:round}
-      .rkp-orbit{stroke:#f7f3e8;stroke-width:8;opacity:.94}
-      .rkp-orbit--quiet{opacity:.58}
-      .rkp-market{stroke:url(#rkp-flow);stroke-width:7}
-      .rkp-depth{stroke-width:5;opacity:.72}
-      .rkp-depth--bid{stroke:#f23b3b}
-      .rkp-depth--mid{stroke:#ff8a00}
-      .rkp-depth--ask{stroke:#ffd43b}
-      .rkp-word{stroke:#f7f3e8;stroke-width:12}
-      .rkp-node{fill:#09090b;stroke-width:5;transform-box:fill-box;transform-origin:center}
-      .rkp-node--red{stroke:#f23b3b}
-      .rkp-node--orange{stroke:#ff8a00}
-      .rkp-node--yellow{stroke:#ffd43b}
-      .rkp-trace{stroke-dasharray:1;stroke-dashoffset:0}
-      @keyframes rkp-draw{from{stroke-dashoffset:1;opacity:.18}to{stroke-dashoffset:0}}
-      @keyframes rkp-settle{0%,100%{transform:scale(1)}48%{transform:scale(1.1)}}
+      .rkp-word{fill:#fafafa}
+      .rkp-signal{transform-box:fill-box;transform-origin:left center}
+      .rkp-signal--base{fill:#3f3f46}
+      .rkp-signal--red{fill:#ef4444}
+      .rkp-signal--orange{fill:#f97316}
+      .rkp-tagline{fill:#a1a1aa;font:700 11px Arial,sans-serif;letter-spacing:5px}
+      @keyframes rkp-signal{from{transform:scaleX(.68);opacity:.72}to{transform:scaleX(1);opacity:1}}
       @media (prefers-reduced-motion:no-preference){
-        .rkp-trace{animation:rkp-draw .68s cubic-bezier(.22,1,.36,1) both}
-        .rkp-node{animation:rkp-settle .42s .62s ease-out both}
-        .rkp-node--orange{animation-delay:.7s}
-        .rkp-node--yellow{animation-delay:.78s}
+        .rkp-signal{animation:rkp-signal .48s cubic-bezier(.22,1,.36,1) both}
+        .rkp-signal--orange{animation-delay:.08s}
       }
       @media (forced-colors:active){
-        .rkp-orbit,.rkp-market,.rkp-depth,.rkp-word,.rkp-node{stroke:CanvasText}
-        .rkp-node{fill:Canvas}
+        .rkp-word,.rkp-signal,.rkp-signal--base,.rkp-tagline{fill:CanvasText}
       }
     </style>
   </defs>
 
+  <g class="rkp-word" fill-rule="evenodd" aria-hidden="true">
+    <path d="M32 58h98c20 0 32 10 32 27v10c0 15-8 24-24 28l37 25h-46l-31-24H71v24H32V58Zm39 23v19h56c5 0 7-2 7-7v-5c0-5-2-7-7-7H71Z"/>
+    <path d="M157 58h39v34l39-34h51l-57 45 65 45h-52l-46-34v34h-39V58Z"/>
+    <path d="M287 58h72c20 0 31 11 31 28v12c0 18-11 29-31 29h-33v21h-39V58Zm39 23v23h29c5 0 7-3 7-8v-7c0-5-2-8-7-8h-29Z"/>
+  </g>
+
   <g aria-hidden="true">
-    <path class="rkp-orbit rkp-trace" pathLength="1" d="M218 72c35 15 58 45 65 78"/>
-    <path class="rkp-orbit rkp-trace" pathLength="1" d="M284 177c-8 34-31 61-63 76"/>
-    <path class="rkp-orbit rkp-trace" pathLength="1" d="M180 266c-43 1-81-20-103-54"/>
-    <path class="rkp-orbit rkp-orbit--quiet rkp-trace" pathLength="1" d="M54 185c-8-24-7-48 2-70"/>
-
-    <path class="rkp-market rkp-trace" pathLength="1" d="M57 101 87 72l29 17 37-48 45 19"/>
-    <g class="rkp-depth">
-      <path class="rkp-depth--bid" d="M72 134h25"/>
-      <path class="rkp-depth--mid" d="M72 150h40"/>
-      <path class="rkp-depth--ask" d="M72 166h29"/>
-    </g>
-
-    <circle class="rkp-node rkp-node--red" cx="57" cy="101" r="8"/>
-    <circle class="rkp-node rkp-node--orange" cx="116" cy="89" r="6"/>
-    <circle class="rkp-node rkp-node--yellow" cx="153" cy="41" r="8"/>
-
-    <path class="rkp-word" d="M105 190V92h34c25 0 38 12 38 31s-13 30-38 30h-34m35 0 37 37"/>
-    <path class="rkp-word" d="M205 92v98m61-98-61 59 66 39"/>
-    <path class="rkp-word" d="M300 190V92h36c27 0 43 12 43 32s-16 32-43 32h-36"/>
+    <rect class="rkp-signal--base" x="32" y="171" width="358" height="4" rx="2"/>
+    <rect class="rkp-signal rkp-signal--red" x="32" y="171" width="42" height="4" rx="2"/>
+    <rect class="rkp-signal rkp-signal--orange" x="82" y="171" width="66" height="4" rx="2"/>
+    <text class="rkp-tagline" x="210" y="211" text-anchor="middle" textLength="250" lengthAdjust="spacing">ORDERED MARKET DATA</text>
   </g>
 </svg>

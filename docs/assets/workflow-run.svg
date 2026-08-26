@@ -3,29 +3,29 @@
   <desc id="desc">A GitHub repository supplies notebook and YAML configuration to Apache Airflow and Papermill. parse_fix writes three Apache Iceberg log tables and resumes instrument lifecycles from the prior Instrument table. Only fix.market continues through an Apache Arrow reader; normalized Instrument rows are projected while parse_market folds the same stream into books.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#ff8a00"/>
+      <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
     </marker>
     <marker id="control-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#f23b3b"/>
+      <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
     </marker>
     <style>
-      .control{fill:#291617;stroke:#f23b3b;stroke-width:2.2}
-      .task{fill:#2b2012;stroke:#ff8a00;stroke-width:2.4}
-      .source{fill:#171719;stroke:#f7f3e8;stroke-width:2.2}
-      .table{fill:#2a2613;stroke:#ffd43b;stroke-width:2.3}
-      .reader{fill:#171719;stroke:#ff8a00;stroke-width:2}
-      .flow{fill:none;stroke:#ff8a00;stroke-width:2.6;marker-end:url(#flow-arrow)}
-      .state-flow{fill:none;stroke:#ffd43b;stroke-width:2;stroke-dasharray:7 6;marker-end:url(#flow-arrow)}
-      .control-flow{fill:none;stroke:#f23b3b;stroke-width:2.1;stroke-dasharray:7 6;marker-end:url(#control-arrow)}
-      .heading{font:700 16px system-ui,sans-serif;fill:#ff8a00;letter-spacing:.06em}
-      .label{font:600 18px system-ui,sans-serif;fill:#f7f3e8;text-anchor:middle}
-      .small{font:13px system-ui,sans-serif;fill:#bdb9b0;text-anchor:middle}
-      .edge-label{font:12px system-ui,sans-serif;fill:#ffd43b;text-anchor:middle}
-      .terminal{font:12px system-ui,sans-serif;fill:#9b9891;text-anchor:middle}
+      .control{fill:#111113;stroke:#3f3f46;stroke-width:2.2}
+      .task{fill:#111113;stroke:#3f3f46;stroke-width:2.4}
+      .source{fill:#111113;stroke:#71717a;stroke-width:2.2}
+      .table{fill:#151517;stroke:#52525b;stroke-width:2.3}
+      .reader{fill:#111113;stroke:#3f3f46;stroke-width:2}
+      .flow{fill:none;stroke:#71717a;stroke-width:2.6;marker-end:url(#flow-arrow)}
+      .state-flow{fill:none;stroke:#a1a1aa;stroke-width:2;stroke-dasharray:7 6;marker-end:url(#flow-arrow)}
+      .control-flow{fill:none;stroke:#ef4444;stroke-width:2.1;stroke-dasharray:7 6;marker-end:url(#control-arrow)}
+      .heading{font:700 16px system-ui,sans-serif;fill:#f97316;letter-spacing:.06em}
+      .label{font:600 18px system-ui,sans-serif;fill:#fafafa;text-anchor:middle}
+      .small{font:13px system-ui,sans-serif;fill:#a1a1aa;text-anchor:middle}
+      .edge-label{font:12px system-ui,sans-serif;fill:#a1a1aa;text-anchor:middle}
+      .terminal{font:12px system-ui,sans-serif;fill:#71717a;text-anchor:middle}
       .brand-plate{fill:#ffffff;rx:7}
     </style>
   </defs>
-  <rect width="1600" height="980" fill="#09090b"/>
+  <rect width="1600" height="980" fill="#050505"/>
 
   <text class="heading" x="30" y="32">VERSIONED CONTROL</text>
   <rect class="control" x="40" y="55" width="340" height="112" rx="15"/>

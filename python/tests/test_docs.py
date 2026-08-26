@@ -80,9 +80,11 @@ def test_home_page_uses_the_animated_rkp_trigram() -> None:
     assert 'class="rkp-hero"' in page
     assert 'src="assets/rkp-logo.svg"' in page
     assert 'aria-labelledby="rkp-title rkp-desc"' in logo
-    assert 'viewBox="0 0 420 280"' in logo
+    assert 'viewBox="0 0 420 230"' in logo
     assert "prefers-reduced-motion:no-preference" in logo
-    assert all(color in logo for color in ("#f23b3b", "#ff8a00", "#ffd43b"))
+    assert all(color in logo for color in ("#ef4444", "#f97316"))
+    assert "#ffd43b" not in logo
+    assert "ORDERED MARKET DATA" in logo
     assert "rkp-frame" not in logo
     assert "rkp-grid" not in logo
     assert "logo: assets/rkp-logo.svg" in config
