@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-import itertools
+import json
 import re
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from types import MappingProxyType
@@ -13,6 +13,7 @@ from typing import Any, Self
 import pyarrow
 
 from rekep.annotations import hide_private, restore_private_slots, unwrap_annotated
+from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.convert import Convertible
 from rekep.fields import arrays
 from rekep.fields.arrow import merge_fields
@@ -47,10 +48,12 @@ FIELD_ID = "iceberg:field_id"
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
 
-#: Which columns a table is kept sorted by, and which way. Declaration order is
-#: the sort order -- a second key would have to be a number every declaration
-#: then has to keep consistent, and the members are already in an order.
+#: Which columns a table is kept sorted by, and which way.
 SORT_KEY = "iceberg:sort_key"
+
+#: Exact ordered sort fields read from an Iceberg table. A root declaration is
+#: needed because an external table's priority need not follow schema order.
+SORT_ORDER = "iceberg:sort_order"
 
 #: What a sort key means when a declaration only says there is one.
 ASCENDING = "asc"
@@ -996,6 +999,25 @@ class StructField(Field):
 
     def sort_keys(self) -> dict[str, str]:
         """Members the data is sorted on, mapped to their direction, in order."""
+        encoded = self.metadata.get(SORT_ORDER)
+        if encoded:
+            try:
+                declared = json.loads(encoded)
+                ordered = [(str(name), str(direction)) for name, direction in declared]
+            except (TypeError, ValueError):
+                raise ValueError(f"field {self.name!r} has an invalid {SORT_ORDER!r}") from None
+            if len({name for name, _ in ordered}) != len(ordered):
+                raise ValueError(f"field {self.name!r} repeats a column in {SORT_ORDER!r}")
+            for name, direction in ordered:
+                member = self.field(name)
+                if not member.is_sort_key or member.sort_direction != direction:
+                    raise ValueError(
+                        f"field {self.name!r} has inconsistent {SORT_ORDER!r} metadata"
+                    )
+            flagged = {member.name for member in self.fields if member.is_sort_key}
+            if flagged != {name for name, _ in ordered}:
+                raise ValueError(f"field {self.name!r} has incomplete {SORT_ORDER!r} metadata")
+            return dict(ordered)
         return {member.name: member.sort_direction for member in self.fields if member.is_sort_key}
 
     def derived_keys(self) -> dict[str, tuple[str, ...]]:
@@ -1003,6 +1025,22 @@ class StructField(Field):
         return {member.name: member.derived_from for member in self.fields if member.derived_from}
 
     def _member_changed(self, member: Field) -> None:
+        encoded = self.metadata.get(SORT_ORDER)
+        if encoded:
+            try:
+                ordered = [(str(name), str(direction)) for name, direction in json.loads(encoded)]
+            except (TypeError, ValueError):
+                ordered = []
+            members = {
+                other.name: member if other.name == member.name else other for other in self.fields
+            }
+            current = {
+                name: candidate.sort_direction
+                for name, candidate in members.items()
+                if candidate.is_sort_key
+            }
+            if current != dict(ordered):
+                self.metadata = _without(self.metadata, SORT_ORDER)
         self.arrow_type = pyarrow.struct(
             [
                 (member if other.name == member.name else other).into_arrow_field()
@@ -1051,11 +1089,17 @@ class StructField(Field):
         return iceberg_sort_order(self, schema, sort_by)
 
     @classmethod
-    def from_iceberg_schema(cls, source: Any, name: str = "", spec: Any = None) -> StructField:
-        """A `pyiceberg` schema as a struct field: docs, keys and partitions."""
+    def from_iceberg_schema(
+        cls,
+        source: Any,
+        name: str = "",
+        spec: Any = None,
+        sort_order: Any = None,
+    ) -> StructField:
+        """A `pyiceberg` schema as a struct field, including its table layout."""
         from rekep.iceberg.fields import iceberg_struct_field
 
-        return iceberg_struct_field(source, name, spec)
+        return iceberg_struct_field(source, name, spec, sort_order)
 
     def into_dataclass(self, name: str | None = None) -> type:
         """Rebuild a `@scalar` class whose projection is exactly this field.
@@ -1217,7 +1261,13 @@ class StructField(Field):
             for batch in source:
                 yield target.cast_arrow_batch(batch, safe=safe)
 
-        return pyarrow.RecordBatchReader.from_batches(target.arrow_schema, generate())
+        batches = generate()
+        close = getattr(source, "close", None)
+        return OwnedRecordBatchReader(
+            target.arrow_schema,
+            batches,
+            close if close is not None else lambda: None,
+        )
 
     # -- merging ------------------------------------------------------------
 
@@ -1474,5 +1524,23 @@ def _peek_schema(
     iterator = iter(source)
     first = next(iterator, None)
     if first is None:
+        _close_iterators(iterator, source)
         return iter(()), None
-    return itertools.chain([first], iterator), first.schema
+
+    def restored() -> Iterator[pyarrow.RecordBatch]:
+        try:
+            yield first
+            yield from iterator
+        finally:
+            _close_iterators(iterator, source)
+
+    return restored(), first.schema
+
+
+def _close_iterators(iterator: Any, source: Any) -> None:
+    """Close an iterator and its distinct iterable owner once each."""
+    close = getattr(iterator, "close", None)
+    if close is not None:
+        close()
+    if source is not iterator and (close := getattr(source, "close", None)) is not None:
+        close()

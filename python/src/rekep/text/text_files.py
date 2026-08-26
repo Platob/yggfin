@@ -16,6 +16,7 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
+from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
@@ -25,7 +26,6 @@ from rekep.text.text_file import (
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
-    _OwnedRecordBatchReader,
     _regexes,
     _validate_read_sizes,
     _validate_window,
@@ -406,7 +406,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
             duration_ns=duration_ns,
             **kwargs,
         )
-        return _OwnedRecordBatchReader(self.schema, batches, lambda: None)
+        return OwnedRecordBatchReader(self.schema, batches, lambda: None)
 
     def into_arrow_table(self, **kwargs: Any) -> pyarrow.Table:
         """Read the whole set into one table. Needs all of it to fit in memory."""

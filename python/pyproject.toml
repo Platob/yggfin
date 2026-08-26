@@ -27,7 +27,7 @@ yaml = ["pyyaml>=6.0"]
 toml = ["tomli-w>=1.0"]
 # The Iceberg dataset, with the SQLite catalog that makes it fully local and
 # the Rust core every partition transform but `identity` is written through.
-iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.9"]
+iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
 polars = ["polars>=1.36"]
 all = ["rekep[iceberg,polars,toml,yaml]"]
 

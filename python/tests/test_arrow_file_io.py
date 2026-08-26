@@ -7,6 +7,7 @@ below it, because "served from memory" is the whole claim.
 """
 
 import gzip
+import threading
 from pathlib import Path
 
 import pyarrow.fs
@@ -20,7 +21,9 @@ from rekep.arrow_file_io import (
     ArrowFileIO,
     CachedInputFile,
     ContentCache,
+    canonical_location,
     inferred_properties,
+    track_outputs,
 )
 
 
@@ -50,6 +53,12 @@ def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None
     assert ArrowFileIO.parse_location("file:/data/t") == ("file", "", "/data/t")
     assert ArrowFileIO.parse_location("s3://bucket/t") == ("s3", "bucket", "bucket/t")
     assert ArrowFileIO.parse_location("s3a://bucket/t") == ("s3a", "bucket", "bucket/t")
+
+
+@pytest.mark.parametrize("scheme", ("s3", "s3a", "s3n"))
+def test_s3_locations_store_only_the_bucket_and_key(scheme: str) -> None:
+    location = f"{scheme}://key:secret@bucket/table?endpoint_override=minio%3A9000&scheme=http"
+    assert canonical_location(location) == f"{scheme}://bucket/table"
 
 
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
@@ -96,7 +105,7 @@ def test_an_endpoint_hostname_keeps_the_bucket_below_it_too(posix: None) -> None
 def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> None:
     """A MinIO behind a certificate says where it is without saying a port."""
     assert inferred_properties({"warehouse": "s3://key:secret@minio.corp.com/wh"}) == {
-        "warehouse": "s3://key:secret@minio.corp.com/wh",
+        "warehouse": "s3://wh/",
         "s3.endpoint": "https://minio.corp.com",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
@@ -108,7 +117,7 @@ def test_a_warehouse_url_configures_the_filesystem_it_names(scheme: str) -> None
     """Said once as a location, rather than again as three settings."""
     location = f"{scheme}://key:sec:ret@minio:9000/wh"
     assert inferred_properties({"warehouse": location}) == {
-        "warehouse": location,
+        "warehouse": f"{scheme}://wh/",
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "sec:ret",
@@ -127,7 +136,7 @@ def test_s3_query_settings_leave_the_location_before_iceberg_appends_to_it() -> 
         }
     )
     assert inferred == {
-        "warehouse": "s3://key:sec%3Aret%2Fword%40x@bucket/wh",
+        "warehouse": "s3://bucket/wh",
         "s3.endpoint": "http://127.0.0.1:19000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "sec:ret/word@x",
@@ -139,10 +148,14 @@ def test_s3_query_settings_leave_the_location_before_iceberg_appends_to_it() -> 
 def test_what_the_caller_set_wins_over_what_the_location_says() -> None:
     """An explicit property is a decision; a URL is a default."""
     inferred = inferred_properties(
-        {"warehouse": "s3://key:secret@minio:9000/wh", "s3.access-key-id": "other"}
+        {
+            "warehouse": "s3://key:secret@minio:9000/wh",
+            "s3.access-key-id": "other",
+            "s3.endpoint": "https://chosen.example.com",
+        }
     )
     assert inferred["s3.access-key-id"] == "other"
-    assert inferred["s3.endpoint"] == "http://minio:9000"
+    assert inferred["s3.endpoint"] == "https://chosen.example.com"
 
 
 def test_s3_process_defaults_are_below_locations_and_catalog_properties(
@@ -173,7 +186,7 @@ def test_an_aws_location_suppresses_a_compatible_store_process_endpoint(
     monkeypatch.setenv("S3_REGION", "us-east-1")
     location = "s3://logs.s3.eu-west-1.amazonaws.com/wh"
     assert inferred_properties({"warehouse": location}) == {
-        "warehouse": location,
+        "warehouse": "s3://logs/wh",
         "s3.region": "eu-west-1",
     }
 
@@ -212,6 +225,74 @@ def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
 
 
 # -- staged uploads ---------------------------------------------------------
+
+
+def test_output_tracking_spans_file_io_instances_and_stops_with_its_context(
+    tmp_path: Path,
+) -> None:
+    from pyiceberg.utils.concurrent import ExecutorFactory
+
+    first = ArrowFileIO()
+    second = ArrowFileIO()
+    paths = [str(tmp_path / "first.avro"), str(tmp_path / "second.metadata.json")]
+    workers = ExecutorFactory.get_or_create()._max_workers  # noqa: SLF001
+
+    with track_outputs() as outputs:
+        first.new_output(paths[0])
+        ExecutorFactory.get_or_create().submit(second.new_output, paths[1]).result()
+
+    first.new_output(str(tmp_path / "later.avro"))
+    assert outputs == set(paths)
+    assert ExecutorFactory.get_or_create()._max_workers == workers  # noqa: SLF001
+
+
+def test_output_tracking_settles_delayed_worker_writes(tmp_path: Path) -> None:
+    from pyiceberg.utils.concurrent import ExecutorFactory
+
+    release = threading.Event()
+    paths = [str(tmp_path / f"worker-{index}.parquet") for index in range(12)]
+
+    def delayed(path: str) -> None:
+        release.wait()
+        ArrowFileIO().new_output(path)
+
+    with track_outputs() as outputs:
+        executor = ExecutorFactory.get_or_create()
+        for path in paths:
+            executor.submit(delayed, path)
+        timer = threading.Timer(0.05, release.set)
+        timer.start()
+        outputs.settle()
+        timer.join()
+
+    assert outputs == set(paths)
+
+
+def test_output_settlement_keeps_waiting_after_an_interrupt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from concurrent.futures import Future
+
+    future: Future[None] = Future()
+    result = future.result
+    calls = 0
+
+    def interrupted_once(timeout: float | None = None) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise KeyboardInterrupt
+        result(timeout)
+
+    monkeypatch.setattr(future, "result", interrupted_once)
+    with track_outputs() as outputs:
+        outputs.watch(future)
+        timer = threading.Timer(0.05, future.set_result, args=(None,))
+        timer.start()
+        outputs.settle()
+        timer.join()
+
+    assert calls == 2
 
 
 @pytest.mark.parametrize("scheme", ("s3", "s3a"))
@@ -458,6 +539,25 @@ def test_a_file_past_the_per_file_cap_is_never_held() -> None:
     cache = ContentCache(limit=80)
     cache.put("big", b"x" * 11)  # over limit // 8, would evict everything else
     assert cache.get("big") is None
+
+
+def test_the_same_s3_path_on_two_endpoints_never_shares_cached_bytes() -> None:
+    location = "s3://same-bucket/metadata/shared.avro"
+    stores = [pyarrow.fs._MockFileSystem(), pyarrow.fs._MockFileSystem()]
+    payloads = [b"first store", b"second store"]
+    readers = []
+    for index, (store, payload) in enumerate(zip(stores, payloads, strict=True)):
+        store.create_dir("same-bucket/metadata", recursive=True)
+        with store.open_output_stream("same-bucket/metadata/shared.avro") as output:
+            output.write(payload)
+        io = ArrowFileIO({"s3.endpoint": f"http://minio-{index}:9000"})
+        io.fs_by_scheme = lambda *_args, store=store: store
+        readers.append(io)
+
+    with readers[0].new_input(location).open() as first:
+        assert first.read() == payloads[0]
+    with readers[1].new_input(location).open() as second:
+        assert second.read() == payloads[1]
 
 
 def test_an_oversized_immutable_input_streams_without_an_eager_copy(tmp_path: Path) -> None:

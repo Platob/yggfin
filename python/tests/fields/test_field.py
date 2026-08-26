@@ -596,6 +596,30 @@ def test_a_sort_key_survives_the_round_trip_through_arrow() -> None:
     assert Field.from_arrow_schema(schema).sort_keys() == {"unix": "asc"}
 
 
+def test_an_exact_external_sort_priority_survives_the_arrow_round_trip() -> None:
+    built = Field.from_arrow_schema(
+        pyarrow.schema(
+            [
+                pyarrow.field("at", pyarrow.int64(), metadata={b"iceberg:sort_key": b"asc"}),
+                pyarrow.field("seq", pyarrow.int64(), metadata={b"iceberg:sort_key": b"desc"}),
+            ],
+            metadata={b"iceberg:sort_order": b'[["seq","desc"],["at","asc"]]'},
+        ),
+        "Ticked",
+    )
+
+    assert built.sort_keys() == {"seq": "desc", "at": "asc"}
+    assert Field.from_arrow_schema(built.into_arrow_schema()).sort_keys() == {
+        "seq": "desc",
+        "at": "asc",
+    }
+
+    built.field("seq").description = "Sequence."
+    assert built.sort_keys() == {"seq": "desc", "at": "asc"}
+    built.field("seq").is_sort_key = "asc"
+    assert built.sort_keys() == {"at": "asc", "seq": "asc"}
+
+
 def test_a_changed_declaration_drops_what_was_derived_from_it() -> None:
     built = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]), "Quote")
     before = built.into_arrow_schema()

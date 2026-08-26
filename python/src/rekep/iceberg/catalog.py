@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Iterator
-from functools import cached_property
 from typing import Any
 
 from rekep.convert import Convertible
@@ -27,23 +26,53 @@ class IcebergCatalog(Convertible):
     name: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        """Give location configuration one lock before this handle is shared."""
+        import threading
+
+        self.__dict__["_location_guard"] = threading.RLock()
+
     # -- the catalog --------------------------------------------------------
 
-    @cached_property
+    @property
     def catalog(self) -> Any:
         """The pyiceberg catalog, loaded once.
 
         Loading reads configuration and may open a connection, and every table
         here lives in the same one. `py-io-impl` defaults to Arrow's FileIO;
-        naming another in `properties` wins.
+        a named implementation is wrapped so failed commits still own every
+        output they created.
         """
-        require("pyiceberg", "iceberg")
-        from pyiceberg.catalog import load_catalog
+        loaded = self.__dict__.get("catalog")
+        if loaded is not None:
+            return loaded
+        with self.__dict__["_location_guard"]:
+            loaded = self.__dict__.get("catalog")
+            if loaded is not None:
+                return loaded
+            require("pyiceberg", "iceberg")
+            from pyiceberg.catalog import load_catalog
 
-        from rekep.arrow_file_io import inferred_properties
+            from rekep.arrow_file_io import inferred_properties
 
-        properties = inferred_properties(self.properties)
-        return load_catalog(self.name, **{"py-io-impl": PYARROW_FILE_IO, **properties})
+            properties = self._tracked_file_io_properties(inferred_properties(self.properties))
+            loaded = load_catalog(self.name, **properties)
+            self.__dict__["catalog"] = loaded
+            return loaded
+
+    @staticmethod
+    def _tracked_file_io_properties(properties: Any) -> dict[str, str]:
+        """Catalog properties with custom FileIO routed through ownership tracking."""
+        from rekep.arrow_file_io import DELEGATE_FILE_IO, TRACKED_FILE_IO
+
+        configured = dict(properties)
+        implementation = configured.get("py-io-impl")
+        if implementation and implementation not in {PYARROW_FILE_IO, TRACKED_FILE_IO}:
+            configured[DELEGATE_FILE_IO] = implementation
+            configured["py-io-impl"] = TRACKED_FILE_IO
+        else:
+            configured.setdefault("py-io-impl", PYARROW_FILE_IO)
+        return configured
 
     def close(self) -> None:
         """Release a loaded catalog without opening an unused one."""
@@ -141,6 +170,34 @@ class IcebergCatalog(Convertible):
     def rename_table(self, name: str, to: str) -> Any:
         return self.catalog.rename_table(name, to)
 
+    def _configure_locations(self, locations: list[str]) -> None:
+        """Apply table-specific S3 settings before loading its catalog handle."""
+        if not locations:
+            return
+        from rekep.arrow_file_io import location_properties
+
+        requested = dict(location_properties({}, locations=locations))
+        with self.__dict__["_location_guard"]:
+            conflicts = sorted(
+                name
+                for name, value in requested.items()
+                if name.startswith("s3.")
+                and name in self.properties
+                and self.properties[name] != value
+            )
+            if conflicts:
+                raise ValueError(
+                    f"explicit S3 location conflicts with catalog settings {conflicts!r}; "
+                    "use a separate IcebergCatalog for another store"
+                )
+            configured = dict(location_properties(self.properties, locations=locations))
+            if configured == self.properties:
+                return
+            self.properties = configured
+            loaded = self.__dict__.get("catalog")
+            if loaded is not None:
+                loaded.properties.update(self._tracked_file_io_properties(configured))
+
     def dataset(self, name: str, **kwargs: Any) -> Any:
         """A dataset on this catalog: the way to read and write a table here.
 
@@ -154,11 +211,28 @@ class IcebergCatalog(Convertible):
         """
         from rekep.iceberg.dataset import IcebergDataset
 
+        storage = kwargs.get("table_properties") or {}
+        self._configure_locations(
+            [
+                str(location)
+                for location in (
+                    kwargs.get("location"),
+                    storage.get("write.data.path"),
+                    storage.get("write.metadata.path"),
+                )
+                if location
+            ]
+        )
         field = kwargs.pop("field", None)
         table = None
         if field is None:
             table = self.load_table(name)
-            field = StructField.from_iceberg_schema(table.schema(), name, spec=table.spec())
+            field = StructField.from_iceberg_schema(
+                table.schema(),
+                name,
+                spec=table.spec(),
+                sort_order=table.sort_order(),
+            )
         else:
             field = Field.from_(field).with_name(name)
         built = IcebergDataset(field=field, catalog=self.name, properties=self.properties, **kwargs)

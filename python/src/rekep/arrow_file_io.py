@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import importlib
+import itertools
 import os
 import re
 import threading
 from collections import OrderedDict
+from collections.abc import Callable, Iterable, Iterator, Set
+from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from contextlib import contextmanager
+from contextvars import ContextVar, copy_context
 from typing import Any
 
 import pyarrow
-from pyiceberg.io import InputFile, InputStream, OutputFile, OutputStream
+from pyiceberg.io import FileIO, InputFile, InputStream, OutputFile, OutputStream
 from pyiceberg.io.pyarrow import PyArrowFile, PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
@@ -41,6 +47,164 @@ CACHE_BYTES_PROPERTY = "rekep.io.cache-bytes"
 #: Enough for thousands of manifests -- they run single-digit KBs each on the
 #: tables this package writes -- and small next to one Arrow table of data.
 DEFAULT_CACHE_BYTES = 64 * 1024 * 1024
+
+DELEGATE_FILE_IO = "rekep.io.delegate-file-io"
+TRACKED_FILE_IO = "rekep.arrow_file_io.TrackedFileIO"
+
+_EXECUTOR_LOCK = threading.Lock()
+
+
+class _OutputTracker(Set[str]):
+    """Paths and worker futures owned by one transaction context."""
+
+    def __init__(self) -> None:
+        self._paths: set[str] = set()
+        self._futures: set[Future[Any]] = set()
+        self._lock = threading.Lock()
+
+    def add(self, path: str) -> None:
+        with self._lock:
+            self._paths.add(path)
+
+    def watch(self, future: Future[Any]) -> None:
+        with self._lock:
+            self._futures.add(future)
+
+    def settle(self) -> None:
+        """Wait until this context has no submitted worker still writing."""
+        while True:
+            with self._lock:
+                futures = tuple(self._futures)
+            if not futures:
+                return
+            for future in futures:
+                try:
+                    future.result()
+                except BaseException:
+                    pass
+            with self._lock:
+                self._futures.difference_update(future for future in futures if future.done())
+
+    def snapshot(self) -> set[str]:
+        with self._lock:
+            return set(self._paths)
+
+    def __contains__(self, path: object) -> bool:
+        with self._lock:
+            return path in self._paths
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.snapshot())
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._paths)
+
+
+# Catalog commits load a fresh FileIO for the next metadata JSON. A context
+# tracker, rather than instance state, observes that writer without mixing
+# concurrent commits in other threads or tasks.
+_OUTPUT_TRACKERS: ContextVar[tuple[_OutputTracker, ...]] = ContextVar(
+    "rekep_arrow_file_io_output_trackers", default=()
+)
+
+
+class _ContextExecutor(Executor):
+    """Keep the submitting context around PyIceberg's worker functions."""
+
+    def __init__(self, executor: ThreadPoolExecutor) -> None:
+        self.executor = executor
+        self._max_workers = executor._max_workers  # noqa: SLF001
+
+    def submit(
+        self,
+        fn: Callable[..., Any],
+        /,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Future[Any]:
+        context = copy_context()
+        trackers = _OUTPUT_TRACKERS.get()
+        future = self.executor.submit(context.run, fn, *args, **kwargs)
+        for tracker in trackers:
+            tracker.watch(future)
+        return future
+
+    def shutdown(self, wait: bool = True, *, cancel_futures: bool = False) -> None:
+        self.executor.shutdown(wait=wait, cancel_futures=cancel_futures)
+
+
+def _propagate_worker_context() -> None:
+    """Install one context-preserving wrapper around PyIceberg's shared pool."""
+    from pyiceberg.utils.concurrent import ExecutorFactory
+
+    with _EXECUTOR_LOCK:
+        executor = ExecutorFactory.get_or_create()
+        if isinstance(executor, ThreadPoolExecutor):
+            ExecutorFactory._instance = _ContextExecutor(executor)  # noqa: SLF001
+
+
+@contextmanager
+def track_outputs() -> Iterator[_OutputTracker]:
+    """Collect every output location opened in this commit context."""
+    _propagate_worker_context()
+    outputs = _OutputTracker()
+    token = _OUTPUT_TRACKERS.set((*_OUTPUT_TRACKERS.get(), outputs))
+    try:
+        yield outputs
+    finally:
+        _OUTPUT_TRACKERS.reset(token)
+        outputs.settle()
+
+
+def _record_output(location: str) -> None:
+    """Attach one output to every transaction context inherited by this call."""
+    for outputs in _OUTPUT_TRACKERS.get():
+        outputs.add(location)
+
+
+class TrackedFileIO(FileIO):
+    """A custom PyIceberg FileIO with transaction output ownership added."""
+
+    def __init__(self, properties: Properties = EMPTY_DICT) -> None:
+        super().__init__(properties)
+        implementation = properties.get(DELEGATE_FILE_IO)
+        if not implementation or implementation == TRACKED_FILE_IO:
+            raise ValueError(f"{DELEGATE_FILE_IO!r} must name the wrapped FileIO")
+        module_name, separator, class_name = implementation.rpartition(".")
+        if not separator:
+            raise ValueError(f"py-io-impl must be a full class path, got {implementation!r}")
+        delegate_properties = {**properties, "py-io-impl": implementation}
+        file_io = getattr(importlib.import_module(module_name), class_name)
+        self.delegate: FileIO = file_io(delegate_properties)
+
+    def new_input(self, location: str) -> InputFile:
+        return self.delegate.new_input(location)
+
+    def new_output(self, location: str) -> OutputFile:
+        _record_output(location)
+        return self.delegate.new_output(location)
+
+    def delete(self, location: str | InputFile | OutputFile) -> None:
+        self.delegate.delete(location)
+
+    def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
+        """Use a delegate's native copy, or a bounded stream when it has none."""
+        _record_output(target)
+        copier = getattr(self.delegate, "copy_from_local", None)
+        if callable(copier):
+            copier(source, target)
+            return target
+        with (
+            open(source, "rb") as incoming,
+            self.delegate.new_output(target).create(overwrite=True) as output,
+        ):
+            while payload := incoming.read(1 << 22):
+                output.write(payload)
+        return target
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.delegate, name)
 
 
 def _immutable(location: str) -> bool:
@@ -136,53 +300,55 @@ class CachedInputFile(InputFile):
     cost.
     """
 
-    def __init__(self, inner: InputFile, cache: ContentCache) -> None:
+    def __init__(self, inner: InputFile, cache: ContentCache, key: str | None = None) -> None:
         super().__init__(location=inner.location)
         self._inner = inner
         self._cache = cache
+        self._key = key or inner.location
 
     def __len__(self) -> int:
-        data = self._cache.peek(self.location)
+        data = self._cache.peek(self._key)
         return len(data) if data is not None else len(self._inner)
 
     def exists(self) -> bool:
-        if self._cache.peek(self.location) is not None:
+        if self._cache.peek(self._key) is not None:
             return True
         return self._inner.exists()
 
     def open(self, seekable: bool = True) -> InputStream:
-        data = self._cache.get(self.location)
+        data = self._cache.get(self._key)
         if data is None:
             if not self._cache.accepts(len(self._inner)):
                 return self._inner.open(seekable)
             with self._inner.open() as stream:
                 data = stream.read()
-            self._cache.put(self.location, data)
+            self._cache.put(self._key, data)
         return pyarrow.BufferReader(data)
 
 
 class CachedOutputFile(OutputFile):
     """An output file whose bytes land in the cache as they land in the store."""
 
-    def __init__(self, inner: OutputFile, cache: ContentCache) -> None:
+    def __init__(self, inner: OutputFile, cache: ContentCache, key: str | None = None) -> None:
         super().__init__(location=inner.location)
         self._inner = inner
         self._cache = cache
+        self._key = key or inner.location
 
     def __len__(self) -> int:
-        data = self._cache.peek(self.location)
+        data = self._cache.peek(self._key)
         return len(data) if data is not None else len(self._inner)
 
     def exists(self) -> bool:
-        if self._cache.peek(self.location) is not None:
+        if self._cache.peek(self._key) is not None:
             return True
         return self._inner.exists()
 
     def to_input_file(self) -> CachedInputFile:
-        return CachedInputFile(self._inner.to_input_file(), self._cache)
+        return CachedInputFile(self._inner.to_input_file(), self._cache, self._key)
 
     def create(self, overwrite: bool = False) -> OutputStream:
-        return _TeeStream(self._inner.create(overwrite), self.location, self._cache)
+        return _TeeStream(self._inner.create(overwrite), self._key, self._cache)
 
 
 class _TeeStream:
@@ -195,9 +361,9 @@ class _TeeStream:
     not written whole must not be readable as if it had been.
     """
 
-    def __init__(self, inner: Any, location: str, cache: ContentCache) -> None:
+    def __init__(self, inner: Any, key: str, cache: ContentCache) -> None:
         self._inner = inner
-        self._location = location
+        self._key = key
         self._cache = cache
         self._cap = cache.limit // 8
         self._buffer: bytearray | None = bytearray()
@@ -224,7 +390,7 @@ class _TeeStream:
             raise
         finally:
             if not self._failed and self._buffer is not None:
-                self._cache.put(self._location, bytes(self._buffer))
+                self._cache.put(self._key, bytes(self._buffer))
             self._buffer = None
 
     def __enter__(self) -> _TeeStream:
@@ -239,39 +405,70 @@ class _TeeStream:
         return getattr(self._inner, name)
 
 
-def inferred_properties(properties: Properties) -> Properties:
-    """`properties`, plus S3 process and location defaults."""
-    environment = s3_environment()
+def canonical_location(location: str) -> str:
+    """An S3 location containing only its scheme, bucket, and object key."""
+    url = Url.from_string(location)
+    if url.scheme not in S3:
+        return location
+    clean = url.copy()
+    clean.user = clean.password = None
+    clean.host = url.bucket
+    clean.port = None
+    clean.path = url.key
+    clean.query.clear()
+    return clean.into_string()
+
+
+def _location_properties(locations: Iterable[str]) -> tuple[dict[str, str], bool, bool]:
+    """Shared settings named by explicit S3 locations."""
     inferred: dict[str, str] = {}
-    normalized = dict(properties)
     endpoint_decided = False
+    credentials_decided = False
+    for location in locations:
+        url = Url.from_string(location)
+        if url.scheme not in S3:
+            continue
+        for key, value in properties_of(url).items():
+            if key in inferred and inferred[key] != value:
+                raise ValueError(f"conflicting {key!r} across explicit S3 locations")
+            inferred[key] = value
+        endpoint_decided = endpoint_decided or url.endpoint is not None
+        credentials_decided = credentials_decided or url.user is not None
+    return inferred, endpoint_decided, credentials_decided
+
+
+def location_properties(properties: Properties, *, locations: Iterable[str] = ()) -> Properties:
+    """`properties` with explicit S3 locations made portable."""
+    normalized = dict(properties)
+    declared: list[str] = []
     for name in LOCATION_PROPERTIES:
         location = properties.get(name)
         if not location:
             continue
-        url = Url.from_string(str(location))
-        if url.scheme not in S3:
-            continue
-        location_defaults = dict(properties_of(url))
-        if endpoint_decided:
-            location_defaults.pop("s3.endpoint", None)
-        for key, value in location_defaults.items():
-            inferred.setdefault(key, value)
-        if url.endpoint is not None:
-            endpoint_decided = True
-        if url.user is not None:
-            # A session token belongs to its access-key pair; never combine a
-            # portable token with credentials explicitly carried by the URL.
-            environment.pop("s3.session-token", None)
-        if url.query:
-            clean = url.copy()
-            clean.query.clear()
-            normalized[name] = clean.into_string()
-    if endpoint_decided and "s3.endpoint" not in inferred:
+        declared.append(str(location))
+        normalized[name] = canonical_location(str(location))
+    inferred, _, _ = _location_properties(itertools.chain(declared, locations))
+    return {**inferred, **normalized}
+
+
+def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()) -> Properties:
+    """`properties`, plus S3 process and explicit-location defaults."""
+    locations = tuple(locations)
+    declared = [str(location) for name in LOCATION_PROPERTIES if (location := properties.get(name))]
+    _, endpoint_decided, credentials_decided = _location_properties(
+        itertools.chain(declared, locations)
+    )
+    normalized = location_properties(properties, locations=locations)
+    environment = s3_environment()
+    if credentials_decided:
+        # A session token belongs to its access-key pair; never combine a
+        # portable token with credentials explicitly carried by the URL.
+        environment.pop("s3.session-token", None)
+    if endpoint_decided and "s3.endpoint" not in normalized:
         environment.pop("s3.endpoint", None)
-    if not environment and not inferred and normalized == properties:
+    if not environment and normalized == properties:
         return properties
-    return {**environment, **inferred, **normalized}
+    return {**environment, **normalized}
 
 
 class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
@@ -338,17 +535,28 @@ class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
                 return "\0".join((canonical_scheme, endpoint, url.bucket, path))
         return None
 
+    def _content_identity(self, location: str) -> str:
+        """A cache key scoped to the S3-compatible store serving a location."""
+        url = Url.from_string(location)
+        if url.scheme not in S3:
+            return location
+        endpoint = str(url.endpoint or self.properties.get("s3.endpoint", ""))
+        access_key = str(url.user or self.properties.get("s3.access-key-id", ""))
+        region = str(self.properties.get("s3.region", ""))
+        return "\0".join(("s3", endpoint, access_key, region, url.bucket, url.key))
+
     def new_input(self, location: str) -> InputFile:
         inner = super().new_input(location)
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedInputFile(inner, self._content_cache)
+        return CachedInputFile(inner, self._content_cache, self._content_identity(location))
 
     def new_output(self, location: str) -> OutputFile:
+        _record_output(location)
         inner = super().new_output(location)
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedOutputFile(inner, self._content_cache)
+        return CachedOutputFile(inner, self._content_cache, self._content_identity(location))
 
     def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
         """Copy one local file to a location through this configured Arrow filesystem."""
@@ -392,5 +600,5 @@ class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
         # Evicted first, whether or not the store's delete then fails: a
         # cached copy of a file the caller wants gone is the copy that lies.
         name = location.location if isinstance(location, (InputFile, OutputFile)) else location
-        CONTENT_CACHE.evict(name)
+        CONTENT_CACHE.evict(self._content_identity(name))
         super().delete(location)

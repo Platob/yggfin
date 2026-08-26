@@ -9,12 +9,13 @@ of pyiceberg's own conversion.
 from __future__ import annotations
 
 import itertools
+import json
 from collections.abc import Sequence
 from typing import Any
 
 import pyarrow
 
-from rekep.fields import DESCRIPTION, FIELD_ID, Field, StructField
+from rekep.fields import DESCRIPTION, FIELD_ID, SORT_ORDER, Field, StructField
 from rekep.require import require
 
 #: Arrow field metadata key pyiceberg reads a column comment from, and writes
@@ -102,7 +103,7 @@ def iceberg_sort_order(
     partition, which decides which file -- is on `Field.is_sort_key`.
     """
     require("pyiceberg", "iceberg")
-    from pyiceberg.table.sorting import SortDirection, SortField, SortOrder
+    from pyiceberg.table.sorting import NullOrder, SortDirection, SortField, SortOrder
     from pyiceberg.transforms import IdentityTransform
 
     declared = source.sort_keys() if sort_by is None else dict.fromkeys(sort_by, "ascending")
@@ -119,13 +120,19 @@ def iceberg_sort_order(
                     if str(direction).lower().startswith("desc")
                     else SortDirection.ASC
                 ),
+                null_order=NullOrder.NULLS_LAST,
             )
             for name, direction in declared.items()
         ]
     )
 
 
-def iceberg_struct_field(schema: Any, name: str = "", spec: Any = None) -> StructField:
+def iceberg_struct_field(
+    schema: Any,
+    name: str = "",
+    spec: Any = None,
+    sort_order: Any = None,
+) -> StructField:
     """A `pyiceberg` schema as a struct field: types, docs and keys.
 
     Reached through `StructField.from_iceberg_schema`, which is the entry every
@@ -144,6 +151,30 @@ def iceberg_struct_field(schema: Any, name: str = "", spec: Any = None) -> Struc
         column = schema.find_column_name(partition.source_id)
         if column and "." not in column:
             field.field(column).is_partition_key = str(partition.transform)
+    if sort_order is not None:
+        from pyiceberg.table.sorting import NullOrder, SortDirection
+        from pyiceberg.transforms import IdentityTransform
+
+        ordered: list[tuple[str, str]] = []
+        for sorting in getattr(sort_order, "fields", ()):
+            column = schema.find_column_name(sorting.source_id)
+            if (
+                not column
+                or "." in column
+                or not isinstance(sorting.transform, IdentityTransform)
+                or sorting.null_order != NullOrder.NULLS_LAST
+            ):
+                ordered = []
+                break
+            direction = "desc" if sorting.direction == SortDirection.DESC else "asc"
+            ordered.append((column, direction))
+        if ordered:
+            for column, direction in ordered:
+                field.field(column).is_sort_key = direction
+            field.metadata = {
+                **field.metadata,
+                SORT_ORDER: json.dumps(ordered, separators=(",", ":")),
+            }
     return field
 
 

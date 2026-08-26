@@ -2,6 +2,7 @@
 
 import dataclasses
 import datetime
+import math
 import os
 import subprocess
 import sys
@@ -15,8 +16,10 @@ import pyarrow.parquet
 import pytest
 from pyiceberg.conversions import from_bytes
 from pyiceberg.expressions import EqualTo
+from pyiceberg.transforms import IdentityTransform
 
 from rekep import Convertible, Field, FixMsg, Kwarg, Message, StructField, scalar
+from rekep.arrow_file_io import ArrowFileIO
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
@@ -43,6 +46,10 @@ class Quote(Convertible):
 
     venue: str | None = None
     """Where it traded, when known."""
+
+
+class CustomArrowFileIO(ArrowFileIO):
+    """A distinct configured FileIO that keeps Windows URI handling."""
 
 
 def local(location: str) -> Path:
@@ -294,6 +301,24 @@ class Timed(Convertible):
 
 
 @scalar
+class DescendingTimed(Convertible):
+    """One row ordered newest first."""
+
+    unix: Annotated[int, Field.primary_key(), Field.sort_key("desc")]
+
+
+@scalar
+class RepeatedTimed(Convertible):
+    """One event whose sort clock may be shared by several identities."""
+
+    seq: Annotated[int, Field.primary_key()]
+    """Stable identity."""
+
+    unix: Annotated[int, Field.sort_key()]
+    """Event time."""
+
+
+@scalar
 class PartitionedTimed(Convertible):
     """One event in a dated, time-sorted stream."""
 
@@ -311,6 +336,20 @@ def timed(*values: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {"unix": list(values), "payload": ["x"] * len(values)},
         schema=Timed.into_field().into_arrow_schema(),
+    )
+
+
+def descending_timed(*values: int) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {"unix": list(values)},
+        schema=DescendingTimed.into_field().into_arrow_schema(),
+    )
+
+
+def repeated_timed(*values: int) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {"seq": list(range(len(values))), "unix": list(values)},
+        schema=RepeatedTimed.into_field().into_arrow_schema(),
     )
 
 
@@ -346,6 +385,40 @@ def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
     assert max(lower) < min(upper), "the file ranges overlap, so a concatenation would fail"
     assert expected == list(range(10)), "the derived fixture still pins every instant"
     assert found.column("unix").to_pylist() == expected[:5] == [0, 1, 2, 3, 4]
+
+
+def test_an_ordered_read_accepts_equal_adjacent_sort_values(tmp_path: Path) -> None:
+    catalog = IcebergCatalog(name="repeated", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.repeated_timed", field=RepeatedTimed.into_field())
+    dataset.append_arrow_table(repeated_timed(7, 7), commit_row_size=0)
+
+    found = dataset.read_arrow_reader(order_by="unix").read_all()
+
+    assert found.column("seq").to_pylist() == [0, 1]
+
+
+def test_closing_a_partial_ordered_limit_releases_the_scan(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    catalog = IcebergCatalog(name="partial", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.partial_timed", field=Timed.into_field())
+    dataset.append_arrow_table(timed(0, 1, 2, 3), commit_row_size=0)
+    original = module._task_batches
+    released = []
+
+    def tracked(*args: Any, **kwargs: Any):
+        try:
+            yield from original(*args, **kwargs)
+        finally:
+            released.append(True)
+
+    monkeypatch.setattr(module, "_task_batches", tracked)
+    reader = dataset.read_arrow_reader(order_by="unix", limit=1)
+    assert reader.read_next_batch().num_rows == 1
+    reader.close()
+    assert released == [True]
 
 
 def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
@@ -538,6 +611,7 @@ class _ClosableBatches:
     def __init__(self, batches: Sequence[pyarrow.RecordBatch]) -> None:
         self.batches = iter(batches)
         self.closed = False
+        self.close_calls = 0
 
     def __iter__(self) -> "_ClosableBatches":
         return self
@@ -546,6 +620,7 @@ class _ClosableBatches:
         return next(self.batches)
 
     def close(self) -> None:
+        self.close_calls += 1
         self.closed = True
 
 
@@ -581,6 +656,377 @@ def test_a_failed_stream_write_closes_its_source(
     assert source.closed
 
 
+@pytest.mark.parametrize("merge_by", [False, True])
+def test_a_direct_partition_write_closes_its_source_once(
+    dataset: IcebergDataset, merge_by: bool
+) -> None:
+    source = _ClosableBatches(quotes(2).to_batches(max_chunksize=1))
+
+    dataset.overwrite_partition_arrow_reader(source, merge_by=merge_by, commit_row_size=1)
+
+    assert source.close_calls == 1
+
+
+def _observed_staging(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> tuple[list[Path], set[str], list[str]]:
+    """Local stages, uploaded targets, and target Parquet footer reopens."""
+    io = dataset.get_or_create_table().io
+    original_copy = io.copy_from_local
+    original_input = io.new_input
+    staged: list[Path] = []
+    uploaded: set[str] = set()
+    reopened: list[str] = []
+
+    def copied(local_path: str, target: str) -> Any:
+        path = Path(local_path)
+        assert path.exists() and path.stat().st_size > 0
+        staged.append(path)
+        result = original_copy(local_path, target)
+        uploaded.add(target)
+        return result
+
+    def opened(location: str) -> Any:
+        if location in uploaded:
+            reopened.append(location)
+        return original_input(location)
+
+    monkeypatch.setattr(io, "copy_from_local", copied)
+    monkeypatch.setattr(io, "new_input", opened)
+    return staged, uploaded, reopened
+
+
+def _iceberg_artifacts(dataset: IcebergDataset) -> set[Path]:
+    root = local(dataset.get_or_create_table().location())
+    return {
+        path.resolve()
+        for path in root.rglob("*")
+        if path.is_file()
+        and (path.suffix in {".avro", ".parquet"} or path.name.endswith(".metadata.json"))
+    }
+
+
+def test_partitioned_insert_paths_stage_locally_without_reopening_targets(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with monkeypatch.context() as observed:
+        staged, uploaded, reopened = _observed_staging(dataset, observed)
+        assert dataset.append_arrow_table(quotes(2)) == 2
+        after_plain_append = len(staged)
+        assert uploaded and reopened == []
+        uploaded.clear()
+        assert dataset.append_arrow_table(quotes(3), merge_by=True) == 1
+        after_insert_merge = len(staged)
+        assert uploaded and reopened == []
+        uploaded.clear()
+        dataset.overwrite_arrow_table(keyed("N", 2), merge_by=True)
+        after_new_key_merge = len(staged)
+        assert uploaded and reopened == []
+
+    assert 0 < after_plain_append < after_insert_merge < after_new_key_merge
+    assert not any(path.exists() for path in staged)
+    assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {
+        "S0",
+        "S1",
+        "S2",
+        "N0",
+        "N1",
+    }
+
+
+def test_partitioned_merge_stages_both_updates_and_inserts(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dataset.append_arrow_table(quotes(2))
+    changed = quotes(3, "XETR")
+
+    with monkeypatch.context() as observed:
+        staged, uploaded, reopened = _observed_staging(dataset, observed)
+        dataset.overwrite_arrow_table(
+            changed,
+            merge_by=True,
+            properties={"rekep.test": "staged-merge"},
+        )
+
+    assert len(staged) == len(uploaded) == 2, "updates and inserts are separate local stages"
+    assert reopened == []
+    assert not any(path.exists() for path in staged)
+    assert stored_sizes(dataset) == {"S0": 0, "S1": 1, "S2": 2}
+    assert set(dataset.read_arrow_table().column("venue").to_pylist()) == {"XETR"}
+
+
+def test_a_failed_partitioned_append_removes_its_uploaded_stage(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table.update.snapshot import _FastAppendFiles
+
+    io = dataset.get_or_create_table().io
+    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+
+    def refused(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("snapshot refused")
+
+    monkeypatch.setattr(_FastAppendFiles, "append_data_file", refused)
+    with pytest.raises(RuntimeError, match="snapshot refused"):
+        dataset.append_arrow_table(quotes(2))
+
+    assert staged and not any(path.exists() for path in staged)
+    assert uploaded and all(not io.new_input(path).exists() for path in uploaded)
+    assert dataset.iceberg_table.history() == []
+
+
+def test_a_lost_upload_acknowledgement_retries_target_cleanup(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    io = dataset.get_or_create_table().io
+    copy = io.copy_from_local
+    targets: set[str] = set()
+
+    def copied_then_lost(local_path: str, target: str) -> None:
+        copy(local_path, target)
+        targets.add(target)
+        raise OSError("upload acknowledgement lost")
+
+    monkeypatch.setattr(io, "copy_from_local", copied_then_lost)
+    with pytest.raises(OSError, match="acknowledgement lost"):
+        dataset.append_arrow_table(quotes(2))
+
+    assert targets and all(not io.new_input(path).exists() for path in targets)
+    assert dataset.iceberg_table.history() == []
+
+
+def test_a_refused_catalog_commit_removes_unreferenced_stages(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    io = dataset.get_or_create_table().io
+    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+
+    def refused(_transaction: Transaction) -> None:
+        raise RuntimeError("catalog refused")
+
+    monkeypatch.setattr(Transaction, "commit_transaction", refused)
+    with pytest.raises(RuntimeError, match="catalog refused"):
+        dataset.append_arrow_table(quotes(2))
+
+    assert staged and not any(path.exists() for path in staged)
+    assert uploaded and all(not io.new_input(path).exists() for path in uploaded)
+    assert dataset.iceberg_table.history() == []
+
+
+def test_a_lost_commit_acknowledgement_keeps_files_the_snapshot_references(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    io = dataset.get_or_create_table().io
+    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+    original = Transaction.commit_transaction
+
+    def acknowledged(transaction: Transaction) -> None:
+        original(transaction)
+        raise RuntimeError("acknowledgement lost")
+
+    monkeypatch.setattr(Transaction, "commit_transaction", acknowledged)
+    with pytest.raises(RuntimeError, match="acknowledgement lost"):
+        dataset.append_arrow_table(quotes(2))
+
+    assert staged and not any(path.exists() for path in staged)
+    assert uploaded and all(io.new_input(path).exists() for path in uploaded)
+    assert dataset.refresh().read_arrow_table().num_rows == 2
+
+
+def test_an_interrupt_after_commit_keeps_partitioned_files_live(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    original = Transaction.commit_transaction
+
+    def committed_then_interrupted(transaction: Transaction) -> None:
+        original(transaction)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(Transaction, "commit_transaction", committed_then_interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        dataset.append_arrow_table(quotes(2), commit_row_size=0)
+
+    stored = dataset.refresh().read_arrow_table()
+    assert stored.num_rows == 2
+    io = dataset.iceberg_table.io
+    assert all(
+        io.new_input(path).exists() for path in dataset.data_files()["file_path"].to_pylist()
+    )
+
+
+def test_a_snapshot_construction_interrupt_removes_partition_stages(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table.update.snapshot import _FastAppendFiles
+
+    before = _iceberg_artifacts(dataset)
+
+    def interrupted(*_args: Any, **_kwargs: Any) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(_FastAppendFiles, "append_data_file", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        dataset.append_arrow_table(quotes(2), commit_row_size=0)
+
+    assert _iceberg_artifacts(dataset) == before
+
+
+def test_a_refused_partitioned_merge_removes_rewrites_and_avro(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    before = _iceberg_artifacts(dataset)
+
+    def refused(_transaction: Transaction) -> None:
+        raise RuntimeError("catalog refused")
+
+    monkeypatch.setattr(Transaction, "commit_transaction", refused)
+    with pytest.raises(RuntimeError, match="catalog refused"):
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+
+    assert _iceberg_artifacts(dataset) == before
+    assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
+
+
+def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    @scalar
+    class FlatQuote(Convertible):
+        symbol: Annotated[str, Field.primary_key()]
+        size: int
+
+    catalog = IcebergCatalog(name="flat-refusal", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.flat_refusal", field=FlatQuote.into_field())
+    schema = FlatQuote.into_field().into_arrow_schema()
+    dataset.append_arrow_table(
+        pyarrow.Table.from_pydict({"symbol": ["S0", "S1"], "size": [0, 1]}, schema=schema),
+        commit_row_size=0,
+    )
+    before = _iceberg_artifacts(dataset)
+
+    def refused(_transaction: Transaction) -> None:
+        raise RuntimeError("catalog refused")
+
+    monkeypatch.setattr(Transaction, "commit_transaction", refused)
+    with pytest.raises(RuntimeError, match="catalog refused"):
+        dataset.overwrite_arrow_table(
+            pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [2]}, schema=schema),
+            merge_by=True,
+            commit_row_size=0,
+        )
+
+    assert _iceberg_artifacts(dataset) == before
+    assert dataset.refresh().read_arrow_table().column("size").to_pylist() == [0, 1]
+
+
+def test_a_metadata_write_followed_by_catalog_refusal_leaves_no_artifact(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    catalog = dataset.iceberg_catalog
+    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    before = _iceberg_artifacts(dataset)
+    write = catalog._write_metadata
+
+    def wrote_then_refused(*args: Any, **kwargs: Any) -> None:
+        write(*args, **kwargs)
+        raise RuntimeError("catalog refused after metadata")
+
+    monkeypatch.setattr(catalog, "_write_metadata", wrote_then_refused)
+    with pytest.raises(RuntimeError, match="refused after metadata"):
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+
+    assert _iceberg_artifacts(dataset) == before
+    assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
+
+
+def test_a_custom_file_io_metadata_refusal_leaves_no_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    properties = {
+        **catalog_properties(tmp_path),
+        "py-io-impl": f"{__name__}.CustomArrowFileIO",
+    }
+    catalog = IcebergCatalog(name="custom-refusal", properties=properties)
+    dataset = catalog.dataset("t.custom_refusal", field=Quote.into_field())
+    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    before = _iceberg_artifacts(dataset)
+    write = catalog.catalog._write_metadata
+
+    def wrote_then_refused(*args: Any, **kwargs: Any) -> None:
+        write(*args, **kwargs)
+        raise RuntimeError("custom catalog refused after metadata")
+
+    monkeypatch.setattr(catalog.catalog, "_write_metadata", wrote_then_refused)
+    with pytest.raises(RuntimeError, match="refused after metadata"):
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+
+    assert _iceberg_artifacts(dataset) == before
+    assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
+
+
+def test_a_refused_manifest_merge_removes_superseded_avro(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    dataset.set_properties({"commit.manifest.min-count-to-merge": "2"})
+    dataset.append_arrow_table(quotes(1), commit_row_size=0)
+    before = _iceberg_artifacts(dataset)
+
+    def refused(_transaction: Transaction) -> None:
+        raise RuntimeError("catalog refused")
+
+    monkeypatch.setattr(Transaction, "commit_transaction", refused)
+    with pytest.raises(RuntimeError, match="catalog refused"):
+        dataset.append_arrow_table(other_day(1), commit_row_size=0)
+
+    assert _iceberg_artifacts(dataset) == before
+
+
+def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table.update.snapshot import _FastAppendFiles
+
+    @scalar
+    class FlatQuote(Convertible):
+        symbol: Annotated[str, Field.primary_key()]
+        size: int
+
+    catalog = IcebergCatalog(name="flat-build", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.flat_build", field=FlatQuote.into_field())
+    schema = FlatQuote.into_field().into_arrow_schema()
+    dataset.append_arrow_table(
+        pyarrow.Table.from_pydict({"symbol": ["S0", "S1"], "size": [0, 1]}, schema=schema),
+        commit_row_size=0,
+    )
+    before = _iceberg_artifacts(dataset)
+
+    def refused(*_args: Any, **_kwargs: Any) -> None:
+        raise RuntimeError("snapshot construction refused")
+
+    monkeypatch.setattr(_FastAppendFiles, "append_data_file", refused)
+    with pytest.raises(RuntimeError, match="construction refused"):
+        dataset.overwrite_arrow_table(
+            pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [2]}, schema=schema),
+            merge_by=True,
+            commit_row_size=0,
+        )
+
+    assert _iceberg_artifacts(dataset) == before
+
+
 # -- merging --------------------------------------------------------------
 
 
@@ -599,21 +1045,11 @@ def test_merge_by_names_upserts_on_those(dataset: IcebergDataset) -> None:
 
 
 def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(
-    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+    dataset: IcebergDataset,
 ) -> None:
-    from pyiceberg.table import Transaction
-
     dataset.append_arrow_table(quotes(3))
     dataset.append_arrow_table(other_day(2))
     replacement = keyed("N", 5)
-    calls: list[int] = []
-    original = Transaction.add_files
-
-    def counted(self: Transaction, file_paths: list[str], **kwargs: Any) -> None:
-        calls.append(len(file_paths))
-        original(self, file_paths, **kwargs)
-
-    monkeypatch.setattr(Transaction, "add_files", counted)
 
     dataset.overwrite_arrow_reader(
         replacement.to_reader(max_chunksize=1), merge_by=False, commit_row_size=2
@@ -624,46 +1060,43 @@ def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(
     tomorrow = [row for row in stored if row["day"] == datetime.date(2026, 8, 15)]
     assert {row["symbol"] for row in today} == {f"N{index}" for index in range(5)}
     assert {row["symbol"] for row in tomorrow} == {"D0", "D1"}
-    assert calls == [3], "five rows stage as bounded two, two, and one-row files"
+    today_files = [
+        row
+        for row in dataset.data_files().to_pylist()
+        if row["partition"]["day"] == datetime.date(2026, 8, 14)
+    ]
+    assert sorted(row["record_count"] for row in today_files) == [1, 2, 2]
 
 
 def test_partition_staging_uses_local_disk_then_cleans_it(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from pyiceberg.table import Transaction
-
     dataset.append_arrow_table(quotes(2))
     dataset.append_arrow_table(other_day(2))
     source = pyarrow.Table.from_batches([*keyed("N", 3).to_batches(), *other_day(2).to_batches()])
     staged: list[Path] = []
-    events: list[tuple[str, int, str | None, dict[str, str]]] = []
+    uploaded: set[str] = set()
+    reopened: list[str] = []
     io = dataset.iceberg_table.io
     original_copy = io.copy_from_local
-    original_delete = Transaction.delete
-    original_add = Transaction.add_files
+    original_input = io.new_input
+    before = len(dataset.iceberg_table.history())
 
     def copied(local_path: str, target: str) -> str:
         path = Path(local_path)
         assert path.exists() and path.stat().st_size > 0
         staged.append(path)
-        return original_copy(local_path, target)
+        result = original_copy(local_path, target)
+        uploaded.add(target)
+        return result
 
-    def deleted(self: Transaction, expression: Any, **kwargs: Any) -> None:
-        events.append(
-            ("delete", id(self), kwargs.get("branch"), kwargs.get("snapshot_properties", {}))
-        )
-        original_delete(self, expression, **kwargs)
-
-    def added(self: Transaction, paths: list[str], **kwargs: Any) -> None:
-        events.append(
-            ("add", id(self), kwargs.get("branch"), kwargs.get("snapshot_properties", {}))
-        )
-        assert kwargs["check_duplicate_files"] is False
-        original_add(self, paths, **kwargs)
+    def opened(location: str):
+        if location in uploaded:
+            reopened.append(location)
+        return original_input(location)
 
     monkeypatch.setattr(io, "copy_from_local", copied)
-    monkeypatch.setattr(Transaction, "delete", deleted)
-    monkeypatch.setattr(Transaction, "add_files", added)
+    monkeypatch.setattr(io, "new_input", opened)
     with monkeypatch.context() as no_concat:
         no_concat.setattr(
             pyarrow,
@@ -678,9 +1111,13 @@ def test_partition_staging_uses_local_disk_then_cleans_it(
         )
 
     assert staged and not any(path.exists() for path in staged)
-    assert [event[0] for event in events] == ["delete", "add", "delete", "add"]
-    assert events[0][1] == events[1][1] and events[2][1] == events[3][1]
-    assert all(event[2:] == ("main", {"rekep.test": "staged"}) for event in events)
+    assert reopened == [], "the local footer already supplied every DataFile metric"
+    assert len(dataset.iceberg_table.history()) - before == 2, "one snapshot per bounded commit"
+    assert all(
+        snapshot.summary["rekep.test"] == "staged"
+        for snapshot in dataset.iceberg_table.snapshots()[-2:]
+    )
+    monkeypatch.setattr(io, "new_input", original_input)
     files = dataset.data_files().to_pylist()
     assert len(files) == 3
     assert all(row["record_count"] <= 2 for row in files)
@@ -696,7 +1133,7 @@ def test_partition_staging_uses_local_disk_then_cleans_it(
 def test_a_failed_partition_commit_removes_unreferenced_stages(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from pyiceberg.table import Transaction
+    from pyiceberg.table.update.snapshot import _OverwriteFiles
 
     dataset.append_arrow_table(quotes(2))
     before = {row["file_path"] for row in dataset.data_files().to_pylist()}
@@ -712,7 +1149,7 @@ def test_a_failed_partition_commit_removes_unreferenced_stages(
         raise RuntimeError("catalog refused")
 
     monkeypatch.setattr(io, "copy_from_local", copied)
-    monkeypatch.setattr(Transaction, "add_files", refused)
+    monkeypatch.setattr(_OverwriteFiles, "append_data_file", refused)
     with pytest.raises(RuntimeError, match="catalog refused"):
         dataset.overwrite_arrow_reader(
             quotes(3).to_reader(max_chunksize=1), merge_by=False, commit_row_size=2
@@ -1322,6 +1759,39 @@ def test_monotonic_inserts_plan_only_at_the_equal_boundary(
         target.iceberg_table.inspect.manifests().num_rows,
         len(target.iceberg_table.snapshots()),
     ) == (5, 5, 5)
+
+
+def test_descending_monotonic_inserts_advance_the_lower_frontier(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    catalog = IcebergCatalog(name="descending-frontier", properties=catalog_properties(tmp_path))
+    target = catalog.dataset("trading.descending_timed", field=DescendingTimed.into_field())
+    table = target.get_or_create_table()
+    scans = 0
+    original = table.scan
+
+    def counted(*args: object, **kwargs: object) -> object:
+        nonlocal scans
+        scans += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(table, "scan", counted)
+    target.append_arrow_reader(
+        descending_timed(8, 7, 6, 5, 4, 3).to_reader(max_chunksize=1),
+        merge_by=True,
+        commit_row_size=2,
+    )
+    assert scans == 0
+
+    target.append_arrow_table(descending_timed(3, 2), merge_by=True, commit_row_size=0)
+    assert scans == 1, "the equal boundary is still checked"
+    target.append_arrow_table(descending_timed(1, 0), merge_by=True, commit_row_size=0)
+    assert scans == 1, "the checked lower frontier advances"
+
+    monkeypatch.setattr(table, "scan", original)
+    assert target.read_arrow_table(order_by=[("unix", "descending")]).column(
+        "unix"
+    ).to_pylist() == list(range(8, -1, -1))
 
 
 def test_a_direct_table_write_invalidates_the_insert_upper_bound(tmp_path: Path) -> None:
@@ -2610,11 +3080,7 @@ def test_a_bare_limit_opens_only_the_files_it_needs(
 def test_a_reader_opens_no_more_files_than_it_reads_ahead(
     dataset: IcebergDataset, opened: dict[str, int], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """`ArrowScan` submits every planned file to its pool at once, and each
-    finished one holds a whole file's decoded batches until the consumer gets
-    there -- so a reader over a big table was a `read_arrow_table` that took
-    longer. Measured on 24 files and 99 MiB: one batch of 20,000 rows opened
-    all 24 and left Arrow holding 97 of those MiB."""
+    """A group shares bounded delete state while data files decode on demand."""
     from rekep.iceberg import dataset as module
 
     monkeypatch.setattr(module, "_read_ahead", lambda: 2)
@@ -2623,7 +3089,7 @@ def test_a_reader_opens_no_more_files_than_it_reads_ahead(
     opened.clear()
     reader = dataset.read_arrow_reader()
     assert reader.read_next_batch().num_rows > 0
-    assert opened.get("data", 0) == 2, "one group, not the whole plan"
+    assert opened.get("data", 0) == 1, "one decoded task, not the whole group"
     assert sum(batch.num_rows for batch in reader) + 2 == 12, "and the rest still comes"
     assert opened.get("data", 0) == 6
 
@@ -2849,6 +3315,51 @@ def test_an_unlimited_unordered_read_hands_the_plan_through_lazily(
     assert consumed == []
     assert next(handed["tasks"]) is tasks[0]
     assert consumed == tasks[:1]
+
+
+def test_delete_files_stay_in_bounded_read_groups(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    tasks = [_task(5, deletes=True) for _ in range(5)]
+    monkeypatch.setattr(module, "_read_ahead", lambda: 2)
+    monkeypatch.setattr(module, "_partition_tasks", lambda scan, planned: [("day=x", tasks)])
+    monkeypatch.setattr(module, "_scan_reader", lambda scan, groups: list(groups))
+
+    groups = module._planned_reader(object(), tasks)
+
+    assert [len(group) for group in groups] == [2, 2, 1]
+
+
+def test_a_task_group_decodes_one_file_before_its_first_batch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pyiceberg.io import pyarrow as iceberg_arrow
+
+    from rekep.iceberg import dataset as module
+
+    tasks = [object() for _ in range(4)]
+    decoded = []
+    delete_groups = []
+
+    class Scan:
+        def _record_batches_from_scan_tasks_and_deletes(self, planned, deletes):
+            assert deletes == {}
+            for task in planned:
+                decoded.append(task)
+                yield pyarrow.record_batch([[len(decoded)]], names=["value"])
+
+    monkeypatch.setattr(
+        iceberg_arrow,
+        "_read_all_delete_files",
+        lambda io, planned: (delete_groups.append(list(planned)), {})[1],
+    )
+    batches = module._task_batches(Scan(), object(), tasks)
+
+    assert next(batches).column("value").to_pylist() == [1]
+    assert decoded == tasks[:1]
+    assert delete_groups == [tasks]
 
 
 def test_a_limit_of_zero_takes_no_file_however_the_plan_starts(
@@ -3710,6 +4221,23 @@ class Ticked(Convertible):
     """Payload."""
 
 
+@scalar
+class DescendingTick(Convertible):
+    """A nullable clock physically ordered newest first."""
+
+    day: Annotated[datetime.date, Field.partition_key()]
+    at: Annotated[int | None, Field.sort_key("desc")] = None
+    seq: Annotated[int, Field.primary_key(), Field.sort_key()] = 0
+
+
+@scalar
+class FloatingTick(Convertible):
+    """A nullable floating-point sort key."""
+
+    value: Annotated[float | None, Field.sort_key()]
+    seq: int
+
+
 def ticked(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {
@@ -3718,6 +4246,24 @@ def ticked(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
             "payload": ["x"] * len(pairs),
         },
         schema=Ticked.into_field().into_arrow_schema(),
+    )
+
+
+def descending_ticked(values: Sequence[int | None]) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {
+            "day": [datetime.date(2026, 8, 14)] * len(values),
+            "at": values,
+            "seq": list(range(len(values))),
+        },
+        schema=DescendingTick.into_field().into_arrow_schema(),
+    )
+
+
+def floating_ticked(values: Sequence[float | None], start: int) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {"value": values, "seq": range(start, start + len(values))},
+        schema=FloatingTick.into_field().into_arrow_schema(),
     )
 
 
@@ -3735,6 +4281,122 @@ def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
     table = explicit.get_or_create_table()
     (sorting,) = table.sort_order().fields
     assert table.schema().find_column_name(sorting.source_id) == "seq"
+
+
+def test_a_reopened_table_keeps_exact_sort_priority_and_null_policy(tmp_path: Path) -> None:
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+
+    catalog = IcebergCatalog(name="sort-roundtrip", properties=catalog_properties(tmp_path))
+    declared = catalog.dataset(
+        "t.reordered",
+        field=Ticked.into_field(),
+        sort_by=["seq", "at"],
+    )
+    table = declared.get_or_create_table()
+
+    assert [sorting.null_order for sorting in table.sort_order().fields] == [
+        NullOrder.NULLS_LAST,
+        NullOrder.NULLS_LAST,
+    ]
+    assert [sorting.direction for sorting in table.sort_order().fields] == [
+        SortDirection.ASC,
+        SortDirection.ASC,
+    ]
+    reopened = catalog.dataset("t.reordered")
+    assert reopened.into_struct_field().sort_keys() == {"seq": "asc", "at": "asc"}
+    assert reopened.sort_fields() == [("seq", "ascending"), ("at", "ascending")]
+
+
+def test_partition_staging_honours_descending_sort_and_nulls_last(tmp_path: Path) -> None:
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+
+    catalog = IcebergCatalog(name="descending", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset(
+        "t.descending",
+        field=DescendingTick.into_field(),
+    )
+    dataset.append_arrow_table(descending_ticked([1, None, 3, 2]), commit_row_size=0)
+
+    table = dataset.iceberg_table
+    assert [(field.direction, field.null_order) for field in table.sort_order().fields] == [
+        (SortDirection.DESC, NullOrder.NULLS_LAST),
+        (SortDirection.ASC, NullOrder.NULLS_LAST),
+    ]
+    (path,) = dataset.data_files().column("file_path").to_pylist()
+    physical = pyarrow.parquet.read_table(local(path))
+    assert physical.column("at").to_pylist() == [3, 2, 1, None]
+
+
+def test_a_descending_ordered_read_merges_commits_and_applies_its_limit(tmp_path: Path) -> None:
+    catalog = IcebergCatalog(name="descending-read", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset(
+        "t.descending_read",
+        field=DescendingTick.into_field(),
+    )
+    dataset.append_arrow_table(descending_ticked([5, None, 1]), commit_row_size=0)
+    dataset.append_arrow_table(descending_ticked([4, None, 2]), commit_row_size=0)
+
+    found = dataset.read_arrow_reader(order_by=("at", "descending"), limit=5).read_all()
+
+    assert found.column("at").to_pylist() == [5, 4, 2, 1, None]
+
+
+@pytest.mark.parametrize("special", [None, float("nan")])
+def test_ordered_read_does_not_concatenate_file_local_special_tails(
+    tmp_path: Path, special: float | None
+) -> None:
+    catalog = IcebergCatalog(name="special-read", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.special_read", field=FloatingTick.into_field())
+    dataset.append_arrow_table(floating_ticked([1.0, special], 0), commit_row_size=0)
+    dataset.append_arrow_table(floating_ticked([2.0, special], 2), commit_row_size=0)
+
+    found = dataset.read_arrow_reader(order_by="value").read_all().column("value").to_pylist()
+
+    assert found[:2] == [1.0, 2.0]
+    if special is None:
+        assert found[2:] == [None, None]
+    else:
+        assert all(math.isnan(value) for value in found[2:])
+
+
+def test_a_snapshot_order_does_not_inherit_a_newer_table_direction(tmp_path: Path) -> None:
+    catalog = IcebergCatalog(name="sort-evolution", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.sort_evolution", field=Ticked.into_field())
+    dataset.append_arrow_table(ticked([(1, 0), (2, 0), (3, 0)]), commit_row_size=0)
+    snapshot_id = dataset.iceberg_table.current_snapshot().snapshot_id
+    with dataset.iceberg_table.update_sort_order() as update:
+        update.desc("at", IdentityTransform())
+
+    assert dataset.sort_fields() == [("at", "descending")]
+    assert dataset.sorted(ticked([(1, 0), (3, 0), (2, 0)])).column("at").to_pylist() == [
+        3,
+        2,
+        1,
+    ]
+
+    found = dataset.read_arrow_reader(snapshot_id=snapshot_id, order_by="at").read_all()
+
+    assert found.column("at").to_pylist() == [1, 2, 3]
+
+
+def test_an_interrupt_after_commit_keeps_unpartitioned_files_live(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.table import Transaction
+
+    catalog = IcebergCatalog(name="flat-interrupt", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.flat_interrupt", field=Ticked.into_field())
+    original = Transaction.commit_transaction
+
+    def committed_then_interrupted(transaction: Transaction) -> None:
+        original(transaction)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(Transaction, "commit_transaction", committed_then_interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        dataset.append_arrow_table(ticked([(1, 0), (2, 0)]), commit_row_size=0)
+
+    assert dataset.refresh().read_arrow_table().column("at").to_pylist() == [1, 2]
 
 
 def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
@@ -3769,10 +4431,7 @@ def test_sortedness_is_lexicographic_over_every_key(
     assert _in_sort_order(ticked(pairs), ["at", "seq"]) is ordered
 
 
-def test_a_null_in_a_sort_column_is_answered_no() -> None:
-    """A comparison against a null is null, and where Arrow puts one in a sort
-    is not something to reimplement -- so the chunk is sorted rather than
-    guessed about."""
+def test_sort_checks_apply_nulls_last_only_when_the_prefix_ties() -> None:
     from rekep.iceberg.dataset import _in_sort_order
 
     rows = ticked([(1, 0), (2, 0)])
@@ -3781,7 +4440,33 @@ def test_a_null_in_a_sort_column_is_answered_no() -> None:
         pyarrow.field("seq", pyarrow.int64()),
         pyarrow.array([None, 1], pyarrow.int64()),
     )
-    assert _in_sort_order(holed, ["at", "seq"]) is False
+    assert _in_sort_order(holed, ["at", "seq"]) is True
+
+    tied = holed.set_column(
+        holed.schema.get_field_index("at"),
+        holed.schema.field("at"),
+        pyarrow.array([1, 1], pyarrow.int64()),
+    )
+    assert _in_sort_order(tied, ["at", "seq"]) is False
+    assert _in_sort_order(tied.take(pyarrow.array([1, 0])), ["at", "seq"]) is True
+
+
+def test_sort_checks_place_nan_after_numbers_and_before_null() -> None:
+    from rekep.iceberg.dataset import _in_sort_order
+
+    ascending = pyarrow.table({"value": [1.0, 2.0, float("nan"), None]})
+    descending = pyarrow.table({"value": [2.0, 1.0, float("nan"), None]})
+
+    assert _in_sort_order(ascending, [("value", "ascending")]) is True
+    assert _in_sort_order(descending, [("value", "descending")]) is True
+    assert _in_sort_order(ascending.take(pyarrow.array([2, 0, 1, 3])), ["value"]) is False
+
+
+def test_an_unknown_sort_direction_is_refused() -> None:
+    from rekep.iceberg.dataset import _sort_fields
+
+    with pytest.raises(ValueError, match="unknown sort direction"):
+        _sort_fields([("value", "sideways")])
 
 
 def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:

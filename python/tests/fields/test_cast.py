@@ -121,6 +121,75 @@ def test_a_reader_is_cast_one_batch_at_a_time() -> None:
     assert first.column("symbol").to_pylist() == ["A"]
 
 
+def test_closing_a_partial_cast_reader_closes_its_source() -> None:
+    released = []
+
+    def batches():
+        try:
+            for value in ("A", "B"):
+                yield batch_of(symbol=[value], size=[1], day=[datetime.date(2026, 8, 14)])
+        finally:
+            released.append(True)
+
+    reader = Tick.into_field().cast_arrow_reader(batches())
+    assert next(reader).column("symbol").to_pylist() == ["A"]
+    reader.close()
+    assert released == [True]
+
+
+def test_a_source_error_closes_its_owned_reader_immediately() -> None:
+    released = []
+
+    def batches():
+        try:
+            yield batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])
+            raise RuntimeError("decode failed")
+        finally:
+            released.append(True)
+
+    reader = Tick.into_field().cast_arrow_reader(batches())
+    next(reader)
+    with pytest.raises(RuntimeError, match="decode failed"):
+        next(reader)
+
+    assert released == [True]
+
+
+def test_closing_a_schema_peek_closes_its_plain_source() -> None:
+    released = []
+
+    def batches():
+        try:
+            for value in ("A", "B"):
+                yield batch_of(symbol=[value], size=[1], day=[datetime.date(2026, 8, 14)])
+        finally:
+            released.append(True)
+
+    reader = Tick.into_field().cast_arrow_reader(batches(), merge_schema=True)
+    assert next(reader).column("symbol").to_pylist() == ["A"]
+    reader.close()
+
+    assert released == [True]
+
+
+def test_closing_a_partial_arrow_c_stream_closes_its_owned_source() -> None:
+    released = []
+
+    def batches():
+        try:
+            for value in ("A", "B"):
+                yield batch_of(symbol=[value], size=[1], day=[datetime.date(2026, 8, 14)])
+        finally:
+            released.append(True)
+
+    owned = Tick.into_field().cast_arrow_reader(batches())
+    consumer = pyarrow.RecordBatchReader.from_stream(owned)
+    assert next(consumer).column("symbol").to_pylist() == ["A"]
+    consumer.close()
+
+    assert released == [True]
+
+
 def test_the_module_functions_take_any_schema() -> None:
     """`cast_batch`/`cast_reader` are not field-bound: a parquet footer or
     another team's contract is a target schema just as well."""

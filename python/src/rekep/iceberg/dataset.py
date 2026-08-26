@@ -7,6 +7,7 @@ import datetime
 import functools
 import itertools
 import json
+import math
 import os
 import tempfile
 import uuid
@@ -17,6 +18,7 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
+from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import (
     SOURCE_INDEX,
     TARGET_INDEX,
@@ -31,6 +33,7 @@ from rekep.fields import Field, StructField, arrays
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
 from rekep.iceberg.fields import metrics_for
+from rekep.urls import S3, Url
 
 #: The physical root ref PyIceberg stores. Public callers may spell the same
 #: state ``root``, ``main``, or ``master`` without creating extra refs.
@@ -145,6 +148,12 @@ COMMIT_PROPERTIES = {
     ROW_GROUP_LIMIT: str(128 * 1024),
 }
 
+_InsertSpan = tuple[
+    tuple[str, tuple[str, ...], str, str],
+    pyarrow.Scalar,
+    pyarrow.Scalar,
+]
+
 #: Maintenance defaults safe to retrofit onto an existing table. Explicit
 #: retention settings still win; `optimize` only supplies absent declarations.
 MAINTENANCE_PROPERTIES = {
@@ -214,6 +223,34 @@ class IcebergDataset(Dataset):
         self.field = field
         if self.branch in ROOT_BRANCHES:
             self.branch = None
+        storage_paths = ("write.data.path", "write.metadata.path")
+        locations = [
+            str(location)
+            for location in (
+                self.location,
+                *(self.table_properties.get(name) for name in storage_paths),
+            )
+            if location
+        ]
+        configured = [
+            str(location)
+            for name in ("warehouse", "location", "uri")
+            if (location := self.properties.get(name))
+        ]
+        if any(Url.from_string(location).scheme in S3 for location in (*configured, *locations)):
+            from rekep.arrow_file_io import canonical_location, location_properties
+
+            self.properties = dict(location_properties(self.properties, locations=locations))
+            if self.location is not None:
+                self.location = canonical_location(self.location)
+            self.table_properties = {
+                name: (
+                    canonical_location(str(value))
+                    if name in storage_paths and value is not None
+                    else value
+                )
+                for name, value in self.table_properties.items()
+            }
 
     @property
     def name(self) -> str:
@@ -238,6 +275,7 @@ class IcebergDataset(Dataset):
         """Release this handle's owned catalog without loading it."""
         self.__dict__.pop("iceberg_table", None)
         self.__dict__.pop("table_field", None)
+        self.__dict__.pop("_table_sort_order_id", None)
         self.__dict__.pop("_insert_upper", None)
         store = self.__dict__.pop("store", None)
         owns_store = self.__dict__.pop("_owns_store", False)
@@ -285,6 +323,29 @@ class IcebergDataset(Dataset):
         lands on a fresh catalog comes through here. The namespace is created
         with it, because a table is not a thing you can have without one.
         """
+        location = kwargs.pop("location", self.location)
+        creation_properties = dict(kwargs.pop("properties", {}))
+        storage_names = ("write.data.path", "write.metadata.path")
+        effective_properties = {**self.table_properties, **creation_properties}
+        storage = [str(path) for name in storage_names if (path := effective_properties.get(name))]
+        storage_locations = ([str(location)] if location is not None else []) + storage
+        if any(Url.from_string(path).scheme in S3 for path in storage_locations):
+            from rekep.arrow_file_io import canonical_location, location_properties
+
+            configured = dict(location_properties(self.properties, locations=storage_locations))
+            store = self.__dict__.get("store")
+            self.properties = configured
+            if store is not None:
+                store.properties = configured
+                catalog = store.__dict__.get("catalog")
+                if catalog is not None:
+                    catalog.properties.update(store._tracked_file_io_properties(configured))
+            if location is not None:
+                location = canonical_location(str(location))
+            creation_properties = {
+                name: canonical_location(str(value)) if name in storage_names else value
+                for name, value in creation_properties.items()
+            }
         if self.exists:
             return self
         field = field.with_name(self.name)
@@ -295,13 +356,13 @@ class IcebergDataset(Dataset):
         table = self.iceberg_catalog.create_table(
             self.name,
             schema=schema,
-            location=kwargs.pop("location", self.location),
+            location=location,
             partition_spec=field.into_iceberg_partition_spec(schema),
             # Declared at creation, because Iceberg records a sort order on the
             # table and every writer through it honours it -- a shape that says
             # how it is read is a shape that says how it should be laid out.
             sort_order=field.into_iceberg_sort_order(schema, self.sort_by),
-            properties={**defaults, **self.table_properties, **kwargs.pop("properties", {})},
+            properties={**defaults, **self.table_properties, **creation_properties},
         )
         self.field = field
         self.__dict__["iceberg_table"] = table
@@ -322,7 +383,7 @@ class IcebergDataset(Dataset):
 
     def refresh(self) -> IcebergDataset:
         """Drop what was loaded, so the next call sees other writers' commits."""
-        for view in ("iceberg_table", "table_field", "_insert_upper"):
+        for view in ("iceberg_table", "table_field", "_table_sort_order_id", "_insert_upper"):
             self.__dict__.pop(view, None)
         return self
 
@@ -332,7 +393,14 @@ class IcebergDataset(Dataset):
     def table_field(self) -> StructField:
         """The table's own shape: its schema, docs, keys and partitioning."""
         table = self.iceberg_table
-        return StructField.from_iceberg_schema(table.schema(), self.name, spec=table.spec())
+        sort_order = table.sort_order()
+        self.__dict__["_table_sort_order_id"] = sort_order.order_id
+        return StructField.from_iceberg_schema(
+            table.schema(),
+            self.name,
+            spec=table.spec(),
+            sort_order=sort_order,
+        )
 
     def into_struct_field(self) -> StructField:
         """The table's declared shape."""
@@ -377,9 +445,13 @@ class IcebergDataset(Dataset):
         snapshot_id: int | None = None,
         limit: int | None = None,
         branch: str | None = None,
-        order_by: str | Sequence[str] | None = None,
+        order_by: str | Sequence[str | tuple[str, str]] | None = None,
     ) -> pyarrow.RecordBatchReader:
         """Stream the table, optionally merging files on lexicographic sort keys.
+
+        A bare `order_by` name is ascending; `(name, "descending")` requests
+        the opposite explicitly, so snapshot reads never guess from newer
+        table metadata.
 
         A table that was never written reads as no rows, not as a failure: on
         the first interval of a fresh catalog every stage reads an upstream
@@ -388,7 +460,20 @@ class IcebergDataset(Dataset):
         `exists` guard at each call site. A source root under `TextFiles`
         refuses instead, because nothing in the pipeline creates one.
         """
-        ordering = (order_by,) if isinstance(order_by, str) else tuple(order_by or ())
+        if isinstance(order_by, str):
+            requested_order = (order_by,)
+        elif (
+            isinstance(order_by, tuple)
+            and len(order_by) == 2
+            and isinstance(order_by[0], str)
+            and isinstance(order_by[1], str)
+            and order_by[1].lower() in _SORT_DIRECTIONS
+        ):
+            requested_order = (order_by,)
+        else:
+            requested_order = tuple(order_by or ())
+        ordering_fields = list(_sort_fields(requested_order))
+        ordering = tuple(name for name, _ in ordering_fields)
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
         if columns and target is not None:
@@ -433,7 +518,7 @@ class IcebergDataset(Dataset):
                 "`columns` or `schema`"
             )
         reader = (
-            _ordered_reader(scan, scan.plan_files(), ordering)
+            _ordered_reader(scan, scan.plan_files(), ordering_fields)
             if ordering
             else _limited_reader(scan, limit)
         )
@@ -516,6 +601,7 @@ class IcebergDataset(Dataset):
     ) -> None:
         """Upsert keyed rows, or stage complete partitions for keyless input."""
         reader: pyarrow.RecordBatchReader | None = None
+        delegated = False
         try:
             # An upsert or an unconditional append can put a key beyond an
             # insert-only writer's known maximum. Its cheap monotonic proof is no
@@ -525,6 +611,11 @@ class IcebergDataset(Dataset):
             join = self.merge_columns(merge_by)
             partitions = _partition_columns(table)
             if partitions and not join:
+                # The partition writer owns the source from entry. Do not close
+                # it again here: an injected iterator need not make `close`
+                # idempotent, and the direct public call must have the same
+                # ownership as this dispatch.
+                delegated = True
                 self.overwrite_partition_arrow_reader(
                     source,
                     schema,
@@ -556,7 +647,8 @@ class IcebergDataset(Dataset):
                         snapshot_properties=properties or {},
                     )
         finally:
-            _close_write_source(source, reader)
+            if not delegated:
+                _close_write_source(source, reader)
 
     def overwrite_partition_arrow_reader(
         self,
@@ -569,47 +661,54 @@ class IcebergDataset(Dataset):
         properties: dict[str, str] | None = None,
     ) -> None:
         """Stage and replace complete partition-contiguous Arrow runs."""
-        self.__dict__.pop("_insert_upper", None)
-        table = self.get_or_create_table()
-        join = self.merge_columns(merge_by)
-        if join:
-            self.overwrite_arrow_reader(
-                source,
-                schema,
-                merge_by,
-                commit_row_size,
-                branch=branch,
-                properties=properties,
-            )
-            return
-        partitions = _partition_columns(table)
-        if not partitions:
-            raise ValueError("partition overwrite needs a supported table partition spec")
-        source = _requiring_columns(source, [column.source for column in partitions])
-        reader = self.target_field(schema).cast_arrow_reader(source)
-        reference = self._branch_name(branch)
-        self._branch_head(table, reference)
-        rows = self.commit_row_size if commit_row_size is None else commit_row_size
-        snapshot = properties or {}
-        file_rows = rows or DEFAULT_COMMIT_ROW_SIZE
-        pending: list[_StagedPartition] = []
-        pending_rows = 0
-
-        def commit(stager: _PartitionStager) -> None:
-            nonlocal pending, pending_rows
-            if not pending:
+        original = source
+        reader: pyarrow.RecordBatchReader | None = None
+        delegated = False
+        try:
+            self.__dict__.pop("_insert_upper", None)
+            table = self.get_or_create_table()
+            join = self.merge_columns(merge_by)
+            if join:
+                delegated = True
+                self.overwrite_arrow_reader(
+                    source,
+                    schema,
+                    merge_by,
+                    commit_row_size,
+                    branch=branch,
+                    properties=properties,
+                )
                 return
-            self._overwrite_partitions(table, pending, reference, snapshot, stager)
-            stager.release(pending)
-            pending, pending_rows = [], 0
+            partitions = _partition_columns(table)
+            if not partitions:
+                raise ValueError("partition overwrite needs a supported table partition spec")
+            required = _requiring_columns(source, [column.source for column in partitions])
+            reader = self.target_field(schema).cast_arrow_reader(required)
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
+            rows = self.commit_row_size if commit_row_size is None else commit_row_size
+            snapshot = properties or {}
+            file_rows = rows or DEFAULT_COMMIT_ROW_SIZE
+            pending: list[_StagedPartition] = []
+            pending_rows = 0
 
-        with _PartitionStager(table, self.sort_columns(), file_rows) as stager:
-            for staged in _staged_partition_stream(reader, partitions, stager):
-                pending.append(staged)
-                pending_rows += staged.rows
-                if rows and pending_rows >= rows:
-                    commit(stager)
-            commit(stager)
+            def commit(stager: _PartitionStager) -> None:
+                nonlocal pending, pending_rows
+                if not pending:
+                    return
+                self._overwrite_partitions(table, pending, reference, snapshot, stager)
+                pending, pending_rows = [], 0
+
+            with _PartitionStager(table, self.sort_fields(), file_rows) as stager:
+                for staged in _staged_partition_stream(reader, partitions, stager):
+                    pending.append(staged)
+                    pending_rows += staged.rows
+                    if rows and pending_rows >= rows:
+                        commit(stager)
+                commit(stager)
+        finally:
+            if not delegated:
+                _close_write_source(original, reader)
 
     def _overwrite_partitions(
         self,
@@ -620,63 +719,135 @@ class IcebergDataset(Dataset):
         stager: _PartitionStager,
     ) -> None:
         """Replace complete staged partitions without loading their Parquet bytes."""
-        paths: list[str] = []
-        for replacement in replacements:
-            paths.extend(replacement.paths)
-        if not paths:
+        data_files = [
+            data_file for replacement in replacements for data_file in replacement.data_files
+        ]
+        if not data_files:
             return
-        transaction = table.transaction()
-        try:
-            identities = _identity_partitions(table)
-            if identities:
-                from pyiceberg.expressions import Or
-
-                predicate = None
-                for replacement in replacements:
-                    term = _partition_filter(replacement.partition, identities)
-                    predicate = term if predicate is None else Or(predicate, term)
-                transaction.delete(
-                    predicate,
-                    snapshot_properties=dict(properties),
-                    branch=reference,
-                )
-            else:
+        with _track_outputs() as generated:
+            transaction = table.transaction()
+            try:
+                _ensure_name_mapping(transaction)
                 replaced = _partition_data_files(table, replacements, reference)
-                direct = any(replacement.data_files for replacement in replacements)
-                if direct and transaction.table_metadata.name_mapping() is None:
-                    from pyiceberg.table import TableProperties
+                with transaction.update_snapshot(
+                    snapshot_properties=dict(properties), branch=reference
+                ).overwrite() as overwrite:
+                    for data_file in replaced:
+                        overwrite.delete_data_file(data_file)
+                    for data_file in data_files:
+                        overwrite.append_data_file(data_file)
+            except BaseException:
+                _discard_paths(table.io, generated)
+                raise
+            _commit_staged(table, transaction, stager, replacements, generated)
 
-                    mapping = transaction.table_metadata.schema().name_mapping
-                    transaction.set_properties(
-                        **{TableProperties.DEFAULT_NAME_MAPPING: mapping.model_dump_json()}
+    def _append_chunk(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> None:
+        """Append one bounded chunk, staging supported partitions on local disk."""
+        if not chunk.num_rows:
+            return
+        chunk = self.sorted(chunk)
+        partitions = _partition_columns(table)
+        if not partitions:
+            with _track_outputs() as generated:
+                transaction = table.transaction()
+                try:
+                    transaction.append(
+                        chunk,
+                        snapshot_properties=dict(properties),
+                        branch=reference,
                     )
-                if replaced or direct:
-                    with transaction.update_snapshot(
-                        snapshot_properties=dict(properties), branch=reference
-                    ).overwrite() as overwrite:
-                        for data_file in replaced:
-                            overwrite.delete_data_file(data_file)
-                        for replacement in replacements:
+                except BaseException:
+                    _discard_paths(table.io, generated)
+                    raise
+                _commit_generated(table, transaction, generated)
+            return
+        with _PartitionStager(table, self.sort_fields(), chunk.num_rows) as stager:
+            staged = list(_staged_partition_chunk(chunk, partitions, stager))
+            with _track_outputs() as generated:
+                transaction = table.transaction()
+                try:
+                    _ensure_name_mapping(transaction)
+                    with transaction._append_snapshot_producer(  # noqa: SLF001
+                        dict(properties), branch=reference
+                    ) as append:
+                        for replacement in staged:
                             for data_file in replacement.data_files:
-                                overwrite.append_data_file(data_file)
-            if not any(replacement.data_files for replacement in replacements):
-                # Every path is minted for this staging attempt and uploaded
-                # once, so no legitimate table file can have the same name.
-                transaction.add_files(
-                    paths,
-                    snapshot_properties=dict(properties),
-                    check_duplicate_files=False,
-                    branch=reference,
-                )
-        except Exception:
-            # The catalog commit has not started, so these uploads are proven
-            # orphans and the stager can safely delete them on unwind.
-            raise
-        # A catalog commit failure can be an acknowledgement failure after the
-        # metadata landed. Protect its data files rather than risk deleting a
-        # committed snapshot; maintenance can later remove a genuine orphan.
-        stager.release(replacements)
-        transaction.commit_transaction()
+                                append.append_data_file(data_file)
+                except BaseException:
+                    _discard_paths(table.io, generated)
+                    raise
+                _commit_staged(table, transaction, stager, staged, generated)
+
+    def _commit_merge(
+        self,
+        table: Any,
+        updates: pyarrow.Table,
+        inserts: pyarrow.Table,
+        predicate: Any,
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> None:
+        """Commit one keyed update and its inserts atomically."""
+        updates = self.sorted(updates)
+        inserts = self.sorted(inserts)
+        partitions = _partition_columns(table)
+        if not partitions:
+            with _track_outputs() as generated:
+                transaction = table.transaction()
+                try:
+                    transaction.overwrite(
+                        updates,
+                        overwrite_filter=predicate,
+                        branch=reference,
+                        snapshot_properties=dict(properties),
+                    )
+                    if inserts.num_rows:
+                        transaction.append(
+                            inserts,
+                            branch=reference,
+                            snapshot_properties=dict(properties),
+                        )
+                except BaseException:
+                    _discard_paths(table.io, generated)
+                    raise
+                _commit_generated(table, transaction, generated)
+            return
+        with _PartitionStager(
+            table, self.sort_fields(), updates.num_rows + inserts.num_rows
+        ) as stager:
+            staged_updates = list(_staged_partition_chunk(updates, partitions, stager))
+            staged_inserts = list(_staged_partition_chunk(inserts, partitions, stager))
+            staged = [*staged_updates, *staged_inserts]
+            with _track_outputs() as generated:
+                transaction = table.transaction()
+                try:
+                    _ensure_name_mapping(transaction)
+                    # PyIceberg owns the delete because a predicate can split
+                    # a data file, preserving unmatched rows one file at a time.
+                    transaction.delete(
+                        predicate,
+                        branch=reference,
+                        snapshot_properties=dict(properties),
+                    )
+                    for additions in (staged_updates, staged_inserts):
+                        if not additions:
+                            continue
+                        with transaction._append_snapshot_producer(  # noqa: SLF001
+                            dict(properties), branch=reference
+                        ) as append:
+                            for replacement in additions:
+                                for data_file in replacement.data_files:
+                                    append.append_data_file(data_file)
+                except BaseException:
+                    _discard_paths(table.io, generated)
+                    raise
+                _commit_staged(table, transaction, stager, staged, generated)
 
     def merge_arrow_table(
         self,
@@ -720,7 +891,7 @@ class IcebergDataset(Dataset):
             # can match: the merge *is* an append, with nothing read and
             # nothing to compare. A stream of new keys -- the log-ingest case
             # this exists for -- lands every chunk here.
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._append_chunk(table, chunk, reference, properties or {})
             return 0, chunk.num_rows
         # The scan filter is a superset, so consume one planned file at a time.
         # Keep only compact positions into the source chunk: neither the ranged
@@ -753,7 +924,7 @@ class IcebergDataset(Dataset):
         if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._append_chunk(table, chunk, reference, properties or {})
             return 0, chunk.num_rows
 
         matched = pyarrow.concat_arrays(matched_positions)
@@ -770,26 +941,28 @@ class IcebergDataset(Dataset):
         )
         if len(updates) == 0 and len(inserts) == 0:
             return 0, 0
-        with table.transaction() as transaction:
-            if len(updates) > 0:
-                from pyiceberg.expressions import And
+        if len(updates) == 0:
+            self._append_chunk(table, inserts, reference, properties or {})
+        else:
+            from pyiceberg.expressions import And
 
-                # The match filter decides what is *deleted*, so it stays exact;
-                # the ranges only narrow it. Never the other way round: a range
-                # alone would delete rows the chunk never touched. Past 200
-                # literals the exact filter stops pruning files on its own, and
-                # this is what keeps a 201-row update from re-reading the table.
-                transaction.overwrite(
-                    updates,
-                    overwrite_filter=And(
-                        _match_filter(updates, join),
-                        _key_ranges(updates, join, derived),
-                    ),
-                    branch=reference,
-                    snapshot_properties=properties or {},
-                )
-            if len(inserts) > 0:
-                transaction.append(inserts, branch=reference, snapshot_properties=properties or {})
+            # The match filter decides what is *deleted*, so it stays exact;
+            # the ranges only narrow it. Never the other way round: a range
+            # alone would delete rows the chunk never touched. Past 200
+            # literals the exact filter stops pruning files on its own, and
+            # this is what keeps a 201-row update from re-reading the table.
+            predicate = And(
+                _match_filter(updates, join),
+                _key_ranges(updates, join, derived),
+            )
+            self._commit_merge(
+                table,
+                updates,
+                inserts,
+                predicate,
+                reference,
+                properties or {},
+            )
         # No `refresh()`: a commit updates the table object it was made on, in
         # place, and this runs once per chunk -- reloading it from the catalog
         # here would be a round trip per commit to learn what we just did.
@@ -820,7 +993,8 @@ class IcebergDataset(Dataset):
                 self.__dict__.pop("_insert_upper", None)
                 inserted = 0
                 for chunk in arrow_chunks(reader, rows):
-                    table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
+                    chunk = self.sorted(chunk)
+                    self._append_chunk(table, chunk, reference, snapshot)
                     inserted += chunk.num_rows
                 return inserted
             inserted = 0
@@ -864,7 +1038,7 @@ class IcebergDataset(Dataset):
             # Once this object has filled an empty table, the upper bound is
             # exact. A later chunk strictly above it cannot match a stored key,
             # so planning manifests and files can only rediscover that fact.
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._append_chunk(table, chunk, reference, properties or {})
             self._remember_inserted(span, table, establish=empty)
             return chunk.num_rows
         scan = table.scan(row_filter=row_filter)
@@ -882,7 +1056,7 @@ class IcebergDataset(Dataset):
             # That snapshot does not carry every key column -- one added since
             # the branch was cut -- so no row on it can match a key, and every
             # row of the chunk is new.
-            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._append_chunk(table, chunk, reference, properties or {})
             return chunk.num_rows
         scan = scan.select(*wanted)
         # Planned once, like a merge. Each streamed key batch removes the rows
@@ -907,18 +1081,18 @@ class IcebergDataset(Dataset):
             positions = fresh.column(SOURCE_INDEX).combine_chunks()
             fresh = chunk.take(positions.take(pyarrow.compute.sort_indices(positions)))
         if fresh.num_rows:
-            table.append(fresh, snapshot_properties=properties or {}, branch=reference)
+            self._append_chunk(table, fresh, reference, properties or {})
             self._remember_inserted(span, table, establish=empty)
         return fresh.num_rows
 
     def _insert_span(
         self, chunk: pyarrow.Table, join: Sequence[str], reference: str
-    ) -> tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar] | None:
+    ) -> _InsertSpan | None:
         """The first declared sort key's `(cache key, minimum, maximum)`."""
-        ordered = self.sort_columns()
-        if not ordered or ordered[0] not in join:
+        ordered = self.sort_fields()
+        if not ordered or ordered[0][0] not in join:
             return None
-        name = ordered[0]
+        name, direction = ordered[0]
         try:
             bounds = pyarrow.compute.min_max(chunk.column(name))
         except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError):
@@ -926,39 +1100,41 @@ class IcebergDataset(Dataset):
         lower, upper = bounds["min"], bounds["max"]
         if not lower.is_valid or not upper.is_valid:
             return None
-        return (reference, tuple(join), name), lower, upper
+        return (reference, tuple(join), name, direction), lower, upper
 
     def _strictly_after_inserted(
         self,
-        span: tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar],
+        span: _InsertSpan,
         empty: bool,
         snapshot_id: int | None,
     ) -> bool:
         """Whether `span` is provably disjoint from every inserted key."""
-        key, lower, _ = span
+        key, lower, upper = span
         remembered = self.__dict__.get("_insert_upper", {}).get(key)
         if remembered is None:
             return empty
-        upper, bounded_snapshot = remembered
+        frontier, bounded_snapshot = remembered
         if bounded_snapshot != snapshot_id:
             bounds = self.__dict__["_insert_upper"]
             del bounds[key]
             if not bounds:
                 del self.__dict__["_insert_upper"]
             return False
-        return bool(pyarrow.compute.greater(lower, upper).as_py())
+        compare = pyarrow.compute.less if key[3] == "descending" else pyarrow.compute.greater
+        value = upper if key[3] == "descending" else lower
+        return bool(compare(value, frontier).as_py())
 
     def _remember_inserted(
         self,
-        span: tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar] | None,
+        span: _InsertSpan | None,
         table: Any,
         *,
         establish: bool = False,
     ) -> None:
-        """Advance an exact insert-only upper bound; never infer one mid-table."""
+        """Advance the directional insert frontier; never infer one mid-table."""
         if span is None:
             return
-        key, _, upper = span
+        key, lower, upper = span
         remembered = self.__dict__.get("_insert_upper")
         if remembered is None:
             if not establish:
@@ -968,24 +1144,40 @@ class IcebergDataset(Dataset):
         if previous is None and not establish:
             return
         bounded = previous[0] if previous is not None else None
-        if bounded is None or pyarrow.compute.greater(upper, bounded).as_py():
-            bounded = upper
+        candidate = lower if key[3] == "descending" else upper
+        compare = pyarrow.compute.less if key[3] == "descending" else pyarrow.compute.greater
+        if bounded is None or compare(candidate, bounded).as_py():
+            bounded = candidate
         head = self._branch_head(table, key[0])
         remembered[key] = (bounded, head.snapshot_id if head is not None else None)
 
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
         """`chunk` in `sort_by` order, or exactly as it came when nothing says."""
-        names = self.sort_columns()
-        if not names or chunk.num_rows < 2 or _in_sort_order(chunk, names):
+        fields = self.sort_fields()
+        if not fields or chunk.num_rows < 2 or _in_sort_order(chunk, fields):
             return chunk
-        return chunk.sort_by([(name, "ascending") for name in names])
+        return chunk.sort_by(fields)
+
+    def sort_fields(self) -> list[tuple[str, str]]:
+        """Physical Arrow sort fields, with normalized directions."""
+        table = self.__dict__.get("iceberg_table")
+        if table is not None:
+            order_id = table.sort_order().order_id
+            if self.__dict__.get("_table_sort_order_id") != order_id:
+                self.__dict__.pop("table_field", None)
+            shape = self.table_field
+        elif self.sort_by is not None:
+            return [(name, "ascending") for name in self.sort_by]
+        else:
+            shape = self.field
+        return [
+            (name, _sort_direction(direction))
+            for name, direction in (shape.sort_keys().items() if shape is not None else ())
+        ]
 
     def sort_columns(self) -> list[str]:
         """Columns a chunk is sorted by: what was asked for, or what is declared."""
-        if self.sort_by is not None:
-            return list(self.sort_by)
-        shape = self.field
-        return list(shape.sort_keys()) if shape is not None else []
+        return [name for name, _ in self.sort_fields()]
 
     def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:
         """Delete the rows a filter matches, in one commit."""
@@ -1492,7 +1684,9 @@ class IcebergDataset(Dataset):
 
 
 def _ordered_reader(
-    scan: Any, tasks: Iterable[Any], columns: Sequence[str]
+    scan: Any,
+    tasks: Iterable[Any],
+    columns: Sequence[tuple[str, str]],
 ) -> pyarrow.RecordBatchReader:
     """Read partition paths in order, merging their sorted files on `columns`.
 
@@ -1505,19 +1699,47 @@ def _ordered_reader(
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
     target = schema_to_pyarrow(scan.projection())
-    primary = columns[0]
+    primary, primary_direction = columns[0]
     field = scan.projection().find_field(primary)
+    floating_primary = pyarrow.types.is_floating(target.field(primary).type)
 
     def bound(task: Any, upper: bool) -> Any | None:
         values = task.file.upper_bounds if upper else task.file.lower_bounds
         raw = (values or {}).get(field.field_id)
         return None if raw is None else from_bytes(field.field_type, raw)
 
+    def bounds_cover_every_value(task: Any) -> bool:
+        # Iceberg bounds omit nulls and NaNs. Only an explicit zero metric (or
+        # a required field for nulls) proves concatenating disjoint ranges is
+        # safe; missing metrics are unknown, not zero.
+        nulls = (task.file.null_value_counts or {}).get(field.field_id)
+        if not field.required and nulls != 0:
+            return False
+        nans = (task.file.nan_value_counts or {}).get(field.field_id)
+        return not floating_primary or nans == 0
+
     def batches() -> Iterator[pyarrow.RecordBatch]:
         for _, partition in _partition_tasks(scan, tasks):
             ranged = [(bound(task, False), bound(task, True), task) for task in partition]
-            if any(lower is None or upper is None for lower, upper, _ in ranged):
+            if any(
+                lower is None or upper is None or not bounds_cover_every_value(task)
+                for lower, upper, task in ranged
+            ):
                 groups = [partition]
+            elif primary_direction == "descending":
+                ranged.sort(key=lambda item: (item[1], str(item[2].file.file_path)), reverse=True)
+                groups = []
+                held = []
+                low = None
+                for lower, upper, task in ranged:
+                    if held and upper < low:
+                        groups.append(held)
+                        held = []
+                        low = None
+                    held.append(task)
+                    low = lower if low is None or lower < low else low
+                if held:
+                    groups.append(held)
             else:
                 ranged.sort(key=lambda item: (item[0], str(item[2].file.file_path)))
                 groups = []
@@ -1540,33 +1762,34 @@ def _ordered_reader(
                 else:
                     yield from _merge_task_batches(scan, group, columns)
 
-    return pyarrow.RecordBatchReader.from_batches(target, batches()).cast(target)
+    return OwnedRecordBatchReader(target, batches(), lambda: None)
 
 
 def _sorted_task_batches(
-    scan: Any, task: Any, columns: Sequence[str]
+    scan: Any, task: Any, columns: Sequence[tuple[str, str]]
 ) -> Iterator[pyarrow.RecordBatch]:
     """One file's batches, refusing a table that only claims to be sorted."""
     previous = None
-    for batch in _planned_reader(scan, [task]):
-        if not batch.num_rows:
-            continue
-        if not _reader_in_sort_order(batch, columns):
-            raise ValueError(
-                f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
-            )
-        first = _row_key(batch, columns, 0)
-        last = _row_key(batch, columns, batch.num_rows - 1)
-        if previous is not None and first < previous:
-            raise ValueError(
-                f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
-            )
-        previous = last
-        yield batch
+    with _planned_reader(scan, [task]) as reader:
+        for batch in reader:
+            if not batch.num_rows:
+                continue
+            if not _reader_in_sort_order(batch, columns):
+                raise ValueError(
+                    f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
+                )
+            first = _row_key(batch, columns, 0)
+            last = _row_key(batch, columns, batch.num_rows - 1)
+            if previous is not None and first < previous:
+                raise ValueError(
+                    f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
+                )
+            previous = last
+            yield batch
 
 
 def _merge_task_batches(
-    scan: Any, tasks: Sequence[Any], columns: Sequence[str]
+    scan: Any, tasks: Sequence[Any], columns: Sequence[tuple[str, str]]
 ) -> Iterator[pyarrow.RecordBatch]:
     """K-way merge overlapping sorted files, moving slices rather than rows."""
     streams = [iter(_sorted_task_batches(scan, task, columns)) for task in tasks]
@@ -1583,55 +1806,149 @@ def _merge_task_batches(
                 return True
         return True
 
-    for index in range(len(streams)):
-        advance(index)
-    while True:
-        live = [index for index in range(len(streams)) if advance(index)]
-        if not live:
-            return
-        starts = {
-            index: _row_key(batches[index], columns, offsets[index])  # type: ignore[arg-type]
-            for index in live
-        }
-        chosen = min(live, key=lambda index: (starts[index], index))
-        others = [starts[index] for index in live if index != chosen]
-        batch = batches[chosen]
-        assert batch is not None
-        stop = (
-            batch.num_rows
-            if not others
-            else _upper_bound(batch, columns, min(others), offsets[chosen])
-        )
-        yield batch.slice(offsets[chosen], stop - offsets[chosen])
-        offsets[chosen] = stop
+    try:
+        for index in range(len(streams)):
+            advance(index)
+        while True:
+            live = [index for index in range(len(streams)) if advance(index)]
+            if not live:
+                return
+            starts = {
+                index: _row_key(batches[index], columns, offsets[index])  # type: ignore[arg-type]
+                for index in live
+            }
+            chosen = min(live, key=lambda index: (starts[index], index))
+            others = [starts[index] for index in live if index != chosen]
+            batch = batches[chosen]
+            assert batch is not None
+            stop = (
+                batch.num_rows
+                if not others
+                else _upper_bound(batch, columns, min(others), offsets[chosen])
+            )
+            yield batch.slice(offsets[chosen], stop - offsets[chosen])
+            offsets[chosen] = stop
+    finally:
+        for stream in streams:
+            close = getattr(stream, "close", None)
+            if close is not None:
+                close()
 
 
-def _row_key(batch: pyarrow.RecordBatch, columns: Sequence[str], index: int) -> tuple[Any, ...]:
-    """One row's lexicographic key, with Arrow's null-last order made explicit."""
+@functools.total_ordering
+@dataclasses.dataclass(frozen=True)
+class _Descending:
+    """A scalar whose Python ordering is reversed."""
+
+    value: Any
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, _Descending):
+            return NotImplemented
+        return bool(self.value > other.value)
+
+
+_SORT_DIRECTIONS = {
+    "asc": "ascending",
+    "ascending": "ascending",
+    "desc": "descending",
+    "descending": "descending",
+}
+
+
+def _sort_direction(direction: Any) -> str:
+    """One Arrow direction spelling from a declaration or Iceberg value."""
+    value = str(direction).lower()
+    try:
+        return _SORT_DIRECTIONS[value]
+    except KeyError as error:
+        raise ValueError(f"unknown sort direction {direction!r}") from error
+
+
+def _sort_fields(
+    columns: Sequence[str] | Sequence[tuple[str, str]],
+) -> tuple[tuple[str, str], ...]:
+    """Normalize name-only ascending keys and explicit direction pairs."""
     return tuple(
-        (value is None, value)
+        (column, "ascending")
+        if isinstance(column, str)
+        else (str(column[0]), _sort_direction(column[1]))
         for column in columns
+    )
+
+
+def _row_key(
+    batch: pyarrow.RecordBatch,
+    columns: Sequence[str] | Sequence[tuple[str, str]],
+    index: int,
+) -> tuple[Any, ...]:
+    """One directional lexicographic key, with nulls kept last."""
+    return tuple(
+        (
+            2 if value is None else 1 if isinstance(value, float) and math.isnan(value) else 0,
+            (
+                None
+                if value is None or isinstance(value, float) and math.isnan(value)
+                else _Descending(value)
+                if direction == "descending"
+                else value
+            ),
+        )
+        for column, direction in _sort_fields(columns)
         for value in (batch.column(column)[index].as_py(),)
     )
 
 
-def _reader_in_sort_order(batch: pyarrow.RecordBatch, columns: Sequence[str]) -> bool:
-    """Whether a physical batch follows Arrow's ascending, null-last ordering."""
+def _reader_in_sort_order(
+    batch: pyarrow.RecordBatch | pyarrow.Table,
+    columns: Sequence[str] | Sequence[tuple[str, str]],
+) -> bool:
+    """Whether a physical batch follows its directional, null-last ordering."""
     compute = pyarrow.compute
     ordered = None
-    for name in reversed(list(columns)):
+    for name, direction in reversed(_sort_fields(columns)):
         column = batch.column(name)
+        if isinstance(column, pyarrow.ChunkedArray):
+            column = column.combine_chunks()
         before, after = column[:-1], column[1:]
         before_null, after_null = compute.is_null(before), compute.is_null(after)
-        less = compute.or_(
-            compute.and_(compute.invert(before_null), after_null),
-            compute.fill_null(compute.less(before, after), False),
+        if pyarrow.types.is_floating(column.type):
+            before_nan = compute.fill_null(compute.is_nan(before), False)
+            after_nan = compute.fill_null(compute.is_nan(after), False)
+        else:
+            before_nan = compute.and_(before_null, compute.invert(before_null))
+            after_nan = compute.and_(after_null, compute.invert(after_null))
+        before_regular = compute.invert(compute.or_(before_null, before_nan))
+        after_regular = compute.invert(compute.or_(after_null, after_nan))
+        regular_precedes = compute.and_(
+            compute.and_(before_regular, after_regular),
+            compute.fill_null(
+                (compute.greater if direction == "descending" else compute.less)(before, after),
+                False,
+            ),
+        )
+        precedes = compute.or_(
+            regular_precedes,
+            compute.or_(
+                compute.and_(before_regular, compute.or_(after_nan, after_null)),
+                compute.and_(before_nan, after_null),
+            ),
         )
         equal = compute.or_(
-            compute.and_(before_null, after_null),
-            compute.fill_null(compute.equal(before, after), False),
+            compute.or_(
+                compute.and_(before_null, after_null),
+                compute.and_(before_nan, after_nan),
+            ),
+            compute.and_(
+                compute.and_(before_regular, after_regular),
+                compute.fill_null(compute.equal(before, after), False),
+            ),
         )
-        ordered = less if ordered is None else compute.or_(less, compute.and_(equal, ordered))
+        ordered = (
+            compute.or_(precedes, equal)
+            if ordered is None
+            else compute.or_(precedes, compute.and_(equal, ordered))
+        )
     if ordered is None:
         return True
     return bool(compute.all(ordered, min_count=0).as_py())
@@ -1639,7 +1956,7 @@ def _reader_in_sort_order(batch: pyarrow.RecordBatch, columns: Sequence[str]) ->
 
 def _upper_bound(
     batch: pyarrow.RecordBatch,
-    columns: Sequence[str],
+    columns: Sequence[str] | Sequence[tuple[str, str]],
     sought: tuple[Any, ...],
     start: int,
 ) -> int:
@@ -1670,7 +1987,7 @@ def _reader_limit(reader: pyarrow.RecordBatchReader, limit: int) -> pyarrow.Reco
             if remaining <= 0:
                 return
 
-    return pyarrow.RecordBatchReader.from_batches(schema, batches()).cast(schema)
+    return OwnedRecordBatchReader(schema, batches(), reader.close)
 
 
 def _planned_reader(
@@ -1680,13 +1997,10 @@ def _planned_reader(
 
     def groups() -> Iterator[Sequence[Any]]:
         for _, partition in _partition_tasks(scan, tasks):
-            # ArrowScan loads delete files per call. Keep a partition sharing
-            # one together unless a memory-sensitive caller explicitly asks
-            # for one file at a time and accepts reopening that delete file.
-            if group_size is None and any(task.delete_files for task in partition):
-                yield partition
-            else:
-                yield from _grouped(partition, group_size or _read_ahead())
+            # ArrowScan loads delete files per call. Reopening one shared by
+            # several groups costs I/O; handing it the whole partition lets
+            # PyIceberg retain every delete array and decoded data file.
+            yield from _grouped(partition, group_size or _read_ahead())
 
     return _scan_reader(scan, groups())
 
@@ -1718,15 +2032,36 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
     def generate() -> Iterator[pyarrow.RecordBatch]:
         taken = 0
         for group in groups:
-            for batch in arrow(
-                None if scan.limit is None else scan.limit - taken
-            ).to_record_batches(group):
-                yield batch
-                taken += batch.num_rows
+            batches = _task_batches(
+                arrow(None if scan.limit is None else scan.limit - taken),
+                scan.io,
+                group,
+            )
+            try:
+                for batch in batches:
+                    yield batch
+                    taken += batch.num_rows
+            finally:
+                close = getattr(batches, "close", None)
+                if close is not None:
+                    close()
             if scan.limit is not None and taken >= scan.limit:
                 return
 
-    return pyarrow.RecordBatchReader.from_batches(target, generate()).cast(target)
+    return OwnedRecordBatchReader(target, generate(), lambda: None)
+
+
+def _task_batches(scan: Any, io: Any, tasks: Sequence[Any]) -> Iterator[pyarrow.RecordBatch]:
+    """Decode planned files synchronously so one task retains one batch."""
+    from pyiceberg.io import pyarrow as iceberg_arrow
+
+    decode = getattr(scan, "_record_batches_from_scan_tasks_and_deletes", None)
+    read_deletes = getattr(iceberg_arrow, "_read_all_delete_files", None)
+    if decode is None or read_deletes is None:
+        yield from scan.to_record_batches(tasks)
+        return
+    deletes = read_deletes(io, tasks)
+    yield from decode(tasks, deletes)
 
 
 def _partition_tasks(scan: Any, tasks: Iterable[Any]) -> Iterator[tuple[str, list[Any]]]:
@@ -1827,25 +2162,12 @@ def _null_partition(partition: Any) -> bool:
     return any(partition[index] is None for index in range(len(partition)))
 
 
-def _in_sort_order(chunk: pyarrow.Table, names: Sequence[str]) -> bool:
-    """Whether `chunk`'s rows are already ascending on `names`, lexicographically."""
-    compute = pyarrow.compute
-    ordered = None
-    for name in reversed(list(names)):
-        column = chunk.column(name).combine_chunks()
-        before, after = column[:-1], column[1:]
-        if ordered is None:
-            ordered = compute.less_equal(before, after)
-            continue
-        ordered = compute.or_(
-            compute.less(before, after),
-            compute.and_(compute.equal(before, after), ordered),
-        )
-    if ordered is None:
-        return True
-    # `min_count=0`, so a chunk with one row -- no adjacent pair to compare --
-    # answers yes rather than null. `all` of nothing is true.
-    return bool(compute.all(compute.fill_null(ordered, False), min_count=0).as_py())
+def _in_sort_order(
+    chunk: pyarrow.Table,
+    names: Sequence[str] | Sequence[tuple[str, str]],
+) -> bool:
+    """Whether `chunk` follows the directional lexicographic sort fields."""
+    return _reader_in_sort_order(chunk, names)
 
 
 def _key_ranges(
@@ -2075,13 +2397,11 @@ def _between(column: str, low: Any, high: Any) -> Any:
 
 
 def _close_write_source(source: Any, reader: pyarrow.RecordBatchReader | None) -> None:
-    """Release a writer's cast reader and then the stream it consumed."""
-    try:
-        if reader is not None:
-            reader.close()
-    finally:
-        if source is not reader and (close := getattr(source, "close", None)) is not None:
-            close()
+    """Release the owning cast reader, or a source casting never produced."""
+    if reader is not None:
+        reader.close()
+    elif (close := getattr(source, "close", None)) is not None:
+        close()
 
 
 def _checked_merge_chunk(table: Any, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
@@ -2342,7 +2662,7 @@ def _column_differs_row_by_row(one: Any, other: Any) -> Any:
     )
 
 
-def _renamed(reader: Any, names: dict[str, str]) -> Any:
+def _renamed(reader: pyarrow.RecordBatchReader, names: dict[str, str]) -> Any:
     """`reader`'s batches under the names the caller asked for them by.
 
     Batch by batch, so nothing is materialised: a stream stays a stream. The
@@ -2351,10 +2671,16 @@ def _renamed(reader: Any, names: dict[str, str]) -> Any:
     """
     if not names or all(stored == asked for stored, asked in names.items()):
         return reader
-    return (
-        batch.rename_columns([names.get(name, name) for name in batch.schema.names])
-        for batch in reader
+    schema = pyarrow.schema(
+        [field.with_name(names.get(field.name, field.name)) for field in reader.schema],
+        metadata=reader.schema.metadata,
     )
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for batch in reader:
+            yield batch.rename_columns([names.get(name, name) for name in batch.schema.names])
+
+    return OwnedRecordBatchReader(schema, batches(), reader.close)
 
 
 def _manifests(table: Any) -> Iterator[tuple[Any, Any]]:
@@ -2464,6 +2790,16 @@ def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
     )
 
 
+def _ensure_name_mapping(transaction: Any) -> None:
+    """Install the field-name fallback staged Parquet files need when read."""
+    if transaction.table_metadata.name_mapping() is not None:
+        return
+    from pyiceberg.table import TableProperties
+
+    mapping = transaction.table_metadata.schema().name_mapping
+    transaction.set_properties(**{TableProperties.DEFAULT_NAME_MAPPING: mapping.model_dump_json()})
+
+
 def _identity_partitions(table: Any) -> tuple[tuple[str, str], ...] | None:
     """Current `(partition field, source column)` pairs when all are identities."""
     from pyiceberg.transforms import IdentityTransform
@@ -2497,9 +2833,13 @@ def _requiring_columns(
         return source
 
     def batches() -> Iterator[pyarrow.RecordBatch]:
-        for batch in source:
-            validate(batch.schema)
-            yield batch
+        try:
+            for batch in source:
+                validate(batch.schema)
+                yield batch
+        finally:
+            if (close := getattr(source, "close", None)) is not None:
+                close()
 
     return batches()
 
@@ -2531,14 +2871,23 @@ class _StagedPartition:
 class _PartitionStager:
     """Bounded local Parquet staging for complete partitions."""
 
-    def __init__(self, table: Any, sort_by: Sequence[str], file_row_size: int) -> None:
-        from pyiceberg.io.pyarrow import _get_parquet_writer_kwargs
+    def __init__(
+        self,
+        table: Any,
+        sort_by: Sequence[tuple[str, str]],
+        file_row_size: int,
+    ) -> None:
+        from pyiceberg.io.pyarrow import (
+            _get_parquet_writer_kwargs,
+            sanitize_column_names,
+        )
         from pyiceberg.table import TableProperties
         from pyiceberg.table.locations import load_location_provider
         from pyiceberg.utils.properties import property_as_int
 
         self.table = table
-        self.sort_by = tuple(sort_by)
+        self.sort_fields = tuple(sort_by)
+        self.sort_by = tuple(name for name, _ in self.sort_fields)
         self.file_row_size = max(int(file_row_size), 1)
         self.directory = tempfile.TemporaryDirectory(prefix="rekep-iceberg-")
         self.location_provider = load_location_provider(
@@ -2546,6 +2895,10 @@ class _PartitionStager:
             table_properties=table.metadata.properties,
         )
         self.writer_kwargs = _get_parquet_writer_kwargs(table.metadata.properties)
+        schema = table.metadata.schema()
+        self.requested_schema = sanitize_column_names(schema)
+        self.name_mapping = schema.name_mapping
+        self.downcast_ns = _downcasts_ns()
         self.row_group_size = property_as_int(
             properties=table.metadata.properties,
             property_name=TableProperties.PARQUET_ROW_GROUP_LIMIT,
@@ -2555,15 +2908,14 @@ class _PartitionStager:
         self.partition: Mapping[str, Any] | None = None
         self.paths: list[str] = []
         self.data_files: list[Any] = []
-        self._writes_data_files = any(
-            not field.transform.preserves_order for field in table.spec().fields
-        )
         self.rows = 0
         self._writer: Any | None = None
         self._local: str | None = None
         self._target: str | None = None
         self._file_rows = 0
         self._last_key: tuple[Any, ...] | None = None
+        self._incoming_arrow_schema: pyarrow.Schema | None = None
+        self._incoming_schema: Any | None = None
 
     def __enter__(self) -> _PartitionStager:
         return self
@@ -2602,27 +2954,33 @@ class _PartitionStager:
         """Write one bounded source chunk without mixing partition values."""
         if self.partition is None:
             raise RuntimeError("start a staged partition before writing it")
-        if self.sort_by and not _in_sort_order(chunk, self.sort_by):
-            chunk = chunk.sort_by([(name, "ascending") for name in self.sort_by])
+        if self.sort_fields and not _in_sort_order(chunk, self.sort_fields):
+            chunk = chunk.sort_by(list(self.sort_fields))
         offset = 0
         while offset < chunk.num_rows:
             available = self.file_row_size - self._file_rows
             piece = chunk.slice(offset, min(available, chunk.num_rows - offset))
             piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
-            first = _row_key(piece_batches[0], self.sort_by, 0)
+            first = _row_key(piece_batches[0], self.sort_fields, 0)
             if self._writer is not None and self._last_key is not None and first < self._last_key:
                 self._close_file(upload=True)
                 available = self.file_row_size
                 piece = chunk.slice(offset, min(available, chunk.num_rows - offset))
                 piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
-            self._open_file(piece.schema)
-            self._writer.write_table(piece, row_group_size=self.row_group_size)
+            for batch in piece_batches:
+                requested = self._requested_batch(batch)
+                self._open_file(requested.schema)
+                self._writer.write_batch(requested, row_group_size=self.row_group_size)
             self._file_rows += piece.num_rows
             self.rows += piece.num_rows
             offset += piece.num_rows
             if self.sort_by:
                 last_batch = piece_batches[-1]
-                self._last_key = _row_key(last_batch, self.sort_by, last_batch.num_rows - 1)
+                self._last_key = _row_key(
+                    last_batch,
+                    self.sort_fields,
+                    last_batch.num_rows - 1,
+                )
             if self._file_rows >= self.file_row_size:
                 self._close_file(upload=True)
 
@@ -2643,6 +3001,28 @@ class _PartitionStager:
         """Leave successfully committed targets in place on context exit."""
         for partition in partitions:
             self.uploaded.difference_update(partition.paths)
+
+    def _requested_batch(self, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
+        """One source batch on PyIceberg's sanitized, field-id-bearing file schema."""
+        from pyiceberg.io.pyarrow import _to_requested_schema, pyarrow_to_schema
+
+        if self._incoming_arrow_schema is None or not batch.schema.equals(
+            self._incoming_arrow_schema, check_metadata=True
+        ):
+            self._incoming_arrow_schema = batch.schema
+            self._incoming_schema = pyarrow_to_schema(
+                batch.schema,
+                name_mapping=self.name_mapping,
+                downcast_ns_timestamp_to_us=self.downcast_ns,
+                format_version=self.table.metadata.format_version,
+            )
+        return _to_requested_schema(
+            requested_schema=self.requested_schema,
+            file_schema=self._incoming_schema,
+            batch=batch,
+            downcast_ns_timestamp_to_us=self.downcast_ns,
+            include_field_ids=True,
+        )
 
     def _open_file(self, schema: pyarrow.Schema) -> None:
         if self._writer is not None:
@@ -2674,25 +3054,148 @@ class _PartitionStager:
         try:
             writer.close()
             if upload:
-                data_file = (
-                    _staged_data_file(self.table, local, target, self.partition or {})
-                    if self._writes_data_files
-                    else None
-                )
+                data_file = _staged_data_file(self.table, local, target, self.partition or {})
+                # A remote copy can create its object and then lose the
+                # acknowledgement. Own the UUID target before starting it so
+                # context cleanup retries deletion after either outcome.
+                self.uploaded.add(target)
                 copier = getattr(self.table.io, "copy_from_local", None)
                 if copier is None:
                     _copy_to_output(self.table.io, local, target)
                 else:
                     copier(local, target)
                 self.paths.append(target)
-                if data_file is not None:
-                    self.data_files.append(data_file)
-                self.uploaded.add(target)
+                self.data_files.append(data_file)
         finally:
             try:
                 os.unlink(local)
             except FileNotFoundError:
                 pass
+
+
+def _track_outputs() -> Any:
+    """One lazy output tracker, keeping PyIceberg an optional import extra."""
+    from rekep.arrow_file_io import track_outputs
+
+    return track_outputs()
+
+
+def _commit_staged(
+    table: Any,
+    transaction: Any,
+    stager: _PartitionStager,
+    staged: Sequence[_StagedPartition],
+    generated: Iterable[str],
+) -> None:
+    """Commit staged files, settling whether a failed acknowledgement landed."""
+    staged_paths = {path for partition in staged for path in partition.paths}
+    try:
+        transaction.commit_transaction()
+    except BaseException:
+        generated_paths = _settled_paths(generated)
+        candidates = staged_paths | generated_paths
+        try:
+            candidates.update(_transaction_paths(table, transaction))
+        except BaseException:
+            pass
+        if _paths_may_be_live(table, candidates):
+            # An unreachable catalog cannot distinguish refusal from a commit
+            # whose acknowledgement was lost. Preserve possible live files;
+            # orphan maintenance settles them once the catalog is reachable.
+            stager.release(staged)
+        else:
+            # The stager owns its uploads; PyIceberg also writes manifests and
+            # preserved rows when a keyed delete splits an existing file.
+            _discard_paths(table.io, candidates - staged_paths)
+        raise
+    else:
+        stager.release(staged)
+
+
+def _commit_generated(table: Any, transaction: Any, generated: Iterable[str]) -> None:
+    """Commit tracked outputs and delete them after a definite refusal."""
+    try:
+        transaction.commit_transaction()
+    except BaseException:
+        candidates = _settled_paths(generated)
+        try:
+            candidates.update(_transaction_paths(table, transaction))
+        except BaseException:
+            pass
+        if not _paths_may_be_live(table, candidates):
+            _discard_paths(table.io, candidates)
+        raise
+
+
+def _transaction_paths(table: Any, transaction: Any) -> set[str]:
+    """Best-effort fallback inventory from completed uncommitted snapshots."""
+    from pyiceberg.manifest import ManifestEntryStatus
+
+    existing = {snapshot.snapshot_id for snapshot in table.metadata.snapshots}
+    paths: set[str] = set()
+    for snapshot in transaction.table_metadata.snapshots:
+        if snapshot.snapshot_id in existing:
+            continue
+        if snapshot.manifest_list:
+            paths.add(str(snapshot.manifest_list))
+        for manifest in snapshot.manifests(io=table.io):
+            if manifest.added_snapshot_id != snapshot.snapshot_id:
+                continue
+            paths.add(str(manifest.manifest_path))
+            for entry in manifest.fetch_manifest_entry(io=table.io, discard_deleted=False):
+                if (
+                    entry.status == ManifestEntryStatus.ADDED
+                    and entry.snapshot_id == snapshot.snapshot_id
+                ):
+                    paths.add(str(entry.data_file.file_path))
+    return paths
+
+
+def _discard_paths(io: Any, paths: Iterable[str]) -> None:
+    """Attempt every orphan deletion without replacing the transaction error."""
+    for path in _settled_paths(paths):
+        try:
+            io.delete(path)
+        except Exception:
+            pass
+
+
+def _settled_paths(paths: Iterable[str]) -> set[str]:
+    """A stable path snapshot after any tracked workers have finished."""
+    settle = getattr(paths, "settle", None)
+    if callable(settle):
+        settle()
+    return set(paths)
+
+
+def _paths_may_be_live(table: Any, candidates: set[str]) -> bool:
+    """Whether a refreshed table references a candidate, or cannot answer safely."""
+    if not candidates:
+        return False
+    try:
+        table.refresh()
+        if str(table.metadata_location) in candidates:
+            return True
+        seen: set[str] = set()
+        for snapshot in table.metadata.snapshots:
+            if str(snapshot.manifest_list) in candidates:
+                return True
+            for manifest in snapshot.manifests(io=table.io):
+                path = str(manifest.manifest_path)
+                if path in candidates:
+                    return True
+                if path in seen:
+                    continue
+                seen.add(path)
+                for entry in manifest.fetch_manifest_entry(
+                    io=table.io,
+                    discard_deleted=True,
+                ):
+                    if str(entry.data_file.file_path) in candidates:
+                        return True
+        return False
+    except BaseException:
+        return True
 
 
 def _partition_key(table: Any, partition: Mapping[str, Any]) -> Any:
@@ -2744,11 +3247,12 @@ def _staged_data_file(table: Any, local: str, target: str, partition: Mapping[st
         compute_statistics_plan,
         data_file_statistics_from_parquet_metadata,
         parquet_path_to_id_mapping,
+        sanitize_column_names,
     )
     from pyiceberg.manifest import DataFile, DataFileContent, FileFormat
 
     metadata = pyarrow.parquet.read_metadata(local)
-    schema = table.metadata.schema()
+    schema = sanitize_column_names(table.metadata.schema())
     statistics = data_file_statistics_from_parquet_metadata(
         parquet_metadata=metadata,
         stats_columns=compute_statistics_plan(schema, table.metadata.properties),
@@ -2809,6 +3313,42 @@ def _staged_partition_stream(
             stager.write(run)
     if current is not None:
         yield stager.finish()
+
+
+def _staged_partition_chunk(
+    chunk: pyarrow.Table,
+    partitions: Sequence[_PartitionColumn],
+    stager: _PartitionStager,
+) -> Iterator[_StagedPartition]:
+    """Stage one bounded chunk after grouping equal transformed partitions."""
+    chunk = _grouped_partition_chunk(chunk, partitions)
+    for _, partition, run in _partition_runs(chunk, partitions):
+        stager.start(partition)
+        stager.write(run)
+        yield stager.finish()
+
+
+def _grouped_partition_chunk(
+    chunk: pyarrow.Table, partitions: Sequence[_PartitionColumn]
+) -> pyarrow.Table:
+    """Put one chunk's equal transformed partitions next to each other."""
+    names = [f"partition_{index}" for index in range(len(partitions))]
+    values = []
+    for partition in partitions:
+        transformed = partition.transform(_arrow_source(chunk, partition.source))
+        values.append(
+            transformed.combine_chunks()
+            if isinstance(transformed, pyarrow.ChunkedArray)
+            else transformed
+        )
+    keys = pyarrow.RecordBatch.from_arrays(values, names=names)
+    if _reader_in_sort_order(keys, names):
+        return chunk
+    indices = pyarrow.compute.sort_indices(
+        keys,
+        sort_keys=[(name, "ascending") for name in names],
+    )
+    return chunk.take(indices)
 
 
 def _partition_runs(
