@@ -1366,3 +1366,32 @@ def test_a_side_without_its_own_clock_keeps_the_reports_resolution() -> None:
 
     assert {one.unix for one in events} == {outer.transacted.unix}
     assert outer.transacted.source.startswith("TrdRegTimestamps")
+
+
+def test_a_pure_trade_report_query_fabricates_no_execution() -> None:
+    """`TradeCaptureReportRequest <AD>` decodes like the report it echoes --
+    but a request carrying only criteria is a question, not a trade."""
+    query = "8=FIX.4.4|35=AD|568=REQ-7|569=0|263=1|60=20260814-10:00:00|10=000"
+    assert list(FixEvents.from_text(query)) == []
+
+    echoed = (
+        "8=FIX.4.4|35=AD|568=REQ-8|571=R-1|880=M-1|31=100|32=5|55=AAPL|54=1|"
+        "60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(echoed))
+    assert (execution.trade_id, execution.px) == ("M-1", 100.0)
+
+
+def test_a_side_with_its_own_regulatory_stamp_keeps_it() -> None:
+    """The report's clock steers only a side with no clock of its own: a side
+    carrying `SideTrdRegTS` resolves its own instant, above the report's."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-4|880=M-4|31=100|32=5|55=AAPL|"
+        "768=1|769=20260814-09:29:58|770=1|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|"
+        "54=2|37=O-SELL|1016=1|1012=20260814-09:29:59|1013=1|10=000"
+    )
+    first, second = list(FixEvents.from_text(wire))
+
+    assert first.unix == unix_of("20260814-09:29:58"), "no clock of its own, the report's"
+    assert second.unix == unix_of("20260814-09:29:59"), "its own stamp, not the report's"

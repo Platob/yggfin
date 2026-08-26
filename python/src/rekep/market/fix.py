@@ -129,6 +129,17 @@ _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
     }
 )
 
+#: The regulatory groups' member fields, which say "this entry carries its
+#: own clock" even where a count-free rendering omits the group's count.
+_REGULATORY_MEMBERS: tuple[str, ...] = (
+    "TrdRegTimestamp",
+    "TrdRegTimestampType",
+    "TrdRegTimestampOrigin",
+    "SideTrdRegTimestamp",
+    "SideTrdRegTimestampType",
+    "SideTrdRegTimestampSrc",
+)
+
 #: MDEntryType <269> to the side of the book an entry belongs to. Everything
 #: else it enumerates -- an index value, a settlement price, a session high,
 #: an imbalance -- is a statistic about the market rather than an order in it,
@@ -150,7 +161,21 @@ QUOTE_HANDLERS = frozenset(
 )
 MASS_QUOTE_HANDLERS = frozenset({"massquote", "massquoteack"})
 EXECUTION_REPORT_HANDLER = "executionreport"
-EXECUTION_HANDLERS = frozenset({"tradecapturereport", "tradecapturereportrequest"})
+#: The request decodes like the report it echoes -- but only when it carries
+#: a trade: a plain query fabricates nothing.
+EXECUTION_REQUEST_HANDLER = "tradecapturereportrequest"
+EXECUTION_HANDLERS = frozenset({"tradecapturereport", EXECUTION_REQUEST_HANDLER})
+
+#: What says a report request actually carries a trade rather than criteria.
+#: Fields both translation paths read, so the gate answers the same flat.
+_TRADE_EVIDENCE_FIELDS: tuple[str, ...] = (
+    "LastPx",
+    "LastQty",
+    "TradeID",
+    "TrdMatchID",
+    "ExecID",
+    "ExecRefID",
+)
 
 #: Every field `FixEvents.instrument` reads, the two repeating groups included.
 #: An entry of a refresh that names none of them is not describing another
@@ -686,7 +711,7 @@ class FixEvents(Convertible):
         elif handler == EXECUTION_REPORT_HANDLER:
             yield from self._reported()
         elif handler in EXECUTION_HANDLERS:
-            yield from self._sides()
+            yield from self._sides(requested=handler == EXECUTION_REQUEST_HANDLER)
         elif handler in ORDER_HANDLERS and kind in self.dictionary.ordered:
             seeded = self.dictionary.ordered[kind]
             if handler == CANCEL_REJECT_HANDLER:
@@ -767,7 +792,7 @@ class FixEvents(Convertible):
             elif entry_type == ENTRY_TRADE:
                 yield inside.into_entry_execution()
 
-    def _sides(self) -> Iterator[Execution]:
+    def _sides(self, requested: bool = False) -> Iterator[Execution]:
         """A TradeCaptureReport, one Execution per `NoSides <552>` entry.
 
         A multi-sided report carries `Side <54>`, `OrderID <37>`, `ClOrdID
@@ -783,6 +808,10 @@ class FixEvents(Convertible):
         """
         entries, report = self._side_entries()
         if not entries:
+            # A report request with no side entries and no trade content is a
+            # query, and a query fabricates no execution.
+            if requested and not any(self.get(name) for name in _TRADE_EVIDENCE_FIELDS):
+                return
             yield self.into_execution()
             return
         level: dict[str, Any] = {}
@@ -840,10 +869,16 @@ class FixEvents(Convertible):
 
     @functools.cached_property
     def _clock_keys(self) -> frozenset[str]:
-        """Every key `TRANSACTED` reads, as this dictionary's wire tags."""
-        return frozenset(
-            self.access.tag_text(field) for rung in TRANSACTED for field in rung.fields
-        )
+        """Every key `TRANSACTED` reads, as this dictionary's wire tags.
+
+        The regulatory groups count by their members and their counts: a side
+        carrying its own `SideTrdRegTS` resolves its own instant, and only a
+        side with no clock at all keeps the report's answer.
+        """
+        named = {field for rung in TRANSACTED for field in rung.fields}
+        named.update(_REGULATORY_GROUPS.values())
+        named.update(_REGULATORY_MEMBERS)
+        return frozenset(self.access.tag_text(field) for field in named)
 
     def _inside(
         self, entry: list[tuple[str, str]], base: Mapping[str, Any] | None = None

@@ -13,9 +13,11 @@ from rekep.fields.arrays import build_list, build_map, dense_counts, interleave,
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.market.fix import (
+    _TRADE_EVIDENCE_FIELDS,
     CANCEL_REJECT_HANDLER,
     EXECUTION_HANDLERS,
     EXECUTION_REPORT_HANDLER,
+    EXECUTION_REQUEST_HANDLER,
     ORDER_HANDLERS,
     MarketTags,
 )
@@ -210,12 +212,21 @@ def flat_market_parts(
     order_at = compute.indices_nonzero(
         compute.is_in(msg_type, value_set=pyarrow.array((*order_types, *report_types)))
     ).cast(pyarrow.int64())
-    execution_at = compute.indices_nonzero(
-        compute.or_(
-            compute.is_in(msg_type, value_set=pyarrow.array(execution_types)),
-            report_executions,
+    execution_rows = compute.is_in(msg_type, value_set=pyarrow.array(execution_types))
+    request_types = tuple(
+        kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REQUEST_HANDLER
+    )
+    if request_types:
+        # A report request with no trade content is a query, mirroring the
+        # scalar reader: it fabricates no execution row.
+        requests = compute.is_in(msg_type, value_set=pyarrow.array(request_types))
+        execution_rows = compute.and_(
+            execution_rows,
+            compute.or_(compute.invert(requests), _trade_evidence_rows(values)),
         )
-    ).cast(pyarrow.int64())
+    execution_at = compute.indices_nonzero(compute.or_(execution_rows, report_executions)).cast(
+        pyarrow.int64()
+    )
     reports_set = pyarrow.array(report_types)
     orders = _orders(values, shared, tags, order_at, reports_set) if len(order_at) else None
     executions = (
@@ -278,6 +289,15 @@ def flat_market_positions(
         where = compute.filter(candidate, eligible)
         if len(where):
             yield where
+
+
+def _trade_evidence_rows(values: _Values) -> pyarrow.Array:
+    """Rows whose report request actually carries a trade, not just criteria."""
+    evidence = pyarrow.repeat(pyarrow.scalar(False), values.rows)
+    for name in _TRADE_EVIDENCE_FIELDS:
+        text = values.text(name)
+        evidence = compute.or_(evidence, compute.fill_null(compute.not_equal(text, ""), False))
+    return evidence
 
 
 def _expiring_rows(values: _Values) -> pyarrow.Array:
