@@ -393,6 +393,30 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
     assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN": "US0378331005"})]
 
 
+def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
+    registry: FixRegistry,
+) -> None:
+    """The same ownership, one nesting deeper: quote sets scope quote entries."""
+    line = (
+        "8=FIX.4.4|35=i|117=Q1|296=1|302=S1|295=2|"
+        "299=E1|55=AAA|132=1|133=2|"
+        "299=E2|55=BBB|454=1|455=037833100|456=1|132=3|133=4|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("SecurityAltID")[0].as_py() is None
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    direct = FixMsg.from_text(line, "|")
+    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    assert found == [
+        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+    ]
+    assert found == [("AAA", None), ("BBB", {"CUSIP": "037833100"})]
+
+
 def test_a_4_3_row_answers_from_the_column_and_from_kwargs_at_once(
     registry: FixRegistry,
 ) -> None:
