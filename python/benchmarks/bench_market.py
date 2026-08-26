@@ -530,8 +530,8 @@ def bench_fix(rows: int, repeat: int) -> None:
         lines = [line] * rows
         produced = len(list(FixEvents.from_text(line)))
         assert produced, label
-        assert all(one.unix and one.xhash for one in FixEvents.from_text(line)), (
-            f"{label} produced an event with no time or no identity"
+        assert all(one.unix and one.hash for one in FixEvents.from_text(line)), (
+            f"{label} produced an event with no time or no version identity"
         )
         # Parsing and translating, together, because that is what a task does:
         # a line off a log becomes rows in a table, and splitting the two here
