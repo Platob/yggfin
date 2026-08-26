@@ -406,12 +406,13 @@ def _unreachable(*_arguments: object, **_named: object) -> int:
         ("20260814-094510.250", "2026-08-14T09:45:10.250000"),
         ("20260814094510", "2026-08-14T09:45:10"),
         ("0945", None),
-        ("20260814-0945", "2026-08-14T09:45:00"),
-        # A trailing zone offset is applied, where `Z` is a no-op.
+        ("20260814-0945", "2026-08-14T00:00:00"),
+        # A trailing zone offset moves a clock, is a calendar label on a
+        # date-only value, and `Z` is a no-op either way.
         ("20260814-09:45:10-0400", "2026-08-14T13:45:10"),
         ("09:30:00-04:00", "1970-01-01T13:30:00"),
-        ("20260814-0400s", "2026-08-14T04:00:00"),
-        ("20260814+0200", "2026-08-13T22:00:00"),
+        ("20260814-0400s", "2026-08-14T00:00:00"),
+        ("20260814+0200", "2026-08-14T00:00:00"),
         # What stays unreadable, stays unreadable.
         ("-0400", None),
         ("20260814-9945", None),

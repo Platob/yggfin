@@ -1316,3 +1316,53 @@ def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
     assert order.kind is MarketKind.LIMIT_ORDER
     assert order.tif is TimeInForce.GTD
     assert order.eunix is not None, "a GTD spelled out still reads its expiry"
+
+
+def test_a_side_never_answers_with_its_siblings_fields() -> None:
+    """The report level falls through to every side; a field one side carried
+    alone does not -- the whole-message first-occurrence view would have
+    handed side one's client id and account to a side two that sent neither."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-1|880=M-1|31=99.5|32=7|55=EUR/USD|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|11=C-BUY|1=ACC-B|54=2|37=O-SELL|10=000"
+    )
+    first, second = list(FixEvents.from_text(wire))
+
+    assert (first.client_order_id, second.client_order_id) == ("C-BUY", None)
+    assert "1" not in (second.metadata or {}).values(), "no borrowed account either"
+    assert {one.trade_id for one in (first, second)} == {"M-1"}, (
+        "the report level still falls through"
+    )
+    assert {one.px for one in (first, second)} == {99.5}
+
+
+def test_a_side_with_nested_parties_does_not_truncate_the_sides_after_it() -> None:
+    """A side regularly nests a multi-entry `NoPartyIDs`, whose repeated tags
+    would end a first-repeat scan in the middle of side one."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-2|880=M-2|31=100|32=5|55=AAPL|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|453=2|448=DESK-A|447=D|452=1|448=XPAR|447=G|452=17|"
+        "54=2|37=O-SELL|10=000"
+    )
+    events = list(FixEvents.from_text(wire))
+
+    assert [(one.side, one.order_id) for one in events] == [
+        (Side.BUY, "O-BUY"),
+        (Side.SELL, "O-SELL"),
+    ]
+
+
+def test_a_side_without_its_own_clock_keeps_the_reports_resolution() -> None:
+    """A report-level regulatory stamp outranks `TransactTime <60>` on the
+    report, and each side that carries no clock of its own keeps that answer
+    rather than re-resolving from the entry's weaker fields."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-3|880=M-3|31=100|32=5|55=AAPL|"
+        "768=1|769=20260814-09:29:58|770=1|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|54=2|37=O-SELL|10=000"
+    )
+    outer = FixEvents.from_text(wire)
+    events = list(outer)
+
+    assert {one.unix for one in events} == {outer.transacted.unix}
+    assert outer.transacted.source.startswith("TrdRegTimestamps")

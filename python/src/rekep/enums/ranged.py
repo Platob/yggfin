@@ -171,17 +171,19 @@ class _AsciiInt32(enum.IntEnum):
     @classmethod
     @functools.cache
     def worded_codes(cls) -> Mapping[str, Self]:
-        """Compiled members by normalized name and built-in alias.
+        """Wire-backed compiled members by normalized name and built-in alias.
 
-        Only compiled members: the wire spelling a code misses resolves here
-        when a human wrote the meaning out, and to nothing otherwise.
+        Only members that carry a FIX code: the wire spelling a code misses
+        resolves here when a human wrote the meaning out, and to nothing
+        otherwise. A member with no code -- `TimeInForce`'s ordering markers
+        -- is not something a wire value can mean, so it never answers.
         """
         found: dict[str, Self] = {
-            name: member for name, member in cls.__members__.items() if member
+            name: member for name, member in cls.__members__.items() if member and member._fix_code
         }
         for alias, target in cls._built_in_aliases().items():
             member = cls.__members__.get(target)
-            if member:
+            if member and member._fix_code:
                 found.setdefault(alias, member)
         return MappingProxyType(found)
 

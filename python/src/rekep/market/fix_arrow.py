@@ -1028,6 +1028,9 @@ def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> 
     values = pyarrow.array([int(value) for value in mapping.values()], pyarrow.int32())
     if not len(keys):
         return _constant(len(source), int(default), pyarrow.int32())
+    # Trimmed like the scalar reading strips, so `"1 "` is the code it is on
+    # both paths.
+    source = compute.utf8_trim_whitespace(source)
     positions = compute.index_in(source, value_set=keys)
     found = compute.take(values, positions)
     if found.null_count > source.null_count:

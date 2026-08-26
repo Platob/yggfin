@@ -772,22 +772,88 @@ class FixEvents(Convertible):
 
         A multi-sided report carries `Side <54>`, `OrderID <37>`, `ClOrdID
         <11>` and `Account <1>` *inside* each side entry, so one flat read
-        kept one side's identity and silently dropped the other's. Each entry
-        reads through `_inside`, whose merged view resolves the report-level
-        facts -- `TrdMatchID <880>`, `LastPx <31>`, `LastQty <32>`, the
-        transaction time -- where the entry is silent, and the entry's own
-        identifiers where it is not. A report with no side entries at all is
-        one execution, read flat as before.
+        kept one side's identity and silently dropped the other's. Each side
+        reads the report level plus its own entry -- never a sibling's: the
+        whole-message first-occurrence view would hand side one's account to
+        a side two that did not repeat it. The report-level facts --
+        `TrdMatchID <880>`, `LastPx <31>`, `LastQty <32>` -- fall through
+        where an entry is silent, the report's resolved clock keeps steering
+        a side that carries no clock of its own, and a report with no side
+        entries at all is one execution, read flat as before.
         """
-        entries = self._group_entries("NoSides")
+        entries, report = self._side_entries()
         if not entries:
             yield self.into_execution()
             return
+        level: dict[str, Any] = {}
+        for key, value in report:
+            level.setdefault(key, value)
+        clocks = self._clock_keys
         for entry in entries:
-            yield self._inside(entry).into_execution()
+            inside = self._inside(entry, base=level)
+            if not any(key in clocks for key, _ in inside.pairs):
+                inside.__dict__["transacted"] = self.transacted
+            yield inside.into_execution()
 
-    def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
-        """A repeating-group entry completed by its message header."""
+    def _side_entries(self) -> tuple[list[list[tuple[str, str]]], list[tuple[str, str]]]:
+        """`(side entries, report-level pairs)`, split without collapsing repeats.
+
+        Segments and not `group_pairs`: a side regularly nests a multi-entry
+        `NoPartyIDs` group, whose repeated tags would end a first-repeat scan
+        in the middle of side one and silently drop every side after it. A
+        segment runs from one delimiter to the next, whatever repeats inside.
+        """
+        count_tag = self.access.tag_text("NoSides")
+        if self._flat_by_tag is not None and count_tag not in self.by_tag:
+            return [], []
+        prefix, entries = _group_segments(
+            self.pairs, count_tag, self._side_delimiter, with_prefix=True
+        )
+        if entries or not self._has_indexed_pairs:
+            return entries, prefix
+        indexed = indexed_group_pairs(self.source_pairs, "NoSides")
+        report = [pair for pair in self.pairs if "NOSIDES[" not in str(pair[0]).upper()]
+        return indexed, report
+
+    @functools.cached_property
+    def _side_delimiter(self) -> str:
+        """The tag that opens one side entry, off the selected declaration."""
+        fallback = self.access.tag_text("Side")
+        registry = self.registry
+        if registry is None:
+            return fallback
+        versions = (self.version,) if self.version else registry.versions
+        for version in versions:
+            try:
+                components = registry.components(version)
+            except (KeyError, OSError, ValueError):
+                continue
+            by_name = {component.name.lower(): component for component in components}
+            root = by_name.get("trdcaprptsidegrp")
+            if root is None:
+                continue
+            sides = _declared_group(root.members, "NoSides", by_name)
+            named = _first_declared_name(sides.members, by_name) if sides else None
+            if named:
+                return self.access.tag_text(named)
+        return fallback
+
+    @functools.cached_property
+    def _clock_keys(self) -> frozenset[str]:
+        """Every key `TRANSACTED` reads, as this dictionary's wire tags."""
+        return frozenset(
+            self.access.tag_text(field) for rung in TRANSACTED for field in rung.fields
+        )
+
+    def _inside(
+        self, entry: list[tuple[str, str]], base: Mapping[str, Any] | None = None
+    ) -> FixEvents:
+        """A repeating-group entry completed by its message header.
+
+        `base` narrows what falls through: the whole message's first
+        occurrences by default, or only the report level for a group whose
+        entries are peers that must not answer for each other.
+        """
         inside = FixEvents(
             message=type(self.message).from_pairs(entry),
             venue=self.venue,
@@ -802,7 +868,7 @@ class FixEvents(Convertible):
         own = inside.by_tag
         if all(inside.get(field) is None for field in INSTRUMENT_FIELDS):
             inside.__dict__["instrument"] = self.instrument
-        inside.__dict__["by_tag"] = {**self.by_tag, **own}
+        inside.__dict__["by_tag"] = {**(self.by_tag if base is None else base), **own}
         return inside
 
     def _mass_quotes(self, kind: str) -> Iterator[Order]:

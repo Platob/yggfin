@@ -287,7 +287,9 @@ def cast_arrow_bool(array: Any) -> Any:
 #: clock (`094510`, `20260814-094510.250`) lands in `compact`, whole -- six
 #: digits or nothing, so a bare `0945` stays unreadable rather than becoming
 #: a guess. A trailing zone offset (`-0400`, `+02:00`, a bridge's `-0400s`)
-#: lands in the `z*` groups and is *applied*, where `Z` is a no-op.
+#: lands in the `z*` groups and is *applied to a clock*, where `Z` is a
+#: no-op; on a date-only value it is a calendar label and moves nothing --
+#: which is also what a four-digit tail after a bare date reads as.
 #:
 #: One source string for both engines: `re` reads a value, RE2 reads a column,
 #: and the two are contracted to agree like every other pattern in this package.
@@ -341,7 +343,10 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
     if offset is None:
         return None
     if hour is None:
-        return base - offset
+        # A zone suffix on a date names the calendar the day is in; it moves
+        # no clock, and subtracting it would land east-of-UTC dates on the
+        # previous civil day.
+        return base
     hours, minutes, secs = int(hour), int(minute), int(second) if second else 0
     # Range-checked, because `\d{2}` is not: `99:99:99` parsed as a shape and
     # came out four days past midnight, which is a plausible-looking instant
@@ -644,6 +649,8 @@ def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
         compute.negate_checked(zone_seconds),
         zone_seconds,
     )
+    # A zone suffix on a date-only value names the calendar, not a clock.
+    zone_seconds = compute.if_else(given("hour"), zone_seconds, pyarrow.scalar(0, pyarrow.int64()))
     valid = compute.fill_null(
         compute.and_(
             compute.and_(

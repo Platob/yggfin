@@ -14,7 +14,7 @@ import pyarrow.compute
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
 from rekep.fix.columns import DECLARATIONS, KWARGS
-from rekep.fix.fields import STAMP_PATTERN, cast_arrow_fix
+from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -719,7 +719,12 @@ def _readable(text: Any, arrow_type: pyarrow.DataType) -> Any:
     elif kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
         pattern = _DECIMAL
     elif kinds.is_temporal(arrow_type):
-        pattern = STAMP_PATTERN
+        # The cast itself, not its pattern: the reader range-checks what the
+        # shape alone admits -- an absurd clock, an impossible zone -- and a
+        # gate that answered from the shape would mark such text readable,
+        # project the null the cast makes of it, and drop the text nobody
+        # can then explain.
+        return compute.is_valid(cast_arrow_fix(text, arrow_type))
     else:
         return compute.is_valid(text)
     return compute.fill_null(compute.match_substring_regex(text, pattern), False)

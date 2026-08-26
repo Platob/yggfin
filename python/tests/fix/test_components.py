@@ -922,3 +922,17 @@ def test_two_leg_blocks_stay_residual_without_owner_context() -> None:
 
     assert legs.to_pylist() == [None]
     assert residual.to_pylist() == source.to_pylist()
+
+
+def test_a_stamp_the_reader_range_checks_away_stays_buffered_text() -> None:
+    """The readable gate answers with the cast, not with the pattern: a zone
+    no calendar has matches the widened shape, and text the reader nulls must
+    land in `buffer` rather than becoming a projected null nobody can explain."""
+    source = _tags([(768, "1"), (769, "20260814-09:29:58-9945"), (770, "1")])
+
+    stamps, residual = _stamps().into_arrow_arrays(source)
+
+    (entry,) = stamps.to_pylist()[0]
+    assert entry["TrdRegTimestamp"] is None
+    assert dict(entry["buffer"]) == {"TrdRegTimestamp": "20260814-09:29:58-9945"}
+    assert residual.to_pylist() == [[]]
