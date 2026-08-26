@@ -56,7 +56,7 @@ nav:
       - Foundations:
           - Why Arrow: overview/arrow.md
           - Design rules: overview/design.md
-  - Data contracts:
+  - Schemas:
       - Declarations:
           - Types: contracts/types.md
           - Schema contracts: contracts/index.md

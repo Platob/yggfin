@@ -80,21 +80,32 @@ def test_home_page_uses_the_animated_rkp_trigram() -> None:
     assert 'class="rkp-hero"' in page
     assert 'src="assets/rkp-logo.svg"' in page
     assert 'aria-labelledby="rkp-title rkp-desc"' in logo
+    assert 'viewBox="0 0 420 280"' in logo
     assert "prefers-reduced-motion:no-preference" in logo
     assert all(color in logo for color in ("#f23b3b", "#ff8a00", "#ffd43b"))
+    assert "rkp-frame" not in logo
+    assert "rkp-grid" not in logo
     assert "logo: assets/rkp-logo.svg" in config
     assert "stylesheets/home.css" in config
 
 
 def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
+    browser = (DOCS / "fix" / "registry.md").read_text(encoding="utf-8")
     page = (DOCS / "fix" / "shell.md").read_text(encoding="utf-8")
     script = (DOCS / "javascripts" / "fix-registry.js").read_text(encoding="utf-8")
+    styles = (DOCS / "stylesheets" / "fix-registry.css").read_text(encoding="utf-8")
     config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
 
     assert "Registry CLI: fix/shell.md" in config
     assert "rekep fix registry show" in page
     assert "rekep fix shell --store" in page
     assert "const PAGE_SIZE = 20" in script
+    assert 'placeholder="Name, tag, MsgType, or member"' in browser
+    assert "field.description" in script
+    assert "member.tag ?? field?.tag" in script
+    assert "fix-registry__description--row" in script
+    assert "fix-registry__description--member" in script
+    assert ".fix-registry__tag" in styles
 
 
 @pytest.mark.parametrize(("page_name", "task_name"), WORKFLOW_STEPS)

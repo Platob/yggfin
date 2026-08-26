@@ -27,6 +27,11 @@
       .join("");
   const badge = (value, modifier = "") =>
     `<span class="fix-registry__badge${modifier ? ` fix-registry__badge--${modifier}` : ""}">${escape(value)}</span>`;
+  const tagCode = (value, angled = false) => {
+    if (value === undefined || value === null || value === "") return "";
+    const label = angled ? `&lt;${escape(value)}&gt;` : escape(value);
+    return `<code class="fix-registry__tag" title="FIX tag ${escape(value)}">${label}</code>`;
+  };
   const href = (kind, value) => `#${kind}=${encodeURIComponent(value)}`;
   const matches = (haystack, query) =>
     normalized(query)
@@ -286,8 +291,11 @@
       fieldRows.innerHTML = page(filtered, state.field.page)
         .map(
           (field) => `<tr>
-            <td>${field.tag === undefined ? '<span class="fix-registry__muted">—</span>' : `<code>${escape(field.tag)}</code>`}</td>
-            <td><a class="fix-registry__name" href="${href("field", field.tag ?? field.name)}">${escape(field.name)}</a></td>
+            <td>${field.tag === undefined ? '<span class="fix-registry__muted">—</span>' : tagCode(field.tag)}</td>
+            <td><div class="fix-registry__identity">
+              <a class="fix-registry__name" href="${href("field", field.tag ?? field.name)}">${escape(field.name)}</a>
+              ${field.description ? `<span class="fix-registry__description fix-registry__description--row">${escape(field.description)}</span>` : ""}
+            </div></td>
             <td><code>${escape(field.type || "—")}</code></td>
             <td>${field._usages.map((usage) => badge(usage)).join("")}</td>
             <td>${chips(field.versions)}</td>
@@ -336,10 +344,15 @@
       return `<a class="fix-registry__name" href="?${query}#fields" data-message-filter="${escape(name)}">${escape(name)}</a>`;
     }
 
-    function fieldLink(member) {
-      const found =
+    function findField(member) {
+      return (
         (member.tag !== undefined && fieldByTag.get(String(member.tag))) ||
-        fieldByName.get(normalized(member.name));
+        fieldByName.get(normalized(member.name))
+      );
+    }
+
+    function fieldLink(member) {
+      const found = findField(member);
       return found
         ? `<a class="fix-registry__name" href="${href("field", found.tag ?? found.name)}">${escape(found.name)}</a>`
         : `<code>${escape(member.name)}</code>`;
@@ -359,7 +372,7 @@
           ${aliasDefinition(component.aliases)}
         </dl>
         ${owners.length ? `<h4>Referenced by components</h4><p>${owners.map((owner) => componentLink(owner.name)).join(" · ")}</p>` : ""}
-        ${relatedFields.length ? `<h4>Fields</h4><p>${relatedFields.map((field) => fieldLink(field)).join(" · ")}</p>` : ""}
+        ${relatedFields.length ? `<h4>Fields</h4><p>${relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`).join(" · ")}</p>` : ""}
         <h4>Member tree</h4>
         ${memberTree(component.members)}
         <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/components/${component.slug}.json`)}">View repository record →</a>`;
@@ -386,8 +399,9 @@
           <div><p class="fix-registry__eyebrow">${field.tag === undefined ? "Namespace" : `Tag ${escape(field.tag)}`}</p><h3>${escape(field.name)}</h3></div>
           <a class="fix-registry__detail-close" data-detail-close href="#fields-title">Close</a>
         </header>
-        ${field.description ? `<p>${escape(field.description)}</p>` : ""}
+        ${field.description ? `<p class="fix-registry__description fix-registry__description--detail">${escape(field.description)}</p>` : ""}
         <dl>
+          ${field.tag === undefined ? "" : `<dt>Tag</dt><dd>${tagCode(field.tag)}</dd>`}
           <dt>Datatype</dt><dd><code>${escape(field.type || "—")}</code></dd>
           <dt>Versions</dt><dd>${chips(field.versions)}</dd>
           ${field.column ? `<dt>Column</dt><dd><code>${escape(field.column)}</code></dd>` : ""}
@@ -417,12 +431,14 @@
       if (!list(members).length) return '<p class="fix-registry__muted">No members.</p>';
       return `<ul class="fix-registry__tree">${members
         .map((member) => {
+          const field = member.kind === "component" ? null : findField(member);
           const named =
             member.kind === "component" ? componentLink(member.name) : fieldLink(member);
+          const description = field?.description || member.description;
           const nested = list(member.members).length ? memberTree(member.members) : "";
-          return `<li>${badge(member.kind)} ${named} ${
+          return `<li><div class="fix-registry__member-line">${badge(member.kind)} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${
             member.required ? badge("required", "required") : badge("optional", "optional")
-          }${nested}</li>`;
+          }</div>${description ? `<span class="fix-registry__description fix-registry__description--member">${escape(description)}</span>` : ""}${nested}</li>`;
         })
         .join("")}</ul>`;
     }

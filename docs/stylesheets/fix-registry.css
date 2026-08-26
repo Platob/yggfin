@@ -269,6 +269,44 @@
   font-weight: 700;
 }
 
+.fix-registry__identity {
+  min-width: 16rem;
+  white-space: normal;
+}
+
+.fix-registry__identity .fix-registry__name,
+.fix-registry__member-line .fix-registry__name {
+  min-height: 0;
+}
+
+.fix-registry__description {
+  color: var(--registry-muted);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.fix-registry__description--row {
+  display: -webkit-box;
+  max-width: 34rem;
+  margin-top: 0.12rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.fix-registry__description--detail {
+  max-width: 52rem;
+  margin: 0.8rem 0;
+  color: var(--md-default-fg-color);
+  font-size: 0.75rem;
+}
+
+.fix-registry__tag {
+  color: var(--registry-yellow);
+  white-space: nowrap;
+}
+
 .fix-registry__muted {
   color: var(--registry-muted);
 }
@@ -415,6 +453,22 @@
   width: 0.4rem;
   border-top: 1px solid var(--registry-orange);
   content: "";
+}
+
+.fix-registry__member-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.fix-registry__description--member {
+  display: -webkit-box;
+  max-width: 44rem;
+  margin: 0.12rem 0 0.4rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .fix-registry__detail-table {

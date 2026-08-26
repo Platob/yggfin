@@ -1,7 +1,9 @@
 # FIX registry browser
 
-Search the repository's FIX components and fields. The catalog is rebuilt from
-`data/fix/` with every documentation deployment.
+Search the repository's FIX components and fields. Field results show their
+registry descriptions; component details resolve every available member tag
+and description. The catalog is rebuilt from `data/fix/` with every
+documentation deployment.
 
 <div class="fix-registry" data-fix-registry data-source="../../assets/fix-registry.json"
      data-repository="https://github.com/Platob/yggfin/blob/main/data/fix">
@@ -35,7 +37,7 @@ Search the repository's FIX components and fields. The catalog is rebuilt from
       <form class="fix-registry__filters" data-component-filters>
         <label class="fix-registry__search">
           <span>Search</span>
-          <input type="search" name="query" placeholder="Name, MsgType, or member" autocomplete="off">
+          <input type="search" name="query" placeholder="Name, tag, MsgType, or member" autocomplete="off">
         </label>
         <label>
           <span>Version</span>

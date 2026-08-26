@@ -5,7 +5,7 @@
   margin: 0 0 2rem;
   padding: clamp(1rem, 3vw, 2rem);
   overflow: hidden;
-  grid-template-columns: minmax(16rem, 0.9fr) minmax(18rem, 1.1fr);
+  grid-template-columns: minmax(18rem, 1fr) minmax(13rem, 17rem);
   align-items: center;
   gap: clamp(1rem, 3vw, 2.2rem);
   border: 1px solid #343237;
@@ -137,7 +137,9 @@
 }
 
 .rkp-hero__mark {
+  width: min(100%, 17rem);
   margin: 0;
+  justify-self: end;
 }
 
 .md-typeset .rkp-hero__mark img {
@@ -153,7 +155,7 @@
 .rkp-hero__mark figcaption {
   margin-top: 0.45rem;
   color: var(--rekep-muted);
-  text-align: right;
+  text-align: center;
 }
 
 @media screen and (max-width: 48rem) {
@@ -168,10 +170,14 @@
 
   .rkp-hero__mark {
     order: 1;
+    width: min(100%, 15rem);
+    justify-self: center;
   }
+}
 
-  .rkp-hero__mark figcaption {
-    text-align: left;
+@media screen and (max-width: 30rem) {
+  .rkp-hero__mark {
+    width: min(100%, 13rem);
   }
 }
 
