@@ -41,6 +41,9 @@ network work happen before the message loop.
 
 The registry supplies:
 
+[Browse every component and field](fix-registry.md) with full-text and
+categorical filters, linked references, and repository source records.
+
 - canonical name and numeric tag;
 - FIX datatype and Arrow projection;
 - description, valid values, and component/message usage;

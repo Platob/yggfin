@@ -37,9 +37,9 @@ all = ["rekep[iceberg,polars,toml,yaml]"]
 rekep = "rekep.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Platob/rekep"
-Repository = "https://github.com/Platob/rekep"
-Issues = "https://github.com/Platob/rekep/issues"
+Homepage = "https://github.com/Platob/yggfin"
+Repository = "https://github.com/Platob/yggfin"
+Issues = "https://github.com/Platob/yggfin/issues"
 
 [dependency-groups]
 docs = [

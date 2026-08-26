@@ -77,7 +77,7 @@ from rekep.urls import HTTP, LOCAL, Url
 BASE_URL = "https://www.onixs.biz/fix-dictionary"
 
 # Sent with every request so scrape traffic identifies its client.
-_USER_AGENT = "rekep-fix-registry (+https://github.com/Platob/rekep)"
+_USER_AGENT = "rekep-fix-registry (+https://github.com/Platob/yggfin)"
 
 #: Where the scrape persists: the tag shards, the components and the version
 #: list, so everything after the first scrape works offline -- including on a

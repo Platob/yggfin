@@ -54,7 +54,7 @@ Core properties:
 - deterministic partition-aware Iceberg reads and bounded writes;
 - six checked contracts under `schemas/rekep/`.
 
-See the [documentation](https://platob.github.io/rekep/) or the local
+See the [documentation](https://platob.github.io/yggfin/) or the local
 [architecture overview](docs/index.md).
 
 Development:

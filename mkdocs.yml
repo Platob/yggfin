@@ -1,8 +1,8 @@
 site_name: rekep
 site_description: Trading logs, Arrow-native fields, and Iceberg datasets
-site_url: https://platob.github.io/rekep/
-repo_url: https://github.com/Platob/rekep
-repo_name: Platob/rekep
+site_url: https://platob.github.io/yggfin/
+repo_url: https://github.com/Platob/yggfin
+repo_name: Platob/yggfin
 docs_dir: docs
 exclude_docs: |
   assets/README.md
@@ -38,6 +38,13 @@ theme:
 
 extra_css:
   - stylesheets/terminal.css
+  - stylesheets/fix-registry.css
+
+extra_javascript:
+  - javascripts/fix-registry.js
+
+hooks:
+  - docs_hooks.py
 
 nav:
   - Overview:
@@ -50,7 +57,9 @@ nav:
       - Binary identities: identity.md
   - FIX and market:
       - FixMsg: fixmsg.md
-      - FIX registry: fix.md
+      - FIX registry:
+          - Browse registry: fix-registry.md
+          - Registry guide: fix.md
       - Parse configuration: configuring.md
       - Market lifecycle: market.md
   - Storage:

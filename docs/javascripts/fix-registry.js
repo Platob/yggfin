@@ -1,0 +1,555 @@
+(() => {
+  "use strict";
+
+  const app = document.querySelector("[data-fix-registry]");
+  if (!app) return;
+
+  const PAGE_SIZE = 50;
+  const number = new Intl.NumberFormat();
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const select = (query, root = app) => root.querySelector(query);
+  const status = select("[data-registry-status]");
+  const ready = select("[data-registry-ready]");
+  const escape = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (character) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+          character
+        ],
+    );
+  const normalized = (value) => String(value ?? "").trim().toLowerCase();
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const object = (value) => (value && typeof value === "object" ? value : {});
+  const chips = (values) =>
+    list(values)
+      .map((value) => `<span class="fix-registry__chip">${escape(value)}</span>`)
+      .join("");
+  const badge = (value, modifier = "") =>
+    `<span class="fix-registry__badge${modifier ? ` fix-registry__badge--${modifier}` : ""}">${escape(value)}</span>`;
+  const href = (kind, value) => `#${kind}=${encodeURIComponent(value)}`;
+  const matches = (haystack, query) =>
+    normalized(query)
+      .split(/\s+/)
+      .filter(Boolean)
+      .every((part) => haystack.includes(part));
+
+  fetch(new URL(app.dataset.source, window.location.href))
+    .then((response) => {
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return response.json();
+    })
+    .then(start)
+    .catch((error) => {
+      status.dataset.error = "";
+      status.textContent = `Registry unavailable: ${error.message}`;
+    });
+
+  function start(catalog) {
+    const components = list(catalog.components);
+    const fields = list(catalog.fields);
+    const versions = list(catalog.versions);
+    const componentByName = new Map(
+      components.map((component) => [normalized(component.name), component]),
+    );
+    const fieldByName = new Map(fields.map((field) => [normalized(field.name), field]));
+    const fieldByTag = new Map(
+      fields.filter((field) => field.tag !== undefined).map((field) => [String(field.tag), field]),
+    );
+    const componentBacklinks = new Map();
+    const componentFields = new Map();
+
+    components.forEach((component) => {
+      component._members = flattenMembers(component.members);
+      component._shape = componentShape(component);
+      component._search = normalized(JSON.stringify(component));
+      component._members
+        .filter((member) => member.kind === "component")
+        .forEach((member) => {
+          const owners = componentBacklinks.get(normalized(member.name)) || [];
+          owners.push(component);
+          componentBacklinks.set(normalized(member.name), owners);
+        });
+    });
+    fields.forEach((field) => {
+      field._usages = fieldUsages(field);
+      field._search = normalized(JSON.stringify(field));
+      list(field.components).forEach((name) => {
+        const members = componentFields.get(normalized(name)) || [];
+        members.push(field);
+        componentFields.set(normalized(name), members);
+      });
+    });
+
+    const state = {
+      component: { query: "", version: "", kind: "", page: 0 },
+      field: { query: "", version: "", type: "", kind: "", page: 0 },
+    };
+    const componentForm = select("[data-component-filters]");
+    const fieldForm = select("[data-field-filters]");
+    const componentRows = select("[data-component-rows]");
+    const fieldRows = select("[data-field-rows]");
+    const componentDetail = select("[data-component-detail]");
+    const fieldDetail = select("[data-field-detail]");
+    const datatypes = new Map();
+    fields.forEach((field) => {
+      const key = normalized(field.type);
+      const current = datatypes.get(key);
+      if (key && (!current || (current === current.toUpperCase() && field.type !== current))) {
+        datatypes.set(key, field.type);
+      }
+    });
+
+    fillSelect(componentForm.elements.version, versions);
+    fillSelect(fieldForm.elements.version, versions);
+    fillSelect(
+      fieldForm.elements.type,
+      [...datatypes].sort((left, right) => left[1].localeCompare(right[1])),
+    );
+
+    select("[data-summary-components]").textContent = number.format(components.length);
+    select("[data-summary-fields]").textContent = number.format(fields.length);
+    select("[data-summary-enums]").textContent = number.format(
+      fields.filter(
+        (field) =>
+          Object.keys(object(field.values)).length > 0 ||
+          Object.keys(object(field.value_names)).length > 0,
+      ).length,
+    );
+    select("[data-summary-versions]").textContent = number.format(versions.length);
+
+    bindForm(componentForm, state.component, renderComponents);
+    bindForm(fieldForm, state.field, renderFields);
+    bindPager(select("[data-component-pager]"), state.component, renderComponents);
+    bindPager(select("[data-field-pager]"), state.field, renderFields);
+    app.addEventListener("click", (event) => {
+      const message = event.target.closest("[data-message-filter]");
+      if (message) {
+        event.preventDefault();
+        Object.assign(state.field, {
+          query: message.dataset.messageFilter,
+          version: "",
+          type: "",
+          kind: "",
+          page: 0,
+        });
+        writeForm(fieldForm, state.field);
+        const url = urlForState();
+        url.hash = "fields";
+        window.history.pushState(null, "", url);
+        renderFields();
+        route(false);
+        select("#fields").scrollIntoView({
+          behavior: reducedMotion ? "auto" : "smooth",
+          block: "start",
+        });
+        fieldForm.elements.query.focus({ preventScroll: true });
+      }
+
+      const close = event.target.closest("[data-detail-close]");
+      if (close) {
+        const target = select(close.getAttribute("href"));
+        window.setTimeout(() => target?.focus({ preventScroll: true }));
+      }
+    });
+
+    function fillSelect(element, values) {
+      values.forEach((value) => {
+        const [optionValue, label] = Array.isArray(value) ? value : [value, value];
+        element.add(new Option(label, optionValue));
+      });
+    }
+
+    function readState() {
+      const query = new URLSearchParams(window.location.search);
+      Object.assign(state.component, {
+        query: query.get("cq") || "",
+        version: query.get("cv") || "",
+        kind: query.get("ck") || "",
+        page: pageOf(query.get("cp")),
+      });
+      Object.assign(state.field, {
+        query: query.get("fq") || "",
+        version: query.get("fv") || "",
+        type: normalized(query.get("ft") || ""),
+        kind: query.get("fk") || "",
+        page: pageOf(query.get("fp")),
+      });
+      writeForm(componentForm, state.component);
+      writeForm(fieldForm, state.field);
+    }
+
+    function pageOf(value) {
+      const parsed = Number.parseInt(value || "0", 10);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    }
+
+    function writeForm(form, values) {
+      [...form.elements].forEach((element) => {
+        if (element.name && Object.hasOwn(values, element.name)) element.value = values[element.name];
+      });
+    }
+
+    function bindForm(form, values, render) {
+      form.addEventListener("submit", (event) => event.preventDefault());
+      form.addEventListener("input", () => {
+        [...form.elements].forEach((element) => {
+          if (element.name && Object.hasOwn(values, element.name)) values[element.name] = element.value;
+        });
+        values.page = 0;
+        writeUrl();
+        render();
+      });
+      form.addEventListener("reset", () => {
+        window.setTimeout(() => {
+          Object.keys(values).forEach((key) => {
+            values[key] = key === "page" ? 0 : "";
+          });
+          writeUrl();
+          render();
+        });
+      });
+    }
+
+    function bindPager(pager, values, render) {
+      select("[data-previous]", pager).addEventListener("click", () => {
+        values.page = Math.max(0, values.page - 1);
+        writeUrl();
+        render();
+        pager.scrollIntoView({ block: "nearest" });
+      });
+      select("[data-next]", pager).addEventListener("click", () => {
+        values.page += 1;
+        writeUrl();
+        render();
+        pager.scrollIntoView({ block: "nearest" });
+      });
+    }
+
+    function urlForState() {
+      const url = new URL(window.location.href);
+      const values = {
+        cq: state.component.query,
+        cv: state.component.version,
+        ck: state.component.kind,
+        cp: state.component.page || "",
+        fq: state.field.query,
+        fv: state.field.version,
+        ft: state.field.type,
+        fk: state.field.kind,
+        fp: state.field.page || "",
+      };
+      Object.entries(values).forEach(([key, value]) => {
+        if (value === "") url.searchParams.delete(key);
+        else url.searchParams.set(key, value);
+      });
+      return url;
+    }
+
+    function writeUrl() {
+      window.history.replaceState(null, "", urlForState());
+    }
+
+    function renderComponents() {
+      const filtered = components.filter(
+        (component) =>
+          matches(component._search, state.component.query) &&
+          (!state.component.version || list(component.versions).includes(state.component.version)) &&
+          (!state.component.kind || component._shape === state.component.kind),
+      );
+      state.component.page = validPage(state.component.page, filtered.length);
+      componentRows.innerHTML = page(filtered, state.component.page)
+        .map(
+          (component) => `<tr>
+            <td><a class="fix-registry__name" href="${href("component", component.name)}">${escape(component.name)}</a></td>
+            <td>${badge(shapeLabel(component._shape))}</td>
+            <td>${component.msg_type ? `<code>${escape(component.msg_type)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
+            <td>${chips(component.versions)}</td>
+            <td>${number.format(component._members.length)}</td>
+          </tr>`,
+        )
+        .join("");
+      if (!filtered.length) componentRows.innerHTML = emptyRow(5);
+      updateCount(select("[data-component-count]"), filtered.length, components.length);
+      updatePager(select("[data-component-pager]"), state.component.page, filtered.length);
+    }
+
+    function renderFields() {
+      const filtered = fields.filter(
+        (field) =>
+          matches(field._search, state.field.query) &&
+          (!state.field.version || list(field.versions).includes(state.field.version)) &&
+          (!state.field.type || normalized(field.type) === state.field.type) &&
+          (!state.field.kind || field._usages.includes(state.field.kind)),
+      );
+      state.field.page = validPage(state.field.page, filtered.length);
+      fieldRows.innerHTML = page(filtered, state.field.page)
+        .map(
+          (field) => `<tr>
+            <td>${field.tag === undefined ? '<span class="fix-registry__muted">—</span>' : `<code>${escape(field.tag)}</code>`}</td>
+            <td><a class="fix-registry__name" href="${href("field", field.tag ?? field.name)}">${escape(field.name)}</a></td>
+            <td><code>${escape(field.type || "—")}</code></td>
+            <td>${field._usages.map((usage) => badge(usage)).join("")}</td>
+            <td>${chips(field.versions)}</td>
+            <td>${number.format(list(field.components).length + list(field.used_in).length)}</td>
+          </tr>`,
+        )
+        .join("");
+      if (!filtered.length) fieldRows.innerHTML = emptyRow(6);
+      updateCount(select("[data-field-count]"), filtered.length, fields.length);
+      updatePager(select("[data-field-pager]"), state.field.page, filtered.length);
+    }
+
+    function validPage(current, count) {
+      return Math.min(current, Math.max(0, Math.ceil(count / PAGE_SIZE) - 1));
+    }
+
+    function page(entries, index) {
+      return entries.slice(index * PAGE_SIZE, (index + 1) * PAGE_SIZE);
+    }
+
+    function emptyRow(columns) {
+      return `<tr><td class="fix-registry__empty" colspan="${columns}">No records match these filters.</td></tr>`;
+    }
+
+    function updateCount(output, count, total) {
+      output.textContent = `${number.format(count)} / ${number.format(total)}`;
+    }
+
+    function updatePager(pager, current, count) {
+      const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+      select("[data-page]", pager).textContent = `Page ${current + 1} / ${pages}`;
+      select("[data-previous]", pager).disabled = current === 0;
+      select("[data-next]", pager).disabled = current + 1 >= pages;
+      pager.hidden = count <= PAGE_SIZE;
+    }
+
+    function componentLink(name) {
+      const found = componentByName.get(normalized(name));
+      return found
+        ? `<a class="fix-registry__name" href="${href("component", found.name)}">${escape(found.name)}</a>`
+        : `<code>${escape(name)}</code>`;
+    }
+
+    function messageLink(name) {
+      const query = new URLSearchParams({ fq: name });
+      return `<a class="fix-registry__name" href="?${query}#fields" data-message-filter="${escape(name)}">${escape(name)}</a>`;
+    }
+
+    function fieldLink(member) {
+      const found =
+        (member.tag !== undefined && fieldByTag.get(String(member.tag))) ||
+        fieldByName.get(normalized(member.name));
+      return found
+        ? `<a class="fix-registry__name" href="${href("field", found.tag ?? found.name)}">${escape(found.name)}</a>`
+        : `<code>${escape(member.name)}</code>`;
+    }
+
+    function renderComponentDetail(component) {
+      const relatedFields = componentFields.get(normalized(component.name)) || [];
+      const owners = componentBacklinks.get(normalized(component.name)) || [];
+      componentDetail.innerHTML = `<header>
+          <div><p class="fix-registry__eyebrow">${escape(shapeLabel(component._shape))}</p><h3>${escape(component.name)}</h3></div>
+          <a class="fix-registry__detail-close" data-detail-close href="#components-title">Close</a>
+        </header>
+        <dl>
+          <dt>Versions</dt><dd>${chips(component.versions)}</dd>
+          <dt>MsgType</dt><dd>${component.msg_type ? `<code>${escape(component.msg_type)}</code>` : "—"}</dd>
+          <dt>Members</dt><dd>${number.format(component._members.length)}</dd>
+          ${aliasDefinition(component.aliases)}
+        </dl>
+        ${owners.length ? `<h4>Referenced by components</h4><p>${owners.map((owner) => componentLink(owner.name)).join(" · ")}</p>` : ""}
+        ${relatedFields.length ? `<h4>Fields</h4><p>${relatedFields.map((field) => fieldLink(field)).join(" · ")}</p>` : ""}
+        <h4>Member tree</h4>
+        ${memberTree(component.members)}
+        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/components/${component.slug}.json`)}">View repository record →</a>`;
+      componentDetail.hidden = false;
+    }
+
+    function renderFieldDetail(field) {
+      const valueCodes = [
+        ...new Set([
+          ...Object.keys(object(field.values)),
+          ...Object.keys(object(field.value_names)),
+          ...Object.keys(object(field.decoded)),
+          ...Object.keys(object(field.states)),
+          ...Object.keys(object(field.event_types)),
+        ]),
+      ];
+      const source =
+        field.tag === undefined
+          ? "fields/named.json"
+          : `fields/${String(Math.floor(Number(field.tag) / 500)).padStart(6, "0")}.json`;
+      const componentReferences = list(field.components);
+      const messageReferences = list(field.used_in);
+      fieldDetail.innerHTML = `<header>
+          <div><p class="fix-registry__eyebrow">${field.tag === undefined ? "Namespace" : `Tag ${escape(field.tag)}`}</p><h3>${escape(field.name)}</h3></div>
+          <a class="fix-registry__detail-close" data-detail-close href="#fields-title">Close</a>
+        </header>
+        ${field.description ? `<p>${escape(field.description)}</p>` : ""}
+        <dl>
+          <dt>Datatype</dt><dd><code>${escape(field.type || "—")}</code></dd>
+          <dt>Versions</dt><dd>${chips(field.versions)}</dd>
+          ${field.column ? `<dt>Column</dt><dd><code>${escape(field.column)}</code></dd>` : ""}
+          ${field.kind ? `<dt>Kind</dt><dd>${badge(field.kind)}</dd>` : ""}
+          ${field.note ? `<dt>Note</dt><dd>${escape(field.note)}</dd>` : ""}
+          ${aliasDefinition(field.aliases)}
+        </dl>
+        ${componentReferences.length ? `<h4>Components</h4><p>${componentReferences.map((name) => componentLink(name)).join(" · ")}</p>` : ""}
+        ${messageReferences.length ? `<h4>Messages</h4><p>${messageReferences.map((name) => messageLink(name)).join(" · ")}</p>` : ""}
+        ${valueCodes.length ? valueTable(field, valueCodes) : ""}
+        ${Object.keys(object(field.encoded)).length ? encodingTable(field.encoded) : ""}
+        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${source}`)}">View repository record →</a>`;
+      fieldDetail.hidden = false;
+    }
+
+    function aliasDefinition(aliases) {
+      if (!list(aliases).length) return "";
+      return `<dt>Aliases</dt><dd>${aliases
+        .map((alias) => {
+          const source = alias.source ? ` · ${alias.source}` : "";
+          return `<span class="fix-registry__chip">${escape(alias.name)}${escape(source)}</span>`;
+        })
+        .join("")}</dd>`;
+    }
+
+    function memberTree(members) {
+      if (!list(members).length) return '<p class="fix-registry__muted">No members.</p>';
+      return `<ul class="fix-registry__tree">${members
+        .map((member) => {
+          const named =
+            member.kind === "component" ? componentLink(member.name) : fieldLink(member);
+          const nested = list(member.members).length ? memberTree(member.members) : "";
+          return `<li>${badge(member.kind)} ${named} ${
+            member.required ? badge("required", "required") : badge("optional", "optional")
+          }${nested}</li>`;
+        })
+        .join("")}</ul>`;
+    }
+
+    function valueTable(field, codes) {
+      return `<h4>Values</h4><div class="fix-registry__table-wrap fix-registry__detail-table"><table class="fix-registry__table">
+        <thead><tr><th>Wire</th><th>Meaning</th><th>Symbol</th><th>Decoded</th><th>State / event</th></tr></thead>
+        <tbody>${codes
+          .map((code) => {
+            const configured = object(field.states)[code] || object(field.event_types)[code];
+            const enumText = configured
+              ? typeof configured === "object"
+                ? `${configured.name} (${configured.id})`
+                : configured
+              : "";
+            return `<tr><td><code>${escape(code)}</code></td><td>${escape(object(field.values)[code] || "")}</td><td><code>${escape(object(field.value_names)[code] || "")}</code></td><td><code>${escape(object(field.decoded)[code] || "")}</code></td><td>${escape(enumText)}</td></tr>`;
+          })
+          .join("")}</tbody></table></div>`;
+    }
+
+    function encodingTable(encoded) {
+      const entries = Object.entries(object(encoded));
+      return `<details><summary>Encoded spellings (${number.format(entries.length)})</summary>
+        <div class="fix-registry__table-wrap fix-registry__detail-table"><table class="fix-registry__table">
+        <thead><tr><th>Spelling</th><th>Wire</th></tr></thead><tbody>${entries
+          .map(
+            ([spelling, wire]) =>
+              `<tr><td><code>${escape(spelling)}</code></td><td><code>${escape(wire)}</code></td></tr>`,
+          )
+          .join("")}</tbody></table></div></details>`;
+    }
+
+    function route(scroll = true) {
+      const parameters = new URLSearchParams(window.location.hash.slice(1));
+      const componentName = parameters.get("component");
+      const fieldKey = parameters.get("field");
+      componentDetail.hidden = true;
+      fieldDetail.hidden = true;
+      status.hidden = true;
+      delete status.dataset.error;
+      if (componentName) {
+        const found = componentByName.get(normalized(componentName));
+        if (found) {
+          renderComponentDetail(found);
+          if (scroll) {
+            componentDetail.focus({ preventScroll: true });
+            componentDetail.scrollIntoView({
+              behavior: reducedMotion ? "auto" : "smooth",
+              block: "start",
+            });
+          }
+        } else {
+          routeError("component", componentName, scroll);
+        }
+      } else if (fieldKey) {
+        const found = fieldByTag.get(fieldKey) || fieldByName.get(normalized(fieldKey));
+        if (found) {
+          renderFieldDetail(found);
+          if (scroll) {
+            fieldDetail.focus({ preventScroll: true });
+            fieldDetail.scrollIntoView({
+              behavior: reducedMotion ? "auto" : "smooth",
+              block: "start",
+            });
+          }
+        } else {
+          routeError("field", fieldKey, scroll);
+        }
+      }
+    }
+
+    function routeError(kind, key, scroll) {
+      status.dataset.error = "";
+      status.textContent = `FIX ${kind} “${key}” was not found.`;
+      status.hidden = false;
+      if (scroll) {
+        status.scrollIntoView({
+          behavior: reducedMotion ? "auto" : "smooth",
+          block: "start",
+        });
+      }
+    }
+
+    function renderAll() {
+      renderComponents();
+      renderFields();
+      route(false);
+    }
+
+    readState();
+    ready.hidden = false;
+    renderComponents();
+    renderFields();
+    route(Boolean(window.location.hash.includes("=")));
+
+    window.addEventListener("hashchange", () => route());
+    window.addEventListener("popstate", () => {
+      readState();
+      renderAll();
+    });
+  }
+
+  function flattenMembers(members) {
+    return list(members).flatMap((member) => [member, ...flattenMembers(member.members)]);
+  }
+
+  function componentShape(component) {
+    if (component.msg_type) return "message";
+    const kinds = new Set(flattenMembers(component.members).map((member) => member.kind));
+    if (kinds.has("group")) return "repeating";
+    if (kinds.has("component")) return "composed";
+    return "flat";
+  }
+
+  function shapeLabel(shape) {
+    return { message: "Message", repeating: "Repeating group", composed: "Composed", flat: "Flat" }[
+      shape
+    ];
+  }
+
+  function fieldUsages(field) {
+    const usages = [];
+    if (field.tag === undefined) usages.push("namespace");
+    if (Object.keys(object(field.values)).length || Object.keys(object(field.value_names)).length)
+      usages.push("enumerated");
+    if (list(field.components).length) usages.push("component");
+    if (list(field.used_in).length) usages.push("message");
+    return usages.length ? usages : ["plain"];
+  }
+})();
