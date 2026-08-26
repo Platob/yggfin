@@ -3,6 +3,7 @@
 import datetime
 
 import pyarrow
+import pyarrow.compute
 import pytest
 
 import rekep.fix.fields
@@ -80,10 +81,16 @@ def test_the_timezone_carrying_types_stay_text() -> None:
 def test_the_scalar_temporal_reader_matches_the_arrow_boundary(
     arrow_type: pyarrow.DataType, text: str
 ) -> None:
-    vector = cast_arrow_fix(pyarrow.array([text]), arrow_type)[0].as_py()
+    vector = cast_arrow_fix(pyarrow.array([text]), arrow_type)
+    if getattr(arrow_type, "unit", None) == "ns":
+        vector = pyarrow.compute.floor_temporal(vector, unit="microsecond")
+        vector = vector.cast(
+            pyarrow.time64("us") if pyarrow.types.is_time(arrow_type) else pyarrow.timestamp("us")
+        )
+    vector_value = vector[0].as_py()
     scalar = scalar_fix_temporal(text, arrow_type)
 
-    expected = text if vector is None else render_fix_value(vector)
+    expected = text if vector_value is None else render_fix_value(vector_value)
     actual = text if scalar is None else render_fix_value(scalar)
     assert actual == expected
 
