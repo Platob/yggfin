@@ -82,6 +82,76 @@ class SideTrdRegTimestamp:
     """Unprojected members of this entry under unique FIX names."""
 
 
+@scalar
+class SecurityAltID:
+    """One entry of FIX's SecAltIDGrp component: one alternative identifier."""
+
+    SecurityAltID: Annotated[str | None, DECLARATIONS[455]] = None
+    """The alternative identifier itself."""
+
+    SecurityAltIDSource: Annotated[str | None, DECLARATIONS[456]] = None
+    """Scheme or class of `SecurityAltID`, in `SecurityIDSource`'s codes."""
+
+    buffer: dict[str, str] | None = None
+    """Unprojected members of this entry under unique FIX names."""
+
+
+@scalar
+class Leg:
+    """One entry of FIX's InstrmtLegGrp component: one leg of a multileg.
+
+    Every member is the instrument field with a `Leg` in front of it --
+    `LegSymbol <600>` is `Symbol <55>` for the leg -- so the columns here are
+    the ones `rekep.market.instrument.Leg` reads, and everything else a venue
+    sends with a leg stays in `buffer` under its unique FIX name.
+    """
+
+    LegSymbol: Annotated[str | None, DECLARATIONS[600]] = None
+    """Identifier as the venue spells the leg; what opens an entry."""
+
+    LegSecurityID: Annotated[str | None, DECLARATIONS[602]] = None
+    """Identifier in the scheme `LegSecurityIDSource` names."""
+
+    LegSecurityIDSource: Annotated[str | None, DECLARATIONS[603]] = None
+    """Which scheme `LegSecurityID` is in, as FIX numbers them."""
+
+    LegSecurityType: Annotated[str | None, DECLARATIONS[609]] = None
+    """What the venue calls this leg, from FIX's own list."""
+
+    LegCFICode: Annotated[str | None, DECLARATIONS[608]] = None
+    """ISO 10962 classification of the leg."""
+
+    LegSecurityExchange: Annotated[str | None, DECLARATIONS[616]] = None
+    """Where the leg is listed, when it differs from the strategy's venue."""
+
+    LegMaturityDate: Annotated[datetime.date | None, DECLARATIONS[611]] = None
+    """When the leg expires; null for anything that does not."""
+
+    LegMaturityMonthYear: Annotated[str | None, DECLARATIONS[610]] = None
+    """The older month-resolution way to say when the leg expires."""
+
+    LegStrikePrice: Annotated[float | None, DECLARATIONS[612]] = None
+    """Exercise price, where the leg is an option."""
+
+    LegPutOrCall: Annotated[int | None, DECLARATIONS[1358]] = None
+    """Which way the leg points, where it is an option."""
+
+    LegContractMultiplier: Annotated[float | None, DECLARATIONS[614]] = None
+    """Units of the underlying one leg contract represents."""
+
+    LegCurrency: Annotated[str | None, DECLARATIONS[556]] = None
+    """ISO 4217 currency the leg is priced in."""
+
+    LegSide: Annotated[str | None, DECLARATIONS[624]] = None
+    """Which way the strategy takes this leg, in `Side <54>`'s codes."""
+
+    LegRatioQty: Annotated[float | None, DECLARATIONS[623]] = None
+    """How many of this leg one unit of the strategy is; the leg's weight."""
+
+    buffer: dict[str, str] | None = None
+    """Unprojected members of this entry under unique FIX names."""
+
+
 def _entries_type(row: type) -> pyarrow.DataType:
     """The list one component's entries land in: never a null entry, ever."""
     return pyarrow.list_(pyarrow.field("item", row.into_field().arrow_type, nullable=False))
@@ -90,10 +160,14 @@ def _entries_type(row: type) -> pyarrow.DataType:
 PARTIES: pyarrow.DataType = _entries_type(Party)
 TRD_REG_TIMESTAMPS: pyarrow.DataType = _entries_type(TrdRegTimestamp)
 SIDE_TRD_REG_TIMESTAMPS: pyarrow.DataType = _entries_type(SideTrdRegTimestamp)
+SECURITY_ALT_IDS: pyarrow.DataType = _entries_type(SecurityAltID)
+LEGS: pyarrow.DataType = _entries_type(Leg)
 
 _NO_PARTY_IDS = "NoPartyIDs"
 _NO_TRD_REG_TIMESTAMPS = "NoTrdRegTimestamps"
 _NO_SIDE_TRD_REG_TS = "NoSideTrdRegTS"
+_NO_SECURITY_ALT_ID = "NoSecurityAltID"
+_NO_LEGS = "NoLegs"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _SIGNED = r"^[+-]?[0-9]{1,18}$"
 _DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)$"
@@ -118,6 +192,17 @@ class ComponentGroup:
     #: Which component to read, and which repeating group inside it.
     component: str = ""
     group: str = ""
+
+    #: Whether an occurrence inside another group's entry belongs to that
+    #: entry rather than to the message. The regulatory components hoist
+    #: deliberately -- `SideTrdRegTS` lives inside `NoSides` by definition and
+    #: its consumers read it off the message -- but an instrument group inside
+    #: one market-data entry describes that entry's instrument, and lifting it
+    #: to the message would file the identifiers under whichever instrument
+    #: the header names. A scoped group is only extracted where it opens
+    #: before every count that could own it; anywhere else it stays residual,
+    #: which is where the per-entry readers already look.
+    scoped: bool = False
 
     @classmethod
     @cache
@@ -232,6 +317,20 @@ class ComponentGroup:
             compute.equal(count_occurrences, 0),
             compute.greater(inferred_delimiters, 0),
         )
+        if self.scoped and len(self._enclosing_array):
+            # An occurrence that opens after a count that could own it is one
+            # entry's, not the message's: leave it residual for the per-entry
+            # readers. Absent either position, there is nothing to be inside.
+            enclosing = compute.is_in(keys, value_set=self._enclosing_array)
+            first_enclosing = _first_by_parent(positions, parents, enclosing, row_ids)
+            counted_valid = compute.and_(
+                counted_valid,
+                compute.fill_null(compute.less(count_positions, first_enclosing), True),
+            )
+            inferred_valid = compute.and_(
+                inferred_valid,
+                compute.fill_null(compute.less(first_delimiter, first_enclosing), True),
+            )
 
         counted_parent = compute.take(counted_valid, parents)
         inferred_parent = compute.take(inferred_valid, parents)
@@ -552,6 +651,59 @@ class ComponentGroup:
             pyarrow.int32(),
         )
 
+    @cached_property
+    def _enclosing_array(self) -> pyarrow.Array:
+        """Count tags of every group that nests this one inside its entries.
+
+        Read off the declaration forest like everything else here: a group
+        whose subtree reaches this component's group scopes it -- an
+        `NoMDEntries <268>` entry carries an `Instrument`, so a
+        `NoSecurityAltID <454>` opening after `268` belongs to one entry and
+        not to the message. Groups whose entries cannot reach this one --
+        underlyings beside legs, legs beside alt-ids -- are not collected, so
+        their presence on a line never refuses a top-level extraction.
+        """
+        grouped = self.group.lower()
+        by_name = {component.name.lower(): component for component in self.components}
+        name_tags = {str(name).lower(): int(tag) for name, tag in (self.names or {}).items()}
+
+        def contains(declared: Sequence[SpecMember], seen: frozenset[str]) -> bool:
+            for member in declared:
+                if isinstance(member, SpecGroup):
+                    if member.name.lower() == grouped or contains(member.members, seen):
+                        return True
+                elif isinstance(member, SpecComponentRef):
+                    key = member.name.lower()
+                    nested = by_name.get(key)
+                    if nested is None or key in seen:
+                        continue
+                    if contains(nested.members, seen | {key}):
+                        return True
+            return False
+
+        found: set[int] = set()
+
+        def visit(declared: Sequence[SpecMember], seen: frozenset[str]) -> None:
+            for member in declared:
+                if isinstance(member, SpecGroup):
+                    if member.name.lower() != grouped and contains(member.members, seen):
+                        declared_tag = getattr(member, "tag", 0)
+                        if declared_tag:
+                            found.add(int(declared_tag))
+                        mapped = name_tags.get(member.name.lower())
+                        if mapped is not None:
+                            found.add(mapped)
+                    visit(member.members, seen)
+                elif isinstance(member, SpecComponentRef):
+                    key = member.name.lower()
+                    nested = by_name.get(key)
+                    if nested is not None and key not in seen:
+                        visit(nested.members, seen | {key})
+
+        for component in self.components:
+            visit(component.members, frozenset({component.name.lower()}))
+        return pyarrow.array(sorted(found), pyarrow.int32())
+
 
 def _readable(text: Any, arrow_type: pyarrow.DataType) -> Any:
     """Which values a column of this type can hold, as a mask over `text`.
@@ -655,6 +807,81 @@ class SideTrdRegTimestamps(ComponentGroup):
             ("SideTrdRegTimestamp", "SideTrdRegTimestamp"),
             ("SideTrdRegTimestampType", "SideTrdRegTimestampType"),
             ("SideTrdRegTimestampSrc", "SideTrdRegTimestampSrc"),
+        )
+
+
+@dataclasses.dataclass(eq=False)
+class SecurityAltIDs(ComponentGroup):
+    """FIX's SecAltIDGrp component, entry by entry.
+
+    Every other identifier an instrument is known by -- an ISIN beside a
+    venue's own code, a CUSIP beside a Bloomberg ticker. Structured for the
+    same reason parties are: the identifier and its scheme always arrive
+    together and mean nothing apart, so a reader wanting "the ISIN" should not
+    be reassembling them out of a flat pair list by index.
+    """
+
+    component: str = "SecAltIDGrp"
+    group: str = _NO_SECURITY_ALT_ID
+    scoped: bool = True
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one alternative identifier is."""
+        return SecurityAltID
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`SecurityAltID` opens an entry; the scheme qualifies it."""
+        return (
+            ("SecurityAltID", "SecurityAltID"),
+            ("SecurityAltIDSource", "SecurityAltIDSource"),
+        )
+
+
+@dataclasses.dataclass(eq=False)
+class Legs(ComponentGroup):
+    """FIX's InstrmtLegGrp component, entry by entry.
+
+    The legs of a multileg instrument: a spread's near and far, an option
+    strategy's pair. The declaration walk reads `NoLegs <555>` off *every*
+    component that declares it -- the order, quote and trade-capture variants
+    wrap the same `InstrumentLeg` and add members of their own -- so a leg's
+    contextual members are known member tags that land in `buffer` rather
+    than breaking the entry.
+    """
+
+    component: str = "InstrmtLegGrp"
+    group: str = _NO_LEGS
+    scoped: bool = True
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one leg is."""
+        return Leg
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`LegSymbol` opens an entry; the members an instrument reads follow."""
+        return (
+            ("LegSymbol", "LegSymbol"),
+            ("LegSecurityID", "LegSecurityID"),
+            ("LegSecurityIDSource", "LegSecurityIDSource"),
+            ("LegSecurityType", "LegSecurityType"),
+            ("LegCFICode", "LegCFICode"),
+            ("LegSecurityExchange", "LegSecurityExchange"),
+            ("LegMaturityDate", "LegMaturityDate"),
+            ("LegMaturityMonthYear", "LegMaturityMonthYear"),
+            ("LegStrikePrice", "LegStrikePrice"),
+            ("LegPutOrCall", "LegPutOrCall"),
+            ("LegContractMultiplier", "LegContractMultiplier"),
+            ("LegCurrency", "LegCurrency"),
+            ("LegSide", "LegSide"),
+            ("LegRatioQty", "LegRatioQty"),
         )
 
 

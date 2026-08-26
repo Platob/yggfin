@@ -59,6 +59,13 @@ MESSAGE = [
     "SideTrdRegTS",
     "ISINCODE",
 ]
+#: Structured components declared after every flat column: Iceberg collects
+#: bounds for leaf columns in declaration order, and this contract crosses
+#: that cutoff -- a list declared earlier would push flat columns past it.
+TRAILING_COMPONENTS = [
+    "SecurityAltID",
+    "Legs",
+]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
 RAW_TAGS = {55: "Symbol", 34: "MsgSeqNum"}
@@ -73,7 +80,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 109
+EXPECTED_LOG_COLUMNS = 111
 
 
 @pytest.fixture(scope="module")
@@ -87,7 +94,7 @@ def test_a_log_line_is_an_event() -> None:
     assert issubclass(FixMsg, Event)
     assert (
         FixMsg.into_field().into_arrow_schema().names
-        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS
+        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS + TRAILING_COMPONENTS
     )
 
 
@@ -272,6 +279,147 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
         [("279", "0"), ("269", "0"), ("55", "ENTRY"), ("270", "100"), ("271", "1")]
     ]
     assert [event.symbol for event in depth.into_market_events(fix_version="4.4")] == ["ENTRY"]
+
+
+def test_instrument_groups_resolve_into_their_structured_columns(
+    registry: FixRegistry,
+) -> None:
+    """Alt-ids and legs land typed, leave `kwargs`, and read back identically."""
+    line = (
+        "8=FIX.4.4|35=d|55=SPREAD|48=XS123|22=4|"
+        "454=2|455=US0378331005|456=4|455=037833100|456=1|"
+        "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
+        "600=MSFT|624=2|623=2|556=USD|687=9|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    alt_ids = batch.column("SecurityAltID")[0].as_py()
+    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+        ("US0378331005", "4"),
+        ("037833100", "1"),
+    ]
+    legs = batch.column("Legs")[0].as_py()
+    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+        ("AAPL", "1", 1.0),
+        ("MSFT", "2", 2.0),
+    ]
+    assert legs[0]["LegMaturityDate"] == datetime.date(2027, 1, 15)
+    assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
+    assert batch.column("kwargs")[0].as_py() == [], "nothing of either group is stored twice"
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    assert stored.group(454, (455, 456)) == [
+        [("455", "US0378331005"), ("456", "4")],
+        [("455", "037833100"), ("456", "1")],
+    ]
+    assert [dict(entry).get("600") for entry in map(dict, stored.group(555))] == ["AAPL", "MSFT"]
+
+    instrument = next(iter(stored.into_fix_events().into_instruments()))
+    direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
+    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.isin_code == "XS123", "the primary ISIN outranks the alternative"
+    assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", "BUY", 1.0),
+        ("MSFT", "SELL", 2.0),
+    ]
+    assert instrument == direct, "the resolved columns and the pair walk agree"
+
+
+def test_rendered_indexed_instrument_groups_resolve_the_same_way(
+    registry: FixRegistry,
+) -> None:
+    """The bridge's `NOLEGS[i]=...` spelling reaches the same typed columns."""
+    member = "\x04\x03"
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=d|#SYMBOL=SPREAD|"
+        f"#NOSECURITYALTID=1|#NOSECURITYALTID[0]=SECURITYALTID=US0378331005{member}"
+        f"SECURITYALTIDSOURCE=4{member}|"
+        f"#NOLEGS=2|#NOLEGS[0]=LEGSYMBOL=AAPL{member}LEGSIDE=1{member}LEGRATIOQTY=1{member}|"
+        f"#NOLEGS[1]=LEGSYMBOL=MSFT{member}LEGSIDE=2{member}LEGRATIOQTY=2{member}"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("protocol_code")[0].as_py() == "UL"
+    alt_ids = batch.column("SecurityAltID")[0].as_py()
+    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+        ("US0378331005", "4"),
+    ]
+    legs = batch.column("Legs")[0].as_py()
+    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+        ("AAPL", "1", 1.0),
+        ("MSFT", "2", 2.0),
+    ]
+
+    instrument = next(
+        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
+    )
+    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", "BUY", 1.0),
+        ("MSFT", "SELL", 2.0),
+    ]
+
+
+def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry) -> None:
+    """A group inside one market-data entry is that entry's, not the message's.
+
+    The scoped extractors leave it in `kwargs`, so the per-entry instrument
+    readers find it exactly where the scalar walk does -- hoisting it into the
+    message-level column would have filed the identifier under whichever
+    instrument the header names.
+    """
+    line = (
+        "8=FIX.4.4|35=X|52=20260814-00:05:01.149|268=2|"
+        "279=0|269=0|55=BTC-USD|270=100.0|271=5|"
+        "279=0|269=0|55=ETH-USD|48=ETH-ID|454=1|455=US0378331005|456=4|270=99.0|271=1|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("SecurityAltID")[0].as_py() is None
+    assert 454 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    direct = FixMsg.from_text(line, "|")
+    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    assert found == [
+        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+    ]
+    assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN": "US0378331005"})]
+
+
+def test_a_4_3_row_answers_from_the_column_and_from_kwargs_at_once(
+    registry: FixRegistry,
+) -> None:
+    """4.3 declares `SecAltIDGrp` and no legs component, so one stored row must
+    read `alt_ids` off the resolved column while `legs` still walk the pairs."""
+    line = (
+        "8=FIX.4.3|35=d|55=SPREAD|454=1|455=US0378331005|456=4|"
+        "555=2|600=AAPL|624=1|623=1|600=MSFT|624=2|623=2|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert [entry["SecurityAltID"] for entry in batch.column("SecurityAltID")[0].as_py()] == [
+        "US0378331005"
+    ]
+    assert batch.column("Legs")[0].as_py() is None
+    assert 555 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+
+    instrument = next(
+        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
+    )
+    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
+        ("AAPL", "BUY"),
+        ("MSFT", "SELL"),
+    ]
 
 
 def test_typed_timestamps_keep_direct_and_stored_book_outputs_equal(
@@ -921,7 +1069,7 @@ def test_fix_names_do_not_alias_the_generic_event_envelope() -> None:
 
 def test_every_promoted_name_is_the_registrys_exact_spelling() -> None:
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 92
+    assert len(names) == 110
     assert all(field.name == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
         6: "AvgPx",

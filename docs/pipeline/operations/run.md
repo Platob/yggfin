@@ -189,7 +189,7 @@ and orders.
 | Contract | Primary key | Partitions | Nested payloads |
 | --- | --- | --- | --- |
 | `Message` | `unix, hash` | `unix_partition` | generic ordered `kwargs`, event lineage and `codes` |
-| `FixMsg` | `unix, hash` | `unix_partition` | `kwargs`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `codes` |
+| `FixMsg` | `unix, hash` | `unix_partition` | `kwargs`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID`, `Legs`, `codes` |
 | `Instrument` | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
 | `Book` | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
 | `Order` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |

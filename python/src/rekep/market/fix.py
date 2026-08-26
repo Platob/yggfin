@@ -41,7 +41,7 @@ from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
-from rekep.text.fixmsg import FixMsg
+from rekep.text.fixmsg import COMPONENT_COLUMNS, FixMsg
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -518,10 +518,7 @@ class FixEvents(Convertible):
     def _flat_by_tag(self) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip."""
         message = self.message
-        if any(
-            getattr(message, name, None) is not None
-            for name in ("Parties", "TrdRegTimestamps", "SideTrdRegTS")
-        ):
+        if any(getattr(message, name, None) is not None for name in COMPONENT_COLUMNS):
             return None
         entries = message.kwargs or ()
         if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
@@ -1004,10 +1001,45 @@ class FixEvents(Convertible):
             legs=self.into_legs() or None,
         )
 
+    def _component_entries(self, column: str) -> list[dict[str, str]] | None:
+        """One resolved component column in `_group`'s first-value-by-name shape.
+
+        None when the parse stage did not resolve the column, which is what
+        sends a scalar-built message down the pair-walking fallback. A stored
+        row hands entries back as mappings and a constructed one as `@scalar`
+        rows; both answer here, typed members rendered back to the wire's
+        spelling so the same readers serve both paths, and `buffer` merged
+        after them because a member kept as text was one a column could not
+        hold.
+        """
+        entries = getattr(self.message, column, None)
+        if entries is None:
+            return None
+        found: list[dict[str, str]] = []
+        for entry in entries:
+            if isinstance(entry, Mapping):
+                values = dict(entry)
+            else:
+                values = {
+                    member.name: getattr(entry, member.name, None)
+                    for member in dataclasses.fields(entry)
+                }
+            resolved: dict[str, str] = {}
+            for name, value in values.items():
+                if name != "buffer" and value is not None:
+                    resolved.setdefault(name, render_fix_value(value))
+            for name, value in dict(values.get("buffer") or {}).items():
+                resolved.setdefault(name, value)
+            found.append(resolved)
+        return found
+
     def into_alt_ids(self) -> dict[str, str]:
         """Every alternative identifier the message carried, by the scheme's name."""
+        entries = self._component_entries("SecurityAltID")
+        if entries is None:
+            entries = self._group("NoSecurityAltID")
         found: dict[str, str] = {}
-        for entry in self._group("NoSecurityAltID"):
+        for entry in entries:
             named = entry.get("SecurityAltID")
             raw_scheme = entry.get("SecurityAltIDSource")
             scheme = IdSource.from_fix(raw_scheme, IdSource.UNKNOWN)
@@ -1024,8 +1056,11 @@ class FixEvents(Convertible):
         `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
         same one, against a different set of tags.
         """
+        entries = self._component_entries("Legs")
+        if entries is None:
+            entries = self._group("NoLegs")
         built = []
-        for entry in self._group("NoLegs"):
+        for entry in entries:
             cfi, security_type = entry.get("LegCFICode"), entry.get("LegSecurityType")
             built.append(
                 Leg(

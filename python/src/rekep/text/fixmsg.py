@@ -34,12 +34,21 @@ from rekep.fix.columns import (
     Kwarg,
 )
 from rekep.fix.components import (
+    LEGS,
     PARTIES,
+    SECURITY_ALT_IDS,
     SIDE_TRD_REG_TIMESTAMPS,
     TRD_REG_TIMESTAMPS,
+    Leg,
     Party,
     SideTrdRegTimestamp,
     TrdRegTimestamp,
+)
+from rekep.fix.components import (
+    # Aliased because `FixMsg` names its column after the member that opens an
+    # entry, and an annotation spelling the bare class name would resolve to
+    # that column's own default under `get_type_hints`.
+    SecurityAltID as SecurityAltIDEntry,
 )
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
@@ -75,7 +84,14 @@ _COMPONENT_GROUPS: tuple[tuple[str, str, type[Any]], ...] = (
     ("Parties", "NoPartyIDs", Party),
     ("TrdRegTimestamps", "NoTrdRegTimestamps", TrdRegTimestamp),
     ("SideTrdRegTS", "NoSideTrdRegTS", SideTrdRegTimestamp),
+    ("SecurityAltID", "NoSecurityAltID", SecurityAltIDEntry),
+    ("Legs", "NoLegs", Leg),
 )
+
+#: The parsed columns that hold one structured component each. What the
+#: market translator checks before taking its flat shortcut, published here so
+#: a component added above is one edit and not a hunt for hardcoded tuples.
+COMPONENT_COLUMNS: tuple[str, ...] = tuple(column for column, _, _ in _COMPONENT_GROUPS)
 
 
 @functools.cache
@@ -525,6 +541,30 @@ class FixMsg(Message):
 
     QuoteEntryID: Annotated[str | None, DECLARATIONS[299]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
+
+    # Last, and lists: what the instrument's two repeating groups carry. Last
+    # because Iceberg counts leaf columns in declaration order for the bounds
+    # it collects, and this contract already crosses that cutoff -- a nested
+    # member declared earlier would push flat columns past it. The three
+    # components above predate the cutoff being crossed; new ones go here.
+
+    SecurityAltID: Annotated[
+        list[SecurityAltIDEntry] | None,
+        Field(
+            arrow_type=SECURITY_ALT_IDS,
+            metadata={"fix:component": "SecurityAltID"},
+        ),
+    ] = None
+    """FIX SecAltIDGrp entries -- every other identifier; null when absent."""
+
+    Legs: Annotated[
+        list[Leg] | None,
+        Field(
+            arrow_type=LEGS,
+            metadata={"fix:component": "Legs"},
+        ),
+    ] = None
+    """FIX InstrmtLegGrp entries -- a multileg's legs; null when absent."""
 
     @classmethod
     def from_text(

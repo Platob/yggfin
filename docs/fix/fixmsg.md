@@ -87,7 +87,10 @@ Structured FIX components also use their FIX spellings:
 - `Parties`, with `PartyID`, `PartyIDSource`, `PartyRole`, and a flexible
   `buffer`;
 - `TrdRegTimestamps`;
-- `SideTrdRegTS`.
+- `SideTrdRegTS`;
+- `SecurityAltID`, with `SecurityAltID`, `SecurityAltIDSource`, and `buffer`;
+- `Legs`, with the `InstrumentLeg` members `rekep.market.instrument.Leg`
+  reads, and `buffer` for the rest.
 
 `FixMsg.get` reads promoted columns and `kwargs` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,

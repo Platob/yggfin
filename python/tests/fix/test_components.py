@@ -2,19 +2,27 @@
 
 from __future__ import annotations
 
+import datetime
+
 import pyarrow
 import pytest
 
 from rekep.fix.columns import KWARGS
 from rekep.fix.components import (
+    LEGS,
     PARTIES,
+    SECURITY_ALT_IDS,
     TRD_REG_TIMESTAMPS,
+    Leg,
+    Legs,
     Parties,
     Party,
+    SecurityAltID,
+    SecurityAltIDs,
     TrdRegTimestamp,
     TrdRegTimestamps,
 )
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecFieldRef, SpecGroup
 
 
 def _tags(*rows: object) -> pyarrow.Array:
@@ -597,3 +605,320 @@ def test_a_group_that_is_not_there_is_null_rather_than_empty() -> None:
     stamps, residual = _stamps().into_arrow_arrays(source)
     assert stamps.to_pylist() == [None]
     assert _pairs(residual.to_pylist()[0]) == [(35, "8"), (55, "AAPL")]
+
+
+# -- the instrument's two groups, extracted by the same machine ---------------
+#
+# Alt-ids and legs mirror the packaged declaration's shape: `SecAltIDGrp`
+# declares its fields inline, while every leg group wraps the shared
+# `InstrumentLeg` component -- and the order/trade variants add context
+# members of their own, which must stay known members rather than break an
+# entry.
+
+SEC_ALT_SPEC = SpecComponent(
+    "SecAltIDGrp",
+    (
+        SpecGroup(
+            "NoSecurityAltID",
+            False,
+            454,
+            (
+                SpecFieldRef("SecurityAltID", False, 455),
+                SpecFieldRef("SecurityAltIDSource", False, 456),
+            ),
+        ),
+    ),
+)
+
+INSTRUMENT_LEG_SPEC = SpecComponent(
+    "InstrumentLeg",
+    (
+        SpecFieldRef("LegSymbol", False, 600),
+        SpecFieldRef("LegSecurityID", False, 602),
+        SpecFieldRef("LegSecurityIDSource", False, 603),
+        SpecFieldRef("LegCFICode", False, 608),
+        SpecFieldRef("LegMaturityDate", False, 611),
+        SpecFieldRef("LegStrikePrice", False, 612),
+        SpecFieldRef("LegCurrency", False, 556),
+        SpecFieldRef("LegSide", False, 624),
+        SpecFieldRef("LegRatioQty", False, 623),
+    ),
+)
+
+LEGS_SPEC = SpecComponent(
+    "InstrmtLegGrp",
+    (SpecGroup("NoLegs", False, 555, (SpecComponentRef("InstrumentLeg", False),)),),
+)
+
+TRD_LEGS_SPEC = SpecComponent(
+    "TrdInstrmtLegGrp",
+    (
+        SpecGroup(
+            "NoLegs",
+            False,
+            555,
+            (
+                SpecComponentRef("InstrumentLeg", False),
+                SpecFieldRef("LegQty", False, 687),
+            ),
+        ),
+    ),
+)
+
+
+def _alt_ids(**declared: object) -> SecurityAltIDs:
+    """The SecAltIDGrp extractor over FIX's own declaration of it."""
+    return SecurityAltIDs(components=[SEC_ALT_SPEC], **declared)
+
+
+def _legs(**declared: object) -> Legs:
+    """The legs extractor over the wrapper, the variant and the shared leg."""
+    return Legs(components=[LEGS_SPEC, TRD_LEGS_SPEC, INSTRUMENT_LEG_SPEC], **declared)
+
+
+def test_an_alternative_identifier_is_the_exact_fix_named_shape() -> None:
+    field = SecurityAltID.into_field()
+    assert field.names == ["SecurityAltID", "SecurityAltIDSource", "buffer"]
+    assert field.field("SecurityAltID").metadata["fix:tag"] == "455"
+    assert field.field("SecurityAltIDSource").metadata["fix:tag"] == "456"
+    assert SECURITY_ALT_IDS.value_field.nullable is False
+
+
+def test_a_leg_is_the_exact_fix_named_shape() -> None:
+    field = Leg.into_field()
+    assert field.names == [
+        "LegSymbol",
+        "LegSecurityID",
+        "LegSecurityIDSource",
+        "LegSecurityType",
+        "LegCFICode",
+        "LegSecurityExchange",
+        "LegMaturityDate",
+        "LegMaturityMonthYear",
+        "LegStrikePrice",
+        "LegPutOrCall",
+        "LegContractMultiplier",
+        "LegCurrency",
+        "LegSide",
+        "LegRatioQty",
+        "buffer",
+    ]
+    assert field.field("LegSymbol").metadata["fix:tag"] == "600"
+    assert field.field("LegMaturityDate").arrow_type == pyarrow.date32()
+    assert field.field("LegRatioQty").arrow_type == pyarrow.float64()
+    assert field.field("LegPutOrCall").arrow_type == pyarrow.int32()
+    assert LEGS.value_field.nullable is False
+
+
+def test_counted_alternative_identifiers_are_lifted_in_wire_order() -> None:
+    source = _tags(
+        [
+            (48, "XS123"),
+            (22, "4"),
+            (454, "2"),
+            (455, "US0378331005"),
+            (456, "4"),
+            (455, "037833100"),
+            (456, "1"),
+            (55, "AAPL"),
+        ]
+    )
+
+    found, residual = _alt_ids().into_arrow_arrays(source)
+
+    assert found.to_pylist() == [
+        [
+            {"SecurityAltID": "US0378331005", "SecurityAltIDSource": "4", "buffer": None},
+            {"SecurityAltID": "037833100", "SecurityAltIDSource": "1", "buffer": None},
+        ]
+    ]
+    assert _pairs(residual.to_pylist()[0]) == [(48, "XS123"), (22, "4"), (55, "AAPL")]
+
+
+def test_legs_resolve_through_the_shared_instrument_leg_component() -> None:
+    """The delimiter comes off `InstrumentLeg`'s first field, behind the ref."""
+    assert sorted(_legs()._declaration[0]) == [555]
+    assert _legs()._declaration[3][()] == {600}
+    source = _tags(
+        [
+            (55, "SPREAD"),
+            (555, "2"),
+            (600, "AAPL"),
+            (624, "1"),
+            (623, "1"),
+            (611, "20270115"),
+            (612, "150.5"),
+            (600, "MSFT"),
+            (624, "2"),
+            (623, "2"),
+            (556, "USD"),
+            (10, "000"),
+        ]
+    )
+
+    legs, residual = _legs().into_arrow_arrays(source)
+
+    first, second = legs.to_pylist()[0]
+    assert (first["LegSymbol"], first["LegSide"], first["LegRatioQty"]) == ("AAPL", "1", 1.0)
+    assert first["LegMaturityDate"] == datetime.date(2027, 1, 15)
+    assert first["LegStrikePrice"] == 150.5
+    assert (second["LegSymbol"], second["LegSide"], second["LegCurrency"]) == ("MSFT", "2", "USD")
+    assert _pairs(residual.to_pylist()[0]) == [(55, "SPREAD"), (10, "000")]
+
+
+def test_a_variant_groups_context_member_lands_in_buffer() -> None:
+    """`LegQty <687>` is `TrdInstrmtLegGrp`'s, not a column -- and not a break."""
+    source = _tags([(555, "1"), (600, "AAPL"), (687, "9"), (623, "1")])
+
+    legs, residual = _legs().into_arrow_arrays(source)
+
+    (entry,) = legs.to_pylist()[0]
+    assert entry["LegSymbol"] == "AAPL"
+    assert entry["LegRatioQty"] == 1.0
+    assert dict(entry["buffer"]) == {"LegQty": "9"}
+    assert _pairs(residual.to_pylist()[0]) == []
+
+
+def test_a_malformed_leg_maturity_is_kept_as_text_rather_than_null() -> None:
+    source = _tags([(555, "1"), (600, "AAPL"), (611, "Jan 15 2027")])
+
+    legs, residual = _legs().into_arrow_arrays(source)
+
+    (entry,) = legs.to_pylist()[0]
+    assert entry["LegMaturityDate"] is None
+    assert dict(entry["buffer"]) == {"LegMaturityDate": "Jan 15 2027"}
+    assert _pairs(residual.to_pylist()[0]) == []
+
+
+def test_alt_ids_and_legs_run_in_sequence_over_one_message() -> None:
+    source = _tags(
+        [
+            (454, "1"),
+            (455, "US0378331005"),
+            (456, "4"),
+            (555, "1"),
+            (600, "AAPL"),
+            (624, "1"),
+        ]
+    )
+
+    alt_ids, rest = _alt_ids().into_arrow_arrays(source)
+    legs, rest = _legs().into_arrow_arrays(rest)
+
+    assert alt_ids.type == SECURITY_ALT_IDS and legs.type == LEGS
+    assert [entry["SecurityAltID"] for entry in alt_ids.to_pylist()[0]] == ["US0378331005"]
+    assert [entry["LegSymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert _pairs(rest.to_pylist()[0]) == []
+
+
+# -- scoped extraction: an entry's group is not the message's -----------------
+#
+# The dictionary nests the instrument inside market-data and quote entries, so
+# a `NoSecurityAltID`/`NoLegs` opening after such a count belongs to one entry
+# -- and the scoped extractors leave it residual for the per-entry readers,
+# where the regulatory components keep hoisting deliberately.
+
+MD_ENTRIES_SPEC = SpecComponent(
+    "MDIncGrp",
+    (
+        SpecGroup(
+            "NoMDEntries",
+            False,
+            268,
+            (
+                SpecFieldRef("MDUpdateAction", False, 279),
+                SpecFieldRef("MDEntryType", False, 269),
+                SpecComponentRef("SecAltIDGrp", False),
+                SpecComponentRef("InstrmtLegGrp", False),
+                SpecFieldRef("MDEntryPx", False, 270),
+            ),
+        ),
+    ),
+)
+
+UNDERLYINGS_SPEC = SpecComponent(
+    "UndInstrmtGrp",
+    (SpecGroup("NoUnderlyings", False, 711, (SpecFieldRef("UnderlyingSymbol", False, 311),)),),
+)
+
+
+def _scoped_legs(**declared: object) -> Legs:
+    """The legs extractor, aware of the groups whose entries can own one."""
+    return Legs(
+        components=[
+            LEGS_SPEC,
+            TRD_LEGS_SPEC,
+            INSTRUMENT_LEG_SPEC,
+            MD_ENTRIES_SPEC,
+            UNDERLYINGS_SPEC,
+        ],
+        **declared,
+    )
+
+
+def test_the_enclosing_counts_come_out_of_the_declaration_forest() -> None:
+    assert _scoped_legs()._enclosing_array.to_pylist() == [268]
+    assert _legs()._enclosing_array.to_pylist() == [], "no declared owner, nothing to guard"
+
+
+def test_a_scoped_group_inside_another_groups_entry_stays_residual() -> None:
+    source = _tags(
+        [(268, "1"), (279, "0"), (269, "0"), (555, "1"), (600, "AAPL"), (623, "1"), (270, "99")]
+    )
+
+    legs, residual = _scoped_legs().into_arrow_arrays(source)
+
+    assert legs.to_pylist() == [None]
+    assert residual.to_pylist() == source.to_pylist()
+
+
+def test_a_scoped_group_without_its_count_is_still_the_entrys() -> None:
+    # The inferred (count-free) reading refuses the same way the counted does.
+    source = _tags([(268, "1"), (279, "0"), (600, "AAPL"), (623, "1")])
+
+    legs, residual = _scoped_legs().into_arrow_arrays(source)
+
+    assert legs.to_pylist() == [None]
+    assert residual.to_pylist() == source.to_pylist()
+
+
+def test_a_scoped_group_opening_before_the_entries_is_the_messages() -> None:
+    source = _tags([(555, "1"), (600, "AAPL"), (623, "1"), (268, "1"), (279, "0"), (270, "100")])
+
+    legs, residual = _scoped_legs().into_arrow_arrays(source)
+
+    assert [entry["LegSymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert _pairs(residual.to_pylist()[0]) == [(268, "1"), (279, "0"), (270, "100")]
+
+
+def test_a_count_whose_entries_cannot_own_the_group_does_not_refuse_it() -> None:
+    """Underlyings carry their own alt-id tags, so `711` is no owner of `555`."""
+    source = _tags([(711, "1"), (311, "WTI"), (555, "1"), (600, "AAPL"), (623, "1")])
+
+    legs, residual = _scoped_legs().into_arrow_arrays(source)
+
+    assert [entry["LegSymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert _pairs(residual.to_pylist()[0]) == [(711, "1"), (311, "WTI")]
+
+
+def test_two_leg_blocks_stay_residual_without_owner_context() -> None:
+    """A TradeCaptureReport can carry `555` at two levels; neither is guessed."""
+    source = _tags(
+        [
+            (555, "2"),
+            (600, "AAPL"),
+            (623, "1"),
+            (600, "MSFT"),
+            (623, "2"),
+            (552, "1"),
+            (54, "1"),
+            (555, "1"),
+            (600, "XYZ"),
+            (623, "9"),
+        ]
+    )
+
+    legs, residual = _scoped_legs().into_arrow_arrays(source)
+
+    assert legs.to_pylist() == [None]
+    assert residual.to_pylist() == source.to_pylist()

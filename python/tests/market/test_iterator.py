@@ -2117,3 +2117,70 @@ def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
 
 def test_purge_alive_on_an_empty_stream_emits_nothing() -> None:
     assert list(BookIterator.from_events([], purge_alive=True)) == []
+
+
+def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() -> None:
+    """A row whose legs or alt-ids live in resolved columns skips the flat path.
+
+    Before componentization these rows carried `NoSecurityAltID <454>` or
+    `NoLegs <555>` in `kwargs`, which is what `_COMPLEX_FIELDS` read to send
+    them to the scalar translator. The groups are lifted with their count tags
+    now, so the resolved column is the only remaining evidence -- and the
+    routing must not quietly change with the storage. The batch still
+    translates, through the scalar reference, to exactly what the scalar
+    events say.
+    """
+    from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
+    from rekep.market.fix_arrow import flat_market_positions
+
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    plain = FixMsg(
+        unix=BASE + 1,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="D",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ClOrdID="C-1",
+        Side="1",
+        OrdType="2",
+        OrderQty=10.0,
+        Price=100.0,
+    )
+    identified = dataclasses.replace(
+        plain,
+        ClOrdID="C-2",
+        SecurityAltID=[SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4")],
+    )
+    # A refused extraction -- the count lies -- leaves the group in `kwargs`
+    # and the column null, so this row rides the pre-existing kwargs check.
+    refused = dataclasses.replace(
+        plain,
+        ClOrdID="C-3",
+        kwargs=[(555, "9"), (600, "AAPL"), (624, "1")],
+    )
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist(
+        [plain.into_dict(), identified.into_dict(), refused.into_dict()], schema
+    )
+
+    assert into_flat_market_batches(batch, {"registry": registry}) is None
+    positions = [
+        where.to_pylist() for where in flat_market_positions(batch, {"registry": registry})
+    ]
+    assert positions == [[0]], "only the row with no group evidence at all stays flat"
+
+    expected = [
+        event
+        for message in FixMsg.from_arrow_reader([batch])
+        for event in message.into_market_events(registry=registry)
+        if isinstance(event, Order)
+    ]
+    found = [
+        translated
+        for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry)
+        if event_type is Order
+    ]
+    assert [order.client_order_id for order in expected] == ["C-1", "C-2", "C-3"]
+    expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
+    assert pyarrow.Table.from_batches(found).equals(expected_table)

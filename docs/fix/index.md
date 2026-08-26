@@ -366,7 +366,12 @@ class TrdRegTimestamps(ComponentGroup):
         )
 ```
 
-The parsed message carries `Parties`, `TrdRegTimestamps`, and `SideTrdRegTS`.
+The parsed message carries `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`,
+`SecurityAltID`, and `Legs`. The two instrument groups are *scoped*: the
+dictionary nests the instrument inside market-data and quote entries, so an
+occurrence opening after such a group's count belongs to that entry and stays
+in `kwargs` for the per-entry readers, where the regulatory components hoist
+to the message deliberately.
 `FixCodec.into_components()` maps each column to its extractor and applies them
 in order against what the last one left, so a member lifted into one
 component's entries cannot also be lifted into another's. There are no fallback

@@ -80,6 +80,17 @@ _FLOAT_FIELDS = (
     "Price",
     "StopPx",
 )
+#: Resolved component columns whose presence sends a row to the scalar
+#: translator. The regulatory clocks steer transaction time; the instrument
+#: groups feed `alt_ids` and `legs` -- their count tags in `kwargs` used to
+#: mark these rows, and the resolved column is where that presence lives now.
+#: `Parties` is deliberately absent: order and execution rows never read it.
+_COMPONENT_EXCLUSIONS = (
+    "TrdRegTimestamps",
+    "SideTrdRegTS",
+    "SecurityAltID",
+    "Legs",
+)
 
 
 def into_flat_market_batches(
@@ -138,7 +149,7 @@ def flat_market_parts(
         return None
     if any(
         (column := columns.get(name)) is not None and column.null_count < batch.num_rows
-        for name in ("TrdRegTimestamps", "SideTrdRegTS")
+        for name in _COMPONENT_EXCLUSIONS
     ):
         return None
     entries = compute.list_flatten(kwargs)
@@ -267,7 +278,7 @@ def _eligible_market_rows(
     """Identify rows for which the flat translator mirrors scalar semantics."""
     eligible = pyarrow.repeat(pyarrow.scalar(True), rows)
     kwargs = columns["kwargs"]
-    for name in ("TrdRegTimestamps", "SideTrdRegTS"):
+    for name in _COMPONENT_EXCLUSIONS:
         column = columns.get(name)
         if column is not None:
             eligible = compute.and_(eligible, compute.is_null(column))

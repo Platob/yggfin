@@ -1097,3 +1097,55 @@ def test_every_tag_the_instrument_reads_is_declared() -> None:
     assert read, "the reading is there to be read"
     assert read <= INSTRUMENT_FIELDS, f"undeclared: {sorted(read - INSTRUMENT_FIELDS)}"
     assert {"NoSecurityAltID", "NoLegs"} <= INSTRUMENT_FIELDS
+
+
+def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
+    """A parsed row's typed `SecurityAltID`/`Legs` answer without a pair walk.
+
+    The parse stage lifts both groups out of `kwargs`, so a stored row has no
+    count tag left to re-parse -- the resolved columns are the only place the
+    entries live, and the instrument they build must equal the one the same
+    wire line builds through the scalar fallback.
+    """
+    from rekep.fix.components import Leg as LegEntry
+    from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
+
+    stored = FixMsg(
+        BeginString="FIX.4.4",
+        MsgType="d",
+        Symbol="SPREAD",
+        protocol_version="4.4",
+        SecurityAltID=[
+            SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4"),
+            SecurityAltIDEntry(SecurityAltID="037833100", SecurityAltIDSource="1"),
+        ],
+        Legs=[
+            LegEntry(
+                LegSymbol="AAPL",
+                LegSide="1",
+                LegRatioQty=1.0,
+                LegMaturityDate=datetime.date(2027, 1, 15),
+                LegStrikePrice=150.5,
+            ),
+            LegEntry(LegSymbol="MSFT", LegSide="2", LegRatioQty=2.0, LegCurrency="USD"),
+        ],
+    )
+    reader = FixEvents(message=stored)
+    instrument = reader.instrument
+
+    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.isin_code == "US0378331005"
+    assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", Side.BUY, 1.0),
+        ("MSFT", Side.SELL, 2.0),
+    ]
+    assert instrument.legs[0].maturity == datetime.date(2027, 1, 15)
+    assert instrument.legs[0].strike == 150.5
+    assert instrument.legs[1].currency == Currency.USD
+
+    wire = (
+        "8=FIX.4.4|35=d|55=SPREAD|454=2|455=US0378331005|456=4|455=037833100|456=1|"
+        "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
+        "600=MSFT|624=2|623=2|556=USD"
+    )
+    assert instrument == FixEvents.from_text(wire).instrument
