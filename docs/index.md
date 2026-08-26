@@ -1,10 +1,38 @@
-# rekep
+<section class="rkp-hero" aria-labelledby="rkp-home-title">
+  <div class="rkp-hero__copy">
+    <p class="rkp-hero__eyebrow">RKP / Arrow-native market data</p>
+    <h1 id="rkp-home-title">rekep</h1>
+    <p class="rkp-hero__lead">Turn ordered text logs into Arrow records and six portable shapes: source messages, FIX messages, instruments, books, orders, and executions.</p>
+    <p class="rkp-hero__flow" aria-label="Log to FIX to market">LOG → FIX → MARKET</p>
+    <nav class="rkp-hero__actions" aria-label="Start with rekep">
+      <a href="pipeline/operations/run/">Run pipeline</a>
+      <a href="fix/transcribe/">Transcribe FIX</a>
+    </nav>
+  </div>
+  <figure class="rkp-hero__mark">
+    <img src="assets/rkp-logo.svg" alt="RKP, the rekep project trigram" width="800" height="280">
+    <figcaption>RKP · ordered logs to portable tables</figcaption>
+  </figure>
+</section>
 
-`rekep` turns ordered text logs into Arrow records and writes six portable
-shapes: source messages, FIX messages, instruments, books, orders, and
-executions.
+## Install
 
-![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](assets/arrow-hub.svg)
+```bash
+pip install rekep
+pip install "rekep[iceberg]"   # persisted tables
+pip install "rekep[all]"       # all package extras
+```
+
+## Choose a task
+
+- [Transcribe a FIX message](fix/transcribe.md)
+- [Run the complete pipeline](pipeline/operations/run.md)
+- [Browse the FIX registry](fix/registry.md)
+- [Publish an Arrow contract](contracts/index.md#publishing)
+
+<div class="rkp-diagram-scroll" role="region" aria-label="Scrollable Apache Arrow interoperability diagram" tabindex="0">
+  <img src="assets/arrow-hub.svg" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
+</div>
 
 Arrow is the project's shared columnar boundary: Iceberg tables and encoded
 files sit on one side, while Spark, DataFrames, query engines, and SQL database
@@ -81,40 +109,6 @@ assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
 The scalar example exposes each boundary. File-scale work keeps the same
 shapes in Arrow batches, as shown below and in the [pipeline guide](pipeline/index.md).
 
-## Guides
-
-**Declaring data**
-
-- [Why Arrow](overview/arrow.md): storage, database, and compute interoperability.
-- [Design](overview/design.md): boundaries and maintenance rules.
-- [Types](contracts/types.md): `@scalar`, fields, and recursive casts.
-- [Contracts](contracts/index.md): the six portable schemas.
-- [Enums](enums/index.md): stored keys, values, and FIX spellings.
-- [Identity](contracts/identity.md): cross-language binary hashing.
-
-**Parsing**
-
-- [FixMsg](fix/fixmsg.md): streamed text parsing and routing.
-- [FIX](fix/index.md): registry-driven transcription.
-- [Configuring a parse](fix/configuring.md): headers, rules, field readings.
-
-**Downstream**
-
-- [Market](market/index.md): events, instruments, books, and audit rows.
-- [Iceberg](storage/iceberg.md): streaming reads, writes, and maintenance.
-- [Pipeline](pipeline/index.md): notebooks, configs, and Airflow.
-- [Airflow](pipeline/operations/airflow.md): deployment, runs, backfills, and operations.
-- [End-to-end run](pipeline/operations/run.md): execution evidence and schema lineage.
-- [Benchmarks](storage/benchmarks.md): focused internal measurements.
-
-## Install
-
-```bash
-pip install rekep
-pip install "rekep[iceberg]"   # persisted tables
-pip install "rekep[all]"       # all package extras
-```
-
 ```python
 from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
 
@@ -136,12 +130,11 @@ for data known to fit in memory.
 
 ```bash
 rekep fields dump --pyclass rekep.text.fixmsg:FixMsg --target fixmsg.yaml
-rekep fields load --target fixmsg.yaml
 rekep fix registry show --store data/fix 35
-rekep fix registry check --store data/fix
 rekep fix shell --store data/fix
 ```
 
 `fields` publishes declarations. `fix registry` is the JSON command surface;
 `fix shell` is the interactive terminal. Styling stays on `stderr`, payloads
-stay on `stdout`, and colour disables itself outside a capable terminal.
+stay on `stdout`, and colour disables itself outside a capable terminal. See
+the [registry CLI guide](fix/shell.md) for the bounded interactive workflow.

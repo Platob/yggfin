@@ -5,6 +5,17 @@ streams `Book.deltas` into the existing `Order` contract and writes
 `market.orders`. It retains event identity and appends the carrying `Book.hash`
 to `parent_hash`.
 
+## Run this step
+
+In book mode, after `parse_market` has populated `market.books`, run from the
+repository root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_orders/flatten_orders.yml \
+  --output flatten_orders.executed.ipynb
+```
+
 The adjacent `flatten_orders.yml`
 sets the `[start, end)` interval, source, target, catalog, and commit size.
 Replay skips existing event keys when `merge_by` is enabled.

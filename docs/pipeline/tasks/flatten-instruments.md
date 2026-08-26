@@ -3,6 +3,16 @@
 `tasks/flatten_instruments/flatten_instruments.ipynb`
 reads sorted `fix.market` rows and writes `market.instruments`.
 
+## Run this step
+
+After `parse_fix` has populated `fix.market`, run from the repository root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_instruments/flatten_instruments.yml \
+  --output flatten_instruments.executed.ipynb
+```
+
 `parse_fix` already created, enriched, versioned, and snapshotted every
 normalized Instrument lifecycle row. This notebook filters those rows by
 `etype` and the internal plugin marker, converts each `FixMsg` back to its exact

@@ -55,7 +55,7 @@ def store(tmp_path: Path) -> Offline:
     return registry
 
 
-def _session(store: Offline, *answers: str) -> tuple[Shell, io.StringIO]:
+def _session(store: FixRegistry, *answers: str) -> tuple[Shell, io.StringIO]:
     """One shell whose answers are `answers`, and where its output went."""
     written = io.StringIO()
     replies = iter(answers)
@@ -74,7 +74,7 @@ def _session(store: Offline, *answers: str) -> tuple[Shell, io.StringIO]:
     )
 
 
-def _run(store: Offline, *answers: str) -> str:
+def _run(store: FixRegistry, *answers: str) -> str:
     shell, written = _session(store, *answers)
     assert shell.run() == 0
     return written.getvalue()
@@ -125,6 +125,14 @@ def test_find_searches_by_name_and_by_tag(store: Offline) -> None:
     assert "FakeCode" in _run(store, "find 90002", "quit")
 
 
+def test_find_shows_one_row_per_identity_across_versions(store: Offline) -> None:
+    store._store_versions(("9.1", "9.2"))
+    store._store_fields("9.2", [_field("FakeRole", 90001, "9.2")])
+    printed = _run(store, "find FakeRole", "quit")
+    rows = [line for line in printed.splitlines() if "FakeRole" in line and "searching" not in line]
+    assert len(rows) == 1
+
+
 def test_show_prints_one_identity_and_every_version_of_it(store: Offline) -> None:
     printed = _run(store, "show FakeRole", "quit")
     assert "FakeRole" in printed and "90001" in printed and "9.1" in printed
@@ -132,6 +140,14 @@ def test_show_prints_one_identity_and_every_version_of_it(store: Offline) -> Non
 
 def test_show_accepts_a_numeric_tag(store: Offline) -> None:
     assert "FakeRole" in _run(store, "show 90001", "quit")
+
+
+def test_large_field_and_component_details_are_bounded() -> None:
+    registry = FixRegistry.from_builtin()
+    field = _run(registry, "show SecurityType", "quit")
+    component = _run(registry, "component Instrument", "quit")
+    assert "more; `rekep fix registry show`" in field
+    assert "more; `rekep fix registry component`" in component
 
 
 def test_a_name_nothing_resolves_says_what_it_could_have_meant(store: Offline) -> None:
@@ -247,10 +263,20 @@ def test_a_duplicate_tag_is_refused_with_the_reason(store: Offline) -> None:
 
 
 def test_alias_records_a_spelling_with_where_it_was_counted(store: Offline) -> None:
-    printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "quit")
+    printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "y", "quit")
     assert "answers to" in printed
     (alias,) = store.resolve("FakeRole").aliases
     assert (alias.name, alias.source, alias.occurrences) == ("FAKEROLLE", "brk", 41)
+
+
+def test_alias_previews_and_refuses_invalid_or_unconfirmed_counts(store: Offline) -> None:
+    printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "n", "quit")
+    assert "nothing was written" in printed
+    assert store.resolve("FakeRole").aliases == ()
+
+    printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "-1", "quit")
+    assert "non-negative whole number" in printed
+    assert store.resolve("FakeRole").aliases == ()
 
 
 def test_remove_asks_first_and_keeps_it_when_the_answer_is_no(store: Offline) -> None:
@@ -265,8 +291,11 @@ def test_check_reports_a_sound_store_as_sound(store: Offline) -> None:
 
 
 def test_dump_writes_the_store_where_it_is_told(store: Offline, tmp_path: Path) -> None:
-    target = tmp_path / "dumped.zip"
-    assert "wrote" in _run(store, f"dump {target}", "quit")
+    target = tmp_path / "folder with spaces" / "dumped.zip"
+    target.parent.mkdir()
+    assert "nothing was written" in _run(store, f'dump "{target}"', "n", "quit")
+    assert not target.exists()
+    assert "wrote" in _run(store, f'dump "{target}"', "y", "quit")
     assert target.exists()
     assert FixRegistry(cache_dir=target, offline=True).field("FakeRole", "9.1").name == "FakeRole"
 

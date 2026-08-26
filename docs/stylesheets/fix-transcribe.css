@@ -20,9 +20,51 @@
   color: var(--registry-muted);
 }
 
+.fix-transcribe__section-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fix-transcribe__section-state output {
+  color: var(--md-default-fg-color);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.62rem;
+}
+
+.fix-transcribe__protocol,
+.fix-transcribe__structure-count {
+  display: inline-flex;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.45rem;
+  align-items: center;
+  border: 1px solid var(--registry-orange);
+  background: color-mix(in srgb, var(--registry-orange) 10%, transparent);
+  color: var(--registry-orange);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fix-transcribe__protocol[data-protocol="fix"] {
+  border-color: var(--registry-red);
+  background: color-mix(in srgb, var(--registry-red) 10%, transparent);
+  color: var(--registry-red);
+}
+
+.fix-transcribe__protocol[data-protocol="ul"] {
+  border-color: var(--registry-yellow);
+  background: color-mix(in srgb, var(--registry-yellow) 10%, transparent);
+  color: var(--registry-yellow);
+}
+
 .fix-transcribe__form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
   gap: 0.8rem;
   margin: 0.8rem 0;
 }
@@ -119,6 +161,31 @@
   margin-top: 0.65rem;
 }
 
+.fix-transcribe__samples {
+  display: flex;
+  margin-top: 0.55rem;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.fix-transcribe__samples > span {
+  margin-right: 0.15rem;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__samples button {
+  min-height: 1.85rem;
+  padding: 0.2rem 0.5rem;
+  border-color: color-mix(in srgb, var(--registry-muted) 38%, transparent);
+  font-size: 0.54rem;
+}
+
 .fix-transcribe button {
   display: inline-flex;
   min-height: 2.5rem;
@@ -206,6 +273,225 @@
   margin: 0.8rem 0;
 }
 
+.fix-transcribe__structure {
+  margin: 0.8rem 0;
+  padding: 0.8rem;
+  border: 1px solid var(--registry-border);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--registry-orange) 5%, transparent), transparent 42%),
+    var(--transcribe-surface);
+}
+
+.fix-transcribe__structure > header,
+.fix-transcribe__component > header,
+.fix-transcribe__group > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.fix-transcribe__structure h3,
+.fix-transcribe__component h4,
+.fix-transcribe__group h5 {
+  margin: 0;
+}
+
+.fix-transcribe__structure h3 {
+  font-size: 0.9rem;
+}
+
+.fix-transcribe__structure-count {
+  border-color: var(--registry-border);
+  background: transparent;
+  color: var(--registry-muted);
+}
+
+.fix-transcribe__structure-empty {
+  margin: 0.7rem 0 0;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.62rem;
+}
+
+.fix-transcribe__structure-issues {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.fix-transcribe__structure-issues p {
+  display: flex;
+  margin: 0;
+  padding: 0.45rem;
+  align-items: center;
+  gap: 0.45rem;
+  border-left: 0.15rem solid var(--registry-orange);
+  background: color-mix(in srgb, var(--registry-orange) 7%, transparent);
+  color: var(--registry-muted);
+  font-size: 0.62rem;
+}
+
+.fix-transcribe__components {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+}
+
+.fix-transcribe__component {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--registry-muted) 34%, transparent);
+  background: var(--md-default-bg-color);
+}
+
+.fix-transcribe__component > header {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--registry-border);
+}
+
+.fix-transcribe__component > header span,
+.fix-transcribe__group > header span:first-child {
+  display: block;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__component h4 {
+  color: var(--registry-yellow);
+  font-size: 0.78rem;
+}
+
+.fix-transcribe__component > header a {
+  color: var(--registry-orange);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+}
+
+.fix-transcribe a.fix-registry__name {
+  color: var(--registry-orange);
+}
+
+.fix-transcribe__component > header a:hover,
+.fix-transcribe a.fix-registry__name:hover {
+  color: var(--registry-yellow);
+}
+
+.fix-transcribe__group {
+  margin-top: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--registry-orange) 36%, transparent);
+  border-left: 0.16rem solid var(--registry-orange);
+}
+
+.fix-transcribe__group > header {
+  padding: 0.5rem 0.55rem;
+  background: color-mix(in srgb, var(--registry-orange) 7%, transparent);
+}
+
+.fix-transcribe__group h5 {
+  color: var(--md-default-fg-color);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.66rem;
+}
+
+.fix-transcribe__group-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.52rem;
+}
+
+.fix-transcribe__group-warning {
+  padding: 0.45rem 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--registry-red) 32%, transparent);
+  color: var(--registry-red);
+  font-size: 0.6rem;
+}
+
+.fix-transcribe__entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fix-transcribe__entries > li {
+  margin: 0;
+  padding: 0.5rem 0.55rem;
+  border-top: 1px solid var(--registry-border);
+}
+
+.fix-transcribe__entry-head {
+  display: flex;
+  margin-bottom: 0.35rem;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: var(--registry-orange);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.53rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__entry-head span:last-child {
+  color: var(--registry-muted);
+  font-weight: 600;
+}
+
+.fix-transcribe__members,
+.fix-transcribe__component-fields {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.fix-transcribe__component-fields {
+  margin-top: 0.55rem;
+}
+
+.fix-transcribe__member {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.55rem;
+  padding: 0.28rem 0.35rem;
+  align-items: baseline;
+  background: color-mix(in srgb, var(--md-default-fg-color) 3%, transparent);
+}
+
+.fix-transcribe__member > span {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.fix-transcribe__member strong {
+  overflow: hidden;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fix-transcribe__member small {
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.48rem;
+}
+
+.fix-transcribe__member code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--registry-yellow);
+  font-size: 0.6rem;
+}
+
 .fix-transcribe__table-wrap {
   max-height: 34rem;
   overflow: auto;
@@ -232,37 +518,49 @@
 }
 
 .fix-transcribe__state--resolved,
-.fix-transcribe__state--encoded {
+.fix-transcribe__state--encoded,
+.fix-transcribe__state--inferred {
   border-color: color-mix(in srgb, var(--registry-yellow) 52%, transparent);
   color: var(--registry-yellow);
 }
 
 .fix-transcribe__state--unknown-value,
 .fix-transcribe__state--version-required,
-.fix-transcribe__state--other-version {
+.fix-transcribe__state--other-version,
+.fix-transcribe__state--ambiguous,
+.fix-transcribe__state--shadowed,
+.fix-transcribe__state--mismatch {
   border-color: color-mix(in srgb, var(--registry-orange) 58%, transparent);
   color: var(--registry-orange);
 }
 
 .fix-transcribe__state--unresolved,
 .fix-transcribe__state--unparsed,
-.fix-transcribe__state--invalid-value {
+.fix-transcribe__state--invalid-value,
+.fix-transcribe__state--invalid {
   border-color: color-mix(in srgb, var(--registry-red) 62%, transparent);
   color: var(--registry-red);
 }
 
 .fix-transcribe__issues,
-.fix-transcribe__debug {
+.fix-transcribe__debug,
+.fix-transcribe__rules {
   margin-top: 0.8rem;
 }
 
 .fix-transcribe__issues summary,
-.fix-transcribe__debug summary {
+.fix-transcribe__debug summary,
+.fix-transcribe__rules summary {
   color: var(--registry-orange);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.64rem;
   font-weight: 750;
   text-transform: uppercase;
+}
+
+.fix-transcribe__rules p {
+  margin: 0.45rem 0 0;
+  color: var(--registry-muted);
 }
 
 .fix-transcribe__debug .fix-transcribe__output-head {
@@ -272,12 +570,6 @@
 .md-typeset .fix-transcribe__debug pre {
   min-height: 8rem;
   max-height: 32rem;
-}
-
-@media screen and (max-width: 68rem) {
-  .fix-transcribe__form {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media screen and (max-width: 46rem) {
@@ -295,7 +587,32 @@
   }
 
   .fix-transcribe__registry-count {
-    width: 100%;
-    margin: 0.2rem 0 0;
+    display: none;
+  }
+
+  .fix-transcribe__structure > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fix-transcribe__member {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .fix-transcribe button,
+  .fix-transcribe__controls label > span,
+  .fix-transcribe__samples > span,
+  .fix-transcribe__samples button,
+  .fix-transcribe__note,
+  .fix-transcribe__component > header span,
+  .fix-transcribe__component > header a,
+  .fix-transcribe__group-meta,
+  .fix-transcribe__entry-head,
+  .fix-transcribe__member strong,
+  .fix-transcribe__member small,
+  .fix-transcribe__member code,
+  .fix-transcribe__state {
+    font-size: 0.68rem;
   }
 }

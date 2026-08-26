@@ -10,6 +10,43 @@ on [Benchmarks](../../storage/benchmarks.md).
 Only `fix.market` continues into market readers. `fix.misc` and
 `fix.unknown` are terminal routes; a route with no rows need not create a table.
 
+## Run the workflow locally
+
+From the repository root, run the task documents in dependency order. The
+first command uses the checked-in sample log; replace its `source` override for
+your own capture.
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_messages/parse_messages.yml \
+  --parameter source=python/tests/data/app_messages_sample.txt \
+  --output parse_messages.executed.ipynb
+
+uv run --project python --with papermill rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --output parse_fix.executed.ipynb
+
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_instruments/flatten_instruments.yml \
+  --output flatten_instruments.executed.ipynb
+
+uv run --project python --with papermill rekep task run \
+  tasks/parse_market/parse_market.yml \
+  --output parse_market.executed.ipynb
+
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_orders/flatten_orders.yml \
+  --output flatten_orders.executed.ipynb
+
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_executions/flatten_executions.yml \
+  --output flatten_executions.executed.ipynb
+```
+
+Each command preserves its executed notebook for inspection. The task YAML
+selects the catalog, branch, tables, and commit sizes; repeatable
+`--parameter NAME=VALUE` options override those values for one run.
+
 ## Run context
 
 | Context | Value |

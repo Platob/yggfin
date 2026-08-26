@@ -801,6 +801,12 @@ def test_search_matches_name_tag_and_description_case_insensitively(
     assert "OrdRejReason" in [f.name for f in registry.search("REJECTION")]
 
 
+def test_search_limits_distinct_identities_across_versions() -> None:
+    registry = FixRegistry.from_builtin()
+    found = registry.search("Side", limit=20)
+    assert sum(member.name == "Side" for member in found) == 1
+
+
 def test_search_ranks_exact_before_prefix_before_substring(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     found = [f.name for f in registry.search("Maturity")]

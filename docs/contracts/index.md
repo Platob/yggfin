@@ -53,8 +53,10 @@ Producers cast before writing; consumers load the same contract and may use
 
 ```bash
 cd python
-uv run python -c "from rekep import Message; Message.into_field().into_yaml('../schemas/rekep/message.yaml')"
-uv run python -c "from rekep import FixMsg; FixMsg.into_field().into_yaml('../schemas/rekep/fixmsg.yaml')"
+uv run rekep fields dump --pyclass rekep.text.message:Message \
+  --target ../schemas/rekep/message.yaml
+uv run rekep fields dump --pyclass rekep.text.fixmsg:FixMsg \
+  --target ../schemas/rekep/fixmsg.yaml
 uv run pytest tests/test_schemas.py
 ```
 

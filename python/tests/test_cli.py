@@ -284,6 +284,17 @@ def reopened(store: Path) -> FixRegistry:
     return FixRegistry(cache_dir=store, offline=True)
 
 
+def test_shell_entrypoint_keeps_its_interface_off_stdout(
+    store: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    answers = iter(("quit",))
+    monkeypatch.setattr("builtins.input", lambda: next(answers))
+    assert run("fix", "shell", "--store", str(store)) == 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "REKEP / FIX REGISTRY" in captured.err
+
+
 def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
     assert (
         run(

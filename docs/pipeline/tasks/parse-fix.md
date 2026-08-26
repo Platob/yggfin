@@ -5,6 +5,21 @@
 `etype >= INTENT` before any FIX dictionary work begins. A disjoint
 `etype < INTENT` scan retains terminal operational and unrecognized rows.
 
+## Run this step
+
+After `parse_messages` has populated `logs.messages`, run from the repository
+root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --output parse_fix.executed.ipynb
+```
+
+To replay only one half-open recording interval, add
+`--parameter start=2026-08-21T10:00:00Z` and
+`--parameter end=2026-08-21T11:00:00Z` before `--output`.
+
 `parse_messages` has already opened the dictionary for MsgType event metadata.
 This stage opens the same dictionary for full transcription. For each Arrow
 batch it:

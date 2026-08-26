@@ -195,7 +195,7 @@ def registry_versions(arguments: argparse.Namespace) -> int:
 def find_fields(arguments: argparse.Namespace) -> int:
     """Write distinct field records matching one query."""
     registry = _registry(arguments)
-    entries: dict[int | str, FieldEntry] = {}
+    entries: list[FieldEntry] = []
     for member in registry.search(
         arguments.query,
         version=arguments.version,
@@ -203,8 +203,8 @@ def find_fields(arguments: argparse.Namespace) -> int:
     ):
         entry = registry.entry(member.fix.get("tag") or member.name)
         if entry is not None:
-            entries.setdefault(entry.key, entry)
-    _write_json([entry.into_dict() for entry in entries.values()])
+            entries.append(entry)
+    _write_json([entry.into_dict() for entry in entries])
     return 0
 
 
@@ -598,6 +598,19 @@ def _parser() -> argparse.ArgumentParser:
         )
         return action
 
+    verb("versions", "write stored versions and field counts as JSON", registry_versions)
+    finding = verb("find", "search fields and write their records as JSON", find_fields)
+    finding.add_argument("query", help="tag, name, or description to search")
+    finding.add_argument("--version", default=None, help="search only one FIX version")
+    finding.add_argument("--limit", type=int, default=20, help="maximum matches to write")
+    showing = verb("show", "write one complete field record as JSON", show_field)
+    showing.add_argument("field", help="field name, alias, or tag")
+    components = verb("components", "write component identities as JSON", list_components)
+    components.add_argument("query", nargs="?", default="", help="optional name filter")
+    component = verb("component", "write one complete component record as JSON", show_component)
+    component.add_argument("component", help="component name or alias")
+    verb("check", "report everything inconsistent about a store", check_registry)
+
     described(verb("add-field", "register a field identity the store does not have", add_field))
     described(verb("update-field", "replace a stored field identity", update_field))
     verb("remove-field", "delete a field identity", remove_field).add_argument(
@@ -625,22 +638,17 @@ def _parser() -> argparse.ArgumentParser:
         "--name", required=True, help="the component to remove"
     )
 
-    verb("versions", "write stored versions and field counts as JSON", registry_versions)
-    finding = verb("find", "search fields and write their records as JSON", find_fields)
-    finding.add_argument("query", help="tag, name, or description to search")
-    finding.add_argument("--version", default=None, help="search only one FIX version")
-    finding.add_argument("--limit", type=int, default=20, help="maximum matches to write")
-    showing = verb("show", "write one complete field record as JSON", show_field)
-    showing.add_argument("field", help="field name, alias, or tag")
-    components = verb("components", "write component identities as JSON", list_components)
-    components.add_argument("query", nargs="?", default="", help="optional name filter")
-    component = verb("component", "write one complete component record as JSON", show_component)
-    component.add_argument("component", help="component name or alias")
     dumping = verb("dump", "write a deterministic registry archive", dump_registry)
     dumping.add_argument("--output", required=True, help="target .zip path or URI")
 
     interactive = protocol.add_parser(
-        "shell", help="drive the registry from a prompt rather than from flags"
+        "shell",
+        help="drive the registry from a prompt rather than from flags",
+        description="Open a bounded, guided view of one FIX registry store.",
+        epilog="""inside the prompt:
+  find PartyRole
+  show 452
+  help show""",
     )
     interactive.add_argument(
         "--store",
@@ -685,8 +693,6 @@ def _parser() -> argparse.ArgumentParser:
         help="skip anything counted fewer times than this",
     )
     applying.set_defaults(run=apply_keys)
-
-    verb("check", "report everything inconsistent about a store", check_registry)
 
     scraping = verbs.add_parser("scrape", help="replace a local store from the FIX sources")
     scraping.add_argument(

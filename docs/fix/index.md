@@ -164,41 +164,18 @@ in the conflict report as the dropped reading it is.
 
 ### Editing and refreshing
 
+The [registry CLI](shell.md) owns the complete command workflow. Its two
+surfaces share the same validated registry operations:
+
 ```bash
 rekep fix registry show --store data/fix 35
-rekep fix registry find --store data/fix "execution report" --limit 5
-rekep fix registry components --store data/fix parties
-rekep fix registry add-field --store data/fix --name TECH.CLIENTID \
-    --type String --column tech_client_id
-rekep fix registry alias-field --store data/fix --name PartyRole \
-    --alias PARTYROLLE --source brk --occurrences 41
 rekep fix registry check --store data/fix
-rekep fix registry dump --store data/fix --output data/fix.zip
-```
-
-Registry reads emit JSON to `stdout`. Status and failures stay on `stderr`.
-Field and component writes validate the whole store before replacing a file.
-A complete field record can be supplied with `--declaration field.json`.
-
-The same verbs run at a prompt, which is what a person editing more than one
-field wants:
-
-```bash
 rekep fix shell --store data/fix
 ```
 
-```text
-help                    # categorized command index
-help show               # one command's usage
-find PartyRole
-show 452
-add-field field.json
-add-component parties.json
-check
-```
-
-The prompt shows each proposed write and requires confirmation. Terminal
-presentation stays on `stderr`; redirects receive only command payloads.
+Registry reads emit JSON to `stdout`; status and failures stay on `stderr`.
+The shell writes its interface to `stderr` and bounds long previews. Every
+proposed write is shown and requires confirmation.
 
 ### Bootstrapping the default store
 
@@ -353,9 +330,9 @@ Two readings the classification depends on:
   anything further out only says where the container came from. So
   `NoPartyIDs[0].PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
   vendor's own field rather than `ClientID <109>` with a prefix.
-- `#Foo` and `Foo` are counted apart. The two namespaces a bridge writes are
-  asymmetric -- some names only ever marked, some only ever bare, a few both --
-  and a count that summed them would say nothing about which.
+- Classification normalizes `#Foo` to `Foo` but retains separate marked and
+  bare occurrence counters. Parsed kwargs receive the normalized name; the
+  counters preserve how each bridge spelling arrived.
 
 ## Groups and components
 

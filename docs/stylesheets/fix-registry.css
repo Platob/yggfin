@@ -39,6 +39,23 @@
   background: var(--rekep-panel);
 }
 
+.fix-registry__coverage {
+  margin: -1.2rem 0 1.8rem;
+}
+
+.fix-registry__coverage > summary {
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.fix-registry__coverage[open] > summary {
+  margin-bottom: 0.6rem;
+  color: var(--registry-orange);
+}
+
 .fix-registry__summary > div {
   display: flex;
   min-width: 0;
@@ -457,5 +474,19 @@
 
   .fix-registry__detail dl {
     grid-template-columns: 1fr;
+  }
+
+  .fix-registry__summary span,
+  .fix-registry__eyebrow,
+  .fix-registry__filters label > span,
+  .md-typeset .fix-registry__table th,
+  .fix-registry__detail dt,
+  .fix-registry__source {
+    font-size: 0.68rem;
+  }
+
+  .fix-registry__badge,
+  .fix-registry__chip {
+    font-size: 0.65rem;
   }
 }

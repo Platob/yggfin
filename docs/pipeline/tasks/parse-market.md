@@ -6,6 +6,26 @@
 `market.books`, and leaves the two flatten notebooks to publish orders and
 executions.
 
+## Run this step
+
+After `parse_fix` has populated `fix.market`, run the configured book mode from
+the repository root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_market/parse_market.yml \
+  --output parse_market.executed.ipynb
+```
+
+Bypass Books and write FIX-carried Orders and Executions directly with:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_market/parse_market.yml \
+  --parameter books=false \
+  --output parse_market.direct.executed.ipynb
+```
+
 With `books: false`, it does not construct or write Books.
 `FixMsg.into_market_arrow_batches()` adapts the input stream into bounded,
 typed Order and Execution batches for `order_target` and `execution_target`.

@@ -18,6 +18,15 @@ import pytest
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 
+WORKFLOW_STEPS = (
+    ("parse-messages", "parse_messages"),
+    ("parse-fix", "parse_fix"),
+    ("flatten-instruments", "flatten_instruments"),
+    ("parse-market", "parse_market"),
+    ("flatten-orders", "flatten_orders"),
+    ("flatten-executions", "flatten_executions"),
+)
+
 #: A fenced block and the language it claims, for the `python` ones.
 _FENCE = re.compile(r"^```(\w+)\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
@@ -50,10 +59,56 @@ def test_fix_transcribe_uses_the_published_registry_in_both_directions() -> None
         assert f"data-{direction}-form" in page
         assert f"data-{direction}-rows" in page
         assert f"data-{direction}-debug" in page
+        assert f"data-{direction}-protocol" in page
+        assert f"data-{direction}-structure" in page
     assert "field.encoded" in script
     assert "field.decoded" in script
+    assert "protocolOf" in script
+    assert "structureOf" in script
+    assert "expandPayloadPairs" in script
+    assert '"fix-wrapper"' in script
+    assert 'return marked || "#"' in script
     assert "stylesheets/fix-transcribe.css" in config
     assert "javascripts/fix-transcribe.js" in config
+
+
+def test_home_page_uses_the_animated_rkp_trigram() -> None:
+    page = (DOCS / "index.md").read_text(encoding="utf-8")
+    logo = (DOCS / "assets" / "rkp-logo.svg").read_text(encoding="utf-8")
+    config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
+
+    assert 'class="rkp-hero"' in page
+    assert 'src="assets/rkp-logo.svg"' in page
+    assert 'aria-labelledby="rkp-title rkp-desc"' in logo
+    assert "prefers-reduced-motion:no-preference" in logo
+    assert all(color in logo for color in ("#f23b3b", "#ff8a00", "#ffd43b"))
+    assert "logo: assets/rkp-logo.svg" in config
+    assert "stylesheets/home.css" in config
+
+
+def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
+    page = (DOCS / "fix" / "shell.md").read_text(encoding="utf-8")
+    script = (DOCS / "javascripts" / "fix-registry.js").read_text(encoding="utf-8")
+    config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
+
+    assert "Registry CLI: fix/shell.md" in config
+    assert "rekep fix registry show" in page
+    assert "rekep fix shell --store" in page
+    assert "const PAGE_SIZE = 20" in script
+
+
+@pytest.mark.parametrize(("page_name", "task_name"), WORKFLOW_STEPS)
+def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: str) -> None:
+    page = (DOCS / "pipeline" / "tasks" / f"{page_name}.md").read_text(encoding="utf-8")
+    workflow = (DOCS / "pipeline" / "operations" / "run.md").read_text(encoding="utf-8")
+    document = DOCS.parent / "tasks" / task_name / f"{task_name}.yml"
+
+    assert document.is_file()
+    assert "## Run this step" in page
+    assert "uv run --project python --with papermill rekep task run" in page
+    assert f"tasks/{task_name}/{task_name}.yml" in page
+    assert f"--output {task_name}.executed.ipynb" in page
+    assert f"tasks/{task_name}/{task_name}.yml" in workflow
 
 
 @pytest.mark.parametrize(("where", "source"), EXAMPLES, ids=[one for one, _ in EXAMPLES])

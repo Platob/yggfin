@@ -5,6 +5,17 @@ streams `Book.executions` into the existing `Execution` contract and
 writes `market.executions`. It retains order links and event identity, then
 appends the carrying `Book.hash` to `parent_hash`.
 
+## Run this step
+
+In book mode, after `parse_market` has populated `market.books`, run from the
+repository root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/flatten_executions/flatten_executions.yml \
+  --output flatten_executions.executed.ipynb
+```
+
 The adjacent `flatten_executions.yml`
 sets the `[start, end)` interval, source, target, catalog, and commit size.
 Replay skips existing event keys when `merge_by` is enabled.

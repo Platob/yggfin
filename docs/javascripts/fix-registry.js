@@ -4,7 +4,7 @@
   const app = document.querySelector("[data-fix-registry]");
   if (!app) return;
 
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
   const number = new Intl.NumberFormat();
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const select = (query, root = app) => root.querySelector(query);

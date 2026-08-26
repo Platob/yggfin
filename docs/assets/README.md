@@ -1,9 +1,9 @@
 # Diagram assets
 
-`arrow-hub.svg`, `workflow-run.svg`, and `schema-lineage.svg` are original
-diagrams licensed with this repository under Apache-2.0. Their names and
-embedded marks identify interoperability or pipeline dependencies only; no
-project endorses rekep.
+`rkp-logo.svg`, `arrow-hub.svg`, `workflow-run.svg`, and `schema-lineage.svg`
+are original assets licensed with this repository under Apache-2.0. Third-party
+marks identify interoperability or pipeline dependencies only; no project
+endorses rekep.
 
 | Local asset | Primary source | Terms |
 | --- | --- | --- |

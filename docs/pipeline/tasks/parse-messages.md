@@ -5,6 +5,21 @@
 registry's MsgType event metadata; field and protocol interpretation stay in
 `parse_fix`.
 
+## Run this step
+
+Set `source` in the adjacent YAML to an existing log path or override it from
+the repository root:
+
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_messages/parse_messages.yml \
+  --parameter source=python/tests/data/app_messages_sample.txt \
+  --output parse_messages.executed.ipynb
+```
+
+The command writes the executed notebook beside the repository root and the
+parsed rows to the configured `logs.messages` Iceberg table.
+
 Each `Message` row contains:
 
 - the recording time in `unix`, with its `unix_partition`;

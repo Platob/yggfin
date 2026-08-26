@@ -9,6 +9,7 @@ exclude_docs: |
 
 theme:
   name: material
+  logo: assets/rkp-logo.svg
   font: false
   features:
     - content.code.copy
@@ -38,6 +39,7 @@ theme:
 
 extra_css:
   - stylesheets/terminal.css
+  - stylesheets/home.css
   - stylesheets/fix-registry.css
   - stylesheets/fix-transcribe.css
 
@@ -81,7 +83,8 @@ nav:
           - Transcribe: fix/transcribe.md
       - FIX registry:
           - Browse registry: fix/registry.md
-          - Registry guide: fix/index.md
+          - Registry CLI: fix/shell.md
+          - Registry internals: fix/index.md
           - Parse configuration: fix/configuring.md
       - Market:
           - Lifecycle: market/index.md

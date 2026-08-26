@@ -7,18 +7,21 @@ Search the repository's FIX components and fields. The catalog is rebuilt from
      data-repository="https://github.com/Platob/yggfin/blob/main/data/fix">
   <p class="fix-registry__status" data-registry-status role="status" aria-live="polite">Loading registry…</p>
   <div data-registry-ready hidden>
-    <div class="fix-registry__summary" aria-label="Registry summary">
-      <div><strong data-summary-components>—</strong><span>components</span></div>
-      <div><strong data-summary-fields>—</strong><span>fields</span></div>
-      <div><strong data-summary-enums>—</strong><span>enumerations</span></div>
-      <div><strong data-summary-versions>—</strong><span>versions</span></div>
-    </div>
-
     <nav class="fix-registry__jump" aria-label="Registry sections">
       <a href="#components">Components</a>
       <a href="#fields">Fields</a>
-      <a href="../">Registry guide</a>
+      <a href="../shell/">Registry CLI</a>
     </nav>
+
+    <details class="fix-registry__coverage">
+      <summary>Registry coverage</summary>
+      <div class="fix-registry__summary" aria-label="Registry summary">
+        <div><strong data-summary-components>—</strong><span>components</span></div>
+        <div><strong data-summary-fields>—</strong><span>fields</span></div>
+        <div><strong data-summary-enums>—</strong><span>enumerations</span></div>
+        <div><strong data-summary-versions>—</strong><span>versions</span></div>
+      </div>
+    </details>
 
     <section id="components" class="fix-registry__section" aria-labelledby="components-title">
       <header>

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280" role="img" aria-labelledby="rkp-title rkp-desc">
+  <title id="rkp-title">RKP</title>
+  <desc id="rkp-desc">The rekep trigram drawn as red, orange, and yellow data paths.</desc>
+  <defs>
+    <linearGradient id="rkp-spectrum" x1="82" y1="0" x2="700" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f23b3b"/>
+      <stop offset="0.48" stop-color="#ff8a00"/>
+      <stop offset="1" stop-color="#ffd43b"/>
+    </linearGradient>
+    <radialGradient id="rkp-field" cx="50%" cy="45%" r="72%">
+      <stop offset="0" stop-color="#1b1712"/>
+      <stop offset="0.58" stop-color="#101012"/>
+      <stop offset="1" stop-color="#09090b"/>
+    </radialGradient>
+    <filter id="rkp-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="rkp-frame-clip">
+      <rect x="10" y="10" width="780" height="260" rx="22"/>
+    </clipPath>
+    <path id="rkp-r" pathLength="1" d="M104 210V70h71c40 0 62 20 62 48s-22 47-62 47h-71m70 0 66 45"/>
+    <path id="rkp-k" pathLength="1" d="M326 70v140m111-140-111 91m43-35 77 84"/>
+    <path id="rkp-p" pathLength="1" d="M531 210V70h77c41 0 64 21 64 51s-23 51-64 51h-77"/>
+    <style>
+      .rkp-frame{fill:url(#rkp-field);stroke:#343237;stroke-width:2}
+      .rkp-grid{fill:none;stroke:#f7f3e8;stroke-width:1;opacity:.055}
+      .rkp-shadow{fill:none;stroke:#2c2926;stroke-width:26;stroke-linecap:square;stroke-linejoin:round}
+      .rkp-letter{fill:none;stroke:url(#rkp-spectrum);stroke-width:17;stroke-linecap:square;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0}
+      .rkp-rule{stroke:url(#rkp-spectrum);stroke-width:2;opacity:.5}
+      .rkp-signal{display:none;fill:#f7f3e8;filter:url(#rkp-glow);opacity:0}
+      .rkp-node{stroke:#09090b;stroke-width:4;transform-box:fill-box;transform-origin:center}
+      .rkp-corner{fill:none;stroke-width:3;opacity:.8}
+      @keyframes rkp-draw{from{stroke-dashoffset:1;opacity:.2}to{stroke-dashoffset:0;opacity:1}}
+      @keyframes rkp-scan{0%{transform:translateX(0);opacity:0}12%,82%{opacity:1}100%{transform:translateX(620px);opacity:0}}
+      @keyframes rkp-node{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+      @media (prefers-reduced-motion:no-preference){
+        .rkp-r{animation:rkp-draw .72s cubic-bezier(.22,1,.36,1) both}
+        .rkp-k{animation:rkp-draw .72s .13s cubic-bezier(.22,1,.36,1) both}
+        .rkp-p{animation:rkp-draw .72s .26s cubic-bezier(.22,1,.36,1) both}
+        .rkp-signal{display:block;animation:rkp-scan .95s .82s cubic-bezier(.22,1,.36,1) both}
+        .rkp-node{animation:rkp-node .38s .72s ease-out both}
+        .rkp-node:nth-of-type(2){animation-delay:.85s}
+        .rkp-node:nth-of-type(3){animation-delay:.98s}
+      }
+      @media (forced-colors:active){.rkp-frame{fill:Canvas;stroke:CanvasText}.rkp-letter,.rkp-rule,.rkp-corner{stroke:CanvasText}.rkp-node{fill:Highlight}}
+    </style>
+  </defs>
+
+  <rect class="rkp-frame" x="10" y="10" width="780" height="260" rx="22"/>
+  <g class="rkp-grid" clip-path="url(#rkp-frame-clip)">
+    <path d="M40 48h720M40 92h720M40 136h720M40 180h720M40 224h720"/>
+    <path d="M84 28v224M172 28v224M260 28v224M348 28v224M436 28v224M524 28v224M612 28v224M700 28v224"/>
+  </g>
+  <g class="rkp-shadow">
+    <use href="#rkp-r"/>
+    <use href="#rkp-k"/>
+    <use href="#rkp-p"/>
+  </g>
+  <g class="rkp-letter" aria-hidden="true">
+    <use class="rkp-r" href="#rkp-r"/>
+    <use class="rkp-k" href="#rkp-k"/>
+    <use class="rkp-p" href="#rkp-p"/>
+  </g>
+
+  <path class="rkp-rule" d="M90 240h620"/>
+  <circle class="rkp-signal" cx="90" cy="240" r="5"/>
+  <g aria-hidden="true">
+    <circle class="rkp-node" cx="104" cy="70" r="7" fill="#f23b3b"/>
+    <circle class="rkp-node" cx="326" cy="70" r="7" fill="#ff8a00"/>
+    <circle class="rkp-node" cx="531" cy="70" r="7" fill="#ffd43b"/>
+  </g>
+  <path class="rkp-corner" d="M33 61V33h28" stroke="#f23b3b"/>
+  <path class="rkp-corner" d="M739 247h28v-28" stroke="#ffd43b"/>
+</svg>

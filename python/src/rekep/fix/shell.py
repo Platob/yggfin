@@ -105,19 +105,19 @@ class Shell:
             ("find <text>", "search fields by tag, name or description"),
             ("show <name|tag>", "one field, every version of it"),
             ("components [text]", "component identities, filtered by name"),
-            ("component <name>", "one component's members, version by version"),
-            ("add-field <path>", "register a complete field declaration"),
-            ("update-field <path>", "replace a complete field declaration"),
+            ("component <name>", "one component's newest member tree"),
+            ("add-field <path>", "register a field declaration file"),
+            ("update-field <path>", "replace a field from a declaration file"),
             ("add-component <path>", "register a component declaration"),
             ("update-component <path>", "replace a component declaration"),
             ("remove-component <name>", "delete a component identity"),
-            ("add", "register a field, one answered question at a time"),
-            ("edit <name>", "change a stored field, keeping what you do not retype"),
+            ("add", "register a field through guided prompts"),
+            ("edit <name>", "change a field through guided prompts"),
             ("alias <name>", "record another spelling a capture used"),
             ("remove <name>", "delete a field identity"),
             ("check", "report everything inconsistent about this store"),
             ("load <path>", "open another store, replacing this one"),
-            ("dump <path>", "write this store to a directory or a .zip"),
+            ("dump <path>", "write this store to a .zip archive"),
             ("quit", "leave"),
         )
 
@@ -182,8 +182,10 @@ class Shell:
             self.console.warn("say what to look for: `find PartyRole`")
             return
         with self.console.spinner(f"searching for {rest!r}"):
-            found = self.registry.search(rest, limit=PAGE)
-        self.console.rule(f"{len(found)} match{'' if len(found) == 1 else 'es'}")
+            found = self.registry.search(rest, limit=PAGE + 1)
+        shown = found[:PAGE]
+        count = f"{PAGE}+" if len(found) > PAGE else str(len(shown))
+        self.console.rule(f"{count} match{'' if count == '1' else 'es'}")
         self.console.table(
             ("tag", "name", "type", "description"),
             [
@@ -193,9 +195,11 @@ class Shell:
                     member.fix.get("type", "-"),
                     _clipped(member.description, max(20, self.console.width - 40)),
                 )
-                for member in found
+                for member in shown
             ],
         )
+        if len(found) > PAGE:
+            self.console.note("more matches; narrow the query")
         self.console.line()
 
     def _show(self, rest: str) -> None:
@@ -217,7 +221,8 @@ class Shell:
             ),
         ]
         self.console.panel(entry.name, rows)
-        if entry.values or entry.value_names:
+        values = list({**entry.values, **entry.value_names})
+        if values:
             self.console.table(
                 ("value", "means", "symbol"),
                 [
@@ -226,9 +231,13 @@ class Shell:
                         _clipped(entry.values.get(value, ""), max(20, self.console.width - 44)),
                         entry.value_names.get(value, "-"),
                     )
-                    for value in {**entry.values, **entry.value_names}
+                    for value in values[:PAGE]
                 ],
             )
+            if len(values) > PAGE:
+                self.console.note(
+                    f"{len(values) - PAGE} more; `rekep fix registry show` writes complete JSON"
+                )
         self.console.line()
 
     def _components(self, rest: str) -> None:
@@ -277,7 +286,8 @@ class Shell:
         self.console.panel(
             f"{entry.name} @ {version}", [f"{len(declared.members)} top-level members"]
         )
-        for member, path in _members(declared.members):
+        members = _members(declared.members)
+        for member, path in members[:PAGE]:
             required = "required" if member.required else "optional"
             tag = getattr(member, "tag", 0)
             self.console.line(
@@ -288,6 +298,10 @@ class Shell:
                 + self.console.style(member.name, "white")
                 + self.console.style(f" <{tag}>" if tag else "", "yellow")
                 + self.console.style(f"  {required}", "grey")
+            )
+        if len(members) > PAGE:
+            self.console.note(
+                f"{len(members) - PAGE} more; `rekep fix registry component` writes complete JSON"
             )
         self.console.line()
 
@@ -343,6 +357,7 @@ class Shell:
         if not path:
             self.console.warn("say which: `add-component parties.json`")
             return None
+        path = _unquoted(path)
         entry = ComponentEntry.from_file(path)
         self.console.panel(
             entry.name,
@@ -369,6 +384,7 @@ class Shell:
         if not path:
             self.console.warn("say which: `add-field field.json`")
             return
+        path = _unquoted(path)
         entry = FieldEntry.from_file(path)
         self._field_panel(entry, source=path)
         verb = "update" if update else "add"
@@ -473,13 +489,25 @@ class Shell:
             return
         source = self._ask_for("which capture it was counted in", "")
         counted = self._ask_for("how many times", "0")
+        if not counted.isdigit():
+            self.console.warn("the occurrence count must be a non-negative whole number")
+            return
+        proposed = Alias(name=spelling, source=source, occurrences=int(counted))
+        self.console.panel(
+            "alias",
+            [
+                _detail(self.console, "field", entry.name),
+                _detail(self.console, "spelling", proposed.name),
+                _detail(self.console, "source", proposed.source or "-"),
+                _detail(self.console, "occurrences", proposed.occurrences),
+            ],
+        )
+        if not self._confirm("record it"):
+            self.console.warn("nothing was written")
+            return
         updated = self.registry.alias_field(
             entry.name,
-            Alias(
-                name=spelling,
-                source=source,
-                occurrences=int(counted) if counted.isdigit() else 0,
-            ),
+            proposed,
         )
         self.console.ok(f"{updated.name} answers to {', '.join(updated.spellings())}")
 
@@ -514,6 +542,7 @@ class Shell:
         if not rest:
             self.console.warn("say which: `load ../data/fix`")
             return
+        rest = _unquoted(rest)
         with self.console.spinner(f"opening {rest}"):
             registry = FixRegistry(cache_dir=rest, offline=True)
             versions = registry.versions
@@ -524,6 +553,17 @@ class Shell:
         """Write this store into one archive, which is how it travels."""
         if not rest:
             self.console.warn("say where: `dump ../data/fix.zip`")
+            return
+        rest = _unquoted(rest)
+        self.console.panel(
+            "archive",
+            [
+                _detail(self.console, "store", self.registry.cache_dir),
+                _detail(self.console, "target", rest),
+            ],
+        )
+        if not self._confirm("write it"):
+            self.console.warn("nothing was written")
             return
         with self.console.spinner(f"writing {rest}"):
             written = self.registry.into_zip(rest)
@@ -606,7 +646,16 @@ def _members(
 def _clipped(text: str, width: int) -> str:
     """`text` cut to `width`, with an ellipsis where it was cut."""
     text = " ".join(str(text).split())
-    return text if len(text) <= width else text[: max(1, width - 1)] + "…"
+    suffix = "..."
+    return text if len(text) <= width else text[: max(0, width - len(suffix))] + suffix
+
+
+def _unquoted(text: str) -> str:
+    """One shell argument, accepting matching quotes around paths with spaces."""
+    text = text.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {'"', "'"}:
+        return text[1:-1]
+    return text
 
 
 def _detail(console: Console, name: str, value: Any) -> str:

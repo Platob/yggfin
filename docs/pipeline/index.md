@@ -10,23 +10,16 @@ parameters:
   source: logs.messages
 ```
 
-`Task` only reads, writes, and resolves this configuration. A notebook runner
-owns execution; the package contains no prebuilt pipeline jobs or task reports.
+Run the same task document locally that Airflow gives Papermill:
 
-```python
-from pathlib import Path
-
-import papermill
-from rekep import Task
-
-document = Path("tasks/parse_fix/parse_fix.yml")
-task = Task.from_yaml(document)
-papermill.execute_notebook(
-    task.into_notebook_path(document),
-    "parse_fix.executed.ipynb",
-    parameters=task.parameters,
-)
+```bash
+uv run --project python --with papermill rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --output parse_fix.executed.ipynb
 ```
+
+`Task` only resolves the configuration. Papermill owns execution; the package
+contains no prebuilt pipeline jobs or task reports.
 
 ## Flow
 

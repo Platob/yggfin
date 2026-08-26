@@ -51,7 +51,7 @@ def test_the_terminal_palette_matches_the_documentation() -> None:
     ("environment", "expected"),
     [({"NO_COLOR": "1"}, False), ({"FORCE_COLOR": "1"}, True), ({"TERM": "dumb"}, False)],
 )
-def test_the_environment_decides_before_the_stream_does(
+def test_the_environment_can_disable_a_terminal(
     monkeypatch: pytest.MonkeyPatch, environment: dict[str, str], expected: bool
 ) -> None:
     """`NO_COLOR` is a convention, and one that wins over being a terminal."""
@@ -60,6 +60,11 @@ def test_the_environment_decides_before_the_stream_does(
     for name, value in environment.items():
         monkeypatch.setenv(name, value)
     assert supports_colour(Terminal()) is expected
+
+
+def test_force_colour_never_styles_a_pipe(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    assert not supports_colour(io.StringIO())
 
 
 def test_a_stream_that_cannot_encode_the_box_drawing_gets_ascii() -> None:
@@ -94,6 +99,24 @@ def test_a_table_is_sized_to_its_contents_and_says_when_there_are_none() -> None
     written.truncate(0), written.seek(0)
     console.table(("tag",), [])
     assert "nothing to show" in written.getvalue()
+
+
+def test_a_table_clips_to_a_narrow_terminal_without_losing_the_key() -> None:
+    class NarrowConsole(Console):
+        @property
+        def width(self) -> int:
+            return 40
+
+    written = io.StringIO()
+    console = NarrowConsole(stream=written, colour=False, glyphs=False)
+    console.table(
+        ("tag", "name", "type", "description"),
+        [("1012", "SideTrdRegTimestamp", "UTCTimestamp", "A deliberately long description")],
+    )
+    lines = written.getvalue().splitlines()
+    assert all(len(line) <= 40 for line in lines)
+    assert "1012" in lines[1]
+    assert "..." in lines[1]
 
 
 def test_a_panel_is_measured_on_the_text_and_not_on_the_escapes() -> None:

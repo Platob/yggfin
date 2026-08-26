@@ -80,15 +80,10 @@ FRAME_SECONDS = 0.08
 def supports_colour(stream: Any = None) -> bool:
     """Whether `stream` should be written to with escapes at all.
 
-    `NO_COLOR` wins over everything, as its convention requires; `FORCE_COLOR`
-    is what a CI that renders escapes sets. Otherwise it is a terminal or it
-    is not.
+    `NO_COLOR` and a dumb terminal win. A pipe never receives styling, even
+    under `FORCE_COLOR`, because its output must remain scriptable.
     """
-    if os.environ.get("NO_COLOR"):
-        return False
-    if os.environ.get("FORCE_COLOR"):
-        return True
-    if os.environ.get("TERM", "") == "dumb":
+    if os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         return False
     stream = sys.stdout if stream is None else stream
     return bool(getattr(stream, "isatty", lambda: False)())
@@ -202,7 +197,7 @@ class Console:
         )
 
     def table(self, headers: Sequence[str], rows: Sequence[Sequence[str]]) -> None:
-        """Columns sized to their contents, header dimmed, nothing wrapped."""
+        """Columns clipped to the terminal width, with identifiers kept widest."""
         if not rows:
             self.line(self.style(f"  {self.glyph('bullet')} nothing to show", "grey"))
             return
@@ -210,20 +205,55 @@ class Console:
             max(len(_plain(str(header))), *(len(_plain(str(row[index]))) for row in rows))
             for index, header in enumerate(headers)
         ]
+        available = self.width - 2 - 2 * (len(columns) - 1)
+        minimums = [
+            min(width, max(3, len(str(header))))
+            for header, width in zip(headers, columns, strict=True)
+        ]
+        while sum(columns) > available:
+            candidates = [
+                index
+                for index, (width, minimum) in enumerate(zip(columns, minimums, strict=True))
+                if index and width > minimum
+            ]
+            if not candidates:
+                candidates = [
+                    index
+                    for index, (width, minimum) in enumerate(zip(columns, minimums, strict=True))
+                    if width > minimum
+                ]
+            if not candidates:
+                break
+            widest = max(candidates, key=lambda index: columns[index] - minimums[index])
+            columns[widest] -= 1
+        while sum(columns) > available:
+            candidates = [index for index, width in enumerate(columns) if index and width > 1]
+            if not candidates:
+                candidates = [index for index, width in enumerate(columns) if width > 1]
+            if not candidates:
+                break
+            columns[max(candidates, key=columns.__getitem__)] -= 1
+
+        def fitted(value: Any, width: int) -> str:
+            rendered = str(value)
+            plain = _plain(rendered)
+            if len(plain) > width:
+                suffix = self.glyph("ellipsis")
+                rendered = plain[: max(0, width - len(suffix))] + suffix[:width]
+                plain = rendered
+            return rendered + " " * max(0, width - len(plain))
+
         self.line(
             "  "
             + "  ".join(
-                self.style(str(header).ljust(width), "bold", "grey")
+                self.style(fitted(header, width), "bold", "grey")
                 for header, width in zip(headers, columns, strict=True)
             )
         )
         for row in rows:
             self.line(
                 "  "
-                + "  ".join(
-                    str(cell) + " " * max(0, width - len(_plain(str(cell))))
-                    for cell, width in zip(row, columns, strict=True)
-                )
+                + "  ".join(fitted(cell, width) for cell, width in zip(row, columns, strict=True))
             )
 
     def ok(self, text: str) -> None:

@@ -1172,9 +1172,9 @@ class FixRegistry(Convertible):
         limit: int = 10,
         fuzzy: bool = True,
     ) -> list[Field]:
-        """Fields matching `text` by tag, name or description, best first."""
+        """Distinct field identities matching `text`, best first."""
         wanted = str(text).strip().lower()
-        if not wanted:
+        if not wanted or limit <= 0:
             return []
         ranked: list[tuple[int, int, int, Field]] = []
         for order, candidate in enumerate(self._versions(version)):
@@ -1192,7 +1192,18 @@ class FixRegistry(Convertible):
                             (100 + distance, order, int(member.fix.get("tag") or _NO_TAG), member)
                         )
         ranked.sort(key=lambda entry: entry[:3])
-        return [member for *_, member in ranked[:limit]]
+        found: list[Field] = []
+        seen: set[int | str] = set()
+        for *_, member in ranked:
+            entry = self.entry(member.fix.get("tag") or member.name)
+            identity = entry.key if entry is not None else member.name
+            if identity in seen:
+                continue
+            seen.add(identity)
+            found.append(member)
+            if len(found) == limit:
+                break
+        return found
 
     # -- one identity, every version -----------------------------------------
     #
