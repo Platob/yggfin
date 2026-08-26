@@ -40,12 +40,12 @@ payloads in two captures remain two source records. The table is sorted by
 `(unix, hash)` and partitioned from the recording time; a later parser may move
 its own event time without changing which source interval owns the row.
 
-Remote compressed captures are copied as raw compressed bytes to a uniquely
-owned temporary spill, then decoded locally as an Arrow stream. The spill is
-deleted when that stream finishes; the expanded capture is never written or
-collected in memory. Plain remote captures stream directly, and local captures
-are never copied. Callers that explicitly request a persistent spill get its
-deterministic, remote-size-validated cache behavior instead.
+Remote compressed captures stream directly through Arrow by default. Set
+`spill: true` to copy their raw compressed bytes to a uniquely owned temporary
+local file before decoding; it is deleted when that stream finishes. The
+expanded capture is never written or collected in memory. Plain remote and
+local captures are never copied. Callers that explicitly request a persistent
+`ArrowFileIO` spill get its deterministic, remote-size-validated cache behavior.
 
 Keep a directly opened `TextFile` in a `with` block. Exhausting its Arrow
 reader releases the temporary spill; when a caller stops early, closing the
@@ -59,9 +59,9 @@ records held beside it.
 ## Configuration
 
 The adjacent `parse_messages.yml` selects the source, FIX dictionary, filename
-pattern, header regex, timezone, protocol rules, catalog, branch and batch
-sizes. Keep custom `protocols` aligned with `parse_fix.yml`; this stage stores
-the classification that projected FIX conversion consumes.
+pattern, header regex, timezone, protocol rules, spill policy, catalog, branch
+and batch sizes. Keep custom `protocols` aligned with `parse_fix.yml`; this
+stage stores the classification that projected FIX conversion consumes.
 Null uses the shipped default rules in both stages.
 `include_regexes` admits a payload when any Arrow RE2 pattern matches;
 `exclude_regexes` then removes a payload when any pattern matches. Empty lists
@@ -72,9 +72,10 @@ message identities are parsed.
 `duration_ns` closes a non-empty batch when its recording-time window changes.
 With `start`, windows begin exactly there; otherwise the first retained `unix`
 is truncated to the duration. A busy window can still produce multiple
-`batch_row_size` batches, and `batch_byte_size` also closes a batch containing
-unusually large diagnostics. Gaps do not produce empty batches. Input must be
-ordered by these windows.
+`batch_row_size` batches, and `batch_byte_size` closes a batch around unusually
+large diagnostics. One logical record is never split, so that record and its
+parsed arguments may exceed the byte target. Gaps do not produce empty batches.
+Input must be ordered by these windows.
 
 Only payloads with a discriminator, a FIX BeginString, or at least two
 pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic key/value

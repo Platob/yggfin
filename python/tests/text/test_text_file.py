@@ -1,11 +1,14 @@
+import bz2
 import datetime
 import gzip
+import hashlib
 import re
 from pathlib import Path
 
 import pyarrow
 import pyarrow.fs
 import pytest
+from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 
 import rekep.text.text_file as text_file_module
 from rekep import Dataset, Field, FixRegistry, Kwarg, Message
@@ -362,6 +365,57 @@ def test_local_compressed_and_remote_plain_reads_do_not_spill(
     assert TextFile(url="captures/app.txt", filesystem=store).read() == SAMPLE_BYTES
 
 
+@pytest.mark.parametrize(
+    ("suffix", "codec"),
+    [("gz", "gzip"), ("bz2", "bz2"), ("zst", "zstd")],
+)
+def test_remote_compressed_logs_stream_in_bounded_reads_without_spilling(
+    suffix: str, codec: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = b"".join(
+        (
+            f"2026-08-14 00:05:{index % 60:02d}.{index % 1000:03d} "
+            f"[t] [M] (INFO) {hashlib.sha256(str(index).encode()).hexdigest()}\n"
+        ).encode()
+        for index in range(5_000)
+    )
+    if codec == "gzip":
+        payload = gzip.compress(raw)
+    elif codec == "bz2":
+        payload = bz2.compress(raw)
+    else:
+        payload = pyarrow.Codec(codec).compress(raw)
+
+    memory = MemoryFileSystem()
+    path = f"/captures/direct-{codec}.log.{suffix}"
+    memory.pipe(path, payload)
+    filesystem = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(memory))
+    reads: list[int] = []
+    original_read = MemoryFile.read
+
+    def tracked_read(opened, size=-1):  # noqa: ANN001, ANN202
+        reads.append(size)
+        return original_read(opened, size)
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("the default compressed path must not spill")
+
+    monkeypatch.setattr(MemoryFile, "read", tracked_read)
+    monkeypatch.setattr(ArrowFileIO, "spill", forbidden)
+    with TextFile(url=path, filesystem=filesystem) as log:
+        batches = list(
+            log.into_arrow_batches(
+                batch_row_size=257,
+                batch_byte_size=1 << 20,
+                read_byte_size=1 << 10,
+            )
+        )
+
+    assert sum(batch.num_rows for batch in batches) == 5_000
+    assert max(batch.num_rows for batch in batches) <= 257
+    assert reads and all(0 < size <= 1 << 16 for size in reads)
+
+
 def test_a_compressed_log_on_a_local_subtree_streams_without_spilling(tmp_path: Path) -> None:
     root = tmp_path / "mounted"
     root.mkdir()
@@ -396,7 +450,7 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
         return materialized
 
     monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
-    log = TextFile(url=remote, filesystem=store)
+    log = TextFile(url=remote, filesystem=store, spill=True)
     first = log.read_arrow_table()
 
     assert first.num_rows == EXPECTED_RECORDS
@@ -430,7 +484,7 @@ def test_a_missing_remote_compressed_log_is_lazy_and_never_materialized(
         return original(self, tmp_path / "spill", temporary=temporary)
 
     monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
-    log = TextFile(url="captures/missing.txt.gz", filesystem=store)
+    log = TextFile(url="captures/missing.txt.gz", filesystem=store, spill=True)
 
     assert calls == 0
     assert not (tmp_path / "spill").exists(), "construction performs no I/O"
@@ -1020,6 +1074,15 @@ def test_reader_is_lazy_until_pulled(plain: Path) -> None:
         reader.close()
 
 
+def test_owned_reader_exports_the_arrow_stream(plain: Path) -> None:
+    with TextFile.from_path(plain) as log:
+        reader = log.into_arrow_reader(batch_row_size=5)
+        imported = pyarrow.RecordBatchReader.from_stream(reader)
+
+        assert imported.read_all().num_rows == EXPECTED_RECORDS
+        reader.close()
+
+
 def test_custom_header_pattern(tmp_path: Path) -> None:
     """A caller's pattern must supply the same groups the schema is built from.
 
@@ -1187,7 +1250,7 @@ def test_text_file_owns_an_injected_arrow_fileio_without_serializing_it() -> Non
     assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
 
 
-def test_closing_a_partial_remote_compressed_read_purges_only_raw_bytes(
+def test_closing_a_partial_remote_compressed_reader_purges_only_raw_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     store = pyarrow.fs._MockFileSystem()
@@ -1201,15 +1264,17 @@ def test_closing_a_partial_remote_compressed_read_purges_only_raw_bytes(
         return original(self, tmp_path / "spill", temporary=temporary)
 
     monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
-    log = TextFile(url="captures/app.txt.gz", filesystem=store)
-    assert log.read(1)
+    log = TextFile(url="captures/app.txt.gz", filesystem=store, spill=True)
+    reader = log.into_arrow_reader(batch_row_size=1)
+    assert reader.read_next_batch().num_rows == 1
     active = log.__dict__["_active_fileio"]
     target = Path(active.location)
     assert active.temporary
     assert target.read_bytes() == payload, "the spill is compressed, never a decoded 30 GB copy"
 
-    log.close()
+    reader.close()
     assert not target.exists()
+    log.close()
 
 
 def test_stream_is_cached(plain: Path) -> None:

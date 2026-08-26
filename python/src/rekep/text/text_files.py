@@ -25,6 +25,7 @@ from rekep.text.text_file import (
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
+    _OwnedRecordBatchReader,
     _regexes,
     _validate_read_sizes,
     _validate_window,
@@ -116,6 +117,9 @@ class TextFiles(Dataset, io.BufferedIOBase):
 
     #: Syntax-only protocol classifier shared by every file in the stream.
     protocol_rules: Any | None = None
+
+    #: Materialize each remote compressed file locally while it is decoded.
+    spill: bool = False
 
     #: Constant columns every row of the capture carries, appended after the
     #: data columns in insertion order -- the same declaration `TextFile` takes,
@@ -347,6 +351,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 technical_msg_types=self.technical_msg_types,
                 technical_plugin_codes=self.technical_plugin_codes,
                 protocol_rules=self.protocol_rules,
+                spill=self.spill,
                 static_values=self.static_values,
             )
 
@@ -401,7 +406,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
             duration_ns=duration_ns,
             **kwargs,
         )
-        return pyarrow.RecordBatchReader.from_batches(self.schema, batches)
+        return _OwnedRecordBatchReader(self.schema, batches, lambda: None)
 
     def into_arrow_table(self, **kwargs: Any) -> pyarrow.Table:
         """Read the whole set into one table. Needs all of it to fit in memory."""

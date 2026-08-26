@@ -166,6 +166,7 @@ null_values: ["", "null", "<null>", "n/a"]
 | --- | --- | --- |
 | `header` | `TextFile.header_pattern` | `parse_messages` |
 | `timezone` | `TextFile.timezone` | `parse_messages` |
+| `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size` | `TextFile` parser bounds | `parse_messages` |

@@ -532,6 +532,55 @@ def test_an_empty_stream_commits_nothing(dataset: IcebergDataset) -> None:
     assert dataset.iceberg_table.history() == []
 
 
+class _ClosableBatches:
+    """A batch source that records the writer releasing it."""
+
+    def __init__(self, batches: Sequence[pyarrow.RecordBatch]) -> None:
+        self.batches = iter(batches)
+        self.closed = False
+
+    def __iter__(self) -> "_ClosableBatches":
+        return self
+
+    def __next__(self) -> pyarrow.RecordBatch:
+        return next(self.batches)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+@pytest.mark.parametrize("verb", ["append", "overwrite"])
+def test_a_completed_stream_write_closes_its_source(dataset: IcebergDataset, verb: str) -> None:
+    source = _ClosableBatches(quotes(2).to_batches(max_chunksize=1))
+
+    getattr(dataset, f"{verb}_arrow_reader")(source, merge_by=True, commit_row_size=1)
+
+    assert source.closed
+
+
+@pytest.mark.parametrize(
+    ("verb", "chunk_method"),
+    [("append", "insert_arrow_table"), ("overwrite", "merge_arrow_table")],
+)
+def test_a_failed_stream_write_closes_its_source(
+    dataset: IcebergDataset,
+    monkeypatch: pytest.MonkeyPatch,
+    verb: str,
+    chunk_method: str,
+) -> None:
+    dataset.get_or_create_table()
+    source = _ClosableBatches(quotes(2).to_batches(max_chunksize=1))
+
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("commit stopped")
+
+    monkeypatch.setattr(dataset, chunk_method, fail)
+    with pytest.raises(RuntimeError, match="commit stopped"):
+        getattr(dataset, f"{verb}_arrow_reader")(source, merge_by=True, commit_row_size=1)
+
+    assert source.closed
+
+
 # -- merging --------------------------------------------------------------
 
 
@@ -2322,11 +2371,17 @@ class _StreamOnly:
 def _forbid_planned_collect(monkeypatch: pytest.MonkeyPatch) -> None:
     from rekep.iceberg import dataset as module
 
-    original = module._planned_reader
+    planned = module._planned_reader
+    unordered = module._unordered_reader
     monkeypatch.setattr(
         module,
         "_planned_reader",
-        lambda scan, tasks, **kwargs: _StreamOnly(original(scan, tasks, **kwargs)),
+        lambda scan, tasks, **kwargs: _StreamOnly(planned(scan, tasks, **kwargs)),
+    )
+    monkeypatch.setattr(
+        module,
+        "_unordered_reader",
+        lambda scan, tasks, **kwargs: _StreamOnly(unordered(scan, tasks, **kwargs)),
     )
 
 
@@ -2344,6 +2399,30 @@ def test_an_insert_consumes_its_key_scan_without_collecting(
     dataset.append_arrow_table(quotes(3))
     _forbid_planned_collect(monkeypatch)
     assert dataset.insert_arrow_table(quotes(3, "XETR")) == 0
+
+
+def test_a_replayed_insert_stops_planning_after_its_keys_are_exhausted(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A huge replay must not retain file tasks after the first exact match."""
+    dataset.append_arrow_table(quotes(3), merge_by=False)
+    dataset.append_arrow_table(quotes(3), merge_by=False)
+    scan_type = type(dataset.iceberg_table.scan())
+    original = scan_type.plan_files
+    planned = 0
+
+    def one_at_a_time(self: Any):
+        nonlocal planned
+        for task in original(self):
+            planned += 1
+            if planned > 1:
+                pytest.fail("the replay planned a file after every source key matched")
+            yield task
+
+    monkeypatch.setattr(scan_type, "plan_files", one_at_a_time)
+
+    assert dataset.insert_arrow_table(quotes(3)) == 0
+    assert planned == 1
 
 
 def test_a_streamed_merge_plans_only_the_partition_named_by_its_chunk(
@@ -2365,14 +2444,14 @@ def test_a_streamed_merge_plans_only_the_partition_named_by_its_chunk(
     from rekep.iceberg import dataset as module
 
     planned: list[Any] = []
-    original = module._planned_reader
+    original = module._unordered_reader
 
     def capture(scan: Any, tasks: Any, **kwargs: Any) -> pyarrow.RecordBatchReader:
         tasks = list(tasks)
         planned.extend(tasks)
         return original(scan, tasks, **kwargs)
 
-    monkeypatch.setattr(module, "_planned_reader", capture)
+    monkeypatch.setattr(module, "_unordered_reader", capture)
     changed = today.set_column(
         today.schema.get_field_index("venue"),
         today.schema.field("venue"),

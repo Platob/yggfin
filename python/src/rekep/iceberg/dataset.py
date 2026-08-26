@@ -515,44 +515,48 @@ class IcebergDataset(Dataset):
         properties: dict[str, str] | None = None,
     ) -> None:
         """Upsert keyed rows, or stage complete partitions for keyless input."""
-        # An upsert or an unconditional append can put a key beyond an
-        # insert-only writer's known maximum. Its cheap monotonic proof is no
-        # longer complete after either operation.
-        self.__dict__.pop("_insert_upper", None)
-        table = self.get_or_create_table()
-        join = self.merge_columns(merge_by)
-        partitions = _partition_columns(table)
-        if partitions and not join:
-            self.overwrite_partition_arrow_reader(
-                source,
-                schema,
-                merge_by,
-                commit_row_size,
-                branch=branch,
-                properties=properties,
-            )
-            return
-        if not join:
-            raise ValueError(
-                f"merge_by={merge_by!r} names nothing to match on, and an overwrite "
-                "replaces the rows whose keys match -- pass True for the primary key "
-                "or the columns to match on, or use append_arrow_* to add rows blindly"
-            )
-        reader = self.target_field(schema).cast_arrow_reader(source)
-        reference = self._branch_name(branch)
-        self._branch_head(table, reference)
-        rows = self.commit_row_size if commit_row_size is None else commit_row_size
-        for chunk in arrow_chunks(reader, rows):
-            chunk = self.sorted(chunk)
-            if self.plan_merges:
-                self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
-            else:
-                self.iceberg_table.upsert(
-                    chunk,
-                    join_cols=join,
-                    branch=reference,
-                    snapshot_properties=properties or {},
+        reader: pyarrow.RecordBatchReader | None = None
+        try:
+            # An upsert or an unconditional append can put a key beyond an
+            # insert-only writer's known maximum. Its cheap monotonic proof is no
+            # longer complete after either operation.
+            self.__dict__.pop("_insert_upper", None)
+            table = self.get_or_create_table()
+            join = self.merge_columns(merge_by)
+            partitions = _partition_columns(table)
+            if partitions and not join:
+                self.overwrite_partition_arrow_reader(
+                    source,
+                    schema,
+                    merge_by,
+                    commit_row_size,
+                    branch=branch,
+                    properties=properties,
                 )
+                return
+            if not join:
+                raise ValueError(
+                    f"merge_by={merge_by!r} names nothing to match on, and an overwrite "
+                    "replaces the rows whose keys match -- pass True for the primary key "
+                    "or the columns to match on, or use append_arrow_* to add rows blindly"
+                )
+            reader = self.target_field(schema).cast_arrow_reader(source)
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
+            rows = self.commit_row_size if commit_row_size is None else commit_row_size
+            for chunk in arrow_chunks(reader, rows):
+                chunk = self.sorted(chunk)
+                if self.plan_merges:
+                    self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
+                else:
+                    self.iceberg_table.upsert(
+                        chunk,
+                        join_cols=join,
+                        branch=reference,
+                        snapshot_properties=properties or {},
+                    )
+        finally:
+            _close_write_source(source, reader)
 
     def overwrite_partition_arrow_reader(
         self,
@@ -705,22 +709,28 @@ class IcebergDataset(Dataset):
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
         # Planned once and read from that plan: `to_arrow_batch_reader` plans
-        # again on its own, and a streaming merge pays planning per chunk.
-        tasks = list(scan.plan_files())
-        if not tasks:
+        # again on its own, and a streaming merge pays planning per chunk. Keep
+        # the plan lazy as well as its data: a replay may finish from the first
+        # file, so collecting every remaining task would retain metadata it
+        # never needs.
+        tasks = iter(scan.plan_files())
+        first_task = next(tasks, None)
+        if first_task is None:
             # No stored file overlaps the chunk's key ranges, so no stored row
             # can match: the merge *is* an append, with nothing read and
             # nothing to compare. A stream of new keys -- the log-ingest case
             # this exists for -- lands every chunk here.
             table.append(chunk, snapshot_properties=properties or {}, branch=reference)
             return 0, chunk.num_rows
-        # The scan filter is a superset, so consume its partition-ordered
-        # reader batchwise. Keep only compact positions into the source chunk:
-        # neither the ranged rows nor even their exact stored matches collect.
+        # The scan filter is a superset, so consume one planned file at a time.
+        # Keep only compact positions into the source chunk: neither the ranged
+        # rows nor even their exact stored matches collect.
         matched_positions: list[pyarrow.Array] = []
         changed_positions: list[pyarrow.Array] = []
         matched_count = 0
-        with _planned_reader(scan, tasks, group_size=1) as planned:
+        with _unordered_reader(
+            scan, itertools.chain((first_task,), tasks), group_size=1
+        ) as planned:
             for batch in _under_current_names(table, planned):
                 candidate = pyarrow.Table.from_batches([batch])
                 candidate = _align_keys(candidate, chunk, join)
@@ -797,26 +807,30 @@ class IcebergDataset(Dataset):
         properties: dict[str, str] | None = None,
     ) -> int:
         """Append a stream, inserting only the keys the table does not hold yet."""
-        join = self.merge_columns(merge_by)
-        table = self.get_or_create_table()
-        reader = self.target_field(schema).cast_arrow_reader(source)
-        reference = self._branch_name(branch)
-        self._branch_head(table, reference)
-        rows = self.commit_row_size if commit_row_size is None else commit_row_size
-        snapshot = properties or {}
-        if not join:
-            self.__dict__.pop("_insert_upper", None)
+        reader: pyarrow.RecordBatchReader | None = None
+        try:
+            join = self.merge_columns(merge_by)
+            table = self.get_or_create_table()
+            reader = self.target_field(schema).cast_arrow_reader(source)
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
+            rows = self.commit_row_size if commit_row_size is None else commit_row_size
+            snapshot = properties or {}
+            if not join:
+                self.__dict__.pop("_insert_upper", None)
+                inserted = 0
+                for chunk in arrow_chunks(reader, rows):
+                    table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
+                    inserted += chunk.num_rows
+                return inserted
             inserted = 0
             for chunk in arrow_chunks(reader, rows):
-                table.append(self.sorted(chunk), snapshot_properties=snapshot, branch=reference)
-                inserted += chunk.num_rows
+                inserted += self.insert_arrow_table(
+                    self.sorted(chunk), join, branch=reference, properties=properties
+                )
             return inserted
-        inserted = 0
-        for chunk in arrow_chunks(reader, rows):
-            inserted += self.insert_arrow_table(
-                self.sorted(chunk), join, branch=reference, properties=properties
-            )
-        return inserted
+        finally:
+            _close_write_source(source, reader)
 
     def insert_arrow_table(
         self,
@@ -872,12 +886,16 @@ class IcebergDataset(Dataset):
             return chunk.num_rows
         scan = scan.select(*wanted)
         # Planned once, like a merge. Each streamed key batch removes the rows
-        # it already holds; no stored key table is accumulated, and a complete
-        # replay stops opening later partitions as soon as nothing remains.
-        tasks = list(scan.plan_files())
+        # it already holds; no stored key table or file-task list is
+        # accumulated, and a complete replay stops planning and opening later
+        # files as soon as nothing remains.
+        tasks = iter(scan.plan_files())
+        first_task = next(tasks, None)
         fresh = keys_of(chunk, join, SOURCE_INDEX)
-        if tasks:
-            with _planned_reader(scan, tasks, group_size=1) as planned:
+        if first_task is not None:
+            with _unordered_reader(
+                scan, itertools.chain((first_task,), tasks), group_size=1
+            ) as planned:
                 for batch in _under_current_names(table, planned):
                     stored = pyarrow.Table.from_batches([keys.cast_arrow_batch(batch)])
                     fresh = fresh.join(
@@ -2054,6 +2072,16 @@ def _between(column: str, low: Any, high: Any) -> Any:
     from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual
 
     return And(GreaterThanOrEqual(column, low), LessThanOrEqual(column, high))
+
+
+def _close_write_source(source: Any, reader: pyarrow.RecordBatchReader | None) -> None:
+    """Release a writer's cast reader and then the stream it consumed."""
+    try:
+        if reader is not None:
+            reader.close()
+    finally:
+        if source is not reader and (close := getattr(source, "close", None)) is not None:
+            close()
 
 
 def _checked_merge_chunk(table: Any, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:

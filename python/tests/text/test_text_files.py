@@ -6,6 +6,7 @@ import pyarrow.fs
 import pytest
 
 from rekep import Dataset, Field, FixRegistry, Message, TextFile, TextFiles
+from rekep.filesystems import ArrowFileIO
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
 
@@ -76,6 +77,12 @@ def relative(files: TextFiles, root: Path) -> list[str]:
 def test_paths_come_out_in_natural_path_order(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert tuple(relative(files, capture)) == CAPTURE_ORDER
+
+
+def test_spill_policy_is_passed_to_each_file(capture: Path) -> None:
+    files = TextFiles.from_folder(capture, pattern="*.txt*", spill=True)
+
+    assert all(opened.spill for opened in files.into_files())
 
 
 def test_a_digit_run_sorts_as_a_number_not_as_text() -> None:
@@ -513,6 +520,34 @@ def test_one_file_is_open_at_a_time(capture: Path) -> None:
     reader.read_all()
     assert len(Counting.opened) == len(CAPTURE_ORDER)
     assert Counting.listed == [capture.as_posix(), (capture / "archive").as_posix()]
+
+
+def test_closing_a_partial_file_set_reader_purges_the_current_spill(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("captures")
+    for name in ("app.1.log.gz", "app.2.log.gz"):
+        with store.open_output_stream(f"captures/{name}", compression=None) as stream:
+            stream.write(gzip.compress(SAMPLE_BYTES))
+    spilled: list[Path] = []
+    original = ArrowFileIO.spill
+
+    def into_test_cache(self, local=None, *, temporary=False):  # noqa: ANN001, ANN202
+        materialized = original(self, tmp_path / "spill", temporary=temporary)
+        assert materialized is not None and materialized.location is not None
+        spilled.append(Path(materialized.location))
+        return materialized
+
+    monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
+    files = TextFiles.from_folder("captures", filesystem=store, pattern="*.gz", spill=True)
+    reader = files.into_arrow_reader(batch_row_size=1)
+
+    assert reader.read_next_batch().num_rows == 1
+    assert len(spilled) == 1 and spilled[0].exists()
+    reader.close()
+
+    assert not spilled[0].exists()
 
 
 # -- the byte stream --------------------------------------------------------

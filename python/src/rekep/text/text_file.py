@@ -6,12 +6,12 @@ import datetime
 import io
 import os
 import re
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import InitVar, dataclass
 from dataclasses import field as dataclass_field
 from functools import cache, cached_property
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Self
 
 import pyarrow
 import pyarrow.compute
@@ -187,6 +187,10 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     #: Syntax-only protocol classifier; it never reads registry fields.
     protocol_rules: Any | None = None
+
+    #: Materialize remote compressed bytes locally before decoding. False
+    #: leaves Arrow reading and decoding the object-store stream directly.
+    spill: bool = False
 
     #: Constant columns every parsed row carries, appended **after** the data
     #: columns in the order they are given here -- the bridge that wrote the
@@ -444,20 +448,18 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Stream filtered messages in row- or duration-bounded Arrow batches."""
         self._check_open()
         self._close_stream()
-        return pyarrow.RecordBatchReader.from_batches(
-            self.schema,
-            self.into_arrow_batches(
-                batch_row_size,
-                read_byte_size,
-                fold_continuations,
-                batch_byte_size=batch_byte_size,
-                include_regexes=include_regexes,
-                exclude_regexes=exclude_regexes,
-                start_unix=start_unix,
-                end_unix=end_unix,
-                duration_ns=duration_ns,
-            ),
+        batches = self.into_arrow_batches(
+            batch_row_size,
+            read_byte_size,
+            fold_continuations,
+            batch_byte_size=batch_byte_size,
+            include_regexes=include_regexes,
+            exclude_regexes=exclude_regexes,
+            start_unix=start_unix,
+            end_unix=end_unix,
+            duration_ns=duration_ns,
         )
+        return _OwnedRecordBatchReader(self.schema, batches, self._close_stream)
 
     def into_arrow_table(self, **kwargs: object) -> pyarrow.Table:
         """Read the whole log into one Arrow table. Needs it to fit in memory."""
@@ -712,11 +714,11 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Open a new Arrow stream over `url`.
 
         Plain logs go through `open_input_file` because it is the only opener
-        that yields a seekable handle. A remote compressed object is spilled as
-        raw bytes once, then Arrow streams its decoding from local disk.
+        that yields a seekable handle. Compressed logs stream their decoding;
+        an opted-in spill first copies the raw compressed bytes to local disk.
         """
         active = self.fileio
-        if self._codec is not None:
+        if self.spill and self._codec is not None:
             active = active.spill(temporary=True)
         if active is None:
             raise FileNotFoundError(f"compressed source does not exist: {self.url}")
@@ -788,6 +790,102 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _check_open(self) -> None:
         if self.closed:
             raise ValueError("I/O operation on closed file.")
+
+
+class _OwnedRecordBatchReader(pyarrow.RecordBatchReader):
+    """An Arrow reader that closes its Python source and owning resource."""
+
+    def __init__(
+        self,
+        schema: pyarrow.Schema,
+        batches: Iterator[pyarrow.RecordBatch],
+        release: Callable[[], None],
+    ) -> None:
+        self._batches = batches
+        self._reader = pyarrow.RecordBatchReader.from_batches(schema, batches)
+        self._release = release
+        self._closed = False
+
+    @property
+    def schema(self) -> pyarrow.Schema:
+        return self._reader.schema
+
+    def read_next_batch(self) -> pyarrow.RecordBatch:
+        try:
+            return self._reader.read_next_batch()
+        except StopIteration:
+            self.close()
+            raise
+
+    def read_next_batch_with_custom_metadata(self) -> Any:
+        try:
+            return self._reader.read_next_batch_with_custom_metadata()
+        except StopIteration:
+            self.close()
+            raise
+
+    def read_all(self) -> pyarrow.Table:
+        try:
+            return self._reader.read_all()
+        finally:
+            self.close()
+
+    def read_pandas(self, **options: Any) -> Any:
+        try:
+            return self._reader.read_pandas(**options)
+        finally:
+            self.close()
+
+    def iter_batches_with_custom_metadata(self) -> Iterator[Any]:
+        try:
+            yield from self._reader.iter_batches_with_custom_metadata()
+        finally:
+            self.close()
+
+    def cast(self, target_schema: pyarrow.Schema) -> pyarrow.RecordBatchReader:
+        return _OwnedRecordBatchReader.from_reader(self._reader.cast(target_schema), self.close)
+
+    @classmethod
+    def from_reader(cls, reader: pyarrow.RecordBatchReader, release: Callable[[], None]) -> Self:
+        """Own an existing reader without inserting another batch iterator."""
+        owned = cls.__new__(cls)
+        owned._batches = None
+        owned._reader = reader
+        owned._release = release
+        owned._closed = False
+        return owned
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self._reader.close()
+        finally:
+            close = getattr(self._batches, "close", None)
+            try:
+                if close is not None:
+                    close()
+            finally:
+                self._release()
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> pyarrow.RecordBatch:
+        return self.read_next_batch()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()
+
+    def __arrow_c_stream__(self, requested_schema: object = None) -> object:
+        return self._reader.__arrow_c_stream__(requested_schema)
+
+    def _export_to_c(self, out_ptr: int) -> None:
+        self._reader._export_to_c(out_ptr)  # noqa: SLF001
 
 
 def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:

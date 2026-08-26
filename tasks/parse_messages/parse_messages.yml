@@ -15,6 +15,9 @@ parameters:
   # `thread_name`, `plugin_code` and `message`. Null reads the shipped one.
   header: null
   recursive: true
+  # False streams compressed objects directly. True stages their raw compressed
+  # bytes in a uniquely owned temporary local file while decoding.
+  spill: false
   timezone: Europe/Paris
   # Arrow RE2 payload patterns: any include admits, while any exclude rejects.
   # Filtering happens before kwargs and message identities are built.
@@ -44,7 +47,7 @@ parameters:
   target: logs.messages
   merge_by: true
   batch_row_size: 65536
-  # Also bounds batches containing unusually large diagnostics.
+  # Also bounds batches between records; one logical record is never split.
   batch_byte_size: 67108864
   commit_row_size: 250000
   limit: null
