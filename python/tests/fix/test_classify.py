@@ -363,6 +363,9 @@ def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     assert row.into_entry() == FieldEntry(
         name="FAKE.VENDOR.CODE", kind=NAMESPACE, versions=(ANY_VERSION,), type="String"
     )
+    assert row.into_entry(column="fake_vendor_code").column == "fake_vendor_code", (
+        "a caller that already knows the column declares it in the same record"
+    )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(
         name="FAKE.VENDOR.CODE", source="brk", occurrences=7
     )

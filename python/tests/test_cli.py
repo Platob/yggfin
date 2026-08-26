@@ -348,6 +348,71 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
     assert reopened(store).resolve("FAKE.VENDOR.CODE") is None
 
 
+def test_a_rendered_field_is_promoted_in_one_call(
+    store: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """One verb registers the name and the column it is lifted into, together."""
+    assert (
+        run(
+            "fix",
+            "registry",
+            "promote",
+            "--store",
+            str(store),
+            "--name",
+            "FAKE.VENDOR.CODE",
+            "--column",
+            "fake_vendor_code",
+            "--description",
+            "A vendor's own code.",
+            "--alias",
+            "FAKEVENDORCODE",
+        )
+        == 0
+    )
+    entry = reopened(store).resolve("FAKE.VENDOR.CODE")
+    assert entry.kind == "namespace" and entry.tag is None
+    assert entry.column == "fake_vendor_code"
+    assert entry.type == "String", "the datatype String goes without saying"
+    assert reopened(store).resolve("FAKEVENDORCODE").name == "FAKE.VENDOR.CODE"
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "promote",
+            "--store",
+            str(store),
+            "--name",
+            "FAKE.VENDOR.CODE",
+            "--column",
+            "elsewhere",
+        )
+        == 1
+    ), "moving an assigned column is a conflict, not an update"
+    assert "already lifted into" in capsys.readouterr().err
+    assert reopened(store).resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
+
+
+def test_promoting_a_standard_field_is_refused(store: Path, capsys: pytest.CaptureFixture) -> None:
+    assert (
+        run(
+            "fix",
+            "registry",
+            "promote",
+            "--store",
+            str(store),
+            "--name",
+            "FakeRole",
+            "--column",
+            "fake_role",
+        )
+        == 1
+    )
+    assert "standard" in capsys.readouterr().err
+    assert reopened(store).resolve("FakeRole").column == ""
+
+
 def test_a_numbered_field_is_registered_for_the_versions_it_names(store: Path) -> None:
     assert (
         run(

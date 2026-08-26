@@ -350,6 +350,108 @@ def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None
     assert not store.remove_field("FAKE.VENDOR.CODE"), "and says so the second time"
 
 
+def test_promoting_registers_a_rendered_name_and_its_column_in_one_call(store: Offline) -> None:
+    """The one-step path: a name never seen becomes a namespaced entry with a column."""
+    entry = store.promote_field(
+        "FAKE.VENDOR.TS",
+        "fake_vendor_ts",
+        type="UTCTimestamp",
+        description="A vendor's own stamp.",
+        aliases=("FAKEVENDORTS",),
+    )
+    assert entry.kind == NAMESPACE and entry.tag is None
+    assert entry.versions == (ANY_VERSION,)
+    assert entry.type == "UTCTimestamp"
+    assert entry.column == "fake_vendor_ts"
+    assert store.resolve("FAKE.VENDOR.TS").column == "fake_vendor_ts"
+    assert store.resolve("FAKEVENDORTS").name == "FAKE.VENDOR.TS"
+    assert store.check() == []
+
+
+def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
+    """A declared name with no column -- what `apply --namespace` leaves -- is
+    finished in place, keeping the aliases and counts the run recorded."""
+    store.add_field(
+        FieldEntry(
+            name="FAKE.VENDOR.CODE",
+            kind=NAMESPACE,
+            versions=(ANY_VERSION,),
+            type="String",
+            aliases=(Alias(name="FAKEVENDORCODE", source="brk", occurrences=7),),
+        )
+    )
+    entry = store.promote_field(
+        "FAKE.VENDOR.CODE",
+        "fake_vendor_code",
+        description="A vendor's own code.",
+        aliases=("FAKEVENDORCODE", "FAKE_VENDOR_CODE"),
+    )
+    assert entry.column == "fake_vendor_code"
+    assert entry.description == "A vendor's own code."
+    assert [alias.name for alias in entry.aliases] == ["FAKEVENDORCODE", "FAKE_VENDOR_CODE"]
+    assert entry.aliases[0].occurrences == 7, "the recorded count survived the promotion"
+
+    again = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
+    assert again.column == "fake_vendor_code", "the same answer twice is not a conflict"
+    assert again.type == "String", "a type left unsaid keeps what the entry holds"
+    assert store.promote_field("FAKEVENDORCODE", "fake_vendor_code").name == "FAKE.VENDOR.CODE", (
+        "any name the entry answers to names it here too"
+    )
+    retyped = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code", type="UTCTimestamp")
+    assert retyped.type == "UTCTimestamp", "and a type said here is the newest reading"
+    reworded = store.promote_field(
+        "FAKE.VENDOR.CODE", "fake_vendor_code", description="A vendor's code, reconfirmed."
+    )
+    assert reworded.description == "A vendor's code, reconfirmed.", "so is a said description"
+
+
+def test_promoting_normalizes_the_column_and_folds_repeated_aliases(store: Offline) -> None:
+    """What is stored is what a later call compares against, so it is cleaned
+    on the way in: padding would lock the entry against its own spelling, and
+    a spelling said twice in one call would be dropped silently on reload."""
+    entry = store.promote_field(
+        "FAKE.VENDOR.CODE",
+        "  fake_vendor_code  ",
+        aliases=("FAKEVENDORCODE", "FakeVendorCode"),
+    )
+    assert entry.column == "fake_vendor_code"
+    assert [alias.name for alias in entry.aliases] == ["FAKEVENDORCODE"]
+    assert store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code").column == (
+        "fake_vendor_code"
+    ), "and the unpadded spelling names the same column"
+
+
+def test_promoting_a_standard_field_is_refused(store: Offline) -> None:
+    """A tagged field's column is the dictionary's to declare, not this verb's."""
+    with pytest.raises(KeyError, match="standard, with tag 90001"):
+        store.promote_field("FakeRole", "fake_role")
+    assert store.resolve("FakeRole").column == "", "unchanged, because it was refused"
+
+
+def test_promoting_refuses_moving_an_assigned_column(store: Offline) -> None:
+    """Two runs disagreeing about where a field lands is a conflict, not an update."""
+    store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
+    with pytest.raises(ValueError, match="already lifted into 'fake_vendor_code'"):
+        store.promote_field("FAKE.VENDOR.CODE", "elsewhere")
+    assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
+
+
+def test_promoting_refuses_a_column_another_field_landed_in(store: Offline) -> None:
+    """One parsed-log column holds one field; a second claimant is a conflict."""
+    store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
+    with pytest.raises(ValueError, match="two fields cannot land in one column"):
+        store.promote_field("FAKE.OTHER.CODE", "fake_vendor_code")
+    assert store.resolve("FAKE.OTHER.CODE") is None, "nothing was written"
+
+
+def test_promoting_requires_a_name_and_a_column(store: Offline) -> None:
+    with pytest.raises(ValueError, match="requires the column"):
+        store.promote_field("FAKE.VENDOR.CODE", "   ")
+    with pytest.raises(ValueError, match="requires its name"):
+        store.promote_field(" ", "fake_vendor_code")
+    assert store.resolve("FAKE.VENDOR.CODE") is None, "nothing was written"
+
+
 def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> None:
     entry = FieldEntry(
         name="MsgType",
