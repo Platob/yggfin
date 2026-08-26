@@ -185,3 +185,18 @@ fields:
   nullable: true
   description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
   fix: {tag: '41', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: OrigClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+- name: clord_link_id
+  type: string
+  nullable: true
+  description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
+  fix: {tag: '583', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
+- name: cxl_rej_reason
+  type: int32
+  nullable: true
+  description: Code to identify reason for cancel rejection.
+  fix: {tag: '102', type: int, version: 5.0.SP2, values: '{"0":"Too late to cancel","1":"Unknown order","2":"Broker / Exchange Option","3":"Order already in Pending Cancel or Pending Replace status","4":"Unable to process Order Mass Cancel Request <q>","5":"OrigOrdModTime <586> did not match last TransactTime <60> of order","6":"Duplicate ClOrdID <11> received","99":"Other","18":"Invalid price increment","7":"Price exceeds current price","8":"Price exceeds current price band"}', value_names: '{"0":"TOO_LATE_TO_CANCEL","1":"UNKNOWN_ORDER","2":"BROKER_CREDIT","3":"ORDER_ALREADY_IN_PENDING_STATUS","6":"DUPLICATE_CL_ORD_ID","5":"ORIG_ORD_MOD_TIME","4":"UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST","99":"OTHER","18":"INVALID_PRICE_INCREMENT","7":"PRICE_EXCEEDS_CURRENT_PRICE","8":"PRICE_EXCEEDS_CURRENT_PRICE_BAND"}', msgtypes: '["OrderCancelReject"]', name: CxlRejReason, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+- name: cxl_rej_response_to
+  type: string
+  nullable: true
+  description: Identifies the type of request that a Cancel Reject <9> is in response to.
+  fix: {tag: '434', type: char, version: 5.0.SP2, values: '{"1":"Order Cancel Request <F>","2":"Order Cancel/Replace Request <G>"}', value_names: '{"1":"ORDER_CANCEL_REQUEST","2":"ORDER_CANCEL_REPLACE_REQUEST"}', msgtypes: '["OrderCancelReject"]', name: CxlRejResponseTo, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'}

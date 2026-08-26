@@ -1213,3 +1213,106 @@ def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
         iter(FixMsg.from_text(line).into_fix_events(fix_version="4.4").into_instruments())
     )
     assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
+
+
+def test_a_cancel_reject_reads_where_the_order_stands_from_ordstatus() -> None:
+    """`OrderCancelReject <9>` is the one order message whose real state lives
+    in `OrdStatus <39>` -- it says where the order stands after the refusal --
+    and its coded reason leads the prose instead of being dropped by it."""
+    line = (
+        "8=FIX.4.4|35=9|37=O-1|11=C-2|41=C-1|39=2|102=1|434=1|"
+        "58=Too late to cancel|60=20260814-10:00:00|10=000"
+    )
+    (order,) = list(FixEvents.from_text(line))
+
+    assert order.state is State.FILLED
+    assert order.cxl_rej_reason == 1
+    assert order.cxl_rej_response_to == "1"
+    assert order.reason is not None
+    coded, response, text = order.reason.split("; ")
+    assert coded.startswith("CxlRejReason=1")
+    assert response.startswith("CxlRejResponseTo=1")
+    assert text == "Too late to cancel"
+
+
+def test_a_cancel_reject_without_ordstatus_stays_unknown() -> None:
+    line = "8=FIX.4.4|35=9|37=O-1|11=C-2|41=C-1|60=20260814-10:00:00|10=000"
+    (order,) = list(FixEvents.from_text(line))
+    assert order.state is State.UNKNOWN
+
+
+def test_a_quote_request_with_prices_is_read_like_any_other_quote() -> None:
+    """`QuoteRequest <R>` used to dispatch to nothing; one carrying prices is
+    two indicative sides, exactly as a quote would be."""
+    line = (
+        "8=FIX.4.4|35=R|131=QR-1|55=EUR/USD|132=1.08|134=1000000|"
+        "133=1.081|135=2000000|60=20260814-10:00:00|10=000"
+    )
+    bid, ask = list(FixEvents.from_text(line))
+    assert (bid.side, bid.px, bid.qty) == (Side.BID, 1.08, 1000000.0)
+    assert (ask.side, ask.px, ask.qty) == (Side.ASK, 1.081, 2000000.0)
+
+
+def test_a_mass_quote_acknowledgement_reads_its_entries() -> None:
+    """`MassQuoteAcknowledgement <b>` carries the same quote sets `i` does,
+    and a rejecting acknowledgement is what says the quote never stood."""
+    line = (
+        "8=FIX.4.4|35=b|117=Q-1|297=5|296=1|302=S1|295=1|299=E1|55=AAA|"
+        "132=9|134=5|60=20260814-10:00:00|10=000"
+    )
+    (entry,) = list(FixEvents.from_text(line))
+    assert entry.state is State.REJECTED
+    # Rejected is terminal, so the working quantity is zeroed and the asked
+    # size survives as the previous one.
+    assert (entry.side, entry.px, entry.qty, entry.prev_qty) == (Side.BID, 9.0, 0.0, 5.0)
+
+
+def test_a_trade_capture_report_request_carrying_a_trade_is_an_execution() -> None:
+    line = (
+        "8=FIX.4.4|35=AD|568=REQ-1|571=R-1|880=M-1|31=100|32=5|55=AAPL|54=1|"
+        "37=O-1|60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(line))
+    assert isinstance(execution, Execution)
+    assert (execution.side, execution.px, execution.qty, execution.trade_id) == (
+        Side.BUY,
+        100.0,
+        5.0,
+        "M-1",
+    )
+
+
+def test_an_execution_carries_how_its_trade_settles() -> None:
+    line = (
+        "8=FIX.4.4|35=AE|571=R-2|880=M-2|31=1.0842|32=1000000|55=EUR/USD|"
+        "64=20260818|63=W2|120=USD|156=M|552=1|54=1|37=O-2|11=C-7|"
+        "60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(line))
+    assert execution.settl_date == datetime.date(2026, 8, 18)
+    assert execution.settl_type == "W2"
+    assert execution.settl_currency == "USD"
+    assert execution.settl_curr_fx_rate_calc == "M"
+
+
+def test_the_order_intent_link_identifier_is_typed_and_coded() -> None:
+    line = "8=FIX.4.4|35=D|11=C-1|583=LINK-9|55=AAPL|54=1|38=5|44=10|60=20260814-10:00:00|10=000"
+    (order,) = list(FixEvents.from_text(line))
+    assert order.clord_link_id == "LINK-9"
+    assert order.codes["cl_ord_link_id"] == "LINK-9"
+
+
+def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
+    """`SIDE=buy`, `ORDSTATUS=canceled`, `EXECTYPE=cancel`, `ORDTYPE=limit`
+    and `TIMEINFORCE=gtd` are how real bridges render the codes; a scalar
+    reader resolves each where it used to record `UNKNOWN`."""
+    line = (
+        "8=FIX.4.4|35=8|37=O-1|11=C-1|17=E-1|54=buy|39=canceled|150=cancel|"
+        "40=limit|59=gtd|38=5|44=10|126=20260820-17:30:00|60=20260814-10:00:00|10=000"
+    )
+    (order,) = list(FixEvents.from_text(line))
+    assert order.state is State.CANCELLED
+    assert order.side is Side.BUY
+    assert order.kind is MarketKind.LIMIT_ORDER
+    assert order.tif is TimeInForce.GTD
+    assert order.eunix is not None, "a GTD spelled out still reads its expiry"

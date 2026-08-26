@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 from pathlib import Path
 
 import pyarrow
@@ -2184,3 +2185,82 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     assert [order.client_order_id for order in expected] == ["C-1", "C-2", "C-3"]
     expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
     assert pyarrow.Table.from_batches(found).equals(expected_table)
+
+
+def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> None:
+    """A cancel-reject's OrdStatus, an intent link and settlement facts read
+    identically flat and scalar -- and the batch is flat-eligible, so the
+    equality is between two live paths and not one falling back."""
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    linked = FixMsg(
+        unix=BASE + 1,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="D",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ClOrdID="C-1",
+        Side="1",
+        OrdType="2",
+        OrderQty=10.0,
+        Price=100.0,
+        kwargs=[(583, "LINK-1")],
+    )
+    rejected = dataclasses.replace(
+        linked,
+        MsgType="9",
+        ClOrdID="C-2",
+        OrigClOrdID="C-1",
+        OrdStatus="2",
+        kwargs=None,
+    )
+    settled = FixMsg(
+        unix=BASE + 3,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="AE",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ExecID="E-1",
+        Side="2",
+        LastPx=99.5,
+        LastQty=3.0,
+        kwargs=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
+    )
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist(
+        [linked.into_dict(), rejected.into_dict(), settled.into_dict()], schema
+    )
+
+    translated = into_flat_market_batches(batch, {"registry": registry})
+    assert translated is not None, "every row here is flat-eligible"
+    orders, executions = translated
+
+    assert orders.column("clord_link_id").to_pylist() == ["LINK-1", None]
+    assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
+        "the reject reads where the order stands from OrdStatus"
+    )
+    assert executions.column("settl_date").to_pylist() == [datetime.date(2026, 8, 18)]
+    assert executions.column("settl_type").to_pylist() == ["W2"]
+    assert executions.column("settl_currency").to_pylist() == ["USD"]
+    assert executions.column("settl_curr_fx_rate_calc").to_pylist() == ["M"]
+
+    expected = {Order: [], Execution: []}
+    for message in FixMsg.from_arrow_reader([batch]):
+        for event in message.into_market_events(registry=registry):
+            if type(event) in expected:
+                expected[type(event)].append(event)
+    expected_orders = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected[Order])))
+    assert pyarrow.Table.from_batches([orders]).equals(expected_orders)
+    # The execution row compares attribute-wise: a scalar event carrying a
+    # date cannot ride `into_arrow_reader` yet (a pre-existing limit its
+    # Instrument.maturity shares), and the identity hashes are the strong
+    # half of the parity anyway.
+    (scalar_execution,) = expected[Execution]
+    (row,) = executions.to_pylist()
+    assert row["hash"] == scalar_execution.hash
+    assert row["xhash"] == scalar_execution.xhash
+    for name in ("exec_id", "px", "qty", "settl_type", "settl_currency"):
+        assert row[name] == getattr(scalar_execution, name), name
+    assert row["settl_date"] == scalar_execution.settl_date
+    assert row["settl_curr_fx_rate_calc"] == scalar_execution.settl_curr_fx_rate_calc

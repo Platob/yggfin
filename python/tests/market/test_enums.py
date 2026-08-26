@@ -398,3 +398,18 @@ def test_only_a_state_is_a_snapshot() -> None:
     assert EventType.BOOK.is_snapshot
     assert not EventType.ORDER.is_snapshot and not EventType.EXECUTION.is_snapshot
     assert EventType.INSTRUMENT.is_snapshot, "reference data is a picture too"
+
+
+def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:
+    """Bridges render `SIDE=buy` and `TIMEINFORCE=gtd` where the wire says
+    `1` and `6`; the exact code stays first and case-sensitive, and the word
+    resolves only to a member that was compiled in -- never registering one."""
+    assert Side.from_fix("buy") is Side.BUY
+    assert Side.from_fix("Sell") is Side.SELL
+    assert Side.from_fix("2") is Side.SELL
+    assert TimeInForce.from_fix("gtd") is TimeInForce.GTD
+    assert TimeInForce.from_fix("ioc") is TimeInForce.IOC
+
+    before = len(Side._value2member_map_)
+    assert Side.from_fix("weird-code", Side.UNKNOWN) is Side.UNKNOWN
+    assert len(Side._value2member_map_) == before, "an unknown wire value registers nothing"

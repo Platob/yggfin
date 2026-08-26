@@ -12,6 +12,8 @@ import enum
 import functools
 import json
 from collections import OrderedDict
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Any, Self
 
 #: A code an ASCII enum learnt at runtime is remembered so the next read of the
@@ -146,15 +148,42 @@ class _AsciiInt32(enum.IntEnum):
 
     @classmethod
     def from_fix(cls, value: Any, default: Self | None = None) -> Self:
-        """Parse a short protocol value."""
+        """Parse a short protocol value.
+
+        The exact wire code first and case-sensitively. Where that misses, a
+        word spelling of a *compiled* member answers -- bridges render
+        `SIDE=buy` and `TIMEINFORCE=gtd` where the wire says `1` and `6` --
+        and nothing here registers a new code: an unknown value is the
+        default, not a member invented from wire noise.
+        """
         raw = str(value).strip() if value is not None else ""
         known = cls._fix_codes().get(raw)
         if known is not None:
             return known
         if cls._fix_codes():
+            worded = cls.worded_codes().get(cls._normalise(raw))
+            if worded is not None:
+                return worded
             return default if default is not None else cls.UNKNOWN
         parsed = cls.from_str(value)
         return default if parsed is cls.UNKNOWN and default is not None else parsed
+
+    @classmethod
+    @functools.cache
+    def worded_codes(cls) -> Mapping[str, Self]:
+        """Compiled members by normalized name and built-in alias.
+
+        Only compiled members: the wire spelling a code misses resolves here
+        when a human wrote the meaning out, and to nothing otherwise.
+        """
+        found: dict[str, Self] = {
+            name: member for name, member in cls.__members__.items() if member
+        }
+        for alias, target in cls._built_in_aliases().items():
+            member = cls.__members__.get(target)
+            if member:
+                found.setdefault(alias, member)
+        return MappingProxyType(found)
 
     @classmethod
     def from_code(cls, value: Any, default: Self | None = None) -> Self:
