@@ -96,6 +96,13 @@ Structured FIX components also use their FIX spellings:
 accessor, whether the caller names a numeric tag, canonical field name,
 component path or namespace-qualified key.
 
+`direction` says which way a line moved where its header verb says so --
+`Receiving : 8=FIX...` reads False, `Sending : ...` True -- resolved at the
+FIX stage against `rekep.fix.rules.DIRECTION_PATTERNS`, and only where the
+verb opens the line before the payload's first token, so the same words
+inside a payload never answer. Null is most rows: bridge re-log lines repeat
+a payload without repeating the verb, and no answer beats a guessed one.
+
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. In that form the named discriminator and named flat fields are
 authoritative, so numeric copies of the same registry identities are removed;

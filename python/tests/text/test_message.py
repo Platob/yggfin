@@ -22,6 +22,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "protocol_code",
         "MsgType",
         "kwargs",
+        "direction",
     ]
     assert all(
         not any(key.startswith("fix:") for key in field.metadata)

@@ -5,6 +5,8 @@ from __future__ import annotations
 import dataclasses
 import functools
 import re
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Any
 
 import pyarrow
@@ -26,6 +28,30 @@ CODEC_KEYS: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
 
 #: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
+
+#: How a bridge says which way a payload moved -- `Receiving : 8=FIX...`,
+#: `Sending : ...`, `Message received:` -- counted only where the verb opens
+#: the line before the payload's own first token, so prose inside a FIX
+#: `Text <58>` or a bridge value never answers. Measured on real capture:
+#: every FIX row carries one of these; most UL re-log lines carry none, so
+#: direction is best-effort there. `incoming`/`outgoing`/`forward`, bare
+#: `IN`/`OUT` markers and the session-name fields were all investigated on
+#: the same capture and ruled out -- each mislabels enrichment snapshots,
+#: Jolokia metadata or the route's fixed endpoints as movement.
+INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b"
+OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b"
+
+#: Which protocols carry a direction verb, and the two patterns that read it.
+#: A protocol-keyed lookup beside the rules rather than two more `Rule`
+#: fields: direction is consulted *after* classification, never folded into
+#: it, and a bridge with different wording passes its own mapping to
+#: `Rules.into_arrow_direction_array`.
+DIRECTION_PATTERNS: Mapping[str, tuple[str, str]] = MappingProxyType(
+    {
+        "FIX": (INBOUND_PATTERN, OUTBOUND_PATTERN),
+        "UL": (INBOUND_PATTERN, OUTBOUND_PATTERN),
+    }
+)
 
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
@@ -190,6 +216,63 @@ class Rules(Convertible):
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, pyarrow.string()), found)
         return found.cast(pyarrow.string(), safe=False)
 
+    def into_arrow_direction_array(
+        self,
+        messages: Any,
+        protocols: Any,
+        patterns: Mapping[str, tuple[str, str]] | None = None,
+    ) -> pyarrow.Array:
+        """True sent, False received, null undirected -- read before the payload.
+
+        The verb counts only where it starts before the first token the row's
+        own rule matched, so a `sent` inside a FIX `Text <58>` or a bridge
+        value never becomes a direction. Neither matching is null, and so is
+        both: no answer beats a guessed one. Protocols outside `patterns` --
+        `DIRECTION_PATTERNS` unless a bridge hands its own wording -- stay
+        null whole.
+        """
+        compute = pyarrow.compute
+        rows = len(messages)
+        found: Any = pyarrow.nulls(rows, pyarrow.bool_())
+        if not rows:
+            return found
+        configured = DIRECTION_PATTERNS if patterns is None else patterns
+        text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
+        names = protocols.cast(pyarrow.string(), safe=False)
+        for protocol, (inbound, outbound) in configured.items():
+            selected = compute.fill_null(compute.equal(names, protocol), False)
+            if not compute.any(selected, min_count=0).as_py():
+                continue
+            # Every rule the protocol answers to, not `rule(protocol)`'s first:
+            # a rendered bridge line matches `UL`, never `UL_WIRE`, and a verb
+            # checked against the wrong vocabulary would answer from anywhere.
+            spelled = tuple(
+                dict.fromkeys(
+                    pattern
+                    for rule in self.rules
+                    if rule.protocol == protocol
+                    for pattern in rule.message_patterns
+                )
+            )
+            if not spelled:
+                continue
+            payload_at = compute.find_substring_regex(
+                text, pattern="|".join(f"(?:{one})" for one in spelled)
+            )
+            received = _opens(compute.find_substring_regex(text, pattern=inbound), payload_at)
+            sent = _opens(compute.find_substring_regex(text, pattern=outbound), payload_at)
+            direction = compute.if_else(
+                compute.and_(sent, compute.invert(received)),
+                pyarrow.scalar(True),
+                compute.if_else(
+                    compute.and_(received, compute.invert(sent)),
+                    pyarrow.scalar(False),
+                    pyarrow.scalar(None, pyarrow.bool_()),
+                ),
+            )
+            found = compute.if_else(selected, direction, found)
+        return found
+
     def into_arrow_category_array(self, protocols: Any, etypes: Any) -> pyarrow.Array:
         """Target category per parsed row, using the scalar rule in kernels."""
         compute = pyarrow.compute
@@ -217,6 +300,18 @@ class Rules(Convertible):
         return compute.if_else(market, pyarrow.scalar(MARKET_CATEGORY), non_market).cast(
             pyarrow.string(), safe=False
         )
+
+
+def _opens(verb_at: Any, payload_at: Any) -> Any:
+    """Whether a found verb starts before the row's first payload token."""
+    compute = pyarrow.compute
+    return compute.and_(
+        compute.fill_null(compute.greater_equal(verb_at, 0), False),
+        compute.fill_null(
+            compute.or_(compute.less(payload_at, 0), compute.less(verb_at, payload_at)),
+            True,
+        ),
+    )
 
 
 def _hit(rule: Rule, text: Any, plugins: Any) -> Any:

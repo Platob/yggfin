@@ -840,6 +840,27 @@ class FixMsg(Message):
         messages = columns.get("message")
         if messages is not None:
             protocols = codec.categorise(messages, columns.get("plugin_code"))
+            # Direction reads the verb before the payload, so it is resolved
+            # here, where the classification saying which token opens the
+            # payload was just computed -- and written back onto the batch,
+            # appended where a stored batch predates the column, so the
+            # partial fast path's slices carry it too. Only a row that
+            # still has its text answers fresh: a projected row dropped the
+            # message, and the stored answer is the only one there is.
+            direction = codec.rules.into_arrow_direction_array(messages, protocols)
+            stored_direction = columns.get("direction")
+            if stored_direction is not None:
+                direction = pyarrow.compute.if_else(
+                    pyarrow.compute.is_valid(messages), direction, stored_direction
+                )
+            columns["direction"] = direction
+            if "direction" in batch.schema.names:
+                at = batch.schema.get_field_index("direction")
+                batch = batch.set_column(at, batch.schema.field(at), direction)
+            else:
+                batch = batch.append_column(
+                    Message.into_field().into_arrow_schema().field("direction"), direction
+                )
         else:
             protocols = columns.get("protocol_code")
             if protocols is None:

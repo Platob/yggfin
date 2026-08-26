@@ -82,6 +82,14 @@ class Message(Event):
     kwargs: list[Kwarg] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""
 
+    # Resolved at the protocol stage, where classification already knows which
+    # rule's token opens the payload -- the verb before it is the direction,
+    # and prose inside the payload never answers. Null before that stage, for
+    # every row no directed protocol claims, and for the many bridge re-log
+    # lines that repeat a payload without repeating `Receiving`/`Sending`.
+    direction: bool | None = None
+    """True where the line says it was sent, False received; null undirected."""
+
     def __post_init__(self) -> None:
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)

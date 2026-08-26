@@ -48,6 +48,7 @@ LINE = [
     "protocol_code",
     "MsgType",
     "kwargs",
+    "direction",
 ]
 MESSAGE = [
     "unix_source",
@@ -80,7 +81,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 111
+EXPECTED_LOG_COLUMNS = 112
 
 
 @pytest.fixture(scope="module")
@@ -120,7 +121,7 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     """
     field = FixMsg.into_field()
     for name in LINE:
-        if name in {"message", "MsgType", "kwargs"}:
+        if name in {"message", "MsgType", "kwargs", "direction"}:
             assert field.field(name).nullable, f"a row may leave {name} null"
             continue
         assert not field.field(name).nullable, name
@@ -1183,3 +1184,57 @@ def test_rendered_isincode_keeps_its_source_identity() -> None:
     field = FixMsg.into_field().field("ISINCODE")
     assert field.arrow_type == pyarrow.string()
     assert field.fix == {"name": "ISINCODE", "type": "String"}
+
+
+def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:
+    """`Receiving`/`Sending` before the payload's first token is the direction;
+    the same words inside the payload -- a reject's prose, a bridge value --
+    answer nothing, and neither does a line saying both or neither."""
+    lines = [
+        "Receiving : 8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|38=5|44=10|58=order sent late|10=000",
+        "Sending : 8=FIX.4.4|35=8|37=O1|11=C1|17=E1|54=1|39=0|150=0|10=000",
+        "Message received: 8=FIX.4.4|35=0|10=000",
+        "toBridge Sending #MSGTYPE=D|#CLORDID=C2|#SYMBOL=MSFT|#SIDE=1",
+        "RouteMessage : 8=FIX.4.4|35=D|11=C3|55=IBM|54=2|38=1|10=000",
+        "Receiving Sending 8=FIX.4.4|35=D|11=C4|10=000",
+        # A rendered bridge line anchors on the `UL` rule's own vocabulary,
+        # not `UL_WIRE`'s: a verb only inside its payload answers nothing.
+        "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
+        "just some heartbeat prose",
+    ]
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(*(Message(message=line) for line in lines)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("direction").to_pylist() == [
+        False,
+        True,
+        False,
+        True,
+        None,
+        None,
+        None,
+        None,
+    ]
+
+    # A stored batch written before the column existed computes it fresh,
+    # through the split path too: the wire row is flat-translated, the
+    # rendered row falls back, and both slices must carry the answer.
+    raw = _raw_batch(*(Message(message=line) for line in lines[:2] + [lines[3]]))
+    legacy = raw.remove_column(raw.schema.get_field_index("direction"))
+    relived = FixMsg.from_message_arrow_batch(legacy, FixCodec(registry=registry))
+    assert relived.column("direction").to_pylist() == [False, True, True]
+
+    # A projected row reparsed without its raw message keeps the resolved
+    # answer: direction is the message stage's fact, and nothing recomputes
+    # it where the text that carried the verb is gone.
+    projected = Message(message="", protocol_code="FIX", direction=True).into_dict()
+    projected["message"] = None
+    projected["kwargs"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
+    again = FixMsg.from_message_arrow_batch(
+        pyarrow.RecordBatch.from_pylist(
+            [projected], schema=Message.into_field().into_arrow_schema()
+        ),
+        FixCodec(registry=registry),
+    )
+    assert again.column("direction").to_pylist() == [True]

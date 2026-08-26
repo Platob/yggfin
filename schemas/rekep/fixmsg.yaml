@@ -137,6 +137,10 @@ fields:
       type: string
       nullable: true
       description: Indexed container prefix.
+- name: direction
+  type: bool
+  nullable: true
+  description: True where the line says it was sent, False received; null undirected.
 - name: unix_source
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock.
