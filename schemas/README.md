@@ -22,9 +22,10 @@ shape = Field.from_yaml("schemas/rekep/message.yaml")
 reader = shape.cast_arrow(reader)
 ```
 
-Descriptions are short contract facts. Use metadata for protocol identity:
-`fix:*`, `enum:*`, and `iceberg:*`. Repeated FIX data uses ordered lists rather
-than maps.
+Descriptions are short contract facts. Protocol identity uses top-level
+`fix: { ... }`, `enum: { ... }`, and `iceberg: { ... }` maps; loading restores
+their members as prefixed Arrow metadata. Repeated FIX data uses ordered lists
+rather than maps.
 
 Schema changes update declarations and generated contracts together while the
 project is pre-release, with no legacy aliases to maintain. After compatibility

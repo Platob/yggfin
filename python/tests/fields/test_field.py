@@ -302,6 +302,42 @@ def test_a_dump_nests_rather_than_flattening() -> None:
     assert by_name["limits"]["value"]["nullable"] is True
 
 
+def test_a_dump_promotes_protocol_metadata_to_named_maps() -> None:
+    original = Field(
+        name="side",
+        arrow_type=pyarrow.int32(),
+        nullable=False,
+        metadata={
+            "fix:tag": "54",
+            "fix:type": "char",
+            "enum:name": "Side",
+            "enum:values": '{"1":"BUY","2":"SELL"}',
+            "vendor:wire": "x",
+            "unit": "code",
+        },
+    )
+
+    dumped = original.into_dict()
+
+    assert dumped["fix"] == {"tag": "54", "type": "char"}
+    assert dumped["enum"] == {"name": "Side", "values": '{"1":"BUY","2":"SELL"}'}
+    assert dumped["vendor"] == {"wire": "x"}, "custom protocols use the same document shape"
+    assert dumped["metadata"] == {"unit": "code"}
+    assert Field.from_dict(dumped) == original
+
+
+def test_a_protocol_map_and_legacy_metadata_cannot_disagree() -> None:
+    with pytest.raises(ValueError, match="fix:tag"):
+        Field.from_dict(
+            {
+                "name": "side",
+                "type": "int32",
+                "metadata": {"fix:tag": "54"},
+                "fix": {"tag": "55"},
+            }
+        )
+
+
 def test_a_dump_round_trips_through_plain_containers() -> None:
     assert Field.from_dict(Book.into_field().into_dict()) == Book.into_field()
 

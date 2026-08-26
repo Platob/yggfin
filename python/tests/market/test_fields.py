@@ -256,7 +256,7 @@ def test_the_published_contract_carries_the_member_table() -> None:
     """Which is the whole point: the file is what a consumer reads, not the code."""
     keys = Order.into_field().into_dict()
     state = next(member for member in keys["fields"] if member["name"] == "state")
-    assert json.loads(state["metadata"]["enum:values"])["410"] == "FILLED"
+    assert json.loads(state["enum"]["values"])["410"] == "FILLED"
 
 
 def test_market_kind_metadata_keeps_each_tags_original_wire_mapping() -> None:

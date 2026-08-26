@@ -250,7 +250,7 @@ def test_ids_ride_under_the_protocol_prefix() -> None:
     field.field_id = 7
     assert field.metadata[FIELD_ID] == "7"
     assert FIELD_ID == "iceberg:field_id"
-    assert field.into_dict()["metadata"] == {FIELD_ID: "7"}
+    assert field.into_dict()["iceberg"] == {"field_id": "7"}
     assert PARQUET_FIELD_ID == b"PARQUET:field_id", "what parquet files carry, not what we write"
 
 

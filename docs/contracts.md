@@ -27,13 +27,16 @@ YAML and JSON use the same document model; the extension selects the codec.
 
 ## Metadata
 
-- `iceberg:*` stores keys, partitions, sort order, and assigned field ids.
-- `fix:*` stores canonical FIX name, tag, datatype, values, and version facts.
-- `enum:*` stores code key/value types and members.
-- `name`, `namespace`, `description`, and `version` identify the schema.
+- `iceberg: { ... }` stores keys, partitions, sort order, and assigned field ids.
+- `fix: { ... }` stores canonical FIX name, tag, datatype, values, and version facts.
+- `enum: { ... }` stores code key/value types and members.
+- `metadata: { ... }` keeps protocol-neutral facts such as units and the schema namespace.
+
+The document maps are restored to Arrow's collision-safe `iceberg:*`, `fix:*`,
+and `enum:*` metadata keys when loaded.
 
 Promoted FIX columns use the registry's spelling directly, for example
-`OrigClOrdID` with `fix:name: OrigClOrdID`. Protocol-neutral and analytical
+`OrigClOrdID` with `fix: { name: OrigClOrdID }`. Protocol-neutral and analytical
 columns retain their own lower-case names.
 
 ## Evolution

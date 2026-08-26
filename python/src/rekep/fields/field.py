@@ -58,6 +58,23 @@ SORT_ORDER = "iceberg:sort_order"
 #: What a sort key means when a declaration only says there is one.
 ASCENDING = "asc"
 
+#: Keys owned by the field document rather than by a protocol map.
+_DOCUMENT_KEYS = frozenset(
+    {
+        NAME,
+        "type",
+        "nullable",
+        DESCRIPTION,
+        "metadata",
+        "fields",
+        "item",
+        "key",
+        "value",
+        "keys_sorted",
+        "list_size",
+    }
+)
+
 #: The declaration; everything else a field holds is derived from these.
 DECLARED = ("name", "arrow_type", "nullable", "metadata")
 
@@ -501,7 +518,7 @@ class Field(Convertible):
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Field:
         """Read a field back from the plain containers `into_dict` writes."""
-        metadata = dict(mapping.get("metadata") or {})
+        metadata = _document_metadata(mapping)
         described = mapping.get(DESCRIPTION)
         if described:
             metadata[DESCRIPTION] = described
@@ -603,8 +620,10 @@ class Field(Convertible):
         described_as = metadata.pop(DESCRIPTION, None)
         if described_as:
             described[DESCRIPTION] = described_as
-        if metadata:
-            described["metadata"] = metadata
+        plain, protocols = _protocol_maps(metadata)
+        if plain:
+            described["metadata"] = plain
+        described.update(protocols)
         described.update(self.nested())  # fields/item/key/value blocks read best last
         return described
 
@@ -1376,6 +1395,38 @@ def cast_reader(
 def decoded(metadata: Mapping[bytes, bytes] | None) -> dict[str, str]:
     """Arrow metadata as text, which is how a `Field` holds it."""
     return {key.decode(): value.decode() for key, value in (metadata or {}).items()}
+
+
+def _protocol_maps(
+    metadata: Mapping[str, str],
+) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    """Split Arrow's `protocol:key` metadata into readable document maps."""
+    plain: dict[str, str] = {}
+    protocols: dict[str, dict[str, str]] = {}
+    for full, value in metadata.items():
+        prefix, marker, key = full.partition(":")
+        if marker and prefix not in _DOCUMENT_KEYS and key:
+            protocols.setdefault(prefix, {})[key] = value
+        else:
+            plain[full] = value
+    return plain, protocols
+
+
+def _document_metadata(mapping: Mapping[str, Any]) -> dict[str, Any]:
+    """Restore top-level protocol maps to Arrow's prefixed metadata keys."""
+    metadata = dict(mapping.get("metadata") or {})
+    for prefix, values in mapping.items():
+        if prefix in _DOCUMENT_KEYS or not isinstance(values, Mapping):
+            continue
+        for key, value in values.items():
+            full = f"{prefix}:{key}"
+            if full in metadata and str(metadata[full]) != str(value):
+                raise ValueError(
+                    f"field {mapping.get(NAME, '')!r} declares {full!r} in both "
+                    "metadata and its protocol map"
+                )
+            metadata[full] = value
+    return metadata
 
 
 def arrow_type_for(text: str) -> pyarrow.DataType:
