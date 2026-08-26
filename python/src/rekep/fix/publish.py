@@ -175,6 +175,7 @@ MARKET_FIELDS: tuple[str, ...] = (
     "NumberOfOrders",
     "TrdMatchID",
     "ExDestination",
+    "NoSides",
     "MaturityMonthYear",
     "StopPx",
     "ExecRefID",

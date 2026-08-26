@@ -603,7 +603,7 @@ class FixEvents(Convertible):
         elif handler == EXECUTION_REPORT_HANDLER:
             yield from self._reported()
         elif handler == EXECUTION_HANDLER:
-            yield self.into_execution()
+            yield from self._sides()
         elif handler in ORDER_HANDLERS and kind in self.dictionary.ordered:
             yield self.into_order(self.dictionary.ordered[kind])
 
@@ -680,6 +680,25 @@ class FixEvents(Convertible):
                 yield inside.into_entry_order(ENTRY_SIDES[entry_type], snapshot=kind == "W")
             elif entry_type == ENTRY_TRADE:
                 yield inside.into_entry_execution()
+
+    def _sides(self) -> Iterator[Execution]:
+        """A TradeCaptureReport, one Execution per `NoSides <552>` entry.
+
+        A multi-sided report carries `Side <54>`, `OrderID <37>`, `ClOrdID
+        <11>` and `Account <1>` *inside* each side entry, so one flat read
+        kept one side's identity and silently dropped the other's. Each entry
+        reads through `_inside`, whose merged view resolves the report-level
+        facts -- `TrdMatchID <880>`, `LastPx <31>`, `LastQty <32>`, the
+        transaction time -- where the entry is silent, and the entry's own
+        identifiers where it is not. A report with no side entries at all is
+        one execution, read flat as before.
+        """
+        entries = self._group_entries("NoSides")
+        if not entries:
+            yield self.into_execution()
+            return
+        for entry in entries:
+            yield self._inside(entry).into_execution()
 
     def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
         """A repeating-group entry completed by its message header."""

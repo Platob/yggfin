@@ -1149,3 +1149,67 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         "600=MSFT|624=2|623=2|556=USD"
     )
     assert instrument == FixEvents.from_text(wire).instrument
+
+
+def test_a_two_sided_trade_capture_report_is_one_execution_per_side() -> None:
+    """`Side <54>`, `OrderID <37>`, `ClOrdID <11>` live inside each `NoSides
+    <552>` entry, so a flat read kept one side's identity and dropped the
+    other's. Each side resolves the report-level facts through the merged
+    view -- the match id, the price, the quantity and the clock are the
+    report's -- and its own identifiers over them."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=RPT-1|880=M-1|31=99.5|32=7|75=20260814|"
+        "55=EUR/USD|60=20260814-09:30:00|552=2|"
+        "54=1|37=O-BUY|11=C-BUY|1=ACC-B|"
+        "54=2|37=O-SELL|11=C-SELL|1=ACC-S|10=000"
+    )
+    events = list(FixEvents.from_text(wire))
+
+    assert [type(one) for one in events] == [Execution, Execution]
+    assert [(one.side, one.order_id, one.client_order_id) for one in events] == [
+        (Side.BUY, "O-BUY", "C-BUY"),
+        (Side.SELL, "O-SELL", "C-SELL"),
+    ]
+    assert {one.trade_id for one in events} == {"M-1"}
+    assert {(one.px, one.qty, one.unix) for one in events} == {(99.5, 7.0, events[0].unix)}
+    assert events[0].xhash != events[1].xhash, "two sides, two lifecycles"
+
+
+def test_a_single_sided_or_flat_trade_capture_report_stays_one_execution() -> None:
+    single = (
+        "8=FIX.4.4|35=AE|571=R2|880=M-2|31=101|32=3|55=AAPL|60=20260814-10:00:00|"
+        "552=1|54=1|37=O-9|11=C-9|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(single))
+    assert (execution.side, execution.order_id, execution.px) == (Side.BUY, "O-9", 101.0)
+
+    flat = (
+        "8=FIX.4.4|35=AE|571=R3|880=M-3|31=50|32=1|55=MSFT|54=2|37=O-3|60=20260814-11:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(flat))
+    assert (execution.side, execution.order_id) == (Side.SELL, "O-3")
+
+
+def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
+    """The bridge's `NOSIDES[i]=...` spelling reaches the same two executions,
+    with report-level legs untouched by the split."""
+    member = "\x04\x03"
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=AE|#TRADEREPORTID=RPT-9|#TRDMATCHID=M-9|"
+        "#LASTPX=1.0842|#LASTQTY=1000000|#SYMBOL=EUR/USD|#TRANSACTTIME=20260814-09:30:00|"
+        f"#NOLEGS=2|#NOLEGS[0]=LEGSYMBOL=EUR/USD-NEAR{member}LEGSIDE=1{member}LEGRATIOQTY=1{member}|"
+        f"#NOLEGS[1]=LEGSYMBOL=EUR/USD-FAR{member}LEGSIDE=2{member}LEGRATIOQTY=1{member}|"
+        f"#NOSIDES=2|#NOSIDES[0]=SIDE=1{member}ORDERID=O-BUY{member}CLORDID=C-BUY{member}|"
+        f"#NOSIDES[1]=SIDE=2{member}ORDERID=O-SELL{member}CLORDID=C-SELL{member}"
+    )
+    events = list(FixMsg.from_text(line).into_fix_events(fix_version="4.4"))
+
+    assert [(one.side, one.order_id) for one in events] == [
+        (Side.BUY, "O-BUY"),
+        (Side.SELL, "O-SELL"),
+    ]
+    assert {one.trade_id for one in events} == {"M-9"}
+    instrument = next(
+        iter(FixMsg.from_text(line).into_fix_events(fix_version="4.4").into_instruments())
+    )
+    assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
