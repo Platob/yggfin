@@ -108,7 +108,7 @@
    "2": "MORTGAGE",
    "3": "LOAN"
   },
-  "translations": {
+  "encoded": {
    "bond": "0",
    "convertiblebond": "1",
    "mortgage": "2",
@@ -117,6 +117,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "bond",
+   "1": "convertiblebond",
+   "2": "mortgage",
+   "3": "loan"
   }
  },
  "2013": {
@@ -898,11 +904,15 @@
    "0": "BASE64",
    "1": "RAW_BINARY"
   },
-  "translations": {
+  "encoded": {
    "base64": "0",
    "rawbinary": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "base64",
+   "1": "rawbinary"
   }
  },
  "2110": {
@@ -957,13 +967,18 @@
    "1": "NEGOTIATED_SPOT",
    "2": "PHONE_SPOT"
   },
-  "translations": {
+  "encoded": {
    "autospot": "0",
    "negotiatedspot": "1",
    "phonespot": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "autospot",
+   "1": "negotiatedspot",
+   "2": "phonespot"
   }
  },
  "2116": {
@@ -1022,7 +1037,7 @@
    "5": "DERIVATIVES_CLOSE",
    "6": "AS_SPECIFIED"
   },
-  "translations": {
+  "encoded": {
    "close": "0",
    "open": "1",
    "officialsettl": "2",
@@ -1037,6 +1052,15 @@
    "4": "4",
    "5": "5",
    "6": "6"
+  },
+  "decoded": {
+   "0": "close",
+   "1": "open",
+   "2": "officialsettl",
+   "3": "valuationtime",
+   "4": "excahgnesettltime",
+   "5": "derivativesclose",
+   "6": "asspecified"
   }
  },
  "2122": {
@@ -1082,11 +1106,15 @@
    "0": "CURRENCY1_PER_CURRENCY2",
    "1": "CURRENCY2_PER_CURRENCY1"
   },
-  "translations": {
+  "encoded": {
    "currency1percurrency2": "0",
    "currency2percurrency1": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "currency1percurrency2",
+   "1": "currency2percurrency1"
   }
  },
  "2127": {
@@ -1157,13 +1185,18 @@
    "1": "BUYER_NOTIFIES",
    "2": "SELLER_OR_BUYER_NOTIFIES"
   },
-  "translations": {
+  "encoded": {
    "sellernotifies": "0",
    "buyernotifies": "1",
    "sellerorbuyernotifies": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "sellernotifies",
+   "1": "buyernotifies",
+   "2": "sellerorbuyernotifies"
   }
  },
  "2135": {
@@ -1229,7 +1262,7 @@
    "CISN": "CALLABLE_INVERSIBLE_SNOWBALL",
    "OTHER": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "straddle": "STD",
    "strangle": "STG",
    "butterfly": "BF",
@@ -1241,6 +1274,14 @@
    "bf": "BF",
    "cndr": "CNDR",
    "cisn": "CISN"
+  },
+  "decoded": {
+   "STD": "straddle",
+   "STG": "strangle",
+   "BF": "butterfly",
+   "CNDR": "condor",
+   "CISN": "callableinversiblesnowball",
+   "OTHER": "other"
   }
  },
  "2142": {
@@ -1262,11 +1303,15 @@
    "1": "NEGOTIATION",
    "2": "CANCELLATION"
   },
-  "translations": {
+  "encoded": {
    "negotiation": "1",
    "cancellation": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "negotiation",
+   "2": "cancellation"
   }
  },
  "2144": {
@@ -1809,13 +1854,18 @@
    "2": "COMMODITIES",
    "3": "ALTERNATIVE_INVESTMENTS"
   },
-  "translations": {
+  "encoded": {
    "financials": "1",
    "commodities": "2",
    "alternativeinvestments": "3",
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "financials",
+   "2": "commodities",
+   "3": "alternativeinvestments"
   }
  },
  "2211": {
@@ -2669,11 +2719,15 @@
    "0": "ACCEPTED",
    "1": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "rejected": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "rejected"
   }
  },
  "2317": {
@@ -2688,13 +2742,18 @@
    "1": "UNK_PTY",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "unkrisklmtrprtid": "0",
    "unkpty": "1",
    "other": "99",
    "0": "0",
    "1": "1",
    "99": "99"
+  },
+  "decoded": {
+   "0": "unkrisklmtrprtid",
+   "1": "unkpty",
+   "99": "other"
   }
  },
  "2318": {
@@ -2725,13 +2784,18 @@
    "1": "CANCEL",
    "2": "REPLACE"
   },
-  "translations": {
+  "encoded": {
    "new": "0",
    "cancel": "1",
    "replace": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "new",
+   "1": "cancel",
+   "2": "replace"
   }
  },
  "2321": {
@@ -2745,11 +2809,15 @@
    "0": "SUBMIT",
    "1": "LIMIT_CONSUMED"
   },
-  "translations": {
+  "encoded": {
    "submit": "0",
    "limitconsumed": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "submit",
+   "1": "limitconsumed"
   }
  },
  "2322": {
@@ -2771,11 +2839,15 @@
    "0": "ALL_OR_NONE",
    "1": "PARTIAL"
   },
-  "translations": {
+  "encoded": {
    "allornone": "0",
    "partial": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "allornone",
+   "1": "partial"
   }
  },
  "2324": {
@@ -2800,7 +2872,7 @@
    "3": "APPROVAL_PENDING",
    "4": "CANCELLED"
   },
-  "translations": {
+  "encoded": {
    "approved": "0",
    "partiallyapproved": "1",
    "rejected": "2",
@@ -2811,6 +2883,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "approved",
+   "1": "partiallyapproved",
+   "2": "rejected",
+   "3": "approvalpending",
+   "4": "cancelled"
   }
  },
  "2326": {
@@ -2828,7 +2907,7 @@
    "4": "REQ_EXCEEDS_MAX_NOTIONAL",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successful": "0",
    "invalidparty": "1",
    "reqexceedscreditlimit": "2",
@@ -2841,6 +2920,14 @@
    "3": "3",
    "4": "4",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "invalidparty",
+   "2": "reqexceedscreditlimit",
+   "3": "reqexceedsclipsizelimit",
+   "4": "reqexceedsmaxnotional",
+   "99": "other"
   }
  },
  "2327": {
@@ -2871,13 +2958,18 @@
    "1": "HALT_TRADING",
    "2": "REINSTATE"
   },
-  "translations": {
+  "encoded": {
    "suspend": "0",
    "halttrading": "1",
    "reinstate": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "suspend",
+   "1": "halttrading",
+   "2": "reinstate"
   }
  },
  "2330": {
@@ -2908,13 +3000,18 @@
    "1": "COMPLETED",
    "2": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "completed": "1",
    "rejected": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "completed",
+   "2": "rejected"
   }
  },
  "2333": {
@@ -2930,7 +3027,7 @@
    "98": "NOT_AUTHORIZED",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "invalidparty": "0",
    "unkreqparty": "1",
    "notauthorized": "98",
@@ -2939,6 +3036,12 @@
    "1": "1",
    "98": "98",
    "99": "99"
+  },
+  "decoded": {
+   "0": "invalidparty",
+   "1": "unkreqparty",
+   "98": "notauthorized",
+   "99": "other"
   }
  },
  "2334": {
@@ -2961,13 +3064,18 @@
    "1": "RISK_LIMIT_CHECK_ID",
    "3": "OUT_OF_BAND_ID"
   },
-  "translations": {
+  "encoded": {
    "risklimitrequestid": "0",
    "risklimitcheckid": "1",
    "outofbandid": "3",
    "0": "0",
    "1": "1",
    "3": "3"
+  },
+  "decoded": {
+   "0": "risklimitrequestid",
+   "1": "risklimitcheckid",
+   "3": "outofbandid"
   }
  },
  "2336": {
@@ -3007,7 +3115,7 @@
    "2": "PING_MODEL",
    "3": "PUSH_MODEL"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "plusonemodel": "1",
    "pingmodel": "2",
@@ -3016,6 +3124,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "plusonemodel",
+   "2": "pingmodel",
+   "3": "pushmodel"
   }
  },
  "2340": {
@@ -3066,7 +3180,7 @@
    "13": "ACCEPTED_BY_EXEC_VENUE",
    "14": "REJECTED_BY_EXEC_VENUE"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "rejected": "1",
    "claimrequired": "2",
@@ -3097,6 +3211,23 @@
    "12": "12",
    "13": "13",
    "14": "14"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "rejected",
+   "2": "claimrequired",
+   "3": "predefinedlimitchecksucceeded",
+   "4": "predefinedlimitcheckfailed",
+   "5": "predefinedautoacceptruleinvoked",
+   "6": "predefinedautorejectruleinvoked",
+   "7": "acceptedbyclearingfirm",
+   "8": "rejectedbyclearingfirm",
+   "9": "pending",
+   "10": "acceptedbycredithub",
+   "11": "rejectedbycredithub",
+   "12": "pendingcredithubcheck",
+   "13": "acceptedbyexecvenue",
+   "14": "rejectedbyexecvenue"
   }
  },
  "2344": {
@@ -3135,13 +3266,18 @@
    "1": "SEF_REQUIRED_TRANSACTION",
    "2": "SEF_PERMITTED_TRANSACTION"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "sefrequiredtransaction": "1",
    "sefpermittedtransaction": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "sefrequiredtransaction",
+   "2": "sefpermittedtransaction"
   }
  },
  "2348": {
@@ -3211,11 +3347,15 @@
    "0": "DISABLED",
    "1": "ENABLED"
   },
-  "translations": {
+  "encoded": {
    "disabled": "0",
    "enabled": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "disabled",
+   "1": "enabled"
   }
  },
  "2356": {
@@ -3229,11 +3369,15 @@
    "0": "NO_REMUNERATION_PAID",
    "1": "REMUNERATION_PAID"
   },
-  "translations": {
+  "encoded": {
    "noremunerationpaid": "0",
    "remunerationpaid": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "noremunerationpaid",
+   "1": "remunerationpaid"
   }
  },
  "2357": {
@@ -3391,11 +3535,15 @@
    "I": "ISIN_OR_ALT_INSTRMT_ID",
    "E": "INTERIM_TAXONOMY"
   },
-  "translations": {
+  "encoded": {
    "isinoraltinstrmtid": "I",
    "interimtaxonomy": "E",
    "i": "I",
    "e": "E"
+  },
+  "decoded": {
+   "I": "isinoraltinstrmtid",
+   "E": "interimtaxonomy"
   }
  },
  "2376": {
@@ -3498,13 +3646,18 @@
    "1": "CONTINGENT_TRADE",
    "2": "NON_CONTINGENT_TRADE"
   },
-  "translations": {
+  "encoded": {
    "doesnotapply": "0",
    "contingenttrade": "1",
    "noncontingenttrade": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "doesnotapply",
+   "1": "contingenttrade",
+   "2": "noncontingenttrade"
   }
  },
  "2388": {
@@ -3590,11 +3743,15 @@
    "1": "CLEARING_MEMBER",
    "2": "CLIENT"
   },
-  "translations": {
+  "encoded": {
    "clearingmember": "1",
    "client": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "clearingmember",
+   "2": "client"
   }
  },
  "2398": {
@@ -3646,7 +3803,7 @@
    "7": "SINGLE_BROKER",
    "8": "MULTI_BROKERS"
   },
-  "translations": {
+  "encoded": {
    "orderentry": "1",
    "hitlift": "2",
    "viewindicativepx": "3",
@@ -3663,6 +3820,16 @@
    "6": "6",
    "7": "7",
    "8": "8"
+  },
+  "decoded": {
+   "1": "orderentry",
+   "2": "hitlift",
+   "3": "viewindicativepx",
+   "4": "viewexecutablepx",
+   "5": "singlequote",
+   "6": "streamingquotes",
+   "7": "singlebroker",
+   "8": "multibrokers"
   }
  },
  "2403": {
@@ -3676,11 +3843,15 @@
    "1": "QUOTE_ENTRY",
    "2": "QUOTE_MODIFICATION"
   },
-  "translations": {
+  "encoded": {
    "quoteentry": "1",
    "quotemodification": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "quoteentry",
+   "2": "quotemodification"
   }
  },
  "2404": {
@@ -3704,7 +3875,7 @@
    "2": "AUTOMATED",
    "3": "VOICE_BROKERED"
   },
-  "translations": {
+  "encoded": {
    "unspecified": "0",
    "manual": "1",
    "automated": "2",
@@ -3713,6 +3884,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "unspecified",
+   "1": "manual",
+   "2": "automated",
+   "3": "voicebrokered"
   }
  },
  "2406": {
@@ -3879,13 +4056,18 @@
    "2": "ACCEPTED_WITH_ADDITIONAL_EVENTS",
    "3": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "1",
    "acceptedwithadditionalevents": "2",
    "rejected": "3",
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "accepted",
+   "2": "acceptedwithadditionalevents",
+   "3": "rejected"
   }
  },
  "2426": {
@@ -3902,7 +4084,7 @@
    "3": "INVALID_MARKET_SEGMENT",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successful": "0",
    "responselevelnotsupported": "1",
    "invalidmarket": "2",
@@ -3913,6 +4095,13 @@
    "2": "2",
    "3": "3",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "responselevelnotsupported",
+   "2": "invalidmarket",
+   "3": "invalidmarketsegment",
+   "99": "other"
   }
  },
  "2427": {
@@ -3928,7 +4117,7 @@
    "2": "ACK_EACH",
    "3": "SUMMARY_ACK"
   },
-  "translations": {
+  "encoded": {
    "noack": "0",
    "minimumack": "1",
    "ackeach": "2",
@@ -3937,6 +4126,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "noack",
+   "1": "minimumack",
+   "2": "ackeach",
+   "3": "summaryack"
   }
  },
  "2428": {
@@ -3961,7 +4156,7 @@
    "4": "SUSPEND",
    "5": "RELEASE"
   },
-  "translations": {
+  "encoded": {
    "add": "1",
    "modify": "2",
    "delete": "3",
@@ -3972,6 +4167,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "add",
+   "2": "modify",
+   "3": "delete",
+   "4": "suspend",
+   "5": "release"
   }
  },
  "2430": {
@@ -4006,7 +4208,7 @@
    "14": "ACTIVE_ORD_SUSPENDED",
    "15": "ORD_EXPIRED"
   },
-  "translations": {
+  "encoded": {
    "ordaddedonrequest": "1",
    "ordreplacedonrequest": "2",
    "ordcxldonrequest": "3",
@@ -4037,6 +4239,23 @@
    "13": "13",
    "14": "14",
    "15": "15"
+  },
+  "decoded": {
+   "1": "ordaddedonrequest",
+   "2": "ordreplacedonrequest",
+   "3": "ordcxldonrequest",
+   "4": "unsolicitedordcxl",
+   "5": "nonrestingordaddedonrequest",
+   "6": "ordreplacedwithnonrestingordonrequest",
+   "7": "triggerordreplacedonrequest",
+   "8": "suspendedordreplacedonrequest",
+   "9": "suspendedordcxldonrequest",
+   "10": "ordcxlpending",
+   "11": "pendingcxlexecuted",
+   "12": "restingordtriggered",
+   "13": "suspendedordactivated",
+   "14": "activeordsuspended",
+   "15": "ordexpired"
   }
  },
  "2432": {
@@ -4107,13 +4326,18 @@
    "1": "REPLACE",
    "2": "CANCEL"
   },
-  "translations": {
+  "encoded": {
    "new": "0",
    "replace": "1",
    "cancel": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "new",
+   "1": "replace",
+   "2": "cancel"
   }
  },
  "2440": {
@@ -4128,13 +4352,18 @@
    "1": "ACCEPT_TRANSFER",
    "2": "DECLINE_TRANSFER"
   },
-  "translations": {
+  "encoded": {
    "requesttransfer": "0",
    "accepttransfer": "1",
    "declinetransfer": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "requesttransfer",
+   "1": "accepttransfer",
+   "2": "declinetransfer"
   }
  },
  "2441": {
@@ -4149,13 +4378,18 @@
    "1": "INTRA_FIRM_TRANSFER",
    "2": "CMTA"
   },
-  "translations": {
+  "encoded": {
    "interfirmtransfer": "0",
    "intrafirmtransfer": "1",
    "cmta": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "interfirmtransfer",
+   "1": "intrafirmtransfer",
+   "2": "cmta"
   }
  },
  "2442": {
@@ -4173,7 +4407,7 @@
    "4": "DECLINED",
    "5": "CANCELLED"
   },
-  "translations": {
+  "encoded": {
    "received": "0",
    "rejectedbyintermediary": "1",
    "acceptpending": "2",
@@ -4186,6 +4420,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "received",
+   "1": "rejectedbyintermediary",
+   "2": "acceptpending",
+   "3": "accepted",
+   "4": "declined",
+   "5": "cancelled"
   }
  },
  "2443": {
@@ -4203,7 +4445,7 @@
    "4": "UNKNOWN_POSITION",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "success": "0",
    "invalidparty": "1",
    "unknowninstrument": "2",
@@ -4216,6 +4458,14 @@
    "3": "3",
    "4": "4",
    "99": "99"
+  },
+  "decoded": {
+   "0": "success",
+   "1": "invalidparty",
+   "2": "unknowninstrument",
+   "3": "unauthorizedtosubmitxfer",
+   "4": "unknownposition",
+   "99": "other"
   }
  },
  "2444": {
@@ -4229,11 +4479,15 @@
    "0": "SUBMIT",
    "1": "ALLEGED"
   },
-  "translations": {
+  "encoded": {
    "submit": "0",
    "alleged": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "submit",
+   "1": "alleged"
   }
  },
  "2445": {
@@ -4363,7 +4617,7 @@
    "29": "AVERAGE_LIQUIDITY",
    "30": "MEDIAN_DURATION"
   },
-  "translations": {
+  "encoded": {
    "count": "1",
    "averagevolume": "2",
    "totalvolume": "3",
@@ -4424,6 +4678,38 @@
    "28": "28",
    "29": "29",
    "30": "30"
+  },
+  "decoded": {
+   "1": "count",
+   "2": "averagevolume",
+   "3": "totalvolume",
+   "4": "distribution",
+   "5": "ratio",
+   "6": "liquidity",
+   "7": "vwap",
+   "8": "volatility",
+   "9": "duration",
+   "10": "tick",
+   "11": "averagevalue",
+   "12": "totalvalue",
+   "13": "high",
+   "14": "low",
+   "15": "midpoint",
+   "16": "first",
+   "17": "last",
+   "18": "final",
+   "19": "exchangebest",
+   "20": "exchangebestwithvolume",
+   "21": "consolidatedbest",
+   "22": "consolidatedbestwithvolume",
+   "23": "twap",
+   "24": "averageduration",
+   "25": "averageprice",
+   "26": "totalfees",
+   "27": "totalbenefits",
+   "28": "medianvalue",
+   "29": "averageliquidity",
+   "30": "medianduration"
   }
  },
  "2457": {
@@ -4471,7 +4757,7 @@
    "35": "REQUEST_FOR_QUOTES",
    "36": "TRADE_VOLUME"
   },
-  "translations": {
+  "encoded": {
    "bidprices": "1",
    "offerprices": "2",
    "biddepth": "3",
@@ -4544,6 +4830,44 @@
    "34": "34",
    "35": "35",
    "36": "36"
+  },
+  "decoded": {
+   "1": "bidprices",
+   "2": "offerprices",
+   "3": "biddepth",
+   "4": "offerdepth",
+   "5": "orders",
+   "6": "quotes",
+   "7": "ordersandquotes",
+   "8": "trades",
+   "9": "tradeprices",
+   "10": "auctionprices",
+   "11": "openingprices",
+   "12": "closingprices",
+   "13": "settlementprices",
+   "14": "underlyingprices",
+   "15": "openinterest",
+   "16": "indexvalues",
+   "17": "marginrates",
+   "18": "outages",
+   "19": "scheduledauctions",
+   "20": "referenceprices",
+   "21": "tradevalue",
+   "22": "marketdatafeeitems",
+   "23": "rebates",
+   "24": "discounts",
+   "25": "payments",
+   "26": "taxes",
+   "27": "levies",
+   "28": "benefits",
+   "29": "fees",
+   "30": "ordersrfqs",
+   "31": "marketmakers",
+   "32": "tradinginterruptions",
+   "33": "tradingsuspensions",
+   "34": "noquotes",
+   "35": "requestforquotes",
+   "36": "tradevolume"
   }
  },
  "2458": {
@@ -4588,7 +4912,7 @@
    "32": "AGGRESSIVE",
    "33": "DIRECTED"
   },
-  "translations": {
+  "encoded": {
    "visible": "1",
    "hidden": "2",
    "indicative": "3",
@@ -4655,6 +4979,41 @@
    "31": "31",
    "32": "32",
    "33": "33"
+  },
+  "decoded": {
+   "1": "visible",
+   "2": "hidden",
+   "3": "indicative",
+   "4": "tradeable",
+   "5": "passive",
+   "6": "marketconsensus",
+   "7": "power",
+   "8": "hardwareerror",
+   "9": "softwareerror",
+   "10": "networkerror",
+   "11": "failed",
+   "12": "executed",
+   "13": "entered",
+   "14": "modified",
+   "15": "cancelled",
+   "16": "marketdataaccess",
+   "17": "terminalaccess",
+   "18": "volume",
+   "19": "cleared",
+   "20": "settled",
+   "21": "other",
+   "22": "monetary",
+   "23": "nonmonetary",
+   "24": "gross",
+   "25": "largeinscale",
+   "26": "neitherhiddennorlargeinscale",
+   "27": "corporateaction",
+   "28": "venuedecision",
+   "29": "minimumtimeperiod",
+   "30": "open",
+   "31": "notexecuted",
+   "32": "aggressive",
+   "33": "directed"
   }
  },
  "2459": {
@@ -4671,7 +5030,7 @@
    "4": "DOWNWARD_MOVE",
    "5": "UPWARD_MOVE"
   },
-  "translations": {
+  "encoded": {
    "entryrate": "1",
    "modificationrate": "2",
    "cancelrate": "3",
@@ -4682,6 +5041,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "entryrate",
+   "2": "modificationrate",
+   "3": "cancelrate",
+   "4": "downwardmove",
+   "5": "upwardmove"
   }
  },
  "2460": {
@@ -4733,7 +5099,7 @@
    "7": "MAXIMUM_RANGE",
    "8": "MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT"
   },
-  "translations": {
+  "encoded": {
    "slidingwindow": "1",
    "slidingwindowpeak": "2",
    "fixeddaterange": "3",
@@ -4750,6 +5116,16 @@
    "6": "6",
    "7": "7",
    "8": "8"
+  },
+  "decoded": {
+   "1": "slidingwindow",
+   "2": "slidingwindowpeak",
+   "3": "fixeddaterange",
+   "4": "fixedtimerange",
+   "5": "currenttimeunit",
+   "6": "previoustimeunit",
+   "7": "maximumrange",
+   "8": "maximumrangeuptoprevioustimeunit"
   }
  },
  "2465": {
@@ -4829,7 +5205,7 @@
    "11": "TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME",
    "12": "ORDERS_TO_TOTAL_NUMBER_ORDERS"
   },
-  "translations": {
+  "encoded": {
    "buyerstosellers": "1",
    "uptickstodownticks": "2",
    "marketmakertononmarketmaker": "3",
@@ -4854,6 +5230,20 @@
    "10": "10",
    "11": "11",
    "12": "12"
+  },
+  "decoded": {
+   "1": "buyerstosellers",
+   "2": "uptickstodownticks",
+   "3": "marketmakertononmarketmaker",
+   "4": "automatedtononautomated",
+   "5": "orderstotrades",
+   "6": "quotestotrades",
+   "7": "ordersandquotestotrades",
+   "8": "failedtototaltradedvalue",
+   "9": "benefitstototaltradedvalue",
+   "10": "feestototaltradedvalue",
+   "11": "tradevolumetototaltradedvolume",
+   "12": "orderstototalnumberorders"
   }
  },
  "2473": {
@@ -4885,7 +5275,7 @@
    "18": "UNAUTHORIZED_FOR_STATISTIC_REQUEST",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successful": "0",
    "invalidorunknownmarket": "1",
    "invalidorunknownmarketsegment": "2",
@@ -4926,6 +5316,28 @@
    "17": "17",
    "18": "18",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "invalidorunknownmarket",
+   "2": "invalidorunknownmarketsegment",
+   "3": "invalidorunknownsecuritylist",
+   "4": "invalidorunknowninstruments",
+   "5": "invalidparties",
+   "6": "tradedateoutofsupportedrange",
+   "7": "unsupportedstatistictype",
+   "8": "unsupportedscopeorsubscope",
+   "9": "unsupportedscopetype",
+   "10": "marketdepthnotsupported",
+   "11": "frequencynotsupported",
+   "12": "unsupportedstatisticinterval",
+   "13": "unsupportedstatisticdaterange",
+   "14": "unsupportedstatistictimerange",
+   "15": "unsupportedratiotype",
+   "16": "invalidorunknowntradeinputsource",
+   "17": "invalidorunknowntradingsession",
+   "18": "unauthorizedforstatisticrequest",
+   "99": "other"
   }
  },
  "2474": {
@@ -4963,11 +5375,15 @@
    "1": "ACTIVE",
    "2": "INACTIVE"
   },
-  "translations": {
+  "encoded": {
    "active": "1",
    "inactive": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "active",
+   "2": "inactive"
   }
  },
  "2478": {
@@ -4989,11 +5405,15 @@
    "1": "ABSOLUTE",
    "2": "PERCENTAGE"
   },
-  "translations": {
+  "encoded": {
    "absolute": "1",
    "percentage": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "absolute",
+   "2": "percentage"
   }
  },
  "2480": {
@@ -5067,7 +5487,7 @@
    "4": "UNACCEPTABLE_COLLATERAL",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "unknowntrade": "0",
    "unknowninstrument": "1",
    "unknowncounterparty": "2",
@@ -5080,6 +5500,14 @@
    "3": "3",
    "4": "4",
    "99": "99"
+  },
+  "decoded": {
+   "0": "unknowntrade",
+   "1": "unknowninstrument",
+   "2": "unknowncounterparty",
+   "3": "unknownposition",
+   "4": "unacceptablecollateral",
+   "99": "other"
   }
  },
  "2488": {
@@ -5094,13 +5522,18 @@
    "1": "RECEIVED",
    "2": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "received": "1",
    "rejected": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "received",
+   "2": "rejected"
   }
  },
  "2489": {

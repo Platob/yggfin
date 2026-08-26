@@ -14,6 +14,7 @@ import pytest
 from rekep.fix import FixRegistry, fix_field
 from rekep.market import (
     MIC,
+    NIL,
     AssetKind,
     Currency,
     Execution,
@@ -286,6 +287,31 @@ def test_an_executions_own_state_is_about_the_fill_not_the_order() -> None:
     assert fill.state is not State.PARTIALLY_FILLED
 
 
+def test_partial_fill_exectype_supplies_order_and_execution_states_without_ordstatus() -> None:
+    report = FILLED.replace("|150=F|", "|150=1|").replace("39=1|", "")
+    order, fill = events(report)
+
+    assert order.state is State.PARTIALLY_FILLED
+    assert fill.state is State.FILLED
+
+
+@pytest.mark.parametrize(
+    ("exec_type", "order_state", "execution_state"),
+    [
+        ("G", State.UNKNOWN, State.REPLACED),
+        ("H", State.UNKNOWN, State.CANCELLED),
+    ],
+)
+def test_trade_revision_exectype_supplies_both_states_without_ordstatus(
+    exec_type: str, order_state: State, execution_state: State
+) -> None:
+    report = FILLED.replace("|150=F|", f"|150={exec_type}|").replace("39=1|", "")
+    order, execution = events(report)
+
+    assert order.state is order_state
+    assert execution.state is execution_state
+
+
 def test_a_trade_cancel_and_a_correct_read_as_what_they_do_to_the_fill() -> None:
     _, cancelled = events(FILLED.replace("|150=F|", "|150=H|"))
     _, corrected = events(FILLED.replace("|150=F|", "|150=G|"))
@@ -323,13 +349,23 @@ def test_a_request_is_pending_because_the_venue_has_not_agreed_yet(kind: str, st
 
 
 def test_an_order_carries_every_slot_the_message_filled() -> None:
-    order, _ = events(FILLED)
+    order, fill = events(FILLED)
     assert order.kind is MarketKind.LIMIT_ORDER and order.tif is TimeInForce.GTC
     assert order.side is Side.BUY
-    assert (order.qty, order.vwap) == (6.0, 100.25)
+    assert (order.qty, order.vwap, fill.vwap) == (6.0, None, 100.25)
+    assert order.metadata["6"] == fill.metadata["6"] == "100.25"
     assert not hasattr(order, "filled_qty") and not hasattr(order, "leaves_qty")
     assert (order.order_id, order.client_order_id) == ("ORD-9", "CL-7")
     assert order.prev_client_order_id == "CL-6"
+
+
+def test_avgpx_is_evidence_not_a_vwap_when_prior_fills_are_unknown() -> None:
+    report = FILLED.replace("|32=4|", "|32=2|")
+    order, fill = events(report)
+
+    assert order.vwap is None and fill.vwap is None
+    assert fill.filled_qty == 4.0 and fill.qty == 2.0
+    assert order.metadata["6"] == fill.metadata["6"] == "100.25"
 
 
 def test_every_parsed_identifier_is_retained_in_isolated_code_maps() -> None:
@@ -348,14 +384,27 @@ def test_every_parsed_identifier_is_retained_in_isolated_code_maps() -> None:
         "trade_id": "TR-1",
         "md_entry_id": "MD-1",
         "md_entry_ref_id": "MD-0",
-        "symbol": "BTC-USD",
     }
 
     assert {name: order.codes[name] for name in shared} == shared
     assert {name: execution.codes[name] for name in shared} == shared
+    assert "symbol" not in order.codes and "symbol" not in execution.codes
     assert order.codes is not execution.codes
     order.codes["local"] = "order-only"
     assert "local" not in execution.codes
+
+
+def test_instrument_fields_never_identify_an_order_or_execution() -> None:
+    (order,) = events("35=D|55=AAPL|48=US0378331005|22=4|54=1|38=1|44=100|60=20260821-10:00:00")
+    (execution,) = events(
+        "35=AE|55=AAPL|48=US0378331005|22=4|54=1|31=100|32=1|60=20260821-10:00:01"
+    )
+
+    assert order.instrument_xhash and execution.instrument_xhash
+    assert order.code == execution.code == ""
+    assert order.xhash == execution.xhash == NIL
+    assert not ({"symbol", "security_id", "isincode"} & order.codes.keys())
+    assert not ({"symbol", "security_id", "isincode"} & execution.codes.keys())
 
 
 def test_a_rendered_identifier_missing_from_the_merged_index_is_still_retained() -> None:
@@ -668,9 +717,21 @@ def test_standard_state_keeps_the_original_field_specific_codes() -> None:
         (
             "ExecType",
             {
-                "1": State.FILLED,
+                "0": State.NEW,
+                "1": State.PARTIALLY_FILLED,
                 "2": State.FILLED,
-                "F": State.FILLED,
+                "3": State.DONE_FOR_DAY,
+                "4": State.CANCELLED,
+                "5": State.REPLACED,
+                "6": State.PENDING_CANCEL,
+                "7": State.STOPPED,
+                "8": State.REJECTED,
+                "9": State.SUSPENDED,
+                "A": State.PENDING_NEW,
+                "B": State.CALCULATED,
+                "C": State.EXPIRED,
+                "E": State.PENDING_REPLACE,
+                "F": State.PARTIALLY_FILLED,
                 "G": State.REPLACED,
                 "H": State.CANCELLED,
             },
@@ -738,31 +799,17 @@ def test_every_builtin_fix_state_is_registry_configuration(
     assert FixRegistry.from_builtin().state_values(field) == expected
 
 
-def test_order_state_fallbacks_are_registry_configuration() -> None:
+def test_every_state_conversion_uses_the_same_registry_configuration() -> None:
     registry = FixRegistry.from_builtin()
 
-    assert registry.order_state_values("MsgType") == {
+    assert registry.state_values("MsgType") == {
         "D": State.PENDING_NEW,
         "F": State.PENDING_CANCEL,
         "G": State.PENDING_REPLACE,
         "9": State.UNKNOWN,
     }
-    assert registry.order_state_values("ExecType") == {
-        "0": State.NEW,
-        "1": State.PARTIALLY_FILLED,
-        "2": State.FILLED,
-        "3": State.DONE_FOR_DAY,
-        "4": State.CANCELLED,
-        "5": State.REPLACED,
-        "6": State.PENDING_CANCEL,
-        "7": State.STOPPED,
-        "8": State.REJECTED,
-        "9": State.SUSPENDED,
-        "A": State.PENDING_NEW,
-        "B": State.CALCULATED,
-        "C": State.EXPIRED,
-        "E": State.PENDING_REPLACE,
-    }
+    assert registry.state_values("ExecType")["1"] is State.PARTIALLY_FILLED
+    assert registry.state_values("ExecType")["G"] is State.REPLACED
 
 
 def test_standard_kind_keeps_each_many_to_one_order_type_spelling() -> None:
@@ -901,6 +948,38 @@ def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
     assert second is not first
     assert first_state is State.NEW
     assert second.states["OrdStatus"]["0"] is State.CANCELLED
+
+
+def test_a_sparse_registry_keeps_builtin_trade_exectypes(tmp_path) -> None:
+    tags = MarketTags.of(FixRegistry(cache_dir=tmp_path / "fix", offline=True), "4.4")
+
+    assert tags.execution_states["G"] is State.REPLACED
+    assert tags.execution_states["H"] is State.CANCELLED
+    assert "G" not in tags.exec_type_fallbacks
+    assert "H" not in tags.exec_type_fallbacks
+
+
+def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    entry = FixRegistry.from_builtin().entry("ExecType")
+    assert entry is not None
+    registry.add_field(
+        dataclasses.replace(
+            entry,
+            values={},
+            value_names={},
+            states={"T": State.REPLACED, "U": State.REJECTED},
+            encoded={"tradecorrect": "T", "tradebust": "U"},
+        )
+    )
+
+    tags = MarketTags.of(registry, "4.4")
+    assert tags.execution_states["G"] is State.REPLACED
+    assert tags.execution_states["H"] is State.CANCELLED
+    assert tags.execution_states["T"] is State.REPLACED
+    assert tags.execution_states["U"] is State.REJECTED
+    assert "T" not in tags.exec_type_fallbacks
+    assert "U" not in tags.exec_type_fallbacks
 
 
 def test_every_carried_tag_comes_from_the_builtin_registry() -> None:

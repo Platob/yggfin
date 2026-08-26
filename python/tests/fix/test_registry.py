@@ -154,6 +154,33 @@ def test_version_ordering_reads_the_sp_suffix() -> None:
 # -- scraping ----------------------------------------------------------------
 
 
+def test_scrape_replaces_a_dump_folder_from_scratch(tmp_path: Path) -> None:
+    class OneVersion(FixRegistry):
+        def _scrape_versions(self) -> tuple[str, ...]:
+            return ("4.4",)
+
+        def _spec_document(self, version: str) -> str:
+            return ""
+
+        def _scrape_version(self, version: str, document: str | None = None) -> list[Field]:
+            return [fix_field("Side", 54, "char", version=version, values={"1": "Buy"})]
+
+    target = tmp_path / "fix"
+    target.mkdir()
+    (target / "stale.json").write_text("{}")
+
+    registry = OneVersion.scrape(target)
+
+    assert registry.offline and registry.cache_dir == target
+    assert registry.field("Side", "4.4").name == "Side"
+    assert not (target / "stale.json").exists()
+
+
+def test_scrape_requires_a_local_dump_folder() -> None:
+    with pytest.raises(ValueError, match="local dump folder"):
+        FixRegistry.scrape("s3://bucket/fix")
+
+
 def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None:
     """Both sources, in tag order: the spec also names component fields."""
     fields = registry.fields("4.4")
@@ -690,6 +717,20 @@ def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
     assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
 
 
+def test_msg_type_handlers_are_the_canonical_decodings() -> None:
+    registry = FixRegistry.from_builtin()
+    msg_type = registry.resolve("MsgType")
+    handlers = registry.msg_type_handlers()
+
+    assert all(msg_type.encode(handler) == value for value, handler in handlers.items())
+    assert {value: handlers[value] for value in ("8", "D", "W", "AE")} == {
+        "8": "executionreport",
+        "D": "newordersingle",
+        "W": "marketdatasnapshotfullrefresh",
+        "AE": "tradecapturereport",
+    }
+
+
 def test_the_builtin_registry_classifies_msg_types_before_transcription() -> None:
     registry = FixRegistry.from_builtin()
     classified = registry.msg_type_event_types()
@@ -807,7 +848,7 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     by_tag = {field.fix["tag"]: field for field in registry.fields("4.4")}
     assert "828" not in {"43", "54", "103", "205"}, "the fixture's extra tag"
     assert by_tag["828"].name == "TrdType"
-    assert by_tag["828"].arrow_type == pyarrow.int64(), "typed from the spec"
+    assert by_tag["828"].arrow_type == pyarrow.int32(), "typed from the spec"
     assert not by_tag["828"].description, "and with no prose, because there is none"
 
 

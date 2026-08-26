@@ -13,6 +13,7 @@ version, which is a schema fact and not data.
 from __future__ import annotations
 
 import dataclasses
+import io
 import json
 import os
 import re
@@ -20,6 +21,7 @@ import socket
 import time
 import urllib.request
 import zipfile
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +47,43 @@ from rekep.fix.transcribe import FixCodec
 
 #: The published dictionary, for the reads that have to answer over the real one.
 PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
+
+
+def _registry_documents() -> dict[str, dict[str, Any]]:
+    field = FieldEntry(name="FakeRole", tag=90001, versions=("9.1",), type="int")
+    component = ComponentEntry(name="FakeParties", versions=("9.1",))
+    return {
+        "versions.json": {
+            "versions": ["9.1"],
+            "stored": ["9.1"],
+            "declared": ["9.1"],
+            "sessions": {"9.1": [["FakeRole", True]]},
+        },
+        shard_name(90001): {"90001": field.into_dict()},
+        "components/fake_parties.json": component.into_dict(),
+    }
+
+
+def _registry_archive(documents: dict[str, dict[str, Any]]) -> bytes:
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, document in documents.items():
+            archive.writestr(name, json.dumps(document))
+    return payload.getvalue()
+
+
+class _Response(io.BytesIO):
+    """A context-managed HTTP response fixture."""
+
+    def __init__(self, payload: bytes, length: bool = True) -> None:
+        super().__init__(payload)
+        self.headers = {"Content-Length": str(len(payload))} if length else {}
+
+    def __enter__(self) -> _Response:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()
 
 
 class Offline(FixRegistry):
@@ -332,10 +371,10 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
         "D": EventType.ORDER,
     }
     document = json.loads((Path(store.cache_dir) / shard_name(35)).read_text())
-    assert document["35"]["event_types"] == {"D": int(EventType.ORDER)}
+    assert document["35"]["event_types"] == {"D": {"name": "ORDER", "id": int(EventType.ORDER)}}
 
 
-def test_market_dispatch_states_and_technical_skips_are_cached_store_data(
+def test_market_dispatch_states_and_codecs_are_cached_store_data(
     store: Offline,
 ) -> None:
     msg_type = FieldEntry(
@@ -345,17 +384,14 @@ def test_market_dispatch_states_and_technical_skips_are_cached_store_data(
         type="String",
         values={"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
         event_types={"D": "ORDER"},
-        handlers={"D": "order"},
-        order_states={"D": "PENDING_NEW"},
-        technical_values=("0", "1"),
-        technical_plugins=("jolokia",),
+        states={"D": State.PENDING_NEW},
     )
     status = FieldEntry(
         name="OrdStatus",
         tag=39,
         versions=("9.1",),
         type="char",
-        states={"0": "NEW", "1": int(State.PARTIALLY_FILLED)},
+        states={"0": State.NEW, "1": State.PARTIALLY_FILLED},
     )
     store.add_field(msg_type)
     store.add_field(status)
@@ -363,10 +399,12 @@ def test_market_dispatch_states_and_technical_skips_are_cached_store_data(
     cached = store.state_values("OrdStatus")
     assert cached == {"0": State.NEW, "1": State.PARTIALLY_FILLED}
     assert store.state_values("OrdStatus") is cached
-    assert store.order_state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert store.msg_type_handlers() == {"D": "order"}
-    assert store.technical_msg_types() == {"0", "1"}
-    assert store.technical_plugin_codes() == {"jolokia"}
+    assert store.state_values("MsgType") == {"D": State.PENDING_NEW}
+    assert store.msg_type_handlers() == {
+        "0": "heartbeat",
+        "1": "testrequest",
+        "D": "newordersingle",
+    }
 
     store.update_field(dataclasses.replace(status, states={"0": State.ACCEPTED}))
     assert store.state_values("OrdStatus") == {"0": State.ACCEPTED}
@@ -374,10 +412,12 @@ def test_market_dispatch_states_and_technical_skips_are_cached_store_data(
 
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
     assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
-    assert reopened.order_state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert reopened.msg_type_handlers() == {"D": "order"}
-    assert reopened.technical_msg_types() == {"0", "1"}
-    assert reopened.technical_plugin_codes() == {"jolokia"}
+    assert reopened.state_values("MsgType") == {"D": State.PENDING_NEW}
+    assert reopened.msg_type_handlers() == {
+        "0": "heartbeat",
+        "1": "testrequest",
+        "D": "newordersingle",
+    }
 
 
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(
@@ -484,12 +524,57 @@ def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> No
     assert [(one.version, one.key, one.reading) for one in values.dropped] == [("9.0", "1", "Was")]
 
 
-def test_a_collapse_reports_every_translation_two_values_share() -> None:
+def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) -> None:
+    class Building(Offline):
+        def _spec_document(self, version: str) -> str:
+            return "<fix><header/><trailer/><messages/><components/><fields/></fix>"
+
+        def _scrape_version(self, version: str, document: str | None = None) -> list[Field]:
+            return [
+                fix_field(
+                    "ExecType",
+                    150,
+                    "char",
+                    version=version,
+                    values={
+                        "0": "New",
+                        "1": "Partial fill",
+                        "F": "Trade",
+                        "G": "Trade correct",
+                        "H": "Trade cancel",
+                    },
+                )
+            ]
+
+    registry = Building(cache_dir=tmp_path / "fix", offline=True)
+    registry.rebuild("9.1")
+    mapping = State.fix_mapping()
+
+    assert mapping is State.fix_mapping()
+    assert mapping[150]["1"] is State.PARTIALLY_FILLED
+    assert registry.state_values("ExecType") == {
+        "0": State.NEW,
+        "1": State.PARTIALLY_FILLED,
+        "F": State.PARTIALLY_FILLED,
+        "G": State.REPLACED,
+        "H": State.CANCELLED,
+    }
+    stored = json.loads((tmp_path / "fix" / shard_name(150)).read_text())
+    assert stored["150"]["states"]["G"] == {
+        "name": "REPLACED",
+        "id": int(State.REPLACED),
+    }
+    assert Offline(cache_dir=registry.cache_dir, offline=True).state_values("ExecType") == (
+        registry.state_values("ExecType")
+    )
+
+
+def test_a_collapse_reports_every_encoding_two_values_share() -> None:
     member = fix_field(
         "FakeRole", 90001, "char", version="9.1", values={"1": "Cross", "2": "cross"}
     )
     _, _, report = collapse(("9.1",), {"9.1": [member]}, {})
-    assert report.counts()["translations"] == 1
+    assert report.counts()["encoded"] == 1
     assert report.collisions[0].key == "cross" and report.collisions[0].values == ("1", "2")
 
 
@@ -602,6 +687,265 @@ def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
     assert second.field(90001, "9.1").name == "FakeRole"
 
 
+def test_a_cold_default_store_installs_the_configured_full_archive(
+    default_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    said: list[str] = []
+    monkeypatch.setenv("REKEP_FIX_REGISTRY_URL", str(PUBLISHED))
+
+    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+        registry = FixRegistry(announce=said.append)
+
+    assert registry.installed
+    assert len(list(default_store.rglob("*.json"))) > 700
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+    assert "downloading the full dictionary" in said[0]
+    assert "is installed" in said[-1]
+
+
+def test_an_https_registry_receives_the_private_bearer_token(
+    default_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _registry_archive(_registry_documents())
+    seen: dict[str, object] = {}
+
+    class Opener:
+        def open(self, request: urllib.request.Request, timeout: float) -> _Response:
+            seen.update(request=request, timeout=timeout)
+            return _Response(payload)
+
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *_handlers: Opener())
+    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+        registry = FixRegistry(
+            registry_url="https://artifactory.example/fix-registry.zip",
+            registry_token="secret",
+            announce=lambda _line: None,
+        )
+
+    request = seen["request"]
+    assert isinstance(request, urllib.request.Request)
+    assert request.get_header("Authorization") == "Bearer secret"
+    assert registry.installed and registry.field(90001, "9.1").name == "FakeRole"
+
+
+@pytest.mark.parametrize(
+    ("url", "message"),
+    [
+        ("http://artifactory.example/fix-registry.zip", "requires an HTTPS"),
+        ("https://user:secret@artifactory.example/fix-registry.zip", "cannot contain credentials"),
+        ("https://artifactory.example/fix-registry.zip?token=secret", "cannot contain a query"),
+    ],
+)
+def test_registry_credentials_cannot_use_an_unsafe_url(
+    tmp_path: Path,
+    url: str,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        FixRegistry(
+            cache_dir=tmp_path / "named",
+            registry_url=url,
+            registry_token="secret",
+        )
+
+
+def test_registry_archive_download_stops_at_the_compressed_limit(
+    default_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(registry_module, "_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES", 8)
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: _Response(b"123456789", length=False),
+    )
+    said: list[str] = []
+
+    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
+        registry = Scraping(
+            registry_url="https://artifactory.example/fix-registry.zip",
+            announce=said.append,
+        )
+
+    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert any("exceeds 8 compressed bytes" in line for line in said)
+
+
+def test_a_failed_registry_archive_stream_falls_back_to_the_existing_scrape(
+    default_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BrokenResponse(_Response):
+        def read(self, _size: int = -1) -> bytes:
+            raise RuntimeError("connection ended")
+
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: BrokenResponse(b"", length=False),
+    )
+    said: list[str] = []
+
+    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
+        registry = Scraping(
+            registry_url="https://artifactory.example/fix-registry.zip",
+            announce=said.append,
+        )
+
+    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert any("archive download failed: connection ended" in line for line in said)
+
+
+def test_a_refused_registry_archive_falls_back_to_the_existing_scrape(
+    default_store: Path,
+    tmp_path: Path,
+) -> None:
+    broken = tmp_path / "broken.zip"
+    broken.write_bytes(b"not a zip")
+    said: list[str] = []
+
+    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
+        registry = Scraping(registry_url=str(broken), announce=said.append)
+
+    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert registry.field(90001, "9.1").name == "FakeRole"
+    assert any("falling back" in line for line in said)
+
+
+def test_an_undecodable_registry_member_falls_back_to_the_existing_scrape(
+    default_store: Path,
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "undecodable.zip"
+    with zipfile.ZipFile(archive, "w") as opened:
+        opened.writestr("versions.json", b"\xff")
+        opened.writestr("fields/000000.json", "{}")
+    said: list[str] = []
+
+    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
+        registry = Scraping(registry_url=str(archive), announce=said.append)
+
+    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert any("cannot be decoded" in line for line in said)
+
+
+def test_a_registry_archive_token_is_not_serialised(tmp_path: Path) -> None:
+    registry = FixRegistry(
+        cache_dir=tmp_path / "named",
+        offline=True,
+        registry_url="https://artifactory.example/fix-registry.zip",
+        registry_token="secret-token",
+    )
+
+    dumped = registry.into_dict()
+    assert "registry_token" not in dumped
+    assert "secret-token" not in repr(registry)
+    assert "secret-token" not in json.dumps(dumped)
+
+
+def test_an_explicit_empty_registry_token_suppresses_the_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REKEP_FIX_REGISTRY_TOKEN", "another-registry-token")
+    registry = FixRegistry(
+        cache_dir=tmp_path / "named",
+        offline=True,
+        registry_url="http://artifactory.example/fix-registry.zip",
+        registry_token="",
+    )
+
+    assert registry.__dict__["_registry_token"] == ""
+
+
+@pytest.mark.parametrize("malformed", ["index", "field", "component"])
+def test_malformed_registry_documents_never_leave_the_staging_directory(
+    tmp_path: Path,
+    malformed: str,
+) -> None:
+    documents = _registry_documents()
+    if malformed == "index":
+        documents["versions.json"]["sessions"] = {"9.1": [["FakeRole", "yes"]]}
+    elif malformed == "field":
+        documents[shard_name(90001)]["90001"]["versions"] = "9.1"
+    else:
+        documents["components/fake_parties.json"]["members"] = "not-a-list"
+    target = tmp_path / malformed
+    registry = FixRegistry(cache_dir=target, offline=True)
+
+    with pytest.raises(ValueError, match="FIX"):
+        registry._install_registry_documents(documents)
+
+    assert not target.exists()
+
+
+def test_a_complete_concurrent_registry_wins_without_a_scrape(
+    default_store: Path,
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "incoming.zip"
+    archive.write_bytes(_registry_archive(_registry_documents()))
+    winner = _registry_documents()
+
+    class Racing(Scraping):
+        def _install_registry_documents(self, documents: Mapping[str, Mapping[str, Any]]) -> int:
+            place = registry_module.DirectoryDocuments(
+                pyarrow.fs.LocalFileSystem(), Path(self.cache_dir).as_posix()
+            )
+            for name, document in winner.items():
+                place.write(name, document)
+            return super()._install_registry_documents(documents)
+
+    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+        registry = Racing(registry_url=str(archive), announce=lambda _line: None)
+
+    assert registry.installed
+    assert "fetched" not in registry.__dict__
+    assert registry.field(90001, "9.1").name == "FakeRole"
+
+
+def test_an_interrupted_registry_install_leaves_no_partial_store(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "fix"
+    registry = FixRegistry(cache_dir=target, offline=True)
+    documents = {
+        "versions.json": {"versions": ["9.1"]},
+        "fields/000000.json": {},
+    }
+    write = registry_module.DirectoryDocuments.write
+    written = 0
+
+    def interrupt(place: object, name: str, document: dict[str, object]) -> None:
+        nonlocal written
+        written += 1
+        if written == 2:
+            raise OSError("interrupted")
+        write(place, name, document)
+
+    monkeypatch.setattr(registry_module.DirectoryDocuments, "write", interrupt)
+    with pytest.raises(OSError, match="interrupted"):
+        registry._install_registry_documents(documents)
+
+    assert not target.exists()
+
+
+def test_a_registry_archive_cannot_write_outside_the_default_store(tmp_path: Path) -> None:
+    archive = tmp_path / "hostile.zip"
+    with zipfile.ZipFile(archive, "w") as opened:
+        opened.writestr("versions.json", '{"versions": ["9.1"]}')
+        opened.writestr("fields/000000.json", "{}")
+        opened.writestr("../outside.json", "{}")
+
+    with pytest.raises(ValueError, match="unsafe FIX registry archive member"):
+        FixRegistry._registry_archive_documents(archive.read_bytes())
+
+    assert not (tmp_path / "outside.json").exists()
+
+
 def test_a_bootstrap_the_network_refuses_serves_the_projection_and_says_it_is_reduced(
     default_store: Path,
 ) -> None:
@@ -610,7 +954,7 @@ def test_a_bootstrap_the_network_refuses_serves_the_projection_and_says_it_is_re
         registry = Refused(announce=said.append)
     assert not default_store.exists(), "nothing was installed over a failed fetch"
     assert "misses the long tail" in said[-1]
-    assert "rekep fix registry bootstrap" in said[-1]
+    assert "rekep fix registry scrape" in said[-1]
     assert registry.field("Side").fix["tag"] == "54", "and the projection answers"
 
 
@@ -627,7 +971,7 @@ def test_a_cold_offline_default_store_opens_no_socket(
     said: list[str] = []
     with pytest.warns(RuntimeWarning, match="this registry is offline"):
         registry = FixRegistry(offline=True, announce=said.append)
-    assert "rekep fix registry bootstrap" in said[-1]
+    assert "rekep fix registry scrape" in said[-1]
     assert registry.field("Side").fix["tag"] == "54", "served reduced, and never silently"
 
 
@@ -890,7 +1234,7 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
     assert group.nullable, "the group itself is optional in this declaration"
     member = group.item.field("fake_role")
     assert not member.nullable, "and its one member is required"
-    assert member.arrow_type == pyarrow.int64(), "typed from the dictionary, not guessed"
+    assert member.arrow_type == pyarrow.int32(), "typed from the dictionary, not guessed"
 
 
 def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:

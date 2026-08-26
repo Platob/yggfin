@@ -1,19 +1,10 @@
-"""`rekep fix shell`: the registry's verbs, driven by a prompt instead of flags.
-
-Editing a dictionary of seven thousand identities from a shell is a lot of
-typing to get one field right, and every mistake is a rejected write and a
-retyped command. Here the same verbs run against a store held open: what is in
-it is browsable, a change is built one answered question at a time with the
-store's own vocabulary offered as it goes, and nothing is written until the
-whole entry has been shown back.
-
-Everything a command does goes through `FixRegistry`, exactly as the flag-driven
-verbs do. This is a way of *calling* them, never a second implementation.
-"""
+"""The interactive FIX registry terminal."""
 
 from __future__ import annotations
 
 import dataclasses
+import difflib
+import sys
 from collections.abc import Callable, Sequence
 from functools import cache
 from typing import Any
@@ -24,12 +15,17 @@ from rekep.fix.fields import FIX_SCALARS
 from rekep.fix.registry import FixRegistry
 from rekep.fix.store import field_document
 
-#: What a bare Enter means at a yes/no question, per question.
+#: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
-NO = ("n", "no")
 
 #: How many rows a listing shows before it says how many more there are.
 PAGE = 20
+
+
+def terminal_reader(prompt: str) -> str:
+    """Read stdin after writing the styled prompt to stderr."""
+    print(prompt, end="", file=sys.stderr, flush=True)
+    return input()
 
 
 @dataclasses.dataclass
@@ -37,10 +33,10 @@ class Shell:
     """One open registry store, and the prompt that edits it."""
 
     registry: FixRegistry
-    console: Console = dataclasses.field(default_factory=Console)
+    console: Console = dataclasses.field(default_factory=lambda: Console(stream="stderr"))
     #: Where answers come from. `input` at a prompt; a list of lines in a test,
     #: which is what makes every branch here reachable without a terminal.
-    reader: Callable[[str], str] = input
+    reader: Callable[[str], str] = terminal_reader
 
     def run(self) -> int:
         """Read commands until `quit`, end of input, or an interrupt."""
@@ -57,6 +53,9 @@ class Shell:
             command = self.into_commands().get(verb.lower())
             if command is None:
                 self.console.fail(f"no command {verb!r}; `help` lists them")
+                near = difflib.get_close_matches(verb.lower(), self.into_commands(), n=1)
+                if near:
+                    self.console.note(f"did you mean `{near[0]}`?")
                 continue
             try:
                 if command(self, rest.strip()) is False:
@@ -80,6 +79,11 @@ class Shell:
             "show": cls._show,
             "components": cls._components,
             "component": cls._component,
+            "add-field": cls._add_field_declaration,
+            "update-field": cls._update_field_declaration,
+            "add-component": cls._add_component,
+            "update-component": cls._update_component,
+            "remove-component": cls._remove_component,
             "add": cls._add,
             "edit": cls._edit,
             "alias": cls._alias,
@@ -96,12 +100,17 @@ class Shell:
     def into_help(cls) -> tuple[tuple[str, str], ...]:
         """One line per verb, in the order `help` prints them."""
         return (
-            ("help", "every verb and what it does"),
+            ("help [verb]", "commands, or details for one verb"),
             ("versions", "every FIX version this store holds"),
             ("find <text>", "search fields by tag, name or description"),
             ("show <name|tag>", "one field, every version of it"),
             ("components [text]", "component identities, filtered by name"),
             ("component <name>", "one component's members, version by version"),
+            ("add-field <path>", "register a complete field declaration"),
+            ("update-field <path>", "replace a complete field declaration"),
+            ("add-component <path>", "register a component declaration"),
+            ("update-component <path>", "replace a component declaration"),
+            ("remove-component <name>", "delete a component identity"),
             ("add", "register a field, one answered question at a time"),
             ("edit <name>", "change a stored field, keeping what you do not retype"),
             ("alias <name>", "record another spelling a capture used"),
@@ -113,13 +122,42 @@ class Shell:
         )
 
     def _help(self, rest: str) -> None:
-        """Every verb and what it does."""
-        del rest
-        self.console.rule("commands")
-        self.console.table(
-            ("verb", "does"),
-            [(self.console.style(verb, "bright_cyan"), text) for verb, text in self.into_help()],
+        """Show the command index or one command's usage."""
+        wanted = rest.strip().lower()
+        if wanted:
+            found = next(
+                ((usage, text) for usage, text in self.into_help() if usage.split()[0] == wanted),
+                None,
+            )
+            if found is None:
+                self.console.fail(f"no command {wanted!r}")
+                return
+            usage, text = found
+            self.console.panel(
+                wanted,
+                [
+                    _detail(self.console, "usage", usage),
+                    _detail(self.console, "does", text),
+                ],
+            )
+            self.console.line()
+            return
+
+        groups = (
+            ("browse", {"versions", "find", "show", "components", "component"}),
+            ("edit fields", {"add", "edit", "alias", "remove", "add-field", "update-field"}),
+            ("edit components", {"add-component", "update-component", "remove-component"}),
+            ("store", {"check", "load", "dump"}),
+            ("session", {"help", "quit"}),
         )
+        for title, verbs in groups:
+            rows = [
+                (self.console.style(usage, "yellow"), text)
+                for usage, text in self.into_help()
+                if usage.split()[0] in verbs
+            ]
+            self.console.rule(title)
+            self.console.table(("command", "does"), rows)
         self.console.line()
 
     def _versions(self, rest: str) -> None:
@@ -130,7 +168,7 @@ class Shell:
             for version in self.registry.versions:
                 rows.append(
                     (
-                        self.console.style(version, "bright_cyan"),
+                        self.console.style(version, "yellow"),
                         str(len(self.registry.fields(version))),
                     )
                 )
@@ -151,7 +189,7 @@ class Shell:
             [
                 (
                     self.console.style(member.fix.get("tag", "-"), "yellow"),
-                    self.console.style(member.name, "bright_cyan"),
+                    self.console.style(member.name, "white"),
                     member.fix.get("type", "-"),
                     _clipped(member.description, max(20, self.console.width - 40)),
                 )
@@ -166,14 +204,17 @@ class Shell:
         if entry is None:
             return
         rows = [
-            f"{self.console.style('tag', 'grey')}      {entry.tag if entry.tag else '-'}",
-            f"{self.console.style('kind', 'grey')}     {entry.kind}",
-            f"{self.console.style('type', 'grey')}     {entry.type or '-'}",
-            f"{self.console.style('column', 'grey')}   {entry.column or '-'}",
-            f"{self.console.style('versions', 'grey')} {', '.join(entry.versions)}",
-            f"{self.console.style('spellings', 'grey')} {', '.join(entry.spellings())}",
-            f"{self.console.style('about', 'grey')}    "
-            f"{_clipped(entry.description, max(20, self.console.width - 14)) or '-'}",
+            _detail(self.console, "tag", entry.tag or "-"),
+            _detail(self.console, "kind", entry.kind),
+            _detail(self.console, "type", entry.type or "-"),
+            _detail(self.console, "column", entry.column or "-"),
+            _detail(self.console, "versions", ", ".join(entry.versions)),
+            _detail(self.console, "spellings", ", ".join(entry.spellings())),
+            _detail(
+                self.console,
+                "about",
+                _clipped(entry.description, max(20, self.console.width - 18)) or "-",
+            ),
         ]
         self.console.panel(entry.name, rows)
         if entry.values or entry.value_names:
@@ -181,7 +222,7 @@ class Shell:
                 ("value", "means", "symbol"),
                 [
                     (
-                        self.console.style(value, "bright_cyan"),
+                        self.console.style(value, "yellow"),
                         _clipped(entry.values.get(value, ""), max(20, self.console.width - 44)),
                         entry.value_names.get(value, "-"),
                     )
@@ -193,16 +234,19 @@ class Shell:
     def _components(self, rest: str) -> None:
         """Component identities, filtered by name when `rest` says one."""
         wanted = rest.strip().lower()
-        entries = [
-            entry
-            for entry in self.registry.component_entries().values()
-            if not wanted or wanted in entry.name.lower()
-        ]
+        entries = sorted(
+            (
+                entry
+                for entry in self.registry.component_entries().values()
+                if not wanted or wanted in entry.name.lower()
+            ),
+            key=lambda entry: entry.name,
+        )
         self.console.rule(f"{len(entries)} component{'' if len(entries) == 1 else 's'}")
         self.console.table(
             ("name", "versions"),
             [
-                (self.console.style(entry.name, "bright_cyan"), ", ".join(entry.versions))
+                (self.console.style(entry.name, "white"), ", ".join(entry.versions))
                 for entry in entries[:PAGE]
             ],
         )
@@ -215,7 +259,19 @@ class Shell:
         if not rest:
             self.console.warn("name one: `component Parties`")
             return
-        entry = self.registry.merged_component(rest)
+        try:
+            entry = self.registry.merged_component(rest)
+        except KeyError:
+            self.console.fail(f"no component {rest!r} in this store")
+            near = difflib.get_close_matches(
+                rest,
+                self.registry.component_entries(),
+                n=3,
+                cutoff=0.5,
+            )
+            if near:
+                self.console.note(f"did you mean {', '.join(near)}?")
+            return
         version = entry.newest
         declared = entry.into_component(version)
         self.console.panel(
@@ -229,13 +285,98 @@ class Shell:
                 + "  " * len(path)
                 + self.console.style(self.console.glyph("bullet"), "grey")
                 + " "
-                + self.console.style(member.name, "bright_cyan")
+                + self.console.style(member.name, "white")
                 + self.console.style(f" <{tag}>" if tag else "", "yellow")
                 + self.console.style(f"  {required}", "grey")
             )
         self.console.line()
 
+    def _add_component(self, rest: str) -> None:
+        """Register the component declaration at `rest`."""
+        entry = self._component_declaration(rest)
+        if entry is None:
+            return
+        if not self._confirm(f"add {entry.name}"):
+            self.console.warn("nothing was written")
+            return
+        stored = self.registry.add_component(entry)
+        self.console.ok(f"added {stored.name}")
+
+    def _update_component(self, rest: str) -> None:
+        """Replace the component declaration at `rest`."""
+        entry = self._component_declaration(rest)
+        if entry is None:
+            return
+        if not self._confirm(f"update {entry.name}"):
+            self.console.warn("nothing was written")
+            return
+        stored = self.registry.update_component(entry)
+        self.console.ok(f"updated {stored.name}")
+
+    def _remove_component(self, rest: str) -> None:
+        """Delete one component after showing what the name resolves to."""
+        if not rest:
+            self.console.warn("name one: `remove-component Parties`")
+            return
+        try:
+            entry = self.registry.merged_component(rest)
+        except KeyError:
+            self.console.fail(f"no component {rest!r} in this store")
+            return
+        self.console.panel(
+            entry.name,
+            [
+                _detail(self.console, "versions", ", ".join(entry.versions)),
+                _detail(self.console, "members", len(entry.members)),
+            ],
+        )
+        if not self._confirm(f"remove {entry.name}"):
+            self.console.warn("kept")
+            return
+        if self.registry.remove_component(entry.name):
+            self.console.ok(f"removed {entry.name}")
+        else:  # pragma: no cover - resolved immediately above
+            self.console.fail(f"{entry.name} was not in this store")
+
+    def _component_declaration(self, path: str) -> ComponentEntry | None:
+        """Read and preview one component document."""
+        if not path:
+            self.console.warn("say which: `add-component parties.json`")
+            return None
+        entry = ComponentEntry.from_file(path)
+        self.console.panel(
+            entry.name,
+            [
+                _detail(self.console, "versions", ", ".join(entry.versions)),
+                _detail(self.console, "members", len(entry.members)),
+                _detail(self.console, "source", path),
+            ],
+        )
+        return entry
+
     # -- changing it --------------------------------------------------------
+
+    def _add_field_declaration(self, rest: str) -> None:
+        """Register the complete field declaration at `rest`."""
+        self._store_field_declaration(rest, update=False)
+
+    def _update_field_declaration(self, rest: str) -> None:
+        """Replace the complete field declaration at `rest`."""
+        self._store_field_declaration(rest, update=True)
+
+    def _store_field_declaration(self, path: str, *, update: bool) -> None:
+        """Preview, confirm, and store one complete field document."""
+        if not path:
+            self.console.warn("say which: `add-field field.json`")
+            return
+        entry = FieldEntry.from_file(path)
+        self._field_panel(entry, source=path)
+        verb = "update" if update else "add"
+        if not self._confirm(f"{verb} {entry.name}"):
+            self.console.warn("nothing was written")
+            return
+        stored = self.registry.update_field(entry) if update else self.registry.add_field(entry)
+        self.console.ok(f"{'updated' if update else 'added'} {stored.name}")
 
     def _add(self, rest: str) -> None:
         """Build one field identity by answering for each part of it."""
@@ -301,21 +442,25 @@ class Shell:
             value_names=dict(held.value_names) if held else {},
             column=column,
         )
-        console.panel(
-            entry.name,
-            [
-                f"{console.style('tag', 'grey')}         {entry.tag if entry.tag else '-'}",
-                f"{console.style('kind', 'grey')}        {entry.kind}",
-                f"{console.style('versions', 'grey')}    {', '.join(versions)}",
-                f"{console.style('type', 'grey')}        {datatype}",
-                f"{console.style('description', 'grey')} {_clipped(described, 60) or '-'}",
-                f"{console.style('column', 'grey')}      {column or '-'}",
-            ],
-        )
+        self._field_panel(entry)
         if not self._confirm("write it"):
             console.warn("nothing was written")
             return None
         return entry
+
+    def _field_panel(self, entry: FieldEntry, *, source: str = "") -> None:
+        """Show one complete field record before a write."""
+        rows = [
+            _detail(self.console, "tag", entry.tag or "-"),
+            _detail(self.console, "kind", entry.kind),
+            _detail(self.console, "versions", ", ".join(entry.versions)),
+            _detail(self.console, "type", entry.type or "-"),
+            _detail(self.console, "description", _clipped(entry.description, 60) or "-"),
+            _detail(self.console, "column", entry.column or "-"),
+        ]
+        if source:
+            rows.append(_detail(self.console, "source", source))
+        self.console.panel(entry.name, rows)
 
     def _alias(self, rest: str) -> None:
         """Record another spelling one field has been observed under."""
@@ -397,11 +542,17 @@ class Shell:
         console = self.console
         console.line()
         console.panel(
-            "rekep fix",
+            "REKEP / FIX REGISTRY",
             [
-                f"{console.style('store', 'grey')}    {self.registry.cache_dir}",
-                f"{console.style('versions', 'grey')} {len(self.registry.versions)}",
-                f"{console.style('help', 'grey')}     type {console.style('help', 'bright_cyan')}",
+                _detail(
+                    console,
+                    "store",
+                    _clipped(str(self.registry.cache_dir), max(20, console.width - 22)),
+                ),
+                _detail(console, "versions", len(self.registry.versions)),
+                _detail(console, "fields", len(self.registry.field_entries())),
+                _detail(console, "components", len(self.registry.component_entries())),
+                _detail(console, "command", f"type {console.style('help', 'yellow')}"),
             ],
         )
         console.line()
@@ -411,14 +562,9 @@ class Shell:
         versions = self.registry.versions
         return versions[0] if versions else ANY_VERSION
 
-    def _newest(self) -> str:
-        """Which version a new field is declared for unless the answer says another."""
-        versions = self.registry.versions
-        return versions[0] if versions else ANY_VERSION
-
     def _ask(self, prompt: str) -> str:
         """One answer, with the prompt styled where the terminal allows it."""
-        return self.reader(self.console.style(prompt, "bold", "cyan"))
+        return self.reader(self.console.style(prompt, "bold", "orange"))
 
     def _ask_for(self, question: str, default: str = "") -> str:
         """One answer, where a bare Enter keeps `default`."""
@@ -436,7 +582,7 @@ class Shell:
         if not name:
             self.console.warn("name a field: `show PartyRole`")
             return None
-        entry = self.registry.resolve(name)
+        entry = self.registry.entry(name)
         if entry is not None:
             return entry
         self.console.fail(f"no field {name!r} in this store")
@@ -463,11 +609,20 @@ def _clipped(text: str, width: int) -> str:
     return text if len(text) <= width else text[: max(1, width - 1)] + "…"
 
 
-def shell(store: str, console: Console | None = None, reader: Callable[[str], str] = input) -> int:
+def _detail(console: Console, name: str, value: Any) -> str:
+    """One aligned label and value inside a shell panel."""
+    return f"{console.style(f'{name:<12}', 'grey')} {value}"
+
+
+def shell(
+    store: str,
+    console: Console | None = None,
+    reader: Callable[[str], str] = terminal_reader,
+) -> int:
     """Open `store` and drive it from a prompt; the exit code the CLI returns."""
     return Shell(
         registry=FixRegistry(cache_dir=store, offline=True),
-        console=console or Console(),
+        console=console or Console(stream="stderr"),
         reader=reader,
     ).run()
 

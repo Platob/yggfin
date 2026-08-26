@@ -981,16 +981,15 @@ def test_the_flat_layer_becomes_columns_and_leaves_the_pair_list(
 ) -> None:
     """Who sent it, what was traded, at what price is what a reader filters on.
 
-    So each is a column of its own, and it is **removed** from the list rather
-    than stored in both places: two copies of one field are two answers as soon
-    as anything rewrites either.
+    So each is a column of its own. A raw audit sidecar remains only where the
+    typed column cannot reproduce the exact FIX spelling.
 
     Addressed by tag through `COLUMNS`, because what is under test is that a
     tag's value lands in the column the declaration gives it -- not how that
     column is spelled, which the declaration is the authority on.
     """
     columns, rest = codec.into_lifted_columns(wire_tags, "4.2")
-    assert rest.to_pylist()[0] == [], "an order names nothing the flat layer left behind"
+    assert _tags(rest) == [(52, "20260814-09:30:00.123")]
     assert rest.type == KWARGS
     filled = {name: column[0].as_py() for name, column in columns.items() if column[0].is_valid}
     assert len(filled) == EXPECTED_WIRE_SESSION + EXPECTED_WIRE_COMMON
@@ -1098,7 +1097,7 @@ def test_a_repeat_in_one_row_costs_no_other_row_its_column(codec: FixCodec) -> N
     columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert columns[COLUMNS[55]].to_pylist() == [None, "TTF"]
     assert [tag for tag, _ in _tags(rest)] == [555, 600, 55, 555, 55]
-    assert rest.to_pylist()[1] == [], "the row that repeated nothing held nothing back"
+    assert _tags(rest, 1) == [(60, "20260814-09:29:59.5")]
     assert columns[COLUMNS[34]].to_pylist() == [8, 9], "each row's own sequence, both lifted"
 
 
@@ -1160,7 +1159,8 @@ def test_an_empty_pair_list_stays_empty_and_a_null_one_stays_null(codec: FixCode
     tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([SINGLE, "heartbeat", None])), "4.4")
     assert tags.to_pylist()[1] == [], "a line that parsed, and carried no pair"
     columns, rest = codec.into_lifted_columns(tags, "4.4")
-    assert rest.to_pylist() == [[], [], None]
+    assert _tags(rest) == [(60, "20260814-09:29:59.5")]
+    assert rest.to_pylist()[1:] == [[], None]
     assert columns[COLUMNS[55]].to_pylist() == ["TTF", None, None]
 
 

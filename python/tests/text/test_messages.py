@@ -10,6 +10,7 @@ import pytest
 
 from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules
 from rekep.fix.columns import COLUMNS
+from rekep.fix.message import render_fix_value
 from rekep.market.event import HOUR, SECOND
 from rekep.text import HEADER_PATTERN, FixMsg, Message, TextFile, TextFiles
 from rekep.times import unix_of
@@ -181,8 +182,11 @@ def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Tab
     assert table.column("Symbol")[PIPED].as_py() == "TTF"
     assert table.column("Side")[PIPED].as_py() == "1"
     assert table.column("Price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
-    assert _tagged(table.column("kwargs")[PIPED]) == [], "every field of it was worth a column"
-    assert _keys(table.column("kwargs")[PIPED]) == []
+    assert _tagged(table.column("kwargs")[PIPED]) == [
+        (52, "20260814-00:05:01.147"),
+        (44, "41.2500"),
+    ]
+    assert _keys(table.column("kwargs")[PIPED]) == ["SendingTime", "Price"]
     assert _named(table.column("kwargs")[PIPED]) == []
     around = str([table.column(name)[PIPED].as_py() for name in FLAT_NAMES])
     assert "sending" not in around and "queued" not in around
@@ -192,7 +196,8 @@ def test_every_field_of_a_wire_message_lands_in_one_of_the_three_places(
     table: pyarrow.Table,
 ) -> None:
     """Nothing drops or duplicates across both pair lists and the columns."""
-    resolved = len(_tagged(table.column("kwargs")[PIPED]))
+    pairs = _tagged(table.column("kwargs")[PIPED])
+    resolved = len(pairs) - len(_audit_pairs(table, PIPED, pairs))
     rest = len(_named(table.column("kwargs")[PIPED]))
     assert resolved + rest + _lifted(table, PIPED) == EXPECTED_WIRE_FIELDS
 
@@ -205,7 +210,7 @@ def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     assert table.column("MsgSeqNum")[SOHED].as_py() == 1094
     assert table.column("CheckSum")[SOHED].as_py() == "118"
     assert table.column("MsgType")[SOHED].as_py() == "8"
-    assert _tagged(table.column("kwargs")[SOHED]) == []
+    assert _tagged(table.column("kwargs")[SOHED]) == [(31, "41.2500"), (6, "41.2500")]
 
     assert _tagged(table.column("kwargs")[CARET]) == CARET_RAW_PAIRS
     assert _keys(table.column("kwargs")[CARET]) == [str(tag) for tag, _ in CARET_RAW_PAIRS]
@@ -213,12 +218,8 @@ def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     _assert_no_semantic_columns(table, CARET)
 
 
-def test_no_flat_tag_is_left_in_the_list_it_was_lifted_out_of(table: pyarrow.Table) -> None:
-    """One fact stored twice is one that can disagree with itself.
-
-    A tag that repeats is the exception, and it is not half-lifted either: it
-    stays whole in the list, every occurrence of it, and its column is null.
-    """
+def test_a_flat_tag_stays_only_for_a_repeat_or_a_lossless_audit(table: pyarrow.Table) -> None:
+    """A singleton sidecar exists only when typing cannot reproduce its text."""
     assert _lifted(table, PIPED), "so the loop below has something to be true about"
     for row in range(table.num_rows):
         if row == CARET:
@@ -227,7 +228,8 @@ def test_no_flat_tag_is_left_in_the_list_it_was_lifted_out_of(table: pyarrow.Tab
         if pairs is None:
             continue
         left = [tag for tag, _ in pairs if tag in COLUMNS]
-        assert all(left.count(tag) > 1 for tag in left), "only a repeat may stay behind"
+        audited = {tag for tag, _ in _audit_pairs(table, row, pairs)}
+        assert all(left.count(tag) > 1 or tag in audited for tag in left)
 
 
 def test_every_field_of_the_bridge_line_lands_in_one_of_the_four_places(
@@ -663,7 +665,7 @@ def test_quote_fields_are_typed_once_and_drive_log_correlation(
     assert parsed.column("DefBidSize").to_pylist() == [9.0]
     assert parsed.column("DefOfferSize").to_pylist() == [11.0]
     assert parsed.column("ValidUntilTime").to_pylist() == [datetime(2026, 8, 21, 10, 5, tzinfo=UTC)]
-    assert parsed.column("kwargs").to_pylist() == [[]], "every field of it was worth a column"
+    assert _tagged(parsed.column("kwargs")[0]) == [(62, "20260821-10:05:00")]
 
 
 def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCodec) -> None:
@@ -787,6 +789,19 @@ def test_absent_values_never_reach_a_column(tmp_path: Path, codec: FixCodec) -> 
 def _lifted(table: pyarrow.Table, row: int) -> int:
     """How many flat columns that row filled."""
     return sum(table.column(name)[row].as_py() is not None for name in FLAT_NAMES)
+
+
+def _audit_pairs(
+    table: pyarrow.Table, row: int, pairs: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    """Raw sidecars whose typed columns cannot reproduce their spelling."""
+    found = []
+    for tag, raw in pairs:
+        column = COLUMNS.get(tag)
+        typed = None if column is None else table.column(column)[row].as_py()
+        if typed is not None and render_fix_value(typed) != raw:
+            found.append((tag, raw))
+    return found
 
 
 def _semantic_floor(table: pyarrow.Table, row: int) -> int:

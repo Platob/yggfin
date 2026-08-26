@@ -153,7 +153,7 @@ class Order(MarketEvent):
     hidden_qty: float | None = None
     """Current quantity hidden from the displayed book; null when unstated."""
 
-    vwap: Annotated[float | None, fix_tag("AvgPx")] = None
+    vwap: float | None = None
     """Average price of what has been done, weighted by quantity."""
 
     indicative: bool = False
@@ -234,14 +234,12 @@ class Order(MarketEvent):
 
     def life_parts(self) -> tuple[Any, ...]:
         """An order's lifecycle is the identifier that survives its amendments."""
-        named = self._named_life_code()
-        if not named and (not self.code or self.code == self.symbol):
-            return MarketEvent.life_parts(self)
-        return (self.instrument_xhash, self.mic, self.code or named, self.side)
+        code = self.life_code()
+        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
-        """The order identifier that survives amendments, then the market fallback."""
-        return self.code or self._named_life_code() or MarketEvent.life_code(self)
+        """The order identifier that survives amendments, or nothing."""
+        return self.code or self._named_life_code()
 
     def _named_life_code(self) -> str:
         """The strongest typed order identifier this version carries."""
@@ -377,7 +375,7 @@ class Execution(MarketEvent):
     leaves_qty: Annotated[float | None, fix_tag("LeavesQty")] = None
     """Quantity still working after this report."""
 
-    vwap: Annotated[float | None, fix_tag("AvgPx")] = None
+    vwap: float | None = None
     """Average price of everything done on the order, as of this report."""
 
     aggressor: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
@@ -430,8 +428,8 @@ class Execution(MarketEvent):
                     )
                 )
         elif self.state is State.FILLED and self.qty is not None:
-            if known_done is None and previous.is_order() and average is None:
-                known_done = 0.0
+            if known_done is None and self.filled_qty is not None and self.filled_qty >= self.qty:
+                known_done = self.filled_qty - self.qty
             delta = self.qty
             revised_average = _weighted(average, known_done, self.px, self.qty)
         if self.filled_qty is None:
@@ -453,14 +451,12 @@ class Execution(MarketEvent):
         is what a trade-capture report carries instead. A correction uses
         `ExecRefID <19>` to stay on the report it amends.
         """
-        named = self._named_life_code()
-        if not named and (not self.code or self.code == self.symbol):
-            return MarketEvent.life_parts(self)
-        return (self.instrument_xhash, self.mic, self.code or named, self.side)
+        code = self.life_code()
+        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
-        """The report identifier that survives corrections, then the market fallback."""
-        return self.code or self._named_life_code() or MarketEvent.life_code(self)
+        """The report identifier that survives corrections, or nothing."""
+        return self.code or self._named_life_code()
 
     def _named_life_code(self) -> str:
         """The strongest execution identifier this version carries itself."""

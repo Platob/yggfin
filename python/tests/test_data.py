@@ -182,8 +182,10 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
 
     msg_type = held["35"]
     assert msg_type["values"]["8"] == "ExecutionReport"
-    assert msg_type["handlers"]["8"] == "executionreport"
-    assert msg_type["handlers"]["i"] == "massquote"
+    assert "handlers" not in msg_type
+    assert msg_type["encoded"]["executionreport"] == "8"
+    assert msg_type["encoded"]["massquote"] == "i"
+    assert msg_type["decoded"]["8"] == "executionreport"
     assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
 
 
@@ -198,13 +200,14 @@ def test_a_component_record_is_one_member_tree_and_its_versions() -> None:
 
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
-    """`translations`, over the real dictionary: one lookup path, not two."""
+    """The real dictionary uses one codec path for prose, symbols and values."""
     stamps = registry.resolve("TrdRegTimestampType")
-    assert stamps.translate("Order Submission Time") == "10"
-    assert stamps.translate("ORDER_SUBMISSION_TIME") == "10"
-    assert stamps.translate("ordersubmissiontime") == "10"
-    assert stamps.translate("10") == "10"
-    assert records()["770"]["translations"]["ordersubmissiontime"] == "10"
+    assert stamps.encode("Order Submission Time") == "10"
+    assert stamps.encode("ORDER_SUBMISSION_TIME") == "10"
+    assert stamps.encode("ordersubmissiontime") == "10"
+    assert stamps.encode("10") == "10"
+    assert stamps.decode("10") == "ordersubmissiontime"
+    assert records()["770"]["encoded"]["ordersubmissiontime"] == "10"
 
 
 def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:

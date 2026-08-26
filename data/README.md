@@ -26,14 +26,14 @@ a field FIX only carries inside a component (`TrdRegTimestamp <769>`, and three
 hundred others in 4.4 alone) records where it lives. The QuickFIX spec supplies
 the symbolic name of every enumerated value and every field an extension pack
 numbered past what the site wrote up. Both are needed: without the spec there
-are no symbols, and `translations` is built from them.
+are no symbols, and the `encoded`/`decoded` string codecs are built from them.
 
 ```python
 from rekep.fix import FixRegistry
 
 registry = FixRegistry(cache_dir="data/fix", offline=True)
 field = registry.field("Side", "4.4")
-registry.resolve("Side").translate("BUY")  # '1'
+registry.resolve("Side").encode("BUY")  # '1'
 ```
 
 Where two versions disagree the newest application version wins -- `FIXT1.1` is
@@ -58,13 +58,12 @@ new field is built one answered question at a time:
 uv run rekep fix shell --store ../data/fix
 ```
 
-Rebuild the whole dictionary from both sources -- one scrape of seven thousand
-pages, several minutes -- and write the collapse report beside it:
+Replace the dictionary from both sources -- one scrape of seven thousand
+pages and several minutes:
 
 ```bash
 cd python
-uv run rekep fix registry bootstrap --store ../data/fix \
-    --report ../data/fix-conflicts.json
+uv run rekep fix registry scrape --output ../data/fix
 uv run python -c "from rekep.fix import FixRegistry; \
 FixRegistry(cache_dir='../data/fix', offline=True).into_zip('../data/fix.zip')"
 ```

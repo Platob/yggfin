@@ -227,13 +227,18 @@
    "1": "MID",
    "2": "OFFER"
   },
-  "translations": {
+  "encoded": {
    "bid": "0",
    "mid": "1",
    "offer": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "bid",
+   "1": "mid",
+   "2": "offer"
   }
  },
  "40028": {
@@ -333,7 +338,7 @@
    "6": "AVERAGE_BLENDED_MARKET",
    "7": "AVERAGE_BLENDED_HIGHEST"
   },
-  "translations": {
+  "encoded": {
    "market": "0",
    "highest": "1",
    "averagemarket": "2",
@@ -350,6 +355,16 @@
    "5": "5",
    "6": "6",
    "7": "7"
+  },
+  "decoded": {
+   "0": "market",
+   "1": "highest",
+   "2": "averagemarket",
+   "3": "averagehighest",
+   "4": "blendedmarket",
+   "5": "blendedhighest",
+   "6": "averageblendedmarket",
+   "7": "averageblendedhighest"
   }
  },
  "40039": {
@@ -451,11 +466,15 @@
    "0": "PAYMENT_CASH_SETTLEMENT",
    "1": "PHYSICAL_DELIVERY"
   },
-  "translations": {
+  "encoded": {
    "paymentcashsettlement": "0",
    "physicaldelivery": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "paymentcashsettlement",
+   "1": "physicaldelivery"
   }
  },
  "40051": {
@@ -795,7 +814,7 @@
    "6": "CALLABLE",
    "7": "PUTTABLE"
   },
-  "translations": {
+  "encoded": {
    "mandatoryearlytermination": "0",
    "optionalearlytermination": "1",
    "cancelable": "2",
@@ -812,6 +831,16 @@
    "5": "5",
    "6": "6",
    "7": "7"
+  },
+  "decoded": {
+   "0": "mandatoryearlytermination",
+   "1": "optionalearlytermination",
+   "2": "cancelable",
+   "3": "extendable",
+   "4": "mutualearlytermination",
+   "5": "evergreen",
+   "6": "callable",
+   "7": "puttable"
   }
  },
  "40092": {
@@ -867,7 +896,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -876,6 +905,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40098": {
@@ -891,7 +926,7 @@
    "2": "MASTER_AGREEENT",
    "3": "SUPPLEMENT"
   },
-  "translations": {
+  "encoded": {
    "exercisingparty": "0",
    "nonexercisingparty": "1",
    "masteragreeent": "2",
@@ -900,6 +935,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "exercisingparty",
+   "1": "nonexercisingparty",
+   "2": "masteragreeent",
+   "3": "supplement"
   }
  },
  "40099": {
@@ -913,11 +954,15 @@
    "1": "BUY",
    "2": "SELL"
   },
-  "translations": {
+  "encoded": {
    "buy": "1",
    "sell": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "buy",
+   "2": "sell"
   }
  },
  "40100": {
@@ -1000,7 +1045,7 @@
    "5": "CROSS_CURRENCY",
    "6": "COLLATERALIZED_PRICE"
   },
-  "translations": {
+  "encoded": {
    "cashprice": "0",
    "cashpricealternate": "1",
    "paryieldcurveadjusted": "2",
@@ -1015,6 +1060,15 @@
    "4": "4",
    "5": "5",
    "6": "6"
+  },
+  "decoded": {
+   "0": "cashprice",
+   "1": "cashpricealternate",
+   "2": "paryieldcurveadjusted",
+   "3": "zerocouponyieldcurveadjusted",
+   "4": "paryieldcurveunadjusted",
+   "5": "crosscurrency",
+   "6": "collateralizedprice"
   }
  },
  "40109": {
@@ -1046,7 +1100,7 @@
    "2": "OFFER",
    "3": "EXERCISING_PARTY_PAYS"
   },
-  "translations": {
+  "encoded": {
    "bid": "0",
    "mid": "1",
    "offer": "2",
@@ -1055,6 +1109,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "bid",
+   "1": "mid",
+   "2": "offer",
+   "3": "exercisingpartypays"
   }
  },
  "40112": {
@@ -1182,7 +1242,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -1191,6 +1251,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40127": {
@@ -1340,11 +1406,15 @@
    "0": "UNADJUSTED",
    "1": "ADJUSTED"
   },
-  "translations": {
+  "encoded": {
    "unadjusted": "0",
    "adjusted": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "unadjusted",
+   "1": "adjusted"
   }
  },
  "40145": {
@@ -1582,11 +1652,15 @@
    "0": "UNADJUSTED",
    "1": "ADJUSTED"
   },
-  "translations": {
+  "encoded": {
    "unadjusted": "0",
    "adjusted": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "unadjusted",
+   "1": "adjusted"
   }
  },
  "40174": {
@@ -1778,7 +1852,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -1787,6 +1861,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40197": {
@@ -1804,7 +1884,7 @@
    "4": "EXCHANGE_BUSINESS",
    "5": "SCHEDULED_TRADING_DAY"
   },
-  "translations": {
+  "encoded": {
    "business": "0",
    "calendar": "1",
    "commoditybusiness": "2",
@@ -1817,6 +1897,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "business",
+   "1": "calendar",
+   "2": "commoditybusiness",
+   "3": "currencybusiness",
+   "4": "exchangebusiness",
+   "5": "scheduledtradingday"
   }
  },
  "40198": {
@@ -1847,13 +1935,18 @@
    "E": "RESTRUCTURING_MULTIPLE_CREDIT_EVENT_NOTICES",
    "C": "FLOATING_RATE_INTEREST_SHORTFALL"
   },
-  "translations": {
+  "encoded": {
    "restructuringmultipleholdingobligations": "H",
    "restructuringmultiplecrediteventnotices": "E",
    "floatingrateinterestshortfall": "C",
    "h": "H",
    "e": "E",
    "c": "C"
+  },
+  "decoded": {
+   "H": "restructuringmultipleholdingobligations",
+   "E": "restructuringmultiplecrediteventnotices",
+   "C": "floatingrateinterestshortfall"
   }
  },
  "40201": {
@@ -1977,7 +2070,7 @@
    "14": "REBATE",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "brokerage": "0",
    "upfrontfee": "1",
    "independentamountcollateral": "2",
@@ -2010,6 +2103,24 @@
    "13": "13",
    "14": "14",
    "99": "99"
+  },
+  "decoded": {
+   "0": "brokerage",
+   "1": "upfrontfee",
+   "2": "independentamountcollateral",
+   "3": "principalexchange",
+   "4": "novationtermination",
+   "5": "earlyterminationprovision",
+   "6": "cancelableprovision",
+   "7": "extendibleprovision",
+   "8": "caprateprovision",
+   "9": "floorrateprovision",
+   "10": "optionpremium",
+   "11": "settlementpayment",
+   "12": "cashsettl",
+   "13": "securitylending",
+   "14": "rebate",
+   "99": "other"
   }
  },
  "40214": {
@@ -2023,11 +2134,15 @@
    "1": "BUY",
    "2": "SELL"
   },
-  "translations": {
+  "encoded": {
    "buy": "1",
    "sell": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "buy",
+   "2": "sell"
   }
  },
  "40215": {
@@ -2138,13 +2253,18 @@
    "1": "NET",
    "2": "STANDARDF_NET"
   },
-  "translations": {
+  "encoded": {
    "standard": "0",
    "net": "1",
    "standardfnet": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "standard",
+   "1": "net",
+   "2": "standardfnet"
   }
  },
  "40228": {

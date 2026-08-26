@@ -13,8 +13,6 @@ source = TextFiles.from_folder(
     pattern="*.log*",
     timezone="Europe/Paris",
     msg_type_event_types=registry.msg_type_event_types(),
-    technical_msg_types=registry.technical_msg_types(),
-    technical_plugin_codes=registry.technical_plugin_codes(),
 )
 codec = FixCodec(registry=registry)
 
@@ -29,12 +27,14 @@ split structured key/value syntax once into ordered `Kwarg` values. They assign
 dictionary resolution, structured components, event time and market identities;
 it consumes those stored arguments instead of tokenizing the payload again.
 Long prose and diagnostics that contain neither a discriminator nor two
-delimiter-separated assignments skip tokenization entirely. Registry-declared
-technical MsgTypes and plugins also keep their discriminator but skip argument
-tokenization.
+delimiter-separated assignments skip tokenization entirely. Use
+`exclude_msgtypes=("0", "1")` on the text reader to discard operational
+traffic before argument tokenization.
 
 The published `Message` contract is version 4. Required raw and FIX argument
-values plus the canonical FIX projection make the `FixMsg` contract version 5.
+values plus the canonical FIX projection make the `FixMsg` contract version 6.
+`kwargs` keeps a raw audit sidecar only when a typed column cannot reproduce
+the source spelling, such as `0010.5000` stored as a numeric `10.5`.
 
 ## Parsed record
 
@@ -79,9 +79,10 @@ Each list item contains:
 The outer value is a list, not a map, because repeated fields and wire order
 are data. `value` is always present; an explicitly empty value is `""`. Raw
 `Message.kwargs` is always a list. A `FixMsg` carrying no recognized message
-has null `kwargs`; a parsed message with no residual fields has an empty list.
-After resolution, `kwargs` retains every field that no promoted column or
-structured component took.
+has null `kwargs`; a parsed message with no residual or audit fields has an
+empty list. After resolution, `kwargs` retains every field that no promoted
+column or structured component took. It also retains a promoted field's raw
+text when its typed value cannot reproduce the exact wire spelling.
 
 Structured FIX components also use their FIX spellings:
 

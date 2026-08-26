@@ -56,7 +56,7 @@ not one per version:
 {"54": {"name": "Side", "tag": 54, "type": "char",
         "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
         "values": {"1": "Buy"}, "value_names": {"1": "BUY"},
-        "translations": {"buy": "1", "1": "1"}}}
+        "encoded": {"buy": "1", "1": "1"}, "decoded": {"1": "buy"}}}
 ```
 
 Records live in tag-range shards of five hundred, named by the shard index:
@@ -109,9 +109,9 @@ meanings is a list somebody can read; a silent drop is not. The counts are
 pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild that grows past
 them fails.
 
-### Translations
+### String codecs
 
-`translations` maps a value spelled as text to the value it names, so
+`encoded` maps a value spelled as text to the wire value it names, so
 `TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. It is built from
 both `values` and `value_names`, normalized by casefold and then by dropping
 every character outside `[a-z0-9]` -- which is what makes
@@ -119,14 +119,20 @@ every character outside `[a-z0-9]` -- which is what makes
 lowercasing leaves two. Each raw value maps to itself, so a caller has one
 lookup path and not two.
 
-Two values that normalize alike emit neither key: an ambiguous translation that
+`decoded` provides the deterministic inverse, preferring the QuickFIX symbol,
+then the dictionary value, then the wire value. Every result uses the same
+lowercase alphanumeric normalization.
+
+Two values that normalize alike emit neither key: an ambiguous encoding that
 silently picks one is worse than none, and the lookup falls through to the raw
 value. The dropped keys are counted with the conflict report. A hand-written
 entry in a record survives a rebuild -- the generated map is the default, not
 the whole map.
 
 ```python
-registry.resolve("TrdRegTimestampType").translate("Order Submission Time")  # '10'
+field = registry.resolve("TrdRegTimestampType")
+field.encode("Order Submission Time")  # '10'
+field.decode("10")                      # 'ordersubmissiontime'
 ```
 
 ### Resolving a name
@@ -156,15 +162,20 @@ in the conflict report as the dropped reading it is.
 ### Editing and refreshing
 
 ```bash
+rekep fix registry show --store data/fix 35
+rekep fix registry find --store data/fix "execution report" --limit 5
+rekep fix registry components --store data/fix parties
 rekep fix registry add-field --store data/fix --name TECH.CLIENTID \
     --type String --column tech_client_id
 rekep fix registry alias-field --store data/fix --name PartyRole \
     --alias PARTYROLLE --source brk --occurrences 41
 rekep fix registry check --store data/fix
+rekep fix registry dump --store data/fix --output data/fix.zip
 ```
 
-Each verb schema-checks the change, re-runs the collision check against the
-whole store, and refuses the write rather than leaving it half applied.
+Registry reads emit JSON to `stdout`. Status and failures stay on `stderr`.
+Field and component writes validate the whole store before replacing a file.
+A complete field record can be supplied with `--declaration field.json`.
 
 The same verbs run at a prompt, which is what a person editing more than one
 field wants:
@@ -173,11 +184,18 @@ field wants:
 rekep fix shell --store data/fix
 ```
 
-`find`, `show`, `component` and `check` read; `add`, `edit`, `alias` and
-`remove` write. A change is built one answered question at a time, offers the
-stored value as each default, shows the whole entry back, and is written only
-after a yes -- through the same `FixRegistry` verbs, never a second
-implementation of them.
+```text
+help                    # categorized command index
+help show               # one command's usage
+find PartyRole
+show 452
+add-field field.json
+add-component parties.json
+check
+```
+
+The prompt shows each proposed write and requires confirmation. Terminal
+presentation stays on `stderr`; redirects receive only command payloads.
 
 ### Bootstrapping the default store
 
@@ -188,9 +206,11 @@ it by starting a seven-thousand-page scrape in the middle of a batch.
 | what it finds | what it does |
 | --- | --- |
 | a store at `cache_dir` | serves it, silently |
-| no store, `offline=False` | announces, fetches both sources, installs, announces again |
+| configured registry URL | validates and atomically expands the full archive |
+| archive unavailable | fetches both sources |
+| no URL, `offline=False` | fetches both sources |
 | no store, the fetch failed | serves the packaged projection and says the registry is reduced |
-| no store, `offline=True` | serves the packaged projection, naming the bootstrap command |
+| no store, `offline=True` | serves the packaged projection, naming the scrape command |
 
 Only the *default* store (`~/.config/fix`) is bootstrapped. A `cache_dir`
 somebody named is that store, cold or not: it is about to be written, or it is
@@ -205,8 +225,51 @@ and `QUICKFIX_URL`, roughly how many pages and how long, where it installs, and
 how to skip it. The finish line says what was written and how long it took.
 
 ```bash
-rekep fix registry bootstrap --store data/fix --report data/fix-conflicts.json
+export REKEP_FIX_REGISTRY_URL="https://artifactory.example/artifactory/rekep/fix-registry.zip"
+export REKEP_FIX_REGISTRY_TOKEN="$ARTIFACTORY_READ_TOKEN"
 ```
+
+```python
+from rekep.fix import FixRegistry
+
+registry = FixRegistry()  # installs into ~/.config/fix only when it is absent
+```
+
+The token is optional, HTTPS-only, and never serialised. Registry URLs cannot
+carry user information or a query. The compressed download and expanded ZIP
+are bounded. Every index, field and component is validated before the staged
+directory is renamed, so a failed or concurrent install never becomes a cache.
+
+```bash
+rekep fix registry scrape --output data/fix
+```
+
+```python
+from rekep.fix import FixRegistry
+
+registry = FixRegistry.scrape("data/fix")
+```
+
+The scrape is staged, validated, and then replaces the local directory in one
+rename. Source URLs and request limits are optional CLI flags.
+
+### Publishing package and registry
+
+`.github/workflows/release.yml` runs for a published GitHub release or a manual
+dispatch. Configure its `artifactory` environment:
+
+| setting | value |
+| --- | --- |
+| variable `ARTIFACTORY_PYPI_URL` | `https://host/artifactory/api/pypi/python-local` |
+| variable `ARTIFACTORY_PYPI_CHECK_URL` | `https://host/artifactory/api/pypi/python-local/simple` |
+| variable `REKEP_FIX_REGISTRY_URL` | full Generic-repository target URL |
+| secret `ARTIFACTORY_TOKEN` | token with deploy permission |
+| secret `ARTIFACTORY_USERNAME` | optional identity; leave empty for JWT token authentication |
+
+The job builds both distributions and a deterministic registry from
+`data/fix/`. `uv publish` checks the simple index so an identical package is
+skipped on a rerun. The registry is uploaded second with its SHA-256 checksum.
+Consumers use its target URL as their cold-cache fallback.
 
 `FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
 the QuickFIX spec before serving it. The default, `0`, never refetches. A
@@ -402,7 +465,7 @@ where its field enumerates its values (`Side=1` is "Buy"). Derived, never
 stored -- it is a fact about the dictionary, not about the row.
 
 One call answers every half, so no call site picks an accessor by which one
-it wants. The typed reading applies the dictionary's own `translate` before
+it wants. The typed reading applies the dictionary's own `encode` before
 the cast, so a value spelled by its meaning (`Side=Buy`) resolves without the
 call site knowing there was anything to resolve.
 
@@ -421,13 +484,12 @@ transcription then resolves those same entries without another parser model.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `FixMsg`. Residual `kwargs` keeps
-everything not promoted -- resolved or not, in wire order, with the tag, the
-name, and the container or namespace it sat in. `FixMsg` exposes that one
-ordered projection directly to market translation. Typed components are
-restored as count-led groups and promoted copies already represented in
-`kwargs` are suppressed, so scalar and persisted rows have the same reading;
-the raw message is never tokenized again.
+Common fields are promoted once into `FixMsg`. Ordered `kwargs` keeps every
+unpromoted field plus a raw audit sidecar when a typed column cannot reproduce
+the wire spelling, such as `0010.5000`. Typed components are restored as
+count-led groups and promoted copies represented by an audit sidecar are
+suppressed, so scalar and persisted rows have the same reading; the raw
+message is never tokenized again.
 
 ## Benchmark
 

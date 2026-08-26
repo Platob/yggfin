@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from rekep.console import ASCII_GLYPHS, GLYPHS, Console, supports_colour, supports_unicode
+from rekep.console import ASCII_GLYPHS, CODES, GLYPHS, Console, supports_colour, supports_unicode
 
 
 class Terminal(io.StringIO):
@@ -40,6 +40,11 @@ def test_a_terminal_gets_them() -> None:
     written = Terminal()
     Console(stream=written).ok("landed")
     assert "\033[" in written.getvalue()
+
+
+def test_the_terminal_palette_matches_the_documentation() -> None:
+    styles = {"reset", "bold", "dim", "italic", "underline"}
+    assert set(CODES) - styles == {"white", "red", "orange", "yellow", "grey"}
 
 
 @pytest.mark.parametrize(

@@ -195,24 +195,21 @@ _IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
     ("quote_set_id", "QuoteSetID"),
     ("md_entry_id", "MDEntryID"),
     ("md_entry_ref_id", "MDEntryRefID"),
-    ("security_id", "SecurityID"),
-    ("isincode", "ISINCODE"),
-    ("symbol", "Symbol"),
 )
-# The rendered ISIN has no wire tag; the bundled cross-version index omits 280
-# even though its version documents carry it, so those two cannot be derived here.
-_IDENTIFIER_FALLBACK_TAGS = MappingProxyType({"MDEntryRefID": 280, "ISINCODE": 0})
+
+
+def _identifier_tag(name: str) -> int:
+    """Registry tag, plus FIX's omitted `MDEntryRefID <280>` declaration."""
+    member = _MERGED_FIELDS.get(name)
+    if member is not None and (tag := member.fix.get("tag")):
+        return int(tag)
+    if name == "MDEntryRefID":
+        return 280
+    raise ValueError(f"FIX identifier {name!r} has no tag")
+
+
 IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
-    (
-        stored,
-        name,
-        int(
-            member.fix.get("tag", 0)
-            if (member := _MERGED_FIELDS.get(name)) is not None
-            else _IDENTIFIER_FALLBACK_TAGS[name]
-        ),
-    )
-    for stored, name in _IDENTIFIER_NAMES
+    (stored, name, _identifier_tag(name)) for stored, name in _IDENTIFIER_NAMES
 )
 
 _ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS

@@ -1,4 +1,4 @@
-"""The `rekep` command: publish a declaration, check one loads, edit the dictionary."""
+"""Build declarations, run tasks, and manage the FIX registry."""
 
 from __future__ import annotations
 
@@ -10,12 +10,12 @@ import pathlib
 import sys
 from typing import Any
 
+from rekep import __version__
 from rekep.console import Console
 from rekep.fields import Field, StructField
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
-from rekep.fix.publish import beyond_baseline
-from rekep.fix.registry import BOOTSTRAP_DURATION, BOOTSTRAP_PAGES, FixRegistry
+from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import field_document
 from rekep.tasks import Task
@@ -36,6 +36,29 @@ FORMATS: dict[str, tuple[str, ...]] = {
 }
 
 
+class CommandFormatter(argparse.RawDescriptionHelpFormatter):
+    """Compact command help with scannable section names."""
+
+    def __init__(self, prog: str) -> None:
+        super().__init__(prog, max_help_position=30)
+
+    def start_section(self, heading: str | None) -> None:
+        super().start_section(heading.upper() if heading else heading)
+
+
+class CommandParser(argparse.ArgumentParser):
+    """An argument parser whose failures use the shared terminal console."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("formatter_class", CommandFormatter)
+        super().__init__(*args, **kwargs)
+
+    def error(self, message: str) -> None:
+        CONSOLE.fail(message)
+        CONSOLE.note(f"run `{self.prog} --help`")
+        raise SystemExit(2)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run one command; return the exit code rather than raising it."""
     parser = _parser()
@@ -44,9 +67,9 @@ def main(argv: list[str] | None = None) -> int:
         return arguments.run(arguments)
     except (
         AttributeError,
-        FileNotFoundError,
         ImportError,
         KeyError,
+        OSError,
         TypeError,
         ValueError,
     ) as error:
@@ -89,7 +112,7 @@ def load(arguments: argparse.Namespace) -> int:
 
 def open_shell(arguments: argparse.Namespace) -> int:
     """Drive the registry from a prompt rather than from flags."""
-    return shell(arguments.store, console=Console())
+    return shell(arguments.store, console=Console(stream="stderr"))
 
 
 def _marks(member: Field) -> str:
@@ -151,6 +174,83 @@ def _registry(arguments: argparse.Namespace) -> FixRegistry:
     return FixRegistry(cache_dir=arguments.store, offline=True)
 
 
+def _write_json(document: Any) -> None:
+    """Write one machine-readable command result to stdout."""
+    json.dump(document, sys.stdout, indent=2, ensure_ascii=False)
+    sys.stdout.write("\n")
+
+
+def registry_versions(arguments: argparse.Namespace) -> int:
+    """Write every stored FIX version and its field count."""
+    registry = _registry(arguments)
+    _write_json(
+        [
+            {"version": version, "fields": len(registry.fields(version))}
+            for version in registry.versions
+        ]
+    )
+    return 0
+
+
+def find_fields(arguments: argparse.Namespace) -> int:
+    """Write distinct field records matching one query."""
+    registry = _registry(arguments)
+    entries: dict[int | str, FieldEntry] = {}
+    for member in registry.search(
+        arguments.query,
+        version=arguments.version,
+        limit=arguments.limit,
+    ):
+        entry = registry.entry(member.fix.get("tag") or member.name)
+        if entry is not None:
+            entries.setdefault(entry.key, entry)
+    _write_json([entry.into_dict() for entry in entries.values()])
+    return 0
+
+
+def show_field(arguments: argparse.Namespace) -> int:
+    """Write one complete field record."""
+    entry = _registry(arguments).entry(arguments.field)
+    if entry is None:
+        CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
+        return 1
+    _write_json(entry.into_dict())
+    return 0
+
+
+def list_components(arguments: argparse.Namespace) -> int:
+    """Write component identities, optionally filtered by name."""
+    wanted = arguments.query.casefold()
+    entries = sorted(_registry(arguments).component_entries().values(), key=lambda item: item.name)
+    _write_json(
+        [
+            {"name": entry.name, "versions": list(entry.versions)}
+            for entry in entries
+            if not wanted or wanted in entry.name.casefold()
+        ]
+    )
+    return 0
+
+
+def show_component(arguments: argparse.Namespace) -> int:
+    """Write one complete component record."""
+    try:
+        entry = _registry(arguments).merged_component(arguments.component)
+    except KeyError:
+        CONSOLE.fail(f"no FIX component {arguments.component!r} in this registry")
+        return 1
+    _write_json(entry.into_dict())
+    return 0
+
+
+def dump_registry(arguments: argparse.Namespace) -> int:
+    """Write a deterministic archive of one registry."""
+    with CONSOLE.spinner(f"writing {arguments.output}"):
+        written = _registry(arguments).into_zip(arguments.output)
+    CONSOLE.ok(f"wrote {written}")
+    return 0
+
+
 def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
@@ -162,9 +262,9 @@ def add_field(arguments: argparse.Namespace) -> int:
 def update_field(arguments: argparse.Namespace) -> int:
     """Replace one stored field identity, keeping the aliases it already has."""
     registry = _registry(arguments)
-    held = registry.resolve(arguments.name)
+    held = registry.resolve(arguments.name) if arguments.name else None
     fresh = _field_entry(arguments)
-    if held is not None:
+    if held is not None and not arguments.declaration:
         fresh = dataclasses.replace(fresh, aliases=held.aliases or fresh.aliases)
     entry = registry.update_field(fresh)
     CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
@@ -239,32 +339,35 @@ def check_registry(arguments: argparse.Namespace) -> int:
     return 1 if problems else 0
 
 
-def bootstrap_registry(arguments: argparse.Namespace) -> int:
-    """Fetch the whole dictionary into a store, once, and say what it cost."""
-    registry = FixRegistry(cache_dir=arguments.store, announce=CONSOLE.note)
-    if registry.installed:
-        # Naming the default store means construction already paid for it.
-        report = registry.conflicts
-    else:
-        CONSOLE.note(
-            f"fetching {BOOTSTRAP_PAGES} pages into {arguments.store}; {BOOTSTRAP_DURATION}"
+def scrape_registry(arguments: argparse.Namespace) -> int:
+    """Scrape and atomically replace a complete local registry."""
+    configuration = {
+        name: value
+        for name, value in (
+            ("base_url", arguments.base_url),
+            ("spec_url", arguments.spec_url),
+            ("timeout", arguments.timeout),
+            ("max_workers", arguments.max_workers),
+            ("retries", arguments.retries),
+            ("backoff", arguments.backoff),
         )
-        with CONSOLE.spinner(f"scraping into {arguments.store}"):
-            report = registry.rebuild()
-    counts = report.counts()
-    CONSOLE.ok(f"{arguments.store} holds {len(registry.field_entries())} fields")
-    CONSOLE.note(f"collapses: {', '.join(f'{part} {count}' for part, count in counts.items())}")
-    if arguments.report:
-        pathlib.Path(arguments.report).write_text(json.dumps(report.into_dict(), indent=1) + "\n")
-        CONSOLE.ok(f"{CONSOLE.glyph('arrow')} {arguments.report}")
-    grown = beyond_baseline(report)
-    for line in grown:
-        CONSOLE.fail(line)
-    return 1 if grown else 0
+        if value is not None
+    }
+    configuration["announce"] = CONSOLE.note
+    target = arguments.output or "~/.config/fix"
+    with CONSOLE.spinner(f"scraping into {target}"):
+        registry = FixRegistry.scrape(arguments.output, **configuration)
+    CONSOLE.ok(
+        f"{registry.cache_dir} holds {len(registry.field_entries())} fields and "
+        f"{len(registry.component_entries())} components"
+    )
+    return 0
 
 
 def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
     """One field identity out of the flags that describe it."""
+    if arguments.declaration:
+        return FieldEntry.from_file(arguments.declaration)
     return FieldEntry(
         name=arguments.name,
         tag=arguments.tag,
@@ -371,13 +474,25 @@ def _parameter(value: str) -> Any:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="rekep", description=__doc__.splitlines()[0])
-    commands = parser.add_subparsers(dest="command", required=True)
-
-    tasks = commands.add_parser("task", help="the notebook jobs under tasks/")
-    running = tasks.add_subparsers(dest="action", required=True).add_parser(
-        "run", help="execute one task document's notebook"
+    parser = CommandParser(
+        prog="rekep",
+        description=__doc__.splitlines()[0],
+        epilog="""examples:
+  rekep fields load --target schemas/rekep/fixmsg.yaml
+  rekep fix registry check --store data/fix
+  rekep fix shell --store data/fix""",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    commands = parser.add_subparsers(
+        dest="command", required=True, title="commands", metavar="COMMAND"
+    )
+
+    tasks = commands.add_parser(
+        "task", help="run notebook tasks", description="Execute project task documents."
+    )
+    running = tasks.add_subparsers(
+        dest="action", required=True, title="commands", metavar="COMMAND"
+    ).add_parser("run", help="execute one task document's notebook")
     running.add_argument("document", help="path to a task YAML under tasks/")
     running.add_argument(
         "--parameter",
@@ -390,8 +505,14 @@ def _parser() -> argparse.ArgumentParser:
     running.add_argument("--kernel", default="python3", help="Jupyter kernel to execute under")
     running.set_defaults(run=run_task)
 
-    fields = commands.add_parser("fields", help="declarations and the documents they publish")
-    actions = fields.add_subparsers(dest="action", required=True)
+    fields = commands.add_parser(
+        "fields",
+        help="publish Arrow declarations",
+        description="Dump and validate portable Arrow declaration documents.",
+    )
+    actions = fields.add_subparsers(
+        dest="action", required=True, title="commands", metavar="COMMAND"
+    )
 
     dumping = actions.add_parser("dump", help="write a class's declaration as a document")
     dumping.add_argument(
@@ -416,10 +537,22 @@ def _parser() -> argparse.ArgumentParser:
     loading.add_argument("--target", required=True, help="path or URI of the document to read")
     loading.set_defaults(run=load)
 
-    fix = commands.add_parser("fix", help="the FIX dictionary this package carries")
-    protocol = fix.add_subparsers(dest="protocol", required=True)
-    registry = protocol.add_parser("registry", help="edit and check a FIX registry store")
-    verbs = registry.add_subparsers(dest="action", required=True)
+    fix = commands.add_parser(
+        "fix",
+        help="manage the FIX dictionary",
+        description="Inspect, edit, validate, and refresh FIX registry stores.",
+    )
+    protocol = fix.add_subparsers(
+        dest="protocol", required=True, title="commands", metavar="COMMAND"
+    )
+    registry = protocol.add_parser(
+        "registry",
+        help="manage a registry store",
+        description="Scriptable FIX registry reads, writes, validation, and refresh.",
+    )
+    verbs = registry.add_subparsers(
+        dest="action", required=True, title="commands", metavar="COMMAND"
+    )
 
     def verb(name: str, help_text: str, run: Any) -> argparse.ArgumentParser:
         """One registry verb, with the store every one of them takes."""
@@ -434,7 +567,12 @@ def _parser() -> argparse.ArgumentParser:
 
     def described(action: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """The flags that describe a field identity, shared by add and update."""
-        action.add_argument("--name", required=True, help="the field's canonical name")
+        source = action.add_mutually_exclusive_group(required=True)
+        source.add_argument("--name", help="the field's canonical name")
+        source.add_argument(
+            "--declaration",
+            help="complete JSON, YAML, or TOML FieldEntry; other field flags are ignored",
+        )
         action.add_argument(
             "--tag",
             type=int,
@@ -487,6 +625,20 @@ def _parser() -> argparse.ArgumentParser:
         "--name", required=True, help="the component to remove"
     )
 
+    verb("versions", "write stored versions and field counts as JSON", registry_versions)
+    finding = verb("find", "search fields and write their records as JSON", find_fields)
+    finding.add_argument("query", help="tag, name, or description to search")
+    finding.add_argument("--version", default=None, help="search only one FIX version")
+    finding.add_argument("--limit", type=int, default=20, help="maximum matches to write")
+    showing = verb("show", "write one complete field record as JSON", show_field)
+    showing.add_argument("field", help="field name, alias, or tag")
+    components = verb("components", "write component identities as JSON", list_components)
+    components.add_argument("query", nargs="?", default="", help="optional name filter")
+    component = verb("component", "write one complete component record as JSON", show_component)
+    component.add_argument("component", help="component name or alias")
+    dumping = verb("dump", "write a deterministic registry archive", dump_registry)
+    dumping.add_argument("--output", required=True, help="target .zip path or URI")
+
     interactive = protocol.add_parser(
         "shell", help="drive the registry from a prompt rather than from flags"
     )
@@ -536,10 +688,26 @@ def _parser() -> argparse.ArgumentParser:
 
     verb("check", "report everything inconsistent about a store", check_registry)
 
-    booting = verb("bootstrap", "fetch the whole dictionary into a store, once", bootstrap_registry)
-    booting.add_argument(
-        "--report", default=None, help="where to write the collapse report as JSON"
+    scraping = verbs.add_parser("scrape", help="replace a local store from the FIX sources")
+    scraping.add_argument(
+        "--output",
+        "--store",
+        dest="output",
+        default=None,
+        metavar="PATH",
+        help="local target directory; defaults to ~/.config/fix",
     )
+    scraping.add_argument("--base-url", default=None, help="FIX dictionary source URL")
+    scraping.add_argument("--spec-url", default=None, help="QuickFIX specification source URL")
+    scraping.add_argument("--timeout", type=float, default=None, help="request timeout in seconds")
+    scraping.add_argument(
+        "--max-workers", type=int, default=None, help="maximum concurrent source requests"
+    )
+    scraping.add_argument("--retries", type=int, default=None, help="retries per source request")
+    scraping.add_argument(
+        "--backoff", type=float, default=None, help="initial retry backoff in seconds"
+    )
+    scraping.set_defaults(run=scrape_registry)
     return parser
 
 

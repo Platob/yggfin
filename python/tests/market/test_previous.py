@@ -182,28 +182,24 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
     assert later.instrument_xhash == first.instrument_xhash, "and it stays in its partition"
 
 
-def test_the_other_identifiers_carry_forward_and_the_lifecycle_code_does_not() -> None:
-    """`codes` is facts about the same thing; `code` is which thing it is.
-
-    So a later version silent about the symbol keeps it, while a fill completed
-    from the order it happened to is never named by that order.
-    """
+def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     first = resting()
-    assert first.code == "ORD-1" and first.codes == {"symbol": "AAPL"}
+    assert first.code == "ORD-1" and first.codes == {}
     later = changed(Order(unix=20, order_id="ORD-1", state=State.OPEN), first)
-    assert later.codes == {"symbol": "AAPL"}, "carried, because the venue stopped repeating it"
+    assert later.codes == {}
     fill = changed(_execution(unix=30, exec_id="EX-1", state=State.FILLED, qty=4.0), first)
     assert fill.code == "EX-1", "and never `ORD-1`: an execution is not a version of its order"
-    assert fill.codes["symbol"] == "AAPL"
+    assert fill.codes == {}
 
 
 def test_an_identifier_already_recorded_is_never_displaced_by_a_later_one() -> None:
     """First spelling wins, so a `codes` entry is as stable as the lifecycle."""
     order = _order(unix=10, order_id="ORD-1")
     order.name_code("symbol", "RENAMED")
-    assert order.codes["symbol"] == "AAPL"
+    order.name_code("symbol", "SECOND")
+    assert order.codes["symbol"] == "RENAMED"
     order.name_code("isin", "FAKE-ISIN-0001")
-    assert order.codes == {"symbol": "AAPL", "isin": "FAKE-ISIN-0001"}
+    assert order.codes == {"symbol": "RENAMED", "isin": "FAKE-ISIN-0001"}
 
 
 def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None:

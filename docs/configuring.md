@@ -74,11 +74,15 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
 {
   "name": "MsgType",
   "tag": 35,
-  "event_types": {"8": "EXECUTION", "D": "ORDER", "W": "BOOK"},
-  "handlers": {"8": "executionreport", "D": "order", "W": "entries"},
-  "order_states": {"D": "PENDING_NEW"},
-  "technical_values": ["0", "1", "2", "3", "4", "5", "A"],
-  "technical_plugins": ["jolokia"]
+  "values": {"8": "ExecutionReport", "D": "NewOrderSingle", "W": "MarketDataSnapshotFullRefresh"},
+  "event_types": {
+    "8": {"name": "EXECUTION", "id": 210},
+    "D": {"name": "ORDER", "id": 110},
+    "W": {"name": "BOOK", "id": 320}
+  },
+  "states": {"D": {"name": "PENDING_NEW", "id": 110}},
+  "encoded": {"newordersingle": "D"},
+  "decoded": {"D": "newordersingle"}
 }
 ```
 
@@ -87,25 +91,34 @@ registry but without a market mapping is also `MISC`; a private value absent
 from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
 these terminal values cannot enter `fix.market` accidentally.
 
-`handlers` is deliberately separate from `event_types`: classification can
-recognize a market family without claiming that the translator implements its
-shape. `technical_values` and `technical_plugins` keep operational traffic out
-of FIX output and let the message parser skip its argument body. These indexes
-are built once from the loaded registry and invalidated when that store changes.
+The normalized `decoded` values are also the market dispatch names:
+`D` is `newordersingle` and `W` is `marketdatasnapshotfullrefresh`. The market
+layer owns which of those standard names it implements; the registry carries
+no second handler vocabulary. Operational MsgTypes are source policy configured
+through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
 
-Lifecycle fields carry their configurable normalization beside their own value
-dictionary. `states` supplies the field's direct market meaning;
-`order_states` supplies the Order fallback used by `MsgType` or `ExecType`.
-Names such as `FILLED` and their persisted integer codes are both accepted.
+Lifecycle fields carry one `states` conversion beside their value dictionary.
+Every consumer, including Order fallbacks, reads that map. Python declarations
+use `State` members; registry documents store both their names and integer ids.
 
 ```json
 {
   "name": "ExecType",
   "tag": 150,
-  "states": {"F": "FILLED", "G": "REPLACED", "H": "CANCELLED"},
-  "order_states": {"0": "NEW", "1": "PARTIALLY_FILLED", "2": "FILLED"}
+  "states": {
+    "0": {"name": "NEW", "id": 210},
+    "1": {"name": "PARTIALLY_FILLED", "id": 310},
+    "2": {"name": "FILLED", "id": 410},
+    "G": {"name": "REPLACED", "id": 520},
+    "H": {"name": "CANCELLED", "id": 510}
+  }
 }
 ```
+
+`PARTIALLY_FILLED` and `FILLED` states create an Execution, as do configured
+ExecType values whose normalized name begins `trade`. A partial fill is
+`PARTIALLY_FILLED` for its Order and `FILLED` for the completed execution;
+trade correction and cancellation states do not replace a missing OrdStatus.
 
 ## What a field's values mean
 
@@ -168,6 +181,8 @@ null_values: ["", "null", "<null>", "n/a"]
 | `timezone` | `TextFile.timezone` | `parse_messages` |
 | `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
+| `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
+| `technical_plugins` | parsed `plugin_code` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size` | `TextFile` parser bounds | `parse_messages` |
 | `protocols` | `Message.protocol_code`, then `FixCodec.rules` | both parse stages |

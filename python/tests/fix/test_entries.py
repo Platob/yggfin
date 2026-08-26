@@ -3,7 +3,7 @@
 The unit half of the layout. `test_store.py` reads a whole store and
 `test_data.py` reads the published one; these hold the record itself to what it
 may state, how a version disagreement collapses into it, and how its
-translations are spelled.
+encodings are spelled.
 
 Every identity here is synthetic (`FAKE-*`, `Fake*`), because none of this is
 about which fields the standard has.
@@ -26,12 +26,12 @@ from rekep.fix.entries import (
     ComponentEntry,
     FieldEntry,
     canonical_versions,
+    encoded_key,
+    encodings_of,
     fold,
     name_of,
     newest_of,
     slug_of,
-    translation_key,
-    translations_of,
 )
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
@@ -196,7 +196,7 @@ def test_a_declared_column_travels_with_the_field() -> None:
     assert entry.into_field("4.4").fix["column"] == "fake"
 
 
-# -- translations ------------------------------------------------------------
+# -- codecs ------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -210,7 +210,7 @@ def test_a_declared_column_travels_with_the_field() -> None:
 )
 def test_every_spelling_of_one_value_normalizes_to_one_key(spelled: str) -> None:
     """Casefold alone leaves four keys; dropping what is not a letter or digit leaves one."""
-    assert translation_key(spelled) == "ordersubmissiontime"
+    assert encoded_key(spelled) == "ordersubmissiontime"
 
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
@@ -219,35 +219,40 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
         values={"1": "Buy", "2": "Sell"},
         value_names={"1": "BUY", "2": "SELL_SHORT"},
     )
-    assert entry.translate("Buy") == "1"
-    assert entry.translate("BUY") == "1"
-    assert entry.translate("sell short") == "2", "the symbol, spaced as a person would write it"
-    assert entry.translate("1") == "1", "and a raw value maps to itself"
-    assert entry.translate("nothing here") == "nothing here", "or falls through untouched"
+    assert entry.encode("Buy") == "1"
+    assert entry.encode("BUY") == "1"
+    assert entry.encode("sell short") == "2", "the symbol, spaced as a person would write it"
+    assert entry.encode("1") == "1", "and a raw value maps to itself"
+    assert entry.encode("nothing here") == "nothing here", "or falls through untouched"
+    assert entry.decode("1") == "buy", "the symbolic value is the canonical decoding"
+    assert entry.decode("2") == "sellshort"
+    assert entry.decode("3") == "3", "an unknown wire value stays intact"
 
 
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     """An ambiguous translation that picks one silently is worse than none."""
-    found, collisions = translations_of({"1": "Cross", "2": "cross!"}, {})
+    found, collisions = encodings_of({"1": "Cross", "2": "cross!"}, {})
     assert "cross" not in found
     assert collisions == {"cross": ["1", "2"]}
-    assert _entry(values={"1": "Cross", "2": "cross!"}).translate("Cross") == "Cross"
+    assert _entry(values={"1": "Cross", "2": "cross!"}).encode("Cross") == "Cross"
 
 
 def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> None:
     """Tag 770 lists keys 8 to 34 under `value_names` and not under `values`."""
-    found, _ = translations_of({"1": "Execution Time"}, {"1": "EXECUTION_TIME", "10": "SUBMITTED"})
+    found, _ = encodings_of({"1": "Execution Time"}, {"1": "EXECUTION_TIME", "10": "SUBMITTED"})
     assert found["executiontime"] == "1"
     assert found["submitted"] == "10"
     assert found["10"] == "10", "and the raw value keys itself even with no prose"
 
 
-def test_a_hand_written_translation_survives_a_rebuild() -> None:
+def test_hand_written_codecs_survive_a_rebuild() -> None:
     """The generated map is the default, not the whole map."""
-    entry = _entry(values={"1": "Buy"}, translations={"achat": "1"})
-    assert entry.translate("achat") == "1"
-    assert entry.translate("Buy") == "1", "and the generated ones are still there"
-    assert FieldEntry.from_dict(entry.into_dict()).translate("achat") == "1"
+    entry = _entry(values={"1": "Buy"}, encoded={"achat": "1"}, decoded={"1": "achat"})
+    assert entry.encode("achat") == "1"
+    assert entry.encode("Buy") == "1", "and the generated ones are still there"
+    restored = FieldEntry.from_dict(entry.into_dict())
+    assert restored.encode("achat") == "1"
+    assert restored.decode("1") == "achat"
 
 
 def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
@@ -270,22 +275,22 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
     entry = _entry(
         name="MsgType",
         tag=35,
+        values={"D": "NewOrderSingle"},
         event_types={"D": "ORDER"},
-        handlers={"D": "new_order"},
-        order_states={"D": "PENDING_NEW"},
-        technical_values=("0", "1"),
-        technical_plugins=("jolokia",),
+        states={"D": State.PENDING_NEW},
     )
 
     restored = FieldEntry.from_dict(entry.into_dict())
     metadata = restored.into_merged().fix
 
     assert restored.event_types == {"D": EventType.ORDER}
-    assert restored.order_states == {"D": State.PENDING_NEW}
-    assert restored.handlers == {"D": "neworder"}
-    assert json.loads(metadata["order_states"]) == {"D": int(State.PENDING_NEW)}
-    assert json.loads(metadata["technical_values"]) == ["0", "1"]
-    assert json.loads(metadata["technical_plugins"]) == ["jolokia"]
+    assert restored.states == {"D": State.PENDING_NEW}
+    assert restored.encode("new_order_single") == "D"
+    assert restored.decode("D") == "newordersingle"
+    assert "handlers" not in restored.into_dict()
+    assert restored.into_dict()["event_types"] == {"D": {"name": "ORDER", "id": 110}}
+    assert restored.into_dict()["states"] == {"D": {"name": "PENDING_NEW", "id": 110}}
+    assert json.loads(metadata["states"]) == {"D": int(State.PENDING_NEW)}
 
 
 def test_event_kinds_only_belong_to_msg_type_and_must_name_a_stable_code() -> None:
@@ -293,6 +298,19 @@ def test_event_kinds_only_belong_to_msg_type_and_must_name_a_stable_code() -> No
         _entry(event_types={"D": EventType.ORDER})
     with pytest.raises(ValueError, match="unknown EventType"):
         _entry(name="MsgType", tag=35, event_types={"D": "invented"})  # type: ignore[dict-item]
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        {"name": "ORDER", "id": 110.9},
+        {"name": "ORDER", "id": "110"},
+        {"name": "", "id": 110},
+    ),
+)
+def test_enum_documents_require_an_exact_string_name_and_integer_id(value: object) -> None:
+    with pytest.raises(ValueError, match="unknown EventType"):
+        _entry(name="MsgType", tag=35, event_types={"D": value})  # type: ignore[dict-item]
 
 
 # -- reading a record back ---------------------------------------------------
@@ -339,7 +357,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
     entry = _entry(values={"1": "One", "2": "Two"}, aliases=(Alias(name="FakeRoleCode"),))
     merged = entry.into_merged(("4.4", "4.2", "4.0"))
     assert merged.name == "FakeRole"
-    assert merged.arrow_type == pyarrow.int64()
+    assert merged.arrow_type == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
     assert merged.fix["version"] == "4.4", "the version the reading was taken from"
     assert json.loads(merged.fix["values"]) == {"1": "One", "2": "Two"}

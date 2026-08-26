@@ -26,6 +26,7 @@ from rekep.text.text_file import (
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
+    _msgtypes,
     _regexes,
     _validate_read_sizes,
     _validate_window,
@@ -108,12 +109,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
 
     #: Registry-owned MsgType values shared by every file in the stream.
     msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
-
-    #: Registry-owned operational MsgTypes excluded from market parsing.
-    technical_msg_types: frozenset[str] = frozenset()
-
-    #: Registry-owned plugin codes excluded from market parsing.
-    technical_plugin_codes: frozenset[str] = frozenset()
 
     #: Syntax-only protocol classifier shared by every file in the stream.
     protocol_rules: Any | None = None
@@ -247,6 +242,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         *,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -260,6 +257,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         reader = self.into_arrow_reader(
             include_regexes=include_regexes,
             exclude_regexes=exclude_regexes,
+            include_msgtypes=include_msgtypes,
+            exclude_msgtypes=exclude_msgtypes,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -348,8 +347,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 row=self.row,
                 timezone=self.timezone,
                 msg_type_event_types=self.msg_type_event_types,
-                technical_msg_types=self.technical_msg_types,
-                technical_plugin_codes=self.technical_plugin_codes,
                 protocol_rules=self.protocol_rules,
                 spill=self.spill,
                 static_values=self.static_values,
@@ -392,6 +389,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         *,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -401,6 +400,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batches = self.into_arrow_batches(
             include_regexes=include_regexes,
             exclude_regexes=exclude_regexes,
+            include_msgtypes=include_msgtypes,
+            exclude_msgtypes=exclude_msgtypes,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -421,6 +422,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -429,6 +432,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         self._check_open()
         includes = _regexes("include_regexes", include_regexes)
         excludes = _regexes("exclude_regexes", exclude_regexes)
+        included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
+        excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
         _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
@@ -438,6 +443,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
             fold_continuations,
             includes,
             excludes,
+            included_msgtypes,
+            excluded_msgtypes,
             start_unix,
             end_unix,
         )
@@ -474,6 +481,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
         fold_continuations: bool,
         include_regexes: Sequence[str],
         exclude_regexes: Sequence[str],
+        include_msgtypes: Sequence[str],
+        exclude_msgtypes: Sequence[str],
         start_unix: int | None,
         end_unix: int | None,
     ) -> Iterator[pyarrow.RecordBatch]:
@@ -487,6 +496,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
                     fold_continuations,
                     include_regexes,
                     exclude_regexes,
+                    include_msgtypes,
+                    exclude_msgtypes,
                     start_unix,
                     end_unix,
                 )

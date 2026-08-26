@@ -699,7 +699,7 @@ class FixCodec(Convertible):
             pyarrow.repeat(True, len(keys)),
             tags,
             self._canonical(keys, tags, version),
-            self._translated(tags, values, version),
+            self._encoded(tags, values, version),
             namespace,
             comp,
         )
@@ -713,10 +713,10 @@ class FixCodec(Convertible):
         found = compute.take(named, compute.index_in(tags, value_set=spelled))
         return compute.if_else(compute.is_valid(found), found, keys)
 
-    def _translated(self, tags: Any, values: Any, version: str | None) -> Any:
+    def _encoded(self, tags: Any, values: Any, version: str | None) -> Any:
         """Each value as the dictionary reads its spelling, where it enumerates any."""
         compute = pyarrow.compute
-        spelled, resolved = self._translations(version)
+        spelled, resolved = self._encodings(version)
         if not len(spelled):
             return values
         composite = compute.binary_join_element_wise(
@@ -733,15 +733,15 @@ class FixCodec(Convertible):
             self._canonicals[version] = _canonical_names(self.registry, version)
         return self._canonicals[version]
 
-    def _translations(self, version: str | None) -> tuple[Any, Any]:
+    def _encodings(self, version: str | None) -> tuple[Any, Any]:
         """`(tag and folded spelling, the value it names)` for one version.
 
         The job's own declared spellings lead the dictionary's, so a rule wins
         a collision: `index_in` takes the first occurrence of a value.
         """
-        if version not in self._translated_values:
-            spelled, resolved = _translations(self.registry, version)
-            declared = self._declared_translations(version)
+        if version not in self._encoded_values:
+            spelled, resolved = _encodings(self.registry, version)
+            declared = self._declared_encodings(version)
             if declared:
                 spelled = pyarrow.concat_arrays(
                     [pyarrow.array([one for one, _ in declared], pyarrow.string()), spelled]
@@ -749,11 +749,11 @@ class FixCodec(Convertible):
                 resolved = pyarrow.concat_arrays(
                     [pyarrow.array([one for _, one in declared], pyarrow.string()), resolved]
                 )
-            self._translated_values[version] = (spelled, resolved)
-        return self._translated_values[version]
+            self._encoded_values[version] = (spelled, resolved)
+        return self._encoded_values[version]
 
-    def _declared_translations(self, version: str | None) -> list[tuple[str, str]]:
-        """`(tag and folded spelling, value)` for every rule that translates one."""
+    def _declared_encodings(self, version: str | None) -> list[tuple[str, str]]:
+        """`(tag and folded spelling, value)` for every declared encoding."""
         return [
             (f"{tag}\x00{spelling.strip().lower()}", str(value))
             for tag, rule in self.field_rules(version).items()
@@ -776,7 +776,8 @@ class FixCodec(Convertible):
 
         Both kinds in one pass, because they are one question asked of one
         column: a numbered tag the log declares a column for, and a rendered
-        name it does.
+        name it does. A raw value stays beside its typed column only when that
+        column cannot reproduce its exact spelling.
         """
         rows = len(kwargs)
         declared = self.named_fields()
@@ -829,25 +830,50 @@ class FixCodec(Convertible):
         codes = compute.take(compute.filter(code, taken), order)
         where = compute.take(compute.filter(parents, taken), order)
         selected_values = compute.take(compute.filter(values, taken), order)
+        selected_identities = compute.add(
+            compute.multiply(where, pyarrow.scalar(1 << 32, pyarrow.int64())),
+            codes.cast(pyarrow.int64()),
+        )
+        retained_identities: list[pyarrow.Array] = []
         row_ids = sequence(rows)
         # `value_counts` answers in first-appearance order, and a sorted
         # column's first appearances are its groups, in order.
         at = 0
         for counted in compute.value_counts(codes).to_pylist():
             one, run = counted["values"], counted["counts"]
-            column = selected_values.slice(at, run)
+            raw = selected_values.slice(at, run)
             column_rows = where.slice(at, run)
+            identities = selected_identities.slice(at, run)
             at += run
+            if one >= 0:
+                column = _cast(raw, fields[one], FLAT_TYPES[one])
+            else:
+                field = declared[named[-1 - one].as_py()]
+                column = cast_arrow_fix(raw, field.arrow_type)
+            changed = _raw_spelling_changed(raw, column)
+            if compute.any(changed, min_count=0).as_py():
+                retained_identities.append(compute.filter(identities, changed))
             # Parent indices are row ordered and `_liftable` chose at most one
             # value per row, so covering every row already is the column.
             if run != rows:
                 column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
             if one >= 0:
-                columns[FLAT_COLUMNS[one]] = _cast(column, fields[one], FLAT_TYPES[one])
+                columns[FLAT_COLUMNS[one]] = column
             else:
-                field = declared[named[-1 - one].as_py()]
-                columns[field.name] = cast_arrow_fix(column, field.arrow_type)
+                columns[field.name] = column
         keep = compute.or_(compute.invert(lift), _quote_group_structure(parents, tags))
+        if retained_identities:
+            identities = compute.add(
+                compute.multiply(parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
+                code.cast(pyarrow.int64()),
+            )
+            keep = compute.or_(
+                keep,
+                compute.is_in(
+                    identities,
+                    value_set=pyarrow.concat_arrays(retained_identities),
+                ),
+            )
         return columns, _kwargs(kwargs, lengths, keep, *_columns_of(entries, keep))
 
     @classmethod
@@ -1123,7 +1149,7 @@ class FixCodec(Convertible):
         return {}
 
     @cached_property
-    def _translated_values(self) -> dict[str | None, tuple[Any, Any]]:
+    def _encoded_values(self) -> dict[str | None, tuple[Any, Any]]:
         return {}
 
     @cached_property
@@ -1543,6 +1569,30 @@ def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
     return read.cast(arrow_type, safe=False)
 
 
+def _raw_spelling_changed(raw: Any, typed: Any) -> Any:
+    """Whether a typed Arrow value cannot reproduce its source FIX text."""
+    compute = pyarrow.compute
+    kinds = pyarrow.types
+    if kinds.is_boolean(typed.type):
+        rendered = compute.if_else(typed, pyarrow.scalar("Y"), pyarrow.scalar("N"))
+    elif (
+        kinds.is_string(typed.type)
+        or kinds.is_large_string(typed.type)
+        or kinds.is_integer(typed.type)
+        or kinds.is_floating(typed.type)
+        or kinds.is_decimal(typed.type)
+    ):
+        rendered = typed.cast(pyarrow.string(), safe=False)
+    else:
+        # Temporal and opaque values have protocol-specific text spellings.
+        # Retaining their source is cheaper and safer than guessing a renderer.
+        return compute.is_valid(raw)
+    return compute.and_(
+        compute.is_valid(raw),
+        compute.fill_null(compute.not_equal(raw.cast(pyarrow.string()), rendered), True),
+    )
+
+
 def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:
     """The tags a version can lift, as the value set a probe takes."""
     return pyarrow.array(sorted(fields), TAG)
@@ -1570,10 +1620,10 @@ def _canonical_names(registry: FixRegistry, version: str | None) -> tuple[Any, A
     return pyarrow.array(tags, TAG), pyarrow.array(names, pyarrow.string())
 
 
-def _translations(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
     """`(tag and folded spelling, the value it names)` for one version.
 
-    The dictionary's own `translations`, as the value set one kernel probes:
+    The dictionary's own `encoded`, as the value set one kernel probes:
     `Side=Buy` and `Side=BUY` both reach `1`, and a spelling two values share
     reaches neither -- which is the record's rule, applied here rather than
     reimplemented.
@@ -1586,9 +1636,9 @@ def _translations(registry: FixRegistry, version: str | None) -> tuple[Any, Any]
         except (KeyError, OSError, ValueError):
             entries = {}
         for entry in entries.values():
-            if entry.tag is None or not entry.translations or not entry.declares(version):
+            if entry.tag is None or not entry.encoded or not entry.declares(version):
                 continue
-            for spelling, value in entry.translations.items():
+            for spelling, value in entry.encoded.items():
                 spelled.append(f"{entry.tag}\x00{spelling}")
                 resolved.append(value)
     return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())

@@ -91,11 +91,11 @@ for data known to fit in memory.
 ```bash
 rekep fields dump --pyclass rekep.text.fixmsg:FixMsg --target fixmsg.yaml
 rekep fields load --target fixmsg.yaml
+rekep fix registry show --store data/fix 35
+rekep fix registry check --store data/fix
 rekep fix shell --store data/fix
 ```
 
-`fields` publishes a declaration and checks one loads; `fix` reads, edits and
-checks the FIX dictionary, either verb by verb or from a prompt. Styling goes
-to `stderr` and the payload to `stdout`, so a dump piped into a file is the
-document and nothing else -- and colour and box drawing turn themselves off
-without a terminal, under `NO_COLOR`, or where the stream cannot encode them.
+`fields` publishes declarations. `fix registry` is the JSON command surface;
+`fix shell` is the interactive terminal. Styling stays on `stderr`, payloads
+stay on `stdout`, and colour disables itself outside a capable terminal.

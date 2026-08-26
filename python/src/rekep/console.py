@@ -25,16 +25,11 @@ CODES: dict[str, str] = {
     "dim": "2",
     "italic": "3",
     "underline": "4",
-    "red": "31",
-    "green": "32",
-    "yellow": "33",
-    "blue": "34",
-    "magenta": "35",
-    "cyan": "36",
+    "white": "97",
+    "red": "91",
+    "orange": "38;5;208",
+    "yellow": "93",
     "grey": "90",
-    "bright_green": "92",
-    "bright_yellow": "93",
-    "bright_cyan": "96",
 }
 
 #: What a box, a rule and a bullet are drawn with. Two sets, because a Windows
@@ -174,7 +169,7 @@ class Console:
         self.line(
             self.style(lead, "grey")
             + " "
-            + self.style(title, "bold", "cyan")
+            + self.style(title, "bold", "orange")
             + " "
             + self.style(bar * rest, "grey")
         )
@@ -194,7 +189,7 @@ class Console:
         self.line(
             self.style(glyph("top_left") + bar, "grey")
             + " "
-            + self.style(title, "bold", "bright_cyan")
+            + self.style(title, "bold", "white")
             + " "
             + self.style(bar * max(0, inner - len(title) - 1) + glyph("top_right"), "grey")
         )
@@ -233,7 +228,7 @@ class Console:
 
     def ok(self, text: str) -> None:
         """One thing that worked."""
-        self.line(f"  {self.style(self.glyph('check'), 'bright_green')} {text}")
+        self.line(f"  {self.style(self.glyph('check'), 'yellow')} {text}")
 
     def fail(self, text: str) -> None:
         """One thing that did not."""
@@ -241,7 +236,7 @@ class Console:
 
     def warn(self, text: str) -> None:
         """One thing worth saying before it becomes a failure."""
-        self.line(f"  {self.style(self.glyph('warn'), 'bright_yellow')} {text}")
+        self.line(f"  {self.style(self.glyph('warn'), 'orange')} {text}")
 
     def note(self, text: str) -> None:
         """Context nobody has to read."""
@@ -275,7 +270,9 @@ class Console:
             for frame in itertools.cycle(frames):
                 if stop.is_set():
                     return
-                self.stream.write(f"\r  {self.style(frame, 'cyan')} {text}{self.glyph('ellipsis')}")
+                self.stream.write(
+                    f"\r  {self.style(frame, 'orange')} {text}{self.glyph('ellipsis')}"
+                )
                 self.stream.flush()
                 time.sleep(FRAME_SECONDS)
 

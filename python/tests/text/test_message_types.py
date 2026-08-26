@@ -114,7 +114,6 @@ def test_a_prefixed_marked_checksum_ends_discriminator_promotion() -> None:
     found = Message.parse_arrow(
         pyarrow.array(["wrapper #10=000|#MSGTYPE=0|#Text=after|"]),
         EVENT_TYPES,
-        technical_msg_types={"0"},
     )
 
     assert found["MsgType"].to_pylist() == [None]
@@ -182,36 +181,22 @@ def test_unstructured_long_rows_never_enter_the_key_value_splitter(monkeypatch) 
     assert found["kwargs"].to_pylist() == [[], []]
 
 
-def test_technical_msgtypes_and_plugins_skip_key_value_tokenization(monkeypatch) -> None:
-    messages = pyarrow.array(
-        [
-            "8=FIX.4.4|35=0|58=" + "A=1|" * 1000,
-            "8=FIX.4.4|35=D|58=" + "B=2|" * 1000,
-            "toBridge #MSGTYPE=0|#Text=" + "C=3|" * 1000,
-            "wrapped #MSGTYPE=1|#Text=" + "D=4|" * 1000,
-            "8=FIX.4.4#35=0#58=" + "E=5#" * 1000,
-        ]
-    )
-
-    def unexpected(cls, messages):
-        raise AssertionError(f"split {len(messages)} technical rows")
-
-    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(unexpected))
+def test_plugin_codes_do_not_define_message_types() -> None:
     found = Message.parse_arrow(
-        messages,
+        pyarrow.array(["8=FIX.4.4|35=D|11=one|"]),
         {"D": EventType.ORDER},
-        pyarrow.array(["fix", "Jolokia", "bridge", "bridge", "fix"]),
-        {"0", "1"},
-        {"jolokia"},
+        plugins=pyarrow.array(["Jolokia"]),
     )
 
-    assert found["MsgType"].to_pylist() == ["0", "D", "0", "1", "0"]
-    assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
-    assert found["kwargs"].to_pylist() == [[], [], [], [], []]
+    assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+    assert [(entry["key"], entry["value"]) for entry in found["kwargs"][0].as_py()] == [
+        ("8", "FIX.4.4"),
+        ("11", "one"),
+    ]
 
 
-def test_technical_rows_skip_a_custom_protocol_classifier() -> None:
-    technical = "toBridge #MSGTYPE=0|#Text=" + "A=1|" * 1000
+def test_custom_protocol_classifier_reads_every_retained_row() -> None:
+    heartbeat = "toBridge #MSGTYPE=0|#Text=" + "A=1|" * 1000
     market = "8=FIX.4.4|35=D|11=one|"
 
     class Classifier:
@@ -219,21 +204,19 @@ def test_technical_rows_skip_a_custom_protocol_classifier() -> None:
 
         def into_arrow_protocol_array(self, messages, plugins):
             self.seen.extend(messages.to_pylist())
-            assert technical not in self.seen
-            assert plugins.to_pylist() == ["fix"]
+            assert plugins.to_pylist() == ["bridge", "fix"]
             return pyarrow.array(["FIX"] * len(messages))
 
     classifier = Classifier()
     found = Message.parse_arrow(
-        pyarrow.array([technical, market]),
+        pyarrow.array([heartbeat, market]),
         EVENT_TYPES,
         pyarrow.array(["bridge", "fix"]),
-        {"0"},
         protocol_rules=classifier,
     )
 
-    assert classifier.seen == [market]
-    assert found["protocol_code"].to_pylist() == ["MISC", "FIX"]
+    assert classifier.seen == [heartbeat, market]
+    assert found["protocol_code"].to_pylist() == ["FIX", "FIX"]
 
 
 def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:

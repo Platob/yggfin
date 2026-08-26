@@ -12,7 +12,12 @@ from rekep.enums import Currency, EventType, MarketKind, Side, State, TimeInForc
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
-from rekep.market.fix import MarketTags
+from rekep.market.fix import (
+    EXECUTION_HANDLER,
+    EXECUTION_REPORT_HANDLER,
+    ORDER_HANDLERS,
+    MarketTags,
+)
 from rekep.market.identity import NIL, hash_arrow
 from rekep.market.orders import Execution, Order
 
@@ -32,11 +37,13 @@ _COMPLEX_FIELDS = (
     "ExpireDate",
     "ExposureDuration",
     "ExposureDurationUnit",
+    "XmlData",
+    "SecureData",
+    "Signature",
     *_REASON_FIELDS,
 )
 _READ_FIELDS = (
     "AggressorIndicator",
-    "AvgPx",
     "ClOrdID",
     "CumQty",
     "Currency",
@@ -63,7 +70,6 @@ _READ_FIELDS = (
     *_COMPLEX_FIELDS,
 )
 _FLOAT_FIELDS = (
-    "AvgPx",
     "CumQty",
     "CxlQty",
     "LastPx",
@@ -74,13 +80,6 @@ _FLOAT_FIELDS = (
     "Price",
     "StopPx",
 )
-_METADATA_COLUMNS = {
-    "MsgSeqNum": "34",
-    "BeginString": "8",
-    "OrdType": "40",
-    "OrdStatus": "39",
-    "ExecType": "150",
-}
 
 
 def into_flat_market_batches(
@@ -123,13 +122,13 @@ def flat_market_parts(
     order_types = tuple(
         kind
         for kind, handler in tags.handlers.items()
-        if handler == "order" and kind in tags.ordered
+        if handler in ORDER_HANDLERS and kind in tags.ordered
     )
     report_types = tuple(
-        kind for kind, handler in tags.handlers.items() if handler == "executionreport"
+        kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REPORT_HANDLER
     )
     execution_types = tuple(
-        kind for kind, handler in tags.handlers.items() if handler == "execution"
+        kind for kind, handler in tags.handlers.items() if handler == EXECUTION_HANDLER
     )
     supported_types = (*order_types, *report_types, *execution_types)
     if not supported_types:
@@ -181,10 +180,10 @@ def flat_market_parts(
             if not compute.all(finite, min_count=0).as_py():
                 return None
 
-    exec_state = values.mapped("ExecType", tags.states["ExecType"], State.UNKNOWN)
+    exec_state = values.mapped("ExecType", tags.execution_states, State.UNKNOWN)
     reports = compute.is_in(msg_type, value_set=pyarrow.array(report_types))
     report_executions = compute.and_(reports, compute.not_equal(exec_state, int(State.UNKNOWN)))
-    for name in ("CumQty", "LeavesQty", "AvgPx"):
+    for name in ("CumQty", "LeavesQty"):
         missing = compute.and_(report_executions, compute.is_null(values.number(name)))
         if compute.any(missing, min_count=0).as_py():
             return None
@@ -240,8 +239,8 @@ def flat_market_positions(
             kind
             for kind, handler in tags.handlers.items()
             if (
-                (handler == "order" and kind in tags.ordered)
-                or handler in {"executionreport", "execution"}
+                (handler in ORDER_HANDLERS and kind in tags.ordered)
+                or handler in {EXECUTION_REPORT_HANDLER, EXECUTION_HANDLER}
             )
         )
         if not supported:
@@ -308,12 +307,12 @@ def _eligible_market_rows(
 
     msg_type = columns["MsgType"]
     reports = pyarrow.array(
-        [kind for kind, handler in tags.handlers.items() if handler == "executionreport"]
+        [kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REPORT_HANDLER]
     )
     report_rows = compute.is_in(msg_type, value_set=reports)
-    exec_state = values.mapped("ExecType", tags.states["ExecType"], State.UNKNOWN)
+    exec_state = values.mapped("ExecType", tags.execution_states, State.UNKNOWN)
     report_executions = compute.and_(report_rows, compute.not_equal(exec_state, int(State.UNKNOWN)))
-    for name in ("CumQty", "LeavesQty", "AvgPx"):
+    for name in ("CumQty", "LeavesQty"):
         missing = compute.and_(report_executions, compute.is_null(values.number(name)))
         eligible = compute.and_(eligible, compute.invert(missing))
     return compute.fill_null(eligible, False)
@@ -428,13 +427,11 @@ def _orders(
     ord_status = shared.take(
         values.mapped("OrdStatus", tags.states["OrdStatus"], State.UNKNOWN), where
     )
-    exec_state = shared.take(
-        values.mapped("ExecType", tags.states["ExecType"], State.UNKNOWN), where
-    )
+    exec_state = shared.take(values.mapped("ExecType", tags.execution_states, State.UNKNOWN), where)
     state = compute.if_else(compute.is_in(msg_type, value_set=report_types), ord_status, state)
     state = compute.if_else(
         compute.equal(state, int(State.UNKNOWN)),
-        shared.take(values.mapped("ExecType", tags.exec_order_states, State.UNKNOWN), where),
+        shared.take(values.mapped("ExecType", tags.exec_type_fallbacks, State.UNKNOWN), where),
         state,
     ).cast(pyarrow.int32())
     total = shared.take(values.number("OrderQty"), where)
@@ -475,23 +472,21 @@ def _orders(
     order_id = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    named = _first_nonempty(order_id, previous_client_id, client_id)
+    named = _first_nonempty(order_id, previous_client_id, client_id, fallback="")
     symbol = shared.take(shared.symbol, where)
-    code = _first_nonempty(named, symbol, fallback="")
+    code = named
     instrument_xhash = shared.take(shared.instrument_xhash, where)
     mic = shared.take(shared.mic, where)
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
         Order.hash_arrow(instrument_xhash, mic, named, side),
-        Order.hash_arrow(instrument_xhash, code, side),
+        pyarrow.scalar(NIL, pyarrow.int64()),
     )
-    absent_life = compute.and_(compute.equal(instrument_xhash, NIL), compute.equal(code, ""))
-    xhash = compute.if_else(absent_life, pyarrow.scalar(NIL, pyarrow.int64()), xhash)
     px = shared.take(values.number("Price"), where)
     ccy = shared.take(shared.ccy, where)
     reason = shared.take(shared.reason, where)
-    vwap = shared.take(values.number("AvgPx"), where)
+    vwap = pyarrow.nulls(len(where), pyarrow.float64())
     null_float = pyarrow.nulls(len(where), pyarrow.float64())
     event_hash = Order.hash_arrow(
         xhash,
@@ -569,7 +564,7 @@ def _executions(
     msg_type = compute.take(values.columns["MsgType"], where)
     reported = compute.is_in(msg_type, value_set=report_types)
     unix = shared.take(shared.unix, where)
-    state = shared.take(values.mapped("ExecType", tags.states["ExecType"], State.UNKNOWN), where)
+    state = shared.take(values.mapped("ExecType", tags.execution_states, State.UNKNOWN), where)
     side = shared.take(values.mapped("Side", Side._fix_codes(), Side.UNKNOWN), where)
     kind = shared.take(
         values.mapped("ExecType", MarketKind.fix_mapping()[150], MarketKind.UNKNOWN), where
@@ -586,19 +581,19 @@ def _executions(
         ),
         compute.fill_null(compute.not_equal(exec_ref_id, ""), False),
     )
-    named = compute.if_else(corrected, exec_ref_id, _first_nonempty(exec_id, trade_id))
+    named = compute.fill_null(
+        compute.if_else(corrected, exec_ref_id, _first_nonempty(exec_id, trade_id)), ""
+    )
     symbol = shared.take(shared.symbol, where)
-    code = _first_nonempty(named, symbol, fallback="")
+    code = named
     instrument_xhash = shared.take(shared.instrument_xhash, where)
     mic = shared.take(shared.mic, where)
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
         Execution.hash_arrow(instrument_xhash, mic, named, side),
-        Execution.hash_arrow(instrument_xhash, code, side),
+        pyarrow.scalar(NIL, pyarrow.int64()),
     )
-    absent_life = compute.and_(compute.equal(instrument_xhash, NIL), compute.equal(code, ""))
-    xhash = compute.if_else(absent_life, pyarrow.scalar(NIL, pyarrow.int64()), xhash)
     order_id = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
@@ -606,7 +601,14 @@ def _executions(
     qty = shared.take(values.number("LastQty"), where)
     filled = shared.take(values.number("CumQty"), where)
     leaves = shared.take(values.number("LeavesQty"), where)
-    vwap = shared.take(values.number("AvgPx"), where)
+    first_fill = compute.and_(
+        compute.equal(state, int(State.FILLED)),
+        compute.and_(
+            compute.and_(compute.is_valid(filled), compute.is_valid(qty)),
+            compute.equal(filled, qty),
+        ),
+    )
+    vwap = compute.if_else(first_fill, px, pyarrow.scalar(None, pyarrow.float64()))
     aggressor_text = shared.take(values.text("AggressorIndicator"), where)
     aggressor_head = compute.utf8_upper(
         compute.utf8_slice_codeunits(compute.utf8_trim_whitespace(aggressor_text), 0, 1)
@@ -863,20 +865,34 @@ def _replaced_state(
 
 
 def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
+    from rekep.text.fixmsg import FixMsg
+
     rows = values.rows
     candidates: list[pyarrow.Array] = []
     names: list[str] = []
-    for name, tag in _METADATA_COLUMNS.items():
+    for name, default_tag in FixMsg.into_tagged_columns():
         column = values.columns.get(name)
-        if column is None:
+        if column is None or column.null_count == rows:
+            continue
+        tag = tags.lookup_tags.get(name, default_tag)
+        if tag in tags.claimed and tag not in tags.audited:
             continue
         candidates.append(cast_arrow_fix(column, pyarrow.string()))
-        names.append(str(tags.tags.get(name, int(tag))))
-    promoted, member = interleave(candidates, rows)
-    promoted_present = compute.is_valid(promoted)
-    promoted_parents = compute.divide(sequence(rows * len(candidates)), len(candidates))
-    promoted_ranks = member.cast(pyarrow.int64())
-    promoted_keys = compute.take(pyarrow.array(names), member)
+        names.append(tag)
+
+    promoted_parents = pyarrow.array([], pyarrow.int64())
+    promoted_keys = pyarrow.array([], pyarrow.string())
+    promoted_items = pyarrow.array([], pyarrow.string())
+    promoted_ranks = pyarrow.array([], pyarrow.int64())
+    if candidates:
+        promoted, member = interleave(candidates, rows)
+        promoted_present = compute.is_valid(promoted)
+        promoted_parents = compute.filter(
+            compute.divide(sequence(rows * len(candidates)), len(candidates)), promoted_present
+        )
+        promoted_keys = compute.filter(compute.take(pyarrow.array(names), member), promoted_present)
+        promoted_items = compute.filter(promoted, promoted_present)
+        promoted_ranks = compute.filter(member.cast(pyarrow.int64()), promoted_present)
 
     stored = values.columns["kwargs"]
     entries = compute.list_flatten(stored)
@@ -892,27 +908,46 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
     residual_values = compute.struct_field(entries, "value")
     residual_ranks = compute.add(sequence(len(entries)), len(candidates))
 
+    kept_residual_parents = compute.filter(residual_parents, residual_keep)
+    kept_residual_tags = compute.filter(residual_tags, residual_keep)
+    if len(promoted_parents) and len(kept_residual_parents):
+        promoted_identities = compute.add(
+            compute.multiply(promoted_parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
+            promoted_keys.cast(pyarrow.int64()),
+        )
+        residual_identities = compute.add(
+            compute.multiply(kept_residual_parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
+            kept_residual_tags.cast(pyarrow.int64()),
+        )
+        keep_promoted = compute.invert(
+            compute.is_in(promoted_identities, value_set=residual_identities)
+        )
+        promoted_parents = compute.filter(promoted_parents, keep_promoted)
+        promoted_keys = compute.filter(promoted_keys, keep_promoted)
+        promoted_items = compute.filter(promoted_items, keep_promoted)
+        promoted_ranks = compute.filter(promoted_ranks, keep_promoted)
+
     parents = pyarrow.concat_arrays(
         [
-            compute.filter(promoted_parents, promoted_present),
-            compute.filter(residual_parents, residual_keep),
+            promoted_parents,
+            kept_residual_parents,
         ]
     )
     keys = pyarrow.concat_arrays(
         [
-            compute.filter(promoted_keys, promoted_present),
+            promoted_keys,
             compute.filter(residual_keys, residual_keep),
         ]
     )
     items = pyarrow.concat_arrays(
         [
-            compute.filter(promoted, promoted_present),
+            promoted_items,
             compute.filter(residual_values, residual_keep),
         ]
     )
     ranks = pyarrow.concat_arrays(
         [
-            compute.filter(promoted_ranks, promoted_present),
+            promoted_ranks,
             compute.filter(residual_ranks, residual_keep),
         ]
     )

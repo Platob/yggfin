@@ -11,7 +11,7 @@ import pyarrow.compute as compute
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import COLUMNS, TYPES
 from rekep.fix.fields import cast_arrow_fix
-from rekep.fix.transcribe import BEGIN_STRING_SOURCE, _version_key
+from rekep.fix.transcribe import BEGIN_STRING_SOURCE, _raw_spelling_changed, _version_key
 from rekep.kwargs import KWARGS
 
 
@@ -251,7 +251,7 @@ def _complete_tagged(codec: Any, kwargs: pyarrow.Array, version: str) -> pyarrow
         [
             tags,
             codec._canonical(keys, tags, version),
-            codec._translated(tags, values, version),
+            codec._encoded(tags, values, version),
             compute.struct_field(entries, "namespace"),
             compute.struct_field(entries, "comp"),
         ],
@@ -267,7 +267,7 @@ def _complete_tagged(codec: Any, kwargs: pyarrow.Array, version: str) -> pyarrow
 def _lifted_columns(
     kwargs: pyarrow.Array, fields: Mapping[int, Any], rows: int
 ) -> tuple[dict[str, pyarrow.Array], pyarrow.Array] | None:
-    """Lift one occurrence of each declared tag and retain the other entries."""
+    """Lift one occurrence per tag and retain raw text a typed column loses."""
     entries = compute.list_flatten(kwargs)
     parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
     tags = compute.struct_field(entries, "tag")
@@ -279,18 +279,39 @@ def _lifted_columns(
     sorted_tags = compute.take(compute.filter(tags, wanted), order)
     sorted_parents = compute.take(compute.filter(parents, wanted), order)
     sorted_values = compute.take(compute.filter(values, wanted), order)
+    sorted_identities = compute.add(
+        compute.multiply(sorted_parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
+        sorted_tags.cast(pyarrow.int64()),
+    )
+    retained_identities: list[pyarrow.Array] = []
     at = 0
     for counted in compute.value_counts(sorted_tags).to_pylist():
         tag, run = counted["values"], counted["counts"]
-        column = sorted_values.slice(at, run)
+        raw = sorted_values.slice(at, run)
         column_rows = sorted_parents.slice(at, run)
+        identities = sorted_identities.slice(at, run)
         at += run
+        column = _cast(raw, fields[tag].arrow_type, TYPES[tag])
+        changed = _raw_spelling_changed(raw, column)
+        if compute.any(changed, min_count=0).as_py():
+            retained_identities.append(compute.filter(identities, changed))
         if run != rows:
             column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
-        cast = _cast(column, fields[tag].arrow_type, TYPES[tag])
-        columns[COLUMNS[tag]] = cast
+        columns[COLUMNS[tag]] = column
 
     keep = compute.invert(wanted)
+    if retained_identities:
+        identities = compute.add(
+            compute.multiply(parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
+            tags.cast(pyarrow.int64()),
+        )
+        keep = compute.or_(
+            keep,
+            compute.is_in(
+                identities,
+                value_set=pyarrow.concat_arrays(retained_identities),
+            ),
+        )
     kept_parents = compute.filter(parents, keep)
     kept = pyarrow.StructArray.from_arrays(
         [compute.filter(compute.struct_field(entries, field.name), keep) for field in entries.type],

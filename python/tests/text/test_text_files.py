@@ -356,6 +356,21 @@ def test_message_regexes_are_forwarded_to_every_file(tmp_path: Path) -> None:
         )
 
 
+def test_msgtype_filters_are_forwarded_to_every_file(tmp_path: Path) -> None:
+    (tmp_path / "a.txt").write_text(
+        "2026-08-14 00:05:01.000 [t] [plugin] (INFO) 35=0|Text=heartbeat|\n"
+        "2026-08-14 00:05:02.000 [t] [plugin] (INFO) 35=D|ClOrdID=A|\n"
+    )
+    (tmp_path / "b.txt").write_text(
+        "2026-08-14 00:05:03.000 [t] [plugin] (INFO) MsgType=1|Text=test|\n"
+        "2026-08-14 00:05:04.000 [t] [plugin] (INFO) MsgType=8|ExecID=B|\n"
+    )
+
+    table = TextFiles.from_folder(tmp_path).read_arrow_table(exclude_msgtypes=("0", "1"))
+
+    assert table.column("MsgType").to_pylist() == ["D", "8"]
+
+
 def test_duration_windows_are_shared_across_file_boundaries(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("2026-08-14 00:05:01.100 [t] [plugin] (INFO) first-file\n")
     (tmp_path / "b.txt").write_text(

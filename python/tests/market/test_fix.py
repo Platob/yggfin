@@ -185,7 +185,7 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
     for name, spellings in by_name.items():
         if name == "Symbol":
             assert spellings == {("symbol", pyarrow.string())}, (
-                "one spelling now: a market event's symbol is a `codes` entry"
+                "one spelling now: Symbol belongs to the Instrument contract"
             )
             continue
         if name == "Currency":

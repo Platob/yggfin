@@ -30,11 +30,11 @@ The task writes orders, quotes, executions, books and instruments to
 `fix.market`. Recognized operational traffic, rows without MsgType, and unknown
 events on a recognized transport go to `fix.misc`; an unknown event on an
 unrecognized transport goes to `fix.unknown`. Market and terminal predicates
-are pushed independently, so neither stream sees the other's rows. Registry-
-declared technical MsgTypes and exact plugin codes are excluded by the scan;
-a case-folded Arrow mask catches plugin spelling variants before counting or
-transcription. The raw `message` column is projected out for both streams:
-stored `kwargs` already carry the parsed content needed for transcription.
+are pushed independently, so neither stream sees the other's rows.
+Registry-declared technical MsgTypes are excluded by the scan. Plugin filtering
+already happened in `parse_messages`, so those rows never enter this source
+table. The raw `message` column is projected out for both streams: stored
+`kwargs` already carry the parsed content needed for transcription.
 
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,

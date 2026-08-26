@@ -8,11 +8,9 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, StructField, cli
-from rekep.fix import registry as registry_module
 from rekep.fix.entries import Alias, FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import Collapse, ConflictReport, Dropped
 
 #: The contracts this repository publishes, which the CLI has to be able to
 #: read -- the same directory `tests/test_schemas.py` pins.
@@ -21,6 +19,31 @@ SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 
 def run(*argv: str) -> int:
     return cli.main(list(argv))
+
+
+def test_help_is_hierarchical_and_argument_errors_are_concise(
+    capsys: pytest.CaptureFixture,
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run("fix", "registry", "show")
+    assert stopped.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "field" in captured.err
+    assert "rekep fix registry show --help" in captured.err
+
+    with pytest.raises(SystemExit) as stopped:
+        run("fix", "--help")
+    assert stopped.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "COMMAND" in help_text and "registry" in help_text and "shell" in help_text
+
+
+def test_version_is_available_without_entering_a_command(capsys: pytest.CaptureFixture) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run("--version")
+    assert stopped.value.code == 0
+    assert cli.__version__ in capsys.readouterr().out
 
 
 # -- dumping ----------------------------------------------------------------
@@ -485,36 +508,123 @@ def test_check_reports_an_inconsistent_store_and_says_a_sound_one_is_sound(
     assert "FakeRole" in capsys.readouterr().err
 
 
-def test_bootstrap_fills_a_cold_store_and_writes_what_it_collapsed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_registry_reads_are_json_and_accept_a_numeric_tag(
+    store: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    """The one command that fetches the dictionary, and the report a build reads."""
+    assert run("fix", "registry", "versions", "--store", str(store)) == 0
+    assert json.loads(capsys.readouterr().out) == [{"version": "9.1", "fields": 1}]
 
-    class Fetching(FixRegistry):
-        """A bootstrap whose scrape is one synthetic version."""
+    assert run("fix", "registry", "show", "--store", str(store), "90001") == 0
+    assert json.loads(capsys.readouterr().out)["name"] == "FakeRole"
 
-        def rebuild(self, *versions: str) -> ConflictReport:
-            self._store_versions(("9.1",))
-            self._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
-            report = ConflictReport(
-                collapses=(
-                    Collapse("FakeRole", "values", "9.1", (Dropped("9.0", "Buy", "1"),), 90001),
-                )
-            )
-            self.__dict__["_conflicts"] = report
-            return report
+    assert run("fix", "registry", "find", "--store", str(store), "role") == 0
+    assert [entry["name"] for entry in json.loads(capsys.readouterr().out)] == ["FakeRole"]
 
-    monkeypatch.setattr(cli, "FixRegistry", Fetching)
+
+def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: Path) -> None:
+    declaration = tmp_path / "vendor.json"
+    declaration.write_text(
+        json.dumps(
+            FieldEntry(
+                name="FAKE.VENUE.CODE",
+                kind="namespace",
+                versions=("*",),
+                type="String",
+                values={"A": "Alpha"},
+                column="fake_venue_code",
+            ).into_dict()
+        )
+    )
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-field",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    stored = reopened(store).resolve("FAKE.VENUE.CODE")
+    assert stored.values == {"A": "Alpha"}
+    assert stored.column == "fake_venue_code"
+
+
+def test_registry_components_and_dump_are_scriptable(
+    store: Path, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    declaration = tmp_path / "parties.json"
+    declaration.write_text(
+        json.dumps(
+            {
+                "name": "FakeParties",
+                "versions": ["9.1"],
+                "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
+            }
+        )
+    )
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-component",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert run("fix", "registry", "components", "--store", str(store), "part") == 0
+    assert json.loads(capsys.readouterr().out) == [{"name": "FakeParties", "versions": ["9.1"]}]
+    assert run("fix", "registry", "component", "--store", str(store), "FakeParties") == 0
+    assert json.loads(capsys.readouterr().out)["members"][0]["name"] == "FakeRole"
+
+    archive = tmp_path / "fix.zip"
+    assert run("fix", "registry", "dump", "--store", str(store), "--output", str(archive)) == 0
+    assert archive.exists()
+    assert FixRegistry(cache_dir=archive, offline=True).resolve("FakeRole") is not None
+
+
+def test_scrape_forwards_source_configuration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
     target = tmp_path / "fresh"
-    report = tmp_path / "conflicts.json"
-    assert run("fix", "registry", "bootstrap", "--store", str(target), "--report", str(report)) == 0
-    # Naming the default store makes construction pay for the scrape, and the
-    # verb must not then pay for a second one.
-    monkeypatch.setattr(registry_module, "CACHE_DIRECTORY", tmp_path / "default")
-    with pytest.warns(RuntimeWarning):
-        assert run("fix", "registry", "bootstrap", "--store", str(tmp_path / "default")) == 0
-    assert reopened(tmp_path / "default").field("FakeRole", "9.1").name == "FakeRole"
-    assert reopened(target).field("FakeRole", "9.1").name == "FakeRole"
-    written = json.loads(report.read_text())
-    assert written["counts"]["values"] == 1
-    assert written["collapses"][0]["dropped"] == [{"version": "9.0", "reading": "Buy", "key": "1"}]
+    called: dict[str, object] = {}
+
+    class Scraped:
+        cache_dir = target
+
+        def field_entries(self) -> dict[str, object]:
+            return {"FakeRole": object()}
+
+        def component_entries(self) -> dict[str, object]:
+            return {"FakeParties": object()}
+
+    def scrape(output, **configuration):
+        called.update(output=output, **configuration)
+        return Scraped()
+
+    monkeypatch.setattr(cli.FixRegistry, "scrape", staticmethod(scrape))
+    assert (
+        run(
+            "fix",
+            "registry",
+            "scrape",
+            "--output",
+            str(target),
+            "--base-url",
+            "https://dictionary.example",
+            "--max-workers",
+            "3",
+        )
+        == 0
+    )
+    assert called["output"] == str(target)
+    assert called["base_url"] == "https://dictionary.example"
+    assert called["max_workers"] == 3
+    assert "1 fields and 1 components" in capsys.readouterr().err

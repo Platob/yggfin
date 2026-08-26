@@ -3,31 +3,33 @@
   <desc id="desc">A GitHub repository supplies notebook and YAML configuration to Apache Airflow and Papermill. parse_fix writes three Apache Iceberg log tables and resumes instrument lifecycles from the prior Instrument table. Only fix.market continues through an Apache Arrow reader; normalized Instrument rows are projected while parse_market folds the same stream into books.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#167c80"/>
+      <path d="M0,0 L0,6 L9,3 z" fill="#ff8a00"/>
     </marker>
     <marker id="control-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#7655a6"/>
+      <path d="M0,0 L0,6 L9,3 z" fill="#f23b3b"/>
     </marker>
     <style>
-      .control{fill:#f5f0fb;stroke:#7655a6;stroke-width:2.2}
-      .task{fill:#eefaf8;stroke:#167c80;stroke-width:2.4}
-      .source{fill:#f2f6fb;stroke:#3d6aa2;stroke-width:2.2}
-      .table{fill:#f5fbff;stroke:#277abe;stroke-width:2.3}
-      .reader{fill:#fff8dc;stroke:#b47b00;stroke-width:2}
-      .flow{fill:none;stroke:#167c80;stroke-width:2.6;marker-end:url(#flow-arrow)}
-      .state-flow{fill:none;stroke:#167c80;stroke-width:2;stroke-dasharray:7 6;marker-end:url(#flow-arrow)}
-      .control-flow{fill:none;stroke:#7655a6;stroke-width:2.1;stroke-dasharray:7 6;marker-end:url(#control-arrow)}
-      .heading{font:700 16px system-ui,sans-serif;fill:#254447;letter-spacing:.06em}
-      .label{font:600 18px system-ui,sans-serif;fill:#173638;text-anchor:middle}
-      .small{font:13px system-ui,sans-serif;fill:#466164;text-anchor:middle}
-      .edge-label{font:12px system-ui,sans-serif;fill:#466164;text-anchor:middle}
-      .terminal{font:12px system-ui,sans-serif;fill:#6f7f82;text-anchor:middle}
+      .control{fill:#291617;stroke:#f23b3b;stroke-width:2.2}
+      .task{fill:#2b2012;stroke:#ff8a00;stroke-width:2.4}
+      .source{fill:#171719;stroke:#f7f3e8;stroke-width:2.2}
+      .table{fill:#2a2613;stroke:#ffd43b;stroke-width:2.3}
+      .reader{fill:#171719;stroke:#ff8a00;stroke-width:2}
+      .flow{fill:none;stroke:#ff8a00;stroke-width:2.6;marker-end:url(#flow-arrow)}
+      .state-flow{fill:none;stroke:#ffd43b;stroke-width:2;stroke-dasharray:7 6;marker-end:url(#flow-arrow)}
+      .control-flow{fill:none;stroke:#f23b3b;stroke-width:2.1;stroke-dasharray:7 6;marker-end:url(#control-arrow)}
+      .heading{font:700 16px system-ui,sans-serif;fill:#ff8a00;letter-spacing:.06em}
+      .label{font:600 18px system-ui,sans-serif;fill:#f7f3e8;text-anchor:middle}
+      .small{font:13px system-ui,sans-serif;fill:#bdb9b0;text-anchor:middle}
+      .edge-label{font:12px system-ui,sans-serif;fill:#ffd43b;text-anchor:middle}
+      .terminal{font:12px system-ui,sans-serif;fill:#9b9891;text-anchor:middle}
+      .brand-plate{fill:#ffffff;rx:7}
     </style>
   </defs>
-  <rect width="1600" height="980" fill="#ffffff"/>
+  <rect width="1600" height="980" fill="#09090b"/>
 
   <text class="heading" x="30" y="32">VERSIONED CONTROL</text>
   <rect class="control" x="40" y="55" width="340" height="112" rx="15"/>
+  <rect class="brand-plate" x="59" y="74" width="74" height="74"/>
   <image href="logos/github-mark.svg" x="65" y="80" width="62" height="62"/>
   <text class="label" x="245" y="92">GitHub repository</text>
   <text class="small" x="245" y="119">notebooks + adjacent YAML</text>
@@ -54,6 +56,7 @@
   <text class="edge-label" x="535" y="196">DAG dependencies follow the data edges</text>
 
   <rect class="reader" x="480" y="287" width="120" height="60" rx="12"/>
+  <rect class="brand-plate" x="490" y="296" width="44" height="40"/>
   <image href="logos/apache-arrow.svg" x="495" y="301" width="34" height="30"/>
   <text class="small" x="560" y="313">Arrow</text>
   <text class="small" x="560" y="332">batches</text>
@@ -81,6 +84,7 @@
   <text class="terminal" x="770" y="611">stored terminal branch</text>
 
   <rect class="reader" x="940" y="242" width="150" height="66" rx="12"/>
+  <rect class="brand-plate" x="948" y="253" width="44" height="40"/>
   <image href="logos/apache-arrow.svg" x="953" y="258" width="34" height="30"/>
   <text class="small" x="1035" y="266">Arrow reader</text>
   <text class="small" x="1035" y="287">fix.market only</text>
@@ -111,6 +115,7 @@
   <text class="edge-label" x="1125" y="174">prior committed Instrument snapshots seed the next interval</text>
 
   <rect class="reader" x="1130" y="515" width="205" height="66" rx="12"/>
+  <rect class="brand-plate" x="1143" y="527" width="44" height="40"/>
   <image href="logos/apache-arrow.svg" x="1148" y="532" width="34" height="30"/>
   <text class="small" x="1262" y="540">Arrow reader</text>
   <text class="small" x="1262" y="561">Book batches</text>

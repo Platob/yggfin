@@ -26,11 +26,15 @@
    "0": "UPDATE",
    "1": "SNAPSHOT"
   },
-  "translations": {
+  "encoded": {
    "update": "0",
    "snapshot": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "update",
+   "1": "snapshot"
   }
  }
 }

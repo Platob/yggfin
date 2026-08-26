@@ -37,8 +37,8 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    encoded_key,
     slug_of,
-    translation_key,
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
@@ -175,6 +175,7 @@ __all__ = [
     "count_reader",
     "detect_entry_separator",
     "detect_separator",
+    "encoded_key",
     "fix_field",
     "infer_version_from_pairs",
     "message_bodies",
@@ -187,7 +188,6 @@ __all__ = [
     "shard_name",
     "slug_of",
     "spec_name",
-    "translation_key",
     "tag_arrow_array",
     "unix_of",
 ]

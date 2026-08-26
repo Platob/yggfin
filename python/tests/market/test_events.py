@@ -251,7 +251,7 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(declared.names)
     assert declared.names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
-    assert "symbol" not in MarketEvent.into_field().names, "it is a `codes` entry"
+    assert "symbol" not in MarketEvent.into_field().names, "instrument_code is the flat spelling"
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)

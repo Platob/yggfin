@@ -26,19 +26,29 @@ from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 #: - **`char` is a string, not one character.** The standard caps it at one,
 #:   real feeds do not -- a value that outgrew its type is still a value, and
 #:   a fixed width would truncate it silently. A string holds both.
-#: - Every count, length and sequence number is `int64`: FIX puts no ceiling
-#:   on them, and a narrower width saves nothing a log cares about.
+#: - FIX `int` is its 32-bit protocol scalar. Lengths, counts and sequence
+#:   numbers remain `int64`; Python's `int` annotation also remains `int64`.
+#: - An unparameterized `array` stays text: no item type was declared, so a
+#:   list projection would invent structure the wire did not promise.
 #:
 #: The time-zoned types (`TZTimestamp`, `TZTimeOnly`) stay strings: their
 #: offset is part of the value, and a naive Arrow type would drop it.
 FIX_SCALARS: dict[str, pyarrow.DataType] = {
-    "int": pyarrow.int64(),
+    "int": pyarrow.int32(),
+    "integer": pyarrow.int32(),
+    "int32": pyarrow.int32(),
+    "bigint": pyarrow.int64(),
+    "long": pyarrow.int64(),
+    "int64": pyarrow.int64(),
     "length": pyarrow.int64(),
     "tagnum": pyarrow.int64(),
     "seqnum": pyarrow.int64(),
     "numingroup": pyarrow.int64(),
     "dayofmonth": pyarrow.int64(),
     "float": pyarrow.float64(),
+    "double": pyarrow.float64(),
+    "real": pyarrow.float64(),
+    "number": pyarrow.float64(),
     "qty": pyarrow.float64(),
     "price": pyarrow.float64(),
     "priceoffset": pyarrow.float64(),
@@ -47,6 +57,13 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "char": pyarrow.string(),
     "boolean": pyarrow.bool_(),
     "string": pyarrow.string(),
+    "array": pyarrow.string(),
+    "list": pyarrow.string(),
+    "text": pyarrow.string(),
+    "varchar": pyarrow.string(),
+    "nvarchar": pyarrow.string(),
+    "json": pyarrow.string(),
+    "uuid": pyarrow.string(),
     "multiplevaluestring": pyarrow.string(),
     "multiplestringvalue": pyarrow.string(),
     "multiplecharvalue": pyarrow.string(),
@@ -63,7 +80,11 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "xid": pyarrow.string(),
     "xidref": pyarrow.string(),
     "data": pyarrow.binary(),
+    "binary": pyarrow.binary(),
+    "bytes": pyarrow.binary(),
     "utctimestamp": pyarrow.timestamp("ns"),
+    "datetime": pyarrow.timestamp("ns"),
+    "timestamp": pyarrow.timestamp("ns"),
     "time": pyarrow.timestamp("ns"),
     "utcdateonly": pyarrow.date32(),
     "utcdate": pyarrow.date32(),

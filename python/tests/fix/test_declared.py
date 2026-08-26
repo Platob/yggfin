@@ -84,7 +84,7 @@ def test_a_declared_type_is_held_as_arrow_spells_it() -> None:
     assert FieldRule(field="X", type="date").type == "date32[day]"
     assert FieldRule(field="X", type="UTCDateOnly").type == "date32[day]"
     assert FieldRule(field="X", type="date32[day]").type == "date32[day]"
-    assert FieldRule(field="X", type="int").type == "int64"
+    assert FieldRule(field="X", type="int").type == "int32"
 
 
 def test_a_type_that_is_neither_arrow_nor_fix_is_refused() -> None:
@@ -100,7 +100,7 @@ def test_a_rule_that_names_no_field_is_refused() -> None:
 # -- the values a field reads --------------------------------------------------
 
 
-def test_a_declared_spelling_is_translated_like_the_dictionary_s(
+def test_a_declared_spelling_is_encoded_like_the_dictionary_s(
     registry: FixRegistry,
 ) -> None:
     declared = {"rules": [{"field": "Side", "values": {"BUYSIDE": "1"}}]}

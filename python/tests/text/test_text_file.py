@@ -713,6 +713,33 @@ def test_message_and_time_filters_run_before_kwarg_parsing(
     assert parsed == [], "a single incidental assignment is not a structured message"
 
 
+def test_msgtype_filters_run_before_kwarg_parsing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    log = _timed_log(
+        tmp_path / "msgtypes.txt",
+        ("2026-08-14 00:05:01.000", "8=FIX.4.4|35=0|58=" + "A=1|" * 1000),
+        ("2026-08-14 00:05:02.000", "#MSGTYPE=1|#Text=" + "B=2|" * 1000),
+        ("2026-08-14 00:05:03.000", "8=FIX.4.4|35=D|11=kept|"),
+        ("2026-08-14 00:05:04.000", "plain diagnostic"),
+    )
+    parsed: list[int] = []
+    original = Kwarg.parse_arrow.__func__
+
+    def counted(cls, messages):  # noqa: ANN001, ANN202 - observes the parser boundary
+        parsed.append(len(messages))
+        return original(cls, messages)
+
+    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(counted))
+    table = log.read_arrow_table(exclude_msgtypes=("0", "1"))
+
+    assert table.column("MsgType").to_pylist() == ["D", None]
+    assert parsed == [1]
+
+    included = log.read_arrow_table(include_msgtypes=("0", "D"), exclude_msgtypes=("0",))
+    assert included.column("MsgType").to_pylist() == ["D"]
+
+
 def test_time_filter_runs_before_payload_utf8_decoding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -744,6 +771,10 @@ def test_regex_arguments_are_lists_and_can_filter_every_message(tmp_path: Path) 
         log.into_arrow_reader(exclude_regexes=(1,)).read_all()  # type: ignore[arg-type]
     with pytest.raises(pyarrow.ArrowInvalid, match="Invalid regular expression"):
         log.into_arrow_batches(include_regexes=(r"[",))
+    with pytest.raises(TypeError, match="include_msgtypes must be a sequence"):
+        log.into_arrow_reader(include_msgtypes="D").read_all()  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="exclude_msgtypes must contain only MsgType strings"):
+        log.into_arrow_reader(exclude_msgtypes=(1,)).read_all()  # type: ignore[arg-type]
 
 
 def test_start_is_inclusive_and_end_is_exclusive(tmp_path: Path) -> None:

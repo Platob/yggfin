@@ -26,7 +26,7 @@ from rekep.fields import StructField
 from rekep.fix import infer_version_from_pairs
 from rekep.fix.access import FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS
-from rekep.fix.entries import translation_key
+from rekep.fix.entries import encoded_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, indexed_group_pairs, render_fix_value
 from rekep.fix.quickfix import (
@@ -130,6 +130,17 @@ _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
 #: an imbalance -- is a statistic about the market rather than an order in it,
 #: and is not a market event this package stores.
 ENTRY_SIDES: dict[str, Side] = {"0": Side.BID, "1": Side.ASK}
+
+# The registry supplies normalized FIX names. These sets say which market
+# shape the package implements; the protocol dictionary does not duplicate it.
+ENTRY_HANDLERS = frozenset({"marketdatasnapshotfullrefresh", "marketdataincrementalrefresh"})
+ORDER_HANDLERS = frozenset(
+    {"newordersingle", "ordercancelrequest", "ordercancelreplacerequest", "ordercancelreject"}
+)
+QUOTE_HANDLERS = frozenset({"quotestatusreport", "quoteresponse", "quote", "quotecancel"})
+MASS_QUOTE_HANDLER = "massquote"
+EXECUTION_REPORT_HANDLER = "executionreport"
+EXECUTION_HANDLER = "tradecapturereport"
 
 #: Every field `FixEvents.instrument` reads, the two repeating groups included.
 #: An entry of a refresh that names none of them is not describing another
@@ -285,16 +296,45 @@ class MarketTags:
     @functools.cached_property
     def ordered(self) -> Mapping[str, State]:
         """Order-bearing MsgTypes and the request state each asserts."""
-        return _registry_values(self.registry, "order_state_values", "MsgType")
+        return _registry_values(self.registry, "state_values", "MsgType")
 
     @functools.cached_property
-    def exec_order_states(self) -> Mapping[str, State]:
-        """ExecType fallbacks used only when OrdStatus is absent."""
-        return _registry_values(self.registry, "order_state_values", "ExecType")
+    def execution_states(self) -> Mapping[str, State]:
+        """Trade-bearing ExecTypes as completed execution occurrences."""
+        states = self.states["ExecType"]
+        builtin = FixRegistry.from_builtin().entry("ExecType")
+        configured = self.registry.entry("ExecType")
+        trade_codes = frozenset(
+            code
+            for entry in (builtin, configured)
+            if entry is not None
+            for spelling, code in entry.encoded.items()
+            if spelling.startswith("trade")
+        )
+        return types.MappingProxyType(
+            {
+                code: State.FILLED if state is State.PARTIALLY_FILLED else state
+                for code, state in states.items()
+                if state in (State.PARTIALLY_FILLED, State.FILLED) or code in trade_codes
+            }
+        )
+
+    @functools.cached_property
+    def exec_type_fallbacks(self) -> Mapping[str, State]:
+        """ExecType lifecycle fallbacks that describe the Order, not an Execution."""
+        states = self.states["ExecType"]
+        execution_codes = self.execution_states
+        return types.MappingProxyType(
+            {
+                code: state
+                for code, state in states.items()
+                if code not in execution_codes or state in (State.PARTIALLY_FILLED, State.FILLED)
+            }
+        )
 
     @functools.cached_property
     def handlers(self) -> Mapping[str, str]:
-        """Supported MsgTypes to their configured translation handler."""
+        """Known MsgTypes to their canonical decoded dispatch name."""
         builtin = FixRegistry.from_builtin().msg_type_handlers()
         configured = self.registry.msg_type_handlers()
         if self.registry is FixRegistry.from_builtin() or not configured:
@@ -510,11 +550,11 @@ class FixEvents(Convertible):
 
         Built once per message rather than walked per miss: a translation asks
         for several dozen fields a message does not carry. The fold is
-        `translation_key`, the same last-tier rule the accessor matches by.
+        `encoded_key`, the same last-tier rule the accessor matches by.
         """
         found: dict[str, Any] = {}
         for key, value in self.by_tag.items():
-            found.setdefault(translation_key(key), value)
+            found.setdefault(encoded_key(key), value)
         return found
 
     def get(self, field: int | str) -> Any:
@@ -536,11 +576,15 @@ class FixEvents(Convertible):
             return found
         if self._flat_by_tag is not None:
             return None
-        return self.by_folded_tag.get(translation_key(field if type(field) is str else str(field)))
+        return self.by_folded_tag.get(encoded_key(field if type(field) is str else str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""
         return self.dictionary.states.get(field, {}).get(self.get(field) or "", default)
+
+    def execution_state(self, default: State = State.UNKNOWN) -> State:
+        """State of the completed execution carried by this ExecType."""
+        return self.dictionary.execution_states.get(self.get("ExecType") or "", default)
 
     @functools.cached_property
     def _message_kind(self) -> str:
@@ -553,17 +597,17 @@ class FixEvents(Convertible):
             return
         kind = self._message_kind
         handler = self.dictionary.handlers.get(kind)
-        if handler == "entries":
+        if handler in ENTRY_HANDLERS:
             yield from self._entries(kind)
-        elif handler == "massquote":
+        elif handler == MASS_QUOTE_HANDLER:
             yield from self._mass_quotes()
-        elif handler == "quote":
+        elif handler in QUOTE_HANDLERS:
             yield from self._quotes(kind)
-        elif handler == "executionreport":
+        elif handler == EXECUTION_REPORT_HANDLER:
             yield from self._reported()
-        elif handler == "execution":
+        elif handler == EXECUTION_HANDLER:
             yield self.into_execution()
-        elif handler == "order" and kind in self.dictionary.ordered:
+        elif handler in ORDER_HANDLERS and kind in self.dictionary.ordered:
             yield self.into_order(self.dictionary.ordered[kind])
 
     def into_instruments(self) -> Iterator[Instrument]:
@@ -587,13 +631,14 @@ class FixEvents(Convertible):
 
     def _instrument_readers(self) -> Iterator[FixEvents]:
         """Entry projections when present, otherwise the message header."""
-        if self.dictionary.handlers.get(self._message_kind) == "entries":
+        handler = self.dictionary.handlers.get(self._message_kind)
+        if handler in ENTRY_HANDLERS:
             entries = self._group_entries("NoMDEntries")
             for entry in entries:
                 yield self._inside(entry)
             if not entries:
                 yield self
-        elif self._message_kind == "i":
+        elif handler == MASS_QUOTE_HANDLER:
             yield from self._quote_readers()
         else:
             yield self
@@ -621,7 +666,7 @@ class FixEvents(Convertible):
         """An ExecutionReport <8>: the order's new state, and the fill if there was one."""
         order = self.into_order(self.state_of("OrdStatus"))
         yield order
-        if self.state_of("ExecType") is not State.UNKNOWN:
+        if self.execution_state() is not State.UNKNOWN:
             # Completed *from the order*, not from a previous report: the
             # running totals a venue leaves out of a fill -- how much is done
             # now, how much is left, what the average is -- are all statements
@@ -763,7 +808,7 @@ class FixEvents(Convertible):
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
         if state is State.UNKNOWN:
-            state = self.dictionary.exec_order_states.get(exec_type, State.UNKNOWN)
+            state = self.dictionary.exec_type_fallbacks.get(exec_type, State.UNKNOWN)
         order_qty = _number(get("OrderQty"))
         cumulative = _number(get("CumQty"))
         leaves = _number(get("LeavesQty"))
@@ -777,7 +822,7 @@ class FixEvents(Convertible):
             )
         transition = _quantity_transition(
             state,
-            execution_state=self.state_of("ExecType"),
+            execution_state=self.execution_state(),
             order_qty=order_qty,
             cum_qty=cumulative,
             leaves_qty=leaves,
@@ -799,7 +844,6 @@ class FixEvents(Convertible):
                 tif=tif,
                 stop_px=_number(get("StopPx")),
                 hidden_qty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
-                vwap=_number(get("AvgPx")),
                 order_id=get("OrderID"),
                 client_order_id=get("ClOrdID"),
                 prev_client_order_id=get("OrigClOrdID"),
@@ -845,7 +889,7 @@ class FixEvents(Convertible):
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                state=self.state_of("ExecType"),
+                state=self.execution_state(),
                 kind=MarketKind.from_fix(get("ExecType"), MarketKind.UNKNOWN, tag=150),
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("LastPx")),
@@ -862,7 +906,6 @@ class FixEvents(Convertible):
                 prev_client_order_id=get("OrigClOrdID"),
                 filled_qty=_number(get("CumQty")),
                 leaves_qty=_number(get("LeavesQty")),
-                vwap=_number(get("AvgPx")),
                 aggressor=_flag(get("AggressorIndicator")),
                 **self._shared(),
             ),

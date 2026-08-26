@@ -9,51 +9,65 @@ exclude_docs: |
 
 theme:
   name: material
+  font: false
   features:
     - content.code.copy
     - content.tabs.link
+    - navigation.footer
+    - navigation.path
     - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
+    - search.highlight
+    - search.suggest
     - toc.follow
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: teal
+    - scheme: slate
+      primary: black
+      accent: deep orange
       toggle:
-        icon: material/weather-night
-        name: Dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: teal
+        icon: material/brightness-7
+        name: Use light mode
+    - scheme: default
+      primary: black
+      accent: deep orange
       toggle:
-        icon: material/weather-sunny
-        name: Light mode
+        icon: material/brightness-4
+        name: Use dark mode
+
+extra_css:
+  - stylesheets/terminal.css
 
 nav:
-  - Home: index.md
-  - Why Arrow: arrow.md
-  - Declaring data:
+  - Overview:
+      - Start here: index.md
+      - Why Arrow: arrow.md
       - Design rules: design.md
+  - Data contracts:
       - Types: types.md
       - Schema contracts: contracts.md
       - Binary identities: identity.md
-  - Parsing:
+  - FIX and market:
       - FixMsg: fixmsg.md
-      - FIX: fix.md
-      - Configuring a parse: configuring.md
-  - Market: market.md
-  - Storage: iceberg.md
+      - FIX registry: fix.md
+      - Parse configuration: configuring.md
+      - Market lifecycle: market.md
+  - Storage:
+      - Iceberg: iceberg.md
+      - Benchmarks: benchmarks.md
   - Pipeline:
       - Overview: tasks.md
-      - Airflow deployment: airflow.md
-      - End-to-end run: workflow-run.md
-      - Parse messages: tasks/parse-messages.md
-      - Parse FIX: tasks/parse-fix.md
-      - Flatten instruments: tasks/flatten-instruments.md
-      - Parse market: tasks/parse-market.md
-      - Flatten orders: tasks/flatten-orders.md
-      - Flatten executions: tasks/flatten-executions.md
-  - Benchmarks: benchmarks.md
+      - Operations:
+          - Airflow deployment: airflow.md
+          - End-to-end run: workflow-run.md
+      - Tasks:
+          - Parse messages: tasks/parse-messages.md
+          - Parse FIX: tasks/parse-fix.md
+          - Flatten instruments: tasks/flatten-instruments.md
+          - Parse market: tasks/parse-market.md
+          - Flatten orders: tasks/flatten-orders.md
+          - Flatten executions: tasks/flatten-executions.md
 
 # Every page carries its own measurements, so the links into them are anchors
 # rather than page names -- and an anchor mkdocs cannot find is only logged at

@@ -62,12 +62,9 @@ RECORD_KEYS: tuple[str, ...] = (
     "values",
     "value_names",
     "event_types",
-    "handlers",
     "states",
-    "order_states",
-    "technical_values",
-    "technical_plugins",
-    "translations",
+    "encoded",
+    "decoded",
     "used_in",
     "components",
     "aliases",
@@ -76,10 +73,10 @@ RECORD_KEYS: tuple[str, ...] = (
 _SLUG_SPLIT = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", re.ASCII)
 _SLUG_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 
-#: What a translation key keeps: nothing that is not a letter or a digit. This
+#: What an encoded key keeps: nothing that is not a letter or a digit. This
 #: is what makes `ORDER_SUBMISSION_TIME` and `Order Submission Time` one key --
 #: lowercasing alone does not, because of the underscores and the spaces.
-_TRANSLATION_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
+_ENCODED_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 
 # Registry identifiers come from prose pages as often as from XML. A suffix is
 # annotation, never part of the FIX name that a renderer writes.
@@ -174,8 +171,8 @@ def newest_rank(version: str) -> tuple[int, ...]:
 
 
 @functools.lru_cache(maxsize=4096)
-def translation_key(text: str) -> str:
-    """A value or its name as `translations` keys it: casefolded, letters and digits.
+def encoded_key(text: str) -> str:
+    """A value or its name as `encoded` keys it: casefolded letters and digits.
 
     `ORDER_SUBMISSION_TIME`, `Order Submission Time` and `ordersubmissiontime`
     are one key; plain lowercasing leaves three.
@@ -184,10 +181,10 @@ def translation_key(text: str) -> str:
     single message -- a hundred thousand calls over two thousand lines, of
     which two hundred were distinct (benchmarks/bench_market.py).
     """
-    return _TRANSLATION_DROP.sub("", str(text).casefold())
+    return _ENCODED_DROP.sub("", str(text).casefold())
 
 
-def translations_of(
+def encodings_of(
     values: Mapping[str, str], value_names: Mapping[str, str]
 ) -> tuple[dict[str, str], dict[str, list[str]]]:
     """`({normalized spelling: value}, {dropped spelling: the values claiming it})`.
@@ -200,12 +197,21 @@ def translations_of(
     claimed: dict[str, list[str]] = {}
     for source in (values, value_names):
         for value, spelled in source.items():
-            _claim(claimed, translation_key(spelled), str(value))
+            _claim(claimed, encoded_key(spelled), str(value))
     for value in (*values, *value_names):
-        _claim(claimed, translation_key(value), str(value))
+        _claim(claimed, encoded_key(value), str(value))
     found = {key: owners[0] for key, owners in claimed.items() if key and len(owners) == 1}
     collisions = {key: owners for key, owners in claimed.items() if key and len(owners) > 1}
     return found, collisions
+
+
+def decodings_of(values: Mapping[str, str], value_names: Mapping[str, str]) -> dict[str, str]:
+    """Wire values to one deterministic normalized string each."""
+    decoded: dict[str, str] = {}
+    for value in dict.fromkeys((*values, *value_names)):
+        source = value_names.get(value) or values.get(value) or value
+        decoded[str(value)] = encoded_key(source) or str(value)
+    return decoded
 
 
 def _claim(claimed: dict[str, list[str]], key: str, value: str) -> None:
@@ -280,22 +286,16 @@ class FieldEntry(Convertible):
     value_names: Mapping[str, str] = dataclasses.field(default_factory=dict)
     #: `{MsgType: EventType}` for classifying a message before transcription.
     event_types: Mapping[str, EventType] = dataclasses.field(default_factory=dict)
-    #: `{MsgType: market handler}` for supported FIX-to-market translations.
-    handlers: Mapping[str, str] = dataclasses.field(default_factory=dict)
     #: `{wire value: State}` for this field's market lifecycle meaning.
     states: Mapping[str, State] = dataclasses.field(default_factory=dict)
-    #: `{wire value: State}` when this field supplies an Order fallback.
-    order_states: Mapping[str, State] = dataclasses.field(default_factory=dict)
-    #: Values intentionally excluded from market parsing.
-    technical_values: tuple[str, ...] = ()
-    #: Plugin codes intentionally excluded from market parsing.
-    technical_plugins: tuple[str, ...] = ()
     #: `{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both reach
     #: `1`. Generated from `values` and `value_names`; a hand-written entry
     #: here survives a rebuild, because the generated map is the default and
-    #: not the whole map. Read through `translate`, off the record -- a
+    #: not the whole map. Read through `encode`, off the record -- a
     #: projected `Field` carries the values it was built from, not this.
-    translations: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    encoded: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    #: `{value: normalized spelling}` for simple string decoding.
+    decoded: Mapping[str, str] = dataclasses.field(default_factory=dict)
     used_in: tuple[str, ...] = ()
     components: tuple[str, ...] = ()
     note: str = ""
@@ -305,7 +305,7 @@ class FieldEntry(Convertible):
     column: str = ""
 
     def __post_init__(self) -> None:
-        """Refuse a record no lookup could answer for, and fill the translations."""
+        """Refuse a record no lookup could answer for, and fill its codecs."""
         if not str(self.name).strip():
             raise ValueError("a FIX field record has no name")
         if self.kind not in KINDS:
@@ -316,23 +316,16 @@ class FieldEntry(Convertible):
             raise ValueError(f"namespaced FIX field {self.name!r} must not claim tag {self.tag}")
         if not self.versions:
             raise ValueError(f"FIX field {self.name!r} is declared for no version")
-        if (self.event_types or self.handlers) and self.tag != 35:
-            raise ValueError("FIX event types and handlers belong to MsgType <35>")
-        if (self.technical_values or self.technical_plugins) and self.tag != 35:
-            raise ValueError("technical message configuration belongs to MsgType <35>")
+        if self.event_types and self.tag != 35:
+            raise ValueError("FIX event types belong to MsgType <35>")
         object.__setattr__(self, "versions", canonical_versions(self.versions))
         object.__setattr__(self, "event_types", _event_types(self.event_types))
-        object.__setattr__(
-            self,
-            "handlers",
-            {str(key): name_of(value).lower() for key, value in _strings(self.handlers).items()},
-        )
         object.__setattr__(self, "states", _states(self.states))
-        object.__setattr__(self, "order_states", _states(self.order_states))
-        object.__setattr__(self, "technical_values", _unique_strings(self.technical_values))
-        object.__setattr__(self, "technical_plugins", _unique_strings(self.technical_plugins))
-        generated, _ = translations_of(self.values, self.value_names)
-        object.__setattr__(self, "translations", {**generated, **dict(self.translations)})
+        generated, _ = encodings_of(self.values, self.value_names)
+        object.__setattr__(self, "encoded", {**generated, **dict(self.encoded)})
+        object.__setattr__(
+            self, "decoded", {**decodings_of(self.values, self.value_names), **dict(self.decoded)}
+        )
 
     @property
     def key(self) -> int | str:
@@ -364,9 +357,13 @@ class FieldEntry(Convertible):
             found.setdefault(alias.folded, alias.name)
         return tuple(found.values())
 
-    def translate(self, value: str) -> str:
+    def encode(self, value: str) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
-        return self.translations.get(translation_key(value), str(value))
+        return self.encoded.get(encoded_key(value), str(value))
+
+    def decode(self, value: str) -> str:
+        """The normalized name of a FIX value, or the value when none is known."""
+        return self.decoded.get(str(value), str(value))
 
     def meaning(self, value: str) -> str | None:
         """What one value means, where this field enumerates its values.
@@ -423,11 +420,7 @@ class FieldEntry(Convertible):
         for key, value in (
             ("value_names", dict(self.value_names)),
             ("event_types", {key: int(value) for key, value in self.event_types.items()}),
-            ("handlers", dict(self.handlers)),
             ("states", {key: int(value) for key, value in self.states.items()}),
-            ("order_states", {key: int(value) for key, value in self.order_states.items()}),
-            ("technical_values", list(self.technical_values)),
-            ("technical_plugins", list(self.technical_plugins)),
             ("used_in", list(self.used_in)),
             ("components", list(self.components)),
         ):
@@ -473,13 +466,10 @@ class FieldEntry(Convertible):
                 "versions": list(self.versions),
                 "values": dict(self.values),
                 "value_names": dict(self.value_names),
-                "event_types": {key: int(value) for key, value in self.event_types.items()},
-                "handlers": dict(self.handlers),
-                "states": {key: int(value) for key, value in self.states.items()},
-                "order_states": {key: int(value) for key, value in self.order_states.items()},
-                "technical_values": list(self.technical_values),
-                "technical_plugins": list(self.technical_plugins),
-                "translations": dict(self.translations),
+                "event_types": _enum_document(self.event_types),
+                "states": _enum_document(self.states),
+                "encoded": dict(self.encoded),
+                "decoded": dict(self.decoded),
                 "used_in": list(self.used_in),
                 "components": list(self.components),
                 "aliases": [alias.into_dict() for alias in self.aliases],
@@ -503,12 +493,9 @@ class FieldEntry(Convertible):
             values=_strings(mapping.get("values")),
             value_names=_strings(mapping.get("value_names")),
             event_types=_event_types(mapping.get("event_types")),
-            handlers=_strings(mapping.get("handlers")),
             states=_states(mapping.get("states")),
-            order_states=_states(mapping.get("order_states")),
-            technical_values=_unique_strings(mapping.get("technical_values")),
-            technical_plugins=_unique_strings(mapping.get("technical_plugins")),
-            translations=_strings(mapping.get("translations")),
+            encoded=_strings(mapping.get("encoded")),
+            decoded=_strings(mapping.get("decoded")),
             used_in=tuple(str(name) for name in mapping.get("used_in") or ()),
             components=tuple(str(name) for name in mapping.get("components") or ()),
             note=str(mapping.get("note") or ""),
@@ -531,20 +518,12 @@ class FieldEntry(Convertible):
         values: dict[str, str] = {}
         value_names: dict[str, str] = {}
         event_types: dict[str, EventType] = {}
-        handlers: dict[str, str] = {}
         states: dict[str, State] = {}
-        order_states: dict[str, State] = {}
-        technical_values: list[str] = []
-        technical_plugins: list[str] = []
         for member in members:
             values.update(_json_mapping(member.fix.get("values")))
             value_names.update(_json_mapping(member.fix.get("value_names")))
             event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
-            handlers.update(_json_mapping(member.fix.get("handlers")))
             states.update(_states(_json_any(member.fix.get("states"))))
-            order_states.update(_states(_json_any(member.fix.get("order_states"))))
-            technical_values.extend(_json_sequence(member.fix.get("technical_values")))
-            technical_plugins.extend(_json_sequence(member.fix.get("technical_plugins")))
         # Newest first, unlike the values: where a field is used is a list and
         # not a mapping, so the newest version's reading leads it rather than
         # correcting it key by key.
@@ -567,11 +546,7 @@ class FieldEntry(Convertible):
             values=values,
             value_names=value_names,
             event_types=event_types,
-            handlers=handlers,
             states=states,
-            order_states=order_states,
-            technical_values=_unique_strings(technical_values),
-            technical_plugins=_unique_strings(technical_plugins),
             used_in=tuple(used_in),
             components=tuple(components),
             note=str(latest.fix.get("note") or ""),
@@ -802,10 +777,7 @@ def _event_types(mapping: Any) -> dict[str, EventType]:
     found: dict[str, EventType] = {}
     for key, value in mapping.items():
         try:
-            parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
-            found[str(key)] = (
-                EventType[parsed.upper()] if isinstance(parsed, str) else EventType(parsed)
-            )
+            found[str(key)] = _enum_value(EventType, value)
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"unknown EventType {value!r} for MsgType {key!r}") from error
     return found
@@ -818,20 +790,35 @@ def _states(mapping: Any) -> dict[str, State]:
     found: dict[str, State] = {}
     for key, value in mapping.items():
         try:
-            parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
-            found[str(key)] = State[parsed.upper()] if isinstance(parsed, str) else State(parsed)
+            found[str(key)] = _enum_value(State, value)
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"unknown State {value!r} for value {key!r}") from error
     return found
 
 
-def _unique_strings(values: Any) -> tuple[str, ...]:
-    """Configured spellings once each, in declaration order."""
-    if values is None:
-        return ()
-    if isinstance(values, str):
-        values = (values,)
-    return tuple(dict.fromkeys(str(value) for value in values))
+def _enum_value(enum_type: Any, value: Any) -> Any:
+    """Read an enum name, id, or the explicit pair stored in registry JSON."""
+    if isinstance(value, Mapping):
+        if set(value) != {"name", "id"}:
+            raise ValueError("an enum object needs name and id")
+        name = value["name"]
+        identifier = value["id"]
+        if type(name) is not str or not name.strip():
+            raise ValueError("an enum object needs a nonempty string name")
+        if type(identifier) is not int:
+            raise ValueError("an enum object needs an integer id")
+        named = enum_type[name.upper()]
+        identified = enum_type(identifier)
+        if named is not identified:
+            raise ValueError("an enum name and id disagree")
+        return named
+    parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
+    return enum_type[parsed.upper()] if isinstance(parsed, str) else enum_type(parsed)
+
+
+def _enum_document(mapping: Mapping[str, Any]) -> dict[str, dict[str, str | int]]:
+    """Enum mappings with a readable name and stable integer id."""
+    return {str(key): {"name": value.name, "id": int(value)} for key, value in mapping.items()}
 
 
 def _walk(

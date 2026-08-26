@@ -24,7 +24,7 @@ from rekep.enums import (
     State,
 )
 from rekep.fields import Field, scalar
-from rekep.market.event import DAY, HOUR, SYMBOL_CODE, MarketEvent
+from rekep.market.event import DAY, HOUR, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL, frame, hash_bytes
 from rekep.market.instrument import Instrument
@@ -2176,7 +2176,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         unix=unix,
         instrument_xhash=state.instrument_xhash,
         code=state.code,
-        codes={**about.codes, SYMBOL_CODE: state.instrument.symbol or about.symbol},
+        codes=dict(about.codes),
         px_unit=about.px_unit,
         ccy=about.ccy,
         qty_unit=about.qty_unit,

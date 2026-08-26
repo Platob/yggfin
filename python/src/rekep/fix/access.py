@@ -22,7 +22,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.fields.arrays import sequence
-from rekep.fix.entries import FieldEntry, fold, translation_key
+from rekep.fix.entries import FieldEntry, encoded_key, fold
 from rekep.fix.fields import cast_arrow_fix, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import TagIndex
@@ -123,7 +123,7 @@ class Resolved:
     #: Every folded name that answers for the field: the ask's own tail, and
     #: -- with a dictionary -- the canonical name and its recorded aliases.
     names: frozenset[str] = frozenset()
-    #: The separator-blind reading of the tail, `translation_key`'s rule: the
+    #: The separator-blind reading of the tail, `encoded_key`'s rule: the
     #: last tier, so registry-exact `MsgType` remains directly addressable.
     norm: str = ""
     lead: str | None = None
@@ -151,7 +151,7 @@ class Resolved:
     def _named(self, entry: Entry) -> bool:
         if entry.folded in self.names:
             return True
-        return bool(self.norm) and translation_key(entry.name) == self.norm
+        return bool(self.norm) and encoded_key(entry.name) == self.norm
 
 
 class Reading:
@@ -299,7 +299,7 @@ class FieldAccess:
             spelling=spelling,
             tag=tag,
             names=frozenset(names),
-            norm=translation_key(name),
+            norm=encoded_key(name),
             lead=lead,
             index=index,
         )
@@ -415,9 +415,9 @@ class FieldAccess:
         return typed if typed is not None else raw
 
     def typed(self, field: int | str, raw: Any) -> Any:
-        """`raw` as the dictionary reads it: translated, then cast to type.
+        """`raw` as the dictionary reads it: encoded, then cast to type.
 
-        The translation is `FieldEntry.translate` -- the dictionary's own
+        The encoding is `FieldEntry.encode` -- the dictionary's own
         resolver -- and the cast is `cast_arrow_fix`, the same reading the
         columnar path applies, over one value.
         """
@@ -426,7 +426,7 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return raw
-        text = record.translate(raw)
+        text = record.encode(raw)
         arrow_type = self._arrow_type(record)
         if arrow_type is None or pyarrow.types.is_string(arrow_type):
             return text
@@ -438,7 +438,7 @@ class FieldAccess:
     def meaning(self, field: int | str, raw: Any) -> str | None:
         """What one value means, through the record's own `meaning`.
 
-        Translated first, so a value spelled by its meaning still finds it:
+        Encoded first, so a value spelled by its meaning still finds it:
         `Side=Buy` and `Side=1` both mean "Buy".
         """
         if raw is None or not isinstance(raw, str):
@@ -446,7 +446,7 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return None
-        return record.meaning(record.translate(raw))
+        return record.meaning(record.encode(raw))
 
     @cached_property
     def _arrow_types(self) -> dict[int | str, pyarrow.DataType | None]:

@@ -180,12 +180,6 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: UNKNOWN, so registry coverage remains observable.
     msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
 
-    #: Registry-owned operational MsgTypes excluded from market parsing.
-    technical_msg_types: frozenset[str] = frozenset()
-
-    #: Registry-owned plugin codes excluded from market parsing.
-    technical_plugin_codes: frozenset[str] = frozenset()
-
     #: Syntax-only protocol classifier; it never reads registry fields.
     protocol_rules: Any | None = None
 
@@ -337,6 +331,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         *,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -350,6 +346,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         reader = self.into_arrow_reader(
             include_regexes=include_regexes,
             exclude_regexes=exclude_regexes,
+            include_msgtypes=include_msgtypes,
+            exclude_msgtypes=exclude_msgtypes,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -442,6 +440,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         fold_continuations: bool = True,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -456,6 +456,8 @@ class TextFile(Dataset, io.BufferedIOBase):
             batch_byte_size=batch_byte_size,
             include_regexes=include_regexes,
             exclude_regexes=exclude_regexes,
+            include_msgtypes=include_msgtypes,
+            exclude_msgtypes=exclude_msgtypes,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -475,6 +477,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -489,6 +493,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         self._check_open()
         includes = _regexes("include_regexes", include_regexes)
         excludes = _regexes("exclude_regexes", exclude_regexes)
+        included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
+        excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
         _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
@@ -498,6 +504,8 @@ class TextFile(Dataset, io.BufferedIOBase):
             fold_continuations,
             includes,
             excludes,
+            included_msgtypes,
+            excluded_msgtypes,
             start_unix,
             end_unix,
         )
@@ -519,6 +527,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         fold_continuations: bool,
         include_regexes: Sequence[str],
         exclude_regexes: Sequence[str],
+        include_msgtypes: Sequence[str],
+        exclude_msgtypes: Sequence[str],
         start_unix: int | None,
         end_unix: int | None,
     ) -> Iterator[pyarrow.RecordBatch]:
@@ -572,6 +582,8 @@ class TextFile(Dataset, io.BufferedIOBase):
                     rownums[:cut],
                     include_regexes,
                     exclude_regexes,
+                    include_msgtypes,
+                    exclude_msgtypes,
                     start_unix,
                     end_unix,
                 )
@@ -585,6 +597,8 @@ class TextFile(Dataset, io.BufferedIOBase):
                 rownums,
                 include_regexes,
                 exclude_regexes,
+                include_msgtypes,
+                exclude_msgtypes,
                 start_unix,
                 end_unix,
             )
@@ -597,6 +611,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         rownums: list[int],
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
+        include_msgtypes: Sequence[str] = (),
+        exclude_msgtypes: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
     ) -> pyarrow.RecordBatch:
@@ -635,6 +651,18 @@ class TextFile(Dataset, io.BufferedIOBase):
         if not count:
             return _empty_batch(schema)
 
+        selected = _msgtype_mask(
+            Message.msg_types_arrow(messages), include_msgtypes, exclude_msgtypes
+        )
+        if selected is not None:
+            unix, threads, plugins, messages, rownums_array = (
+                pyarrow.compute.filter(values, selected)
+                for values in (unix, threads, plugins, messages, rownums_array)
+            )
+        count = len(unix)
+        if not count:
+            return _empty_batch(schema)
+
         columns: dict[str, Any] = {
             "unix": unix,
             "unix_partition": unix_partition_arrow(unix),
@@ -661,8 +689,6 @@ class TextFile(Dataset, io.BufferedIOBase):
                 messages,
                 self.msg_type_event_types,
                 columns["plugin_code"],
-                self.technical_msg_types,
-                self.technical_plugin_codes,
                 self.protocol_rules,
             )
         )
@@ -886,6 +912,44 @@ def _regexes(name: str, values: Sequence[str]) -> tuple[str, ...]:
     for pattern in patterns:
         pyarrow.compute.match_substring_regex(probe, pattern)
     return patterns
+
+
+def _msgtypes(name: str, values: Sequence[str]) -> tuple[str, ...]:
+    """An exact MsgType list, never a string split into characters."""
+    if isinstance(values, str):
+        raise TypeError(f"{name} must be a sequence of MsgType strings, not one string")
+    found = tuple(values)
+    invalid = next((type(value).__name__ for value in found if not isinstance(value, str)), None)
+    if invalid is not None:
+        raise TypeError(f"{name} must contain only MsgType strings, got {invalid}")
+    return tuple(dict.fromkeys(found))
+
+
+def _msgtype_mask(
+    msgtypes: pyarrow.Array,
+    include_msgtypes: Sequence[str],
+    exclude_msgtypes: Sequence[str],
+) -> pyarrow.Array | None:
+    """Rows admitted by an exact include and no exact exclude."""
+    compute = pyarrow.compute
+    included = (
+        None
+        if not include_msgtypes
+        else compute.fill_null(
+            compute.is_in(msgtypes, value_set=pyarrow.array(include_msgtypes)), False
+        )
+    )
+    excluded = (
+        None
+        if not exclude_msgtypes
+        else compute.fill_null(
+            compute.is_in(msgtypes, value_set=pyarrow.array(exclude_msgtypes)), False
+        )
+    )
+    if excluded is None:
+        return included
+    allowed = compute.invert(excluded)
+    return allowed if included is None else compute.and_(included, allowed)
 
 
 def _message_mask(

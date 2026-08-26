@@ -29,6 +29,7 @@ from typing import Any, Protocol
 import pyarrow.fs
 
 from rekep.convert import Convertible
+from rekep.enums import State
 from rekep.fields import Field
 from rekep.filesystems import write_bytes
 from rekep.fix.entries import (
@@ -37,11 +38,11 @@ from rekep.fix.entries import (
     ComponentEntry,
     FieldEntry,
     _json_mapping,
+    encodings_of,
     fold,
     newest_of,
     newest_rank,
     slug_of,
-    translations_of,
 )
 from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecMember
 from rekep.require import require
@@ -814,14 +815,11 @@ def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEnt
             values={**held.values, **fresh.values},
             value_names={**held.value_names, **fresh.value_names},
             event_types={**fresh.event_types, **held.event_types},
-            handlers={**fresh.handlers, **held.handlers},
             states={**fresh.states, **held.states},
-            order_states={**fresh.order_states, **held.order_states},
-            technical_values=_union(fresh.technical_values, held.technical_values),
-            technical_plugins=_union(fresh.technical_plugins, held.technical_plugins),
             used_in=_union(held.used_in, fresh.used_in),
             components=_union(held.components, fresh.components),
-            translations=dict(held.translations),
+            encoded=dict(held.encoded),
+            decoded=dict(held.decoded),
             aliases=_displaced(held, fresh.name),
             column=held.column or fresh.column,
         )
@@ -831,11 +829,7 @@ def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEnt
         values={**fresh.values, **held.values},
         value_names={**fresh.value_names, **held.value_names},
         event_types={**fresh.event_types, **held.event_types},
-        handlers={**fresh.handlers, **held.handlers},
         states={**fresh.states, **held.states},
-        order_states={**fresh.order_states, **held.order_states},
-        technical_values=_union(fresh.technical_values, held.technical_values),
-        technical_plugins=_union(fresh.technical_plugins, held.technical_plugins),
         used_in=_union(held.used_in, fresh.used_in),
         components=_union(held.components, fresh.components),
         column=held.column or fresh.column,
@@ -938,7 +932,7 @@ class Collapse(Convertible):
 
 @dataclasses.dataclass(frozen=True)
 class Collision(Convertible):
-    """One translation spelling two values both normalize to, so neither has it."""
+    """One encoded spelling two values both normalize to, so neither has it."""
 
     name: str
     key: str
@@ -976,7 +970,7 @@ PARTS: tuple[str, ...] = (VALUES, VALUE_NAMES, TYPE, NAME, NOTE, MEMBERS)
 
 @dataclasses.dataclass(frozen=True)
 class ConflictReport(Convertible):
-    """Every reading a build dropped, and every translation it could not spell.
+    """Every reading a build dropped, and every encoding it could not spell.
 
     A dictionary is collapsed once and read forever, so the judgement it makes
     is written down rather than inferred: a silent drop is a reading nobody can
@@ -987,11 +981,11 @@ class ConflictReport(Convertible):
     collisions: tuple[Collision, ...] = ()
 
     def counts(self) -> dict[str, int]:
-        """`{part: identities collapsed there}`, with the translations beside them."""
+        """`{part: identities collapsed there}`, with encoding collisions beside them."""
         counted = dict.fromkeys(PARTS, 0)
         for collapse in self.collapses:
             counted[collapse.part] = counted.get(collapse.part, 0) + 1
-        counted["translations"] = len(self.collisions)
+        counted["encoded"] = len(self.collisions)
         return counted
 
     def exceeds(self, baseline: Mapping[str, int]) -> list[str]:
@@ -1049,7 +1043,7 @@ def collapse(
             [member for _, member in found], [version for version, _ in found]
         )
         collapses.extend(_field_collapses(entry, found))
-        _, clashing = translations_of(entry.values, entry.value_names)
+        _, clashing = encodings_of(entry.values, entry.value_names)
         collisions.extend(
             Collision(entry.name, spelling, tuple(owners), entry.tag)
             for spelling, owners in sorted(clashing.items())
@@ -1064,6 +1058,13 @@ def collapse(
         entries[key] = entry
 
     entries = _aliased(entries, collapses, by_name)
+    for tag, mapping in State.fix_mapping().items():
+        entry = entries.get(tag)
+        if entry is None:
+            continue
+        declared = entry.values.keys() | entry.value_names.keys()
+        defaults = {code: state for code, state in mapping.items() if code in declared}
+        entries[tag] = dataclasses.replace(entry, states={**defaults, **entry.states})
 
     component_readings: dict[str, list[tuple[str, SpecComponent]]] = {}
     for version in order:

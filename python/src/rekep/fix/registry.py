@@ -6,15 +6,18 @@ import concurrent.futures
 import dataclasses
 import html
 import importlib.resources
+import io
 import json
 import os
 import pathlib
 import re
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
 import warnings
+import zipfile
 from collections.abc import Iterator, Mapping, Sequence
 from functools import cache, cached_property
 from types import MappingProxyType
@@ -26,7 +29,15 @@ from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
-from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, name_of, newest_rank
+from rekep.fix.entries import (
+    ANY_VERSION,
+    Alias,
+    ComponentEntry,
+    FieldEntry,
+    fold,
+    name_of,
+    newest_rank,
+)
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -39,19 +50,26 @@ from rekep.fix.quickfix import (
     spec_name,
 )
 from rekep.fix.store import (
+    COMPONENTS,
+    DECLARED,
     DOCUMENT_SUFFIX,
+    FIELDS,
+    SESSIONS,
+    STORED,
+    VERSIONS_FILE,
     ArchiveDocuments,
     ConflictReport,
     DirectoryDocuments,
     Documents,
     ShardedLayout,
     collapse,
+    document_of,
     documents_of,
     field_document,
     slug_collisions,
     write_archive,
 )
-from rekep.urls import HTTP, Url
+from rekep.urls import HTTP, LOCAL, Url
 
 #: The dictionary that is scraped: OnixS publishes every FIX version as one
 #: page per version listing the tags, and one page per field carrying the
@@ -65,6 +83,24 @@ _USER_AGENT = "rekep-fix-registry (+https://github.com/Platob/rekep)"
 #: list, so everything after the first scrape works offline -- including on a
 #: machine that was never online, by copying the directory.
 CACHE_DIRECTORY = pathlib.Path.home() / ".config" / "fix"
+
+#: Optional full-registry archive and bearer token used to fill a cold default store.
+REGISTRY_URL_ENVIRONMENT = "REKEP_FIX_REGISTRY_URL"
+REGISTRY_TOKEN_ENVIRONMENT = "REKEP_FIX_REGISTRY_TOKEN"
+
+#: A registry is currently under 3 MiB expanded; this bounds corrupt or hostile archives.
+_REGISTRY_ARCHIVE_MAX_BYTES = 64 * 1024 * 1024
+_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES = 16 * 1024 * 1024
+_REGISTRY_ARCHIVE_MAX_DOCUMENTS = 10_000
+_REGISTRY_ARCHIVE_READ_BYTE_SIZE = 64 * 1024
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse authenticated redirects so a bearer token reaches one HTTPS URL."""
+
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
 
 #: What one bootstrap costs, said before it starts. The dictionary is a page
 #: per field per version and the site throttles a long walk, so the number is
@@ -149,7 +185,7 @@ _DEFAULT = object()
 
 @dataclasses.dataclass(eq=False)
 class FixRegistry(Convertible):
-    """The OnixS FIX dictionary as `Field`s, one scrape then offline forever."""
+    """The FIX dictionary as local `Field` declarations."""
 
     #: Where the dictionary lives; override to scrape a mirror.
     base_url: str = BASE_URL
@@ -173,6 +209,12 @@ class FixRegistry(Convertible):
 
     #: Optional filesystem for `cache_dir`, whose value is then a path on it.
     filesystem: pyarrow.fs.FileSystem | None = None
+
+    #: Full registry archive tried before scraping when the default store is empty.
+    registry_url: str | None = None
+
+    #: Optional bearer token for `registry_url`; consumed and never serialised.
+    registry_token: dataclasses.InitVar[str | None] = None
 
     #: Seconds one page fetch may take, and how many fetch at once. The site
     #: is a static dictionary; eight lanes drain a version in seconds without
@@ -220,10 +262,26 @@ class FixRegistry(Convertible):
     #: wrong for an operation somebody is waiting on.
     announce: Any = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, registry_token: str | None) -> None:
         """Normalise the locations once, then bootstrap the default store."""
         self.base_url = Url.from_string(str(self.base_url)).into_string().rstrip("/")
         self.spec_url = Url.from_string(str(self.spec_url)).into_string().rstrip("/")
+        if self.registry_url is None:
+            self.registry_url = os.environ.get(REGISTRY_URL_ENVIRONMENT)
+        self.__dict__["_registry_token"] = (
+            registry_token
+            if registry_token is not None
+            else os.environ.get(REGISTRY_TOKEN_ENVIRONMENT)
+        )
+        if self.registry_url:
+            source = Url.from_string(self.registry_url)
+            if source.user is not None:
+                raise ValueError("registry_url cannot contain credentials; use registry_token")
+            if source.query:
+                raise ValueError("registry_url cannot contain a query")
+            if self.__dict__["_registry_token"] and source.scheme == "http":
+                raise ValueError("registry_token requires an HTTPS registry_url")
+            self.registry_url = source.into_string()
         if self.cache_dir is None:
             self.cache_dir = CACHE_DIRECTORY
         if self.cache_ttl < 0:
@@ -246,17 +304,50 @@ class FixRegistry(Convertible):
         """
         return cls(cache_dir=builtin_projection(), offline=not cache_ttl, cache_ttl=cache_ttl)
 
+    @classmethod
+    def scrape(
+        cls,
+        dump_folder: str | os.PathLike[str] | None = None,
+        **configuration: Any,
+    ) -> Self:
+        """Scrape a fresh registry and replace one local directory with it."""
+        reserved = {"cache_dir", "filesystem", "offline"} & configuration.keys()
+        if reserved:
+            raise TypeError(f"scrape configures {sorted(reserved)} through dump_folder")
+        location = Url.from_string(os.fspath(dump_folder or CACHE_DIRECTORY))
+        if location.scheme not in LOCAL or pathlib.PurePath(location.path).suffix.lower() == ".zip":
+            raise ValueError("FixRegistry.scrape requires a local dump folder")
+        target = pathlib.Path(local_path(location.into_string()))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists() and (not target.is_dir() or target.is_symlink()):
+            raise ValueError(f"the FIX registry dump target is not a directory: {target}")
+
+        with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
+            root = pathlib.Path(scratch)
+            staged = root / target.name
+            source = cls(cache_dir=staged, offline=False, **configuration)
+            source.rebuild()
+            cls._validate_registry_store(source._documents)
+
+            previous = root / "previous"
+            if target.exists():
+                target.replace(previous)
+            try:
+                staged.replace(target)
+            except BaseException:
+                if previous.exists() and not target.exists():
+                    previous.replace(target)
+                raise
+        return cls(cache_dir=target, offline=True, **configuration)
+
     # -- bootstrapping the default store --------------------------------------
 
     def bootstrap(self) -> bool:
         """Fill the default store, once, saying so before and after; True when it did.
 
-        Four answers, resolved here and never again: a store at `cache_dir`
-        is served silently; no store and a network is one scrape, announced
-        before it starts because a multi-minute blocking fetch must never be
-        inferred from silence; a scrape that fails, and an offline registry
-        with no store, both serve the packaged projection and say the registry
-        is reduced.
+        A cold online store tries the configured full archive, then the source
+        dictionaries. A failed source or a cold offline store serves the
+        packaged projection and says that it is reduced.
 
         Only the *default* store is bootstrapped. A `cache_dir` somebody named
         is that store, cold or not -- it is about to be written, or it is a
@@ -269,6 +360,26 @@ class FixRegistry(Convertible):
             return False
         if self._documents.names():
             return False
+        if not self.offline and self.registry_url:
+            source = Url.from_string(self.registry_url)
+            self._say(
+                f"no FIX registry at {self.cache_dir}; downloading the full dictionary "
+                f"from {source.masked}"
+            )
+            started = time.monotonic()
+            try:
+                counted = self._install_registry_archive()
+            except (OSError, ValueError, zipfile.BadZipFile, pyarrow.ArrowException) as error:
+                self._say(
+                    f"the FIX registry archive at {source.masked} could not be installed "
+                    f"({error}); falling back to the source dictionaries"
+                )
+            else:
+                self._say(
+                    f"the FIX registry is installed at {self.cache_dir}: {counted} documents, "
+                    f"in {time.monotonic() - started:.0f}s"
+                )
+                return True
         if self.offline:
             self._reduced("this registry is offline")
             return False
@@ -293,9 +404,352 @@ class FixRegistry(Convertible):
         )
         return True
 
+    def _install_registry_archive(self) -> int:
+        """Download, validate and expand the configured registry archive."""
+        if not self.registry_url:  # pragma: no cover - guarded by bootstrap
+            raise ValueError("a FIX registry archive URL is required")
+        payload = self._registry_archive_payload()
+        documents = self._registry_archive_documents(payload)
+        return self._install_registry_documents(documents)
+
+    def _registry_archive_payload(self) -> bytes:
+        """Read the compressed archive in bounded chunks."""
+        if not self.registry_url:  # pragma: no cover - guarded by bootstrap
+            raise ValueError("a FIX registry archive URL is required")
+        source = Url.from_string(self.registry_url)
+        token = self.__dict__.get("_registry_token")
+        if source.scheme in HTTP:
+            headers = {"User-Agent": _USER_AGENT}
+            if token and source.scheme == "https":
+                headers["Authorization"] = f"Bearer {token}"
+            request = urllib.request.Request(self.registry_url, headers=headers)
+            if "Authorization" in headers:
+                response = urllib.request.build_opener(_NoRedirect()).open(
+                    request, timeout=self.timeout
+                )
+            else:
+                response = urllib.request.urlopen(request, timeout=self.timeout)  # noqa: S310
+            with response:
+                return self._bounded_registry_archive(response)
+        filesystem, path = resolve(self.registry_url)
+        info = filesystem.get_file_info(path)
+        if info.type == pyarrow.fs.FileType.NotFound:
+            raise FileNotFoundError(self.registry_url)
+        if info.size > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
+            raise ValueError(
+                "the FIX registry archive exceeds "
+                f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
+            )
+        with filesystem.open_input_stream(path) as stream:
+            return self._bounded_registry_archive(stream)
+
+    @staticmethod
+    def _bounded_registry_archive(stream: Any) -> bytes:
+        """Read at most the configured compressed archive size."""
+        length = getattr(stream, "headers", {}).get("Content-Length")
+        if str(length or "").isdigit() and int(length) > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
+            raise ValueError(
+                "the FIX registry archive exceeds "
+                f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
+            )
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            read_size = min(
+                _REGISTRY_ARCHIVE_READ_BYTE_SIZE,
+                _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES - total + 1,
+            )
+            try:
+                chunk = stream.read(read_size)
+            except (OSError, EOFError, RuntimeError, pyarrow.ArrowException) as error:
+                raise OSError(f"the FIX registry archive download failed: {error}") from error
+            if not chunk:
+                break
+            payload = bytes(chunk)
+            total += len(payload)
+            if total > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
+                raise ValueError(
+                    "the FIX registry archive exceeds "
+                    f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
+                )
+            chunks.append(payload)
+        return b"".join(chunks)
+
+    def _install_registry_documents(self, documents: Mapping[str, Mapping[str, Any]]) -> int:
+        """Stage a complete default store beside its final path, then rename it."""
+        if self.filesystem is not None:
+            raise ValueError("a downloaded FIX registry requires the local default store")
+        target = pathlib.Path(os.fspath(self.cache_dir))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
+            staged = pathlib.Path(scratch) / target.name
+            place = DirectoryDocuments(pyarrow.fs.LocalFileSystem(), staged.as_posix())
+            for name in sorted(documents):
+                place.write(name, documents[name])
+            if set(place.names()) != set(documents):
+                raise OSError("the staged FIX registry is incomplete")
+            counted = self._validate_registry_store(place)
+            try:
+                target.rmdir()
+            except FileNotFoundError:
+                pass
+            except OSError:
+                return self._accept_registry_winner(target)
+            try:
+                staged.replace(target)
+            except OSError:
+                return self._accept_registry_winner(target)
+        self._forget()
+        return counted
+
+    def _accept_registry_winner(self, target: pathlib.Path) -> int:
+        """Accept a complete store installed by a concurrent process."""
+        place = DirectoryDocuments(pyarrow.fs.LocalFileSystem(), target.as_posix())
+        counted = self._validate_registry_store(place)
+        self._forget()
+        return counted
+
+    @staticmethod
+    def _validate_registry_store(place: Documents) -> int:
+        """Validate every staged document as the record it declares."""
+        names = place.names()
+        allowed_index = {"versions", SESSIONS, STORED, DECLARED}
+        index = place.read(VERSIONS_FILE)
+        if not isinstance(index, Mapping):
+            raise ValueError("the FIX registry has no readable version index")
+        unknown = sorted(set(index) - allowed_index)
+        if unknown:
+            raise ValueError(f"the FIX registry version index declares unknown {unknown}")
+        versions = index.get("versions")
+        if (
+            not isinstance(versions, list)
+            or not versions
+            or any(type(version) is not str or not version.strip() for version in versions)
+            or len(set(versions)) != len(versions)
+        ):
+            raise ValueError("the FIX registry version index needs distinct version names")
+        known_versions = set(versions)
+        for key in (STORED, DECLARED):
+            declared = index.get(key, [])
+            if (
+                not isinstance(declared, list)
+                or any(type(version) is not str for version in declared)
+                or len(set(declared)) != len(declared)
+                or not set(declared).issubset(known_versions)
+            ):
+                raise ValueError(f"the FIX registry version index has invalid {key}")
+        sessions = index.get(SESSIONS, {})
+        if not isinstance(sessions, Mapping) or not set(sessions).issubset(known_versions):
+            raise ValueError("the FIX registry version index has invalid sessions")
+        for version, members in sessions.items():
+            if not isinstance(members, list):
+                raise ValueError(f"the FIX {version} session is not a sequence")
+            seen: set[str] = set()
+            for member in members:
+                if (
+                    not isinstance(member, list | tuple)
+                    or len(member) != 2
+                    or type(member[0]) is not str
+                    or not member[0].strip()
+                    or type(member[1]) is not bool
+                    or member[0] in seen
+                ):
+                    raise ValueError(f"the FIX {version} session has an invalid field")
+                seen.add(member[0])
+
+        fields: dict[int | str, FieldEntry] = {}
+        components: dict[str, ComponentEntry] = {}
+        component_tags: set[int] = set()
+        component_refs: set[str] = set()
+        for name in names:
+            if name == VERSIONS_FILE:
+                continue
+            document = place.read(name)
+            if not isinstance(document, Mapping) or not document:
+                raise ValueError(f"FIX registry document {name!r} is empty or unreadable")
+            if name.startswith(f"{FIELDS}/"):
+                for stored, record in document.items():
+                    if not isinstance(record, Mapping):
+                        raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
+                    record_versions = record.get("versions")
+                    if (
+                        type(record.get("name")) is not str
+                        or not isinstance(record_versions, list)
+                        or any(type(version) is not str for version in record_versions)
+                        or not set(record_versions).issubset(known_versions | {ANY_VERSION})
+                        or not isinstance(record.get("aliases", []), list)
+                        or any(
+                            key in record and not isinstance(record[key], Mapping)
+                            for key in (
+                                "values",
+                                "value_names",
+                                "event_types",
+                                "states",
+                                "encoded",
+                                "decoded",
+                            )
+                        )
+                        or any(
+                            key in record and not isinstance(record[key], list)
+                            for key in ("used_in", "components")
+                        )
+                    ):
+                        raise ValueError(f"FIX field {stored!r} in {name!r} has invalid metadata")
+                    try:
+                        entry = FieldEntry.from_dict(record)
+                    except (AttributeError, KeyError, TypeError, ValueError) as error:
+                        raise ValueError(
+                            f"FIX field {stored!r} in {name!r} is invalid: {error}"
+                        ) from error
+                    expected_key = str(entry.tag) if entry.tag is not None else entry.name
+                    if str(stored) != expected_key or field_document(entry) != name:
+                        raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
+                    if entry.key in fields:
+                        raise ValueError(f"FIX field {stored!r} is stored more than once")
+                    fields[entry.key] = entry
+                continue
+            if not name.startswith(f"{COMPONENTS}/"):
+                raise ValueError(f"unexpected FIX registry document {name!r}")
+            unknown = sorted(set(document) - {"name", "versions", "members", "msg_type", "aliases"})
+            component_versions = document.get("versions")
+            members = document.get("members", [])
+            if (
+                unknown
+                or type(document.get("name")) is not str
+                or not isinstance(component_versions, list)
+                or any(type(version) is not str for version in component_versions)
+                or not set(component_versions).issubset(known_versions | {ANY_VERSION})
+                or not isinstance(members, list)
+                or not isinstance(document.get("aliases", []), list)
+            ):
+                raise ValueError(f"FIX component in {name!r} has invalid metadata")
+            pending = list(members)
+            while pending:
+                member = pending.pop()
+                if not isinstance(member, Mapping):
+                    raise ValueError(f"FIX component in {name!r} has a non-object member")
+                kind = member.get("kind")
+                allowed = {"kind", "name", "required"}
+                if kind in ("field", "group"):
+                    allowed.add("tag")
+                if kind == "group":
+                    allowed.add("members")
+                if (
+                    kind not in ("field", "component", "group")
+                    or set(member) - allowed
+                    or type(member.get("name")) is not str
+                    or not member["name"].strip()
+                    or type(member.get("required")) is not bool
+                    or (
+                        kind in ("field", "group")
+                        and (type(member.get("tag")) is not int or member["tag"] <= 0)
+                    )
+                    or (kind == "group" and not isinstance(member.get("members"), list))
+                ):
+                    raise ValueError(f"FIX component in {name!r} has an invalid member")
+                if kind == "group":
+                    pending.extend(member["members"])
+                if kind in ("field", "group"):
+                    component_tags.add(member["tag"])
+                elif kind == "component":
+                    component_refs.add(fold(member["name"]))
+            try:
+                entry = ComponentEntry.from_dict(document)
+            except (AttributeError, KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"FIX component in {name!r} is invalid: {error}") from error
+            expected = f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}"
+            if name != expected or entry.slug in components:
+                raise ValueError(f"FIX component {entry.name!r} is stored under the wrong name")
+            components[entry.slug] = entry
+        if not fields:
+            raise ValueError("the FIX registry has no fields")
+        field_names = {
+            fold(spelling) for entry in fields.values() for spelling in entry.spellings()
+        }
+        for version, members in sessions.items():
+            missing = [name for name, _required in members if fold(name) not in field_names]
+            if missing:
+                raise ValueError(f"the FIX {version} session names unknown fields {missing}")
+        missing_tags = sorted(component_tags - {entry.tag for entry in fields.values()})
+        if missing_tags:
+            raise ValueError(f"FIX components name unknown field tags {missing_tags[:5]}")
+        missing_components = sorted(
+            component_refs - {entry.folded for entry in components.values()}
+        )
+        if missing_components:
+            raise ValueError(f"FIX components name unknown components {missing_components[:5]}")
+        problems = _problems((fields, components))
+        if problems:
+            raise ValueError(f"the FIX registry is inconsistent: {problems[0]}")
+        return len(names)
+
+    @staticmethod
+    def _registry_archive_documents(payload: bytes) -> dict[str, dict[str, Any]]:
+        """Read only root registry documents from a bounded ZIP archive."""
+        documents: dict[str, dict[str, Any]] = {}
+        expanded = 0
+        try:
+            archive = zipfile.ZipFile(io.BytesIO(payload))
+        except (OSError, EOFError, RuntimeError, NotImplementedError, zipfile.BadZipFile) as error:
+            raise ValueError(f"the FIX registry archive cannot be decoded: {error}") from error
+        with archive:
+            try:
+                members = [member for member in archive.infolist() if not member.is_dir()]
+            except (OSError, EOFError, RuntimeError, zipfile.BadZipFile) as error:
+                raise ValueError(f"the FIX registry archive cannot be decoded: {error}") from error
+            if len(members) > _REGISTRY_ARCHIVE_MAX_DOCUMENTS:
+                raise ValueError("the FIX registry archive has too many documents")
+            for member in members:
+                name = member.filename
+                path = pathlib.PurePosixPath(name)
+                parts = path.parts
+                nested = len(parts) == 2 and parts[0] in (FIELDS, COMPONENTS)
+                if (
+                    not parts
+                    or path.is_absolute()
+                    or "\\" in name
+                    or any(part in ("", ".", "..") for part in parts)
+                    or not (name == VERSIONS_FILE or nested)
+                    or path.suffix != DOCUMENT_SUFFIX
+                ):
+                    raise ValueError(f"unsafe FIX registry archive member {name!r}")
+                if name in documents:
+                    raise ValueError(f"duplicate FIX registry archive member {name!r}")
+                if member.flag_bits & 1:
+                    raise ValueError(f"FIX registry archive member {name!r} is encrypted")
+                expanded += member.file_size
+                if expanded > _REGISTRY_ARCHIVE_MAX_BYTES:
+                    raise ValueError("the FIX registry archive expands beyond 64 MiB")
+                try:
+                    document = document_of(archive.read(member), name)
+                except (
+                    OSError,
+                    EOFError,
+                    RuntimeError,
+                    NotImplementedError,
+                    UnicodeError,
+                    ValueError,
+                    zipfile.BadZipFile,
+                ) as error:
+                    raise ValueError(
+                        f"FIX registry archive member {name!r} cannot be decoded: {error}"
+                    ) from error
+                if not isinstance(document, dict):
+                    raise ValueError(f"FIX registry archive member {name!r} is not an object")
+                documents[name] = document
+        index = documents.get(VERSIONS_FILE)
+        versions = index.get("versions") if index is not None else None
+        if (
+            not isinstance(versions, list)
+            or not versions
+            or not any(name.startswith(f"{FIELDS}/") for name in documents)
+        ):
+            raise ValueError("the FIX registry archive has no version index or fields")
+        return documents
+
     @property
     def installed(self) -> bool:
-        """Whether constructing this registry paid for the scrape and wrote the store."""
+        """Whether construction filled the default store."""
         return bool(self.__dict__.get("_installed"))
 
     def _reduced(self, why: str) -> None:
@@ -304,7 +758,7 @@ class FixRegistry(Convertible):
         self._say(
             f"no FIX registry at {self.cache_dir} and {why}, so a reduced one is served: "
             "the packaged projection parses common traffic and misses the long tail. "
-            "Run `rekep fix registry bootstrap` to install the whole dictionary."
+            "Run `rekep fix registry scrape` to install the whole dictionary."
         )
 
     def _say(self, line: str) -> None:
@@ -608,7 +1062,7 @@ class FixRegistry(Convertible):
     def entry(self, key: int | str) -> FieldEntry | None:
         """The stored record one tag or name resolves to, or None.
 
-        The record, not a projected `Field`: `FieldEntry.translate` and the
+        The record, not a projected `Field`: `FieldEntry.encode` and the
         alias spellings live on it, and `FieldAccess` reads both.
         """
         return self._record(key)
@@ -649,14 +1103,16 @@ class FixRegistry(Convertible):
         )
 
     def msg_type_handlers(self) -> Mapping[str, str]:
-        """Supported MsgTypes to their configured market translation handler."""
+        """Known MsgTypes to their canonical normalized decoded name."""
         return self._msg_type_handlers
 
     @cached_property
     def _msg_type_handlers(self) -> Mapping[str, str]:
-        """MsgType dispatch built once per store revision."""
+        """MsgType codes to their canonical decoded spelling."""
         entry = self.entry(35)
-        return MappingProxyType({}) if entry is None else MappingProxyType(dict(entry.handlers))
+        if entry is None:
+            return MappingProxyType({})
+        return MappingProxyType(dict(entry.decoded))
 
     def state_values(self, field: int | str) -> Mapping[str, State]:
         """Configured market states for one FIX field's wire values."""
@@ -673,44 +1129,6 @@ class FixRegistry(Convertible):
                 if entry.states
             }
         )
-
-    def order_state_values(self, field: int | str) -> Mapping[str, State]:
-        """Configured Order fallback states for one FIX field's wire values."""
-        entry = self.entry(field)
-        return (
-            MappingProxyType({}) if entry is None else self._order_state_values.get(entry.key, {})
-        )
-
-    @cached_property
-    def _order_state_values(self) -> Mapping[int | str, Mapping[str, State]]:
-        """Order-state fallback maps built once per store revision."""
-        return MappingProxyType(
-            {
-                entry.key: MappingProxyType(dict(entry.order_states))
-                for entry in self._entries[0].values()
-                if entry.order_states
-            }
-        )
-
-    def technical_msg_types(self) -> frozenset[str]:
-        """MsgTypes intentionally excluded from market parsing."""
-        return self._technical_msg_types
-
-    @cached_property
-    def _technical_msg_types(self) -> frozenset[str]:
-        """Technical MsgTypes built once per store revision."""
-        entry = self.entry(35)
-        return frozenset() if entry is None else frozenset(entry.technical_values)
-
-    def technical_plugin_codes(self) -> frozenset[str]:
-        """Plugin codes intentionally excluded from market parsing."""
-        return self._technical_plugin_codes
-
-    @cached_property
-    def _technical_plugin_codes(self) -> frozenset[str]:
-        """Technical plugins built once per store revision."""
-        entry = self.entry(35)
-        return frozenset() if entry is None else frozenset(entry.technical_plugins)
 
     def scalar(
         self,
@@ -1373,9 +1791,6 @@ class FixRegistry(Convertible):
         self.__dict__.pop("_msg_types", None)
         self.__dict__.pop("_msg_type_handlers", None)
         self.__dict__.pop("_state_values", None)
-        self.__dict__.pop("_order_state_values", None)
-        self.__dict__.pop("_technical_msg_types", None)
-        self.__dict__.pop("_technical_plugin_codes", None)
         self.__dict__.pop("_group_count_tags", None)
         self.__dict__["_revision"] = self.revision + 1
 
@@ -1468,7 +1883,7 @@ class FixRegistry(Convertible):
 
         The records themselves, copied rather than rebuilt: a record already
         holds every version's contribution, and re-deriving one from a version
-        walk would drop the aliases and the hand-written translations on it.
+        walk would drop the aliases and the hand-written encodings on it.
         """
         if not keys:
             raise ValueError("a FIX registry projection needs at least one field")

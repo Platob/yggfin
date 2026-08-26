@@ -89,7 +89,7 @@ def test_party_is_the_exact_fix_named_shape() -> None:
     assert Party.into_field().field("PartyID").metadata["fix:tag"] == "448"
     assert Party.into_field().field("PartyIDSource").metadata["fix:tag"] == "447"
     assert Party.into_field().field("PartyRole").metadata["fix:tag"] == "452"
-    assert Party.into_field().field("PartyRole").arrow_type == pyarrow.int64()
+    assert Party.into_field().field("PartyRole").arrow_type == pyarrow.int32()
     assert Party.into_field().field("buffer").arrow_type == pyarrow.map_(
         pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
     )

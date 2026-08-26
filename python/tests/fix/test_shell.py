@@ -15,10 +15,11 @@ import pytest
 
 from rekep.console import Console
 from rekep.fields import Field
+from rekep.fix.entries import FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 from rekep.fix.registry import FixRegistry
-from rekep.fix.shell import Shell
+from rekep.fix.shell import Shell, terminal_reader
 
 
 class Offline(FixRegistry):
@@ -88,6 +89,16 @@ def test_a_session_ends_on_quit_and_on_the_end_of_input(store: Offline) -> None:
     assert shell.run() == 0, "and on nothing at all, rather than raising"
 
 
+def test_the_live_prompt_is_presentation_on_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    monkeypatch.setattr("builtins.input", lambda: "show 35")
+    assert terminal_reader("FIX > ") == "show 35"
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "FIX > "
+
+
 def test_help_lists_every_verb_the_loop_dispatches(store: Offline) -> None:
     """So a verb added without a line of help is visible as a gap."""
     printed = _run(store, "help", "quit")
@@ -96,6 +107,12 @@ def test_help_lists_every_verb_the_loop_dispatches(store: Offline) -> None:
     assert verbs == dispatched
     for verb in verbs:
         assert verb in printed
+
+
+def test_help_is_grouped_and_can_explain_one_command(store: Offline) -> None:
+    printed = _run(store, "help", "help show", "quit")
+    assert all(title in printed for title in ("browse", "edit fields", "edit components", "store"))
+    assert "show <name|tag>" in printed
 
 
 def test_versions_says_what_the_store_holds(store: Offline) -> None:
@@ -113,6 +130,10 @@ def test_show_prints_one_identity_and_every_version_of_it(store: Offline) -> Non
     assert "FakeRole" in printed and "90001" in printed and "9.1" in printed
 
 
+def test_show_accepts_a_numeric_tag(store: Offline) -> None:
+    assert "FakeRole" in _run(store, "show 90001", "quit")
+
+
 def test_a_name_nothing_resolves_says_what_it_could_have_meant(store: Offline) -> None:
     printed = _run(store, "show FakeRolle", "quit")
     assert "no field 'FakeRolle'" in printed
@@ -121,6 +142,7 @@ def test_a_name_nothing_resolves_says_what_it_could_have_meant(store: Offline) -
 
 def test_an_unknown_verb_is_reported_rather_than_ignored(store: Offline) -> None:
     assert "no command 'wat'" in _run(store, "wat", "quit")
+    assert "did you mean `show`" in _run(store, "shwo FakeRole", "quit")
 
 
 def test_components_and_component_read_the_declaration(store: Offline) -> None:
@@ -128,6 +150,43 @@ def test_components_and_component_read_the_declaration(store: Offline) -> None:
     printed = _run(store, "component FakeParties", "quit")
     assert "NoFakeParties" in printed
     assert "required" in printed, "the spec's own rule, which is what nullability reads"
+
+
+def test_component_declarations_are_added_updated_and_removed(
+    store: Offline, tmp_path: Path
+) -> None:
+    declaration = tmp_path / "legs.json"
+    declaration.write_text(
+        """{
+  "name": "FakeLegs",
+  "versions": ["9.1"],
+  "members": [{"kind": "field", "name": "FakeCode", "tag": 90002}]
+}
+"""
+    )
+    assert "added FakeLegs" in _run(store, f"add-component {declaration}", "y", "quit")
+    assert store.merged_component("FakeLegs").members[0].name == "FakeCode"
+
+    assert "updated FakeLegs" in _run(store, f"update-component {declaration}", "y", "quit")
+    assert "kept" in _run(store, "remove-component FakeLegs", "n", "quit")
+    assert "removed FakeLegs" in _run(store, "remove-component FakeLegs", "y", "quit")
+    with pytest.raises(KeyError, match="FakeLegs"):
+        store.merged_component("FakeLegs")
+
+
+def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_path: Path) -> None:
+    declaration = tmp_path / "venue.json"
+    FieldEntry(
+        name="FAKE.VENUE.CODE",
+        kind="namespace",
+        versions=("*",),
+        type="String",
+        values={"A": "Alpha"},
+    ).into_json(str(declaration))
+    assert "added FAKE.VENUE.CODE" in _run(store, f"add-field {declaration}", "y", "quit")
+    assert store.resolve("FAKE.VENUE.CODE").values == {"A": "Alpha"}
+
+    assert "updated FAKE.VENUE.CODE" in _run(store, f"update-field {declaration}", "y", "quit")
 
 
 # -- changing it -------------------------------------------------------------

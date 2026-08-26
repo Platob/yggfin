@@ -57,7 +57,7 @@ from rekep.market.identity import NIL
 from rekep.text.message import Message
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "5"})
+_CONTRACT_METADATA = MappingProxyType({"version": "6"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 
@@ -193,14 +193,14 @@ class FixMsg(Message):
         """Give the parsed event its lifecycle and version identities."""
         return Event.identify(self)
 
-    # Nullable, and null on `fix.market`: there `kwargs` carries every
-    # field the line held, so keeping the raw string beside it would store the
-    # same content twice. An all-null column run-length and dictionary encodes
+    # Nullable, and null on `fix.market`: typed columns plus `kwargs` carry
+    # every field the line held, so keeping the raw string beside them would
+    # store the same content twice. An all-null column run-length and dictionary encodes
     # to nothing on disk, which is what makes one stored shape across the
     # three tables affordable -- the same reasoning `_zeros` applies to the
     # envelope members a parsed line leaves unset.
     message: str | None = None
-    """Payload with the header and level stripped; null where `kwargs` holds it all."""
+    """Payload text; null where parsed columns retain every field."""
 
     protocol_code: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
@@ -228,9 +228,9 @@ class FixMsg(Message):
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
     # A list preserves repeated keys and wire order. Null means no parsed
-    # message; an empty list means a message with nothing left after lifting.
+    # message; an empty list means no residual or raw audit sidecar remains.
     kwargs: list[Kwarg] | None = None
-    """Every field the message carried and no column took, as the dictionary read it."""
+    """Unlifted fields and lossless raw audit sidecars for typed columns."""
 
     Parties: Annotated[
         list[Party] | None,
@@ -265,7 +265,7 @@ class FixMsg(Message):
     # -- what a message says, flattened ---------------------------------------
     #
     # Flat fields keep the registry's exact name, type, description and
-    # metadata. A lifted fact is removed from `kwargs`; repeated facts stay.
+    # metadata. A lifted fact stays in `kwargs` only where typing loses text.
 
     # The envelope itself.
 

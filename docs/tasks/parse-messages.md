@@ -19,12 +19,11 @@ Each `Message` row contains:
 Registry names, protocol versions, components and typed values do not belong
 to this stage. Numeric keys remain the numbers the line wrote, named keys
 retain their spelling after a leading `#` syntax marker is removed, and values
-remain text. MsgType metadata decides the
-event kind and identifies technical MsgTypes; registry plugin metadata also
-identifies technical sources such as Jolokia. Their raw log rows remain
-auditable in `logs.messages`, but their argument bodies skip tokenization and
-`parse_fix` excludes them before FIX translation. `parse_fix` owns dictionary
-interpretation.
+remain text. MsgType metadata decides the event kind. Exact `include_msgtypes`
+and `exclude_msgtypes` filters run before argument splitting; the task excludes
+heartbeats (`0`) and test requests (`1`) by default. `technical_plugins` drops
+named operational sources such as Jolokia before persistence. `parse_fix` owns
+dictionary interpretation.
 
 ## Why the table is retained
 
@@ -69,6 +68,16 @@ Null uses the shipped default rules in both stages.
 keep every payload. Matching sees the complete folded message and happens
 together with the `[start, end)` recording-time filter before kwargs and
 message identities are parsed.
+
+`include_msgtypes` admits only exact discriminator values when non-empty;
+`exclude_msgtypes` removes exact values after that inclusion. Rows without a
+discriminator survive an empty include list. Both filters run before kwargs
+are split.
+
+`technical_plugins` names exact plugin codes to omit case-insensitively from
+the parsed stream before it is written. This source policy belongs to the task,
+not to the FIX dictionary; null or an empty list retains every plugin. Rebuild
+`logs.messages` after changing it when previously persisted rows must be removed.
 
 `duration_ns` closes a non-empty batch when its recording-time window changes.
 With `start`, windows begin exactly there; otherwise the first retained `unix`

@@ -23,6 +23,11 @@ parameters:
   # Filtering happens before kwargs and message identities are built.
   include_regexes: []
   exclude_regexes: []
+  # Exact FIX MsgTypes retained or dropped before key/value parsing.
+  include_msgtypes: []
+  exclude_msgtypes: ["0", "1"]
+  # Exact plugin codes excluded after parsing and before persistence.
+  technical_plugins: [jolokia]
   start: null
   end: null
   # Optional recording-time batch window in nanoseconds.

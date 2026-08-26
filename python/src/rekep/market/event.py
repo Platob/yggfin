@@ -43,18 +43,12 @@ HOUR = 3_600_000_000_000
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
-#: What `codes` holds: every readable identifier a row carried beside the one
-#: that names its lifecycle, keyed by whatever carried it -- `symbol`,
-#: `cl_ord_id`, `exec_id`, `isincode`. A map and not a set of columns, because
-#: which identifiers a source spells is the source's business and a column per
-#: candidate is a schema change per venue.
+#: What `codes` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
+#: and `exec_id`. Instrument identity has `instrument_xhash` and
+#: `instrument_code`; mixing it into this map lets unrelated events match.
 CODES_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
-
-#: The one `codes` key this package writes itself. A market row's instrument
-#: symbol used to be `code`, before `code` became the lifecycle identifier.
-SYMBOL_CODE = "symbol"
 
 _LINKED_EVENTS_TYPE = pyarrow.list_(
     pyarrow.field(
@@ -707,7 +701,6 @@ class MarketEvent(Event):
         self.__instrument = instrument
         self.instrument_xhash = self.instrument_xhash or instrument.xhash
         self.instrument_code = self.instrument_code or instrument.code or instrument.symbol
-        self.name_code(SYMBOL_CODE, instrument.symbol)
         if self.ccy is None:
             self.ccy = instrument.currency
         return self
@@ -718,12 +711,8 @@ class MarketEvent(Event):
 
     @property
     def symbol(self) -> str:
-        """The instrument symbol the source spelled, where it spelled one.
-
-        `instrument_code` first: it is the spelling this package settled on for
-        the lifecycle, and `codes` still carries whatever the venue sent.
-        """
-        return self.instrument_code or self.codes.get(SYMBOL_CODE, "")
+        """The flat readable instrument spelling."""
+        return self.instrument_code
 
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.

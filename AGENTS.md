@@ -24,6 +24,27 @@ reader.
 - Delete rather than deprecate. There are no compatibility shims here, so a
   renamed thing has exactly one name.
 
+## Documentation
+
+Documentation is example-first. A reader should reach the working shape before
+the explanation of it.
+
+- Prefer executable Python, command lines, YAML and Arrow schemas to prose.
+  Never replace a concrete example with several paragraphs describing it.
+- Keep prose connective: one explicit fact per sentence and the fewest
+  sentences that make the example safe to use. Delete introductions,
+  repetition and implementation narration.
+- Put commands in fenced blocks that can be copied unchanged. Put configuration
+  beside the command that consumes it and show the resulting schema or table
+  when that is the contract.
+- Keep each fact in the one page that owns it; link there instead of repeating
+  a shortened explanation elsewhere.
+- The site is dark-first and uses black, white, red, orange and yellow. New
+  diagrams and page assets use that palette except for third-party brand marks.
+- Top-level guide families are horizontal tabs. Pages within the selected
+  family remain a categorized vertical navigation; do not flatten the site
+  into one long menu.
+
 ## Command line
 
 `rekep` is read at a terminal, so it is styled like one written this decade --
@@ -31,6 +52,9 @@ and every bit of that degrades on its own.
 
 - `rekep.console.Console` owns colour, box drawing, spinners and tables.
   Nothing else writes an escape sequence.
+- The shell uses the documentation palette: white for primary values, yellow
+  for success and selected values, orange for interaction and warnings, red
+  for failures, and grey only for secondary context. Do not add another hue.
 - Colour is off without a TTY, under `NO_COLOR`, and on `TERM=dumb`. Box
   drawing falls back to ASCII where the stream cannot encode it.
 - Styling goes to `stderr`; the payload -- a dumped document, a report -- goes

@@ -137,7 +137,7 @@
    "R": "REJECTED",
    "H": "HELD"
   },
-  "translations": {
+  "encoded": {
    "accepted": "A",
    "rejected": "R",
    "held": "H",
@@ -147,6 +147,12 @@
    "r": "R",
    "h": "H",
    "n": "N"
+  },
+  "decoded": {
+   "A": "accepted",
+   "R": "rejected",
+   "H": "held",
+   "N": "reminder"
   },
   "used_in": [
    "PositionReport",
@@ -186,7 +192,7 @@
    "6": "INVALID_REG_DETAILS",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "invaliddistribinstns": "13",
    "invalidagentcode": "17",
    "invalidaccountname": "16",
@@ -225,6 +231,27 @@
    "18": "18",
    "6": "6",
    "99": "99"
+  },
+  "decoded": {
+   "13": "invaliddistribinstns",
+   "17": "invalidagentcode",
+   "16": "invalidaccountname",
+   "4": "noregdetails",
+   "15": "invalidpaymentmethod",
+   "14": "invalidpercentage",
+   "3": "invalidownershiptype",
+   "2": "invalidtaxexempttype",
+   "12": "invalidcountry",
+   "11": "invaliddateofbirth",
+   "10": "invalidinvestoridsource",
+   "9": "invalidinvestorid",
+   "8": "invalidmailinginstructions",
+   "7": "invalidmailingdetails",
+   "5": "invalidregseqno",
+   "1": "invalidaccounttype",
+   "18": "invalidaccountnum",
+   "6": "invalidregdetails",
+   "99": "other"
   },
   "used_in": [
    "RegistrationInstructionsResponse"
@@ -378,13 +405,18 @@
    "0": "NEW",
    "1": "REPLACE"
   },
-  "translations": {
+  "encoded": {
    "new": "0",
    "replace": "1",
    "cancel": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "new",
+   "1": "replace",
+   "2": "cancel"
   },
   "used_in": [
    "RegistrationInstructions",
@@ -445,13 +477,18 @@
    "T": "TENANTS_IN_COMMON",
    "2": "JOINT_TRUSTEES"
   },
-  "translations": {
+  "encoded": {
    "jointtrustees": "2",
    "jointinvestors": "J",
    "tenantsincommon": "T",
    "2": "2",
    "j": "J",
    "t": "T"
+  },
+  "decoded": {
+   "2": "jointtrustees",
+   "J": "jointinvestors",
+   "T": "tenantsincommon"
   },
   "used_in": [
    "RegistrationInstructions"
@@ -523,7 +560,7 @@
    "14": "FUND_BASED_RENEWAL_COMMISSION_ON_FUND",
    "13": "FUND_BASED_RENEWAL_COMMISSION_ON_ORDER"
   },
-  "translations": {
+  "encoded": {
    "commissionamountactual": "1",
    "commissionpercentactual": "2",
    "initialchargeamount": "3",
@@ -560,6 +597,23 @@
    "13": "13",
    "14": "14",
    "15": "15"
+  },
+  "decoded": {
+   "1": "commissionamount",
+   "2": "commissionpercent",
+   "3": "initialchargeamount",
+   "4": "initialchargepercent",
+   "5": "discountamount",
+   "6": "discountpercent",
+   "7": "dilutionlevyamount",
+   "8": "dilutionlevypercent",
+   "9": "exitchargeamount",
+   "10": "exitchargepercent",
+   "11": "fundbasedrenewalcommissionpercent",
+   "12": "projectedfundvalue",
+   "13": "fundbasedrenewalcommissiononorder",
+   "14": "fundbasedrenewalcommissiononfund",
+   "15": "netsettlementamount"
   },
   "used_in": [
    "ExecutionReport",
@@ -660,7 +714,7 @@
    "21": "FIRMS_ERROR_ACCOUNT",
    "22": "FIRM_AGENCY_AVERAGE_PRICE_ACCOUNT"
   },
-  "translations": {
+  "encoded": {
    "individualinvestor": "1",
    "publiccompany": "2",
    "privatecompany": "3",
@@ -705,6 +759,30 @@
    "20": "20",
    "21": "21",
    "22": "22"
+  },
+  "decoded": {
+   "1": "individualinvestor",
+   "2": "publiccompany",
+   "3": "privatecompany",
+   "4": "individualtrustee",
+   "5": "companytrustee",
+   "6": "pensionplan",
+   "7": "custodianundergiftstominorsact",
+   "8": "trusts",
+   "9": "fiduciaries",
+   "10": "networkingsubaccount",
+   "11": "nonprofitorganization",
+   "12": "corporatebody",
+   "13": "nominee",
+   "14": "institutionalcustomer",
+   "15": "combined",
+   "16": "memberfirmemployee",
+   "17": "marketmakingaccount",
+   "18": "proprietaryaccount",
+   "19": "nonbrokerdealer",
+   "20": "unknownbeneficialownertype",
+   "21": "firmserroraccount",
+   "22": "firmagencyaveragepriceaccount"
   },
   "used_in": [
    "RegistrationInstructions"
@@ -873,7 +951,7 @@
    "G": "PROPRIETARY",
    "M": "MIXED_CAPACITY"
   },
-  "translations": {
+  "encoded": {
    "agency": "A",
    "proprietary": "G",
    "individual": "I",
@@ -889,6 +967,15 @@
    "r": "R",
    "w": "W",
    "m": "M"
+  },
+  "decoded": {
+   "A": "agency",
+   "G": "proprietary",
+   "I": "individual",
+   "P": "principal",
+   "R": "risklessprincipal",
+   "W": "agentforothermember",
+   "M": "mixedcapacity"
   },
   "used_in": [
    "ExecutionReport",
@@ -970,7 +1057,7 @@
    "H": "SIGNIFICANT_SHAREHOLDER",
    "I": "NORMAL_COURSE_ISSUER_BID"
   },
-  "translations": {
+  "encoded": {
    "programtrade": "1",
    "indexarbitrage": "2",
    "nonindexarbitrage": "3",
@@ -1010,6 +1097,26 @@
    "g": "G",
    "h": "H",
    "i": "I"
+  },
+  "decoded": {
+   "1": "programtrade",
+   "2": "indexarbitrage",
+   "3": "nonindexarbitrage",
+   "4": "competingmarketmaker",
+   "5": "actingasmarketmakerorspecialistinsecurity",
+   "6": "actingasmarketmakerorspecialistinunderlying",
+   "7": "foreignentity",
+   "8": "externalmarketparticipant",
+   "9": "externalinterconnectedmarketlinkage",
+   "A": "risklessarbitrage",
+   "B": "issuerholding",
+   "C": "issuepricestabilization",
+   "D": "nonalgorithmic",
+   "E": "algorithmic",
+   "F": "cross",
+   "G": "insideraccount",
+   "H": "significantshareholder",
+   "I": "normalcourseissuerbid"
   },
   "used_in": [
    "ExecutionReport",
@@ -1080,7 +1187,7 @@
    "B": "CANCEL_ORDERS_FOR_SECURITY_ISSUER",
    "C": "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
   },
-  "translations": {
+  "encoded": {
    "cancelordersforasecurity": "1",
    "cancelordersforanunderlyingsecurity": "2",
    "cancelordersforaproduct460": "3",
@@ -1109,6 +1216,20 @@
    "a": "A",
    "b": "B",
    "c": "C"
+  },
+  "decoded": {
+   "1": "cancelordersforasecurity",
+   "2": "cancelordersforanunderlyingsecurity",
+   "3": "cancelordersforaproduct",
+   "4": "cancelordersforacficode",
+   "5": "cancelordersforasecuritytype",
+   "6": "cancelordersforatradingsession",
+   "7": "cancelallorders",
+   "8": "cancelordersforamarket",
+   "9": "cancelordersforamarketsegment",
+   "A": "cancelordersforasecuritygroup",
+   "B": "cancelordersforsecurityissuer",
+   "C": "cancelforissuerofunderlyingsecurity"
   },
   "used_in": [
    "OrderMassCancelRequest",
@@ -1157,7 +1278,7 @@
    "B": "CANCEL_ORDERS_FOR_A_SECURITIES_ISSUER",
    "C": "CANCEL_ORDERS_FOR_ISSUER_OF_UNDERLYING_SECURITY"
   },
-  "translations": {
+  "encoded": {
    "cancelrequestrejectedseemasscancelrejectreason532": "0",
    "cancelordersforasecurity": "1",
    "cancelordersforanunderlyingsecurity": "2",
@@ -1188,6 +1309,21 @@
    "a": "A",
    "b": "B",
    "c": "C"
+  },
+  "decoded": {
+   "0": "cancelrequestrejected",
+   "1": "cancelordersforasecurity",
+   "2": "cancelordersforanunderlyingsecurity",
+   "3": "cancelordersforaproduct",
+   "4": "cancelordersforacficode",
+   "5": "cancelordersforasecuritytype",
+   "6": "cancelordersforatradingsession",
+   "7": "cancelallorders",
+   "8": "cancelordersforamarket",
+   "9": "cancelordersforamarketsegment",
+   "A": "cancelordersforasecuritygroup",
+   "B": "cancelordersforasecuritiesissuer",
+   "C": "cancelordersforissuerofunderlyingsecurity"
   },
   "used_in": [
    "OrderMassCancelReport"
@@ -1235,7 +1371,7 @@
    "10": "INVALID_OR_UNKNOWN_SECURITY_ISSUER",
    "11": "INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY"
   },
-  "translations": {
+  "encoded": {
    "masscancelnotsupported": "0",
    "invalidorunknownsecurity": "1",
    "invalidorunknownunderlyingsecurity": "2",
@@ -1266,6 +1402,21 @@
    "9": "9",
    "10": "10",
    "11": "11"
+  },
+  "decoded": {
+   "0": "masscancelnotsupported",
+   "1": "invalidorunknownsecurity",
+   "2": "invalidorunknownunderlyingsecurity",
+   "3": "invalidorunknownproduct",
+   "4": "invalidorunknowncficode",
+   "5": "invalidorunknownsecuritytype",
+   "6": "invalidorunknowntradingsession",
+   "99": "other",
+   "7": "invalidorunknownmarket",
+   "8": "invalidorunkownmarketsegment",
+   "9": "invalidorunknownsecuritygroup",
+   "10": "invalidorunknownsecurityissuer",
+   "11": "invalidorunknownissuerofunderlyingsecurity"
   },
   "used_in": [
    "OrderMassCancelReport"
@@ -1370,7 +1521,7 @@
    "3": "COUNTER",
    "4": "INITIALLY_TRADEABLE"
   },
-  "translations": {
+  "encoded": {
    "indicative": "0",
    "tradeable": "1",
    "restrictedtradeable": "2",
@@ -1382,6 +1533,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "indicative",
+   "1": "tradeable",
+   "2": "restrictedtradeable",
+   "3": "counter",
+   "4": "initiallytradeable"
   },
   "used_in": [
    "QuoteStatusReport",
@@ -1500,9 +1658,12 @@
   "values": {
    "\"ZZ\"": "physical or bearer"
   },
-  "translations": {
+  "encoded": {
    "physicalorbearer": "\"ZZ\"",
    "zz": "\"ZZ\""
+  },
+  "decoded": {
+   "\"ZZ\"": "physicalorbearer"
   },
   "components": [
    "Instrument"
@@ -1530,13 +1691,18 @@
    "3": "MARGIN_CLOSE",
    "1": "CASH"
   },
-  "translations": {
+  "encoded": {
    "cash": "1",
    "marginopen": "2",
    "marginclose": "3",
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "cash",
+   "2": "marginopen",
+   "3": "marginclose"
   },
   "used_in": [
    "ExecutionReport",
@@ -1593,7 +1759,7 @@
    "2": "NATIONAL",
    "3": "GLOBAL"
   },
-  "translations": {
+  "encoded": {
    "localmarketexchangeecnats": "1",
    "national": "2",
    "global": "3",
@@ -1601,6 +1767,11 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "localmarket",
+   "2": "national",
+   "3": "global"
   },
   "used_in": [
    "MarketDataRequest",
@@ -1632,13 +1803,17 @@
    "Y": "YES",
    "N": "NO"
   },
-  "translations": {
+  "encoded": {
    "clienthasresponsibilityforimplicitlydeletingbidsoroffersfallingoutsidethemarketdepth264oftherequest": "Y",
    "servermustsendanexplicitdeleteforbidsoroffersfallingoutsidetherequestedmarketdepth264oftherequest": "N",
    "yes": "Y",
    "no": "N",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "MarketDataRequest"
@@ -1692,7 +1867,7 @@
    "8": "STS_CROSS",
    "9": "CUSTOMER_TO_CUSTOMER"
   },
-  "translations": {
+  "encoded": {
    "crossaoncrosstradewhichisexecutedcompletelyornotbothsidesaretreatedinthesamemannerthisisequivalenttoanallornone": "1",
    "crossioccrosstradewhichisexecutedpartiallyandtherestiscancelledonesideisfullyexecutedtheothersideispartiallyexecutedwiththeremainderbeingcancelledthisisequivalenttoaniocontheothersidenotecrossprioritization550fieldmaybeusedtoindicatewhichsideshouldfullyexecuteinthisscenario": "2",
    "crossonesidecrosstradewhichispartiallyexecutedwiththeunfilledportionsremainingactiveonesideofthecrossisfullyexecutedasdenotedbythecrossprioritization550fieldbuttheunfilledportionremainsactive": "3",
@@ -1715,6 +1890,17 @@
    "7": "7",
    "8": "8",
    "9": "9"
+  },
+  "decoded": {
+   "1": "crossaon",
+   "2": "crossioc",
+   "3": "crossoneside",
+   "4": "crosssameprice",
+   "5": "basiscross",
+   "6": "contingentcross",
+   "7": "vwapcross",
+   "8": "stscross",
+   "9": "customertocustomer"
   },
   "used_in": [
    "ExecutionReport",
@@ -1745,13 +1931,18 @@
    "0": "NONE",
    "1": "BUY_SIDE_IS_PRIORITIZED"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "buysideisprioritized": "1",
    "sellsideisprioritized": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "buysideisprioritized",
+   "2": "sellsideisprioritized"
   },
   "used_in": [
    "NewOrderCross",
@@ -1797,11 +1988,15 @@
    "1": "ONE_SIDE",
    "2": "BOTH_SIDES"
   },
-  "translations": {
+  "encoded": {
    "oneside": "1",
    "bothsides": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "oneside",
+   "2": "bothsides"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -2026,7 +2221,7 @@
    "0": "SYMBOL",
    "5": "MARKET_ID_OR_MARKET_ID"
   },
-  "translations": {
+  "encoded": {
    "symbol55": "0",
    "securitytype167andorcficode461": "1",
    "product460": "2",
@@ -2044,6 +2239,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "symbol",
+   "1": "securitytypeand",
+   "2": "product",
+   "3": "tradingsessionid",
+   "4": "allsecurities",
+   "5": "marketidormarketid"
   },
   "used_in": [
    "SecurityListRequest",
@@ -2078,7 +2281,7 @@
    "3": "NOT_AUTHORIZED_TO_RETRIEVE_INSTRUMENT_DATA",
    "2": "NO_INSTRUMENTS_FOUND"
   },
-  "translations": {
+  "encoded": {
    "validrequest": "0",
    "invalidorunsupportedrequest": "1",
    "noinstrumentsfoundthatmatchselectioncriteria": "2",
@@ -2092,6 +2295,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "validrequest",
+   "1": "invalidorunsupportedrequest",
+   "2": "noinstrumentsfound",
+   "3": "notauthorizedtoretrieveinstrumentdata",
+   "4": "instrumentdatatemporarilyunavailable",
+   "5": "requestforinstrumentdatanotsupported"
   },
   "used_in": [
    "DerivativeSecurityList",
@@ -2168,7 +2379,7 @@
    "1": "REPORT_BY_MULTILEG_SECURITY_AND_INSTRUMENT_LEGS",
    "2": "REPORT_BY_INSTRUMENT_LEGS_ONLY"
   },
-  "translations": {
+  "encoded": {
    "reportbymulitlegsecurityonlydonotreportlegs": "0",
    "reportbymultilegsecurityandbyinstrumentlegsbelongingtothemultilegsecurity": "1",
    "reportbyinstrumentlegsbelongingtothemultilegsecurityonlydonotreportstatusofmultilegsecurity": "2",
@@ -2178,6 +2389,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "reportbymulitlegsecurityonly",
+   "1": "reportbymultilegsecurityandinstrumentlegs",
+   "2": "reportbyinstrumentlegsonly"
   },
   "used_in": [
    "NewOrderMultileg",
@@ -2285,12 +2501,16 @@
    "1": "UNKNOWN_OR_INVALID_TRADING_SESSION_ID",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "unknownorinvalidtradingsessionid336": "1",
    "other": "99",
    "unknownorinvalidtradingsessionid": "1",
    "1": "1",
    "99": "99"
+  },
+  "decoded": {
+   "1": "unknownorinvalidtradingsessionid",
+   "99": "other"
   },
   "used_in": [
    "TradingSessionStatus"
@@ -2343,7 +2563,7 @@
    "1": "MATCHED_TRADES_MATCHING_CRITERIA",
    "0": "ALL_TRADES"
   },
-  "translations": {
+  "encoded": {
    "alltrades": "0",
    "matchedtradesmatchingcriteriaprovidedonrequestpartiesexecidtradeidorderidinstrumentinputsourceetc": "1",
    "unmatchedtradesthatmatchcriteria": "2",
@@ -2355,6 +2575,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "alltrades",
+   "1": "matchedtradesmatchingcriteria",
+   "2": "unmatchedtradesthatmatchcriteria",
+   "3": "unreportedtradesthatmatchcriteria",
+   "4": "advisoriesthatmatchcriteria"
   },
   "used_in": [
    "TradeCaptureReportRequest",
@@ -2381,13 +2608,17 @@
    "N": "NO",
    "Y": "YES"
   },
-  "translations": {
+  "encoded": {
    "perviouslyreportedtocounterparty": "Y",
    "notreportedtocounterparty": "N",
    "no": "N",
    "yes": "Y",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -2464,7 +2695,7 @@
    "2": "ADVISORY_OR_ALERT",
    "3": "MISMATCHED"
   },
-  "translations": {
+  "encoded": {
    "comparedmatchedoraffirmed": "0",
    "uncomparedunmatchedorunaffirmed": "1",
    "advisoryoralert": "2",
@@ -2475,6 +2706,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "compared",
+   "1": "uncompared",
+   "2": "advisoryoralert",
+   "3": "mismatched"
   },
   "used_in": [
    "TradeCaptureReportRequest",
@@ -2576,7 +2813,7 @@
    "10": "AUTO_MATCH_LAST_LOOK",
    "11": "CROSS_AUCTION_LAST_LOOK"
   },
-  "translations": {
+  "encoded": {
    "exactmatchontradedate75stocksymbol55quantity53price44tradetype418andspecialtradeindicatorplusfourbadgesandexecutiontimewithintwominutewindow": "A1",
    "exactmatchontradedatestocksymbolquantitypricetradetypeandspecialtradeindicatorplusfourbadges": "A2",
    "exactmatchontradedatestocksymbolquantitypricetradetypeandspecialtradeindicatorplustwobadgesandexecutiontimewithintwominutewindow": "A3",
@@ -2660,6 +2897,43 @@
    "10": "10",
    "11": "11"
   },
+  "decoded": {
+   "A1": "exactmatchplus4badgesexectime",
+   "A2": "exactmatchplus4badges",
+   "A3": "exactmatchplus2badgesexectime",
+   "A4": "exactmatchplus2badges",
+   "AQ": "stampedadvisoriesorspecialistaccepts",
+   "M1": "exactmatchminusbadgestimes",
+   "M2": "summarizedmatchminusbadgestimes",
+   "MT": "ocslockedin",
+   "M3": "actacceptedtrade",
+   "M4": "actdefaulttrade",
+   "M5": "actdefaultafterm2",
+   "M6": "actm6match",
+   "A5": "exactmatchplusexectime",
+   "60": "onepartyprivatelynegotiatedtradereport",
+   "61": "twopartyprivatelynegotiatedtradereport",
+   "62": "continuousautomatch",
+   "63": "crossauction",
+   "64": "counterorderselection",
+   "65": "callauction",
+   "S1": "a1exactmatchsummarizedquantity",
+   "S2": "a2exactmatchsummarizedquantity",
+   "S3": "a3exactmatchsummarizedquantity",
+   "S4": "a4exactmatchsummarizedquantity",
+   "S5": "a5exactmatchsummarizedquantity",
+   "1": "onepartytradereport",
+   "2": "twopartytradereport",
+   "3": "confirmedtradereport",
+   "4": "automatch",
+   "5": "crossauction",
+   "6": "counterorderselection",
+   "7": "callauction",
+   "8": "issuing",
+   "9": "systematicinternaliser",
+   "10": "automatchlastlook",
+   "11": "crossauctionlastlook"
+  },
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReport",
@@ -2694,13 +2968,17 @@
    "Y": "YES",
    "N": "NO"
   },
-  "translations": {
+  "encoded": {
    "treatasroundlotdefault": "N",
    "treatasoddlot": "Y",
    "yes": "Y",
    "no": "N",
    "n": "N",
    "y": "Y"
+  },
+  "decoded": {
+   "N": "no",
+   "Y": "yes"
   },
   "used_in": [
    "TradeCaptureReport"
@@ -2776,7 +3054,7 @@
    "13": "SELF_CLEARING",
    "14": "BUY_IN"
   },
-  "translations": {
+  "encoded": {
    "processnormally": "0",
    "excludefromallnetting": "1",
    "bilateralnettingonly": "2",
@@ -2810,6 +3088,23 @@
    "12": "12",
    "13": "13",
    "14": "14"
+  },
+  "decoded": {
+   "0": "processnormally",
+   "1": "excludefromallnetting",
+   "2": "bilateralnettingonly",
+   "3": "exclearing",
+   "4": "specialtrade",
+   "5": "multilateralnetting",
+   "6": "clearagainstcentralcounterparty",
+   "7": "excludefromcentralcounterparty",
+   "8": "manualmode",
+   "9": "automaticpostingmode",
+   "10": "automaticgiveupmode",
+   "11": "qualifiedservicerepresentativeqsr",
+   "12": "customertrade",
+   "13": "selfclearing",
+   "14": "buyin"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -2920,7 +3215,7 @@
    "12": "ACCOUNT_CUSTOMER_NON_CUSTOMER_ORDERS",
    "13": "ACCOUNT_ORDERS_MULTIPLE_CUSTOMERS"
   },
-  "translations": {
+  "encoded": {
    "accountiscarriedoncustomersideofthebooks": "1",
    "accountiscarriedonnoncustomersideofbooks": "2",
    "housetrader": "3",
@@ -2950,6 +3245,20 @@
    "11": "11",
    "12": "12",
    "13": "13"
+  },
+  "decoded": {
+   "1": "carriedcustomerside",
+   "2": "carriednoncustomerside",
+   "3": "housetrader",
+   "4": "floortrader",
+   "6": "carriednoncustomersidecrossmargined",
+   "7": "housetradercrossmargined",
+   "8": "jointbackofficeaccount",
+   "9": "equitiesspecialist",
+   "10": "optionsmarketmaker",
+   "11": "optionsfirmaccount",
+   "12": "accountcustomernoncustomerorders",
+   "13": "accountordersmultiplecustomers"
   },
   "used_in": [
    "ExecutionReport",
@@ -3021,7 +3330,7 @@
    "4": "ALL_OTHER",
    "5": "RETAIL_CUSTOMER"
   },
-  "translations": {
+  "encoded": {
    "membertradingfortheirownaccount": "1",
    "clearingfirmtradingforitsproprietaryaccount": "2",
    "membertradingforanothermember": "3",
@@ -3032,6 +3341,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "membertradingfortheirownaccount",
+   "2": "clearingfirmtradingforitsproprietaryaccount",
+   "3": "membertradingforanothermember",
+   "4": "allother",
+   "5": "retailcustomer"
   },
   "used_in": [
    "ExecutionReport",
@@ -3145,7 +3461,7 @@
    "9": "STATUS_FOR_SECURITY_ISSUER",
    "10": "STATUS_FOR_ISSUER_OF_UNDERLYING_SECURITY"
   },
-  "translations": {
+  "encoded": {
    "statusforordersforasecurity": "1",
    "statusforordersforanunderlyingsecurity": "2",
    "statusforordersforaproduct460": "3",
@@ -3170,6 +3486,18 @@
    "8": "8",
    "9": "9",
    "10": "10"
+  },
+  "decoded": {
+   "1": "statusforordersforasecurity",
+   "2": "statusforordersforanunderlyingsecurity",
+   "3": "statusforordersforaproduct",
+   "4": "statusforordersforacficode",
+   "5": "statusforordersforasecuritytype",
+   "6": "statusforordersforatradingsession",
+   "7": "statusforallorders",
+   "8": "statusforordersforapartyid",
+   "9": "statusforsecurityissuer",
+   "10": "statusforissuerofunderlyingsecurity"
   },
   "used_in": [
    "OrderMassStatusRequest"
@@ -3308,7 +3636,7 @@
    "1": "SPEAK_WITH_ORDER_INITIATOR_BEFORE_BOOKING",
    "2": "ACCUMULATE"
   },
-  "translations": {
+  "encoded": {
    "cantriggerbookingwithoutreferencetotheorderinitiatorauto": "0",
    "speakwithorderinitiatorbeforebookingspeakfirst": "1",
    "accumulate": "2",
@@ -3317,6 +3645,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "auto",
+   "1": "speakwithorderinitiatorbeforebooking",
+   "2": "accumulate"
   },
   "used_in": [
    "ExecutionReport",
@@ -3356,7 +3689,7 @@
    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL",
    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT"
   },
-  "translations": {
+  "encoded": {
    "eachpartialexecutionisabookableunit": "0",
    "aggregatepartialexecutionsonthisorderandbookonetradeperorder": "1",
    "aggregateexecutionsforthissymbolsideandsettlementdate": "2",
@@ -3365,6 +3698,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "eachpartialexecutionisabookableunit",
+   "1": "aggregatepartialexecutionsonthisorder",
+   "2": "aggregateexecutionsforthissymbol"
   },
   "used_in": [
    "ExecutionReport",
@@ -3402,12 +3740,16 @@
    "0": "PRO_RATA",
    "1": "DO_NOT_PRO_RATA"
   },
-  "translations": {
+  "encoded": {
    "prorata": "0",
    "donotproratadiscussfirst": "1",
    "donotprorata": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "prorata",
+   "1": "donotprorata"
   },
   "used_in": [
    "ExecutionReport",
@@ -3996,7 +4338,7 @@
    "12": "PUBLIC_AUCTION",
    "13": "GROUP_AUCTION"
   },
-  "translations": {
+  "encoded": {
    "pretrading": "1",
    "openingoropeningauction": "2",
    "continuoustrading": "3",
@@ -4025,6 +4367,21 @@
    "11": "11",
    "12": "12",
    "13": "13"
+  },
+  "decoded": {
+   "1": "pretrading",
+   "2": "openingoropeningauction",
+   "3": "continuous",
+   "4": "closingorclosingauction",
+   "5": "posttrading",
+   "6": "scheduledintradayauction",
+   "7": "quiescent",
+   "8": "anyauction",
+   "9": "unscheduledintradayauction",
+   "10": "outofmainsessiontrading",
+   "11": "privateauction",
+   "12": "publicauction",
+   "13": "groupauction"
   },
   "used_in": [
    "Advertisement",
@@ -4163,7 +4520,7 @@
    "25": "APPROVE_TAKEUP",
    "26": "NOTIONAL_VALUE_AVERAGE_PX_GROUP_ALLOC"
   },
-  "translations": {
+  "encoded": {
    "calculatedincludesmiscfeesandnetmoney118": "1",
    "preliminarywithoutmiscfeesandnetmoney118": "2",
    "sellsidecalculatedusingpreliminaryincludesmiscfeesandnetmoney118replaceddeprecatedinfix42": "3",
@@ -4222,6 +4579,34 @@
    "24": "24",
    "25": "25",
    "26": "26"
+  },
+  "decoded": {
+   "1": "calculated",
+   "2": "preliminary",
+   "3": "sellsidecalculatedusingpreliminary",
+   "4": "sellsidecalculatedwithoutpreliminary",
+   "5": "readytobook",
+   "6": "buysidereadytobook",
+   "7": "warehouseinstruction",
+   "8": "requesttointermediary",
+   "9": "accept",
+   "10": "reject",
+   "11": "acceptpending",
+   "12": "incompletegroup",
+   "13": "completegroup",
+   "14": "reversalpending",
+   "15": "reopengroup",
+   "16": "cancelgroup",
+   "17": "giveup",
+   "18": "takeup",
+   "19": "refusetakeup",
+   "20": "initiatereversal",
+   "21": "reverse",
+   "22": "refusereversal",
+   "23": "suballocationgiveup",
+   "24": "approvegiveup",
+   "25": "approvetakeup",
+   "26": "notionalvalueaveragepxgroupalloc"
   },
   "used_in": [
    "AllocationInstructionAlert",
@@ -4438,7 +4823,7 @@
    "B": "CBOE_MEMBER",
    "L": "LESSEE106_F_EMPLOYEES"
   },
-  "translations": {
+  "encoded": {
    "cboemember": "B",
    "nonmemberandcustomer": "C",
    "equitymemberandclearingmember": "E",
@@ -4476,6 +4861,22 @@
    "4": "4",
    "5": "5",
    "9": "9"
+  },
+  "decoded": {
+   "B": "cboemember",
+   "C": "nonmemberandcustomer",
+   "E": "equitymemberandclearingmember",
+   "F": "fullandassociatemember",
+   "H": "firms106hand106j",
+   "I": "gim",
+   "L": "lessee106femployees",
+   "M": "allotherownershiptypes",
+   "1": "firstyeardelegate",
+   "2": "secondyeardelegate",
+   "3": "thirdyeardelegate",
+   "4": "fourthyeardelegate",
+   "5": "fifthyeardelegate",
+   "9": "sixthyeardelegate"
   },
   "used_in": [
    "ExecutionReport",
@@ -4518,13 +4919,17 @@
    "N": "NO",
    "Y": "YES"
   },
-  "translations": {
+  "encoded": {
    "orderiscurrentlybeingworked": "Y",
    "orderhasbeenacceptedbutnotyetinaworkingstate": "N",
    "no": "N",
    "yes": "Y",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "ExecutionReport",
@@ -4577,11 +4982,15 @@
    "0": "PRIORITY_UNCHANGED",
    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
   },
-  "translations": {
+  "encoded": {
    "priorityunchanged": "0",
    "lostpriorityasresultoforderchange": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "priorityunchanged",
+   "1": "lostpriorityasresultoforderchange"
   },
   "used_in": [
    "ExecutionReport"
@@ -4819,13 +5228,17 @@
    "Y": "YES",
    "N": "NO"
   },
-  "translations": {
+  "encoded": {
    "legalconfirm": "Y",
    "doesnotconsitutealegalconfirm": "N",
    "yes": "Y",
    "no": "N",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "Confirmation",
@@ -4888,7 +5301,7 @@
    "3": "Unauthorized request",
    "4": "Invalid definition request"
   },
-  "translations": {
+  "encoded": {
    "pendingapproval": "0",
    "approvedaccepted": "1",
    "rejected": "2",
@@ -4899,6 +5312,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "pendingapproval",
+   "1": "approvedaccepted",
+   "2": "rejected",
+   "3": "unauthorizedrequest",
+   "4": "invaliddefinitionrequest"
   }
  },
  "654": {
@@ -5028,7 +5448,7 @@
    "14": "EXCEEDED_DV01_PV01_LIMIT",
    "15": "EXCEEDED_CS01_LIMIT"
   },
-  "translations": {
+  "encoded": {
    "unknownsymbolsecurity": "1",
    "exchangesecurityclosed": "2",
    "quoterequestrexceedslimit": "3",
@@ -5064,6 +5484,24 @@
    "13": "13",
    "14": "14",
    "15": "15"
+  },
+  "decoded": {
+   "1": "unknownsymbol",
+   "2": "exchange",
+   "3": "quoterequestexceedslimit",
+   "4": "toolatetoenter",
+   "5": "invalidprice",
+   "6": "notauthorizedtorequestquote",
+   "7": "nomatchforinquiry",
+   "8": "nomarketforinstrument",
+   "9": "noinventory",
+   "10": "pass",
+   "99": "other",
+   "11": "insufficientcredit",
+   "12": "exceededclipsizelimit",
+   "13": "exceededmaxnotionalorderamt",
+   "14": "exceededdv01pv01limit",
+   "15": "exceededcs01limit"
   },
   "used_in": [
    "QuoteRequestReject"
@@ -5117,7 +5555,7 @@
    "99": "OTHER",
    "6": "SPSAID"
   },
-  "translations": {
+  "encoded": {
    "bic": "1",
    "sidcode": "2",
    "tfmgspta": "3",
@@ -5135,6 +5573,15 @@
    "5": "5",
    "99": "99",
    "6": "6"
+  },
+  "decoded": {
+   "1": "bic",
+   "2": "sidcode",
+   "3": "tfm",
+   "4": "omgeo",
+   "5": "dtcccode",
+   "99": "other",
+   "6": "spsaid"
   },
   "used_in": [
    "ExecutionReport",
@@ -5287,7 +5734,7 @@
    "4": "CONFIRMED",
    "5": "REQUEST_REJECTED"
   },
-  "translations": {
+  "encoded": {
    "received": "1",
    "mismatchedaccount": "2",
    "missingsettlementinstructions": "3",
@@ -5298,6 +5745,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "received",
+   "2": "mismatchedaccount",
+   "3": "missingsettlementinstructions",
+   "4": "confirmed",
+   "5": "requestrejected"
   },
   "used_in": [
    "Confirmation"
@@ -5324,13 +5778,18 @@
    "1": "REPLACE",
    "2": "CANCEL"
   },
-  "translations": {
+  "encoded": {
    "new": "0",
    "replace": "1",
    "cancel": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "new",
+   "1": "replace",
+   "2": "cancel"
   },
   "used_in": [
    "Confirmation"
@@ -5370,12 +5829,16 @@
    "1": "BOOK_ENTRY",
    "2": "BEARER"
   },
-  "translations": {
+  "encoded": {
    "bookentrydefault": "1",
    "bearer": "2",
    "bookentry": "1",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "bookentry",
+   "2": "bearer"
   },
   "components": [
    "InstrumentExtension"
@@ -5790,7 +6253,7 @@
    "4": "RISK",
    "5": "PROCEEDS"
   },
-  "translations": {
+  "encoded": {
    "parforpar": "1",
    "modifiedduration": "2",
    "risk": "4",
@@ -5799,6 +6262,12 @@
    "2": "2",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "parforpar",
+   "2": "modifiedduration",
+   "4": "risk",
+   "5": "proceeds"
   },
   "used_in": [
    "ExecutionReport",
@@ -5888,7 +6357,7 @@
    "24": "INTEREST_RATE",
    "25": "PERCENTAGE_OF_NOTIONAL"
   },
-  "translations": {
+  "encoded": {
    "percentpercentofpar": "1",
    "pershareegcentspershare": "2",
    "fixedamountabsolutevalue": "3",
@@ -5944,6 +6413,32 @@
    "23": "23",
    "24": "24",
    "25": "25"
+  },
+  "decoded": {
+   "1": "percent",
+   "2": "pershare",
+   "3": "fixedamount",
+   "4": "discount",
+   "5": "premium",
+   "6": "spread",
+   "7": "tedprice",
+   "8": "tedyield",
+   "9": "yieldspread",
+   "10": "yield",
+   "12": "pricespread",
+   "13": "productticksinhalves",
+   "14": "productticksinfourths",
+   "15": "productticksineighths",
+   "16": "productticksinsixteenths",
+   "17": "productticksinthirtyseconds",
+   "18": "productticksinsixtyfourths",
+   "19": "productticksinonetwentyeighths",
+   "20": "normalraterepresentation",
+   "21": "inverseraterepresentation",
+   "22": "basispoints",
+   "23": "upfrontpoints",
+   "24": "interestrate",
+   "25": "percentageofnotional"
   },
   "used_in": [
    "QuoteRequestReject",
@@ -6008,20 +6503,56 @@
    "12": "TERMINATE_CONTRACT"
   },
   "states": {
-   "1": 410,
-   "2": 200,
-   "3": 530,
-   "4": 200,
-   "5": 510,
-   "6": 510,
-   "7": 510,
-   "8": 510,
-   "9": 200,
-   "10": 200,
-   "11": 220,
-   "12": 510
+   "1": {
+    "name": "FILLED",
+    "id": 410
+   },
+   "2": {
+    "name": "OPEN",
+    "id": 200
+   },
+   "3": {
+    "name": "EXPIRED",
+    "id": 530
+   },
+   "4": {
+    "name": "OPEN",
+    "id": 200
+   },
+   "5": {
+    "name": "CANCELLED",
+    "id": 510
+   },
+   "6": {
+    "name": "CANCELLED",
+    "id": 510
+   },
+   "7": {
+    "name": "CANCELLED",
+    "id": 510
+   },
+   "8": {
+    "name": "CANCELLED",
+    "id": 510
+   },
+   "9": {
+    "name": "OPEN",
+    "id": 200
+   },
+   "10": {
+    "name": "OPEN",
+    "id": 200
+   },
+   "11": {
+    "name": "ACCEPTED",
+    "id": 220
+   },
+   "12": {
+    "name": "CANCELLED",
+    "id": 510
+   }
   },
-  "translations": {
+  "encoded": {
    "hitlift": "1",
    "counter": "2",
    "expired": "3",
@@ -6047,6 +6578,20 @@
    "10": "10",
    "11": "11",
    "12": "12"
+  },
+  "decoded": {
+   "1": "hit",
+   "2": "counter",
+   "3": "expired",
+   "4": "cover",
+   "5": "doneaway",
+   "6": "pass",
+   "7": "endtrade",
+   "8": "timedout",
+   "9": "tied",
+   "10": "tiedcover",
+   "11": "accept",
+   "12": "terminatecontract"
   },
   "used_in": [
    "QuoteResponse"
@@ -6260,7 +6805,7 @@
    "CFE": "CASH_FUTURES_EQUIVALENT_QUANTITY",
    "SECLN": "LOAN_OR_BORROWED_QUANTITY"
   },
-  "translations": {
+  "encoded": {
    "transactionquantity": "TQ",
    "intraspreadqty": "IAS",
    "interspreadqty": "IES",
@@ -6337,6 +6882,45 @@
    "cfe": "CFE",
    "secln": "SECLN"
   },
+  "decoded": {
+   "TQ": "transactionquantity",
+   "IAS": "intraspreadqty",
+   "IES": "interspreadqty",
+   "FIN": "endofdayqty",
+   "SOD": "startofdayqty",
+   "EX": "optionexerciseqty",
+   "AS": "optionassignment",
+   "TX": "transactionfromexercise",
+   "TA": "transactionfromassignment",
+   "PIT": "pittradeqty",
+   "TRF": "transfertradeqty",
+   "ETR": "electronictradeqty",
+   "ALC": "allocationtradeqty",
+   "PA": "adjustmentqty",
+   "ASF": "asoftradeqty",
+   "DLV": "deliveryqty",
+   "TOT": "totaltransactionqty",
+   "XM": "crossmarginqty",
+   "SPL": "integralsplit",
+   "RCV": "receivequantity",
+   "CAA": "corporateactionadjustment",
+   "DN": "deliverynoticeqty",
+   "EP": "exchangeforphysicalqty",
+   "PNTN": "privatelynegotiatedtradeqty",
+   "DLT": "netdeltaqty",
+   "CEA": "crediteventadjustment",
+   "SEA": "successioneventadjustment",
+   "NET": "netqty",
+   "GRS": "grossqty",
+   "ITD": "intradayqty",
+   "NDAS": "grosslongnondeltaadjustedswaptionposition",
+   "DAS": "longdeltaadjustedpairedswaptionposition",
+   "EXP": "expiringquantity",
+   "UNEX": "quantitynotexercised",
+   "REQ": "requestedexercisequantity",
+   "CFE": "cashfuturesequivalentquantity",
+   "SECLN": "loanorborrowedquantity"
+  },
   "components": [
    "PositionQty"
   ]
@@ -6392,13 +6976,18 @@
    "1": "ACCEPTED",
    "2": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "submitted": "0",
    "accepted": "1",
    "rejected": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "submitted",
+   "1": "accepted",
+   "2": "rejected"
   },
   "components": [
    "PositionQty"
@@ -6472,7 +7061,7 @@
    "MGNLN": "OUTSTANDING_MARGIN_LOAN",
    "LNVL": "LOAN_VALUE"
   },
-  "translations": {
+  "encoded": {
    "finalmarktomarketamount": "FMTM",
    "incrementalmarktomarketamount": "IMTM",
    "tradevariationamount": "TVAR",
@@ -6545,6 +7134,43 @@
    "mgnln": "MGNLN",
    "lnvl": "LNVL"
   },
+  "decoded": {
+   "FMTM": "finalmarktomarketamount",
+   "IMTM": "incrementalmarktomarketamount",
+   "TVAR": "tradevariationamount",
+   "SMTM": "startofdaymarktomarketamount",
+   "PREM": "premiumamount",
+   "CRES": "cashresidualamount",
+   "CASH": "cashamount",
+   "VADJ": "valueadjustedamount",
+   "SETL": "settlementvalue",
+   "ICPN": "initialtradecouponamount",
+   "ACPN": "accruedcouponamount",
+   "CPN": "couponamount",
+   "IACPN": "incrementalaccruedcoupon",
+   "CMTM": "collateralizedmarktomarket",
+   "ICMTM": "incrementalcollateralizedmarktomarket",
+   "DLV": "compensationamount",
+   "BANK": "totalbankedamount",
+   "COLAT": "totalcollateralizedamount",
+   "LSNV": "longpairedswapnotionalvalue",
+   "SSNV": "shortpairedswapnotionalvalue",
+   "SACPN": "startofdayaccruedcoupon",
+   "NPV": "netpresentvalue",
+   "SNPV": "startofdaynetpresentvalue",
+   "NCF": "netcashflow",
+   "PVFEES": "presentvalueoffees",
+   "PV01": "presentvalueonebasispoints",
+   "5YREN": "fiveyearequivalentnotional",
+   "UMTM": "undiscountedmarktomarket",
+   "MTD": "marktomodel",
+   "VMTM": "marktomarketvariance",
+   "VMTD": "marktomodelvariance",
+   "UPFRNT": "upfrontpayment",
+   "ENDV": "endvale",
+   "MGNLN": "outstandingmarginloan",
+   "LNVL": "loanvalue"
+  },
   "components": [
    "PositionAmountData"
   ]
@@ -6601,7 +7227,7 @@
    "15": "CLOSEOUT",
    "16": "REOPEN"
   },
-  "translations": {
+  "encoded": {
    "exercise": "1",
    "donotexercise": "2",
    "positionadjustment": "3",
@@ -6635,6 +7261,24 @@
    "14": "14",
    "15": "15",
    "16": "16"
+  },
+  "decoded": {
+   "1": "exercise",
+   "2": "donotexercise",
+   "3": "positionadjustment",
+   "4": "positionchangesubmission",
+   "5": "pledge",
+   "6": "largetradersubmission",
+   "7": "largepositionsreportingsubmission",
+   "8": "longholdings",
+   "9": "internaltransfer",
+   "10": "transferoffirm",
+   "11": "externaltransfer",
+   "12": "corporateaction",
+   "13": "notification",
+   "14": "positioncreation",
+   "15": "closeout",
+   "16": "reopen"
   },
   "used_in": [
    "PositionMaintenanceRequest",
@@ -6756,7 +7400,7 @@
    "3": "CANCEL",
    "4": "REVERSE"
   },
-  "translations": {
+  "encoded": {
    "newusedtoincrementtheoveralltransactionquantity": "1",
    "replaceusedtooverridetheoveralltransactionquantityorspecifiaddmessagesbasedonthereferenceid": "2",
    "cancelusedtoremovetheoveralltransactionorspecificaddmessagesbasedonreferenceid": "3",
@@ -6769,6 +7413,12 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "1": "new",
+   "2": "replace",
+   "3": "cancel",
+   "4": "reverse"
   },
   "used_in": [
    "PositionMaintenanceRequest",
@@ -6873,7 +7523,7 @@
    "ETH": "ELECTRONIC_TRADING_HOURS",
    "EOD": "END_OF_DAY"
   },
-  "translations": {
+  "encoded": {
    "intraday": "ITD",
    "regulartradinghours": "RTH",
    "electronictradinghours": "ETH",
@@ -6882,6 +7532,12 @@
    "rth": "RTH",
    "eth": "ETH",
    "eod": "EOD"
+  },
+  "decoded": {
+   "ITD": "intraday",
+   "RTH": "regulartradinghours",
+   "ETH": "electronictradinghours",
+   "EOD": "endofday"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -6951,7 +7607,7 @@
    "3": "FINAL",
    "4": "CUSTOMER_SPECIFIC_POSITION"
   },
-  "translations": {
+  "encoded": {
    "processrequestasmargindisposition": "0",
    "deltaplus": "1",
    "deltaminus": "2",
@@ -6962,6 +7618,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "processrequestasmargindisposition",
+   "1": "deltaplus",
+   "2": "deltaminus",
+   "3": "final",
+   "4": "customerspecificposition"
   },
   "used_in": [
    "PositionMaintenanceRequest",
@@ -7043,7 +7706,7 @@
    "3": "COMPLETED",
    "4": "COMPLETED_WITH_WARNINGS"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "acceptedwithwarnings": "1",
    "rejected": "2",
@@ -7054,6 +7717,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "acceptedwithwarnings",
+   "2": "rejected",
+   "3": "completed",
+   "4": "completedwithwarnings"
   },
   "used_in": [
    "PositionMaintenanceReport"
@@ -7080,7 +7750,7 @@
    "1": "REJECTED",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successfulcompletionnowarningsorerrors": "0",
    "rejected": "1",
    "other": "99",
@@ -7088,6 +7758,11 @@
    "0": "0",
    "1": "1",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successfulcompletion",
+   "1": "rejected",
+   "99": "other"
   },
   "used_in": [
    "PositionMaintenanceReport"
@@ -7126,7 +7801,7 @@
    "9": "EXERCISE_POSITION_REPORTING_SUBMISSION",
    "10": "POSITION_LIMIT_REPORTING_SUBMISSING"
   },
-  "translations": {
+  "encoded": {
    "positions": "0",
    "trades": "1",
    "exercises": "2",
@@ -7149,6 +7824,19 @@
    "8": "8",
    "9": "9",
    "10": "10"
+  },
+  "decoded": {
+   "0": "positions",
+   "1": "trades",
+   "2": "exercises",
+   "3": "assignments",
+   "4": "settlementactivity",
+   "5": "backoutmessage",
+   "6": "deltapositions",
+   "7": "netposition",
+   "8": "largepositionsreporting",
+   "9": "exercisepositionreportingsubmission",
+   "10": "positionlimitreportingsubmissing"
   },
   "used_in": [
    "RequestForPositions",
@@ -7176,13 +7864,17 @@
    "0": "INBAND",
    "1": "OUT_OF_BAND"
   },
-  "translations": {
+  "encoded": {
    "inbandtransporttherequestwassentoverdefault": "0",
    "outofbandprearrangedoutofbanddeliverymechanizmieftphttpndmetcbetweencounterparties": "1",
    "inband": "0",
    "outofband": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "inband",
+   "1": "outofband"
   },
   "used_in": [
    "TradeCaptureReportRequest",
@@ -7258,7 +7950,7 @@
    "4": "REQUEST_FOR_POSITION_NOT_SUPPORTED",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "validrequest": "0",
    "invalidorunsupportedrequest": "1",
    "nopositionsfoundthatmatchcriteria": "2",
@@ -7272,6 +7964,14 @@
    "3": "3",
    "4": "4",
    "99": "99"
+  },
+  "decoded": {
+   "0": "validrequest",
+   "1": "invalidorunsupportedrequest",
+   "2": "nopositionsfoundthatmatchcriteria",
+   "3": "notauthorizedtorequestpositions",
+   "4": "requestforpositionnotsupported",
+   "99": "other"
   },
   "used_in": [
    "RequestForPositionsAck",
@@ -7299,13 +7999,18 @@
    "1": "COMPLETED_WITH_WARNINGS",
    "2": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "completed": "0",
    "completedwithwarnings": "1",
    "rejected": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "completed",
+   "1": "completedwithwarnings",
+   "2": "rejected"
   },
   "used_in": [
    "RequestForPositionsAck"
@@ -7347,11 +8052,15 @@
    "1": "FINAL",
    "2": "THEORETICAL"
   },
-  "translations": {
+  "encoded": {
    "final": "1",
    "theoretical": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "final",
+   "2": "theoretical"
   },
   "used_in": [
    "PositionReport",
@@ -7610,11 +8319,15 @@
    "R": "RANDOM",
    "P": "PRO_RATA"
   },
-  "translations": {
+  "encoded": {
    "random": "R",
    "prorata": "P",
    "r": "R",
    "p": "P"
+  },
+  "decoded": {
+   "R": "random",
+   "P": "prorata"
   },
   "used_in": [
    "AssignmentReport"
@@ -7669,11 +8382,15 @@
    "A": "AUTOMATIC",
    "M": "MANUAL"
   },
-  "translations": {
+  "encoded": {
    "automatic": "A",
    "manual": "M",
    "a": "A",
    "m": "M"
+  },
+  "decoded": {
+   "A": "automatic",
+   "M": "manual"
   },
   "used_in": [
    "AssignmentReport"
@@ -7728,7 +8445,7 @@
    "9": "NOT_AUTHORIZED",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successfuldefault": "0",
    "invalidorunknowninstrument": "1",
    "invalidtypeoftraderequested": "2",
@@ -7749,6 +8466,17 @@
    "8": "8",
    "9": "9",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "invalidorunknowninstrument",
+   "2": "invalidtypeoftraderequested",
+   "3": "invalidparties",
+   "4": "invalidtransporttyperequested",
+   "5": "invaliddestinationrequested",
+   "8": "traderequesttypenotsupported",
+   "9": "notauthorized",
+   "99": "other"
   },
   "used_in": [
    "TradeCaptureReportRequestAck"
@@ -7775,13 +8503,18 @@
    "1": "COMPLETED",
    "2": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "completed": "1",
    "rejected": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "completed",
+   "2": "rejected"
   },
   "used_in": [
    "TradeCaptureReportRequestAck"
@@ -7817,7 +8550,7 @@
    "6": "REFERENCE_PRICE_NOT_AVAILABLE",
    "7": "NOTIONAL_VALUE_EXCEEDS_THRESHOLD"
   },
-  "translations": {
+  "encoded": {
    "successfuldefault": "0",
    "invalidpartyinformation": "1",
    "unknowninstrument": "2",
@@ -7837,6 +8570,17 @@
    "5": "5",
    "6": "6",
    "7": "7"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "invalidpartyinformation",
+   "2": "unknowninstrument",
+   "3": "unauthorizedtoreporttrades",
+   "4": "invalidtradetype",
+   "99": "other",
+   "5": "priceexceedscurrentpriceband",
+   "6": "referencepricenotavailable",
+   "7": "notionalvalueexceedsthreshold"
   },
   "used_in": [
    "TradeCaptureReportAck"
@@ -7863,7 +8607,7 @@
    "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
    "3": "MULTILEG_SECURITY"
   },
-  "translations": {
+  "encoded": {
    "singlesecuritydefaultifnotspecified": "1",
    "individuallegofamultilegsecurity": "2",
    "multilegsecurity": "3",
@@ -7871,6 +8615,11 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "singlesecurity",
+   "2": "individuallegofamultilegsecurity",
+   "3": "multilegsecurity"
   },
   "used_in": [
    "TradeCaptureReport"
@@ -8201,7 +8950,7 @@
    "33": "TRADE_MODIFICATION_TIME",
    "34": "REFERENCE_TIME_FOR_NBBO"
   },
-  "translations": {
+  "encoded": {
    "executiontime": "1",
    "timein": "2",
    "timeout": "3",
@@ -8271,6 +9020,42 @@
    "33": "33",
    "34": "34"
   },
+  "decoded": {
+   "1": "executiontime",
+   "2": "timein",
+   "3": "timeout",
+   "4": "brokerreceipt",
+   "5": "brokerexecution",
+   "6": "deskreceipt",
+   "7": "submissiontoclearing",
+   "8": "timepriority",
+   "9": "orderbookentrytime",
+   "10": "ordersubmissiontime",
+   "11": "publiclyreported",
+   "12": "publicreportupdated",
+   "13": "nonpubliclyreported",
+   "14": "nonpublicreportupdated",
+   "15": "submittedforconfirmation",
+   "16": "updatedforconfirmation",
+   "17": "confirmed",
+   "18": "updatedforclearing",
+   "19": "cleared",
+   "20": "allocationssubmitted",
+   "21": "allocationsupdated",
+   "22": "allocationscompleted",
+   "23": "submittedtorepository",
+   "24": "posttrdcontntnevnt",
+   "25": "posttradevaluation",
+   "26": "previoustimepriority",
+   "27": "identifierassigned",
+   "28": "previousidentifierassigned",
+   "29": "ordercancellationtime",
+   "30": "ordermodificationtime",
+   "31": "orderroutingtime",
+   "32": "tradecancellationtime",
+   "33": "trademodificationtime",
+   "34": "referencetimefornbbo"
+  },
   "components": [
    "TrdRegTimestamps"
   ]
@@ -8326,7 +9111,7 @@
    "2": "CONFIRMATION",
    "3": "CONFIRMATION_REQUEST_REJECTED"
   },
-  "translations": {
+  "encoded": {
    "status": "1",
    "confirmation": "2",
    "confirmationrequestbhrejectedreasoncanbestatedintext58field": "3",
@@ -8334,6 +9119,11 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "status",
+   "2": "confirmation",
+   "3": "confirmationrequestrejected"
   },
   "used_in": [
    "Confirmation",
@@ -8378,7 +9168,7 @@
    "18": "INCORRECT_OR_MISSING_SETTL_CCY_INSTRUCTIONS",
    "19": "INCORRECT_OR_MISSING_CAPACITY"
   },
-  "translations": {
+  "encoded": {
    "mismatchedaccount": "1",
    "missingsettlementinstructions": "2",
    "other": "99",
@@ -8420,6 +9210,28 @@
    "18": "18",
    "19": "19"
   },
+  "decoded": {
+   "1": "mismatchedaccount",
+   "2": "missingsettlementinstructions",
+   "99": "other",
+   "3": "unknownormissingindividualallocid",
+   "4": "transactionnotrecognized",
+   "5": "duplicatetransaction",
+   "6": "incorrectormissinginstrument",
+   "7": "incorrectormissingprice",
+   "8": "incorrectormissingcommission",
+   "9": "incorrectormissingsettldate",
+   "10": "incorrectormissingfundidorfundname",
+   "11": "incorrectormissingquantity",
+   "12": "incorrectormissingfees",
+   "13": "incorrectormissingtax",
+   "14": "incorrectormissingparty",
+   "15": "incorrectormissingside",
+   "16": "incorrectormissingnetmoney",
+   "17": "incorrectormissingtradedate",
+   "18": "incorrectormissingsettlccyinstructions",
+   "19": "incorrectormissingcapacity"
+  },
   "used_in": [
    "ConfirmationAck"
   ]
@@ -8445,7 +9257,7 @@
    "1": "CFD",
    "2": "TOTAL_RETURN_SWAP"
   },
-  "translations": {
+  "encoded": {
    "regularbooking": "0",
    "cfdcontractfordifference": "1",
    "totalreturnswap": "2",
@@ -8453,6 +9265,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "regularbooking",
+   "1": "cfd",
+   "2": "totalreturnswap"
   },
   "used_in": [
    "ExecutionReport",
@@ -8578,7 +9395,7 @@
    "3": "SSIDBI_DS_PROVIDED",
    "4": "PHONE_FOR_INSTRUCTIONS"
   },
-  "translations": {
+  "encoded": {
    "usedefaultinstructions": "0",
    "derivefromparametersprovided": "1",
    "fulldetailsprovided": "2",
@@ -8589,6 +9406,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "usedefaultinstructions",
+   "1": "derivefromparametersprovided",
+   "2": "fulldetailsprovided",
+   "3": "ssidbidsprovided",
+   "4": "phoneforinstructions"
   },
   "used_in": [
    "AllocationReport",
@@ -8709,11 +9533,15 @@
    "S": "SECURITIES",
    "C": "CASH"
   },
-  "translations": {
+  "encoded": {
    "securities": "S",
    "cash": "C",
    "s": "S",
    "c": "C"
+  },
+  "decoded": {
+   "S": "securities",
+   "C": "cash"
   },
   "components": [
    "DlvyInstGrp",
@@ -8743,7 +9571,7 @@
    "3": "FLEXIBLE",
    "4": "OPEN"
   },
-  "translations": {
+  "encoded": {
    "overnight": "1",
    "term": "2",
    "flexible": "3",
@@ -8752,6 +9580,12 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "1": "overnight",
+   "2": "term",
+   "3": "flexible",
+   "4": "open"
   },
   "components": [
    "FinancingDetails"
@@ -8828,7 +9662,7 @@
    "2": "NO_MATCHING_SETTLEMENT_INSTRUCTIONS_FOUND",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "unabletoprocessrequest": "0",
    "unknownaccount": "1",
    "nomatchingsettlementinstructionsfound": "2",
@@ -8837,6 +9671,12 @@
    "1": "1",
    "2": "2",
    "99": "99"
+  },
+  "decoded": {
+   "0": "unabletoprocessrequest",
+   "1": "unknownaccount",
+   "2": "nomatchingsettlementinstructionsfound",
+   "99": "other"
   },
   "used_in": [
    "SettlementInstructions"
@@ -8903,7 +9743,7 @@
    "18": "ALLEGED",
    "19": "SUB_ALLOCATION_GIVEUP"
   },
-  "translations": {
+  "encoded": {
    "sellsidecalculatedusingpreliminaryincludesmiscfeesandnetmoney118": "3",
    "sellsidecalculatedwithoutpreliminarysentunsolicitedbysellsideincludesmiscfeesandnetmoney": "4",
    "warehouserecap": "5",
@@ -8936,6 +9776,23 @@
    "17": "17",
    "18": "18",
    "19": "19"
+  },
+  "decoded": {
+   "3": "sellsidecalculatedusingpreliminary",
+   "4": "sellsidecalculatedwithoutpreliminary",
+   "5": "warehouserecap",
+   "8": "requesttointermediary",
+   "2": "preliminaryrequesttointermediary",
+   "9": "accept",
+   "10": "reject",
+   "11": "acceptpending",
+   "12": "complete",
+   "14": "reversepending",
+   "15": "giveup",
+   "16": "takeup",
+   "17": "reversal",
+   "18": "alleged",
+   "19": "suballocationgiveup"
   },
   "used_in": [
    "AllocationReport",
@@ -8979,7 +9836,7 @@
    "99": "OTHER",
    "3": "CANCELLED_BY_GIVEUP_FIRM"
   },
-  "translations": {
+  "encoded": {
    "originaldetailsincompleteincorrect": "1",
    "changeinunderlyingorderdetails": "2",
    "other": "99",
@@ -8989,6 +9846,12 @@
    "2": "2",
    "99": "99",
    "3": "3"
+  },
+  "decoded": {
+   "1": "originaldetailsincomplete",
+   "2": "changeinunderlyingorderdetails",
+   "99": "other",
+   "3": "cancelledbygiveupfirm"
   },
   "used_in": [
    "AllocationReport",
@@ -9043,7 +9906,7 @@
    "7": "HOUSE_TRADER_CROSS_MARGINED",
    "8": "JOINT_BACK_OFFICE_ACCOUNT"
   },
-  "translations": {
+  "encoded": {
    "accountiscarriedpncustomersideofbooks": "1",
    "accountiscarriedonnoncustomersideofbooks": "2",
    "housetrader": "3",
@@ -9063,6 +9926,15 @@
    "6": "6",
    "7": "7",
    "8": "8"
+  },
+  "decoded": {
+   "1": "carriedcustomerside",
+   "2": "carriednoncustomerside",
+   "3": "housetrader",
+   "4": "floortrader",
+   "6": "carriednoncustomersidecrossmargined",
+   "7": "housetradercrossmargined",
+   "8": "jointbackofficeaccount"
   },
   "used_in": [
    "Confirmation",
@@ -9279,7 +10151,7 @@
    "86": "PARTY_SIDE",
    "87": "LEGAL_REGISTRATION_COUNTRY"
   },
-  "translations": {
+  "encoded": {
    "firm": "1",
    "person": "2",
    "system": "3",
@@ -9463,6 +10335,96 @@
    "86": "86",
    "87": "87"
   },
+  "decoded": {
+   "1": "firm",
+   "2": "person",
+   "3": "system",
+   "4": "application",
+   "5": "fulllegalnameoffirm",
+   "6": "postaladdress",
+   "7": "phonenumber",
+   "8": "emailaddress",
+   "9": "contactname",
+   "10": "securitiesaccountnumber",
+   "11": "registrationnumber",
+   "12": "registeredaddressforconfirmation",
+   "13": "regulatorystatus",
+   "14": "registrationname",
+   "15": "cashaccountnumber",
+   "16": "bic",
+   "17": "csdparticipantmembercode",
+   "18": "registeredaddress",
+   "19": "fundaccountname",
+   "20": "telexnumber",
+   "21": "faxnumber",
+   "22": "securitiesaccountname",
+   "23": "cashaccountname",
+   "24": "department",
+   "25": "locationdesk",
+   "26": "positionaccounttype",
+   "27": "securitylocateid",
+   "28": "marketmaker",
+   "29": "eligiblecounterparty",
+   "30": "professionalclient",
+   "31": "location",
+   "32": "executionvenue",
+   "4000+": "reservedandavailableforbilaterallyagreeduponuserdefinedvalues",
+   "33": "currencydeliveryidentifier",
+   "34": "addresscity",
+   "35": "addressstateorprovince",
+   "36": "addresspostalcode",
+   "37": "addressstreet",
+   "38": "addressisocountrycode",
+   "39": "isocountrycode",
+   "40": "marketsegment",
+   "41": "customeraccounttype",
+   "42": "omnibusaccount",
+   "43": "fundssegregationtype",
+   "44": "guaranteefund",
+   "45": "swapdealer",
+   "46": "majorparticipant",
+   "47": "financialentity",
+   "48": "usperson",
+   "49": "reportingentityindicator",
+   "50": "electedclearingrequirementexception",
+   "51": "businesscenter",
+   "52": "referencetext",
+   "53": "shortmarkingexemptaccount",
+   "54": "parentfirmidentifier",
+   "55": "parentfirmname",
+   "56": "dealidentifier",
+   "57": "systemtradeid",
+   "58": "systemtradesubid",
+   "59": "fcmcode",
+   "60": "dlvrytrmlcode",
+   "61": "volntyrptentity",
+   "62": "rptobligjursdctn",
+   "63": "volntyrptjursdctn",
+   "64": "companyactivities",
+   "65": "eeareadomiciled",
+   "66": "contractlinked",
+   "67": "contractabove",
+   "68": "volntyrptpty",
+   "69": "enduser",
+   "70": "locationorjurisdiction",
+   "71": "derivativesdealer",
+   "72": "domicile",
+   "73": "exemptfromrecognition",
+   "74": "payer",
+   "75": "receiver",
+   "76": "systematicinternaliser",
+   "77": "publishingentityindicator",
+   "78": "firstname",
+   "79": "surname",
+   "80": "dateofbirth",
+   "81": "ordertransmittingfirm",
+   "82": "ordertransmittingfirmbuyer",
+   "83": "ordertransmitterseller",
+   "84": "legalentityidentifier",
+   "85": "subsectorclassification",
+   "86": "partyside",
+   "87": "legalregistrationcountry"
+  },
   "components": [
    "PtysSubGrp",
    "Parties"
@@ -9559,7 +10521,7 @@
    "5": "BLOCK_LEVEL_REJECT",
    "6": "ACCOUNT_LEVEL_REJECT"
   },
-  "translations": {
+  "encoded": {
    "pendingaccept": "1",
    "pendingrelease": "2",
    "pendingreversal": "3",
@@ -9572,6 +10534,14 @@
    "4": "4",
    "5": "5",
    "6": "6"
+  },
+  "decoded": {
+   "1": "pendingaccept",
+   "2": "pendingrelease",
+   "3": "pendingreversal",
+   "4": "accept",
+   "5": "blocklevelreject",
+   "6": "accountlevelreject"
   },
   "used_in": [
    "AllocationReport",
@@ -9685,7 +10655,7 @@
    "2": "OVERLAY_LAST",
    "3": "END_SESSION"
   },
-  "translations": {
+  "encoded": {
    "noactiontaken": "0",
    "queueflushed": "1",
    "overlaylast": "2",
@@ -9694,6 +10664,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "noactiontaken",
+   "1": "queueflushed",
+   "2": "overlaylast",
+   "3": "endsession"
   },
   "used_in": [
    "MarketDataSnapshotFullRefresh",
@@ -9723,7 +10699,7 @@
    "2": "OVERLAY_LAST",
    "3": "END_SESSION"
   },
-  "translations": {
+  "encoded": {
    "noactiontaken": "0",
    "queueflushed": "1",
    "overlaylast": "2",
@@ -9732,6 +10708,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "noactiontaken",
+   "1": "queueflushed",
+   "2": "overlaylast",
+   "3": "endsession"
   },
   "used_in": [
    "MarketDataRequest"
@@ -9822,7 +10804,7 @@
    "3": "NOTIONAL_VALUE_AVERAGE_PX_GROUP_TRADE",
    "4": "AVERAGE_PRICED_TRADE"
   },
-  "translations": {
+  "encoded": {
    "noaveragepricing": "0",
    "tradeispartofanaveragepricegroupidentifiedbythetradelinkid820": "1",
    "lasttradeistheaveragepricegroupidentifiedbythetradelinkid820": "2",
@@ -9835,6 +10817,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "noaveragepricing",
+   "1": "trade",
+   "2": "lasttrade",
+   "3": "notionalvalueaveragepxgrouptrade",
+   "4": "averagepricedtrade"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -9977,7 +10966,7 @@
    "5": "ALLOCATION_TO_CLAIM_ACCOUNT",
    "6": "TRADE_SPLIT"
   },
-  "translations": {
+  "encoded": {
    "allocationnotrequired": "0",
    "allocationrequiredgiveuptradeallocationinformationnotprovidedincomplete": "1",
    "useallocationprovidedwiththetrade": "2",
@@ -9993,6 +10982,15 @@
    "4": "4",
    "5": "5",
    "6": "6"
+  },
+  "decoded": {
+   "0": "allocationnotrequired",
+   "1": "allocationrequired",
+   "2": "useallocationprovidedwiththetrade",
+   "3": "allocationgiveupexecutor",
+   "4": "allocationfromexecutor",
+   "5": "allocationtoclaimaccount",
+   "6": "tradesplit"
   },
   "used_in": [
    "TradeCaptureReport"
@@ -10023,7 +11021,7 @@
    "1": "EXPIRE_ON_TRADING_SESSION_OPEN",
    "2": "SPECIFIED_EXPIRATION"
   },
-  "translations": {
+  "encoded": {
    "expireontradingsessionclosedefault": "0",
    "expireontradingsessionopen": "1",
    "tradingeligibilityexpirationspecifiedinthedateandtimefieldseventdate866andeventtime1145associatedwitheventtype8657lasteligibletradedate": "2",
@@ -10032,6 +11030,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "expireontradingsessionclose",
+   "1": "expireontradingsessionopen",
+   "2": "specifiedexpiration"
   },
   "used_in": [
    "SecurityDefinitionRequest",
@@ -10183,7 +11186,7 @@
    "65": "PACKAGE_TRADE",
    "66": "ROLL_TRADE"
   },
-  "translations": {
+  "encoded": {
    "regulartrade": "0",
    "blocktrade": "1",
    "efpexchangeforphysical": "2",
@@ -10343,6 +11346,74 @@
    "65": "65",
    "66": "66"
   },
+  "decoded": {
+   "0": "regulartrade",
+   "1": "blocktrade",
+   "2": "efp",
+   "3": "transfer",
+   "4": "latetrade",
+   "5": "ttrade",
+   "6": "weightedaveragepricetrade",
+   "7": "bunchedtrade",
+   "8": "latebunchedtrade",
+   "9": "priorreferencepricetrade",
+   "10": "afterhourstrade",
+   "11": "exchangeforrisk",
+   "12": "exchangeforswap",
+   "13": "exchangeoffuturesfor",
+   "14": "exchangeofoptionsforoptions",
+   "15": "tradingatsettlement",
+   "16": "allornone",
+   "17": "futureslargeorderexecution",
+   "18": "exchangeoffuturesforfutures",
+   "19": "optioninterimtrade",
+   "20": "optioncabinettrade",
+   "22": "privatelynegotiatedtrades",
+   "23": "substitutionoffuturesforforwards",
+   "24": "errortrade",
+   "25": "specialcumdividend",
+   "26": "specialexdividend",
+   "27": "specialcumcoupon",
+   "28": "specialexcoupon",
+   "29": "cashsettlement",
+   "30": "specialprice",
+   "31": "guaranteeddelivery",
+   "32": "specialcumrights",
+   "33": "specialexrights",
+   "34": "specialcumcapitalrepayments",
+   "35": "specialexcapitalrepayments",
+   "36": "specialcumbonus",
+   "37": "specialexbonus",
+   "38": "largetrade",
+   "39": "workedprincipaltrade",
+   "40": "blocktrades",
+   "41": "namechange",
+   "42": "portfoliotransfer",
+   "43": "prorogationbuy",
+   "44": "prorogationsell",
+   "45": "optionexercise",
+   "46": "deltaneutraltransaction",
+   "47": "financingtransaction",
+   "48": "nonstandardsettlement",
+   "49": "derivativerelatedtransaction",
+   "50": "portfoliotrade",
+   "51": "volumeweightedaveragetrade",
+   "52": "exchangegrantedtrade",
+   "53": "repurchaseagreement",
+   "54": "otc",
+   "55": "exchangebasisfacility",
+   "56": "openingtrade",
+   "57": "nettedtrade",
+   "58": "blockswaptrade",
+   "59": "crediteventtrade",
+   "60": "successioneventtrade",
+   "61": "giveupgiveintrade",
+   "62": "darktrade",
+   "63": "technicaltrade",
+   "64": "benchmark",
+   "65": "packagetrade",
+   "66": "rolltrade"
+  },
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
@@ -10461,7 +11532,7 @@
    "53": "TRD_SUBMIT_VENUE_CLR_SETTL",
    "54": "BILATERAL_COMPRESSION"
   },
-  "translations": {
+  "encoded": {
    "cmta": "0",
    "internaltransferoradjustment": "1",
    "externaltransferortransferofaccount": "2",
@@ -10589,6 +11660,60 @@
    "53": "53",
    "54": "54"
   },
+  "decoded": {
+   "0": "cmta",
+   "1": "internaltransferoradjustment",
+   "2": "externaltransferortransferofaccount",
+   "3": "rejectforsubmittingside",
+   "4": "advisoryforcontraside",
+   "5": "offsetduetoanallocation",
+   "6": "onsetduetoanallocation",
+   "7": "differentialspread",
+   "8": "impliedspreadlegexecutedagainstanoutright",
+   "9": "transactionfromexercise",
+   "10": "transactionfromassignment",
+   "11": "acats",
+   "14": "ai",
+   "15": "b",
+   "16": "k",
+   "17": "lc",
+   "18": "m",
+   "19": "n",
+   "20": "nm",
+   "21": "nr",
+   "22": "p",
+   "23": "pa",
+   "24": "pc",
+   "25": "pn",
+   "26": "r",
+   "27": "ro",
+   "28": "rt",
+   "29": "sw",
+   "30": "t",
+   "31": "wn",
+   "32": "wt",
+   "33": "offhourstrade",
+   "34": "onhourstrade",
+   "35": "otcquote",
+   "36": "convertedswap",
+   "37": "crossedtrade",
+   "38": "interimprotectedtrade",
+   "39": "largeinscale",
+   "40": "washtrade",
+   "41": "tradeatsettlement",
+   "42": "auctiontrade",
+   "43": "tradeatmarker",
+   "44": "creditdefault",
+   "45": "creditrestructuring",
+   "46": "merger",
+   "47": "spinoff",
+   "48": "multilateralcompression",
+   "50": "balancing",
+   "51": "basistradeindexclose",
+   "52": "tradeatcashopen",
+   "53": "trdsubmitvenueclrsettl",
+   "54": "bilateralcompression"
+  },
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
@@ -10693,12 +11818,16 @@
    "0": "FLOATING",
    "1": "FIXED"
   },
-  "translations": {
+  "encoded": {
    "floatingdefault": "0",
    "fixed": "1",
    "floating": "0",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "floating",
+   "1": "fixed"
   },
   "components": [
    "PegInstructions"
@@ -10728,7 +11857,7 @@
    "3": "PRICE_TIER",
    "4": "PERCENTAGE"
   },
-  "translations": {
+  "encoded": {
    "pricedefault": "0",
    "basispoints": "1",
    "ticks": "2",
@@ -10741,6 +11870,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "price",
+   "1": "basispoints",
+   "2": "ticks",
+   "3": "pricetier",
+   "4": "percentage"
   },
   "components": [
    "PegInstructions"
@@ -10767,7 +11903,7 @@
    "1": "STRICT",
    "2": "OR_WORSE"
   },
-  "translations": {
+  "encoded": {
    "orbetterdefaultpriceimprovementallowed": "0",
    "strictlimitisastrictlimit": "1",
    "orworseforabuythepeglimitisaminimumandforasellthepeglimitisamaximumforusefororderswhichhaveapricerange": "2",
@@ -10777,6 +11913,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "orbetter",
+   "1": "strict",
+   "2": "orworse"
   },
   "components": [
    "PegInstructions"
@@ -10801,13 +11942,17 @@
    "1": "MORE_AGGRESSIVE",
    "2": "MORE_PASSIVE"
   },
-  "translations": {
+  "encoded": {
    "moreaggressiveonabuyorderroundthepriceuptothenearesttickonasellorderrounddowntothenearesttick": "1",
    "morepassiveonabuyorderrounddowntothenearesttickonasellorderrounduptothenearesttick": "2",
    "moreaggressive": "1",
    "morepassive": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "moreaggressive",
+   "2": "morepassive"
   },
   "components": [
    "PegInstructions"
@@ -10851,7 +11996,7 @@
    "3": "GLOBAL",
    "4": "NATIONAL_EXCLUDING_LOCAL"
   },
-  "translations": {
+  "encoded": {
    "localexchangeecnats": "1",
    "national": "2",
    "global": "3",
@@ -10861,6 +12006,12 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "1": "local",
+   "2": "national",
+   "3": "global",
+   "4": "nationalexcludinglocal"
   },
   "components": [
    "PegInstructions"
@@ -10885,12 +12036,16 @@
    "0": "FLOATING",
    "1": "FIXED"
   },
-  "translations": {
+  "encoded": {
    "floatingdefault": "0",
    "fixed": "1",
    "floating": "0",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "floating",
+   "1": "fixed"
   },
   "components": [
    "DiscretionInstructions"
@@ -10919,7 +12074,7 @@
    "2": "TICKS",
    "3": "PRICE_TIER"
   },
-  "translations": {
+  "encoded": {
    "pricedefault": "0",
    "basispoints": "1",
    "ticks": "2",
@@ -10930,6 +12085,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "price",
+   "1": "basispoints",
+   "2": "ticks",
+   "3": "pricetier"
   },
   "components": [
    "DiscretionInstructions"
@@ -10956,7 +12117,7 @@
    "1": "STRICT",
    "2": "OR_WORSE"
   },
-  "translations": {
+  "encoded": {
    "orbetterdefaultpriceimprovementallowed": "0",
    "strictlimitisastrictlimit": "1",
    "orworseforabuythediscretionpriceisaminimumandforasellthediscretionpriceisamaximumforusefororderswhichhaveapricerange": "2",
@@ -10966,6 +12127,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "orbetter",
+   "1": "strict",
+   "2": "orworse"
   },
   "components": [
    "DiscretionInstructions"
@@ -10990,13 +12156,17 @@
    "1": "MORE_AGGRESSIVE",
    "2": "MORE_PASSIVE"
   },
-  "translations": {
+  "encoded": {
    "moreaggressiveonabuyorderroundthepriceuptothenearesttickonasellrounddowntothenearesttick": "1",
    "morepassiveonabuyorderrounddowntothenearesttickonasellorderrounduptothenearesttick": "2",
    "moreaggressive": "1",
    "morepassive": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "moreaggressive",
+   "2": "morepassive"
   },
   "components": [
    "DiscretionInstructions"
@@ -11040,7 +12210,7 @@
    "3": "GLOBAL",
    "4": "NATIONAL_EXCLUDING_LOCAL"
   },
-  "translations": {
+  "encoded": {
    "localexchangeecnats": "1",
    "national": "2",
    "global": "3",
@@ -11050,6 +12220,12 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "1": "local",
+   "2": "national",
+   "3": "global",
+   "4": "nationalexcludinglocal"
   },
   "components": [
    "DiscretionInstructions"
@@ -11077,7 +12253,7 @@
    "2": "PARTICIPATE",
    "3": "MININIZE_MARKET_IMPACT"
   },
-  "translations": {
+  "encoded": {
    "vwap": "1",
    "participateieaimtobexpercentofthemarketvolume": "2",
    "mininizemarketimpact": "3",
@@ -11087,6 +12263,12 @@
    "2": "2",
    "3": "3",
    "1000": "1000+"
+  },
+  "decoded": {
+   "1": "vwap",
+   "2": "participate",
+   "3": "mininizemarketimpact",
+   "1000+": "reservedandavailableforbilaterallyagreeduponuserdefinedvalues"
   },
   "used_in": [
    "ExecutionReport",
@@ -11198,7 +12380,7 @@
    "10": "UNKNOWN",
    "11": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "addedliquidity": "1",
    "removedliquidity": "2",
    "liquidityroutedout": "3",
@@ -11224,6 +12406,20 @@
    "10": "10",
    "11": "11"
   },
+  "decoded": {
+   "1": "addedliquidity",
+   "2": "removedliquidity",
+   "3": "liquidityroutedout",
+   "4": "auction",
+   "0": "neitheraddednorremovedliquidity",
+   "5": "triggeredstoporder",
+   "6": "triggeredcontingencyorder",
+   "7": "triggeredmarketorder",
+   "8": "removedliquidityafterfirmordercommitment",
+   "9": "auctionexecutionafterfirmordercommitment",
+   "10": "unknown",
+   "11": "other"
+  },
   "used_in": [
    "ExecutionReport"
   ]
@@ -11247,13 +12443,17 @@
    "Y": "YES",
    "N": "NO"
   },
-  "translations": {
+  "encoded": {
    "reporttrade": "Y",
    "donotreporttrade": "N",
    "yes": "Y",
    "no": "N",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -11287,7 +12487,7 @@
    "4": "QUALIFIED_SERVICE_REPRESENTATIVE",
    "5": "QSR_OR_AGU_CONTRA_SIDE_SOLD_SHORT_EXEMPT"
   },
-  "translations": {
+  "encoded": {
    "dealersoldshort": "0",
    "dealersoldshortexempt": "1",
    "sellingcustomersoldshort": "2",
@@ -11301,6 +12501,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "dealersoldshort",
+   "1": "dealersoldshortexempt",
+   "2": "sellingcustomersoldshort",
+   "3": "sellingcustomersoldshortexempt",
+   "4": "qualifiedservicerepresentative",
+   "5": "qsroragucontrasidesoldshortexempt"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -11328,7 +12536,7 @@
    "1": "CONTRACTS",
    "2": "UNITS_OF_MEASURE_PER_TIME_UNIT"
   },
-  "translations": {
+  "encoded": {
    "unitssharesparcurrency": "0",
    "contractsifusedmustspecifycontractmultiplier231": "1",
    "unitsofmeasurepertimeunitifusedmustspecifyunitofmeasure996andtimeunit997": "2",
@@ -11338,6 +12546,11 @@
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "units",
+   "1": "contracts",
+   "2": "unitsofmeasurepertimeunit"
   },
   "used_in": [
    "IOI",
@@ -11439,7 +12652,7 @@
    "17": "DISPUTE",
    "18": "NON_MATERIAL_UPDATE"
   },
-  "translations": {
+  "encoded": {
    "submit": "0",
    "alleged": "1",
    "accept": "2",
@@ -11483,6 +12696,27 @@
    "17": "17",
    "18": "18"
   },
+  "decoded": {
+   "0": "submit",
+   "1": "alleged",
+   "2": "accept",
+   "3": "decline",
+   "4": "addendum",
+   "5": "no",
+   "6": "tradereportcancel",
+   "7": "lockedin",
+   "8": "defaulted",
+   "9": "invalidcmta",
+   "10": "pended",
+   "11": "allegednew",
+   "12": "allegedaddendum",
+   "13": "allegedno",
+   "14": "allegedtradereportcancel",
+   "15": "allegedtradebreak",
+   "16": "verify",
+   "17": "dispute",
+   "18": "nonmaterialupdate"
+  },
   "used_in": [
    "TradeCaptureReport",
    "TradeCaptureReportAck"
@@ -11507,11 +12741,15 @@
    "0": "NOT_SPECIFIED",
    "1": "EXPLICIT_LIST_PROVIDED"
   },
-  "translations": {
+  "encoded": {
    "notspecified": "0",
    "explicitlistprovided": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "notspecified",
+   "1": "explicitlistprovided"
   },
   "used_in": [
    "AllocationReport",
@@ -11698,7 +12936,7 @@
    "26": "REDEMPTION_DATE",
    "27": "TRD_CNTNTN_EFCTV_DT"
   },
-  "translations": {
+  "encoded": {
    "put": "1",
    "call": "2",
    "tender": "3",
@@ -11755,6 +12993,36 @@
    "25": "25",
    "26": "26",
    "27": "27"
+  },
+  "decoded": {
+   "1": "put",
+   "2": "call",
+   "3": "tender",
+   "4": "sinkingfundcall",
+   "99": "other",
+   "5": "activation",
+   "6": "inactiviation",
+   "7": "lasteligibletradedate",
+   "8": "swapstartdate",
+   "9": "swapenddate",
+   "10": "swaprolldate",
+   "11": "swapnextstartdate",
+   "12": "swapnextrolldate",
+   "13": "firstdeliverydate",
+   "14": "lastdeliverydate",
+   "15": "initialinventoryduedate",
+   "16": "finalinventoryduedate",
+   "17": "firstintentdate",
+   "18": "lastintentdate",
+   "19": "positionremovaldate",
+   "20": "minimumnotice",
+   "21": "deliverystarttime",
+   "22": "deliveryendtime",
+   "23": "firstnoticedate",
+   "24": "lastnoticedate",
+   "25": "firstexercisedate",
+   "26": "redemptiondate",
+   "27": "trdcntntnefctvdt"
   },
   "components": [
    "EvntGrp",
@@ -11927,7 +13195,7 @@
    "40": "AVERAGE_DAILY_NOTIONAL_AMOUNT",
    "41": "AVERAGE_DAILY_NUMBER_TRADES"
   },
-  "translations": {
+  "encoded": {
    "flatsecuritiespayinterestonacurrentbasisbutaretradedwithoutinterest": "1",
    "zerocoupon": "2",
    "interestbearingforeurocommercialpaperwhennotissuedatdiscount": "3",
@@ -12022,6 +13290,50 @@
    "40": "40",
    "41": "41"
   },
+  "decoded": {
+   "1": "flat",
+   "2": "zerocoupon",
+   "3": "interestbearing",
+   "4": "noperiodicpayments",
+   "5": "variablerate",
+   "6": "lessfeeforput",
+   "7": "steppedcoupon",
+   "8": "couponperiod",
+   "9": "when",
+   "10": "originalissuediscount",
+   "11": "callable",
+   "12": "escrowedtomaturity",
+   "13": "escrowedtoredemptiondate",
+   "14": "prerefunded",
+   "15": "indefault",
+   "16": "unrated",
+   "17": "taxable",
+   "18": "indexed",
+   "19": "subjecttoalternativeminimumtax",
+   "20": "originalissuediscountprice",
+   "21": "callablebelowmaturityvalue",
+   "22": "callablewithoutnotice",
+   "99": "text",
+   "23": "pricetickrulesforsecurity",
+   "24": "tradetypeeligibilitydetailsforsecurity",
+   "25": "instrumentdenominator",
+   "26": "instrumentnumerator",
+   "27": "instrumentpriceprecision",
+   "28": "instrumentstrikeprice",
+   "29": "tradeableindicator",
+   "30": "instrumenteligibleanonorders",
+   "31": "minguaranteedfillvolume",
+   "32": "minguaranteedfillstatus",
+   "33": "tradeatsettlementeligibility",
+   "34": "testinstrument",
+   "35": "dummyinstrument",
+   "36": "negativesettlementpriceeligibility",
+   "37": "negativestrikepriceeligibility",
+   "38": "usstdcontractind",
+   "39": "admittedtotradingontradingvenue",
+   "40": "averagedailynotionalamount",
+   "41": "averagedailynumbertrades"
+  },
   "components": [
    "AttrbGrp",
    "InstrumentExtension"
@@ -12100,7 +13412,7 @@
    "7": "PROGRAM3A7",
    "8": "PROGRAM3C7"
   },
-  "translations": {
+  "encoded": {
    "3a3": "1",
    "42": "2",
    "other": "99",
@@ -12121,6 +13433,17 @@
    "6": "6",
    "7": "7",
    "8": "8"
+  },
+  "decoded": {
+   "1": "program3a3",
+   "2": "program42",
+   "99": "other",
+   "3": "program3a2",
+   "4": "program3a3and3c7",
+   "5": "program3a4",
+   "6": "program3a5",
+   "7": "program3a7",
+   "8": "program3c7"
   },
   "components": [
    "Instrument"
@@ -12376,13 +13699,18 @@
    "1": "PER_UNIT",
    "2": "PERCENTAGE"
   },
-  "translations": {
+  "encoded": {
    "absolute": "0",
    "perunit": "1",
    "percentage": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "absolute",
+   "1": "perunit",
+   "2": "percentage"
   },
   "used_in": [
    "ExecutionReport",
@@ -12435,13 +13763,17 @@
    "Y": "YES",
    "N": "NO"
   },
-  "translations": {
+  "encoded": {
    "lastmessage": "Y",
    "notlastmessage": "N",
    "yes": "Y",
    "no": "N",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "ExecutionReport",
@@ -12516,7 +13848,7 @@
    "9": "TRANSFER_WITHDRAWAL",
    "10": "PLEDGE"
   },
-  "translations": {
+  "encoded": {
    "initial": "0",
    "scheduled": "1",
    "timewarning": "2",
@@ -12539,6 +13871,19 @@
    "8": "8",
    "9": "9",
    "10": "10"
+  },
+  "decoded": {
+   "0": "initial",
+   "1": "scheduled",
+   "2": "timewarning",
+   "3": "margindeficiency",
+   "4": "marginexcess",
+   "5": "forwardcollateraldemand",
+   "6": "eventofdefault",
+   "7": "adversetaxevent",
+   "8": "transferdeposit",
+   "9": "transferwithdrawal",
+   "10": "pledge"
   },
   "used_in": [
    "CollateralRequest",
@@ -12577,7 +13922,7 @@
    "6": "FULLY_ASSIGNED",
    "7": "OUTSTANDING_TRADES"
   },
-  "translations": {
+  "encoded": {
    "tradedate": "0",
    "gcinstrument": "1",
    "collateralinstrument": "2",
@@ -12595,6 +13940,16 @@
    "5": "5",
    "6": "6",
    "7": "7"
+  },
+  "decoded": {
+   "0": "tradedate",
+   "1": "gcinstrument",
+   "2": "collateralinstrument",
+   "3": "substitutioneligible",
+   "4": "notassigned",
+   "5": "partiallyassigned",
+   "6": "fullyassigned",
+   "7": "outstandingtrades"
   },
   "used_in": [
    "CollateralInquiry",
@@ -12740,7 +14095,7 @@
    "3": "RELEASE",
    "4": "REVERSE"
   },
-  "translations": {
+  "encoded": {
    "new": "0",
    "replace": "1",
    "cancel": "2",
@@ -12751,6 +14106,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "new",
+   "1": "replace",
+   "2": "cancel",
+   "3": "release",
+   "4": "reverse"
   },
   "used_in": [
    "CollateralAssignment",
@@ -12797,7 +14159,7 @@
    "4": "TRANSACTION_PENDING",
    "5": "TRANSACTION_COMPLETED_WITH_WARNING"
   },
-  "translations": {
+  "encoded": {
    "received": "0",
    "accepted": "1",
    "declined": "2",
@@ -12810,6 +14172,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "received",
+   "1": "accepted",
+   "2": "declined",
+   "3": "rejected",
+   "4": "transactionpending",
+   "5": "transactioncompletedwithwarning"
   },
   "used_in": [
    "CollateralResponse"
@@ -12844,7 +14214,7 @@
    "5": "EXCESSIVE_SUBSTITUTION",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "unknowndealordertrade": "0",
    "unknownorinvalidinstrument": "1",
    "unauthorizedtransaction": "2",
@@ -12860,6 +14230,15 @@
    "4": "4",
    "5": "5",
    "99": "99"
+  },
+  "decoded": {
+   "0": "unknowndeal",
+   "1": "unknownorinvalidinstrument",
+   "2": "unauthorizedtransaction",
+   "3": "insufficientcollateral",
+   "4": "invalidtypeofcollateral",
+   "5": "excessivesubstitution",
+   "99": "other"
   },
   "used_in": [
    "CollateralResponse"
@@ -12938,7 +14317,7 @@
    "4": "CHALLENGED",
    "5": "REUSED"
   },
-  "translations": {
+  "encoded": {
    "unassigned": "0",
    "partiallyassigned": "1",
    "assignmentproposed": "2",
@@ -12952,6 +14331,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "unassigned",
+   "1": "partiallyassigned",
+   "2": "assignmentproposed",
+   "3": "assigned",
+   "4": "challenged",
+   "5": "reused"
   },
   "used_in": [
    "CollateralReport"
@@ -12994,13 +14381,17 @@
    "N": "NO",
    "Y": "YES"
   },
-  "translations": {
+  "encoded": {
    "lastmessage": "Y",
    "notlastmessage": "N",
    "no": "N",
    "yes": "Y",
    "y": "Y",
    "n": "N"
+  },
+  "decoded": {
+   "Y": "yes",
+   "N": "no"
   },
   "used_in": [
    "ExecutionReport",
@@ -13123,7 +14514,7 @@
    "3": "HOLD_IN_CUSTODY",
    "4": "DELIVER_BY_VALUE"
   },
-  "translations": {
+  "encoded": {
    "versuspaymentdeliverifsellorreceiveifbuyvsagainstpayment": "0",
    "freedeliverifsellorreceiveifbuyfree": "1",
    "triparty": "2",
@@ -13136,6 +14527,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "versuspayment",
+   "1": "free",
+   "2": "triparty",
+   "3": "holdincustody",
+   "4": "deliverbyvalue"
   },
   "components": [
    "FinancingDetails"
@@ -13268,7 +14666,7 @@
    "4": "REQUEST_INDIVIDUAL_USER_STATUS",
    "5": "REQUEST_THROTTLE_LIMIT"
   },
-  "translations": {
+  "encoded": {
    "logonuser": "1",
    "logoffuser": "2",
    "changepasswordforuser": "3",
@@ -13279,6 +14677,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "logonuser",
+   "2": "logoffuser",
+   "3": "changepasswordforuser",
+   "4": "requestindividualuserstatus",
+   "5": "requestthrottlelimit"
   },
   "used_in": [
    "UserRequest"
@@ -13333,7 +14738,7 @@
    "8": "SESSION_SHUTDOWN_WARNING",
    "9": "THROTTLE_PARAMETERS_CHANGED"
   },
-  "translations": {
+  "encoded": {
    "loggedin": "1",
    "notloggedin": "2",
    "usernotrecognised": "3",
@@ -13354,6 +14759,17 @@
    "7": "7",
    "8": "8",
    "9": "9"
+  },
+  "decoded": {
+   "1": "loggedin",
+   "2": "notloggedin",
+   "3": "usernotrecognised",
+   "4": "passwordincorrect",
+   "5": "passwordchanged",
+   "6": "other",
+   "7": "forceduserlogoutbyexchange",
+   "8": "sessionshutdownwarning",
+   "9": "throttleparameterschanged"
   },
   "used_in": [
    "UserResponse",
@@ -13398,7 +14814,7 @@
    "3": "NOT_CONNECTED_EXPECTED",
    "4": "IN_PROCESS"
   },
-  "translations": {
+  "encoded": {
    "connected": "1",
    "notconnecteddownexpectedup": "2",
    "notconnecteddownexpecteddown": "3",
@@ -13409,6 +14825,12 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "1": "connected",
+   "2": "notconnectedunexpected",
+   "3": "notconnectedexpected",
+   "4": "inprocess"
   },
   "used_in": [
    "NetworkCounterpartySystemStatusResponse"
@@ -13544,7 +14966,7 @@
    "4": "STOP_SUBSCRIBING",
    "8": "LEVEL_OF_DETAIL"
   },
-  "translations": {
+  "encoded": {
    "snapshot": "1",
    "subscribe": "2",
    "stopsubscribing": "4",
@@ -13554,6 +14976,12 @@
    "2": "2",
    "4": "4",
    "8": "8"
+  },
+  "decoded": {
+   "1": "snapshot",
+   "2": "subscribe",
+   "4": "stopsubscribing",
+   "8": "levelofdetail"
   },
   "used_in": [
    "NetworkCounterpartySystemStatusRequest"
@@ -13598,11 +15026,15 @@
    "1": "FULL",
    "2": "INCREMENTAL_UPDATE"
   },
-  "translations": {
+  "encoded": {
    "full": "1",
    "incrementalupdate": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "full",
+   "2": "incrementalupdate"
   },
   "used_in": [
    "NetworkCounterpartySystemStatusResponse"
@@ -13657,7 +15089,7 @@
    "10": "VERIFIED",
    "11": "DISPUTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "rejected": "1",
    "acceptedwitherrors": "3",
@@ -13682,6 +15114,20 @@
    "9": "9",
    "10": "10",
    "11": "11"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "rejected",
+   "3": "acceptedwitherrors",
+   "2": "cancelled",
+   "4": "pendingnew",
+   "5": "pendingcancel",
+   "6": "pendingreplace",
+   "7": "terminated",
+   "8": "pendingverification",
+   "9": "deemedverified",
+   "10": "verified",
+   "11": "disputed"
   },
   "used_in": [
    "TradeCaptureReport",
@@ -13709,7 +15155,7 @@
    "2": "CONFIRM_REJECTED",
    "3": "AFFIRMED"
   },
-  "translations": {
+  "encoded": {
    "received": "1",
    "confirmrejectedienotaffirmed": "2",
    "affirmed": "3",
@@ -13717,6 +15163,11 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "1": "received",
+   "2": "confirmrejected",
+   "3": "affirmed"
   },
   "used_in": [
    "ConfirmationAck"
@@ -13794,13 +15245,18 @@
    "1": "ADD",
    "2": "REMOVE"
   },
-  "translations": {
+  "encoded": {
    "retain": "0",
    "add": "1",
    "remove": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "retain",
+   "1": "add",
+   "2": "remove"
   },
   "used_in": [
    "CollateralRequest",
@@ -13836,7 +15292,7 @@
    "3": "COMPLETED_WITH_WARNINGS",
    "4": "REJECTED"
   },
-  "translations": {
+  "encoded": {
    "accepted": "0",
    "acceptedwithwarnings": "1",
    "completed": "2",
@@ -13847,6 +15303,13 @@
    "2": "2",
    "3": "3",
    "4": "4"
+  },
+  "decoded": {
+   "0": "accepted",
+   "1": "acceptedwithwarnings",
+   "2": "completed",
+   "3": "completedwithwarnings",
+   "4": "rejected"
   },
   "used_in": [
    "CollateralInquiryAck"
@@ -13889,7 +15352,7 @@
    "9": "UNAUTHORIZED_FOR_COLLATERAL_INQUIRY",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "successfuldefault": "0",
    "invalidorunknowninstrument": "1",
    "invalidorunknowncollateraltype": "2",
@@ -13914,6 +15377,19 @@
    "8": "8",
    "9": "9",
    "99": "99"
+  },
+  "decoded": {
+   "0": "successful",
+   "1": "invalidorunknowninstrument",
+   "2": "invalidorunknowncollateraltype",
+   "3": "invalidparties",
+   "4": "invalidtransporttyperequested",
+   "5": "invaliddestinationrequested",
+   "6": "nocollateralfoundforthetradespecified",
+   "7": "nocollateralfoundfortheorderspecified",
+   "8": "collateralinquirytypenotsupported",
+   "9": "unauthorizedforcollateralinquiry",
+   "99": "other"
   },
   "used_in": [
    "CollateralInquiryAck"
@@ -14172,7 +15648,7 @@
    "28": "TZ_TIMESTAMP",
    "29": "TENOR"
   },
-  "translations": {
+  "encoded": {
    "int": "1",
    "length": "2",
    "numingroup": "3",
@@ -14231,6 +15707,37 @@
    "27": "27",
    "28": "28",
    "29": "29"
+  },
+  "decoded": {
+   "1": "int",
+   "2": "length",
+   "3": "numingroup",
+   "4": "seqnum",
+   "5": "tagnum",
+   "6": "float",
+   "7": "qty",
+   "8": "price",
+   "9": "priceoffset",
+   "10": "amt",
+   "11": "percentage",
+   "12": "char",
+   "13": "boolean",
+   "14": "string",
+   "15": "multiplecharvalue",
+   "16": "currency",
+   "17": "exchange",
+   "18": "monthyear",
+   "19": "utctimestamp",
+   "20": "utctimeonly",
+   "21": "localmktdate",
+   "22": "utcdateonly",
+   "23": "data",
+   "24": "multiplestringvalue",
+   "25": "country",
+   "26": "language",
+   "27": "tztimeonly",
+   "28": "tztimestamp",
+   "29": "tenor"
   },
   "components": [
    "StrategyParametersGrp"
@@ -14339,7 +15846,7 @@
    "10": "PUBLISHED",
    "11": "PENDING_DELETION"
   },
-  "translations": {
+  "encoded": {
    "active": "1",
    "inactive": "2",
    "activeclosingordersonly": "3",
@@ -14362,6 +15869,19 @@
    "9": "9",
    "10": "10",
    "11": "11"
+  },
+  "decoded": {
+   "1": "active",
+   "2": "inactive",
+   "3": "activeclosingordersonly",
+   "4": "expired",
+   "5": "delisted",
+   "6": "knockedout",
+   "7": "knockoutrevoked",
+   "8": "pendingexpiry",
+   "9": "suspended",
+   "10": "published",
+   "11": "pendingdeletion"
   },
   "components": [
    "Instrument"
@@ -14497,9 +16017,13 @@
    "FIXED": "FIXED",
    "DIFF": "DIFF"
   },
-  "translations": {
+  "encoded": {
    "fixed": "FIXED",
    "diff": "DIFF"
+  },
+  "decoded": {
+   "FIXED": "fixed",
+   "DIFF": "diff"
   },
   "components": [
    "UnderlyingInstrument"
@@ -14525,7 +16049,7 @@
    "4": "T_PLUS3",
    "5": "T_PLUS4"
   },
-  "translations": {
+  "encoded": {
    "t1": "2",
    "t3": "4",
    "t4": "5",
@@ -14535,6 +16059,11 @@
    "2": "2",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "2": "tplus1",
+   "4": "tplus3",
+   "5": "tplus4"
   },
   "components": [
    "UnderlyingInstrument"
@@ -14616,13 +16145,18 @@
    "D": "DELETE",
    "M": "MODIFY"
   },
-  "translations": {
+  "encoded": {
    "add": "A",
    "delete": "D",
    "modify": "M",
    "a": "A",
    "d": "D",
    "m": "M"
+  },
+  "decoded": {
+   "A": "add",
+   "D": "delete",
+   "M": "modify"
   },
   "used_in": [
    "SecurityListUpdateReport",
@@ -14668,7 +16202,7 @@
    "4": "CONTRARY_INTENTION",
    "5": "DIFFERENCE"
   },
-  "translations": {
+  "encoded": {
    "autoexercise": "1",
    "nonautoexercise": "2",
    "finalwillbeexercised": "3",
@@ -14679,6 +16213,13 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "1": "autoexercise",
+   "2": "nonautoexercise",
+   "3": "finalwillbeexercised",
+   "4": "contraryintention",
+   "5": "difference"
   },
   "components": [
    "ExpirationQty"
@@ -14844,11 +16385,15 @@
    "1": "SUB_ALLOCATE",
    "2": "THIRD_PARTY_ALLOCATION"
   },
-  "translations": {
+  "encoded": {
    "suballocate": "1",
    "thirdpartyallocation": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "suballocate",
+   "2": "thirdpartyallocation"
   },
   "components": [
    "AllocAckGrp",
@@ -14993,7 +16538,7 @@
    "Sqyd": "SQUARE_YARD",
    "yd": "YARD"
   },
-  "translations": {
+  "encoded": {
    "barrels": "Bbl",
    "billioncubicfeet": "Bcf",
    "bushels": "Bu",
@@ -15152,6 +16697,88 @@
    "sqyd": "Sqyd",
    "yd": "yd"
   },
+  "decoded": {
+   "Bbl": "barrels",
+   "Bcf": "billioncubicfeet",
+   "Bu": "bushels",
+   "lbs": "pounds",
+   "Gal": "gallons",
+   "MMbbl": "millionbarrels",
+   "MMBtu": "onemillionbtu",
+   "MWh": "megawatthours",
+   "oz_tr": "troyounces",
+   "t": "metrictons",
+   "tn": "tons",
+   "USD": "usdollars",
+   "Alw": "allowances",
+   "CBM": "cubicmeters",
+   "GJ": "gigajoules",
+   "kHR": "heatrate",
+   "kWh": "kilowatthours",
+   "MHR": "megaheatrate",
+   "thm": "therms",
+   "tnCO2": "tonsofcarbondioxide",
+   "BDFT": "boardfeet",
+   "Ccy": "currency",
+   "CDD": "coolingdegreeday",
+   "CER": "certifiedemissionsreduction",
+   "CPD": "criticalprecipday",
+   "CRT": "climatereservetonnes",
+   "cwt": "hundredweight",
+   "day": "day",
+   "dt": "drymetrictons",
+   "EnvAllwnc": "envallwnccert",
+   "EnvCrd": "environmentalcredit",
+   "EnvOfst": "environmentaloffset",
+   "g": "grams",
+   "GT": "grosstons",
+   "HDD": "heatingdegreeday",
+   "IPNT": "indexpoint",
+   "kg": "kilograms",
+   "kL": "kiloliters",
+   "kW-a": "kilowattyear",
+   "kW-d": "kilowattday",
+   "kW-h": "kilowatthour",
+   "kW-M": "kilowattmonth",
+   "kW-min": "kilowattminute",
+   "L": "liters",
+   "MW-a": "megawattyear",
+   "MW-d": "megawattday",
+   "MW-h": "megawatthour",
+   "MW-M": "megawattmonth",
+   "MW-min": "megawattminute",
+   "PRINC": "principalwithrelationtodebtinstrument",
+   "a": "are",
+   "ac": "acre",
+   "cL": "centiliter",
+   "cM": "centimeter",
+   "DGE": "dieselgallonequivalent",
+   "ft": "foot",
+   "Gal_gb": "gbgallon",
+   "GGE": "gasolinegallonequivalent",
+   "ha": "hectare",
+   "in": "inch",
+   "kM": "kilometer",
+   "M": "meter",
+   "mi": "mile",
+   "mL": "milliliter",
+   "mM": "millimeter",
+   "oz": "usounce",
+   "pc": "piece",
+   "pt": "uspint",
+   "pt_gb": "gbpint",
+   "qt": "usquart",
+   "qt_gb": "gbquart",
+   "SqcM": "squarecentimeter",
+   "Sqft": "squarefoot",
+   "Sqin": "squareinch",
+   "SqkM": "squarekilometer",
+   "SqM": "squaremeter",
+   "Sqmi": "squaremile",
+   "SqmM": "squaremillimeter",
+   "Sqyd": "squareyard",
+   "yd": "yard"
+  },
   "components": [
    "Instrument"
   ]
@@ -15185,7 +16812,7 @@
    "Yr": "YEAR",
    "Q": "QUARTER"
   },
-  "translations": {
+  "encoded": {
    "second": "S",
    "minute": "Min",
    "hour": "H",
@@ -15202,6 +16829,16 @@
    "mo": "Mo",
    "yr": "Yr",
    "q": "Q"
+  },
+  "decoded": {
+   "S": "second",
+   "Min": "minute",
+   "H": "hour",
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year",
+   "Q": "quarter"
   },
   "components": [
    "Instrument"

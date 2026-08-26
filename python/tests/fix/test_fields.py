@@ -9,6 +9,7 @@ import pytest
 import rekep.fix.fields
 import rekep.market
 import rekep.market.fix
+from rekep.fields import scalar
 from rekep.fix import arrow_type_of, cast_arrow_bool, cast_arrow_fix, fix_field, unix_of
 from rekep.fix.fields import scalar_fix_temporal
 from rekep.fix.message import render_fix_value
@@ -24,14 +25,20 @@ def test_char_is_a_string_not_one_character() -> None:
     ("datatype", "expected"),
     [
         ("Boolean", pyarrow.bool_()),
-        ("int", pyarrow.int64()),
+        ("int", pyarrow.int32()),
+        ("INTEGER", pyarrow.int32()),
+        ("bigint", pyarrow.int64()),
+        ("LONG", pyarrow.int64()),
         ("SeqNum", pyarrow.int64()),
         ("NumInGroup", pyarrow.int64()),
         ("Price", pyarrow.float64()),
         ("Qty", pyarrow.float64()),
         ("String", pyarrow.string()),
+        ("ARRAY", pyarrow.string()),
+        ("varchar", pyarrow.string()),
         ("Currency", pyarrow.string()),
         ("UTCTimestamp", pyarrow.timestamp("ns")),
+        ("datetime", pyarrow.timestamp("ns")),
         ("LocalMktDate", pyarrow.date32()),
         ("UTCTimeOnly", pyarrow.time64("ns")),
         ("data", pyarrow.binary()),
@@ -47,6 +54,14 @@ def test_spelling_is_forgiven_and_the_unknown_is_a_string() -> None:
     assert arrow_type_of("SomeVendorThing") == pyarrow.string()
     assert arrow_type_of(None) == pyarrow.string()
     assert arrow_type_of("") == pyarrow.string()
+
+
+def test_a_python_int_hint_remains_int64() -> None:
+    @scalar
+    class Example:
+        value: int
+
+    assert Example.into_field().field("value").arrow_type == pyarrow.int64()
 
 
 def test_the_timezone_carrying_types_stay_text() -> None:

@@ -8,6 +8,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep import FixCodec, Message
 from rekep.fix import FixRegistry
 from rekep.market import (
     MIC,
@@ -143,7 +144,7 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
     ]
 
 
-def test_log_codes_retain_all_parsed_identifiers_in_lookup_order() -> None:
+def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
     columns = {
         "OrderID": pyarrow.array(["ORD-1", None]),
         "OrigClOrdID": pyarrow.array(["CL-0", None]),
@@ -160,12 +161,10 @@ def test_log_codes_retain_all_parsed_identifiers_in_lookup_order() -> None:
         ("orig_cl_ord_id", "CL-0"),
         ("cl_ord_id", "CL-1"),
         ("exec_id", "EX-1"),
-        ("symbol", "AAPL"),
     ]
     assert list(codes[1].items()) == [
         ("cl_ord_id", "CL-2"),
         ("quote_set_id", "SET-1"),
-        ("symbol", "MSFT"),
     ]
 
 
@@ -594,7 +593,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
         assert found_table.equals(expected_table)
 
 
-def test_flat_fix_arrow_uses_custom_handlers_and_states(tmp_path: Path) -> None:
+def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     builtin = FixRegistry.from_builtin()
     msg_type = builtin.entry("MsgType")
@@ -604,8 +603,12 @@ def test_flat_fix_arrow_uses_custom_handlers_and_states(tmp_path: Path) -> None:
     configured = {
         "MsgType": dataclasses.replace(
             msg_type,
-            handlers={**msg_type.handlers, "Q": "order", "R": "executionreport"},
-            order_states={**msg_type.order_states, "Q": State.PENDING_NEW},
+            values={"Q": "NewOrderSingle", "R": "ExecutionReport"},
+            value_names={"Q": "NEW_ORDER_SINGLE", "R": "EXECUTION_REPORT"},
+            event_types={"Q": EventType.ORDER, "R": EventType.EXECUTION},
+            states={"Q": State.PENDING_NEW},
+            encoded={},
+            decoded={},
         ),
         "OrdStatus": dataclasses.replace(
             ord_status,
@@ -712,6 +715,63 @@ def test_flat_fix_arrow_uses_custom_handlers_and_states(tmp_path: Path) -> None:
     ]
     assert expected[Execution][0].state is State.FILLED
     assert expected[Order][0].codes["cl_ord_id"] == "CUSTOM-1"
+
+
+@pytest.mark.parametrize(
+    ("exec_type", "execution_state"),
+    [("G", State.REPLACED), ("H", State.CANCELLED)],
+)
+def test_flat_fix_arrow_keeps_trade_revision_order_state_unknown(
+    exec_type: str, execution_state: State
+) -> None:
+    message = FixMsg(
+        unix=BASE,
+        protocol_version="4.4",
+        MsgType="8",
+        Symbol="AAPL",
+        OrderID="ORDER-1",
+        ClOrdID="CLIENT-1",
+        ExecID="EXEC-1",
+        ExecType=exec_type,
+        Side="1",
+        OrderQty=5.0,
+        LastPx=100.25,
+        LastQty=2.0,
+        CumQty=2.0,
+        LeavesQty=3.0,
+        AvgPx=100.25,
+    )
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist([message.into_dict()], schema)
+
+    translated = into_flat_market_batches(batch, {"registry": FixRegistry.from_builtin()})
+    assert translated is not None
+    orders, executions = translated
+    assert orders is not None and executions is not None
+    assert orders.column("state")[0].as_py() == int(State.UNKNOWN)
+    assert executions.column("state")[0].as_py() == int(execution_state)
+
+
+def test_parsed_fixmsg_keeps_raw_unused_values_in_scalar_and_arrow_metadata() -> None:
+    line = (
+        "8=FIX.4.4|35=8|37=ORDER-1|11=CLIENT-1|17=EXEC-1|55=AAPL|54=1|"
+        "39=1|150=F|38=2|31=10.5|32=2|14=2|151=0|6=0010.5000|"
+        "60=20260825-09:30:03.5|10=000|"
+    )
+    raw = next(iter(Message.into_arrow_reader([Message(message=line)])))
+    registry = FixRegistry.from_builtin()
+    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+
+    message = next(FixMsg.from_arrow_reader([parsed]))
+    scalar = list(message.into_market_events(registry=registry))
+    assert scalar and all(event.metadata["6"] == "0010.5000" for event in scalar)
+
+    translated = into_flat_market_batches(parsed, {"registry": registry})
+    assert translated is not None
+    for batch in translated:
+        if batch is not None:
+            for metadata in batch["metadata"].to_pylist():
+                assert metadata.count(("6", "0010.5000")) == 1
 
 
 def test_reference_input_is_read_only_and_books_remain_the_only_output() -> None:

@@ -1922,7 +1922,7 @@
    "8": "VARIANCE",
    "9": "CORRELATION"
   },
-  "translations": {
+  "encoded": {
    "periodic": "0",
    "initial": "1",
    "single": "2",
@@ -1943,6 +1943,18 @@
    "7": "7",
    "8": "8",
    "9": "9"
+  },
+  "decoded": {
+   "0": "periodic",
+   "1": "initial",
+   "2": "single",
+   "3": "dividend",
+   "4": "interest",
+   "5": "dividendreturn",
+   "6": "pricereturn",
+   "7": "totalreturn",
+   "8": "variance",
+   "9": "correlation"
   }
  },
  "40739": {
@@ -1996,11 +2008,15 @@
    "0": "STANDARD",
    "1": "FRA"
   },
-  "translations": {
+  "encoded": {
    "standard": "0",
    "fra": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "standard",
+   "1": "fra"
   }
  },
  "40745": {
@@ -2032,7 +2048,7 @@
    "2": "STRAIGHT",
    "3": "SPREAD_EXCLUSIVE"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "flat": "1",
    "straight": "2",
@@ -2041,6 +2057,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "flat",
+   "2": "straight",
+   "3": "spreadexclusive"
   }
  },
  "40748": {
@@ -2105,7 +2127,7 @@
    "Yr": "YEAR",
    "T": "TERM"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -2116,6 +2138,13 @@
    "mo": "Mo",
    "yr": "Yr",
    "t": "T"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year",
+   "T": "term"
   }
  },
  "40755": {
@@ -2171,7 +2200,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -2180,6 +2209,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40761": {
@@ -2238,7 +2273,7 @@
    "SAT": "SATURDAY",
    "SUN": "SUNDAY"
   },
-  "translations": {
+  "encoded": {
    "monday": "MON",
    "tuesday": "TUE",
    "wednesday": "WED",
@@ -2253,6 +2288,15 @@
    "fri": "FRI",
    "sat": "SAT",
    "sun": "SUN"
+  },
+  "decoded": {
+   "MON": "monday",
+   "TUE": "tuesday",
+   "WED": "wednesday",
+   "THU": "thursday",
+   "FRI": "friday",
+   "SAT": "saturday",
+   "SUN": "sunday"
   }
  },
  "40767": {
@@ -2452,7 +2496,7 @@
    "2": "TELERATE",
    "99": "OTHER"
   },
-  "translations": {
+  "encoded": {
    "bloomberg": "0",
    "reuters": "1",
    "telerate": "2",
@@ -2461,6 +2505,12 @@
    "1": "1",
    "2": "2",
    "99": "99"
+  },
+  "decoded": {
+   "0": "bloomberg",
+   "1": "reuters",
+   "2": "telerate",
+   "99": "other"
   }
  },
  "40791": {
@@ -2476,7 +2526,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -2485,6 +2535,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40792": {
@@ -2522,11 +2578,15 @@
    "0": "SHORT",
    "1": "LONG"
   },
-  "translations": {
+  "encoded": {
    "short": "0",
    "long": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "short",
+   "1": "long"
   }
  },
  "40796": {
@@ -2540,11 +2600,15 @@
    "0": "BOND_EQUIVALENT_YIELD",
    "1": "MONEY_MARKET_YIELD"
   },
-  "translations": {
+  "encoded": {
    "bondequivalentyield": "0",
    "moneymarketyield": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "bondequivalentyield",
+   "1": "moneymarketyield"
   }
  },
  "40797": {
@@ -2566,11 +2630,15 @@
    "1": "BUYER",
    "2": "SELLER"
   },
-  "translations": {
+  "encoded": {
    "buyer": "1",
    "seller": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "buyer",
+   "2": "seller"
   }
  },
  "40799": {
@@ -2600,11 +2668,15 @@
    "1": "BUYER",
    "2": "SELLER"
   },
-  "translations": {
+  "encoded": {
    "buyer": "1",
    "seller": "2",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "1": "buyer",
+   "2": "seller"
   }
  },
  "40802": {
@@ -2650,11 +2722,15 @@
    "0": "UNWEIGHTED",
    "1": "WEIGHTED"
   },
-  "translations": {
+  "encoded": {
    "unweighted": "0",
    "weighted": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "unweighted",
+   "1": "weighted"
   }
  },
  "40807": {
@@ -2668,11 +2744,15 @@
    "0": "ZERO_INTEREST_RATE_METHOD",
    "1": "NEGATIVE_INTEREST_RATE_METHOD"
   },
-  "translations": {
+  "encoded": {
    "zerointerestratemethod": "0",
    "negativeinterestratemethod": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "zerointerestratemethod",
+   "1": "negativeinterestratemethod"
   }
  },
  "40808": {
@@ -2696,7 +2776,7 @@
    "Mo": "MONTH",
    "Yr": "YEAR"
   },
-  "translations": {
+  "encoded": {
    "day": "D",
    "week": "Wk",
    "month": "Mo",
@@ -2705,6 +2785,12 @@
    "wk": "Wk",
    "mo": "Mo",
    "yr": "Yr"
+  },
+  "decoded": {
+   "D": "day",
+   "Wk": "week",
+   "Mo": "month",
+   "Yr": "year"
   }
  },
  "40810": {
@@ -2722,7 +2808,7 @@
    "4": "EXCHANGE_BUSINESS",
    "5": "SCHEDULED_TRADING_DAY"
   },
-  "translations": {
+  "encoded": {
    "business": "0",
    "calendar": "1",
    "commoditybusiness": "2",
@@ -2735,6 +2821,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "business",
+   "1": "calendar",
+   "2": "commoditybusiness",
+   "3": "currencybusiness",
+   "4": "exchangebusiness",
+   "5": "scheduledtradingday"
   }
  },
  "40811": {
@@ -2748,11 +2842,15 @@
    "0": "NONE",
    "1": "LINEAR_ZERO_YIELD"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "linearzeroyield": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "linearzeroyield"
   }
  },
  "40812": {
@@ -2799,13 +2897,18 @@
    "1": "ISDA",
    "2": "AFMA"
   },
-  "translations": {
+  "encoded": {
    "none": "0",
    "isda": "1",
    "afma": "2",
    "0": "0",
    "1": "1",
    "2": "2"
+  },
+  "decoded": {
+   "0": "none",
+   "1": "isda",
+   "2": "afma"
   }
  },
  "40817": {
@@ -2899,11 +3002,15 @@
    "0": "UNADJUSTED",
    "1": "ADJUSTED"
   },
-  "translations": {
+  "encoded": {
    "unadjusted": "0",
    "adjusted": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "unadjusted",
+   "1": "adjusted"
   }
  },
  "40828": {
@@ -2947,7 +3054,7 @@
    "22": "COMPOUNDING_CAP_RATE",
    "23": "COMPOUNDING_FLOOR_RATE"
   },
-  "translations": {
+  "encoded": {
    "notional": "0",
    "cashflow": "1",
    "fxlinkednotional": "2",
@@ -2996,6 +3103,32 @@
    "21": "21",
    "22": "22",
    "23": "23"
+  },
+  "decoded": {
+   "0": "notional",
+   "1": "cashflow",
+   "2": "fxlinkednotional",
+   "3": "fixedrate",
+   "4": "futurevaluenotional",
+   "5": "knownamount",
+   "6": "floatingratemultiplier",
+   "7": "spread",
+   "8": "caprate",
+   "9": "floorrate",
+   "10": "nondeliverablesettlpaymentdates",
+   "11": "nondeliverablesettlcalculationdates",
+   "12": "nondeliverablefxfixingdates",
+   "13": "settlperiodnotnl",
+   "14": "settlperiodpx",
+   "15": "calcperiod",
+   "16": "dividendaccrualratemultiplier",
+   "17": "dividendaccrualratespread",
+   "18": "dividendaccrualcaprate",
+   "19": "dividendaccrualfloorrate",
+   "20": "compoundingratemultiplier",
+   "21": "compoundingratespread",
+   "22": "compoundingcaprate",
+   "23": "compoundingfloorrate"
   }
  },
  "40830": {
@@ -3161,11 +3294,15 @@
    "0": "INITIAL",
    "1": "PREVIOUS"
   },
-  "translations": {
+  "encoded": {
    "initial": "0",
    "previous": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "initial",
+   "1": "previous"
   }
  },
  "40850": {
@@ -3365,7 +3502,7 @@
    "2": "COMPOUNDING_INITIAL",
    "3": "COMPOUNDING_FINAL"
   },
-  "translations": {
+  "encoded": {
    "initial": "0",
    "final": "1",
    "compoundinginitial": "2",
@@ -3374,6 +3511,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "initial",
+   "1": "final",
+   "2": "compoundinginitial",
+   "3": "compoundingfinal"
   }
  },
  "40874": {
@@ -3387,11 +3530,15 @@
    "0": "SHORT",
    "1": "LONG"
   },
-  "translations": {
+  "encoded": {
    "short": "0",
    "long": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "short",
+   "1": "long"
   }
  },
  "40875": {
@@ -3769,7 +3916,7 @@
    "4": "EXCHANGE_BUSINESS",
    "5": "SCHEDULED_TRADING_DAY"
   },
-  "translations": {
+  "encoded": {
    "business": "0",
    "calendar": "1",
    "commoditybusiness": "2",
@@ -3782,6 +3929,14 @@
    "3": "3",
    "4": "4",
    "5": "5"
+  },
+  "decoded": {
+   "0": "business",
+   "1": "calendar",
+   "2": "commoditybusiness",
+   "3": "currencybusiness",
+   "4": "exchangebusiness",
+   "5": "scheduledtradingday"
   }
  },
  "40921": {
@@ -3801,7 +3956,7 @@
    "6": "MODIFIED_PRECEDING_DAY",
    "7": "NEAREST_DAY"
   },
-  "translations": {
+  "encoded": {
    "notapplicable": "0",
    "none": "1",
    "followingday": "2",
@@ -3818,6 +3973,16 @@
    "5": "5",
    "6": "6",
    "7": "7"
+  },
+  "decoded": {
+   "0": "notapplicable",
+   "1": "none",
+   "2": "followingday",
+   "3": "floatingratenote",
+   "4": "modifiedfollowingday",
+   "5": "precedingday",
+   "6": "modifiedprecedingday",
+   "7": "nearestday"
   }
  },
  "40922": {
@@ -3875,7 +4040,7 @@
    "SAT": "SAT",
    "SUN": "SUN"
   },
-  "translations": {
+  "encoded": {
    "firstday": "1",
    "secondday": "2",
    "thirdday": "3",
@@ -3952,6 +4117,54 @@
    "28": "28",
    "29": "29",
    "30": "30"
+  },
+  "decoded": {
+   "1": "firstday",
+   "2": "secondday",
+   "3": "thirdday",
+   "4": "fourthday",
+   "5": "fifthday",
+   "6": "sixthday",
+   "7": "seventhday",
+   "8": "eighthday",
+   "9": "ninthday",
+   "10": "tenthday",
+   "11": "eleventhday",
+   "12": "twelvthday",
+   "13": "thirteenthday",
+   "14": "forteenthday",
+   "15": "fifteenthday",
+   "16": "sixteenthday",
+   "17": "seventeenthday",
+   "18": "eighteenthday",
+   "19": "nineteenthday",
+   "20": "twentiethday",
+   "21": "twentyfirstday",
+   "22": "twentysecondday",
+   "23": "twentythirdday",
+   "24": "twentyfourthday",
+   "25": "twentyfifthday",
+   "26": "twentysixthday",
+   "27": "twentyseventhday",
+   "28": "twentyeigthda28y",
+   "29": "twentyninthday",
+   "30": "thirtiethday",
+   "EOM": "eom",
+   "FRN": "frn",
+   "IMM": "imm",
+   "IMMCAD": "immcad",
+   "IMMAUD": "immaud",
+   "IMMNZD": "immnzd",
+   "SFE": "sfe",
+   "NONE": "none",
+   "TBILL": "tbill",
+   "MON": "mon",
+   "TUE": "tue",
+   "WED": "wed",
+   "THU": "thu",
+   "FRI": "fri",
+   "SAT": "sat",
+   "SUN": "sun"
   }
  },
  "40923": {
@@ -4534,7 +4747,7 @@
    "9": "FIXED_RATE",
    "10": "FLOATING_RATE"
   },
-  "translations": {
+  "encoded": {
    "initial": "0",
    "intermediate": "1",
    "final": "2",
@@ -4557,6 +4770,19 @@
    "8": "8",
    "9": "9",
    "10": "10"
+  },
+  "decoded": {
+   "0": "initial",
+   "1": "intermediate",
+   "2": "final",
+   "3": "prepaid",
+   "4": "postpaid",
+   "5": "variable",
+   "6": "fixed",
+   "7": "swap",
+   "8": "conditional",
+   "9": "fixedrate",
+   "10": "floatingrate"
   }
  },
  "40994": {

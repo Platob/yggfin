@@ -92,7 +92,7 @@ def test_a_log_line_is_an_event() -> None:
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
-    assert FixMsg.into_field_metadata() == {"version": "5"}
+    assert FixMsg.into_field_metadata() == {"version": "6"}
     with pytest.raises(TypeError):
         FixMsg.into_field_metadata()["version"] = "2"
 
@@ -515,10 +515,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
             "buffer": None,
         }
     ]
-    assert parsed.column("codes").to_pylist()[0] == [
-        ("orig_cl_ord_id", "ROOT"),
-        ("symbol", "IBM"),
-    ]
+    assert parsed.column("codes").to_pylist()[0] == [("orig_cl_ord_id", "ROOT")]
 
 
 def test_fixmsg_preserves_the_message_stage_type_and_event_code(
@@ -658,6 +655,29 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
     assert translated.equals(reference, check_metadata=True)
     assert translated.column("Side").to_pylist()[0] == "1"
     assert translated.column("mic").null_count == 5
+
+
+def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
+    registry: FixRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import rekep.text.fixmsg_arrow as fixmsg_arrow
+
+    source = _raw_batch(
+        Message(message="8=FIX.4.4|35=8|6=0010.5000|10=000|"),
+        Message(message="8=FIX.4.4|35=8|6=10.5|10=000|"),
+    ).drop_columns(["message"])
+    codec = FixCodec(registry=registry)
+    fast = FixMsg.from_message_arrow_batch(source, codec)
+    monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", lambda *args, **kwargs: None)
+    reference = FixMsg.from_message_arrow_batch(source, codec)
+
+    assert fast.equals(reference, check_metadata=True)
+    assert fast.column("AvgPx").to_pylist() == [10.5, 10.5]
+    assert fast.column("hash")[0].as_py() != fast.column("hash")[1].as_py()
+    assert [
+        [(entry["tag"], entry["value"]) for entry in row if entry["tag"] == 6]
+        for row in fast.column("kwargs").to_pylist()
+    ] == [[(6, "0010.5000")], []]
 
 
 def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import re
-from collections.abc import Collection, Mapping
+from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -112,8 +112,6 @@ class Message(Event):
         messages: Any,
         msg_type_event_types: Mapping[str, EventType | int | str] | None = None,
         plugins: Any | None = None,
-        technical_msg_types: Collection[str] = (),
-        technical_plugin_codes: Collection[str] = (),
         protocol_rules: Any | None = None,
     ) -> dict[str, Any]:
         """Promote discriminators and parse only structured payload rows."""
@@ -126,8 +124,6 @@ class Message(Event):
                         chunk,
                         msg_type_event_types,
                         plugin_chunk,
-                        technical_msg_types,
-                        technical_plugin_codes,
                         protocol_rules,
                     )
                 )
@@ -154,59 +150,36 @@ class Message(Event):
 
         compute = pyarrow.compute
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-        wire_match = compute.extract_regex(text, _WIRE_MSG_TYPE)
-        named_match = compute.extract_regex(text, _NAMED_MSG_TYPE)
-        wire_values = compute.struct_field(wire_match, "value")
-        named_values = compute.struct_field(named_match, "value")
-        checksum_at = compute.find_substring_regex(text, _CHECKSUM_TOKEN)
-        wire_at = compute.find_substring_regex(text, _WIRE_MSG_TYPE)
-        named_at = compute.find_substring_regex(text, _NAMED_MSG_TYPE)
-        wire_probe = _before_checksum(wire_at, checksum_at)
-        named_probe = _before_checksum(named_at, checksum_at)
-        missing = pyarrow.scalar(None, pyarrow.string())
-        wire_values = compute.if_else(wire_probe, wire_values, missing)
-        named_values = compute.if_else(named_probe, named_values, missing)
-        begins_fix = compute.fill_null(compute.match_substring_regex(text, _FIX_BEGIN), False)
-        wrapped = compute.and_(
-            compute.fill_null(compute.starts_with(wire_values, "U"), False), named_probe
-        )
-        probed_msg_types = compute.if_else(
-            wrapped, named_values, compute.coalesce(wire_values, named_values)
-        )
-        technical = _technical_rows(
-            probed_msg_types,
-            plugins,
-            technical_msg_types,
-            technical_plugin_codes,
-        )
+        wire_values, wire_probe, named_probe, begins_fix, probed_msg_types = _msg_type_probe(text)
         candidates = compute.or_(
             compute.or_(compute.or_(wire_probe, named_probe), begins_fix),
-            _structured_rows(text, technical),
+            Kwarg.looks_structured_arrow(text),
         )
-        candidates = compute.and_(candidates, compute.invert(technical))
         kwargs = _candidate_kwargs(text, candidates)
         parsed_msg_types, kwargs = _message_types(kwargs)
-        msg_types = compute.if_else(technical, probed_msg_types, parsed_msg_types)
+        msg_types = compute.coalesce(parsed_msg_types, probed_msg_types)
         event_types = _event_types(msg_types, msg_type_event_types)
         protocols = (
-            _configured_protocol_codes(text, plugins, technical, protocol_rules)
+            protocol_rules.into_arrow_protocol_array(text, plugins)
             if protocol_rules is not None
-            else compute.if_else(
-                technical,
-                pyarrow.scalar("MISC"),
-                _protocol_codes(wire_values, wire_probe, named_probe, begins_fix),
-            )
+            else _protocol_codes(wire_values, wire_probe, named_probe, begins_fix)
         )
         return {
-            "etype": compute.if_else(
-                technical,
-                pyarrow.scalar(int(EventType.MISC), _EVENT_CODE),
-                event_types,
-            ),
+            "etype": event_types,
             "protocol_code": protocols,
             "MsgType": msg_types,
             "kwargs": kwargs,
         }
+
+    @classmethod
+    def msg_types_arrow(cls, messages: Any) -> Any:
+        """Probe top-level message discriminators without splitting payload fields."""
+        if isinstance(messages, pyarrow.ChunkedArray):
+            return pyarrow.chunked_array(
+                [cls.msg_types_arrow(chunk) for chunk in messages.chunks], pyarrow.string()
+            )
+        text = pyarrow.compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
+        return _msg_type_probe(text)[-1]
 
     def identify(self) -> Self:
         """Give this raw row the identity of its exact payload."""
@@ -339,26 +312,6 @@ def _candidate_kwargs(text: pyarrow.Array, candidates: pyarrow.Array) -> pyarrow
     return scattered([parsed, skipped], [selected_at, skipped_at])
 
 
-def _structured_rows(text: pyarrow.Array, skipped: pyarrow.Array) -> pyarrow.Array:
-    """Structured-pair probes only on rows not already known as technical."""
-    compute = pyarrow.compute
-    if not compute.any(skipped, min_count=0).as_py():
-        return Kwarg.looks_structured_arrow(text)
-    keep = compute.invert(skipped)
-    if not compute.any(keep, min_count=0).as_py():
-        return pyarrow.repeat(False, len(text))
-    positions = sequence(len(text))
-    kept_at = compute.filter(positions, keep)
-    skipped_at = compute.filter(positions, skipped)
-    return scattered(
-        [
-            Kwarg.looks_structured_arrow(compute.filter(text, keep)),
-            pyarrow.repeat(False, len(skipped_at)),
-        ],
-        [kept_at, skipped_at],
-    )
-
-
 def _event_types(
     msg_types: pyarrow.Array,
     declared: Mapping[str, EventType | int | str] | None,
@@ -403,29 +356,6 @@ def _protocol_codes(
     ).cast(pyarrow.string(), safe=False)
 
 
-def _configured_protocol_codes(
-    text: pyarrow.Array,
-    plugins: Any | None,
-    skipped: pyarrow.Array,
-    rules: Any,
-) -> pyarrow.Array:
-    """Classify only rows not excluded by registry-owned technical metadata."""
-    compute = pyarrow.compute
-    rows = len(text)
-    keep = compute.invert(skipped)
-    if not compute.any(keep, min_count=0).as_py():
-        return pyarrow.repeat(pyarrow.scalar("MISC"), rows)
-    if compute.all(keep, min_count=0).as_py():
-        return rules.into_arrow_protocol_array(text, plugins)
-    positions = sequence(rows)
-    kept_at = compute.filter(positions, keep)
-    skipped_at = compute.filter(positions, skipped)
-    selected_plugins = None if plugins is None else compute.filter(plugins, keep)
-    classified = rules.into_arrow_protocol_array(compute.filter(text, keep), selected_plugins)
-    misc = pyarrow.repeat(pyarrow.scalar("MISC"), len(skipped_at))
-    return scattered([classified, misc], [kept_at, skipped_at])
-
-
 def _before_checksum(candidate_at: pyarrow.Array, checksum_at: pyarrow.Array) -> pyarrow.Array:
     """A discriminator exists and precedes the first checksum token."""
     compute = pyarrow.compute
@@ -436,37 +366,25 @@ def _before_checksum(candidate_at: pyarrow.Array, checksum_at: pyarrow.Array) ->
     )
 
 
-def _technical_rows(
-    msg_types: pyarrow.Array,
-    plugins: Any | None,
-    technical_msg_types: Collection[str],
-    technical_plugin_codes: Collection[str],
-) -> pyarrow.Array:
-    """Configured operational traffic excluded before protocol translation."""
+def _msg_type_probe(
+    text: pyarrow.Array,
+) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array]:
+    """Wire values, syntax masks, and the first valid top-level discriminator."""
     compute = pyarrow.compute
-    found = pyarrow.repeat(False, len(msg_types))
-    if technical_msg_types:
-        found = compute.fill_null(
-            compute.is_in(
-                msg_types,
-                value_set=pyarrow.array(tuple(technical_msg_types), pyarrow.string()),
-            ),
-            False,
-        )
-    if plugins is not None and technical_plugin_codes:
-        values = pyarrow.array(
-            sorted({str(value).casefold() for value in technical_plugin_codes}),
-            pyarrow.string(),
-        )
-        plugin_rows = compute.fill_null(
-            compute.is_in(
-                compute.utf8_lower(plugins.cast(pyarrow.string(), safe=False)),
-                value_set=values,
-            ),
-            False,
-        )
-        found = compute.or_(found, plugin_rows)
-    return found
+    wire_values = compute.struct_field(compute.extract_regex(text, _WIRE_MSG_TYPE), "value")
+    named_values = compute.struct_field(compute.extract_regex(text, _NAMED_MSG_TYPE), "value")
+    checksum_at = compute.find_substring_regex(text, _CHECKSUM_TOKEN)
+    wire_probe = _before_checksum(compute.find_substring_regex(text, _WIRE_MSG_TYPE), checksum_at)
+    named_probe = _before_checksum(compute.find_substring_regex(text, _NAMED_MSG_TYPE), checksum_at)
+    missing = pyarrow.scalar(None, pyarrow.string())
+    wire_values = compute.if_else(wire_probe, wire_values, missing)
+    named_values = compute.if_else(named_probe, named_values, missing)
+    begins_fix = compute.fill_null(compute.match_substring_regex(text, _FIX_BEGIN), False)
+    wrapped = compute.and_(
+        compute.fill_null(compute.starts_with(wire_values, "U"), False), named_probe
+    )
+    msg_types = compute.if_else(wrapped, named_values, compute.coalesce(wire_values, named_values))
+    return wire_values, wire_probe, named_probe, begins_fix, msg_types
 
 
 def _event_code(value: EventType | int | str) -> int:

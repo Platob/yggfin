@@ -12,7 +12,8 @@ import functools
 import json
 import re
 from collections import OrderedDict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from types import MappingProxyType
 from typing import Any, Self
 
 from rekep.enums.ranged import (
@@ -316,6 +317,102 @@ class State(Ranged):
     """Refused; reason fields explain why."""
     INTERNAL_REJECTED = 620
     """Refused by this pipeline before it could change market state."""
+
+    @classmethod
+    @functools.cache
+    def fix_mapping(cls) -> Mapping[int, Mapping[str, State]]:
+        """Tag-scoped lifecycle meanings written into a built FIX registry."""
+        declared = {
+            35: {
+                "D": cls.PENDING_NEW,
+                "F": cls.PENDING_CANCEL,
+                "G": cls.PENDING_REPLACE,
+                "9": cls.UNKNOWN,
+            },
+            39: {
+                "0": cls.NEW,
+                "1": cls.PARTIALLY_FILLED,
+                "2": cls.FILLED,
+                "3": cls.DONE_FOR_DAY,
+                "4": cls.CANCELLED,
+                "5": cls.REPLACED,
+                "6": cls.PENDING_CANCEL,
+                "7": cls.STOPPED,
+                "8": cls.REJECTED,
+                "9": cls.SUSPENDED,
+                "A": cls.PENDING_NEW,
+                "B": cls.CALCULATED,
+                "C": cls.EXPIRED,
+                "D": cls.ACCEPTED,
+                "E": cls.PENDING_REPLACE,
+            },
+            150: {
+                "0": cls.NEW,
+                "1": cls.PARTIALLY_FILLED,
+                "2": cls.FILLED,
+                "3": cls.DONE_FOR_DAY,
+                "4": cls.CANCELLED,
+                "5": cls.REPLACED,
+                "6": cls.PENDING_CANCEL,
+                "7": cls.STOPPED,
+                "8": cls.REJECTED,
+                "9": cls.SUSPENDED,
+                "A": cls.PENDING_NEW,
+                "B": cls.CALCULATED,
+                "C": cls.EXPIRED,
+                "E": cls.PENDING_REPLACE,
+                "F": cls.PARTIALLY_FILLED,
+                "G": cls.REPLACED,
+                "H": cls.CANCELLED,
+            },
+            279: {
+                "0": cls.NEW,
+                "1": cls.OPEN,
+                "2": cls.CANCELLED,
+                "3": cls.CANCELLED,
+                "4": cls.CANCELLED,
+                "5": cls.OPEN,
+            },
+            297: {
+                "0": cls.ACCEPTED,
+                "1": cls.CANCELLED,
+                "2": cls.CANCELLED,
+                "3": cls.CANCELLED,
+                "4": cls.CANCELLED,
+                "5": cls.REJECTED,
+                "6": cls.CANCELLED,
+                "7": cls.EXPIRED,
+                "9": cls.REJECTED,
+                "10": cls.PENDING,
+                "11": cls.CANCELLED,
+                "12": cls.OPEN,
+                "13": cls.OPEN,
+                "14": cls.CANCELLED,
+                "15": cls.CANCELLED,
+                "16": cls.OPEN,
+                "17": cls.CANCELLED,
+                "18": cls.OPEN,
+                "19": cls.PENDING_CANCEL,
+                "21": cls.FILLED,
+                "22": cls.FILLED,
+                "23": cls.EXPIRED,
+            },
+            694: {
+                "1": cls.FILLED,
+                "2": cls.OPEN,
+                "3": cls.EXPIRED,
+                "4": cls.OPEN,
+                "5": cls.CANCELLED,
+                "6": cls.CANCELLED,
+                "7": cls.CANCELLED,
+                "8": cls.CANCELLED,
+                "9": cls.OPEN,
+                "10": cls.OPEN,
+                "11": cls.ACCEPTED,
+                "12": cls.CANCELLED,
+            },
+        }
+        return MappingProxyType({tag: MappingProxyType(values) for tag, values in declared.items()})
 
     @property
     def is_live(self) -> bool:

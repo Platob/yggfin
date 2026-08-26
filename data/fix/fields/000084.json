@@ -1546,11 +1546,15 @@
    "0": "PROPRIETARY",
    "1": "EIC"
   },
-  "translations": {
+  "encoded": {
    "proprietary": "0",
    "eic": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "proprietary",
+   "1": "eic"
   }
  },
  "42193": {
@@ -1756,11 +1760,15 @@
    "0": "CLOSE",
    "1": "HEDGE"
   },
-  "translations": {
+  "encoded": {
    "close": "0",
    "hedge": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "close",
+   "1": "hedge"
   }
  },
  "42218": {
@@ -1998,11 +2006,15 @@
    "0": "EX_DATE",
    "1": "RECORD_DATE"
   },
-  "translations": {
+  "encoded": {
    "exdate": "0",
    "recorddate": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "exdate",
+   "1": "recorddate"
   }
  },
  "42247": {
@@ -2018,7 +2030,7 @@
    "2": "PAID_AMOUNT",
    "3": "PER_MASTER_CONFIRM"
   },
-  "translations": {
+  "encoded": {
    "recordamount": "0",
    "examount": "1",
    "paidamount": "2",
@@ -2027,6 +2039,12 @@
    "1": "1",
    "2": "2",
    "3": "3"
+  },
+  "decoded": {
+   "0": "recordamount",
+   "1": "examount",
+   "2": "paidamount",
+   "3": "permasterconfirm"
   }
  },
  "42248": {
@@ -2120,11 +2138,15 @@
    "0": "POTENTIAL_ADJUSTMENT",
    "1": "CASH_EQUIVALENT"
   },
-  "translations": {
+  "encoded": {
    "potentialadjustment": "0",
    "cashequivalent": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "potentialadjustment",
+   "1": "cashequivalent"
   }
  },
  "42259": {
@@ -2138,11 +2160,15 @@
    "0": "EQUITY_AMOUNT_RECEIVER",
    "1": "CALCULATION_AGENT"
   },
-  "translations": {
+  "encoded": {
    "equityamountreceiver": "0",
    "calculationagent": "1",
    "0": "0",
    "1": "1"
+  },
+  "decoded": {
+   "0": "equityamountreceiver",
+   "1": "calculationagent"
   }
  },
  "42260": {
