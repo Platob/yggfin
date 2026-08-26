@@ -75,7 +75,7 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
   "name": "MsgType",
   "tag": 35,
   "event_types": {"8": "EXECUTION", "D": "ORDER", "W": "BOOK"},
-  "handlers": {"8": "execution_report", "D": "order", "W": "entries"},
+  "handlers": {"8": "executionreport", "D": "order", "W": "entries"},
   "order_states": {"D": "PENDING_NEW"},
   "technical_values": ["0", "1", "2", "3", "4", "5", "A"],
   "technical_plugins": ["jolokia"]

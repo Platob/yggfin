@@ -3,7 +3,7 @@
   "values": 152,
   "value_names": 24,
   "type": 214,
-  "name": 63,
+  "name": 40,
   "note": 18,
   "members": 15,
   "translations": 135
@@ -434,7 +434,7 @@
     },
     {
      "version": "4.3",
-     "reading": "AllocShares prior to FIX 4.3)"
+     "reading": "AllocShares"
     }
    ]
   },
@@ -1250,18 +1250,6 @@
   {
    "name": "Benchmark",
    "tag": 219,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "Benchmark(Deprecated)"
-    }
-   ]
-  },
-  {
-   "name": "Benchmark",
-   "tag": 219,
    "part": "note",
    "kept": "5.0.SP2",
    "dropped": [
@@ -1588,18 +1576,6 @@
   {
    "name": "BrokerOfCredit",
    "tag": 92,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "BrokerOfCredit(replaced)"
-    }
-   ]
-  },
-  {
-   "name": "BrokerOfCredit",
-   "tag": 92,
    "part": "type",
    "kept": "5.0.SP2",
    "dropped": [
@@ -1828,18 +1804,6 @@
    ]
   },
   {
-   "name": "ClearingAccount",
-   "tag": 440,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "ClearingAccount(replaced)"
-    }
-   ]
-  },
-  {
    "name": "ClearingFeeIndicator",
    "tag": 635,
    "part": "values",
@@ -1938,18 +1902,6 @@
    ]
   },
   {
-   "name": "ClearingFirm",
-   "tag": 439,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "ClearingFirm(replaced)"
-    }
-   ]
-  },
-  {
    "name": "ClearingInstruction",
    "tag": 577,
    "part": "values",
@@ -2044,18 +1996,6 @@
      "version": "4.4",
      "reading": "exclude from central counterparty",
      "key": "7"
-    }
-   ]
-  },
-  {
-   "name": "ClientID",
-   "tag": 109,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "ClientID(replaced)"
     }
    ]
   },
@@ -2558,18 +2498,6 @@
    ]
   },
   {
-   "name": "CustomerOrFirm",
-   "tag": 204,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "CustomerOrFirm(replaced)"
-    }
-   ]
-  },
-  {
    "name": "CxlQty",
    "tag": 84,
    "part": "type",
@@ -2628,26 +2556,6 @@
      "version": "5.0.SP1",
      "reading": "ORDER_CANCEL",
      "key": "2"
-    }
-   ]
-  },
-  {
-   "name": "CxlType",
-   "tag": 125,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.1",
-     "reading": "CxlType(no longer used)"
-    },
-    {
-     "version": "4.2",
-     "reading": "CxlType(no longer used)"
-    },
-    {
-     "version": "4.3",
-     "reading": "CxlType(no longer used)"
     }
    ]
   },
@@ -3073,26 +2981,6 @@
   {
    "name": "DlvyInst",
    "tag": 86,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.1",
-     "reading": "DlvyInst(no longer used)"
-    },
-    {
-     "version": "4.2",
-     "reading": "DlvyInst(no longer used)"
-    },
-    {
-     "version": "4.3",
-     "reading": "DlvyInst(no longer used)"
-    }
-   ]
-  },
-  {
-   "name": "DlvyInst",
-   "tag": 86,
    "part": "type",
    "kept": "5.0.SP2",
    "dropped": [
@@ -3424,18 +3312,6 @@
      "version": "5.0.SP1",
      "reading": "DON",
      "key": "2"
-    }
-   ]
-  },
-  {
-   "name": "ExecBroker",
-   "tag": 76,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "ExecBroker(replaced)"
     }
    ]
   },
@@ -3959,18 +3835,6 @@
      "version": "4.4",
      "reading": "Canceled, Not Best",
      "key": "9"
-    }
-   ]
-  },
-  {
-   "name": "ExecTransType",
-   "tag": 20,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "ExecTransType(replaced)"
     }
    ]
   },
@@ -4552,22 +4416,6 @@
    ]
   },
   {
-   "name": "IOIOthSvc (no longer used)",
-   "tag": 24,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.0",
-     "reading": "IOIOthSvc"
-    },
-    {
-     "version": "4.1",
-     "reading": "IOIOthSvc"
-    }
-   ]
-  },
-  {
    "name": "IOIQty",
    "tag": 27,
    "part": "name",
@@ -4587,7 +4435,7 @@
     },
     {
      "version": "4.3",
-     "reading": "IOIShares prior to FIX 4.3)"
+     "reading": "IOIShares"
     }
    ]
   },
@@ -5060,7 +4908,7 @@
     },
     {
      "version": "4.3",
-     "reading": "LastShares prior to FIX 4.3)"
+     "reading": "LastShares"
     }
    ]
   },
@@ -5797,18 +5645,6 @@
   {
    "name": "MaturityDay",
    "tag": 205,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "MaturityDay(replaced)"
-    }
-   ]
-  },
-  {
-   "name": "MaturityDay",
-   "tag": 205,
    "part": "type",
    "kept": "5.0.SP2",
    "dropped": [
@@ -6150,1623 +5986,108 @@
    "kept": "5.0.SP2",
    "dropped": [
     {
-     "version": "FIXT1.1",
-     "reading": "Heartbeat",
-     "key": "0"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TestRequest",
-     "key": "1"
-    },
-    {
      "version": "4.0",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "4.1",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "4.2",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "4.3",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "4.4",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "5.0",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Test Request <1>",
-     "key": "1"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ResendRequest",
-     "key": "2"
-    },
-    {
-     "version": "4.0",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "4.1",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "4.2",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "4.3",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "4.4",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "5.0",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Resend Request <2>",
-     "key": "2"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Reject",
-     "key": "3"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SequenceReset",
-     "key": "4"
-    },
-    {
-     "version": "4.0",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "4.1",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "4.2",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "4.3",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "4.4",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "5.0",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Sequence Reset <4>",
-     "key": "4"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Logout",
-     "key": "5"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "IOI",
-     "key": "6"
-    },
-    {
-     "version": "4.0",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "4.1",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "4.2",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "4.3",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "4.4",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "5.0",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
      "version": "5.0.SP1",
-     "reading": "Indication of Interest <6>",
+     "reading": "IndicationofInterest",
      "key": "6"
     },
     {
-     "version": "FIXT1.1",
-     "reading": "Advertisement",
-     "key": "7"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ExecutionReport",
-     "key": "8"
-    },
-    {
-     "version": "4.0",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "4.1",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "4.2",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "4.3",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
      "version": "4.4",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "5.0",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Execution Report <8>",
-     "key": "8"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderCancelReject",
-     "key": "9"
-    },
-    {
-     "version": "4.0",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "4.1",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "4.2",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Cancel Reject <9>",
-     "key": "9"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Logon",
-     "key": "A"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "DerivativeSecurityList",
-     "key": "AA"
-    },
-    {
-     "version": "4.3",
-     "reading": "Derivative Security List <AA>",
-     "key": "AA"
-    },
-    {
-     "version": "4.4",
-     "reading": "Derivative Security List <AA>",
-     "key": "AA"
-    },
-    {
-     "version": "5.0",
-     "reading": "Derivative Security List <AA>",
-     "key": "AA"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Derivative Security List <AA>",
-     "key": "AA"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NewOrderMultileg",
-     "key": "AB"
-    },
-    {
-     "version": "4.3",
-     "reading": "New Order - Multileg <AB>",
-     "key": "AB"
-    },
-    {
-     "version": "4.4",
-     "reading": "New Order Multileg <AB>",
-     "key": "AB"
-    },
-    {
-     "version": "5.0",
-     "reading": "New Order Multileg <AB>",
-     "key": "AB"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "New Order Multileg <AB>",
-     "key": "AB"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MultilegOrderCancelReplace",
-     "key": "AC"
-    },
-    {
-     "version": "4.3",
-     "reading": "Multileg Order Cancel/Replace <AC> (a.k.a. Multileg Order Modification Request)",
-     "key": "AC"
-    },
-    {
-     "version": "4.4",
-     "reading": "Multileg Order Cancel/Replace <AC> (a.k.a. Multileg Order Modification Request)",
-     "key": "AC"
-    },
-    {
-     "version": "5.0",
-     "reading": "Multileg Order Cancel/Replace <AC> (a.k.a. Multileg Order Modification Request)",
-     "key": "AC"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Multileg Order Cancel/Replace <AC> (a.k.a. Multileg Order Modification Request)",
-     "key": "AC"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradeCaptureReportRequest",
-     "key": "AD"
-    },
-    {
-     "version": "4.3",
-     "reading": "Trade Capture Report Request <AD>",
-     "key": "AD"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trade Capture Report Request <AD>",
-     "key": "AD"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trade Capture Report Request <AD>",
-     "key": "AD"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trade Capture Report Request <AD>",
-     "key": "AD"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradeCaptureReport",
-     "key": "AE"
-    },
-    {
-     "version": "4.3",
-     "reading": "Trade Capture Report <AE>",
-     "key": "AE"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trade Capture Report <AE>",
-     "key": "AE"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trade Capture Report <AE>",
-     "key": "AE"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trade Capture Report <AE>",
-     "key": "AE"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderMassStatusRequest",
-     "key": "AF"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Mass Status Request <AF>",
-     "key": "AF"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Mass Status Request <AF>",
-     "key": "AF"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Mass Status Request <AF>",
-     "key": "AF"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Mass Status Request <AF>",
-     "key": "AF"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteRequestReject",
-     "key": "AG"
-    },
-    {
-     "version": "4.3",
-     "reading": "Quote Request Reject <AG>",
-     "key": "AG"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Request Reject <AG>",
-     "key": "AG"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Request Reject <AG>",
-     "key": "AG"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Request Reject <AG>",
-     "key": "AG"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "RFQRequest",
-     "key": "AH"
-    },
-    {
-     "version": "4.3",
-     "reading": "RFQ Request <AH>",
-     "key": "AH"
-    },
-    {
-     "version": "4.4",
-     "reading": "RFQ Request <AH>",
-     "key": "AH"
-    },
-    {
-     "version": "5.0",
-     "reading": "RFQ Request <AH>",
-     "key": "AH"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "RFQ Request <AH>",
-     "key": "AH"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteStatusReport",
-     "key": "AI"
-    },
-    {
-     "version": "4.3",
-     "reading": "Quote Status Report <AI>",
-     "key": "AI"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Status Report <AI>",
-     "key": "AI"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Status Report <AI>",
-     "key": "AI"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Status Report <AI>",
-     "key": "AI"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteResponse",
-     "key": "AJ"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Response <AJ>",
-     "key": "AJ"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Response <AJ>",
-     "key": "AJ"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Response <AJ>",
-     "key": "AJ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Confirmation",
-     "key": "AK"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "PositionMaintenanceRequest",
-     "key": "AL"
-    },
-    {
-     "version": "4.4",
-     "reading": "Position Maintenance Request <AL>",
-     "key": "AL"
-    },
-    {
-     "version": "5.0",
-     "reading": "Position Maintenance Request <AL>",
-     "key": "AL"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Position Maintenance Request <AL>",
-     "key": "AL"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "PositionMaintenanceReport",
-     "key": "AM"
-    },
-    {
-     "version": "4.4",
-     "reading": "Position Maintenance Report <AM>",
-     "key": "AM"
-    },
-    {
-     "version": "5.0",
-     "reading": "Position Maintenance Report <AM>",
-     "key": "AM"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Position Maintenance Report <AM>",
-     "key": "AM"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "RequestForPositions",
-     "key": "AN"
-    },
-    {
-     "version": "4.4",
-     "reading": "Request For Positions <AN>",
-     "key": "AN"
-    },
-    {
-     "version": "5.0",
-     "reading": "Request For Positions <AN>",
-     "key": "AN"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Request For Positions <AN>",
-     "key": "AN"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "RequestForPositionsAck",
-     "key": "AO"
-    },
-    {
-     "version": "4.4",
-     "reading": "Request For Positions Ack <AO>",
-     "key": "AO"
-    },
-    {
-     "version": "5.0",
-     "reading": "Request For Positions Ack <AO>",
-     "key": "AO"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Request For Positions Ack <AO>",
-     "key": "AO"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "PositionReport",
-     "key": "AP"
-    },
-    {
-     "version": "4.4",
-     "reading": "Position Report <AP>",
-     "key": "AP"
-    },
-    {
-     "version": "5.0",
-     "reading": "Position Report <AP>",
-     "key": "AP"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Position Report <AP>",
-     "key": "AP"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradeCaptureReportRequestAck",
-     "key": "AQ"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trade Capture Report Request Ack <AQ>",
-     "key": "AQ"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trade Capture Report Request Ack <AQ>",
-     "key": "AQ"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trade Capture Report Request Ack <AQ>",
-     "key": "AQ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradeCaptureReportAck",
-     "key": "AR"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trade Capture Report Ack <AR>",
-     "key": "AR"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trade Capture Report Ack <AR>",
-     "key": "AR"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trade Capture Report Ack <AR>",
-     "key": "AR"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AllocationReport",
-     "key": "AS"
-    },
-    {
-     "version": "4.4",
-     "reading": "Allocation Report <AS> (aka Allocation Claim)",
-     "key": "AS"
-    },
-    {
-     "version": "5.0",
-     "reading": "Allocation Report <AS> (aka Allocation Claim)",
-     "key": "AS"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Allocation Report <AS> (aka Allocation Claim)",
-     "key": "AS"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AllocationReportAck",
-     "key": "AT"
-    },
-    {
-     "version": "4.4",
-     "reading": "Allocation Report Ack <AT> (aka Allocation Claim Ack)",
-     "key": "AT"
-    },
-    {
-     "version": "5.0",
-     "reading": "Allocation Report Ack <AT> (aka Allocation Claim Ack)",
-     "key": "AT"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Allocation Report Ack <AT> (aka Allocation Claim Ack)",
-     "key": "AT"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Confirmation_Ack",
-     "key": "AU"
-    },
-    {
-     "version": "4.4",
-     "reading": "Confirmation Ack <AU> (aka Affirmation)",
-     "key": "AU"
-    },
-    {
-     "version": "5.0",
-     "reading": "Confirmation Ack <AU> (aka Affirmation)",
-     "key": "AU"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Confirmation Ack <AU> (aka Affirmation)",
-     "key": "AU"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SettlementInstructionRequest",
-     "key": "AV"
-    },
-    {
-     "version": "4.4",
-     "reading": "Settlement Instruction Request <AV>",
-     "key": "AV"
-    },
-    {
-     "version": "5.0",
-     "reading": "Settlement Instruction Request <AV>",
-     "key": "AV"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Settlement Instruction Request <AV>",
-     "key": "AV"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AssignmentReport",
-     "key": "AW"
-    },
-    {
-     "version": "4.4",
-     "reading": "Assignment Report <AW>",
-     "key": "AW"
-    },
-    {
-     "version": "5.0",
-     "reading": "Assignment Report <AW>",
-     "key": "AW"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Assignment Report <AW>",
-     "key": "AW"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralRequest",
-     "key": "AX"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Request <AX>",
-     "key": "AX"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Request <AX>",
-     "key": "AX"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Request <AX>",
-     "key": "AX"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralAssignment",
-     "key": "AY"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Assignment <AY>",
-     "key": "AY"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Assignment <AY>",
-     "key": "AY"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Assignment <AY>",
-     "key": "AY"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralResponse",
-     "key": "AZ"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Response <AZ>",
-     "key": "AZ"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Response <AZ>",
-     "key": "AZ"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Response <AZ>",
-     "key": "AZ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "News",
-     "key": "B"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralReport",
-     "key": "BA"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Report <BA>",
-     "key": "BA"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Report <BA>",
-     "key": "BA"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Report <BA>",
-     "key": "BA"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralInquiry",
-     "key": "BB"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Inquiry <BB>",
-     "key": "BB"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Inquiry <BB>",
-     "key": "BB"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Inquiry <BB>",
-     "key": "BB"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NetworkCounterpartySystemStatusRequest",
+     "reading": "Network",
      "key": "BC"
     },
     {
      "version": "4.4",
-     "reading": "Network (Counterparty System) Status Request <BC>",
-     "key": "BC"
-    },
-    {
-     "version": "5.0",
-     "reading": "Network Counterparty System Status Request <BC>",
-     "key": "BC"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Network Counterparty System Status Request <BC>",
-     "key": "BC"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NetworkCounterpartySystemStatusResponse",
+     "reading": "Network",
      "key": "BD"
     },
     {
-     "version": "4.4",
-     "reading": "Network (Counterparty System) Status Response <BD>",
-     "key": "BD"
-    },
-    {
-     "version": "5.0",
-     "reading": "Network Counterparty System Status Response <BD>",
-     "key": "BD"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Network Counterparty System Status Response <BD>",
-     "key": "BD"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "UserRequest",
-     "key": "BE"
-    },
-    {
-     "version": "4.4",
-     "reading": "User Request <BE>",
-     "key": "BE"
-    },
-    {
-     "version": "5.0",
-     "reading": "User Request <BE>",
-     "key": "BE"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "User Request <BE>",
-     "key": "BE"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "UserResponse",
-     "key": "BF"
-    },
-    {
-     "version": "4.4",
-     "reading": "User Response <BF>",
-     "key": "BF"
-    },
-    {
-     "version": "5.0",
-     "reading": "User Response <BF>",
-     "key": "BF"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "User Response <BF>",
-     "key": "BF"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CollateralInquiryAck",
-     "key": "BG"
-    },
-    {
-     "version": "4.4",
-     "reading": "Collateral Inquiry Ack <BG>",
-     "key": "BG"
-    },
-    {
-     "version": "5.0",
-     "reading": "Collateral Inquiry Ack <BG>",
-     "key": "BG"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Collateral Inquiry Ack <BG>",
-     "key": "BG"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ConfirmationRequest",
-     "key": "BH"
-    },
-    {
-     "version": "4.4",
-     "reading": "Confirmation Request <BH>",
-     "key": "BH"
-    },
-    {
-     "version": "5.0",
-     "reading": "Confirmation Request <BH>",
-     "key": "BH"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Confirmation Request <BH>",
-     "key": "BH"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradingSessionListRequest",
-     "key": "BI"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trading Session List Request <BI>",
-     "key": "BI"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trading Session List Request <BI>",
-     "key": "BI"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradingSessionList",
-     "key": "BJ"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trading Session List <BJ>",
-     "key": "BJ"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trading Session List <BJ>",
-     "key": "BJ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityListUpdateReport",
-     "key": "BK"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security List Update Report <BK>",
-     "key": "BK"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security List Update Report <BK>",
-     "key": "BK"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AdjustedPositionReport",
-     "key": "BL"
-    },
-    {
-     "version": "5.0",
-     "reading": "Adjusted Position Report <BL>",
-     "key": "BL"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Adjusted Position Report <BL>",
-     "key": "BL"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AllocationInstructionAlert",
-     "key": "BM"
-    },
-    {
-     "version": "5.0",
-     "reading": "Allocation Instruction Alert <BM>",
-     "key": "BM"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Allocation Instruction Alert <BM>",
-     "key": "BM"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ExecutionAcknowledgement",
-     "key": "BN"
-    },
-    {
-     "version": "5.0",
-     "reading": "Execution Acknowledgement <BN>",
-     "key": "BN"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Execution Acknowledgement <BN>",
-     "key": "BN"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ContraryIntentionReport",
-     "key": "BO"
-    },
-    {
-     "version": "5.0",
-     "reading": "Contrary Intention Report <BO>",
-     "key": "BO"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Contrary Intention Report <BO>",
-     "key": "BO"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityDefinitionUpdateReport",
-     "key": "BP"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Definition Update Report <BP>",
-     "key": "BP"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Definition Update Report <BP>",
-     "key": "BP"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SettlementObligationReport",
-     "key": "BQ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "DerivativeSecurityListUpdateReport",
-     "key": "BR"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradingSessionListUpdateReport",
-     "key": "BS"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDefinitionRequest",
-     "key": "BT"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDefinition",
-     "key": "BU"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDefinitionUpdateReport",
-     "key": "BV"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ApplicationMessageRequest",
-     "key": "BW"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ApplicationMessageRequestAck",
-     "key": "BX"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ApplicationMessageReport",
-     "key": "BY"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderMassActionReport",
-     "key": "BZ"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Email",
-     "key": "C"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderMassActionRequest",
-     "key": "CA"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "UserNotification",
-     "key": "CB"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "StreamAssignmentRequest",
-     "key": "CC"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "StreamAssignmentReport",
-     "key": "CD"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "StreamAssignmentReportACK",
-     "key": "CE"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NewOrderSingle",
-     "key": "D"
-    },
-    {
-     "version": "4.0",
-     "reading": "New Order - Single <D>",
-     "key": "D"
-    },
-    {
-     "version": "4.1",
-     "reading": "New Order - Single <D>",
-     "key": "D"
-    },
-    {
      "version": "4.2",
-     "reading": "Order - Single <D>",
+     "reading": "OrderSingle",
      "key": "D"
     },
     {
      "version": "4.3",
-     "reading": "Order - Single <D>",
+     "reading": "OrderSingle",
      "key": "D"
     },
     {
-     "version": "4.4",
-     "reading": "New Order Single <D>",
-     "key": "D"
-    },
-    {
-     "version": "5.0",
-     "reading": "New Order Single <D>",
-     "key": "D"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "New Order Single <D>",
-     "key": "D"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NewOrderList",
-     "key": "E"
-    },
-    {
-     "version": "4.0",
-     "reading": "New Order - List <E>",
-     "key": "E"
-    },
-    {
-     "version": "4.1",
-     "reading": "New Order - List <E>",
-     "key": "E"
-    },
-    {
      "version": "4.2",
-     "reading": "Order - List <E>",
+     "reading": "OrderList",
      "key": "E"
     },
     {
      "version": "4.3",
-     "reading": "Order - List <E>",
+     "reading": "OrderList",
      "key": "E"
     },
     {
-     "version": "4.4",
-     "reading": "New Order List <E>",
-     "key": "E"
-    },
-    {
-     "version": "5.0",
-     "reading": "New Order List <E>",
-     "key": "E"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "New Order List <E>",
-     "key": "E"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderCancelRequest",
-     "key": "F"
-    },
-    {
      "version": "4.0",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "4.1",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "4.2",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Cancel Request <F>",
-     "key": "F"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderCancelReplaceRequest",
-     "key": "G"
-    },
-    {
-     "version": "4.0",
-     "reading": "Order Cancel/Replace Request <G>",
-     "key": "G"
-    },
-    {
-     "version": "4.1",
-     "reading": "Order Cancel/Replace Request <G>",
-     "key": "G"
-    },
-    {
-     "version": "4.2",
-     "reading": "Order Cancel/Replace Request <G>",
-     "key": "G"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Cancel/Replace Request <G>",
-     "key": "G"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Cancel/Replace Request <G>",
-     "key": "G"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Cancel/Replace Request <G> (a.k.a. Order Modification Request)",
-     "key": "G"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Cancel/Replace Request <G> (a.k.a. Order Modification Request)",
-     "key": "G"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderStatusRequest",
-     "key": "H"
-    },
-    {
-     "version": "4.0",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "4.1",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "4.2",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Status Request <H>",
-     "key": "H"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AllocationInstruction",
-     "key": "J"
-    },
-    {
-     "version": "4.0",
-     "reading": "Allocation <J>",
+     "reading": "Allocation",
      "key": "J"
     },
     {
      "version": "4.1",
-     "reading": "Allocation <J>",
+     "reading": "Allocation",
      "key": "J"
     },
     {
      "version": "4.2",
-     "reading": "Allocation <J>",
+     "reading": "Allocation",
      "key": "J"
     },
     {
      "version": "4.3",
-     "reading": "Allocation <J>",
+     "reading": "Allocation",
      "key": "J"
     },
     {
-     "version": "4.4",
-     "reading": "Allocation Instruction <J>",
-     "key": "J"
-    },
-    {
-     "version": "5.0",
-     "reading": "Allocation Instruction <J>",
-     "key": "J"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Allocation Instruction <J>",
-     "key": "J"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ListCancelRequest",
-     "key": "K"
-    },
-    {
      "version": "4.0",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "4.1",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "4.2",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "4.3",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "4.4",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "5.0",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "List Cancel Request <K>",
-     "key": "K"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ListExecute",
-     "key": "L"
-    },
-    {
-     "version": "4.0",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "4.1",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "4.2",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "4.3",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "4.4",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "5.0",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "List Execute <L>",
-     "key": "L"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ListStatusRequest",
-     "key": "M"
-    },
-    {
-     "version": "4.0",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "4.1",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "4.2",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "4.3",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "4.4",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "5.0",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "List Status Request <M>",
-     "key": "M"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ListStatus",
-     "key": "N"
-    },
-    {
-     "version": "4.0",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "4.1",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "4.2",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "4.3",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "4.4",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "5.0",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "List Status <N>",
-     "key": "N"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "AllocationInstructionAck",
-     "key": "P"
-    },
-    {
-     "version": "4.0",
-     "reading": "Allocation ACK <P>",
+     "reading": "AllocationACK",
      "key": "P"
     },
     {
      "version": "4.1",
-     "reading": "Allocation ACK <P>",
+     "reading": "AllocationACK",
      "key": "P"
     },
     {
      "version": "4.2",
-     "reading": "Allocation ACK <P>",
+     "reading": "AllocationACK",
      "key": "P"
     },
     {
      "version": "4.3",
-     "reading": "Allocation ACK <P>",
-     "key": "P"
-    },
-    {
-     "version": "4.4",
-     "reading": "Allocation Instruction Ack <P>",
-     "key": "P"
-    },
-    {
-     "version": "5.0",
-     "reading": "Allocation Instruction Ack <P>",
-     "key": "P"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Allocation Instruction Ack <P>",
+     "reading": "AllocationACK",
      "key": "P"
     },
     {
@@ -7775,984 +6096,29 @@
      "key": "Q"
     },
     {
-     "version": "4.0",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "4.1",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
      "version": "4.2",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "4.3",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "4.4",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "5.0",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Don't Know Trade <Q> (DK)",
-     "key": "Q"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteRequest",
-     "key": "R"
-    },
-    {
-     "version": "4.0",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "4.1",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "4.2",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "4.3",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Request <R>",
-     "key": "R"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "Quote",
-     "key": "S"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SettlementInstructions",
-     "key": "T"
-    },
-    {
-     "version": "4.1",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "4.2",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "4.3",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "4.4",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "5.0",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Settlement Instructions <T>",
-     "key": "T"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDataRequest",
-     "key": "V"
-    },
-    {
-     "version": "4.2",
-     "reading": "Market Data Request <V>",
-     "key": "V"
-    },
-    {
-     "version": "4.3",
-     "reading": "Market Data Request <V>",
-     "key": "V"
-    },
-    {
-     "version": "4.4",
-     "reading": "Market Data Request <V>",
-     "key": "V"
-    },
-    {
-     "version": "5.0",
-     "reading": "Market Data Request <V>",
-     "key": "V"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Market Data Request <V>",
-     "key": "V"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDataSnapshotFullRefresh",
-     "key": "W"
-    },
-    {
-     "version": "4.2",
-     "reading": "Market Data-Snapshot/Full Refresh <W>",
-     "key": "W"
-    },
-    {
-     "version": "4.3",
-     "reading": "Market Data-Snapshot/Full Refresh <W>",
-     "key": "W"
-    },
-    {
-     "version": "4.4",
-     "reading": "Market Data-Snapshot/Full Refresh <W>",
-     "key": "W"
-    },
-    {
-     "version": "5.0",
-     "reading": "Market Data-Snapshot/Full Refresh <W>",
-     "key": "W"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Market Data-Snapshot/Full Refresh <W>",
-     "key": "W"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDataIncrementalRefresh",
-     "key": "X"
-    },
-    {
-     "version": "4.2",
-     "reading": "Market Data-Incremental Refresh <X>",
-     "key": "X"
-    },
-    {
-     "version": "4.3",
-     "reading": "Market Data-Incremental Refresh <X>",
-     "key": "X"
-    },
-    {
-     "version": "4.4",
-     "reading": "Market Data-Incremental Refresh <X>",
-     "key": "X"
-    },
-    {
-     "version": "5.0",
-     "reading": "Market Data-Incremental Refresh <X>",
-     "key": "X"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Market Data-Incremental Refresh <X>",
-     "key": "X"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MarketDataRequestReject",
-     "key": "Y"
-    },
-    {
-     "version": "4.2",
-     "reading": "Market Data Request Reject <Y>",
-     "key": "Y"
-    },
-    {
-     "version": "4.3",
-     "reading": "Market Data Request Reject <Y>",
-     "key": "Y"
-    },
-    {
-     "version": "4.4",
-     "reading": "Market Data Request Reject <Y>",
-     "key": "Y"
-    },
-    {
-     "version": "5.0",
-     "reading": "Market Data Request Reject <Y>",
-     "key": "Y"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Market Data Request Reject <Y>",
-     "key": "Y"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteCancel",
-     "key": "Z"
-    },
-    {
-     "version": "4.2",
-     "reading": "Quote Cancel <Z>",
-     "key": "Z"
-    },
-    {
-     "version": "4.3",
-     "reading": "Quote Cancel <Z>",
-     "key": "Z"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Cancel <Z>",
-     "key": "Z"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Cancel <Z>",
-     "key": "Z"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Cancel <Z>",
-     "key": "Z"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "QuoteStatusRequest",
-     "key": "a"
-    },
-    {
-     "version": "4.2",
-     "reading": "Quote Status Request <a>",
-     "key": "a"
-    },
-    {
-     "version": "4.3",
-     "reading": "Quote Status Request <a>",
-     "key": "a"
-    },
-    {
-     "version": "4.4",
-     "reading": "Quote Status Request <a>",
-     "key": "a"
-    },
-    {
-     "version": "5.0",
-     "reading": "Quote Status Request <a>",
-     "key": "a"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Quote Status Request <a>",
-     "key": "a"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MassQuoteAcknowledgement",
-     "key": "b"
-    },
-    {
-     "version": "4.2",
-     "reading": "Quote Acknowledgement <b>",
+     "reading": "QuoteAcknowledgement",
      "key": "b"
     },
     {
      "version": "4.3",
-     "reading": "Mass Quote Acknowledgement <b>",
-     "key": "b"
-    },
-    {
-     "version": "4.4",
-     "reading": "Mass Quote Acknowledgement <b>",
-     "key": "b"
-    },
-    {
-     "version": "5.0",
-     "reading": "Mass Quote Acknowledgement <b>",
-     "key": "b"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Mass Quote Acknowledgement <b>",
-     "key": "b"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityDefinitionRequest",
-     "key": "c"
-    },
-    {
-     "version": "4.2",
-     "reading": "Security Definition Request <c>",
-     "key": "c"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Definition Request <c>",
-     "key": "c"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Definition Request <c>",
-     "key": "c"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Definition Request <c>",
-     "key": "c"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Definition Request <c>",
-     "key": "c"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityDefinition",
-     "key": "d"
-    },
-    {
-     "version": "4.2",
-     "reading": "Security Definition <d>",
-     "key": "d"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Definition <d>",
-     "key": "d"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Definition <d>",
-     "key": "d"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Definition <d>",
-     "key": "d"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Definition <d>",
-     "key": "d"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityStatusRequest",
-     "key": "e"
-    },
-    {
-     "version": "4.2",
-     "reading": "Security Status Request <e>",
-     "key": "e"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Status Request <e>",
-     "key": "e"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Status Request <e>",
-     "key": "e"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Status Request <e>",
-     "key": "e"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Status Request <e>",
-     "key": "e"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityStatus",
-     "key": "f"
-    },
-    {
-     "version": "4.2",
-     "reading": "Security Status <f>",
-     "key": "f"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Status <f>",
-     "key": "f"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Status <f>",
-     "key": "f"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Status <f>",
-     "key": "f"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Status <f>",
-     "key": "f"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradingSessionStatusRequest",
-     "key": "g"
-    },
-    {
-     "version": "4.2",
-     "reading": "Trading Session Status Request <g>",
-     "key": "g"
-    },
-    {
-     "version": "4.3",
-     "reading": "Trading Session Status Request <g>",
-     "key": "g"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trading Session Status Request <g>",
-     "key": "g"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trading Session Status Request <g>",
-     "key": "g"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trading Session Status Request <g>",
-     "key": "g"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "TradingSessionStatus",
-     "key": "h"
-    },
-    {
-     "version": "4.2",
-     "reading": "Trading Session Status <h>",
-     "key": "h"
-    },
-    {
-     "version": "4.3",
-     "reading": "Trading Session Status <h>",
-     "key": "h"
-    },
-    {
-     "version": "4.4",
-     "reading": "Trading Session Status <h>",
-     "key": "h"
-    },
-    {
-     "version": "5.0",
-     "reading": "Trading Session Status <h>",
-     "key": "h"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Trading Session Status <h>",
-     "key": "h"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "MassQuote",
-     "key": "i"
-    },
-    {
-     "version": "4.2",
-     "reading": "Mass Quote <i>",
-     "key": "i"
-    },
-    {
-     "version": "4.3",
-     "reading": "Mass Quote <i>",
-     "key": "i"
-    },
-    {
-     "version": "4.4",
-     "reading": "Mass Quote <i>",
-     "key": "i"
-    },
-    {
-     "version": "5.0",
-     "reading": "Mass Quote <i>",
-     "key": "i"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Mass Quote <i>",
-     "key": "i"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "BusinessMessageReject",
-     "key": "j"
-    },
-    {
-     "version": "4.2",
-     "reading": "Business Message Reject <j>",
-     "key": "j"
-    },
-    {
-     "version": "4.3",
-     "reading": "Business Message Reject <j>",
-     "key": "j"
-    },
-    {
-     "version": "4.4",
-     "reading": "Business Message Reject <j>",
-     "key": "j"
-    },
-    {
-     "version": "5.0",
-     "reading": "Business Message Reject <j>",
-     "key": "j"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Business Message Reject <j>",
-     "key": "j"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "BidRequest",
-     "key": "k"
-    },
-    {
-     "version": "4.2",
-     "reading": "Bid Request <k>",
-     "key": "k"
-    },
-    {
-     "version": "4.3",
-     "reading": "Bid Request <k>",
-     "key": "k"
-    },
-    {
-     "version": "4.4",
-     "reading": "Bid Request <k>",
-     "key": "k"
-    },
-    {
-     "version": "5.0",
-     "reading": "Bid Request <k>",
-     "key": "k"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Bid Request <k>",
-     "key": "k"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "BidResponse",
-     "key": "l"
-    },
-    {
-     "version": "4.2",
-     "reading": "Bid Response <l> (lowercase L)",
-     "key": "l"
-    },
-    {
-     "version": "4.3",
-     "reading": "Bid Response <l> (lowercase L)",
-     "key": "l"
-    },
-    {
-     "version": "4.4",
-     "reading": "Bid Response <l> (lowercase L)",
-     "key": "l"
-    },
-    {
-     "version": "5.0",
-     "reading": "Bid Response <l> (lowercase L)",
-     "key": "l"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Bid Response <l> (lowercase L)",
-     "key": "l"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "ListStrikePrice",
-     "key": "m"
-    },
-    {
-     "version": "4.2",
-     "reading": "List Strike Price <m>",
-     "key": "m"
-    },
-    {
-     "version": "4.3",
-     "reading": "List Strike Price <m>",
-     "key": "m"
-    },
-    {
-     "version": "4.4",
-     "reading": "List Strike Price <m>",
-     "key": "m"
-    },
-    {
-     "version": "5.0",
-     "reading": "List Strike Price <m>",
-     "key": "m"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "List Strike Price <m>",
-     "key": "m"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "XML_non_FIX",
-     "key": "n"
-    },
-    {
-     "version": "4.3",
-     "reading": "XML message (e.g. non-FIX MsgType) <n>",
+     "reading": "XMLmessage",
      "key": "n"
     },
     {
      "version": "4.4",
-     "reading": "XML message <n> (e.g. non-FIX MsgType)",
+     "reading": "XMLmessage",
      "key": "n"
     },
     {
      "version": "5.0",
-     "reading": "XML message <n> (e.g. non-FIX MsgType)",
+     "reading": "XMLmessage",
      "key": "n"
     },
     {
      "version": "5.0.SP1",
-     "reading": "XML message <n> (e.g. non-FIX MsgType)",
+     "reading": "XMLmessage",
      "key": "n"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "RegistrationInstructions",
-     "key": "o"
-    },
-    {
-     "version": "4.3",
-     "reading": "Registration Instructions <o>",
-     "key": "o"
-    },
-    {
-     "version": "4.4",
-     "reading": "Registration Instructions <o>",
-     "key": "o"
-    },
-    {
-     "version": "5.0",
-     "reading": "Registration Instructions <o>",
-     "key": "o"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Registration Instructions <o>",
-     "key": "o"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "RegistrationInstructionsResponse",
-     "key": "p"
-    },
-    {
-     "version": "4.3",
-     "reading": "Registration Instructions Response <p>",
-     "key": "p"
-    },
-    {
-     "version": "4.4",
-     "reading": "Registration Instructions Response <p>",
-     "key": "p"
-    },
-    {
-     "version": "5.0",
-     "reading": "Registration Instructions Response <p>",
-     "key": "p"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Registration Instructions Response <p>",
-     "key": "p"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderMassCancelRequest",
-     "key": "q"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Mass Cancel Request <q>",
-     "key": "q"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Mass Cancel Request <q>",
-     "key": "q"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Mass Cancel Request <q>",
-     "key": "q"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Mass Cancel Request <q>",
-     "key": "q"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "OrderMassCancelReport",
-     "key": "r"
-    },
-    {
-     "version": "4.3",
-     "reading": "Order Mass Cancel Report <r>",
-     "key": "r"
-    },
-    {
-     "version": "4.4",
-     "reading": "Order Mass Cancel Report <r>",
-     "key": "r"
-    },
-    {
-     "version": "5.0",
-     "reading": "Order Mass Cancel Report <r>",
-     "key": "r"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Order Mass Cancel Report <r>",
-     "key": "r"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "NewOrderCross",
-     "key": "s"
-    },
-    {
-     "version": "4.3",
-     "reading": "New Order - Cross <s>",
-     "key": "s"
-    },
-    {
-     "version": "4.4",
-     "reading": "New Order Cross <s>",
-     "key": "s"
-    },
-    {
-     "version": "5.0",
-     "reading": "New Order Cross <s>",
-     "key": "s"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "New Order Cross <s>",
-     "key": "s"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CrossOrderCancelReplaceRequest",
-     "key": "t"
-    },
-    {
-     "version": "4.3",
-     "reading": "Cross Order Cancel/Replace Request <t> (a.k.a. Cross Order Modification Request)",
-     "key": "t"
-    },
-    {
-     "version": "4.4",
-     "reading": "Cross Order Cancel/Replace Request <t> (a.k.a. Cross Order Modification Request)",
-     "key": "t"
-    },
-    {
-     "version": "5.0",
-     "reading": "Cross Order Cancel/Replace Request <t> (a.k.a. Cross Order Modification Request)",
-     "key": "t"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Cross Order Cancel/Replace Request <t> (a.k.a. Cross Order Modification Request)",
-     "key": "t"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "CrossOrderCancelRequest",
-     "key": "u"
-    },
-    {
-     "version": "4.3",
-     "reading": "Cross Order Cancel Request <u>",
-     "key": "u"
-    },
-    {
-     "version": "4.4",
-     "reading": "Cross Order Cancel Request <u>",
-     "key": "u"
-    },
-    {
-     "version": "5.0",
-     "reading": "Cross Order Cancel Request <u>",
-     "key": "u"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Cross Order Cancel Request <u>",
-     "key": "u"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityTypeRequest",
-     "key": "v"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Type Request <v>",
-     "key": "v"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Type Request <v>",
-     "key": "v"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Type Request <v>",
-     "key": "v"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Type Request <v>",
-     "key": "v"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityTypes",
-     "key": "w"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security Types <w>",
-     "key": "w"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security Types <w>",
-     "key": "w"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security Types <w>",
-     "key": "w"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security Types <w>",
-     "key": "w"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityListRequest",
-     "key": "x"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security List Request <x>",
-     "key": "x"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security List Request <x>",
-     "key": "x"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security List Request <x>",
-     "key": "x"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security List Request <x>",
-     "key": "x"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "SecurityList",
-     "key": "y"
-    },
-    {
-     "version": "4.3",
-     "reading": "Security List <y>",
-     "key": "y"
-    },
-    {
-     "version": "4.4",
-     "reading": "Security List <y>",
-     "key": "y"
-    },
-    {
-     "version": "5.0",
-     "reading": "Security List <y>",
-     "key": "y"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Security List <y>",
-     "key": "y"
-    },
-    {
-     "version": "FIXT1.1",
-     "reading": "DerivativeSecurityListRequest",
-     "key": "z"
-    },
-    {
-     "version": "4.3",
-     "reading": "Derivative Security List Request <z>",
-     "key": "z"
-    },
-    {
-     "version": "4.4",
-     "reading": "Derivative Security List Request <z>",
-     "key": "z"
-    },
-    {
-     "version": "5.0",
-     "reading": "Derivative Security List Request <z>",
-     "key": "z"
-    },
-    {
-     "version": "5.0.SP1",
-     "reading": "Derivative Security List Request <z>",
-     "key": "z"
     }
    ]
   },
@@ -9009,26 +6375,6 @@
     {
      "version": "4.2",
      "reading": "int"
-    }
-   ]
-  },
-  {
-   "name": "NoDlvyInst",
-   "tag": 85,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.1",
-     "reading": "NoDlvyInst(no longer used)"
-    },
-    {
-     "version": "4.2",
-     "reading": "NoDlvyInst(no longer used)"
-    },
-    {
-     "version": "4.3",
-     "reading": "NoDlvyInst(no longer used)"
     }
    ]
   },
@@ -9441,18 +6787,6 @@
     {
      "version": "4.1",
      "reading": "char"
-    }
-   ]
-  },
-  {
-   "name": "OnBehalfOfSendingTime",
-   "tag": 370,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "OnBehalfOfSendingTime(Deprecated)"
     }
    ]
   },
@@ -10796,7 +8130,7 @@
     },
     {
      "version": "4.3",
-     "reading": "OpenClose prior to FIX 4.3)"
+     "reading": "OpenClose"
     }
    ]
   },
@@ -11381,18 +8715,6 @@
   {
    "name": "PutOrCall",
    "tag": 201,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "PutOrCall(replaced)"
-    }
-   ]
-  },
-  {
-   "name": "PutOrCall",
-   "tag": 201,
    "part": "note",
    "kept": "5.0.SP2",
    "dropped": [
@@ -11439,7 +8761,7 @@
     },
     {
      "version": "4.3",
-     "reading": "Shares prior to FIX 4.3)"
+     "reading": "Shares"
     }
    ]
   },
@@ -11996,7 +9318,7 @@
     },
     {
      "version": "4.3",
-     "reading": "QuoteAckStatus prior to FIX 4.3)"
+     "reading": "QuoteAckStatus"
     }
    ]
   },
@@ -12200,27 +9522,7 @@
    ]
   },
   {
-   "name": "RelatdSym (no longer used)",
-   "tag": 46,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.0",
-     "reading": "RelatdSym"
-    },
-    {
-     "version": "4.1",
-     "reading": "RelatdSym"
-    },
-    {
-     "version": "4.2",
-     "reading": "RelatdSym"
-    }
-   ]
-  },
-  {
-   "name": "RelatdSym (no longer used)",
+   "name": "RelatdSym",
    "tag": 46,
    "part": "type",
    "kept": "5.0.SP2",
@@ -12340,31 +9642,7 @@
    ]
   },
   {
-   "name": "Rule80A(No Longer Used)",
-   "tag": 47,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.0",
-     "reading": "Rule80A"
-    },
-    {
-     "version": "4.1",
-     "reading": "Rule80A(aka OrderCapacity)"
-    },
-    {
-     "version": "4.2",
-     "reading": "Rule80A(aka OrderCapacity)"
-    },
-    {
-     "version": "4.3",
-     "reading": "Rule80A(Deprecated)"
-    }
-   ]
-  },
-  {
-   "name": "Rule80A(No Longer Used)",
+   "name": "Rule80A",
    "tag": 47,
    "part": "note",
    "kept": "5.0.SP2",
@@ -12384,7 +9662,7 @@
    ]
   },
   {
-   "name": "Rule80A(No Longer Used)",
+   "name": "Rule80A",
    "tag": 47,
    "part": "values",
    "kept": "5.0.SP2",
@@ -12766,7 +10044,7 @@
     },
     {
      "version": "4.3",
-     "reading": "IDSource prior to FIX 4.3)"
+     "reading": "IDSource"
     }
    ]
   },
@@ -13501,19 +10779,7 @@
    ]
   },
   {
-   "name": "SendingDate (no longer used)",
-   "tag": 51,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.0",
-     "reading": "SendingDate (not used)"
-    }
-   ]
-  },
-  {
-   "name": "SendingDate (no longer used)",
+   "name": "SendingDate",
    "tag": 51,
    "part": "type",
    "kept": "5.0.SP2",
@@ -13529,7 +10795,7 @@
    ]
   },
   {
-   "name": "SendingDate (no longer used)",
+   "name": "SendingDate",
    "tag": 51,
    "part": "note",
    "kept": "5.0.SP2",
@@ -13931,18 +11197,6 @@
   {
    "name": "SettlLocation",
    "tag": 166,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "SettlLocation(replaced)"
-    }
-   ]
-  },
-  {
-   "name": "SettlLocation",
-   "tag": 166,
    "part": "type",
    "kept": "5.0.SP2",
    "dropped": [
@@ -14225,7 +11479,7 @@
     },
     {
      "version": "4.3",
-     "reading": "SpreadToBenchmark prior to FIX 4.3)"
+     "reading": "SpreadToBenchmark"
     }
    ]
   },
@@ -14713,11 +11967,11 @@
     },
     {
      "version": "4.2",
-     "reading": "ListNoOrds)"
+     "reading": "ListNoOrds"
     },
     {
      "version": "4.3",
-     "reading": "ListNoOrds)"
+     "reading": "ListNoOrds"
     }
    ]
   },
@@ -15218,22 +12472,6 @@
    ]
   },
   {
-   "name": "UnderlyingCurrency",
-   "tag": 318,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.2",
-     "reading": "Underlying Currency"
-    },
-    {
-     "version": "4.3",
-     "reading": "Underlying Currency"
-    }
-   ]
-  },
-  {
    "name": "UnderlyingInstrumentPartyID",
    "tag": 1059,
    "part": "name",
@@ -15326,30 +12564,6 @@
    ]
   },
   {
-   "name": "UnderlyingMaturityDay",
-   "tag": 314,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "UnderlyingMaturityDay(replaced)"
-    }
-   ]
-  },
-  {
-   "name": "UnderlyingPutOrCall",
-   "tag": 315,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "UnderlyingPutOrCall(replaced)"
-    }
-   ]
-  },
-  {
    "name": "UnderlyingPutOrCall",
    "tag": 315,
    "part": "note",
@@ -15389,7 +12603,7 @@
     },
     {
      "version": "4.3",
-     "reading": "UnderlyingIDSource prior to FIX 4.3)"
+     "reading": "UnderlyingIDSource"
     }
    ]
   },
@@ -15507,18 +12721,6 @@
     {
      "version": "5.0.SP1",
      "reading": "FuturesValuationMethod"
-    }
-   ]
-  },
-  {
-   "name": "WaveNo",
-   "tag": 105,
-   "part": "name",
-   "kept": "5.0.SP2",
-   "dropped": [
-    {
-     "version": "4.3",
-     "reading": "WaveNo(no longer used)"
     }
    ]
   },

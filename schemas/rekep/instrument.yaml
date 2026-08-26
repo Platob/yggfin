@@ -137,13 +137,7 @@ fields:
     fix:tag: '55'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","Security Definition Request","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: Symbol
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
@@ -164,13 +158,7 @@ fields:
     fix:tag: '48'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: SecurityID
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
@@ -191,18 +179,11 @@ fields:
       Reporting Authority","K":"ISDA/FpML Product URL (URL in SecurityID)","L":"Letter
       of Credit","M":"Marketplace-assigned Identifier"}'
     fix:value_names: '{"1":"CUSIP","2":"SEDOL","3":"QUIK","4":"ISIN_NUMBER","5":"RIC_CODE","6":"ISO_CURRENCY_CODE","7":"ISO_COUNTRY_CODE","8":"EXCHANGE_SYMBOL","9":"CONSOLIDATED_TAPE_ASSOCIATION","E":"SICOVAM","F":"BELGIAN","D":"VALOREN","C":"DUTCH","B":"WERTPAPIER","A":"BLOOMBERG_SYMBOL","G":"COMMON","H":"CLEARING_HOUSE","I":"ISDA_FP_ML_SPECIFICATION","J":"OPTION_PRICE_REPORTING_AUTHORITY","K":"ISDA_FP_MLURL","L":"LETTER_OF_CREDIT","M":"MARKETPLACE_ASSIGNED_IDENTIFIER","N":"MARKIT_RED_ENTITY_CLIP","P":"MARKIT_RED_PAIR_CLIP","Q":"CFTC_COMMODITY_CODE","R":"ISDA_COMMODITY_REFERENCE_PRICE","S":"FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER","T":"LEGAL_ENTITY_IDENTIFIER","U":"SYNTHETIC","V":"FIDESSA_INSTRUMENT_MNEMONIC","W":"INDEX_NAME","X":"UNIFORM_SYMBOL","Y":"DIGITAL_TOKEN_IDENTIFIER"}'
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: SecurityIDSource
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:aliases: '[{"name":"IDSource","source":"4.0","occurrences":0},{"name":"IDSource
-      prior to FIX 4.3)","source":"4.3","occurrences":0}]'
+    fix:aliases: '[{"name":"IDSource","source":"4.0","occurrences":0}]'
 - name: isin_code
   type: string
   nullable: true
@@ -276,15 +257,7 @@ fields:
       Rate Notes","FXNDF":"Non-deliverable forward","FXSPOT":"FX Spot","FXFWD":"FX
       Forward","FXSWAP":"FX Swap"}'
     fix:value_names: '{"BA":"BANKERS_ACCEPTANCE","CD":"CERTIFICATE_OF_DEPOSIT","CMO":"COLLATERALIZED_MORTGAGE_OBLIGATION","CORP":"CORPORATE_BOND","CP":"COMMERCIAL_PAPER","CPP":"CORPORATE_PRIVATE_PLACEMENT","CS":"COMMON_STOCK","FHA":"FEDERAL_HOUSING_AUTHORITY","FHL":"FEDERAL_HOME_LOAN","FN":"FEDERAL_NATIONAL_MORTGAGE_ASSOCIATION","FOR":"FOREIGN_EXCHANGE_CONTRACT","FUT":"FUTURE","GN":"GOVERNMENT_NATIONAL_MORTGAGE_ASSOCIATION","GOVT":"TREASURIES_AGENCY_DEBENTURE","MF":"MUTUAL_FUND","MIO":"MORTGAGE_INTEREST_ONLY","MPO":"MORTGAGE_PRINCIPAL_ONLY","MPP":"MORTGAGE_PRIVATE_PLACEMENT","MPT":"MISCELLANEOUS_PASS_THROUGH","MUNI":"MUNICIPAL_BOND","NONE":"NO_SECURITY_TYPE","OPT":"OPTION","PS":"PREFERRED_STOCK","RP":"REPURCHASE_AGREEMENT","RVRP":"REVERSE_REPURCHASE_AGREEMENT","SL":"STUDENT_LOAN_MARKETING_ASSOCIATION","TD":"TIME_DEPOSIT","USTB":"US_TREASURY_BILL_OLD","WAR":"WARRANT","ZOO":"CATS_TIGERS_AND_LIONS","?":"WILDCARD","CB":"CONVERTIBLE_BOND","IET":"IOETTE_MORTGAGE","VRDN":"VARIABLE_RATE_DEMAND_NOTE","PZFJ":"PLAZOS_FIJOS","PN":"PROMISSORY_NOTE","ONITE":"OVERNIGHT","MTN":"MEDIUM_TERM_NOTES","TECP":"TAX_EXEMPT_COMMERCIAL_PAPER","AMENDED":"AMENDED","BRIDGE":"BRIDGE_LOAN","LOFC":"LETTER_OF_CREDIT","SWING":"SWING_LINE_FACILITY","DINP":"DEBTOR_IN_POSSESSION","DEFLTED":"DEFAULTED","WITHDRN":"WITHDRAWN","LQN":"LIQUIDITY_NOTE","MATURED":"MATURED","DN":"DEPOSIT_NOTES","RETIRED":"RETIRED","BN":"BANK_NOTES","BOX":"BILL_OF_EXCHANGES","CL":"CALL_LOANS","REPLACD":"REPLACED","MT":"MANDATORY_TENDER","RVLVTRM":"REVOLVER","STN":"SHORT_TERM_LOAN_NOTE","TBA":"TO_BE_ANNOUNCED","AN":"OTHER_ANTICIPATION_NOTES","COFP":"CERTIFICATE_OF_PARTICIPATION","MBS":"MORTGAGE_BACKED_SECURITIES","REV":"REVENUE_BONDS","SPCLA":"SPECIAL_ASSESSMENT","SPCLO":"SPECIAL_OBLIGATION","SPCLT":"SPECIAL_TAX","TAN":"TAX_ANTICIPATION_NOTE","TAXA":"TAX_ALLOCATION","COFO":"CERTIFICATE_OF_OBLIGATION","GO":"GENERAL_OBLIGATION_BONDS","MLEG":"MULTILEG_INSTRUMENT","TRAN":"TAX_REVENUE_ANTICIPATION_NOTE","XCN":"EXTENDED_COMM_NOTE","POOL":"AGENCY_POOLS","ABS":"ASSET_BACKED_SECURITIES","CMBS":"CORP","RAN":"REVENUE_ANTICIPATION_NOTE","RVLV":"REVOLVER_LOAN","FAC":"FEDERAL_AGENCY_COUPON","FADN":"FEDERAL_AGENCY_DISCOUNT_NOTE","PEF":"PRIVATE_EXPORT_FUNDING","DUAL":"DUAL_CURRENCY","XLINKD":"INDEXED_LINKED","YANK":"YANKEE_CORPORATE_BOND","BRADY":"BRADY_BOND","TBOND":"US_TREASURY_BOND","TINT":"INTEREST_STRIP_FROM_ANY_BOND_OR_NOTE","TIPS":"TREASURY_INFLATION_PROTECTED_SECURITIES","TCAL":"PRINCIPAL_STRIP_OF_A_CALLABLE_BOND_OR_NOTE","TPRN":"PRINCIPAL_STRIP_FROM_A_NON_CALLABLE_BOND_OR_NOTE","UST":"US_TREASURY_NOTE_OLD","TERM":"TERM_LOAN","STRUCT":"STRUCTURED_NOTES","EUSUPRA":"EURO_SUPRANATIONAL_COUPONS","SUPRA":"USD_SUPRANATIONAL_COUPONS","EUCORP":"EURO_CORPORATE_BOND","EUSOV":"EURO_SOVEREIGNS","TNOTE":"US_TREASURY_NOTE","TBILL":"US_TREASURY_BILL","REPO":"REPURCHASE","FORWARD":"FORWARD","BUYSELL":"BUY_SELLBACK","SECLOAN":"SECURITIES_LOAN","SECPLEDGE":"SECURITIES_PLEDGE","EUCD":"EURO_CERTIFICATE_OF_DEPOSIT","EUCP":"EURO_COMMERCIAL_PAPER","YCD":"YANKEE_CERTIFICATE_OF_DEPOSIT","PFAND":"PFANDBRIEF","OOF":"OPTIONS_ON_FUTURES","OOP":"OPTIONS_ON_PHYSICAL","WLD":"WILDCARD_ENTRY","CASH":"CASH","EUFRN":"EURO_CORPORATE_FLOATING_RATE_NOTES","FRN":"US_CORPORATE_FLOATING_RATE_NOTES","CDS":"CREDIT_DEFAULT_SWAP","IRS":"INTEREST_RATE_SWAP","OOC":"OPTIONS_ON_COMBO","CAN":"CANADIAN_TREASURY_NOTES","CTB":"CANADIAN_TREASURY_BILLS","PROV":"CANADIAN_PROVINCIAL_BONDS","TB":"TREASURY_BILL","BDN":"BANK_DEPOSITORY_NOTE","CAMM":"CANADIAN_MONEY_MARKETS","SLQN":"SECURED_LIQUIDITY_NOTE","TLQN":"TERM_LIQUIDITY_NOTE","CMB":"CANADIAN_MORTGAGE_BONDS","TMCP":"TAXABLE_MUNICIPAL_CP","DIMSUMCORP":"OFFSHORE_ISSUED_CHINESE_YUAN_CORPORATE_BOND","PRCORP":"PREFERRED_CORPORATE_BOND","FXNDF":"NON_DELIVERABLE_FORWARD","FXSPOT":"FX_SPOT","FXFWD":"FX_FORWARD","FXSWAP":"FX_SWAP","FXNDS":"NON_DELIVERABLE_SWAP","FXBN":"FX_BANK_NOTE","FXDN":"FOREIGN_CURRENCY_DISCOUNT_NOTE","CAP":"CAP","CLLR":"COLLAR","CMDTYSWAP":"COMMODITY_SWAP","EXOTIC":"EXOTIC","FLR":"FLOOR","FRA":"FRA","FWD":"DERIVATIVE_FORWARD","TRS":"TOTAL_RETURN_SWAP","LOANLEASE":"LOAN_LEASE","SPOTFWD":"SPOT_FORWARD","SWAPTION":"SWAP_OPTION","XMISSION":"TRANSMISSION","INDEX":"INDEX","BDBSKT":"BOND_BASKET","CFD":"CONTRACT_FOR_DIFFERENCE","CRLTNSWAP":"CORRELATION_SWAP","DVDNDSWAP":"DIVIEND_SWAP","EQBSKT":"EQUITY_BASKET","EQFWD":"EQUITY_FORWARD","RTRNSWAP":"RETURN_SWAP","VARSWAP":"VARIANCE_SWAP","PRTFLIOSWAP":"PORTFOLIO_SWAPS","FUTSWAP":"FUTURES_ON_A_SWAP","FWDSWAP":"FORWARDS_ON_A_SWAP","FWDFRTAGMT":"FORWARD_FREIGHT_AGREEMENT","SPREADBET":"SPREAD_BETTING","ETC":"EXCHANGE_TRADED_COMMODITY","DR":"DEPOSITORY_RECEIPTS","DVPLDG":"DELIVERY_VERSUS_PLEDGE","COLLBSKT":"COLLATERAL_BASKET","SFP":"STRUCTURED_FINANCE_PRODUCT","MRGNLOAN":"MARGIN_LOAN","DIMSUMSOV":"OFFSHORE_ISSUED_CHINESE_YUAN_SOVEREIGN_BOND","SOV":"SOVEREIGN_BOND","TFRN":"US_TREASURY_FLOATING_RATE_NOTE","BAB":"BANK_ACCEPTED_BILL","BNST":"SHORT_TERM_BANK_NOTE","CLCP":"CALLABLE_COMMERCIAL_PAPER","CN":"COMMERCIAL_NOTE","CPIB":"INTEREST_BEARING_COMMERCIAL_PAPER","EUMTN":"EURO_MEDIUM_TERM_NOTE","EUNCP":"EURO_NEGOTIABLE_COMMERCIAL_PAPER","EUSTLQN":"EURO_STRUCTURED_LIQUIDITY_NOTE","EUTD":"EURO_TIME_DEPOSIT","JCD":"JUMBO_CERTIFICATE_OF_DEPOSIT","MMF":"MONEY_MARKET_FUND","MN":"MASTER_NOTE","NCD":"NEGOTIABLE_CERTIFICATE_OF_DEPOSIT","NCP":"NEGOTIABLE_COMMERCIAL_PAPER","RCD":"RETAIL_CERTIFICATE_OF_DEPOSIT","TDR":"TERM_DEPOSIT_RECEIPT","MCPIB":"MUNICIPAL_INTEREST_BEARING_COMMERCIAL_PAPER","TMB":"TAXABLE_MUNICIPAL_BOND","VRDO":"VARIABLE_RATE_DEMAND_OBLIGATION","Other":"OTHER","ETN":"EXCHANGE_TRADED_NOTE","SECDERIV":"SECURITIZED_DERIVATIVE","ETF":"EXCHANGE_TRADED_FUND","DIGITAL":"DIGITAL_ASSET"}'
-    fix:used_in: '["AllocationReportAck","SettlementInstructionRequest","AllocationInstructionAck","SecurityTypeRequest","Allocation
-      Report Ack","Settlement Instruction Request","Allocation Instruction Ack","Settlement
-      Instructions","Security Type Request","Security Types","Indication of Interest","Advertisement","Execution
-      Report","Quote Status Request","Quote Acknowledgement","News","Security Definition
-      Request","Email","Security Definition","New Order - Single","Security Status
-      Request","New Order - List","Security Status","Order Cancel Request","Order
-      Cancel/Replace Request","Order Status Request","Mass Quote","Allocation","List
-      Strike Price","Don''t Know Trade","Quote Request","Quote","Market Data Request","Market
-      Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["AllocationReportAck","SettlementInstructionRequest","AllocationInstructionAck","SecurityTypeRequest","SettlementInstructions","SecurityTypes","IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
     fix:name: SecurityType
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
@@ -303,8 +276,7 @@ fields:
     fix:tag: '461'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:used_in: '["SettlementInstructionRequest","Settlement Instruction Request","Settlement
-      Instructions","Security Types"]'
+    fix:used_in: '["SettlementInstructionRequest","SettlementInstructions","SecurityTypes"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
     fix:name: CFICode
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
@@ -316,14 +288,7 @@ fields:
     fix:tag: '207'
     fix:type: Exchange
     fix:version: 5.0.SP2
-    fix:used_in: '["TradingSessionListRequest","TradingSessionStatusRequest","Indication
-      of Interest","Advertisement","Execution Report","Quote Status Request","Quote
-      Acknowledgement","News","Security Definition Request","Email","Security Definition","New
-      Order - Single","Security Status Request","New Order - List","Security Status","Order
-      Cancel Request","Order Cancel/Replace Request","Order Status Request","Mass
-      Quote","Allocation","List Strike Price","Don''t Know Trade","Quote Request","Quote","Market
-      Data Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
-      Refresh","Quote Cancel"]'
+    fix:used_in: '["TradingSessionListRequest","TradingSessionStatusRequest","IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument","TrdSessLstGrp"]'
     fix:name: SecurityExchange
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
@@ -338,21 +303,7 @@ fields:
     fix:tag: '15'
     fix:type: Currency
     fix:version: 5.0.SP2
-    fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","Execution
-      Report","Derivative Security List","New Order Multileg","Multileg Order Cancel/Replace","Trade
-      Capture Report","Quote Request Reject","Quote Status Report","Quote Response","Position
-      Maintenance Request","Position Maintenance Report","Request For Positions","Request
-      for Positions Ack","Position Report","Allocation Report","Assignment Report","Collateral
-      Request","Collateral Assignment","Collateral Response","Mass Quote Acknowledgement","Collateral
-      Report","Collateral Inquiry","Collateral Inquiry Ack","Security Definition Request","Security
-      Definition","New Order Single","Security Status Request","New Order List","Security
-      Status","Order Cancel/Replace Request","Mass Quote","Allocation Instruction","Bid
-      Request","List Strike Price","Quote Request","New Order Cross","Cross Order
-      Cancel/Replace Request","Market Data - Snapshot/Full Refresh","Security List
-      Request","Market Data - Incremental Refresh","Security List","Derivative Security
-      List Request","Indications of Interest","New Order - Multileg","Multileg Order
-      Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
-      Order - Cross","Indication of Interest"]'
+    fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","DerivativeSecurityList","QuoteRequestReject","MassQuoteAcknowledgement","NewOrderList","MassQuote","ListStrikePrice","QuoteRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","SecurityList","IndicationsofInterest","MultilegOrderCancelReplaceRequest","Allocation","IndicationofInterest"]'
     fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:name: Currency
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
@@ -381,13 +332,7 @@ fields:
     fix:tag: '231'
     fix:type: float
     fix:version: 5.0.SP2
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: ContractMultiplier
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
@@ -410,8 +355,7 @@ fields:
     fix:tag: '561'
     fix:type: Qty
     fix:version: 5.0.SP2
-    fix:used_in: '["SecurityDefinitionUpdateReport","SecurityDefinition","Security
-      Definition","Security List"]'
+    fix:used_in: '["SecurityDefinitionUpdateReport","SecurityDefinition","SecurityList"]'
     fix:components: '["BaseTradingRules","SecListGrp","SecLstUpdRelSymGrp"]'
     fix:name: RoundLot
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
@@ -434,13 +378,7 @@ fields:
     fix:tag: '202'
     fix:type: Price
     fix:version: 5.0.SP2
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: StrikePrice
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
@@ -453,17 +391,10 @@ fields:
     fix:version: 5.0.SP2
     fix:values: '{"0":"Put","1":"Call"}'
     fix:value_names: '{"0":"PUT","1":"CALL","2":"OTHER","3":"CHOOSER"}'
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: PutOrCall
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:aliases: '[{"name":"PutOrCall(replaced)","source":"4.3","occurrences":0}]'
     enum:name: OptionKind
     enum:key_type: int32
     enum:value_type: utf8
@@ -477,13 +408,7 @@ fields:
     fix:tag: '107'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
+    fix:used_in: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]'
     fix:components: '["Instrument"]'
     fix:name: SecurityDesc
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
@@ -617,8 +542,7 @@ fields:
         fix:tag: '556'
         fix:type: Currency
         fix:version: 5.0.SP2
-        fix:used_in: '["Derivative Security List","Security Definition Request","Security
-          Definition","Security List"]'
+        fix:used_in: '["DerivativeSecurityList","SecurityDefinitionRequest","SecurityDefinition","SecurityList"]'
         fix:components: '["InstrumentLeg"]'
         fix:name: LegCurrency
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'

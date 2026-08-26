@@ -1030,8 +1030,8 @@ def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     return _parsed(staged, codec)
 
 
-def test_two_identical_lines_in_two_captures_stay_two_rows(tmp_path: Path) -> None:
-    """Where a line was read is part of its identity, so a copy is not the same row."""
+def test_two_identical_lines_in_two_captures_share_payload_identities(tmp_path: Path) -> None:
+    """Capture provenance does not alter the exact message-payload identity."""
     digests = []
     for name in ("first.txt", "second.txt"):
         path = tmp_path / name
@@ -1039,7 +1039,7 @@ def test_two_identical_lines_in_two_captures_stay_two_rows(tmp_path: Path) -> No
         with TextFile.from_path(path) as log:
             digests.append(log.read_arrow_table().column("hash").to_pylist())
     assert len(digests[0]) == len(STAGED_LINES.splitlines())
-    assert not set(digests[0]) & set(digests[1]), "one capture copied is not one capture"
+    assert digests[0] == digests[1]
 
 
 def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(

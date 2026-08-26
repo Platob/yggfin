@@ -126,7 +126,7 @@ def flat_market_parts(
         if handler == "order" and kind in tags.ordered
     )
     report_types = tuple(
-        kind for kind, handler in tags.handlers.items() if handler == "execution_report"
+        kind for kind, handler in tags.handlers.items() if handler == "executionreport"
     )
     execution_types = tuple(
         kind for kind, handler in tags.handlers.items() if handler == "execution"
@@ -241,7 +241,7 @@ def flat_market_positions(
             for kind, handler in tags.handlers.items()
             if (
                 (handler == "order" and kind in tags.ordered)
-                or handler in {"execution_report", "execution"}
+                or handler in {"executionreport", "execution"}
             )
         )
         if not supported:
@@ -308,7 +308,7 @@ def _eligible_market_rows(
 
     msg_type = columns["MsgType"]
     reports = pyarrow.array(
-        [kind for kind, handler in tags.handlers.items() if handler == "execution_report"]
+        [kind for kind, handler in tags.handlers.items() if handler == "executionreport"]
     )
     report_rows = compute.is_in(msg_type, value_set=reports)
     exec_state = values.mapped("ExecType", tags.states["ExecType"], State.UNKNOWN)

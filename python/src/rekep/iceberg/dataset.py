@@ -12,6 +12,7 @@ import os
 import tempfile
 import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from functools import cached_property
 from typing import Any
 
@@ -103,6 +104,13 @@ MERGE_GROUP_GAIN = 8
 #: throughput stops improving and file count starts mattering.
 DEFAULT_COMMIT_ROW_SIZE = 1_000_000
 
+#: Iceberg's table property for the maximum age of an unprotected snapshot.
+#: Keeping the protocol name here lets a dataset declaration use it without
+#: importing the optional PyIceberg extra during configuration loading.
+SNAPSHOT_MAX_AGE = "history.expire.max-snapshot-age-ms"
+
+SnapshotExpiry = datetime.datetime | datetime.timedelta | str | None
+
 #: Table property holding what compaction has already settled: a JSON object
 #: mapping "<branch>/<partition>" to the snapshot that part was rewritten at. A
 #: part whose partition has had nothing land in it since is not planned again,
@@ -149,7 +157,7 @@ COMMIT_PROPERTIES = {
 }
 
 _InsertSpan = tuple[
-    tuple[str, tuple[str, ...], str, str],
+    tuple[str, tuple[str, ...], str, str, tuple[Any, ...] | None],
     pyarrow.Scalar,
     pyarrow.Scalar,
 ]
@@ -209,6 +217,11 @@ class IcebergDataset(Dataset):
     #: Iceberg's, and Iceberg's defaults are not tuned for a stream.
     optimize_commits: bool = True
 
+    #: Cutoff applied once after a successful public write. None reads the
+    #: table's `history.expire.max-snapshot-age-ms`, including Iceberg's
+    #: default when the property is absent.
+    snapshot_expiry: SnapshotExpiry = None
+
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
     table_properties: dict[str, str] = dataclasses.field(default_factory=dict)
@@ -223,6 +236,21 @@ class IcebergDataset(Dataset):
         self.field = field
         if self.branch in ROOT_BRANCHES:
             self.branch = None
+        configured_expiry = self.table_properties.get(SNAPSHOT_MAX_AGE)
+        if configured_expiry is None:
+            configured_expiry = self.properties.get(SNAPSHOT_MAX_AGE)
+        if isinstance(self.snapshot_expiry, datetime.timedelta):
+            duration = _checked_expiry_delta(self.snapshot_expiry)
+            self.table_properties = {
+                **self.table_properties,
+                SNAPSHOT_MAX_AGE: str(duration // datetime.timedelta(milliseconds=1)),
+            }
+            self.__dict__["_snapshot_expiry"] = duration
+            # Relative retention is an Iceberg table declaration. Keeping its
+            # one canonical spelling also makes dataset documents round-trip.
+            self.snapshot_expiry = None
+        elif self.snapshot_expiry is None and configured_expiry is not None:
+            self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)
         storage_paths = ("write.data.path", "write.metadata.path")
         locations = [
             str(location)
@@ -416,6 +444,18 @@ class IcebergDataset(Dataset):
         """
         return self.field.derived_keys()
 
+    def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
+        """Reported merge keys, with partition sources naming their scope."""
+        join = self._row_merge_columns(merge_by)
+        if not join:
+            return join
+        shape = self.table_field if "iceberg_table" in self.__dict__ else self.field
+        return list(dict.fromkeys([*shape.partition_keys(), *join]))
+
+    def _row_merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
+        """Stored columns compared inside one transformed partition."""
+        return super().merge_columns(merge_by)
+
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
         """Add the columns `source` has and the table lacks; skip when there are none."""
         target = self.target_field(source)
@@ -598,6 +638,28 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> None:
+        """Upsert a stream, then expire snapshots under the configured cutoff."""
+        with self._write(snapshot_expiry):
+            self._overwrite_arrow_reader(
+                source,
+                schema,
+                merge_by,
+                commit_row_size,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _overwrite_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] = True,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> None:
         """Upsert keyed rows, or stage complete partitions for keyless input."""
         reader: pyarrow.RecordBatchReader | None = None
@@ -608,7 +670,7 @@ class IcebergDataset(Dataset):
             # longer complete after either operation.
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
-            join = self.merge_columns(merge_by)
+            join = self._row_merge_columns(merge_by)
             partitions = _partition_columns(table)
             if partitions and not join:
                 # The partition writer owns the source from entry. Do not close
@@ -637,7 +699,7 @@ class IcebergDataset(Dataset):
             rows = self.commit_row_size if commit_row_size is None else commit_row_size
             for chunk in arrow_chunks(reader, rows):
                 chunk = self.sorted(chunk)
-                if self.plan_merges:
+                if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
                 else:
                     self.iceberg_table.upsert(
@@ -659,6 +721,28 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> None:
+        """Replace partition runs, then expire snapshots under the configured cutoff."""
+        with self._write(snapshot_expiry):
+            self._overwrite_partition_arrow_reader(
+                source,
+                schema,
+                merge_by,
+                commit_row_size,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _overwrite_partition_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = True,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> None:
         """Stage and replace complete partition-contiguous Arrow runs."""
         original = source
@@ -667,7 +751,7 @@ class IcebergDataset(Dataset):
         try:
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
-            join = self.merge_columns(merge_by)
+            join = self._row_merge_columns(merge_by)
             if join:
                 delegated = True
                 self.overwrite_arrow_reader(
@@ -821,8 +905,16 @@ class IcebergDataset(Dataset):
         with _PartitionStager(
             table, self.sort_fields(), updates.num_rows + inserts.num_rows
         ) as stager:
-            staged_updates = list(_staged_partition_chunk(updates, partitions, stager))
-            staged_inserts = list(_staged_partition_chunk(inserts, partitions, stager))
+            staged_updates = (
+                list(_staged_partition_chunk(updates, partitions, stager))
+                if updates.num_rows
+                else []
+            )
+            staged_inserts = (
+                list(_staged_partition_chunk(inserts, partitions, stager))
+                if inserts.num_rows
+                else []
+            )
             staged = [*staged_updates, *staged_inserts]
             with _track_outputs() as generated:
                 transaction = table.transaction()
@@ -856,19 +948,55 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> tuple[int, int]:
+        """Merge one table, then expire snapshots under the configured cutoff."""
+        with self._write(snapshot_expiry):
+            return self._merge_arrow_table(
+                chunk,
+                merge_by,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _merge_arrow_table(
+        self,
+        chunk: pyarrow.Table,
+        merge_by: bool | Sequence[str] | None = True,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> tuple[int, int]:
         """One chunk merged into the table: `(rows updated, rows inserted)`."""
         self.__dict__.pop("_insert_upper", None)
-        join = self.merge_columns(merge_by)
+        table = self.get_or_create_table()
+        join = self._row_merge_columns(merge_by)
         if not join:
             raise ValueError("merge_arrow_table needs columns to merge on")
-        table = self.get_or_create_table()
-        chunk = _checked_merge_chunk(table, chunk, join)
         if chunk.num_rows == 0:
+            _checked_merge_chunk(table, chunk, join)
             # Nothing to match, and the schema was still worth checking: a scan
             # for it would read the table to discover that, and `_key_ranges`
             # has no bounds to build from.
             return 0, 0
+        partitions = _partition_columns(table)
+        partition = None
+        if partitions:
+            runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
+            if len(runs) > 1:
+                updated = inserted = 0
+                for _, _, run in runs:
+                    changed, fresh = self._merge_arrow_table(
+                        run,
+                        join,
+                        branch=branch,
+                        properties=properties,
+                    )
+                    updated += changed
+                    inserted += fresh
+                return updated, inserted
+            _, partition, chunk = runs[0]
+        chunk = _checked_merge_chunk(table, chunk, join)
         # The chunk's own shape is the one everything is brought onto: an Arrow
         # join refuses to match a `string` key against the `large_string` a scan
         # hands back, and converting what was *read* costs less than converting
@@ -879,12 +1007,13 @@ class IcebergDataset(Dataset):
         derived = self.derived_columns()
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
+        scan = _scoped_partition_scan(scan, table, partition)
         # Planned once and read from that plan: `to_arrow_batch_reader` plans
         # again on its own, and a streaming merge pays planning per chunk. Keep
         # the plan lazy as well as its data: a replay may finish from the first
         # file, so collecting every remaining task would retain metadata it
         # never needs.
-        tasks = iter(scan.plan_files())
+        tasks = iter(_tasks_in_partition(table, scan.plan_files(), partition))
         first_task = next(tasks, None)
         if first_task is None:
             # No stored file overlaps the chunk's key ranges, so no stored row
@@ -898,6 +1027,10 @@ class IcebergDataset(Dataset):
         # rows nor even their exact stored matches collect.
         matched_positions: list[pyarrow.Array] = []
         changed_positions: list[pyarrow.Array] = []
+        delete_rows: list[pyarrow.Table] = []
+        delete_columns = list(
+            dict.fromkeys([*(column.source for column in partitions or ()), *join])
+        )
         matched_count = 0
         with _unordered_reader(
             scan, itertools.chain((first_task,), tasks), group_size=1
@@ -921,6 +1054,7 @@ class IcebergDataset(Dataset):
                 if changed.num_rows:
                     local = _matching_positions(source, changed, join)
                     changed_positions.append(positions.take(local))
+                    delete_rows.append(semi_join(candidate, changed, join).select(delete_columns))
         if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
@@ -946,13 +1080,13 @@ class IcebergDataset(Dataset):
         else:
             from pyiceberg.expressions import And
 
+            deleted = pyarrow.concat_tables(delete_rows)
             # The match filter decides what is *deleted*, so it stays exact;
-            # the ranges only narrow it. Never the other way round: a range
-            # alone would delete rows the chunk never touched. Past 200
-            # literals the exact filter stops pruning files on its own, and
-            # this is what keeps a 201-row update from re-reading the table.
+            # stored partition sources name the transformed partition without
+            # becoming row equality keys. The ranges only narrow that exact
+            # predicate; they never decide what is removed.
             predicate = And(
-                _match_filter(updates, join),
+                _stored_match_filter(deleted, delete_columns),
                 _key_ranges(updates, join, derived),
             )
             self._commit_merge(
@@ -978,12 +1112,34 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> int:
+        """Append a stream, then expire snapshots under the configured cutoff."""
+        with self._write(snapshot_expiry):
+            return self._append_arrow_reader(
+                source,
+                schema,
+                merge_by,
+                commit_row_size,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> int:
         """Append a stream, inserting only the keys the table does not hold yet."""
         reader: pyarrow.RecordBatchReader | None = None
         try:
-            join = self.merge_columns(merge_by)
             table = self.get_or_create_table()
+            join = self._row_merge_columns(merge_by)
             reader = self.target_field(schema).cast_arrow_reader(source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
@@ -1013,25 +1169,58 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> int:
+        """Insert one table, then expire snapshots under the configured cutoff."""
+        with self._write(snapshot_expiry):
+            return self._insert_arrow_table(
+                chunk,
+                merge_by,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _insert_arrow_table(
+        self,
+        chunk: pyarrow.Table,
+        merge_by: bool | Sequence[str] | None = True,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> int:
         """One chunk appended where no stored row matches: rows inserted."""
-        join = self.merge_columns(merge_by)
+        table = self.get_or_create_table()
+        join = self._row_merge_columns(merge_by)
         if not join:
             raise ValueError("insert_arrow_table needs columns to merge on")
         if SOURCE_INDEX in join or TARGET_INDEX in join:
             raise ValueError(
                 f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
             )
-        table = self.get_or_create_table()
         if chunk.num_rows == 0:
             return 0
+        partitions = _partition_columns(table)
+        partition = None
+        if partitions:
+            runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
+            if len(runs) > 1:
+                return sum(
+                    self._insert_arrow_table(
+                        run,
+                        join,
+                        branch=branch,
+                        properties=properties,
+                    )
+                    for _, _, run in runs
+                )
+            _, partition, chunk = runs[0]
         chunk = first_rows(normalised_keys(chunk, join), join)
         reference = self._branch_name(branch)
         head = self._branch_head(table, reference)
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
         row_filter = _key_ranges(chunk, join, self.derived_columns())
-        span = self._insert_span(chunk, join, reference)
+        span = self._insert_span(chunk, join, reference, partition)
         empty = head is None
         snapshot_id = head.snapshot_id if head is not None else None
         if span is not None and self._strictly_after_inserted(span, empty, snapshot_id):
@@ -1059,11 +1248,12 @@ class IcebergDataset(Dataset):
             self._append_chunk(table, chunk, reference, properties or {})
             return chunk.num_rows
         scan = scan.select(*wanted)
+        scan = _scoped_partition_scan(scan, table, partition)
         # Planned once, like a merge. Each streamed key batch removes the rows
         # it already holds; no stored key table or file-task list is
         # accumulated, and a complete replay stops planning and opening later
         # files as soon as nothing remains.
-        tasks = iter(scan.plan_files())
+        tasks = iter(_tasks_in_partition(table, scan.plan_files(), partition))
         first_task = next(tasks, None)
         fresh = keys_of(chunk, join, SOURCE_INDEX)
         if first_task is not None:
@@ -1086,7 +1276,11 @@ class IcebergDataset(Dataset):
         return fresh.num_rows
 
     def _insert_span(
-        self, chunk: pyarrow.Table, join: Sequence[str], reference: str
+        self,
+        chunk: pyarrow.Table,
+        join: Sequence[str],
+        reference: str,
+        partition: Mapping[str, Any] | None,
     ) -> _InsertSpan | None:
         """The first declared sort key's `(cache key, minimum, maximum)`."""
         ordered = self.sort_fields()
@@ -1100,7 +1294,10 @@ class IcebergDataset(Dataset):
         lower, upper = bounds["min"], bounds["max"]
         if not lower.is_valid or not upper.is_valid:
             return None
-        return (reference, tuple(join), name, direction), lower, upper
+        scope = None
+        if partition is not None:
+            scope = _partition_identity(_partition_key(self.iceberg_table, partition).partition)
+        return (reference, tuple(join), name, direction, scope), lower, upper
 
     def _strictly_after_inserted(
         self,
@@ -1170,6 +1367,11 @@ class IcebergDataset(Dataset):
             return [(name, "ascending") for name in self.sort_by]
         else:
             shape = self.field
+            declared = {
+                **dict.fromkeys(shape.partition_keys(), "ascending"),
+                **shape.sort_keys(),
+            }
+            return [(name, _sort_direction(direction)) for name, direction in declared.items()]
         return [
             (name, _sort_direction(direction))
             for name, direction in (shape.sort_keys().items() if shape is not None else ())
@@ -1178,6 +1380,48 @@ class IcebergDataset(Dataset):
     def sort_columns(self) -> list[str]:
         """Columns a chunk is sorted by: what was asked for, or what is declared."""
         return [name for name, _ in self.sort_fields()]
+
+    @contextmanager
+    def _write(self, snapshot_expiry: SnapshotExpiry) -> Iterator[None]:
+        """Expire once after the outermost successful public write."""
+        depth = int(self.__dict__.get("_write_depth", 0))
+        expiry = (
+            self._resolved_snapshot_expiry(snapshot_expiry, self.get_or_create_table())
+            if depth == 0
+            else snapshot_expiry
+        )
+        self.__dict__["_write_depth"] = depth + 1
+        succeeded = False
+        try:
+            yield
+            succeeded = True
+        finally:
+            remaining = int(self.__dict__["_write_depth"]) - 1
+            if remaining:
+                self.__dict__["_write_depth"] = remaining
+            else:
+                self.__dict__.pop("_write_depth", None)
+            if succeeded and depth == 0:
+                self.expire_snapshots(expiry)
+
+    def _resolved_snapshot_expiry(
+        self, value: SnapshotExpiry, table: Any
+    ) -> datetime.datetime | datetime.timedelta:
+        """Validate one write cutoff before the write can commit."""
+        if value is None:
+            value = self.snapshot_expiry
+        if value is None:
+            value = self.__dict__.get("_snapshot_expiry")
+        return _expiry_value(value, table)
+
+    def expire_snapshots(self, snapshot_expiry: SnapshotExpiry = None) -> int:
+        """Expire unprotected snapshots older than one absolute cutoff."""
+        table = self.get_or_create_table()
+        cutoff = _expiry_cutoff(self._resolved_snapshot_expiry(snapshot_expiry, table))
+        expired = self._expirable(0, cutoff)
+        if expired:
+            table.maintenance.expire_snapshots().older_than(cutoff).commit()
+        return len(expired)
 
     def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:
         """Delete the rows a filter matches, in one commit."""
@@ -2498,6 +2742,31 @@ def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
     )
 
 
+def _stored_match_filter(rows: pyarrow.Table, columns: Sequence[str]) -> Any:
+    """Exact stored coordinates, including a transformed partition's null source."""
+    from pyiceberg.expressions import And, EqualTo, IsNull, Or
+
+    fixed_null = [name for name in columns if rows.column(name).null_count == rows.num_rows]
+    mixed_null = [name for name in columns if 0 < rows.column(name).null_count < rows.num_rows]
+    if mixed_null:
+        unique = rows.select(list(columns)).group_by(list(columns)).aggregate([])
+        terms = [
+            And(
+                *[
+                    IsNull(name) if row[name] is None else EqualTo(name, row[name])
+                    for name in columns
+                ]
+            )
+            for row in unique.to_pylist()
+        ]
+        return Or(*terms) if len(terms) > 1 else terms[0]
+    remaining = [name for name in columns if name not in fixed_null]
+    terms = [*(IsNull(name) for name in fixed_null)]
+    if remaining:
+        terms.append(_match_filter(rows, remaining))
+    return And(*terms) if len(terms) > 1 else terms[0]
+
+
 def _factored(updates: pyarrow.Table, join: Sequence[str]) -> Any:
     """The same filter, with whatever a key column repeats said once."""
     from pyiceberg.expressions import And, EqualTo, In, Or
@@ -2788,6 +3057,39 @@ def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
         )
         for field in spec.fields
     )
+
+
+def _tasks_in_partition(
+    table: Any, tasks: Iterable[Any], partition: Mapping[str, Any] | None
+) -> Iterator[Any]:
+    """Planned data tasks belonging to one exact transformed partition."""
+    if partition is None:
+        yield from tasks
+        return
+    current = table.spec()
+    specs = table.metadata.specs()
+    target = _partition_identity(_partition_key(table, partition).partition)
+    for task in tasks:
+        spec_id = int(getattr(task.file, "spec_id", current.spec_id) or 0)
+        stored = specs.get(spec_id)
+        if stored is None or not current.compatible_with(stored):
+            raise ValueError("keyed write cannot mix incompatible live partition specs")
+        if _partition_identity(task.file.partition) == target:
+            yield task
+
+
+def _scoped_partition_scan(scan: Any, table: Any, partition: Mapping[str, Any] | None) -> Any:
+    """Push one exact transformed partition into local manifest planning."""
+    if partition is None:
+        return scan
+    from pyiceberg.expressions import And
+
+    current = table.spec()
+    exact = _partition_value_filter(partition)
+    for spec_id, stored in table.metadata.specs().items():
+        if current.compatible_with(stored):
+            scan.partition_filters[spec_id] = And(scan.partition_filters[spec_id], exact)
+    return scan
 
 
 def _ensure_name_mapping(transaction: Any) -> None:
@@ -3213,7 +3515,9 @@ def _partition_key(table: Any, partition: Mapping[str, Any]) -> Any:
 def _partition_data_files(
     table: Any, replacements: Sequence[_StagedPartition], reference: str
 ) -> list[Any]:
-    """Live data files whose current-spec partition is being replaced."""
+    """Live data files from manifests that can contain a replaced partition."""
+    from pyiceberg.expressions import Or
+    from pyiceberg.expressions.visitors import manifest_evaluator
     from pyiceberg.manifest import DataFileContent, ManifestContent
 
     current = table.spec()
@@ -3224,17 +3528,27 @@ def _partition_data_files(
     snapshot = table.metadata.snapshot_by_name(reference)
     if snapshot is None:
         return []
+    filters = [_partition_value_filter(replacement.partition) for replacement in replacements]
+    partition_filter = functools.reduce(Or, filters) if len(filters) > 1 else filters[0]
+    specs = table.metadata.specs()
+    evaluators: dict[int, Callable[[Any], bool]] = {}
     found = []
     for manifest in snapshot.manifests(io=table.io):
         if manifest.content != ManifestContent.DATA:
             continue
-        stored = table.metadata.specs()[manifest.partition_spec_id]
+        stored = specs[manifest.partition_spec_id]
+        if not current.compatible_with(stored):
+            raise ValueError("partition overwrite cannot mix incompatible live partition specs")
+        evaluator = evaluators.setdefault(
+            stored.spec_id,
+            manifest_evaluator(stored, table.schema(), partition_filter),
+        )
+        if not evaluator(manifest):
+            continue
         for entry in manifest.fetch_manifest_entry(io=table.io, discard_deleted=True):
             data_file = entry.data_file
             if data_file.content != DataFileContent.DATA:
                 continue
-            if not current.compatible_with(stored):
-                raise ValueError("partition overwrite cannot mix incompatible live partition specs")
             if _partition_identity(data_file.partition) in targets:
                 found.append(data_file)
     return found
@@ -3440,6 +3754,11 @@ def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> 
     return functools.reduce(And, terms)
 
 
+def _partition_value_filter(partition: Mapping[str, Any]) -> Any:
+    """An exact predicate over a partition struct's own field names."""
+    return _partition_filter(partition, [(name, name) for name in partition])
+
+
 def _always_true() -> Any:
     from pyiceberg.expressions import AlwaysTrue
 
@@ -3472,3 +3791,52 @@ def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int
     if isinstance(older_than, datetime.timedelta):
         older_than = datetime.datetime.now(datetime.UTC) - older_than
     return int(older_than.timestamp() * 1000)
+
+
+def _expiry_delta(value: Any) -> datetime.timedelta:
+    """An Iceberg millisecond retention property as a non-negative duration."""
+    try:
+        milliseconds = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{SNAPSHOT_MAX_AGE} must be a whole number of milliseconds") from None
+    if milliseconds < 0:
+        raise ValueError(f"{SNAPSHOT_MAX_AGE} cannot be negative")
+    return datetime.timedelta(milliseconds=milliseconds)
+
+
+def _checked_expiry_delta(value: datetime.timedelta) -> datetime.timedelta:
+    """A non-negative relative retention at Iceberg's millisecond precision."""
+    if value < datetime.timedelta(0):
+        raise ValueError("snapshot_expiry cannot be a negative duration")
+    millisecond = datetime.timedelta(milliseconds=1)
+    return millisecond * -(-value // millisecond)
+
+
+def _expiry_value(value: SnapshotExpiry, table: Any) -> datetime.datetime | datetime.timedelta:
+    """A relative, absolute, or table-configured expiry declaration."""
+    if value is None:
+        from pyiceberg.table import TableProperties
+        from pyiceberg.utils.properties import property_as_int
+
+        value = datetime.timedelta(
+            milliseconds=property_as_int(
+                table.properties,
+                TableProperties.MAX_SNAPSHOT_AGE_MS,
+                TableProperties.MAX_SNAPSHOT_AGE_MS_DEFAULT,
+            )
+        )
+    if isinstance(value, datetime.timedelta):
+        return _checked_expiry_delta(value)
+    from rekep.times import datetime_of
+
+    cutoff = datetime_of(value)
+    if cutoff is None:
+        raise ValueError(f"snapshot_expiry={value!r} is not a datetime")
+    return cutoff
+
+
+def _expiry_cutoff(value: datetime.datetime | datetime.timedelta) -> datetime.datetime:
+    """A validated expiry declaration as one absolute UTC cutoff."""
+    if isinstance(value, datetime.timedelta):
+        return datetime.datetime.now(datetime.UTC) - value
+    return value

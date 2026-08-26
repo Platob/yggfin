@@ -106,7 +106,11 @@ def iceberg_sort_order(
     from pyiceberg.table.sorting import NullOrder, SortDirection, SortField, SortOrder
     from pyiceberg.transforms import IdentityTransform
 
-    declared = source.sort_keys() if sort_by is None else dict.fromkeys(sort_by, "ascending")
+    declared = (
+        {**dict.fromkeys(source.partition_keys(), "ascending"), **source.sort_keys()}
+        if sort_by is None
+        else dict.fromkeys(sort_by, "ascending")
+    )
     if not declared:
         return SortOrder()
     schema = schema if schema is not None else iceberg_schema(source)

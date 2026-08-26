@@ -183,7 +183,7 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
     assert side.description == "Side of order."
     assert side.fix["type"] == "char"
     assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert "Execution Report" in json.loads(side.fix["used_in"])
+    assert "ExecutionReport" in json.loads(side.fix["used_in"])
 
 
 def test_a_boolean_field_projects_to_arrow_bool(registry: FixtureRegistry) -> None:
@@ -227,7 +227,7 @@ def test_a_captured_page_fills_description_and_paragraph_values(
         "5": "Sell short",
         "6": "Sell short exempt",
     }
-    assert json.loads(side.fix["used_in"])[:2] == ["Indication of Interest", "Execution Report"]
+    assert json.loads(side.fix["used_in"])[:2] == ["IndicationofInterest", "ExecutionReport"]
 
 
 def test_a_captured_page_with_no_enumeration_still_has_its_prose(
@@ -237,7 +237,7 @@ def test_a_captured_page_with_no_enumeration_still_has_its_prose(
     account = captured[1]
     assert account.description == "Account mnemonic as agreed between broker and institution."
     assert "values" not in account.fix
-    assert "Order Cancel/Replace Request" in json.loads(account.fix["used_in"])
+    assert "OrderCancelReplaceRequest" in json.loads(account.fix["used_in"])
 
 
 def test_message_links_that_are_values_are_not_read_as_messages(
@@ -246,8 +246,8 @@ def test_message_links_that_are_values_are_not_read_as_messages(
     """MsgType lists its messages *as values*, and its own Used In is empty."""
     msg_type = captured[35]
     values = json.loads(msg_type.fix["values"])
-    assert values["0"] == "Heartbeat <0>"
-    assert values["D"] == "New Order - Single <D>"
+    assert values["0"] == "Heartbeat"
+    assert values["D"] == "NewOrderSingle"
     assert "used_in" not in msg_type.fix, "the value links belong to the enumeration"
 
 

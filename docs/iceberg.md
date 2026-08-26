@@ -63,12 +63,19 @@ Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested
 commit size. Schema additions are nullable and additive.
 
-Keyed writes push safe key ranges, including declared derived partition
-columns, into Iceberg planning. When the merge key contains or determines each
-identity partition column, overwrite reads only each touched partition,
-preserves its unmatched rows, and follows the bounded exact merge path. A key
-that may move between partitions uses that same path. Insert progressively
-removes stored keys and stops once none remain.
+Keyed writes scope primary and explicit merge keys by the table's transformed
+partition identity. Primary-key values are therefore unique within a partition;
+the same value in another partition is another row. The raw partition source is
+not row equality: two timestamps in the same `day(timestamp)` partition still
+name one key. Each bounded input chunk is split by transformed partition, and
+merge or insert plans, reads, and commits one touched partition at a time.
+Deletes use the matched stored row's source values, so their exact predicate
+cannot reach the same key in another partition.
+
+The default physical sort order starts with partition source columns before the
+declared sort keys. A transformed partition already decides file placement;
+ordering its source within that file keeps useful timestamp, truncated-value,
+or bucket-source locality instead of recording a constant transformed value.
 
 A complete partition replacement applies the table's transforms with Arrow,
 stages bounded local Parquet files, then copies them through the table's
@@ -99,7 +106,9 @@ epoch-second `int` need an explicit table migration or recreation. Recreate or
 rewrite every table using one of the six pipeline contracts, on every retained
 branch, before appending: an ordinary merge cannot migrate the renamed,
 rescaled, narrowed partition field. Dataset writes do not guess missing lineage
-or keep retired columns alive.
+or keep retired columns alive. Rebuild `logs.messages` as part of that cutover:
+its `hash` now identifies only the exact message payload, so it cannot be mixed
+with rows written by the previous provenance-framed identity.
 
 Every data verb accepts `branch`; reads also accept `snapshot_id`. `root`,
 `main`, and `master` are aliases for Iceberg's physical `main` ref, so task
@@ -161,8 +170,13 @@ logs.optimize(
 )
 ```
 
-Write streams do not run maintenance. Call these operations explicitly, or run
-the scheduled maintenance described below.
+After a successful outermost append, insert, merge, or overwrite, the writer
+expires old snapshots once. `snapshot_expiry` accepts a `timedelta` relative to
+now, a `datetime`, or a parseable instant string. When omitted, the dataset
+reads `history.expire.max-snapshot-age-ms` and then Iceberg's default. The
+checked-in project tasks set that table property to seven days. Writers do not
+compact or sweep files; call those operations explicitly, or run the scheduled
+maintenance described below.
 
 Snapshot expiration itself removes history from the current metadata JSON. It
 does not remove rows visible in a retained snapshot, but it permanently removes

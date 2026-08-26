@@ -225,7 +225,7 @@ def test_a_value_its_field_enumerates_reads_its_meaning(codec: FixCodec) -> None
     pairs = parse_arrow_array(pyarrow.array(["35=D|54=1|55=TTF|"]))
     stored = codec.into_kwargs(pairs, "4.4").to_pylist()[0]
     assert access.reading(stored, 54).meaning == "Buy"
-    assert access.reading(stored, 35).meaning == "NewOrderSingle <D>", (
+    assert access.reading(stored, 35).meaning == "NewOrderSingle", (
         "the newest version's spelling of the value"
     )
     assert access.reading(stored, 55).meaning is None, (

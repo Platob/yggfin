@@ -53,6 +53,16 @@ def hash_bytes(raw: bytes) -> int:
     return value - (1 << 64) if value >= (1 << 63) else value
 
 
+def hash_bytes_arrow(raw: Any) -> pyarrow.Array:
+    """Hash each unframed UTF-8 or binary value as one indivisible blob."""
+    if sys.byteorder != "little":
+        raise RuntimeError("hash_bytes_arrow requires a little-endian Arrow host; use hash_bytes")
+    binary = _binary(raw)
+    if isinstance(binary, pyarrow.Scalar):
+        binary = pyarrow.array([binary.as_py()], type=pyarrow.binary())
+    return _digested(binary)
+
+
 #: Cached prefixes cover nearly every market identity part.
 _PREFIXES = tuple(LENGTH.pack(size) for size in range(256))
 

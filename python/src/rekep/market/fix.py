@@ -555,11 +555,11 @@ class FixEvents(Convertible):
         handler = self.dictionary.handlers.get(kind)
         if handler == "entries":
             yield from self._entries(kind)
-        elif handler == "mass_quote":
+        elif handler == "massquote":
             yield from self._mass_quotes()
         elif handler == "quote":
             yield from self._quotes(kind)
-        elif handler == "execution_report":
+        elif handler == "executionreport":
             yield from self._reported()
         elif handler == "execution":
             yield self.into_execution()

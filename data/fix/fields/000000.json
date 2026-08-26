@@ -45,48 +45,15 @@
    "RegistrationInstructionsResponse",
    "Quote",
    "QuoteCancel",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Quote Status Request",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Order Mass Status Request",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Ack",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
-   "Bid Request",
-   "Registration Instructions",
-   "Registration Instructions Response",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "BidRequest",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "BidCompReqGrp",
@@ -238,11 +205,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
-   "List Status",
+   "ListStatus",
    "Allocation"
   ],
   "components": [
@@ -266,8 +229,7 @@
    "FIXT1.1"
   ],
   "used_in": [
-   "ResendRequest",
-   "Resend Request"
+   "ResendRequest"
   ]
  },
  "8": {
@@ -382,45 +344,19 @@
    "OrderMassCancelReport",
    "QuoteRequest",
    "SettlementInstructions",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Response",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Allocation Instruction",
-   "List Strike Price",
-   "List Status",
-   "Registration Instructions",
-   "Registration Instructions Response",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "AllocationReport",
+   "ConfirmationRequest",
+   "NewOrderList",
+   "AllocationInstruction",
+   "ListStrikePrice",
+   "ListStatus",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "InstrmtStrkPxGrp",
@@ -454,14 +390,12 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
    "Allocation",
-   "Bid Response"
+   "BidResponse"
   ],
   "components": [
    "CommissionData"
@@ -527,14 +461,12 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
    "Allocation",
-   "Bid Response"
+   "BidResponse"
   ],
   "components": [
    "CommissionData"
@@ -558,8 +490,7 @@
   "used_in": [
    "ExecutionReport",
    "ExecutionAcknowledgement",
-   "Execution Report",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp",
@@ -622,55 +553,20 @@
    "CrossOrderCancelReplaceRequest",
    "SecurityListRequest",
    "DerivativeSecurityListRequest",
-   "Execution Report",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Allocation Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Security Definition Request",
-   "Security Definition",
-   "New Order Single",
-   "Security Status Request",
-   "New Order List",
-   "Security Status",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Strike Price",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Derivative Security List Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "DerivativeSecurityList",
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "ListStrikePrice",
+   "QuoteRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Indication of Interest"
+   "IndicationofInterest"
   ],
   "components": [
    "InstrmtMDReqGrp",
@@ -709,8 +605,7 @@
    "FIXT1.1"
   ],
   "used_in": [
-   "ResendRequest",
-   "Resend Request"
+   "ResendRequest"
   ]
  },
  "17": {
@@ -735,19 +630,15 @@
    "TradeCaptureReportAck",
    "ExecutionAcknowledgement",
    "DontKnowTradeDK",
-   "Execution Report",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Allocation Instruction",
-   "Don't Know Trade",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "AllocationInstruction",
+   "DontKnowTrade",
    "Allocation"
   ],
   "components": [
@@ -1004,22 +895,11 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "NewOrderList",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -1046,8 +926,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "TrdCapRptSideGrp"
@@ -1091,14 +970,7 @@
    "3": "3"
   },
   "used_in": [
-   "Execution Report"
-  ],
-  "aliases": [
-   {
-    "name": "ExecTransType(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "ExecutionReport"
   ]
  },
  "21": {
@@ -1145,19 +1017,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -1311,32 +1172,32 @@
    "y": "Y"
   },
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -1345,11 +1206,6 @@
    {
     "name": "IDSource",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "IDSource prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -1377,27 +1233,17 @@
    "NewOrderSingle",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Response",
-   "New Order Single",
-   "New Order List",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "Indication of Interest"
+   "NewOrderList",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
+   "IndicationofInterest"
   ],
   "components": [
    "ListOrdGrp"
   ]
  },
  "24": {
-  "name": "IOIOthSvc (no longer used)",
+  "name": "IOIOthSvc",
   "tag": 24,
   "note": "no longer used",
   "type": "char",
@@ -1427,14 +1273,7 @@
    "b": "B"
   },
   "used_in": [
-   "Indication of Interest"
-  ],
-  "aliases": [
-   {
-    "name": "IOIOthSvc",
-    "source": "4.0",
-    "occurrences": 0
-   }
+   "IndicationofInterest"
   ]
  },
  "25": {
@@ -1472,8 +1311,8 @@
   },
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "26": {
@@ -1493,8 +1332,8 @@
   ],
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "27": {
@@ -1536,18 +1375,13 @@
   },
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "aliases": [
    {
     "name": "IOIShares",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "IOIShares prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -1587,8 +1421,8 @@
   },
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "29": {
@@ -1633,9 +1467,8 @@
   },
   "used_in": [
    "ExecutionReport",
-   "Execution Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -1666,12 +1499,8 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "31": {
@@ -1696,12 +1525,9 @@
    "ExecutionAcknowledgement",
    "SecurityStatus",
    "DontKnowTradeDK",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Security Status",
-   "Allocation Instruction",
-   "Don't Know Trade",
+   "AllocationReport",
+   "AllocationInstruction",
+   "DontKnowTrade",
    "Allocation"
   ],
   "components": [
@@ -1731,11 +1557,9 @@
    "TradeCaptureReportAck",
    "ExecutionAcknowledgement",
    "DontKnowTradeDK",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
-   "Don't Know Trade",
+   "AllocationReport",
+   "AllocationInstruction",
+   "DontKnowTrade",
    "Allocation"
   ],
   "components": [
@@ -1745,11 +1569,6 @@
    {
     "name": "LastShares",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "LastShares prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -1821,124 +1640,124 @@
    "FIXT1.1"
   ],
   "values": {
-   "0": "Heartbeat <0>",
-   "1": "TestRequest <1>",
-   "2": "ResendRequest <2>",
-   "3": "Reject <3>",
-   "4": "SequenceReset <4>",
-   "5": "Logout <5>",
-   "6": "IOI <6>",
-   "7": "Advertisement <7>",
-   "8": "ExecutionReport <8>",
-   "9": "OrderCancelReject <9>",
-   "A": "Logon <A>",
-   "AA": "DerivativeSecurityList <AA>",
-   "AB": "NewOrderMultileg <AB>",
-   "AC": "MultilegOrderCancelReplace <AC> (a.k.a. Multileg Order Modification Request)",
-   "AD": "TradeCaptureReportRequest <AD>",
-   "AE": "TradeCaptureReport <AE>",
-   "AF": "OrderMassStatusRequest <AF>",
-   "AG": "QuoteRequestReject <AG>",
-   "AH": "RFQRequest <AH>",
-   "AI": "QuoteStatusReport <AI>",
-   "AJ": "QuoteResponse <AJ>",
-   "AK": "Confirmation <AK>",
-   "AL": "PositionMaintenanceRequest <AL>",
-   "AM": "PositionMaintenanceReport <AM>",
-   "AN": "RequestForPositions <AN>",
-   "AO": "RequestForPositionsAck <AO>",
-   "AP": "PositionReport <AP>",
-   "AQ": "TradeCaptureReportRequestAck <AQ>",
-   "AR": "TradeCaptureReportAck <AR>",
-   "AS": "AllocationReport <AS> (aka Allocation Claim)",
-   "AT": "AllocationReportAck <AT> (aka Allocation Claim Ack)",
-   "AU": "ConfirmationAck <AU> (aka Affirmation)",
-   "AV": "SettlementInstructionRequest <AV>",
-   "AW": "AssignmentReport <AW>",
-   "AX": "CollateralRequest <AX>",
-   "AY": "CollateralAssignment <AY>",
-   "AZ": "CollateralResponse <AZ>",
-   "B": "News <B>",
-   "BA": "CollateralReport <BA>",
-   "BB": "CollateralInquiry <BB>",
-   "BC": "NetworkCounterpartySystemStatusRequest <BC>",
-   "BD": "NetworkCounterpartySystemStatusResponse <BD>",
-   "BE": "UserRequest <BE>",
-   "BF": "UserResponse <BF>",
-   "BG": "CollateralInquiryAck <BG>",
-   "BH": "ConfirmationRequest <BH>",
-   "BI": "TradingSessionListRequest <BI>",
-   "BJ": "TradingSessionList <BJ>",
-   "BK": "SecurityListUpdateReport <BK>",
-   "BL": "AdjustedPositionReport <BL>",
-   "BM": "AllocationInstructionAlert <BM>",
-   "BN": "ExecutionAcknowledgement <BN>",
-   "BO": "ContraryIntentionReport <BO>",
-   "BP": "SecurityDefinitionUpdateReport <BP>",
-   "BQ": "SettlementObligationReport <BP>",
-   "BR": "DerivativeSecurityListUpdateReport <BR>",
-   "BS": "TradingSessionListUpdateReport <BS>",
-   "BT": "MarketDefinitionRequest <BT>",
-   "BU": "MarketDefinition <BU>",
-   "BV": "MarketDefinitionUpdateReport <BV>",
-   "BW": "ApplicationMessageRequest <BW>",
-   "BX": "ApplicationMessageRequestAck <BX>",
-   "BY": "ApplicationMessageReport <BY>",
-   "BZ": "OrderMassActionReport <BZ>",
-   "C": "Email <C>",
-   "CA": "OrderMassActionRequest <CA>",
-   "CB": "UserNotification <CB>",
-   "CC": "StreamAssignmentRequest <CC>",
-   "CD": "StreamAssignmentReport <CD>",
-   "CE": "StreamAssignmentReportACK <CE>",
+   "0": "Heartbeat",
+   "1": "TestRequest",
+   "2": "ResendRequest",
+   "3": "Reject",
+   "4": "SequenceReset",
+   "5": "Logout",
+   "6": "IOI",
+   "7": "Advertisement",
+   "8": "ExecutionReport",
+   "9": "OrderCancelReject",
+   "A": "Logon",
+   "AA": "DerivativeSecurityList",
+   "AB": "NewOrderMultileg",
+   "AC": "MultilegOrderCancelReplace",
+   "AD": "TradeCaptureReportRequest",
+   "AE": "TradeCaptureReport",
+   "AF": "OrderMassStatusRequest",
+   "AG": "QuoteRequestReject",
+   "AH": "RFQRequest",
+   "AI": "QuoteStatusReport",
+   "AJ": "QuoteResponse",
+   "AK": "Confirmation",
+   "AL": "PositionMaintenanceRequest",
+   "AM": "PositionMaintenanceReport",
+   "AN": "RequestForPositions",
+   "AO": "RequestForPositionsAck",
+   "AP": "PositionReport",
+   "AQ": "TradeCaptureReportRequestAck",
+   "AR": "TradeCaptureReportAck",
+   "AS": "AllocationReport",
+   "AT": "AllocationReportAck",
+   "AU": "ConfirmationAck",
+   "AV": "SettlementInstructionRequest",
+   "AW": "AssignmentReport",
+   "AX": "CollateralRequest",
+   "AY": "CollateralAssignment",
+   "AZ": "CollateralResponse",
+   "B": "News",
+   "BA": "CollateralReport",
+   "BB": "CollateralInquiry",
+   "BC": "NetworkCounterpartySystemStatusRequest",
+   "BD": "NetworkCounterpartySystemStatusResponse",
+   "BE": "UserRequest",
+   "BF": "UserResponse",
+   "BG": "CollateralInquiryAck",
+   "BH": "ConfirmationRequest",
+   "BI": "TradingSessionListRequest",
+   "BJ": "TradingSessionList",
+   "BK": "SecurityListUpdateReport",
+   "BL": "AdjustedPositionReport",
+   "BM": "AllocationInstructionAlert",
+   "BN": "ExecutionAcknowledgement",
+   "BO": "ContraryIntentionReport",
+   "BP": "SecurityDefinitionUpdateReport",
+   "BQ": "SettlementObligationReport",
+   "BR": "DerivativeSecurityListUpdateReport",
+   "BS": "TradingSessionListUpdateReport",
+   "BT": "MarketDefinitionRequest",
+   "BU": "MarketDefinition",
+   "BV": "MarketDefinitionUpdateReport",
+   "BW": "ApplicationMessageRequest",
+   "BX": "ApplicationMessageRequestAck",
+   "BY": "ApplicationMessageReport",
+   "BZ": "OrderMassActionReport",
+   "C": "Email",
+   "CA": "OrderMassActionRequest",
+   "CB": "UserNotification",
+   "CC": "StreamAssignmentRequest",
+   "CD": "StreamAssignmentReport",
+   "CE": "StreamAssignmentReportACK",
    "CF": "PartyDetailsListRequest",
    "CG": "PartyDetailsListReport",
-   "D": "NewOrderSingle <D>",
-   "E": "NewOrderList <E>",
-   "F": "OrderCancelRequest <F>",
-   "G": "OrderCancel/ReplaceRequest <G>",
-   "H": "OrderStatusRequest <H>",
-   "J": "AllocationInstruction <J>",
-   "K": "ListCancelRequest <K>",
-   "L": "ListExecute <L>",
-   "M": "ListStatusRequest <M>",
-   "N": "ListStatus <N>",
-   "P": "AllocationInstructionAck <P>",
-   "Q": "DontKnowTrade <Q>",
-   "R": "QuoteRequest <R>",
-   "S": "Quote <S>",
-   "T": "SettlementInstructions <T>",
-   "V": "MarketDataRequest <V>",
-   "W": "MarketDataSnapshotFullRefresh <W>",
-   "X": "MarketDataIncrementalRefresh <X>",
-   "Y": "MarketDataRequestReject <Y>",
-   "Z": "QuoteCancel <Z>",
-   "a": "QuoteStatusRequest <a>",
-   "b": "MassQuoteAcknowledgement <b>",
-   "c": "SecurityDefinitionRequest <c>",
-   "d": "SecurityDefinition <d>",
-   "e": "SecurityStatusRequest <e>",
-   "f": "SecurityStatus <f>",
-   "g": "TradingSessionStatusRequest <g>",
-   "h": "TradingSessionStatus <h>",
-   "i": "MassQuote <i>",
-   "j": "BusinessMessageReject <j>",
-   "k": "BidRequest <k>",
-   "l": "BidResponse <l> (lowercase L)",
-   "m": "ListStrikePrice <m>",
-   "n": "XMLnonFIX <n>",
-   "o": "RegistrationInstructions <o>",
-   "p": "RegistrationInstructionsResponse <p>",
-   "q": "OrderMassCancelRequest <q>",
-   "r": "OrderMassCancelReport <r>",
-   "s": "NewOrderCross <s>",
-   "t": "CrossOrderCancelReplaceRequest <t>",
-   "u": "CrossOrderCancelRequest <u>",
-   "v": "SecurityTypeRequest <v>",
-   "w": "SecurityTypes <w>",
-   "x": "SecurityListRequest <x>",
-   "y": "SecurityList <y>",
-   "z": "DerivativeSecurityListRequest <z>"
+   "D": "NewOrderSingle",
+   "E": "NewOrderList",
+   "F": "OrderCancelRequest",
+   "G": "OrderCancelReplaceRequest",
+   "H": "OrderStatusRequest",
+   "J": "AllocationInstruction",
+   "K": "ListCancelRequest",
+   "L": "ListExecute",
+   "M": "ListStatusRequest",
+   "N": "ListStatus",
+   "P": "AllocationInstructionAck",
+   "Q": "DontKnowTrade",
+   "R": "QuoteRequest",
+   "S": "Quote",
+   "T": "SettlementInstructions",
+   "V": "MarketDataRequest",
+   "W": "MarketDataSnapshotFullRefresh",
+   "X": "MarketDataIncrementalRefresh",
+   "Y": "MarketDataRequestReject",
+   "Z": "QuoteCancel",
+   "a": "QuoteStatusRequest",
+   "b": "MassQuoteAcknowledgement",
+   "c": "SecurityDefinitionRequest",
+   "d": "SecurityDefinition",
+   "e": "SecurityStatusRequest",
+   "f": "SecurityStatus",
+   "g": "TradingSessionStatusRequest",
+   "h": "TradingSessionStatus",
+   "i": "MassQuote",
+   "j": "BusinessMessageReject",
+   "k": "BidRequest",
+   "l": "BidResponse",
+   "m": "ListStrikePrice",
+   "n": "XMLnonFIX",
+   "o": "RegistrationInstructions",
+   "p": "RegistrationInstructionsResponse",
+   "q": "OrderMassCancelRequest",
+   "r": "OrderMassCancelReport",
+   "s": "NewOrderCross",
+   "t": "CrossOrderCancelReplaceRequest",
+   "u": "CrossOrderCancelRequest",
+   "v": "SecurityTypeRequest",
+   "w": "SecurityTypes",
+   "x": "SecurityListRequest",
+   "y": "SecurityList",
+   "z": "DerivativeSecurityListRequest"
   },
   "value_names": {
    "0": "HEARTBEAT",
@@ -2128,7 +1947,7 @@
    "d": 410
   },
   "handlers": {
-   "8": "execution_report",
+   "8": "executionreport",
    "9": "order",
    "AE": "execution",
    "D": "order",
@@ -2140,7 +1959,7 @@
    "AJ": "quote",
    "S": "quote",
    "Z": "quote",
-   "i": "mass_quote",
+   "i": "massquote",
    "d": "instrument"
   },
   "order_states": {
@@ -2162,124 +1981,6 @@
    "jolokia"
   ],
   "translations": {
-   "heartbeat0": "0",
-   "testrequest1": "1",
-   "resendrequest2": "2",
-   "reject3": "3",
-   "sequencereset4": "4",
-   "logout5": "5",
-   "ioi6": "6",
-   "advertisement7": "7",
-   "executionreport8": "8",
-   "ordercancelreject9": "9",
-   "logona": "A",
-   "derivativesecuritylistaa": "AA",
-   "newordermultilegab": "AB",
-   "multilegordercancelreplaceacakamultilegordermodificationrequest": "AC",
-   "tradecapturereportrequestad": "AD",
-   "tradecapturereportae": "AE",
-   "ordermassstatusrequestaf": "AF",
-   "quoterequestrejectag": "AG",
-   "rfqrequestah": "AH",
-   "quotestatusreportai": "AI",
-   "quoteresponseaj": "AJ",
-   "confirmationak": "AK",
-   "positionmaintenancerequestal": "AL",
-   "positionmaintenancereportam": "AM",
-   "requestforpositionsan": "AN",
-   "requestforpositionsackao": "AO",
-   "positionreportap": "AP",
-   "tradecapturereportrequestackaq": "AQ",
-   "tradecapturereportackar": "AR",
-   "allocationreportasakaallocationclaim": "AS",
-   "allocationreportackatakaallocationclaimack": "AT",
-   "confirmationackauakaaffirmation": "AU",
-   "settlementinstructionrequestav": "AV",
-   "assignmentreportaw": "AW",
-   "collateralrequestax": "AX",
-   "collateralassignmentay": "AY",
-   "collateralresponseaz": "AZ",
-   "newsb": "B",
-   "collateralreportba": "BA",
-   "collateralinquirybb": "BB",
-   "networkcounterpartysystemstatusrequestbc": "BC",
-   "networkcounterpartysystemstatusresponsebd": "BD",
-   "userrequestbe": "BE",
-   "userresponsebf": "BF",
-   "collateralinquiryackbg": "BG",
-   "confirmationrequestbh": "BH",
-   "tradingsessionlistrequestbi": "BI",
-   "tradingsessionlistbj": "BJ",
-   "securitylistupdatereportbk": "BK",
-   "adjustedpositionreportbl": "BL",
-   "allocationinstructionalertbm": "BM",
-   "executionacknowledgementbn": "BN",
-   "contraryintentionreportbo": "BO",
-   "securitydefinitionupdatereportbp": "BP",
-   "settlementobligationreportbp": "BQ",
-   "derivativesecuritylistupdatereportbr": "BR",
-   "tradingsessionlistupdatereportbs": "BS",
-   "marketdefinitionrequestbt": "BT",
-   "marketdefinitionbu": "BU",
-   "marketdefinitionupdatereportbv": "BV",
-   "applicationmessagerequestbw": "BW",
-   "applicationmessagerequestackbx": "BX",
-   "applicationmessagereportby": "BY",
-   "ordermassactionreportbz": "BZ",
-   "emailc": "C",
-   "ordermassactionrequestca": "CA",
-   "usernotificationcb": "CB",
-   "streamassignmentrequestcc": "CC",
-   "streamassignmentreportcd": "CD",
-   "streamassignmentreportackce": "CE",
-   "partydetailslistrequest": "CF",
-   "partydetailslistreport": "CG",
-   "newordersingled": "D",
-   "neworderliste": "E",
-   "ordercancelrequestf": "F",
-   "ordercancelreplacerequestg": "G",
-   "orderstatusrequesth": "H",
-   "allocationinstructionj": "J",
-   "listcancelrequestk": "K",
-   "listexecutel": "L",
-   "liststatusrequestm": "M",
-   "liststatusn": "N",
-   "allocationinstructionackp": "P",
-   "dontknowtradeq": "Q",
-   "quoterequestr": "R",
-   "quotes": "S",
-   "settlementinstructionst": "T",
-   "marketdatarequestv": "V",
-   "marketdatasnapshotfullrefreshw": "W",
-   "marketdataincrementalrefreshx": "X",
-   "marketdatarequestrejecty": "Y",
-   "quotecancelz": "Z",
-   "quotestatusrequesta": "a",
-   "massquoteacknowledgementb": "b",
-   "securitydefinitionrequestc": "c",
-   "securitydefinitiond": "d",
-   "securitystatusrequeste": "e",
-   "securitystatusf": "f",
-   "tradingsessionstatusrequestg": "g",
-   "tradingsessionstatush": "h",
-   "massquotei": "i",
-   "businessmessagerejectj": "j",
-   "bidrequestk": "k",
-   "bidresponsellowercasel": "l",
-   "liststrikepricem": "m",
-   "xmlnonfixn": "n",
-   "registrationinstructionso": "o",
-   "registrationinstructionsresponsep": "p",
-   "ordermasscancelrequestq": "q",
-   "ordermasscancelreportr": "r",
-   "newordercrosss": "s",
-   "crossordercancelreplacerequestt": "t",
-   "crossordercancelrequestu": "u",
-   "securitytyperequestv": "v",
-   "securitytypesw": "w",
-   "securitylistrequestx": "x",
-   "securitylisty": "y",
-   "derivativesecuritylistrequestz": "z",
    "heartbeat": "0",
    "testrequest": "1",
    "resendrequest": "2",
@@ -2291,8 +1992,67 @@
    "executionreport": "8",
    "ordercancelreject": "9",
    "logon": "A",
+   "derivativesecuritylist": "AA",
+   "newordermultileg": "AB",
+   "multilegordercancelreplace": "AC",
+   "tradecapturereportrequest": "AD",
+   "tradecapturereport": "AE",
+   "ordermassstatusrequest": "AF",
+   "quoterequestreject": "AG",
+   "rfqrequest": "AH",
+   "quotestatusreport": "AI",
+   "quoteresponse": "AJ",
+   "confirmation": "AK",
+   "positionmaintenancerequest": "AL",
+   "positionmaintenancereport": "AM",
+   "requestforpositions": "AN",
+   "requestforpositionsack": "AO",
+   "positionreport": "AP",
+   "tradecapturereportrequestack": "AQ",
+   "tradecapturereportack": "AR",
+   "allocationreport": "AS",
+   "allocationreportack": "AT",
+   "confirmationack": "AU",
+   "settlementinstructionrequest": "AV",
+   "assignmentreport": "AW",
+   "collateralrequest": "AX",
+   "collateralassignment": "AY",
+   "collateralresponse": "AZ",
    "news": "B",
+   "collateralreport": "BA",
+   "collateralinquiry": "BB",
+   "networkcounterpartysystemstatusrequest": "BC",
+   "networkcounterpartysystemstatusresponse": "BD",
+   "userrequest": "BE",
+   "userresponse": "BF",
+   "collateralinquiryack": "BG",
+   "confirmationrequest": "BH",
+   "tradingsessionlistrequest": "BI",
+   "tradingsessionlist": "BJ",
+   "securitylistupdatereport": "BK",
+   "adjustedpositionreport": "BL",
+   "allocationinstructionalert": "BM",
+   "executionacknowledgement": "BN",
+   "contraryintentionreport": "BO",
+   "securitydefinitionupdatereport": "BP",
+   "settlementobligationreport": "BQ",
+   "derivativesecuritylistupdatereport": "BR",
+   "tradingsessionlistupdatereport": "BS",
+   "marketdefinitionrequest": "BT",
+   "marketdefinition": "BU",
+   "marketdefinitionupdatereport": "BV",
+   "applicationmessagerequest": "BW",
+   "applicationmessagerequestack": "BX",
+   "applicationmessagereport": "BY",
+   "ordermassactionreport": "BZ",
    "email": "C",
+   "ordermassactionrequest": "CA",
+   "usernotification": "CB",
+   "streamassignmentrequest": "CC",
+   "streamassignmentreport": "CD",
+   "streamassignmentreportack": "CE",
+   "partydetailslistrequest": "CF",
+   "partydetailslistreport": "CG",
    "newordersingle": "D",
    "neworderlist": "E",
    "ordercancelrequest": "F",
@@ -2314,7 +2074,7 @@
    "marketdatarequestreject": "Y",
    "quotecancel": "Z",
    "quotestatusrequest": "a",
-   "massquoteack": "b",
+   "massquoteacknowledgement": "b",
    "securitydefinitionrequest": "c",
    "securitydefinition": "d",
    "securitystatusrequest": "e",
@@ -2326,15 +2086,6 @@
    "bidrequest": "k",
    "bidresponse": "l",
    "liststrikeprice": "m",
-   "derivativesecuritylist": "AA",
-   "newordermultileg": "AB",
-   "multilegordercancelreplace": "AC",
-   "tradecapturereportrequest": "AD",
-   "tradecapturereport": "AE",
-   "ordermassstatusrequest": "AF",
-   "quoterequestreject": "AG",
-   "rfqrequest": "AH",
-   "quotestatusreport": "AI",
    "xmlnonfix": "n",
    "registrationinstructions": "o",
    "registrationinstructionsresponse": "p",
@@ -2348,54 +2099,8 @@
    "securitylistrequest": "x",
    "securitylist": "y",
    "derivativesecuritylistrequest": "z",
-   "quoteresponse": "AJ",
-   "confirmation": "AK",
-   "positionmaintenancerequest": "AL",
-   "positionmaintenancereport": "AM",
-   "requestforpositions": "AN",
-   "requestforpositionsack": "AO",
-   "positionreport": "AP",
-   "tradecapturereportrequestack": "AQ",
-   "tradecapturereportack": "AR",
-   "allocationreport": "AS",
-   "allocationreportack": "AT",
-   "confirmationack": "AU",
-   "settlementinstructionrequest": "AV",
-   "assignmentreport": "AW",
-   "collateralrequest": "AX",
-   "collateralassignment": "AY",
-   "collateralresponse": "AZ",
-   "collateralreport": "BA",
-   "collateralinquiry": "BB",
-   "networkcounterpartysystemstatusrequest": "BC",
-   "networkcounterpartysystemstatusresponse": "BD",
-   "userrequest": "BE",
-   "userresponse": "BF",
-   "collateralinquiryack": "BG",
-   "confirmationrequest": "BH",
-   "tradingsessionlistrequest": "BI",
-   "tradingsessionlist": "BJ",
-   "securitylistupdatereport": "BK",
-   "adjustedpositionreport": "BL",
-   "allocationinstructionalert": "BM",
+   "massquoteack": "b",
    "executionack": "BN",
-   "contraryintentionreport": "BO",
-   "securitydefinitionupdatereport": "BP",
-   "settlementobligationreport": "BQ",
-   "derivativesecuritylistupdatereport": "BR",
-   "tradingsessionlistupdatereport": "BS",
-   "marketdefinitionrequest": "BT",
-   "marketdefinition": "BU",
-   "marketdefinitionupdatereport": "BV",
-   "applicationmessagerequest": "BW",
-   "applicationmessagerequestack": "BX",
-   "applicationmessagereport": "BY",
-   "ordermassactionreport": "BZ",
-   "ordermassactionrequest": "CA",
-   "usernotification": "CB",
-   "streamassignmentrequest": "CC",
-   "streamassignmentreport": "CD",
-   "streamassignmentreportack": "CE",
    "marginrequirementinquiry": "CH",
    "marginrequirementinquiryack": "CI",
    "marginrequirementreport": "CJ",
@@ -2582,8 +2287,7 @@
    "FIXT1.1"
   ],
   "used_in": [
-   "SequenceReset",
-   "Sequence Reset"
+   "SequenceReset"
   ]
  },
  "37": {
@@ -2621,31 +2325,15 @@
    "OrderMassCancelReport",
    "CrossOrderCancelReplaceRequest",
    "CrossOrderCancelRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Allocation Instruction",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Multileg Order Cancel/Replace Request",
+   "AllocationReport",
+   "ConfirmationRequest",
+   "AllocationInstruction",
+   "DontKnowTrade",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation"
   ],
   "components": [
@@ -2675,17 +2363,17 @@
   ],
   "used_in": [
    "Confirmation",
-   "Allocation Report",
-   "Confirmation Request",
-   "Allocation Instruction",
-   "Quote Request Reject",
-   "Quote Request",
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Don't Know Trade"
+   "AllocationReport",
+   "ConfirmationRequest",
+   "AllocationInstruction",
+   "QuoteRequestReject",
+   "QuoteRequest",
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "DontKnowTrade"
   ],
   "components": [
    "OrdAllocGrp",
@@ -2798,10 +2486,7 @@
    "OrderCancelReject",
    "TradeCaptureReport",
    "TradeCaptureReportAck",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Trade Capture Report",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp",
@@ -2955,27 +2640,14 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "Order - List"
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "QuoteRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "OrderList"
   ],
   "components": [
    "ListOrdGrp",
@@ -3012,14 +2684,9 @@
    "MultilegOrderCancelReplace",
    "OrderCancelRequest",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Multileg Order Cancel/Replace",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Mass Cancel Report",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request"
+   "OrderMassCancelReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest"
   ],
   "components": [
    "AffectedOrdGrp",
@@ -3115,32 +2782,14 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Bid Response",
-   "List Strike Price",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "Indication of Interest"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "BidResponse",
+   "ListStrikePrice",
+   "QuoteRequest",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
+   "IndicationofInterest"
   ],
   "components": [
    "BidCompRspGrp",
@@ -3170,12 +2819,11 @@
   ],
   "used_in": [
    "Reject",
-   "BusinessMessageReject",
-   "Business Message Reject"
+   "BusinessMessageReject"
   ]
  },
  "46": {
-  "name": "RelatdSym (no longer used)",
+  "name": "RelatdSym",
   "tag": 46,
   "note": "no longer used",
   "type": "String",
@@ -3193,17 +2841,10 @@
   "used_in": [
    "News",
    "Email"
-  ],
-  "aliases": [
-   {
-    "name": "RelatdSym",
-    "source": "4.0",
-    "occurrences": 0
-   }
   ]
  },
  "47": {
-  "name": "Rule80A(No Longer Used)",
+  "name": "Rule80A",
   "tag": 47,
   "note": "No Longer Used",
   "type": "char",
@@ -3336,27 +2977,10 @@
    "z": "Z"
   },
   "used_in": [
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request"
-  ],
-  "aliases": [
-   {
-    "name": "Rule80A",
-    "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "Rule80A(aka OrderCapacity)",
-    "source": "4.1",
-    "occurrences": 0
-   },
-   {
-    "name": "Rule80A(Deprecated)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest"
   ]
  },
  "48": {
@@ -3375,32 +2999,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -3447,7 +3071,7 @@
   ]
  },
  "51": {
-  "name": "SendingDate (no longer used)",
+  "name": "SendingDate",
   "tag": 51,
   "note": "no longer used",
   "type": "LocalMktDate",
@@ -3461,13 +3085,6 @@
    "5.0",
    "5.0.SP1",
    "5.0.SP2"
-  ],
-  "aliases": [
-   {
-    "name": "SendingDate (not used)",
-    "source": "4.0",
-    "occurrences": 0
-   }
   ]
  },
  "52": {
@@ -3517,25 +3134,12 @@
    "CollateralInquiryAck",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Allocation Instruction",
    "Allocation"
   ],
   "aliases": [
    {
     "name": "Shares",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "Shares prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -3666,50 +3270,25 @@
    "DontKnowTradeDK",
    "OrderMassCancelReport",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Order Mass Status Request",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Allocation Report",
-   "Settlement Instruction Request",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Allocation Instruction",
-   "Bid Request",
-   "Bid Response",
-   "List Strike Price",
-   "Order Mass Cancel Request",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "NewOrderList",
+   "BidRequest",
+   "BidResponse",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "SettlementInstructions",
+   "CrossOrderCancelRequest",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Indication of Interest",
-   "Quote Status Request",
-   "Security Definition Request",
-   "Security Definition"
+   "IndicationofInterest",
+   "QuoteStatusRequest",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition"
   ],
   "components": [
    "BidCompReqGrp",
@@ -3742,30 +3321,30 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -3831,7 +3410,7 @@
    "Reject",
    "Logout",
    "IOI",
-   "Advertisement <7",
+   "Advertisement",
    "ExecutionReport",
    "OrderCancelReject",
    "Logon",
@@ -3851,7 +3430,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "AssignmentReport",
    "CollateralRequest",
    "CollateralAssignment",
@@ -3902,82 +3481,27 @@
    "SecurityListRequest",
    "MarketDataRequestReject",
    "DerivativeSecurityListRequest",
-   "Advertisement",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
+   "DerivativeSecurityList",
+   "TradeCaptureReport",
    "News",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "Security Definition Request",
    "Email",
-   "Security Definition",
-   "New Order Single",
-   "New Order List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Trading Session Status",
-   "Business Message Reject",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Cancel Request",
-   "Bid Response",
-   "List Execute",
-   "List Strike Price",
-   "List Status Request",
-   "List Status",
-   "Allocation Instruction Ack",
-   "Order Mass Cancel Request",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "Security Type Request",
-   "Security Types",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Market Data Request Reject",
-   "Derivative Security List Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "NewOrderList",
+   "BidResponse",
+   "ListStrikePrice",
+   "ListStatus",
+   "DontKnowTrade",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "Allocation ACK",
-   "New Order - Cross",
-   "Indication of Interest",
-   "Quote Acknowledgement"
+   "AllocationACK",
+   "IndicationofInterest",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "BidCompRspGrp",
@@ -4084,21 +3608,10 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -4141,7 +3654,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "SettlementInstructionRequest",
    "CollateralRequest",
    "CollateralAssignment",
@@ -4176,55 +3689,17 @@
    "SettlementInstructions",
    "CrossOrderCancelRequest",
    "SecurityList",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "Settlement Instruction Request",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Allocation Instruction",
-   "List Cancel Request",
-   "List Execute",
-   "List Status",
-   "Allocation Instruction Ack",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "TradeCaptureReportRequest",
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "QuoteRequest",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "Allocation ACK",
-   "New Order - Cross",
-   "Indication of Interest"
+   "AllocationACK",
+   "IndicationofInterest"
   ],
   "components": [
    "ListOrdGrp",
@@ -4295,13 +3770,11 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Request",
-   "Indications of Interest",
-   "Indication of Interest"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "QuoteRequest",
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4409,29 +3882,13 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Bid Request",
-   "Bid Response",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "BidRequest",
+   "BidResponse",
+   "QuoteRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "BidCompReqGrp",
@@ -4491,37 +3948,15 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Allocation Instruction",
-   "Bid Request",
-   "Bid Response",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "BidRequest",
+   "BidResponse",
+   "QuoteRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "BidCompReqGrp",
@@ -4576,32 +4011,32 @@
    "cd": "CD"
   },
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -4633,24 +4068,13 @@
    "ListStrikePrice",
    "ListStatusRequest",
    "ListStatus",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Trade Capture Report",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Confirmation Request",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Cancel Request",
-   "Bid Response",
-   "List Execute",
-   "List Strike Price",
-   "List Status Request",
-   "List Status",
-   "New Order - List",
+   "AllocationReport",
+   "ConfirmationRequest",
+   "AllocationInstruction",
+   "BidRequest",
+   "BidResponse",
    "Allocation"
   ],
   "components": [
@@ -4678,8 +4102,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order List",
-   "New Order - List"
+   "NewOrderList"
   ],
   "components": [
    "ListOrdGrp"
@@ -4702,20 +4125,12 @@
   ],
   "used_in": [
    "NewOrderList",
-   "ListStatus",
-   "New Order List",
-   "List Status",
-   "New Order - List"
+   "ListStatus"
   ],
   "aliases": [
    {
     "name": "ListNoOrds",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "ListNoOrds)",
-    "source": "4.2",
     "occurrences": 0
    }
   ]
@@ -4736,9 +4151,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List",
-   "New Order - List"
+   "NewOrderList"
   ]
  },
  "70": {
@@ -4769,22 +4182,13 @@
    "OrderCancelReplaceRequest",
    "AllocationInstruction",
    "AllocationInstructionAck",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
+   "TradeCaptureReport",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
    "Allocation",
-   "Allocation ACK",
-   "Settlement Instructions"
+   "AllocationACK",
+   "SettlementInstructions"
   ],
   "components": [
    "ListOrdGrp",
@@ -4850,8 +4254,6 @@
    "AllocationReportAck",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -4874,8 +4276,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -4896,12 +4296,11 @@
   ],
   "used_in": [
    "Confirmation",
-   "Allocation Report",
-   "Confirmation Request",
-   "New Order List",
-   "Allocation Instruction",
-   "List Status",
-   "New Order - List",
+   "AllocationReport",
+   "ConfirmationRequest",
+   "NewOrderList",
+   "AllocationInstruction",
+   "ListStatus",
    "Allocation"
   ],
   "components": [
@@ -4930,8 +4329,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ],
   "aliases": [
@@ -4968,7 +4365,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "AllocationInstructionAlert",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
@@ -4978,28 +4375,14 @@
    "AllocationInstructionAck",
    "MarketDataSnapshotFullRefresh",
    "MarketDataIncrementalRefresh",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Cancel Request",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
+   "TradeCaptureReportRequest",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
    "Allocation",
-   "Allocation ACK",
-   "Settlement Instructions"
+   "AllocationACK",
+   "SettlementInstructions"
   ],
   "components": [
    "ListOrdGrp",
@@ -5025,23 +4408,16 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
+   "ExecutionReport",
+   "OrderCancelReject",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
    "Allocation",
-   "Allocation ACK",
-   "Settlement Instructions"
-  ],
-  "aliases": [
-   {
-    "name": "ExecBroker(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "AllocationACK",
+   "SettlementInstructions"
   ]
  },
  "77": {
@@ -5098,24 +4474,13 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "AllocationInstruction",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "ListOrdGrp",
@@ -5127,11 +4492,6 @@
    {
     "name": "OpenClose",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "OpenClose prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -5152,25 +4512,21 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "AllocationReportAck",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "AllocAckGrp",
@@ -5199,28 +4555,22 @@
    "Confirmation",
    "SettlementInstructionRequest",
    "ConfirmationRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Settlement Instruction Request",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "AllocationReportAck",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "AllocAckGrp",
@@ -5247,23 +4597,19 @@
   ],
   "used_in": [
    "Confirmation",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "AllocAckGrp",
@@ -5276,11 +4622,6 @@
    {
     "name": "AllocShares",
     "source": "4.0",
-    "occurrences": 0
-   },
-   {
-    "name": "AllocShares prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -5341,21 +4682,12 @@
    "NewOrderSingle",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "AllocationReport",
+   "NewOrderList",
+   "AllocationInstruction",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "AllocGrp",
@@ -5380,8 +4712,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "83": {
@@ -5400,8 +4731,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "MDFullGrp",
@@ -5426,7 +4756,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp"
@@ -5453,13 +4783,6 @@
   "components": [
    "DlvyInstGrp",
    "SettlInstructionsData"
-  ],
-  "aliases": [
-   {
-    "name": "NoDlvyInst(no longer used)",
-    "source": "4.1",
-    "occurrences": 0
-   }
   ]
  },
  "86": {
@@ -5480,13 +4803,6 @@
   ],
   "used_in": [
    "Allocation"
-  ],
-  "aliases": [
-   {
-    "name": "DlvyInst(no longer used)",
-    "source": "4.1",
-    "occurrences": 0
-   }
   ]
  },
  "87": {
@@ -5569,10 +4885,7 @@
    "AllocationReportAck",
    "AllocationReport",
    "AllocationInstructionAck",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction Ack",
-   "Allocation ACK"
+   "AllocationACK"
   ]
  },
  "88": {
@@ -5712,10 +5025,7 @@
    "AllocationReport",
    "AllocationReportAck",
    "AllocationInstructionAck",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction Ack",
-   "Allocation ACK"
+   "AllocationACK"
   ]
  },
  "89": {
@@ -5796,13 +5106,6 @@
   ],
   "used_in": [
    "Allocation"
-  ],
-  "aliases": [
-   {
-    "name": "BrokerOfCredit(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
   ]
  },
  "93": {
@@ -5882,8 +5185,7 @@
    "Logon",
    "News",
    "UserRequest",
-   "Email",
-   "User Request"
+   "Email"
   ]
  },
  "96": {
@@ -5906,8 +5208,7 @@
    "Logon",
    "News",
    "UserRequest",
-   "Email",
-   "User Request"
+   "Email"
   ]
  },
  "97": {
@@ -6030,19 +5331,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -6088,20 +5378,8 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Status Report",
-   "Quote Response",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -6178,8 +5456,7 @@
    "8": "8"
   },
   "used_in": [
-   "OrderCancelReject",
-   "Order Cancel Reject"
+   "OrderCancelReject"
   ]
  },
  "103": {
@@ -6318,8 +5595,7 @@
   },
   "used_in": [
    "ExecutionReport",
-   "Execution Report",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp"
@@ -6467,8 +5743,8 @@
   },
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "IOIQualGrp"
@@ -6492,18 +5768,11 @@
   ],
   "used_in": [
    "Allocation",
-   "New Order - List",
-   "List Cancel Request",
-   "List Execute",
-   "List Status Request",
-   "List Status"
-  ],
-  "aliases": [
-   {
-    "name": "WaveNo(no longer used)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "NewOrderList",
+   "ListCancelRequest",
+   "ListExecute",
+   "ListStatusRequest",
+   "ListStatus"
   ]
  },
  "106": {
@@ -6522,32 +5791,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -6569,32 +5838,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -6637,23 +5906,16 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
+   "ExecutionReport",
+   "OrderCancelReject",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
    "Allocation",
-   "Allocation ACK",
-   "Settlement Instructions"
-  ],
-  "aliases": [
-   {
-    "name": "ClientID(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "AllocationACK",
+   "SettlementInstructions"
   ]
  },
  "110": {
@@ -6682,21 +5944,10 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -6728,19 +5979,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -6764,8 +6004,7 @@
   ],
   "used_in": [
    "Heartbeat",
-   "TestRequest",
-   "Test Request"
+   "TestRequest"
   ]
  },
  "113": {
@@ -6800,8 +6039,7 @@
    "n": "N"
   },
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "114": {
@@ -6842,18 +6080,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -6927,24 +6155,9 @@
    "Quote",
    "CrossOrderCancelReplaceRequest",
    "QuoteCancel",
-   "Quote Status Request",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "New Order Single",
-   "New Order List",
-   "Mass Quote",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "Quote Acknowledgement"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "ListOrdGrp"
@@ -6971,18 +6184,15 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
+   "TradeCaptureReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -7007,10 +6217,9 @@
   "used_in": [
    "ExecutionReport",
    "Confirmation",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7051,23 +6260,13 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "AllocationReport",
+   "NewOrderList",
+   "AllocationInstruction",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "AllocGrp",
@@ -7119,19 +6318,10 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "BidRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Bid Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -7191,8 +6381,7 @@
    "y": "Y"
   },
   "used_in": [
-   "SequenceReset",
-   "Sequence Reset"
+   "SequenceReset"
   ]
  },
  "124": {
@@ -7211,14 +6400,14 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Allocation Instruction",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7259,14 +6448,7 @@
    "f": "F"
   },
   "used_in": [
-   "Order Cancel Request"
-  ],
-  "aliases": [
-   {
-    "name": "CxlType(no longer used)",
-    "source": "4.1",
-    "occurrences": 0
-   }
+   "OrderCancelRequest"
   ]
  },
  "126": {
@@ -7296,29 +6478,13 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Settlement Instruction Request",
-   "Collateral Request",
-   "Collateral Assignment",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "NEW Order - Single"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "QuoteRequest",
+   "SettlementInstructions",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -7386,7 +6552,7 @@
   "used_in": [
    "ExecutionAcknowledgement",
    "DontKnowTradeDK",
-   "Don't Know Trade"
+   "DontKnowTrade"
   ]
  },
  "128": {
@@ -7462,8 +6628,8 @@
   },
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "131": {
@@ -7489,13 +6655,7 @@
    "QuoteRequest",
    "Quote",
    "QuoteCancel",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Request",
-   "Quote Cancel",
-   "Quote Acknowledgement"
+   "QuoteAcknowledgement"
   ]
  },
  "132": {
@@ -7517,10 +6677,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -7546,10 +6704,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -7575,10 +6731,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -7604,10 +6758,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -7630,15 +6782,15 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
+   "ExecutionReport",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7661,15 +6813,15 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
+   "ExecutionReport",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7692,15 +6844,15 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
+   "ExecutionReport",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7852,15 +7004,15 @@
    "36": "36"
   },
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
+   "ExecutionReport",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -7888,21 +7040,12 @@
    "NewOrderSingle",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Request Reject",
-   "RFQ Request",
-   "New Order Single",
-   "New Order List",
-   "List Strike Price",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "QuoteRequestReject",
+   "RFQRequest",
+   "NewOrderList",
+   "ListStrikePrice",
+   "QuoteRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtStrkPxGrp",
@@ -8038,16 +7181,16 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Derivative Security List",
-   "Quote Request Reject",
-   "RFQ Request",
+   "DerivativeSecurityList",
+   "QuoteRequestReject",
+   "RFQRequest",
    "News",
    "Email",
-   "Quote Request",
-   "Market Data Request",
-   "Security List",
-   "Security Definition Request",
-   "Security Definition"
+   "QuoteRequest",
+   "MarketDataRequest",
+   "SecurityList",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition"
   ],
   "components": [
    "InstrmtGrp",
@@ -8117,8 +7260,8 @@
    "IOI",
    "Advertisement",
    "News",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "150": {
@@ -8268,11 +7411,7 @@
    "ExecutionReport",
    "TradeCaptureReport",
    "TradeCaptureReportAck",
-   "TradeCaptureReportRequest",
-   "Execution Report",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportRequest"
   ]
  },
  "151": {
@@ -8291,8 +7430,7 @@
   ],
   "used_in": [
    "ExecutionReport",
-   "Execution Report",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp",
@@ -8314,14 +7452,14 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Request Reject",
-   "Quote Request",
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Don't Know Trade"
+   "QuoteRequestReject",
+   "QuoteRequest",
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "DontKnowTrade"
   ],
   "components": [
    "OrderQtyData"
@@ -8342,8 +7480,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -8365,8 +7503,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -8390,10 +7528,9 @@
   "used_in": [
    "ExecutionReport",
    "Confirmation",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -8437,12 +7574,9 @@
    "QuoteResponse",
    "Confirmation",
    "Quote",
-   "Execution Report",
-   "Trade Capture Report",
-   "Quote Status Report",
-   "Quote Response",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -8471,10 +7605,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
    "Allocation"
   ],
   "components": [
@@ -8502,16 +7633,13 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
+   "TradeCaptureReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -8543,21 +7671,13 @@
    "CollateralInquiry",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Allocation Instruction",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
+   "TradeCaptureReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -8614,9 +7734,7 @@
   },
   "used_in": [
    "SettlementInstructions",
-   "New Order List",
-   "Settlement Instructions",
-   "New Order - List",
+   "NewOrderList",
    "Allocation"
   ],
   "components": [
@@ -8638,10 +7756,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
    "Allocation"
   ],
   "components": [
@@ -8664,7 +7782,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -8707,7 +7825,7 @@
    "t": "T"
   },
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -8767,7 +7885,7 @@
    "3": "3"
   },
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "DlvyInstGrp",
@@ -8822,14 +7940,7 @@
    "ptc": "PTC"
   },
   "used_in": [
-   "Settlement Instructions"
-  ],
-  "aliases": [
-   {
-    "name": "SettlLocation(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "SettlementInstructions"
   ]
  },
  "167": {
@@ -9566,38 +8677,34 @@
    "SettlementInstructionRequest",
    "AllocationInstructionAck",
    "SecurityTypeRequest",
-   "Allocation Report Ack",
-   "Settlement Instruction Request",
-   "Allocation Instruction Ack",
-   "Settlement Instructions",
-   "Security Type Request",
-   "Security Types",
-   "Indication of Interest",
+   "SettlementInstructions",
+   "SecurityTypes",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument",
@@ -9628,21 +8735,9 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Settlement Instruction Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "SettlementInstructions",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -9693,8 +8788,7 @@
   },
   "used_in": [
    "SettlementInstructionRequest",
-   "Settlement Instruction Request",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstructionsData"
@@ -9716,8 +8810,7 @@
   ],
   "used_in": [
    "SettlementInstructionRequest",
-   "Settlement Instruction Request",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstructionsData"
@@ -9739,8 +8832,7 @@
   ],
   "used_in": [
    "SettlementInstructionRequest",
-   "Settlement Instruction Request",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstructionsData"
@@ -9785,7 +8877,7 @@
    "3": "3"
   },
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstructionsData"
@@ -9807,7 +8899,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "174": {
@@ -9826,7 +8918,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "175": {
@@ -9845,7 +8937,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "176": {
@@ -9864,7 +8956,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "177": {
@@ -9883,7 +8975,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "178": {
@@ -9902,7 +8994,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "179": {
@@ -9921,7 +9013,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "180": {
@@ -9940,7 +9032,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "181": {
@@ -9959,7 +9051,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "182": {
@@ -9978,7 +9070,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "183": {
@@ -9997,7 +9089,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "184": {
@@ -10016,7 +9108,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "185": {
@@ -10035,7 +9127,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "186": {
@@ -10054,7 +9146,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "187": {
@@ -10073,7 +9165,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "188": {
@@ -10094,10 +9186,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -10122,10 +9212,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -10150,10 +9238,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -10178,10 +9264,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -10210,20 +9294,13 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "Quote",
-   "Execution Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Quote Request",
-   "New Order - Single",
-   "New Order - List",
-   "Order - Single",
-   "Order - List"
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "QuoteRequest",
+   "OrderSingle",
+   "OrderList"
   ],
   "components": [
    "ListOrdGrp",
@@ -10255,20 +9332,13 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "Quote",
-   "Execution Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Quote Request",
-   "New Order - List",
-   "New Order - Single",
-   "Order - Single",
-   "Order - List"
+   "QuoteRequestReject",
+   "MassQuoteAcknowledgement",
+   "NewOrderList",
+   "MassQuote",
+   "QuoteRequest",
+   "OrderSingle",
+   "OrderList"
   ],
   "components": [
    "ListOrdGrp",
@@ -10302,9 +9372,7 @@
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "195": {
@@ -10324,9 +9392,7 @@
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "196": {
@@ -10347,8 +9413,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -10384,8 +9448,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -10415,21 +9477,12 @@
    "ExecutionAcknowledgement",
    "DontKnowTradeDK",
    "OrderMassCancelReport",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
+   "TradeCaptureReport",
+   "AllocationReport",
+   "ConfirmationRequest",
    "Confirmation",
-   "Allocation Instruction",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
+   "AllocationInstruction",
+   "DontKnowTrade",
    "Allocation"
   ],
   "components": [
@@ -10457,8 +9510,8 @@
   ],
   "used_in": [
    "IOI",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "IOIQualGrp"
@@ -10479,32 +9532,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -10545,42 +9598,35 @@
    "3": "3"
   },
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
-  ],
-  "aliases": [
-   {
-    "name": "PutOrCall(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
   ]
  },
  "202": {
@@ -10598,32 +9644,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -10662,18 +9708,10 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -10710,16 +9748,9 @@
    "1": "1"
   },
   "used_in": [
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request"
-  ],
-  "aliases": [
-   {
-    "name": "CustomerOrFirm(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest"
   ]
  },
  "205": {
@@ -10738,39 +9769,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
-  ],
-  "aliases": [
-   {
-    "name": "MaturityDay(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ]
  },
  "206": {
@@ -10801,32 +9825,32 @@
    "09": "0-9"
   },
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -10849,32 +9873,32 @@
   "used_in": [
    "TradingSessionListRequest",
    "TradingSessionStatusRequest",
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument",
@@ -10912,8 +9936,8 @@
    "n": "N"
   },
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -10956,8 +9980,8 @@
    "4": "4"
   },
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -10986,19 +10010,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -11019,14 +10032,14 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "PegInstructions"
@@ -11089,7 +10102,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -11112,8 +10125,8 @@
    "IOI",
    "News",
    "Email",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "RoutingGrp"
@@ -11164,8 +10177,8 @@
    "IOI",
    "News",
    "Email",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "RoutingGrp"
@@ -11188,8 +10201,8 @@
    "IOI",
    "News",
    "Email",
-   "Indications of Interest",
-   "Indication of Interest"
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ],
   "components": [
    "RoutingGrp"
@@ -11209,7 +10222,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest"
+   "IndicationofInterest"
   ],
   "components": [
    "SpreadOrBenchmarkCurveData"
@@ -11218,11 +10231,6 @@
    {
     "name": "SpreadToBenchmark",
     "source": "4.2",
-    "occurrences": 0
-   },
-   {
-    "name": "SpreadToBenchmark prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -11289,15 +10297,8 @@
    "9": "9"
   },
   "used_in": [
-   "Indications of Interest",
-   "Indication of Interest"
-  ],
-  "aliases": [
-   {
-    "name": "Benchmark(Deprecated)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "IndicationsofInterest",
+   "IndicationofInterest"
   ]
  },
  "220": {
@@ -11493,32 +10494,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -11629,25 +10630,13 @@
    "OrderCancelReplaceRequest",
    "AllocationInstruction",
    "ListCancelRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Quote Request Reject",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "List Cancel Request",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "Allocation"
   ],
   "components": [
    "ListOrdGrp",
@@ -11672,8 +10661,7 @@
   "used_in": [
    "ExecutionReport",
    "Confirmation",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -11694,32 +10682,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -12381,10 +11369,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
    "Allocation"
   ],
   "components": [
@@ -12410,10 +11395,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
+   "TradeCaptureReport",
    "Allocation"
   ],
   "components": [
@@ -12764,8 +11746,7 @@
    "n": "N"
   },
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "259": {
@@ -12781,8 +11762,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "260": {
@@ -12798,8 +11778,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "262": {
@@ -12819,11 +11798,7 @@
    "MarketDataRequest",
    "MarketDataSnapshotFullRefresh",
    "MarketDataIncrementalRefresh",
-   "MarketDataRequestReject",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Market Data Request Reject"
+   "MarketDataRequestReject"
   ]
  },
  "263": {
@@ -12879,23 +11854,7 @@
    "MarketDataRequest",
    "SecurityTypes",
    "SecurityListRequest",
-   "DerivativeSecurityListRequest",
-   "Quote Status Request",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "RFQ Request",
-   "Request For Positions",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Collateral Inquiry",
-   "Security Definition Request",
-   "Security Status Request",
-   "Trading Session Status Request",
-   "Market Data Request",
-   "Security Types",
-   "Security List Request",
-   "Derivative Security List Request"
+   "DerivativeSecurityListRequest"
   ]
  },
  "264": {
@@ -12927,8 +11886,7 @@
   "used_in": [
    "SecurityStatus",
    "MarketDataRequest",
-   "MarketDataSnapshotFullRefresh",
-   "Market Data Request"
+   "MarketDataSnapshotFullRefresh"
   ],
   "components": [
    "MDIncGrp",
@@ -12963,8 +11921,7 @@
    "1": "1"
   },
   "used_in": [
-   "MarketDataRequest",
-   "Market Data Request"
+   "MarketDataRequest"
   ]
  },
  "266": {
@@ -12997,8 +11954,7 @@
    "n": "N"
   },
   "used_in": [
-   "MarketDataRequest",
-   "Market Data Request"
+   "MarketDataRequest"
   ]
  },
  "267": {
@@ -13015,7 +11971,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data Request"
+   "MarketDataRequest"
   ],
   "components": [
    "MDReqGrp"
@@ -13035,8 +11991,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13217,9 +12173,9 @@
    "i": "i"
   },
   "used_in": [
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13241,8 +12197,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13263,8 +12219,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "InstrmtMDReqGrp",
@@ -13287,8 +12243,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13309,8 +12265,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13353,8 +12309,8 @@
    "3": "3"
   },
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13376,8 +12332,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13596,8 +12552,8 @@
    "7": "7"
   },
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13937,8 +12893,8 @@
    "6": "6"
   },
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -13959,7 +12915,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14018,7 +12974,7 @@
    "5": "5"
   },
   "used_in": [
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp"
@@ -14038,7 +12994,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp"
@@ -14130,8 +13086,7 @@
    "d": "D"
   },
   "used_in": [
-   "MarketDataRequestReject",
-   "Market Data Request Reject"
+   "MarketDataRequestReject"
   ]
  },
  "282": {
@@ -14149,8 +13104,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14171,10 +13126,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "NetworkCounterpartySystemStatusRequest",
+   "NetworkCounterpartySystemStatusResponse",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "CompIDReqGrp",
@@ -14197,10 +13152,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "NetworkCounterpartySystemStatusRequest",
+   "NetworkCounterpartySystemStatusResponse",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "CompIDReqGrp",
@@ -14238,7 +13193,7 @@
    "1": "1"
   },
   "used_in": [
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp"
@@ -14291,9 +13246,8 @@
   },
   "used_in": [
    "MarketDataRequest",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14321,8 +13275,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14343,8 +13297,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14365,8 +13319,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14387,8 +13341,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -14431,9 +13385,7 @@
    "CollateralReport",
    "SecurityStatus",
    "MarketDataSnapshotFullRefresh",
-   "Security Status",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp"
@@ -14557,9 +13509,7 @@
    "SecurityDefinition",
    "SecurityStatus",
    "MarketDataSnapshotFullRefresh",
-   "Security Status",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp",
@@ -14581,8 +13531,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "MassQuote",
-   "Mass Quote"
+   "MassQuote"
   ]
  },
  "294": {
@@ -14599,8 +13548,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "MassQuote",
-   "Mass Quote"
+   "MassQuote"
   ]
  },
  "295": {
@@ -14617,10 +13565,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Cancel",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "QuoteCancel",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "QuotCxlEntriesGrp",
@@ -14642,9 +13590,9 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "QuotSetAckGrp",
@@ -14794,16 +13742,7 @@
   "used_in": [
    "QuoteStatusReport",
    "MassQuoteAcknowledgement",
-   "Quote Status Report",
-   "Mass Quote Acknowledgement",
-   "Quote Acknowledgement"
-  ],
-  "aliases": [
-   {
-    "name": "QuoteAckStatus prior to FIX 4.3)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "QuoteAcknowledgement"
   ]
  },
  "298": {
@@ -14863,8 +13802,7 @@
   "used_in": [
    "QuoteStatusReport",
    "MassQuoteAcknowledgement",
-   "QuoteCancel",
-   "Quote Cancel"
+   "QuoteCancel"
   ]
  },
  "299": {
@@ -14881,11 +13819,11 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "MDFullGrp",
@@ -15000,8 +13938,7 @@
   "used_in": [
    "MassQuoteAcknowledgement",
    "QuoteStatusReport",
-   "Mass Quote Acknowledgement",
-   "Quote Acknowledgement"
+   "QuoteAcknowledgement"
   ]
  },
  "301": {
@@ -15044,10 +13981,7 @@
    "MassQuote",
    "Quote",
    "QuoteCancel",
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Cancel",
-   "Quote Acknowledgement"
+   "QuoteAcknowledgement"
   ]
  },
  "302": {
@@ -15064,9 +13998,9 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "QuotSetAckGrp",
@@ -15104,9 +14038,9 @@
    "3": "3"
   },
   "used_in": [
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Request"
+   "QuoteRequestReject",
+   "RFQRequest",
+   "QuoteRequest"
   ],
   "components": [
    "QuotReqGrp",
@@ -15128,9 +14062,9 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "MassQuote",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "QuotSetAckGrp",
@@ -15158,10 +14092,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15170,11 +14104,6 @@
    {
     "name": "UnderlyingIDSource",
     "source": "4.2",
-    "occurrences": 0
-   },
-   {
-    "name": "UnderlyingIDSource prior to FIX 4.3)",
-    "source": "4.3",
     "occurrences": 0
    }
   ]
@@ -15193,10 +14122,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15216,10 +14145,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15239,10 +14168,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15262,10 +14191,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15312,10 +14241,10 @@
    "supra": "SUPRA"
   },
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15335,11 +14264,11 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote",
-   "Quote Cancel"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote",
+   "QuoteCancel"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15359,10 +14288,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15382,10 +14311,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15406,17 +14335,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
-  ],
-  "aliases": [
-   {
-    "name": "UnderlyingMaturityDay(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ]
  },
  "315": {
@@ -15433,20 +14355,13 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
-  ],
-  "aliases": [
-   {
-    "name": "UnderlyingPutOrCall(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
   ]
  },
  "316": {
@@ -15463,10 +14378,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15486,10 +14401,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -15509,18 +14424,11 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Security Definition Request",
-   "Security Definition"
+   "SecurityDefinitionRequest",
+   "SecurityDefinition"
   ],
   "components": [
    "UnderlyingInstrument"
-  ],
-  "aliases": [
-   {
-    "name": "Underlying Currency",
-    "source": "4.2",
-    "occurrences": 0
-   }
   ]
  },
  "319": {
@@ -15538,8 +14446,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Security Definition Request",
-   "Security Definition"
+   "SecurityDefinitionRequest",
+   "SecurityDefinition"
   ]
  },
  "320": {
@@ -15566,15 +14474,7 @@
    "SecurityTypes",
    "SecurityListRequest",
    "SecurityList",
-   "DerivativeSecurityListRequest",
-   "Derivative Security List",
-   "Security Definition Request",
-   "Security Definition",
-   "Security Type Request",
-   "Security Types",
-   "Security List Request",
-   "Security List",
-   "Derivative Security List Request"
+   "DerivativeSecurityListRequest"
   ]
  },
  "321": {
@@ -15645,8 +14545,7 @@
    "9": "9"
   },
   "used_in": [
-   "SecurityDefinitionRequest",
-   "Security Definition Request"
+   "SecurityDefinitionRequest"
   ]
  },
  "322": {
@@ -15669,11 +14568,7 @@
    "DerivativeSecurityListUpdateReport",
    "SecurityDefinition",
    "SecurityTypes",
-   "SecurityList",
-   "Derivative Security List",
-   "Security Definition",
-   "Security Types",
-   "Security List"
+   "SecurityList"
   ]
  },
  "323": {
@@ -15725,9 +14620,7 @@
   "used_in": [
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "SecurityTypes",
-   "Security Definition",
-   "Security Types"
+   "SecurityTypes"
   ]
  },
  "324": {
@@ -15745,9 +14638,7 @@
   ],
   "used_in": [
    "SecurityStatusRequest",
-   "SecurityStatus",
-   "Security Status Request",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "325": {
@@ -15784,12 +14675,7 @@
    "RequestForPositionsAck",
    "PositionReport",
    "SecurityStatus",
-   "TradingSessionStatus",
-   "Trade Capture Report",
-   "Request for Positions Ack",
-   "Position Report",
-   "Security Status",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -15926,8 +14812,7 @@
    "27": "27"
   },
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ],
   "components": [
    "MDFullGrp",
@@ -15992,8 +14877,7 @@
    "5": "5"
   },
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ],
   "components": [
    "MDFullGrp",
@@ -16030,8 +14914,7 @@
    "n": "N"
   },
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "329": {
@@ -16064,8 +14947,7 @@
    "n": "N"
   },
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "330": {
@@ -16082,8 +14964,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "331": {
@@ -16100,8 +14981,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "332": {
@@ -16118,8 +14998,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ],
   "components": [
    "MDFullGrp",
@@ -16140,8 +15019,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ],
   "components": [
    "MDFullGrp",
@@ -16180,8 +15058,7 @@
    "3": "3"
   },
   "used_in": [
-   "SecurityStatus",
-   "Security Status"
+   "SecurityStatus"
   ]
  },
  "335": {
@@ -16202,9 +15079,7 @@
    "TradingSessionList",
    "TradingSessionListUpdateReport",
    "TradingSessionStatusRequest",
-   "TradingSessionStatus",
-   "Trading Session Status Request",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ]
  },
  "336": {
@@ -16287,63 +15162,33 @@
    "QuoteCancel",
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "Execution Report",
-   "Quote Status Request",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Order Mass Status Request",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Security Definition Request",
-   "Security Definition",
-   "New Order Single",
-   "Security Status Request",
-   "New Order List",
-   "Security Status",
-   "Trading Session Status Request",
-   "Order Cancel/Replace Request",
-   "Trading Session Status",
-   "Mass Quote",
-   "Allocation Instruction",
-   "Bid Request",
-   "Bid Response",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Security Type Request",
-   "Market Data Request",
-   "Security Types",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Derivative Security List Request",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "DerivativeSecurityList",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "RFQRequest",
+   "PositionMaintenanceRequest",
+   "PositionMaintenanceReport",
+   "RequestForPositions",
+   "MassQuoteAcknowledgement",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "MassQuote",
+   "BidRequest",
+   "BidResponse",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Settlement Instructions",
-   "Quote Acknowledgement"
+   "SettlementInstructions",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "BidCompReqGrp",
@@ -16379,7 +15224,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -16422,9 +15267,7 @@
   "used_in": [
    "TradingSessionListRequest",
    "TradingSessionStatusRequest",
-   "TradingSessionStatus",
-   "Trading Session Status Request",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16464,9 +15307,7 @@
   "used_in": [
    "TradingSessionListRequest",
    "TradingSessionStatusRequest",
-   "TradingSessionStatus",
-   "Trading Session Status Request",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16520,8 +15361,7 @@
    "6": "6"
   },
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16541,8 +15381,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16562,8 +15401,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16583,8 +15421,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16604,8 +15441,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16625,8 +15461,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -16646,8 +15481,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -16698,32 +15533,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -16743,32 +15578,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "new Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "newOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -16788,32 +15623,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -16833,32 +15668,32 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Indication of Interest",
+   "IndicationofInterest",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Quote Acknowledgement",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "QuoteAcknowledgement",
    "News",
-   "Security Definition Request",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order - Single",
-   "Security Status Request",
-   "New Order - List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "MassQuote",
    "Allocation",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
    "Quote",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "Quote Cancel"
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "QuoteCancel"
   ],
   "components": [
    "Instrument"
@@ -16878,9 +15713,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List",
-   "New Order - List"
+   "NewOrderList"
   ]
  },
  "353": {
@@ -16897,9 +15730,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List",
-   "New Order - List"
+   "NewOrderList"
   ]
  },
  "354": {
@@ -16940,7 +15771,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "AssignmentReport",
    "CollateralRequest",
    "CollateralAssignment",
@@ -16991,80 +15822,26 @@
    "SecurityListRequest",
    "MarketDataRequestReject",
    "DerivativeSecurityListRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
+   "DerivativeSecurityList",
+   "TradeCaptureReport",
    "News",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "Security Definition Request",
    "Email",
-   "Security Definition",
-   "New Order Single",
-   "New Order List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Trading Session Status",
-   "Business Message Reject",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Cancel Request",
-   "Bid Response",
-   "List Execute",
-   "List Strike Price",
-   "List Status Request",
-   "List Status",
-   "Allocation Instruction Ack",
-   "Order Mass Cancel Request",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "Security Type Request",
-   "Security Types",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Market Data Request Reject",
-   "Derivative Security List Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "NewOrderList",
+   "BidResponse",
+   "ListStrikePrice",
+   "ListStatus",
+   "DontKnowTrade",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "Allocation ACK",
-   "New Order - Cross",
-   "Indication of Interest"
+   "AllocationACK",
+   "IndicationofInterest"
   ],
   "components": [
    "BidCompRspGrp",
@@ -17124,7 +15901,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "AssignmentReport",
    "CollateralRequest",
    "CollateralAssignment",
@@ -17175,80 +15952,26 @@
    "SecurityListRequest",
    "MarketDataRequestReject",
    "DerivativeSecurityListRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
+   "DerivativeSecurityList",
+   "TradeCaptureReport",
    "News",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "Security Definition Request",
    "Email",
-   "Security Definition",
-   "New Order Single",
-   "New Order List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Trading Session Status",
-   "Business Message Reject",
-   "Allocation Instruction",
-   "Bid Request",
-   "List Cancel Request",
-   "Bid Response",
-   "List Execute",
-   "List Strike Price",
-   "List Status Request",
-   "List Status",
-   "Allocation Instruction Ack",
-   "Order Mass Cancel Request",
-   "Don't Know Trade",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Settlement Instructions",
-   "Cross Order Cancel Request",
-   "Security Type Request",
-   "Security Types",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Market Data Request Reject",
-   "Derivative Security List Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "NewOrderList",
+   "BidResponse",
+   "ListStrikePrice",
+   "ListStatus",
+   "DontKnowTrade",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "Allocation ACK",
-   "New Order - Cross",
-   "Indication of Interest"
+   "AllocationACK",
+   "IndicationofInterest"
   ],
   "components": [
    "BidCompRspGrp",
@@ -17352,10 +16075,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
    "Allocation"
   ],
   "components": [
@@ -17377,10 +16100,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
    "Allocation"
   ],
   "components": [
@@ -17402,10 +16125,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -17425,10 +16148,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -17448,10 +16171,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -17471,10 +16194,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -17494,10 +16217,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
    "Allocation"
   ],
   "components": [
@@ -17519,7 +16242,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Mass Quote"
+   "MassQuote"
   ],
   "components": [
    "QuotSetAckGrp",
@@ -17600,8 +16323,8 @@
    "13": "13"
   },
   "used_in": [
-   "Mass Quote Acknowledgement",
-   "Quote Acknowledgement"
+   "MassQuoteAcknowledgement",
+   "QuoteAcknowledgement"
   ],
   "components": [
    "QuotEntryAckGrp"
@@ -17638,13 +16361,6 @@
    "5.0",
    "5.0.SP1",
    "5.0.SP2"
-  ],
-  "aliases": [
-   {
-    "name": "OnBehalfOfSendingTime(Deprecated)",
-    "source": "4.3",
-    "occurrences": 0
-   }
   ]
  },
  "371": {
@@ -17682,8 +16398,7 @@
   "used_in": [
    "BusinessMessageReject",
    "Reject",
-   "Logon",
-   "Business Message Reject"
+   "Logon"
   ],
   "components": [
    "MsgTypeGrp"
@@ -17827,8 +16542,7 @@
    "c": "C"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "375": {
@@ -17845,7 +16559,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -17873,22 +16587,10 @@
    "OrderCancelRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "NewOrderList",
+   "CrossOrderCancelRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -17932,21 +16634,12 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross",
-   "Order Cancel Request"
+   "TradeCaptureReport",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "OrderCancelRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -18060,9 +16753,7 @@
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "379": {
@@ -18079,8 +16770,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BusinessMessageReject",
-   "Business Message Reject"
+   "BusinessMessageReject"
   ]
  },
  "380": {
@@ -18148,8 +16838,7 @@
    "10": "10"
   },
   "used_in": [
-   "BusinessMessageReject",
-   "Business Message Reject"
+   "BusinessMessageReject"
   ]
  },
  "381": {
@@ -18173,10 +16862,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -18194,7 +16879,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -18288,22 +16973,18 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "PositionMaintenanceRequest",
+   "PositionMaintenanceReport",
+   "RequestForPositions",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MarketDataRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "TrdSessLstGrp",
@@ -18325,9 +17006,8 @@
   ],
   "used_in": [
    "TradingSessionStatus",
-   "Trading Session Status",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -18385,14 +17065,14 @@
    "7": "7"
   },
   "used_in": [
-   "Execution Report",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "DiscretionInstructions"
@@ -18412,14 +17092,14 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "DiscretionInstructions"
@@ -18449,12 +17129,7 @@
    "NewOrderList",
    "BidRequest",
    "BidResponse",
-   "ListExecute",
-   "New Order List",
-   "Bid Request",
-   "Bid Response",
-   "List Execute",
-   "New Order - List"
+   "ListExecute"
   ]
  },
  "391": {
@@ -18474,12 +17149,7 @@
    "NewOrderList",
    "BidRequest",
    "BidResponse",
-   "ListExecute",
-   "New Order List",
-   "Bid Request",
-   "Bid Response",
-   "List Execute",
-   "New Order - List"
+   "ListExecute"
   ]
  },
  "392": {
@@ -18496,8 +17166,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "393": {
@@ -18519,10 +17188,7 @@
    "DerivativeSecurityListUpdateReport",
    "BidRequest",
    "SecurityList",
-   "Derivative Security List",
-   "Bid Request",
-   "Security List",
-   "Security Definition"
+   "SecurityDefinition"
   ],
   "aliases": [
    {
@@ -18567,10 +17233,7 @@
   },
   "used_in": [
    "NewOrderList",
-   "BidRequest",
-   "New Order List",
-   "Bid Request",
-   "New Order - List"
+   "BidRequest"
   ]
  },
  "395": {
@@ -18587,8 +17250,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "396": {
@@ -18605,8 +17267,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "397": {
@@ -18623,8 +17284,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "398": {
@@ -18641,7 +17301,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18679,7 +17339,7 @@
    "3": "3"
   },
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18699,7 +17359,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18735,9 +17395,8 @@
    "2": "2"
   },
   "used_in": [
-   "New Order List",
-   "Bid Request",
-   "New Order - List"
+   "NewOrderList",
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp",
@@ -18758,7 +17417,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18778,7 +17437,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18798,7 +17457,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18818,7 +17477,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18838,8 +17497,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request",
-   "Bid Response"
+   "BidRequest",
+   "BidResponse"
   ],
   "components": [
    "BidCompRspGrp",
@@ -18860,7 +17519,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18880,7 +17539,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -18924,8 +17583,7 @@
    "4": "4"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "410": {
@@ -18942,8 +17600,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "411": {
@@ -18976,8 +17633,7 @@
    "n": "N"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "412": {
@@ -18994,8 +17650,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "413": {
@@ -19012,8 +17667,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "414": {
@@ -19052,10 +17706,7 @@
   },
   "used_in": [
    "NewOrderList",
-   "BidRequest",
-   "New Order List",
-   "Bid Request",
-   "New Order - List"
+   "BidRequest"
   ]
  },
  "415": {
@@ -19073,10 +17724,7 @@
   ],
   "used_in": [
    "NewOrderList",
-   "BidRequest",
-   "New Order List",
-   "Bid Request",
-   "New Order - List"
+   "BidRequest"
   ]
  },
  "416": {
@@ -19107,8 +17755,7 @@
    "2": "2"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "417": {
@@ -19125,8 +17772,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "418": {
@@ -19165,8 +17811,7 @@
    "j": "J"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ],
   "aliases": [
    {
@@ -19251,8 +17896,7 @@
    "z": "Z"
   },
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "420": {
@@ -19269,8 +17913,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request",
-   "Bid Response"
+   "BidRequest",
+   "BidResponse"
   ],
   "components": [
    "BidCompReqGrp",
@@ -19291,7 +17935,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Response"
+   "BidResponse"
   ],
   "components": [
    "BidCompRspGrp"
@@ -19311,8 +17955,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStrikePrice",
-   "List Strike Price"
+   "ListStrikePrice"
   ]
  },
  "423": {
@@ -19464,34 +18107,13 @@
    "NewOrderCross",
    "Quote",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Bid Response",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Indications of Interest",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "BidResponse",
+   "QuoteRequest",
+   "IndicationsofInterest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "BaseTradingRules",
@@ -19517,8 +18139,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "425": {
@@ -19535,8 +18156,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "426": {
@@ -19553,8 +18173,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "427": {
@@ -19598,19 +18217,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -19630,7 +18238,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "List Strike Price"
+   "ListStrikePrice"
   ],
   "components": [
    "InstrmtStrkPxGrp"
@@ -19680,8 +18288,7 @@
    "6": "6"
   },
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "430": {
@@ -19712,8 +18319,8 @@
    "2": "2"
   },
   "used_in": [
-   "Bid Request",
-   "Bid Response"
+   "BidRequest",
+   "BidResponse"
   ],
   "components": [
    "BidCompReqGrp",
@@ -19771,8 +18378,7 @@
    "7": "7"
   },
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "432": {
@@ -19797,22 +18403,10 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Assignment Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -19864,9 +18458,7 @@
    "5": "5"
   },
   "used_in": [
-   "NewOrderList",
-   "New Order List",
-   "New Order - List"
+   "NewOrderList"
   ]
  },
  "434": {
@@ -19899,8 +18491,7 @@
    "2": "2"
   },
   "used_in": [
-   "OrderCancelReject",
-   "Order Cancel Reject"
+   "OrderCancelReject"
   ]
  },
  "435": {
@@ -19917,10 +18508,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -19940,10 +18531,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Acknowledgement",
-   "Security Definition Request",
-   "Security Definition",
-   "Mass Quote"
+   "QuoteAcknowledgement",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "MassQuote"
   ],
   "components": [
    "UnderlyingInstrument"
@@ -19963,7 +18554,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -19983,7 +18574,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -20004,17 +18595,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request"
-  ],
-  "aliases": [
-   {
-    "name": "ClearingFirm(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest"
   ]
  },
  "440": {
@@ -20032,17 +18616,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request"
-  ],
-  "aliases": [
-   {
-    "name": "ClearingAccount(replaced)",
-    "source": "4.3",
-    "occurrences": 0
-   }
+   "ExecutionReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest"
   ]
  },
  "441": {
@@ -20059,7 +18636,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Bid Request"
+   "BidRequest"
   ],
   "components": [
    "BidDescReqGrp"
@@ -20105,11 +18682,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Request Ack"
+   "AllocationInstruction"
   ]
  },
  "443": {
@@ -20126,8 +18699,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "BidRequest",
-   "Bid Request"
+   "BidRequest"
   ]
  },
  "444": {
@@ -20144,8 +18716,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "445": {
@@ -20162,8 +18733,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "446": {
@@ -20180,8 +18750,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ListStatus",
-   "List Status"
+   "ListStatus"
   ]
  },
  "447": {
@@ -20358,12 +18927,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ]
  },
  "450": {
-  "name": "TotalVolumeTraded Time",
+  "name": "TotalVolumeTradedTime",
   "tag": 450,
   "note": "replaced",
   "type": "UTCTimeOnly",
@@ -20376,8 +18945,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ]
  },
  "451": {
@@ -20394,8 +18963,7 @@
   ],
   "used_in": [
    "MarketDataSnapshotFullRefresh",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDIncGrp"
@@ -21100,12 +19668,8 @@
    "SettlementInstructionRequest",
    "AllocationInstructionAck",
    "SecurityTypeRequest",
-   "Allocation Report Ack",
-   "Settlement Instruction Request",
-   "Allocation Instruction Ack",
-   "Settlement Instructions",
-   "Security Type Request",
-   "Security Types"
+   "SettlementInstructions",
+   "SecurityTypes"
   ],
   "components": [
    "Instrument",
@@ -21127,9 +19691,8 @@
   ],
   "used_in": [
    "SettlementInstructionRequest",
-   "Settlement Instruction Request",
-   "Settlement Instructions",
-   "Security Types"
+   "SettlementInstructions",
+   "SecurityTypes"
   ],
   "components": [
    "Instrument",
@@ -21254,17 +19817,17 @@
    "8": "8"
   },
   "used_in": [
-   "Indications of Interest",
-   "Execution Report",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "Quote Request Reject",
-   "New Order - Single",
-   "New Order - List",
-   "Order Cancel/Replace Request",
-   "Quote Request",
-   "New Order - Cross",
-   "Cross Order Cancel/Replace Request"
+   "IndicationsofInterest",
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplaceRequest",
+   "QuoteRequestReject",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ]
  },
  "466": {
@@ -21283,8 +19846,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation"
   ]
  },
@@ -21303,27 +19864,22 @@
   "used_in": [
    "Confirmation",
    "ConfirmationRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "AllocationReportAck",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "AllocAckGrp",
@@ -21444,7 +20000,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -21463,7 +20019,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -21482,7 +20038,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -21501,7 +20057,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -21578,7 +20134,7 @@
    "999": "999"
   },
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -21597,7 +20153,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -21662,19 +20218,7 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "MultilegOrderCancelReplaceRequest"
   ]
  },
  "481": {
@@ -21727,19 +20271,7 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "MultilegOrderCancelReplaceRequest"
   ]
  },
  "482": {
@@ -21755,7 +20287,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -21777,8 +20309,7 @@
    "ExecutionReport",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "MDIncGrp",
@@ -21838,8 +20369,7 @@
    "s": "S"
   },
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "485": {
@@ -21855,8 +20385,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "486": {
@@ -21872,7 +20401,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -21928,9 +20457,7 @@
   },
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "488": {
@@ -21946,7 +20473,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -21965,7 +20492,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -21984,7 +20511,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -22003,7 +20530,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -22116,7 +20643,7 @@
    "999": "999"
   },
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -22135,8 +20662,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "RegistrationInstructions",
-   "Registration Instructions"
+   "RegistrationInstructions"
   ]
  },
  "494": {
@@ -22159,19 +20685,8 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp"
@@ -22350,8 +20865,7 @@
    "999": "999"
   },
   "used_in": [
-   "RegistrationInstructions",
-   "Registration Instructions"
+   "RegistrationInstructions"
   ]
  },
  "496": {
@@ -22367,8 +20881,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "RegistrationInstructionsResponse",
-   "Registration Instructions Response"
+   "RegistrationInstructionsResponse"
   ]
  },
  "497": {
@@ -22414,7 +20927,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -22433,7 +20946,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"

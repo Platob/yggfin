@@ -29,6 +29,7 @@ from rekep.market.identity import (
     frame,
     hash_arrow,
     hash_bytes,
+    hash_bytes_arrow,
     hash_of,
     part_bytes,
 )
@@ -74,6 +75,7 @@ __all__ = [
     "fix_tag",
     "hash_arrow",
     "hash_bytes",
+    "hash_bytes_arrow",
     "hash_of",
     "market_tags",
     "part_bytes",

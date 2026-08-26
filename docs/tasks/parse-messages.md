@@ -14,7 +14,7 @@ Each `Message` row contains:
 - the protocol syntax in `protocol_code`, without field interpretation;
 - residual ordered `kwargs` parsed from key/value syntax, with repeated keys retained;
 - the unambiguous `MsgType` spelling and the registry-mapped `etype`;
-- `hash`, the stable identity of that source row.
+- `hash`, the XXH3-64 identity of the exact UTF-8 `message` payload.
 
 Registry names, protocol versions, components and typed values do not belong
 to this stage. Numeric keys remain the numbers the line wrote, named keys
@@ -35,10 +35,11 @@ retained `kwargs`; it does not split `message` again. A change to MsgType
 `event_types` is different because it changes stored `Message.etype`, so it
 requires rebuilding this table.
 
-The row identity includes its source location and row number, so identical
-payloads in two captures remain two source records. The table is sorted by
-`(unix, hash)` and partitioned from the recording time; a later parser may move
-its own event time without changing which source interval owns the row.
+The row identity hashes only `message`, without a composite frame, source path,
+or row number. Identical payloads therefore share an identity across captures.
+The table is sorted by `(unix, hash)` and partitioned from the recording time;
+a later parser may move its own event time without changing which source
+interval owns the row.
 
 Remote compressed captures stream directly through Arrow by default. Set
 `spill: true` to copy their raw compressed bytes to a uniquely owned temporary

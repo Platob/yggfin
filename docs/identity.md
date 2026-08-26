@@ -63,8 +63,10 @@ framing.
 
 ## Arrow and Python
 
-`hash_of(*parts)` implements the scalar contract. `hash_arrow(*columns)`
-produces the same values row by row:
+`hash_of(*parts)` implements the scalar composite contract and
+`hash_arrow(*columns)` produces the same values row by row.
+`hash_bytes_arrow(column)` is the vectorized unframed operation used for raw
+message strings:
 
 - dictionary arrays are decoded to values and extension arrays use storage;
 - integers are safely widened to `int64` and floats to `float64`;

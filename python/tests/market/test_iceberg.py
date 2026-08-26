@@ -86,14 +86,15 @@ def test_the_partition_is_the_hour_and_only_the_hour() -> None:
 
 
 def test_the_table_is_laid_out_in_time_inside_the_partition() -> None:
-    """A sort order is what turns a `unix BETWEEN` into a few files, not a full scan."""
+    """The partition scope precedes the event time used for range pruning."""
     schema = Order.into_field().into_iceberg_schema()
     order = Order.into_field().into_iceberg_sort_order(schema)
-    assert len(order.fields) == 1
-    sorted_on = order.fields[0]
-    assert schema.find_column_name(sorted_on.source_id) == "unix"
-    assert str(sorted_on.transform) == "identity"
-    assert sorted_on.direction.name.lower() == "asc"
+    assert [schema.find_column_name(field.source_id) for field in order.fields] == [
+        "unix_partition",
+        "unix",
+    ]
+    assert all(str(field.transform) == "identity" for field in order.fields)
+    assert all(field.direction.name.lower() == "asc" for field in order.fields)
 
 
 @pytest.mark.parametrize("shape", (Order, Book), ids=lambda cls: cls.__name__)

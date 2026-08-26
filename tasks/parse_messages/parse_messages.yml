@@ -41,6 +41,8 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
+  table_properties:
+    history.expire.max-snapshot-age-ms: "604800000"
   # root, main, and master name the same Iceberg root branch.
   branch: root
   # Retained so protocol parsers can be rerun without reading the source files.

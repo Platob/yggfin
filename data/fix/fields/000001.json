@@ -12,7 +12,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -31,7 +31,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -50,7 +50,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -69,7 +69,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -88,7 +88,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -107,7 +107,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -150,9 +150,7 @@
   },
   "used_in": [
    "PositionReport",
-   "RegistrationInstructionsResponse",
-   "Position Report",
-   "Registration Instructions Response"
+   "RegistrationInstructionsResponse"
   ]
  },
  "507": {
@@ -229,8 +227,7 @@
    "99": "99"
   },
   "used_in": [
-   "RegistrationInstructionsResponse",
-   "Registration Instructions Response"
+   "RegistrationInstructionsResponse"
   ]
  },
  "508": {
@@ -247,9 +244,7 @@
   ],
   "used_in": [
    "RegistrationInstructions",
-   "RegistrationInstructionsResponse",
-   "Registration Instructions",
-   "Registration Instructions Response"
+   "RegistrationInstructionsResponse"
   ]
  },
  "509": {
@@ -265,7 +260,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -291,7 +286,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -310,7 +305,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -329,7 +324,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDistInstGrp"
@@ -358,21 +353,7 @@
    "RegistrationInstructionsResponse",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Registration Instructions",
-   "Registration Instructions Response",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "MultilegOrderCancelReplaceRequest"
   ]
  },
  "514": {
@@ -407,9 +388,7 @@
   },
   "used_in": [
    "RegistrationInstructions",
-   "RegistrationInstructionsResponse",
-   "Registration Instructions",
-   "Registration Instructions Response"
+   "RegistrationInstructionsResponse"
   ]
  },
  "515": {
@@ -425,8 +404,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "516": {
@@ -476,8 +454,7 @@
    "t": "T"
   },
   "used_in": [
-   "RegistrationInstructions",
-   "Registration Instructions"
+   "RegistrationInstructions"
   ]
  },
  "518": {
@@ -493,8 +470,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report"
+   "ExecutionReport",
+   "TradeCaptureReport"
   ],
   "components": [
    "ContAmtGrp"
@@ -585,8 +562,8 @@
    "15": "15"
   },
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report"
+   "ExecutionReport",
+   "TradeCaptureReport"
   ],
   "components": [
    "ContAmtGrp"
@@ -605,8 +582,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report"
+   "ExecutionReport",
+   "TradeCaptureReport"
   ],
   "components": [
    "ContAmtGrp"
@@ -625,8 +602,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report"
+   "ExecutionReport",
+   "TradeCaptureReport"
   ],
   "components": [
    "ContAmtGrp"
@@ -730,7 +707,7 @@
    "22": "22"
   },
   "used_in": [
-   "Registration Instructions"
+   "RegistrationInstructions"
   ],
   "components": [
    "RgstDtlsGrp"
@@ -816,39 +793,19 @@
    "OrderStatusRequest",
    "OrderMassCancelRequest",
    "OrderMassCancelReport",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Allocation Instruction",
-   "List Strike Price",
-   "List Status",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "Allocation",
-   "New Order - Cross"
+   "AllocationReport",
+   "ConfirmationRequest",
+   "NewOrderList",
+   "AllocationInstruction",
+   "ListStrikePrice",
+   "ListStatus",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MultilegOrderCancelReplaceRequest",
+   "Allocation"
   ],
   "components": [
    "InstrmtStrkPxGrp",
@@ -879,11 +836,8 @@
    "ExecutionReport",
    "TradeCaptureReport",
    "TradeCaptureReportAck",
-   "Execution Report",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Instruction",
+   "AllocationReport",
+   "AllocationInstruction",
    "Allocation"
   ],
   "components": [
@@ -946,24 +900,13 @@
    "OrderCancelReplaceRequest",
    "QuoteRequest",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Response",
+   "TradeCaptureReport",
    "Confirmation",
-   "Trade Capture Report Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "CpctyConfGrp",
@@ -1078,22 +1021,13 @@
    "OrderCancelReplaceRequest",
    "QuoteRequest",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
+   "TradeCaptureReport",
    "Confirmation",
-   "Trade Capture Report Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "CpctyConfGrp",
@@ -1178,9 +1112,7 @@
   },
   "used_in": [
    "OrderMassCancelRequest",
-   "OrderMassCancelReport",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ]
  },
  "531": {
@@ -1258,8 +1190,7 @@
    "c": "C"
   },
   "used_in": [
-   "OrderMassCancelReport",
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ]
  },
  "532": {
@@ -1337,8 +1268,7 @@
    "11": "11"
   },
   "used_in": [
-   "OrderMassCancelReport",
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ]
  },
  "533": {
@@ -1355,8 +1285,7 @@
   ],
   "used_in": [
    "OrderMassActionReport",
-   "OrderMassCancelReport",
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ]
  },
  "534": {
@@ -1372,7 +1301,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ],
   "components": [
    "AffectedOrdGrp"
@@ -1391,7 +1320,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ],
   "components": [
    "AffectedOrdGrp"
@@ -1410,7 +1339,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Order Mass Cancel Report"
+   "OrderMassCancelReport"
   ],
   "components": [
    "AffectedOrdGrp"
@@ -1461,13 +1390,9 @@
    "MassQuote",
    "Quote",
    "QuoteCancel",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote",
-   "Quote Request"
+   "QuoteRequestReject",
+   "RFQRequest",
+   "QuoteRequest"
   ],
   "components": [
    "InstrmtMDReqGrp",
@@ -1525,8 +1450,6 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Instruction",
-   "Allocation Report",
    "Allocation"
   ]
  },
@@ -1621,19 +1544,10 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -1690,9 +1604,8 @@
   },
   "used_in": [
    "MarketDataRequest",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -1728,8 +1641,7 @@
    "n": "N"
   },
   "used_in": [
-   "MarketDataRequest",
-   "Market Data Request"
+   "MarketDataRequest"
   ]
  },
  "548": {
@@ -1748,12 +1660,7 @@
    "ExecutionReport",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "CrossOrderCancelRequest",
-   "Execution Report",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Cross"
+   "CrossOrderCancelRequest"
   ]
  },
  "549": {
@@ -1813,12 +1720,7 @@
    "ExecutionReport",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "CrossOrderCancelRequest",
-   "Execution Report",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Cross"
+   "CrossOrderCancelRequest"
   ]
  },
  "550": {
@@ -1854,11 +1756,7 @@
   "used_in": [
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "CrossOrderCancelRequest",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Cross"
+   "CrossOrderCancelRequest"
   ]
  },
  "551": {
@@ -1876,10 +1774,7 @@
   "used_in": [
    "ExecutionReport",
    "CrossOrderCancelReplaceRequest",
-   "CrossOrderCancelRequest",
-   "Execution Report",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request"
+   "CrossOrderCancelRequest"
   ]
  },
  "552": {
@@ -1909,11 +1804,10 @@
    "2": "2"
   },
   "used_in": [
-   "Trade Capture Report",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest"
   ],
   "components": [
    "SideCrossOrdCxlGrp",
@@ -1938,9 +1832,7 @@
   "used_in": [
    "Logon",
    "UserRequest",
-   "UserResponse",
-   "User Request",
-   "User Response"
+   "UserResponse"
   ],
   "components": [
    "UsernameGrp"
@@ -1961,8 +1853,7 @@
   ],
   "used_in": [
    "Logon",
-   "UserRequest",
-   "User Request"
+   "UserRequest"
   ]
  },
  "555": {
@@ -1980,56 +1871,55 @@
   "used_in": [
    "IOI",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Status Report",
-   "Quote Response",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "DerivativeSecurityList",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "RFQRequest",
+   "QuoteStatusReport",
+   "QuoteResponse",
    "Confirmation",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
+   "PositionMaintenanceRequest",
+   "PositionMaintenanceReport",
+   "RequestForPositions",
+   "RequestforPositionsAck",
+   "PositionReport",
+   "TradeCaptureReportRequestAck",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "MassQuoteAcknowledgement",
    "News",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Security Definition Request",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "Security Status Request",
-   "Security Status",
-   "Mass Quote",
-   "Allocation Instruction",
-   "Don't Know Trade",
-   "Quote Request",
-   "New Order Cross",
+   "SecurityDefinition",
+   "SecurityStatusRequest",
+   "SecurityStatus",
+   "MassQuote",
+   "AllocationInstruction",
+   "DontKnowTrade",
+   "QuoteRequest",
+   "NewOrderCross",
    "Quote",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "SecurityListRequest",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "QuoteCancel",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -2057,10 +1947,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Derivative Security List",
-   "Security Definition Request",
-   "Security Definition",
-   "Security List"
+   "DerivativeSecurityList",
+   "SecurityDefinitionRequest",
+   "SecurityDefinition",
+   "SecurityList"
   ],
   "components": [
    "InstrumentLeg"
@@ -2079,8 +1969,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SecurityTypes",
-   "Security Types"
+   "SecurityTypes"
   ],
   "aliases": [
    {
@@ -2103,7 +1992,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Security Types"
+   "SecurityTypes"
   ],
   "components": [
    "SecTypesGrp"
@@ -2158,9 +2047,7 @@
   },
   "used_in": [
    "SecurityListRequest",
-   "DerivativeSecurityListRequest",
-   "Security List Request",
-   "Derivative Security List Request"
+   "DerivativeSecurityListRequest"
   ]
  },
  "560": {
@@ -2210,9 +2097,7 @@
    "DerivativeSecurityList",
    "SecurityListUpdateReport",
    "DerivativeSecurityListUpdateReport",
-   "SecurityList",
-   "Derivative Security List",
-   "Security List"
+   "SecurityList"
   ]
  },
  "561": {
@@ -2230,8 +2115,7 @@
   "used_in": [
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "Security Definition",
-   "Security List"
+   "SecurityList"
   ],
   "components": [
    "BaseTradingRules",
@@ -2254,8 +2138,7 @@
   "used_in": [
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "Security Definition",
-   "Security List"
+   "SecurityList"
   ],
   "components": [
    "BaseTradingRules",
@@ -2299,10 +2182,7 @@
   "used_in": [
    "NewOrderMultileg",
    "MultilegOrderCancelReplace",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "MultilegOrderCancelReplaceRequest"
   ]
  },
  "564": {
@@ -2318,13 +2198,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -2345,13 +2224,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -2372,13 +2250,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrumentLeg",
@@ -2416,8 +2293,7 @@
    "99": "99"
   },
   "used_in": [
-   "TradingSessionStatus",
-   "Trading Session Status"
+   "TradingSessionStatus"
   ],
   "components": [
    "TrdSessLstGrp"
@@ -2438,10 +2314,7 @@
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
-   "TradeCaptureReportRequestAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Request Ack"
+   "TradeCaptureReportRequestAck"
   ]
  },
  "569": {
@@ -2485,9 +2358,7 @@
   },
   "used_in": [
    "TradeCaptureReportRequest",
-   "TradeCaptureReportRequestAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report Request Ack"
+   "TradeCaptureReportRequestAck"
   ]
  },
  "570": {
@@ -2523,10 +2394,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "571": {
@@ -2545,15 +2413,12 @@
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
    "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck"
   ],
   "components": [
    "TrdCollGrp"
@@ -2573,9 +2438,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "573": {
@@ -2621,16 +2484,10 @@
    "PositionReport",
    "TradeCaptureReportAck",
    "AllocationReportAck",
-   "Confirmation_Ack",
+   "ConfirmationAck",
    "AllocationInstructionAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Request For Positions",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "AllocGrp"
@@ -2809,10 +2666,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ],
   "components": [
    "MDIncGrp",
@@ -2849,7 +2703,7 @@
    "y": "Y"
   },
   "used_in": [
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -2869,9 +2723,9 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "TradeCaptureReport",
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "ClrInstGrp"
@@ -2958,9 +2812,9 @@
    "14": "14"
   },
   "used_in": [
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "TradeCaptureReport",
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "ClrInstGrp"
@@ -2983,8 +2837,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Trade Capture Report Request",
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -3006,8 +2859,7 @@
   "used_in": [
    "TradeCaptureReportRequest",
    "AllocationReport",
-   "Trade Capture Report Request",
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -3027,7 +2879,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Trade Capture Report Request"
+   "TradeCaptureReportRequest"
   ],
   "components": [
    "TrdCapDtGrp"
@@ -3126,43 +2978,14 @@
    "MassQuote",
    "Quote",
    "QuoteCancel",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Quote Status Request",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Ack",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Mass Quote",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -3222,23 +3045,12 @@
    "OrderCancelReplaceRequest",
    "AllocationInstruction",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Status Report",
-   "Quote Response",
-   "Trade Capture Report Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -3268,23 +3080,11 @@
    "OrderCancelRequest",
    "OrderCancelReplaceRequest",
    "OrderStatusRequest",
-   "Execution Report",
-   "Order Cancel Reject",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -3306,9 +3106,7 @@
   ],
   "used_in": [
    "ExecutionReport",
-   "OrderMassStatusRequest",
-   "Execution Report",
-   "Order Mass Status Request"
+   "OrderMassStatusRequest"
   ]
  },
  "585": {
@@ -3374,8 +3172,7 @@
    "10": "10"
   },
   "used_in": [
-   "OrderMassStatusRequest",
-   "Order Mass Status Request"
+   "OrderMassStatusRequest"
   ]
  },
  "586": {
@@ -3395,13 +3192,9 @@
    "MultilegOrderCancelReplace",
    "OrderCancelRequest",
    "OrderCancelReplaceRequest",
-   "Order Cancel Reject",
-   "Multileg Order Cancel/Replace",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "Multileg Order Cancel/Replace Request"
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "SideCrossOrdCxlGrp",
@@ -3421,19 +3214,18 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Trade Capture Report Ack",
-   "Quote Request",
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "TradeCaptureReportAck",
+   "QuoteRequest",
    "Quote",
-   "Security List",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "SecurityList",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -3466,18 +3258,17 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Trade Capture Report Ack",
-   "Quote Request",
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "TradeCaptureReportAck",
+   "QuoteRequest",
    "Quote",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -3533,19 +3324,10 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -3590,19 +3372,10 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -3642,21 +3415,12 @@
    "MultilegOrderCancelReplace",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -4296,62 +4060,32 @@
    "QuoteCancel",
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "Execution Report",
-   "Quote Status Request",
-   "Derivative Security List",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Order Mass Status Request",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Mass Quote Acknowledgement",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Security Definition Request",
-   "Security Definition",
-   "New Order Single",
-   "Security Status Request",
-   "New Order List",
-   "Security Status",
-   "Trading Session Status Request",
-   "Order Cancel/Replace Request",
-   "Trading Session Status",
-   "Mass Quote",
-   "Allocation Instruction",
-   "Bid Request",
-   "Bid Response",
-   "Order Mass Cancel Request",
-   "Order Mass Cancel Report",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Security Type Request",
-   "Market Data Request",
-   "Security Types",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Derivative Security List Request",
-   "Quote Cancel",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
+   "DerivativeSecurityList",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "RFQRequest",
+   "PositionMaintenanceRequest",
+   "PositionMaintenanceReport",
+   "RequestForPositions",
+   "MassQuoteAcknowledgement",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "MassQuote",
+   "BidRequest",
+   "BidResponse",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "MultilegOrderCancelReplaceRequest",
    "Allocation",
-   "New Order - Cross",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "BidCompReqGrp",
@@ -4493,8 +4227,6 @@
    "AllocationInstructionAlert",
    "AllocationInstruction",
    "AllocationInstructionAck",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
    "Allocation"
   ]
  },
@@ -4582,10 +4314,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4608,10 +4338,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4634,10 +4362,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4660,10 +4386,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4760,23 +4484,13 @@
    "TradeCaptureReportAck",
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request",
-   "New Order - Single",
-   "New Order - List",
-   "New Order - Cross"
+   "TradeCaptureReport",
+   "AllocationReport",
+   "NewOrderList",
+   "AllocationInstruction",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "AllocGrp",
@@ -4815,9 +4529,7 @@
   "used_in": [
    "ExecutionReport",
    "OrderCancelReject",
-   "Execution Report",
-   "Order Cancel Reject",
-   "List Status"
+   "ListStatus"
   ],
   "components": [
    "OrdListStatGrp"
@@ -4836,9 +4548,9 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "ExecutionReport",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -4872,8 +4584,7 @@
    "1": "1"
   },
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "639": {
@@ -4889,8 +4600,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "640": {
@@ -4908,13 +4618,9 @@
   "used_in": [
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
-   "Quote Request Reject",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Quote Request",
-   "New Order - Single",
-   "New Order - List"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "QuoteRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -4935,8 +4641,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "642": {
@@ -4955,10 +4660,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -4981,10 +4684,8 @@
    "QuoteStatusReport",
    "QuoteResponse",
    "Quote",
-   "Quote Status Report",
-   "Quote Response",
-   "Mass Quote Acknowledgement",
-   "Mass Quote"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotEntryAckGrp",
@@ -5006,10 +4707,7 @@
   "used_in": [
    "QuoteRequestReject",
    "RFQRequest",
-   "QuoteRequest",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Request"
+   "QuoteRequest"
   ]
  },
  "645": {
@@ -5027,9 +4725,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "646": {
@@ -5047,9 +4743,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "647": {
@@ -5067,9 +4761,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "648": {
@@ -5087,9 +4779,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "649": {
@@ -5106,9 +4796,7 @@
   ],
   "used_in": [
    "QuoteStatusRequest",
-   "QuoteStatusReport",
-   "Quote Status Request",
-   "Quote Status Report"
+   "QuoteStatusReport"
   ]
  },
  "650": {
@@ -5144,10 +4832,8 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction",
    "Allocation",
-   "Allocation ACK"
+   "AllocationACK"
   ]
  },
  "651": {
@@ -5163,8 +4849,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "652": {
@@ -5180,8 +4865,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "653": {
@@ -5230,13 +4914,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "New Order - Multileg",
-   "Multileg Order Cancel/Replace Request"
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "MultilegOrderCancelReplaceRequest"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -5259,7 +4942,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report"
+   "ExecutionReport"
   ],
   "components": [
    "ContraGrp"
@@ -5280,9 +4963,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "657": {
@@ -5300,9 +4981,7 @@
   "used_in": [
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "658": {
@@ -5387,8 +5066,7 @@
    "15": "15"
   },
   "used_in": [
-   "QuoteRequestReject",
-   "Quote Request Reject"
+   "QuoteRequestReject"
   ]
  },
  "659": {
@@ -5404,9 +5082,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "New Order - Cross"
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "SideCrossOrdModGrp"
@@ -5483,36 +5160,14 @@
    "RegistrationInstructionsResponse",
    "Quote",
    "QuoteCancel",
-   "Execution Report",
-   "Order Cancel Reject",
-   "Quote Status Request",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Order Mass Status Request",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Ack",
-   "Mass Quote Acknowledgement",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Mass Quote",
-   "Bid Request",
-   "Registration Instructions",
-   "Registration Instructions Response",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request",
-   "Quote Cancel"
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "TradeCaptureReportAck",
+   "NewOrderList",
+   "BidRequest",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "BidCompReqGrp",
@@ -5539,21 +5194,19 @@
    "Confirmation",
    "SettlementInstructionRequest",
    "ConfirmationRequest",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Settlement Instruction Request",
-   "Confirmation Request",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "AllocationReportAck",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "AllocAckGrp",
@@ -5606,8 +5259,7 @@
   ],
   "used_in": [
    "Confirmation",
-   "Confirmation_Ack",
-   "Confirmation Ack"
+   "ConfirmationAck"
   ]
  },
  "665": {
@@ -5745,10 +5397,8 @@
    "TradeCaptureReport",
    "TradeCaptureReportAck",
    "ExecutionAcknowledgement",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "ExecAllocGrp"
@@ -5766,8 +5416,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "LegPreAllocGrp"
@@ -5785,8 +5435,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "LegPreAllocGrp"
@@ -5804,8 +5454,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "LegPreAllocGrp"
@@ -5823,8 +5473,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "LegPreAllocGrp"
@@ -5842,8 +5492,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "LegPreAllocGrp"
@@ -5861,8 +5511,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -5958,7 +5608,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Response",
+   "QuoteResponse",
    "Quote"
   ],
   "components": [
@@ -6010,7 +5660,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Response",
+   "QuoteResponse",
    "Quote"
   ],
   "components": [
@@ -6048,7 +5698,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Response",
+   "QuoteResponse",
    "Quote"
   ],
   "components": [
@@ -6067,15 +5717,15 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Trade Capture Report Ack",
-   "Quote Request",
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "TradeCaptureReportAck",
+   "QuoteRequest",
    "Quote"
   ],
   "components": [
@@ -6151,17 +5801,17 @@
    "5": "5"
   },
   "used_in": [
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Trade Capture Report Ack",
-   "Quote Request",
+   "ExecutionReport",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "TradeCaptureReportAck",
+   "QuoteRequest",
    "Quote",
-   "Security List"
+   "SecurityList"
   ],
   "components": [
    "InstrmtLegExecGrp",
@@ -6296,8 +5946,8 @@
    "25": "25"
   },
   "used_in": [
-   "Quote Request Reject",
-   "Quote Request"
+   "QuoteRequestReject",
+   "QuoteRequest"
   ],
   "components": [
    "QuotReqGrp",
@@ -6319,10 +5969,7 @@
    "ExecutionReport",
    "QuoteStatusReport",
    "QuoteResponse",
-   "Quote",
-   "Execution Report",
-   "Quote Status Report",
-   "Quote Response"
+   "Quote"
   ]
  },
  "694": {
@@ -6402,8 +6049,7 @@
    "12": "12"
   },
   "used_in": [
-   "QuoteResponse",
-   "Quote Response"
+   "QuoteResponse"
   ]
  },
  "695": {
@@ -6418,10 +6064,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Quote Request",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "QuoteRequest",
    "Quote"
   ],
   "components": [
@@ -6502,9 +6148,7 @@
   "used_in": [
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "701": {
@@ -6994,9 +6638,7 @@
   },
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "710": {
@@ -7016,12 +6658,7 @@
    "RequestForPositions",
    "RequestForPositionsAck",
    "PositionReport",
-   "AssignmentReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report"
+   "AssignmentReport"
   ]
  },
  "711": {
@@ -7038,56 +6675,56 @@
   "used_in": [
    "IOI",
    "Advertisement",
-   "Execution Report",
-   "Quote Status Request",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "RFQ Request",
-   "Quote Status Report",
-   "Quote Response",
+   "ExecutionReport",
+   "QuoteStatusRequest",
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReport",
+   "QuoteRequestReject",
+   "RFQRequest",
+   "QuoteStatusReport",
+   "QuoteResponse",
    "Confirmation",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Position Report",
-   "Trade Capture Report Request Ack",
-   "Allocation Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
+   "PositionMaintenanceRequest",
+   "PositionMaintenanceReport",
+   "RequestForPositions",
+   "RequestforPositionsAck",
+   "PositionReport",
+   "TradeCaptureReportRequestAck",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
    "News",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "Security Definition Request",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "SecurityDefinitionRequest",
    "Email",
-   "Security Definition",
-   "New Order Single",
-   "Security Status Request",
-   "New Order List",
-   "Security Status",
-   "Order Cancel Request",
-   "Order Cancel/Replace Request",
-   "Order Status Request",
-   "Allocation Instruction",
-   "List Strike Price",
-   "Don't Know Trade",
-   "Quote Request",
-   "New Order Cross",
+   "SecurityDefinition",
+   "NewOrderSingle",
+   "SecurityStatusRequest",
+   "NewOrderList",
+   "SecurityStatus",
+   "OrderCancelRequest",
+   "OrderCancelReplaceRequest",
+   "OrderStatusRequest",
+   "AllocationInstruction",
+   "ListStrikePrice",
+   "DontKnowTrade",
+   "QuoteRequest",
+   "NewOrderCross",
    "Quote",
-   "Cross Order Cancel/Replace Request",
-   "Cross Order Cancel Request",
-   "Market Data Request",
-   "Market Data - Snapshot/Full Refresh",
-   "Security List Request",
-   "Market Data - Incremental Refresh",
-   "Security List",
-   "Quote Cancel"
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "SecurityListRequest",
+   "MarketDataIncrementalRefresh",
+   "SecurityList",
+   "QuoteCancel"
   ],
   "components": [
    "PosUndInstrmtGrp",
@@ -7135,9 +6772,7 @@
   },
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "713": {
@@ -7153,9 +6788,7 @@
   ],
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "714": {
@@ -7172,8 +6805,7 @@
   "used_in": [
    "PositionMaintenanceRequest",
    "PositionMaintenanceReport",
-   "AdjustedPositionReport",
-   "Position Maintenance Request"
+   "AdjustedPositionReport"
   ]
  },
  "715": {
@@ -7215,19 +6847,7 @@
    "SecurityDefinition",
    "AllocationInstruction",
    "MarketDataSnapshotFullRefresh",
-   "SecurityList",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Position Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "SecurityList"
   ]
  },
  "716": {
@@ -7277,17 +6897,7 @@
    "CollateralReport",
    "CollateralInquiry",
    "CollateralInquiryAck",
-   "AdjustedPositionReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Position Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "AdjustedPositionReport"
   ]
  },
  "717": {
@@ -7314,17 +6924,7 @@
    "CollateralAssignment",
    "CollateralReport",
    "CollateralInquiry",
-   "CollateralInquiryAck",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Request For Positions",
-   "Position Report",
-   "Assignment Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "718": {
@@ -7365,9 +6965,7 @@
   },
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "719": {
@@ -7383,8 +6981,7 @@
   ],
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request"
+   "PositionMaintenanceReport"
   ]
  },
  "720": {
@@ -7400,8 +6997,7 @@
   ],
   "used_in": [
    "PositionMaintenanceRequest",
-   "PositionMaintenanceReport",
-   "Position Maintenance Request"
+   "PositionMaintenanceReport"
   ]
  },
  "721": {
@@ -7419,10 +7015,7 @@
    "AdjustedPositionReport",
    "PositionMaintenanceReport",
    "RequestForPositionsAck",
-   "PositionReport",
-   "Position Maintenance Report",
-   "Request for Positions Ack",
-   "Position Report"
+   "PositionReport"
   ]
  },
  "722": {
@@ -7463,8 +7056,7 @@
    "4": "4"
   },
   "used_in": [
-   "PositionMaintenanceReport",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "723": {
@@ -7498,8 +7090,7 @@
    "99": "99"
   },
   "used_in": [
-   "PositionMaintenanceReport",
-   "Position Maintenance Report"
+   "PositionMaintenanceReport"
   ]
  },
  "724": {
@@ -7563,9 +7154,7 @@
    "RequestForPositions",
    "RequestForPositionsAck",
    "PositionReport",
-   "AdjustedPositionReport",
-   "Request For Positions",
-   "Position Report"
+   "AdjustedPositionReport"
   ]
  },
  "725": {
@@ -7602,14 +7191,7 @@
    "TradeCaptureReportRequestAck",
    "TradeCaptureReportAck",
    "CollateralInquiry",
-   "CollateralInquiryAck",
-   "Trade Capture Report Request",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "726": {
@@ -7630,14 +7212,7 @@
    "TradeCaptureReportRequestAck",
    "TradeCaptureReportAck",
    "CollateralInquiry",
-   "CollateralInquiryAck",
-   "Trade Capture Report Request",
-   "Request For Positions",
-   "Request for Positions Ack",
-   "Trade Capture Report Request Ack",
-   "Trade Capture Report Ack",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "727": {
@@ -7653,9 +7228,7 @@
   ],
   "used_in": [
    "RequestForPositionsAck",
-   "PositionReport",
-   "Request for Positions Ack",
-   "Position Report"
+   "PositionReport"
   ]
  },
  "728": {
@@ -7702,9 +7275,7 @@
   },
   "used_in": [
    "RequestForPositionsAck",
-   "PositionReport",
-   "Request for Positions Ack",
-   "Position Report"
+   "PositionReport"
   ]
  },
  "729": {
@@ -7737,8 +7308,7 @@
    "2": "2"
   },
   "used_in": [
-   "RequestForPositionsAck",
-   "Request for Positions Ack"
+   "RequestForPositionsAck"
   ]
  },
  "730": {
@@ -7755,9 +7325,7 @@
   "used_in": [
    "PositionReport",
    "AssignmentReport",
-   "AdjustedPositionReport",
-   "Position Report",
-   "Assignment Report"
+   "AdjustedPositionReport"
   ]
  },
  "731": {
@@ -7787,9 +7355,7 @@
   },
   "used_in": [
    "PositionReport",
-   "AssignmentReport",
-   "Position Report",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "732": {
@@ -7805,8 +7371,7 @@
   ],
   "used_in": [
    "AssignmentReport",
-   "Position Report",
-   "Assignment Report"
+   "PositionReport"
   ],
   "components": [
    "PosUndInstrmtGrp"
@@ -7824,7 +7389,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Position Report"
+   "PositionReport"
   ],
   "components": [
    "PosUndInstrmtGrp"
@@ -7844,8 +7409,7 @@
   "used_in": [
    "PositionReport",
    "AssignmentReport",
-   "AdjustedPositionReport",
-   "Position Report"
+   "AdjustedPositionReport"
   ]
  },
  "735": {
@@ -7860,10 +7424,10 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Quote Request Reject",
-   "Quote Status Report",
-   "Quote Response",
-   "Quote Request",
+   "QuoteRequestReject",
+   "QuoteStatusReport",
+   "QuoteResponse",
+   "QuoteRequest",
    "Quote"
   ],
   "components": [
@@ -7882,17 +7446,17 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderMultileg",
+   "MultilegOrderCancelReplace",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "AllocationReport",
+   "NewOrderSingle",
+   "NewOrderList",
+   "OrderCancelReplaceRequest",
+   "AllocationInstruction",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "AllocGrp",
@@ -7913,8 +7477,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "AllocGrp"
@@ -7937,10 +7501,7 @@
    "AllocationReport",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Allocation Instruction"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -7989,8 +7550,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "AllocGrp"
@@ -8008,8 +7569,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "AllocGrp"
@@ -8027,8 +7588,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "PositionReport",
-   "Position Report"
+   "PositionReport"
   ]
  },
  "744": {
@@ -8057,8 +7617,7 @@
    "p": "P"
   },
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "745": {
@@ -8073,8 +7632,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "746": {
@@ -8089,8 +7647,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "747": {
@@ -8119,8 +7676,7 @@
    "m": "M"
   },
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "748": {
@@ -8136,9 +7692,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportRequestAck",
-   "Trade Capture Report",
-   "Trade Capture Report Request Ack"
+   "TradeCaptureReportRequestAck"
   ]
  },
  "749": {
@@ -8197,8 +7751,7 @@
    "99": "99"
   },
   "used_in": [
-   "TradeCaptureReportRequestAck",
-   "Trade Capture Report Request Ack"
+   "TradeCaptureReportRequestAck"
   ]
  },
  "750": {
@@ -8231,8 +7784,7 @@
    "2": "2"
   },
   "used_in": [
-   "TradeCaptureReportRequestAck",
-   "Trade Capture Report Request Ack"
+   "TradeCaptureReportRequestAck"
   ]
  },
  "751": {
@@ -8287,8 +7839,7 @@
    "7": "7"
   },
   "used_in": [
-   "TradeCaptureReportAck",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "752": {
@@ -8322,7 +7873,7 @@
    "3": "3"
   },
   "used_in": [
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -8358,9 +7909,7 @@
   "used_in": [
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "755": {
@@ -8376,9 +7925,7 @@
   ],
   "used_in": [
    "AllocationReport",
-   "AllocationReportAck",
-   "Allocation Report",
-   "Allocation Report Ack"
+   "AllocationReportAck"
   ]
  },
  "756": {
@@ -8486,9 +8033,7 @@
   "used_in": [
    "SecurityTypeRequest",
    "DerivativeSecurityListRequest",
-   "Security Type Request",
-   "Security Types",
-   "Derivative Security List Request"
+   "SecurityTypes"
   ],
   "components": [
    "Instrument",
@@ -8537,8 +8082,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List"
+   "NewOrderList"
   ]
  },
  "766": {
@@ -8553,8 +8097,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List"
+   "NewOrderList"
   ]
  },
  "767": {
@@ -8569,8 +8112,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NewOrderList",
-   "New Order List"
+   "NewOrderList"
   ]
  },
  "768": {
@@ -8795,8 +8337,7 @@
   },
   "used_in": [
    "Confirmation",
-   "ConfirmationRequest",
-   "Confirmation Request"
+   "ConfirmationRequest"
   ]
  },
  "774": {
@@ -8880,8 +8421,7 @@
    "19": "19"
   },
   "used_in": [
-   "Confirmation_Ack",
-   "Confirmation Ack"
+   "ConfirmationAck"
   ]
  },
  "775": {
@@ -8926,16 +8466,9 @@
    "AllocationInstruction",
    "QuoteRequest",
    "Quote",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Allocation Report",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderList",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -8957,8 +8490,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Allocation Report Ack",
-   "Allocation Instruction Ack"
+   "AllocationReportAck",
+   "AllocationInstructionAck"
   ],
   "components": [
    "AllocAckGrp"
@@ -8976,8 +8509,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "SettlementInstructions",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "778": {
@@ -8992,7 +8524,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp"
@@ -9013,8 +8545,7 @@
    "TradeCaptureReport",
    "TradeCaptureReportAck",
    "SettlementInstructionRequest",
-   "Settlement Instruction Request",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ],
   "components": [
    "SettlInstGrp",
@@ -9060,8 +8591,8 @@
    "4": "4"
   },
   "used_in": [
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "AllocationInstruction"
   ],
   "components": [
    "AllocGrp"
@@ -9255,9 +8786,7 @@
   ],
   "used_in": [
    "ExecutionReport",
-   "OrderStatusRequest",
-   "Execution Report",
-   "Order Status Request"
+   "OrderStatusRequest"
   ]
  },
  "791": {
@@ -9273,9 +8802,7 @@
   ],
   "used_in": [
    "SettlementInstructionRequest",
-   "SettlementInstructions",
-   "Settlement Instruction Request",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "792": {
@@ -9312,8 +8839,7 @@
    "99": "99"
   },
   "used_in": [
-   "SettlementInstructions",
-   "Settlement Instructions"
+   "SettlementInstructions"
   ]
  },
  "793": {
@@ -9334,12 +8860,7 @@
    "ConfirmationRequest",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "AllocationInstructionAck",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Confirmation Request",
-   "Allocation Instruction",
-   "Allocation Instruction Ack"
+   "AllocationInstructionAck"
   ]
  },
  "794": {
@@ -9418,9 +8939,7 @@
   },
   "used_in": [
    "AllocationReport",
-   "AllocationReportAck",
-   "Allocation Report",
-   "Allocation Report Ack"
+   "AllocationReportAck"
   ]
  },
  "795": {
@@ -9435,8 +8954,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "AllocationReport",
-   "Allocation Report"
+   "AllocationReport"
   ]
  },
  "796": {
@@ -9475,9 +8993,7 @@
   "used_in": [
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "797": {
@@ -9495,9 +9011,7 @@
    "ExecutionReport",
    "TradeCaptureReport",
    "Confirmation",
-   "TradeCaptureReportAck",
-   "Execution Report",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "798": {
@@ -9552,8 +9066,7 @@
   },
   "used_in": [
    "Confirmation",
-   "ConfirmationRequest",
-   "Confirmation Request"
+   "ConfirmationRequest"
   ]
  },
  "799": {
@@ -9569,9 +9082,9 @@
   ],
   "used_in": [
    "Confirmation",
-   "Allocation Report",
-   "Confirmation Request",
-   "Allocation Instruction"
+   "AllocationReport",
+   "ConfirmationRequest",
+   "AllocationInstruction"
   ],
   "components": [
    "OrdAllocGrp"
@@ -9590,9 +9103,9 @@
   ],
   "used_in": [
    "Confirmation",
-   "Allocation Report",
-   "Confirmation Request",
-   "Allocation Instruction"
+   "AllocationReport",
+   "ConfirmationRequest",
+   "AllocationInstruction"
   ],
   "components": [
    "OrdAllocGrp"
@@ -10065,11 +9578,7 @@
    "AllocationReportAck",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "AllocationInstructionAck",
-   "Allocation Report",
-   "Allocation Report Ack",
-   "Allocation Instruction",
-   "Allocation Instruction Ack"
+   "AllocationInstructionAck"
   ]
  },
  "809": {
@@ -10114,8 +9623,8 @@
   "used_in": [
    "ExecutionReport",
    "PositionReport",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataIncrementalRefresh"
   ],
   "components": [
    "MDFullGrp",
@@ -10134,8 +9643,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "MarketDataRequest",
-   "Market Data Request"
+   "MarketDataRequest"
   ]
  },
  "813": {
@@ -10151,9 +9659,7 @@
   ],
   "used_in": [
    "MarketDataSnapshotFullRefresh",
-   "MarketDataIncrementalRefresh",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ]
  },
  "814": {
@@ -10191,9 +9697,7 @@
   },
   "used_in": [
    "MarketDataSnapshotFullRefresh",
-   "MarketDataIncrementalRefresh",
-   "Market Data - Snapshot/Full Refresh",
-   "Market Data - Incremental Refresh"
+   "MarketDataIncrementalRefresh"
   ]
  },
  "815": {
@@ -10230,8 +9734,7 @@
    "3": "3"
   },
   "used_in": [
-   "MarketDataRequest",
-   "Market Data Request"
+   "MarketDataRequest"
   ]
  },
  "816": {
@@ -10246,7 +9749,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data Request Reject"
+   "MarketDataRequestReject"
   ],
   "components": [
    "MDRjctGrp"
@@ -10264,7 +9767,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Market Data Request Reject"
+   "MarketDataRequestReject"
   ],
   "components": [
    "MDRjctGrp"
@@ -10285,15 +9788,12 @@
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
    "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck"
   ],
   "components": [
    "TrdCollGrp"
@@ -10342,8 +9842,7 @@
    "AllocationReport",
    "AllocationReportAck",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Trade Capture Report"
+   "AllocationInstruction"
   ]
  },
  "820": {
@@ -10360,10 +9859,7 @@
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "821": {
@@ -10378,7 +9874,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TradeReportOrderDetail",
@@ -10399,8 +9895,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "823": {
@@ -10416,8 +9911,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "824": {
@@ -10433,8 +9927,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "825": {
@@ -10449,7 +9942,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -10502,7 +9995,7 @@
    "6": "6"
   },
   "used_in": [
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -10544,10 +10037,8 @@
    "SecurityDefinitionRequest",
    "SecurityDefinitionUpdateReport",
    "SecurityDefinition",
-   "Derivative Security List",
-   "Security Definition Request",
-   "Security Definition",
-   "Security List"
+   "DerivativeSecurityList",
+   "SecurityList"
   ],
   "components": [
    "BaseTradingRules",
@@ -10858,10 +10349,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "AllocationInstruction"
   ],
   "components": [
    "MDFullGrp",
@@ -11107,10 +10595,7 @@
    "TradeCaptureReportAck",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "AllocationInstruction"
   ]
  },
  "830": {
@@ -11127,10 +10612,7 @@
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "831": {
@@ -11157,8 +10639,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "833": {
@@ -11173,8 +10654,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "AssignmentReport",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "834": {
@@ -11191,10 +10671,7 @@
   "used_in": [
    "PositionMaintenanceRequest",
    "PositionMaintenanceReport",
-   "AssignmentReport",
-   "Position Maintenance Request",
-   "Position Maintenance Report",
-   "Assignment Report"
+   "AssignmentReport"
   ]
  },
  "835": {
@@ -11348,8 +10825,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "840": {
@@ -11538,8 +11014,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "846": {
@@ -11621,14 +11096,7 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderList"
   ],
   "components": [
    "ListOrdGrp"
@@ -11653,14 +11121,7 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderList"
   ],
   "components": [
    "ListOrdGrp"
@@ -11685,14 +11146,7 @@
    "OrderCancelReplaceRequest",
    "NewOrderCross",
    "CrossOrderCancelReplaceRequest",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "NewOrderList"
   ],
   "components": [
    "ListOrdGrp"
@@ -11710,8 +11164,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "851": {
@@ -11772,8 +11225,7 @@
    "11": "11"
   },
   "used_in": [
-   "ExecutionReport",
-   "Execution Report"
+   "ExecutionReport"
   ]
  },
  "852": {
@@ -11805,8 +11257,7 @@
   },
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "853": {
@@ -11853,8 +11304,7 @@
   },
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report"
+   "TradeCaptureReportAck"
   ]
  },
  "854": {
@@ -11909,25 +11359,11 @@
    "NewOrderSingle",
    "OrderCancelReplaceRequest",
    "AllocationInstruction",
-   "Execution Report",
-   "New Order Multileg",
-   "Multileg Order Cancel/Replace",
-   "Trade Capture Report",
-   "Quote Request Reject",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack",
-   "New Order Single",
-   "New Order List",
-   "Order Cancel/Replace Request",
-   "Allocation Instruction",
-   "Quote Request",
-   "New Order Cross",
-   "Cross Order Cancel/Replace Request"
+   "QuoteRequestReject",
+   "NewOrderList",
+   "QuoteRequest",
+   "NewOrderCross",
+   "CrossOrderCancelReplaceRequest"
   ],
   "components": [
    "ListOrdGrp",
@@ -11950,10 +11386,7 @@
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "856": {
@@ -12052,9 +11485,7 @@
   },
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "857": {
@@ -12085,9 +11516,7 @@
   "used_in": [
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "858": {
@@ -12118,8 +11547,7 @@
   ],
   "used_in": [
    "Confirmation",
-   "ConfirmationRequest",
-   "Confirmation Request"
+   "ConfirmationRequest"
   ]
  },
  "860": {
@@ -12137,9 +11565,7 @@
    "Confirmation",
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "861": {
@@ -12775,10 +12201,7 @@
    "ExecutionReport",
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report Request",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "881": {
@@ -12794,9 +12217,7 @@
   ],
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "882": {
@@ -12964,15 +12385,15 @@
    "2": "2"
   },
   "used_in": [
-   "Execution Report",
-   "Trade Capture Report",
+   "ExecutionReport",
+   "TradeCaptureReport",
    "Confirmation",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Allocation Instruction"
+   "AllocationReport",
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "AllocationInstruction"
   ],
   "components": [
    "MiscFeesGrp"
@@ -12992,9 +12413,7 @@
   "used_in": [
    "AllocationReport",
    "AllocationInstructionAlert",
-   "AllocationInstruction",
-   "Allocation Report",
-   "Allocation Instruction"
+   "AllocationInstruction"
   ]
  },
  "893": {
@@ -13038,16 +12457,8 @@
    "ListStatus",
    "SecurityTypes",
    "SecurityList",
-   "Derivative Security List",
-   "Allocation Report",
-   "Mass Quote Acknowledgement",
-   "New Order List",
-   "Allocation Instruction",
-   "List Status",
-   "Mass Quote",
-   "List Strike Price",
-   "Security Types",
-   "Security List"
+   "MassQuoteAcknowledgement",
+   "MassQuote"
   ],
   "components": [
    "QuotSetAckGrp",
@@ -13068,10 +12479,7 @@
   "used_in": [
    "CollateralRequest",
    "CollateralAssignment",
-   "CollateralResponse",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "895": {
@@ -13135,10 +12543,7 @@
   "used_in": [
    "CollateralRequest",
    "CollateralAssignment",
-   "CollateralResponse",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "896": {
@@ -13192,8 +12597,8 @@
    "7": "7"
   },
   "used_in": [
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiry",
+   "CollateralInquiryAck"
   ],
   "components": [
    "CollInqQualGrp"
@@ -13211,12 +12616,12 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse",
+   "CollateralReport",
+   "CollateralInquiry",
+   "CollateralInquiryAck"
   ],
   "components": [
    "TrdCollGrp"
@@ -13253,12 +12658,7 @@
    "CollateralAssignment",
    "CollateralResponse",
    "CollateralReport",
-   "CollateralInquiry",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry"
+   "CollateralInquiry"
   ]
  },
  "900": {
@@ -13277,12 +12677,7 @@
    "CollateralAssignment",
    "CollateralResponse",
    "CollateralReport",
-   "CollateralInquiry",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry"
+   "CollateralInquiry"
   ]
  },
  "901": {
@@ -13301,12 +12696,7 @@
    "CollateralAssignment",
    "CollateralResponse",
    "CollateralReport",
-   "CollateralInquiry",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry"
+   "CollateralInquiry"
   ]
  },
  "902": {
@@ -13322,9 +12712,7 @@
   ],
   "used_in": [
    "CollateralAssignment",
-   "CollateralResponse",
-   "Collateral Assignment",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "903": {
@@ -13366,9 +12754,7 @@
   },
   "used_in": [
    "CollateralAssignment",
-   "CollateralResponse",
-   "Collateral Assignment",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "904": {
@@ -13383,8 +12769,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "CollateralResponse",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "905": {
@@ -13427,8 +12812,7 @@
    "5": "5"
   },
   "used_in": [
-   "CollateralResponse",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "906": {
@@ -13478,8 +12862,7 @@
    "99": "99"
   },
   "used_in": [
-   "CollateralResponse",
-   "Collateral Response"
+   "CollateralResponse"
   ]
  },
  "907": {
@@ -13494,8 +12877,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "CollateralAssignment",
-   "Collateral Assignment"
+   "CollateralAssignment"
   ]
  },
  "908": {
@@ -13510,8 +12892,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "CollateralReport",
-   "Collateral Report"
+   "CollateralReport"
   ]
  },
  "909": {
@@ -13528,10 +12909,7 @@
   "used_in": [
    "CollateralReport",
    "CollateralInquiry",
-   "CollateralInquiryAck",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "910": {
@@ -13576,8 +12954,7 @@
    "5": "5"
   },
   "used_in": [
-   "CollateralReport",
-   "Collateral Report"
+   "CollateralReport"
   ]
  },
  "911": {
@@ -13595,10 +12972,7 @@
    "ExecutionReport",
    "CollateralReport",
    "CollateralInquiryAck",
-   "MarketDataSnapshotFullRefresh",
-   "Execution Report",
-   "Collateral Report",
-   "Collateral Inquiry Ack"
+   "MarketDataSnapshotFullRefresh"
   ]
  },
  "912": {
@@ -13632,11 +13006,7 @@
    "ExecutionReport",
    "TradeCaptureReport",
    "AssignmentReport",
-   "CollateralReport",
-   "Execution Report",
-   "Trade Capture Report",
-   "Assignment Report",
-   "Collateral Report"
+   "CollateralReport"
   ]
  },
  "913": {
@@ -13793,15 +13163,7 @@
    "CollateralInquiry",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Allocation Instruction"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -13830,15 +13192,7 @@
    "CollateralInquiry",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Allocation Instruction"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -13867,15 +13221,7 @@
    "CollateralInquiry",
    "AllocationInstructionAlert",
    "AllocationInstruction",
-   "Execution Report",
-   "Trade Capture Report",
-   "Allocation Report",
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response",
-   "Collateral Report",
-   "Collateral Inquiry",
-   "Allocation Instruction"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -13895,9 +13241,7 @@
   ],
   "used_in": [
    "UserRequest",
-   "UserResponse",
-   "User Request",
-   "User Response"
+   "UserResponse"
   ]
  },
  "924": {
@@ -13937,8 +13281,7 @@
    "5": "5"
   },
   "used_in": [
-   "UserRequest",
-   "User Request"
+   "UserRequest"
   ]
  },
  "925": {
@@ -13955,8 +13298,7 @@
   ],
   "used_in": [
    "Logon",
-   "UserRequest",
-   "User Request"
+   "UserRequest"
   ]
  },
  "926": {
@@ -14015,8 +13357,7 @@
   },
   "used_in": [
    "UserResponse",
-   "UserNotification",
-   "User Response"
+   "UserNotification"
   ]
  },
  "927": {
@@ -14031,8 +13372,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "UserResponse",
-   "User Response"
+   "UserResponse"
   ]
  },
  "928": {
@@ -14071,7 +13411,7 @@
    "4": "4"
   },
   "used_in": [
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ],
   "components": [
    "CompIDStatGrp"
@@ -14089,7 +13429,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ],
   "components": [
    "CompIDStatGrp"
@@ -14107,8 +13447,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusRequest",
+   "NetworkCounterpartySystemStatusResponse"
   ],
   "components": [
    "CompIDReqGrp",
@@ -14127,8 +13467,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusRequest",
+   "NetworkCounterpartySystemStatusResponse"
   ],
   "components": [
    "CompIDReqGrp",
@@ -14147,8 +13487,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NetworkCounterpartySystemStatusResponse",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ]
  },
  "933": {
@@ -14164,9 +13503,7 @@
   ],
   "used_in": [
    "NetworkCounterpartySystemStatusRequest",
-   "NetworkCounterpartySystemStatusResponse",
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ]
  },
  "934": {
@@ -14181,8 +13518,7 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "NetworkCounterpartySystemStatusResponse",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ]
  },
  "935": {
@@ -14220,8 +13556,7 @@
    "8": "8"
   },
   "used_in": [
-   "NetworkCounterpartySystemStatusRequest",
-   "Network Counterparty System Status Request"
+   "NetworkCounterpartySystemStatusRequest"
   ]
  },
  "936": {
@@ -14236,8 +13571,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Network Counterparty System Status Request",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusRequest",
+   "NetworkCounterpartySystemStatusResponse"
   ],
   "components": [
    "CompIDReqGrp",
@@ -14270,8 +13605,7 @@
    "2": "2"
   },
   "used_in": [
-   "NetworkCounterpartySystemStatusResponse",
-   "Network Counterparty System Status Response"
+   "NetworkCounterpartySystemStatusResponse"
   ]
  },
  "938": {
@@ -14286,8 +13620,8 @@
    "5.0.SP2"
   ],
   "used_in": [
-   "Collateral Inquiry",
-   "Collateral Inquiry Ack"
+   "CollateralInquiry",
+   "CollateralInquiryAck"
   ],
   "components": [
    "CollInqQualGrp"
@@ -14351,8 +13685,7 @@
   },
   "used_in": [
    "TradeCaptureReport",
-   "TradeCaptureReportAck",
-   "Trade Capture Report Ack"
+   "TradeCaptureReportAck"
   ]
  },
  "940": {
@@ -14386,8 +13719,7 @@
    "3": "3"
   },
   "used_in": [
-   "Confirmation_Ack",
-   "Confirmation Ack"
+   "ConfirmationAck"
   ]
  },
  "941": {
@@ -14434,9 +13766,7 @@
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReportRequest",
-   "Execution Report",
-   "Trade Capture Report Request",
-   "Trade Capture Report"
+   "TradeCaptureReport"
   ],
   "components": [
    "TrdCapRptAckSideGrp",
@@ -14473,9 +13803,9 @@
    "2": "2"
   },
   "used_in": [
-   "Collateral Request",
-   "Collateral Assignment",
-   "Collateral Response"
+   "CollateralRequest",
+   "CollateralAssignment",
+   "CollateralResponse"
   ],
   "components": [
    "UndInstrmtCollGrp"
@@ -14519,8 +13849,7 @@
    "4": "4"
   },
   "used_in": [
-   "CollateralInquiryAck",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "946": {
@@ -14587,8 +13916,7 @@
    "99": "99"
   },
   "used_in": [
-   "CollateralInquiryAck",
-   "Collateral Inquiry Ack"
+   "CollateralInquiryAck"
   ]
  },
  "947": {

@@ -29,6 +29,7 @@ from rekep.market.identity import (
     frame,
     hash_arrow,
     hash_bytes,
+    hash_bytes_arrow,
     hash_of,
     part_bytes,
 )
@@ -193,6 +194,13 @@ def test_a_blob_is_hashed_as_it_stands_and_not_framed() -> None:
     """A whole line has no split to forge, so there is nothing to frame."""
     assert hash_bytes(b"a line") != hash_of("a line")
     assert hash_bytes(b"a line") == hash_bytes(b"a line")
+
+
+def test_unframed_arrow_hashes_match_scalar_bytes() -> None:
+    values = pyarrow.array(["a line", "", "café"])
+    assert hash_bytes_arrow(values).to_pylist() == [
+        hash_bytes(value.encode("utf-8")) for value in values.to_pylist()
+    ]
 
 
 def test_an_empty_composite_is_refused_in_both_builders() -> None:

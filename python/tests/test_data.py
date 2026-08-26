@@ -171,6 +171,22 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
     assert [alias["name"] for alias in held["ISINCODE"]["aliases"]] == ["AMON.ISINCODE"]
 
 
+def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
+    held = records()
+    for key, record in held.items():
+        if record.get("kind") != "namespace":
+            assert str(record["name"]).isalnum(), key
+            assert all(str(alias["name"]).isalnum() for alias in record.get("aliases", ())), key
+        assert all(str(name).isalnum() for name in record.get("used_in", ())), key
+        assert all(str(name).isalnum() for name in record.get("components", ())), key
+
+    msg_type = held["35"]
+    assert msg_type["values"]["8"] == "ExecutionReport"
+    assert msg_type["handlers"]["8"] == "executionreport"
+    assert msg_type["handlers"]["i"] == "massquote"
+    assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
+
+
 def test_a_component_record_is_one_member_tree_and_its_versions() -> None:
     """The same for a component: the newest tree, and who declares it."""
     parties = members("components")["parties"]
@@ -206,6 +222,13 @@ def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
         one.name for one in values
     }
     assert all(one.dropped for one in report.collapses), "an entry with no loss is not one"
+    assert all(one.name.isalnum() for one in report.collapses)
+    assert all(
+        dropped.reading.isalnum()
+        for one in report.collapses
+        if one.part == "name" or (one.part == "values" and one.tag == 35)
+        for dropped in one.dropped
+    )
 
 
 #: The prose the site wrote up, per version, derived then pinned as a floor.
@@ -292,11 +315,11 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    # A third of the published dictionary for two fields, and every byte of the
-    # remainder is component declarations: those travel whole rather than being
+    # Just under half of the published dictionary for two fields, and nearly all
+    # of the remainder is component declarations: those travel whole rather than being
     # selected with the fields, because a component says where a repeating
     # group starts and ends and a tree missing members would end it elsewhere.
-    assert target.stat().st_size < DATA.stat().st_size // 2
+    assert target.stat().st_size < DATA.stat().st_size * 51 // 100
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
     assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"

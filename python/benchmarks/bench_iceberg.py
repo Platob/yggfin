@@ -206,7 +206,7 @@ def monotonic_insert_case(table: pyarrow.Table, commit_rows: int, *, shortcut: b
     try:
         target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
         if not shortcut:
-            target.__dict__["_insert_span"] = lambda chunk, join, reference: None
+            target.__dict__["_insert_span"] = lambda chunk, join, reference, partition: None
 
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):

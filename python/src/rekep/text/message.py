@@ -15,6 +15,7 @@ from rekep.enums import EventType
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
 from rekep.market.event import Event
+from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.kwargs import KWARGS, Kwarg
 
 _CONTRACT_METADATA = MappingProxyType({"version": "4"})
@@ -208,9 +209,9 @@ class Message(Event):
         }
 
     def identify(self) -> Self:
-        """Give this raw row its provenance-scoped content identity."""
+        """Give this raw row the identity of its exact payload."""
         if not self.hash:
-            self.hash = self.hash_of(self.message, self.source_url, self.source_rownum)
+            self.hash = hash_bytes(self.message.encode("utf-8"))
         self.xhash = self.hash
         return self
 
@@ -219,9 +220,7 @@ class Message(Event):
         cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
     ) -> pyarrow.RecordBatch:
         """Build a batch after assigning raw row identities in Arrow kernels."""
-        columns["hash"] = cls.hash_arrow(
-            columns["message"], columns["source_url"], columns["source_rownum"]
-        )
+        columns["hash"] = hash_bytes_arrow(columns["message"])
         columns["xhash"] = columns["hash"]
         return pyarrow.RecordBatch.from_arrays(
             [columns[name] for name in schema.names], schema=schema

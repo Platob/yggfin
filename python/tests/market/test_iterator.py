@@ -604,7 +604,7 @@ def test_flat_fix_arrow_uses_custom_handlers_and_states(tmp_path: Path) -> None:
     configured = {
         "MsgType": dataclasses.replace(
             msg_type,
-            handlers={**msg_type.handlers, "Q": "order", "R": "execution_report"},
+            handlers={**msg_type.handlers, "Q": "order", "R": "executionreport"},
             order_states={**msg_type.order_states, "Q": State.PENDING_NEW},
         ),
         "OrdStatus": dataclasses.replace(

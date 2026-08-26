@@ -81,6 +81,19 @@ _SLUG_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 #: lowercasing alone does not, because of the underscores and the spaces.
 _TRANSLATION_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 
+# Registry identifiers come from prose pages as often as from XML. A suffix is
+# annotation, never part of the FIX name that a renderer writes.
+_NAME_DETAIL = re.compile(r"[<(].*$")
+_NAME_VERSION = re.compile(r"\s+prior\s+to\s+FIX\b.*$", re.IGNORECASE)
+_NAME_DROP = re.compile(r"[^A-Za-z0-9]+", re.ASCII)
+
+
+def name_of(text: str) -> str:
+    """A prose label as one FIX identifier."""
+    named = _NAME_DETAIL.sub("", str(text).strip())
+    named = _NAME_VERSION.sub("", named)
+    return _NAME_DROP.sub("", named)
+
 
 def slug_of(name: str) -> str:
     """The file name one component is stored under: `Parties` -> `parties`.
@@ -309,7 +322,11 @@ class FieldEntry(Convertible):
             raise ValueError("technical message configuration belongs to MsgType <35>")
         object.__setattr__(self, "versions", canonical_versions(self.versions))
         object.__setattr__(self, "event_types", _event_types(self.event_types))
-        object.__setattr__(self, "handlers", _strings(self.handlers))
+        object.__setattr__(
+            self,
+            "handlers",
+            {str(key): name_of(value).lower() for key, value in _strings(self.handlers).items()},
+        )
         object.__setattr__(self, "states", _states(self.states))
         object.__setattr__(self, "order_states", _states(self.order_states))
         object.__setattr__(self, "technical_values", _unique_strings(self.technical_values))

@@ -26,7 +26,7 @@ from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
-from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, newest_rank
+from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, name_of, newest_rank
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -1175,7 +1175,7 @@ class FixRegistry(Convertible):
             detail = details.get(tag, {})
             known = spec.get(tag)
             built = fix_field(
-                detail.get("name") or name or (known.name if known else str(tag)),
+                name_of(detail.get("name") or name or (known.name if known else str(tag))),
                 tag,
                 detail.get("type") or (known.datatype if known else None),
                 description=detail.get("description"),
@@ -1232,6 +1232,7 @@ class FixRegistry(Convertible):
                 listed.setdefault(tag, ("", ""))
                 continue
             name, note = _split_note(text)
+            name = name_of(name)
             known = listed.get(tag)
             if known is None or not known[0]:
                 listed[tag] = (name, note)
@@ -1262,7 +1263,7 @@ class FixRegistry(Convertible):
         detail: dict[str, Any] = {}
         title = _TITLE.search(page)
         if title and title[2] == str(tag):
-            detail["name"] = _text(title[1])
+            detail["name"] = name_of(_text(title[1]))
         typed = _TYPE.search(page)
         if typed:
             detail["type"] = typed[1]
@@ -1270,7 +1271,7 @@ class FixRegistry(Convertible):
         description = _description(prose)
         if description:
             detail["description"] = description
-        values = _values(listed)
+        values = _values(listed, names=tag == 35)
         if values:
             detail["values"] = values
         used = _used_in(carried)
@@ -1646,14 +1647,16 @@ def _description(prose: str) -> str:
     return _text(prose[:8000])
 
 
-def _values(markup: str) -> dict[str, str]:
+def _values(markup: str, *, names: bool = False) -> dict[str, str]:
     """The enumerated values a field page lists: `{"1": "Buy", ...}`."""
     found: dict[str, str] = {}
     for _, item in _VALUE_ITEM.findall(markup):
         text = _text(item)
         value = _VALUE.match(text)
         if value:
-            found.setdefault(value[1], value[2])
+            label = name_of(value[2]) if names else value[2]
+            if label:
+                found.setdefault(value[1], label)
     return found
 
 
@@ -1665,17 +1668,18 @@ def _used_in(markup: str, kind: str = MESSAGE_LINK) -> list[str]:
     <769>`, and three hundred others in 4.4 alone -- recorded as used nowhere.
     """
     names = []
+    seen: set[str] = set()
     pattern = rf"<a[^>]+href=\"{kind}_[^\"]+\"[^>]*>(.*?)</a>"
     for match in re.finditer(pattern, markup, re.DOTALL):
         name, _ = _split_note(_text(match[1]))
-        # A message link reads `Execution Report <8>` and keeps its name; a
-        # component link is only `<TrdRegTimestamps>` and *is* the brackets'
-        # contents. Cutting the same trailing marker off both would leave a
-        # component with nothing.
+        # A component link's own angle brackets are its name, unlike the tag
+        # suffix on a message link.
         name = _COMPONENT_NAME.sub(r"\1", name) if kind == COMPONENT_LINK else name
-        name = re.sub(r"\s*<\s*\w+\s*>$", "", name).strip()
-        if name and name not in names:
+        name = name_of(name)
+        folded = name.casefold()
+        if name and folded not in seen:
             names.append(name)
+            seen.add(folded)
     return names
 
 

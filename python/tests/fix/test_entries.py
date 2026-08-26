@@ -27,6 +27,7 @@ from rekep.fix.entries import (
     FieldEntry,
     canonical_versions,
     fold,
+    name_of,
     newest_of,
     slug_of,
     translation_key,
@@ -70,6 +71,19 @@ def test_a_name_that_slugs_to_nothing_is_refused() -> None:
     for hostile in ("", "   ", "...", "///"):
         with pytest.raises(ValueError, match="FIX registry entry"):
             slug_of(hostile)
+
+
+@pytest.mark.parametrize(
+    ("label", "name"),
+    [
+        ("Execution Report <8>", "ExecutionReport"),
+        ("Order Cancel/Replace Request (legacy)", "OrderCancelReplaceRequest"),
+        ("LastShares prior to FIX 4.3)", "LastShares"),
+        ("ListNoOrds)", "ListNoOrds"),
+    ],
+)
+def test_a_registry_label_has_one_annotation_free_identifier(label: str, name: str) -> None:
+    assert name_of(label) == name
 
 
 @pytest.mark.parametrize(
@@ -257,7 +271,7 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
         name="MsgType",
         tag=35,
         event_types={"D": "ORDER"},
-        handlers={"D": "order"},
+        handlers={"D": "new_order"},
         order_states={"D": "PENDING_NEW"},
         technical_values=("0", "1"),
         technical_plugins=("jolokia",),
@@ -268,7 +282,7 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
 
     assert restored.event_types == {"D": EventType.ORDER}
     assert restored.order_states == {"D": State.PENDING_NEW}
-    assert restored.handlers == {"D": "order"}
+    assert restored.handlers == {"D": "neworder"}
     assert json.loads(metadata["order_states"]) == {"D": int(State.PENDING_NEW)}
     assert json.loads(metadata["technical_values"]) == ["0", "1"]
     assert json.loads(metadata["technical_plugins"]) == ["jolokia"]

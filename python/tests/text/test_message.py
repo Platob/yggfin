@@ -7,7 +7,7 @@ import pyarrow
 import rekep.text.kwargs as kwargs_module
 from rekep import FixRegistry, Kwarg, Message, TextFile
 from rekep.enums import EventType
-from rekep.market import Event
+from rekep.market import Event, hash_bytes
 
 
 def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
@@ -291,13 +291,13 @@ def test_generic_arguments_do_not_apply_fix_checksum_semantics() -> None:
     ]
 
 
-def test_raw_identity_is_scoped_to_the_payload_and_its_source() -> None:
+def test_raw_identity_depends_only_on_the_payload() -> None:
     first = Message(message="same", source_url="one.log", source_rownum=2).identify()
-    again = Message(message="same", source_url="one.log", source_rownum=2).identify()
-    copied = Message(message="same", source_url="two.log", source_rownum=2).identify()
+    copied = Message(message="same", source_url="two.log", source_rownum=9).identify()
+    changed = Message(message="different", source_url="one.log", source_rownum=2).identify()
 
-    assert first.hash == again.hash == first.xhash
-    assert copied.hash != first.hash
+    assert first.hash == copied.hash == first.xhash == hash_bytes(b"same")
+    assert changed.hash != first.hash
 
 
 def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Path) -> None:
@@ -324,6 +324,4 @@ def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Pat
     assert table.column("etype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert table.column("hash")[0].as_py() == Message.hash_of(
-        payload, table.column("source_url")[0].as_py(), 1
-    )
+    assert table.column("hash")[0].as_py() == hash_bytes(payload.encode("utf-8"))
