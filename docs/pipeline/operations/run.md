@@ -3,9 +3,9 @@
 Measured on 2026-08-23, this run executed the code cells from all six task
 notebooks against a fresh local Iceberg warehouse, then replayed the same
 interval. It is a correctness fixture; the larger focused measurements remain
-on [Benchmarks](benchmarks.md).
+on [Benchmarks](../../storage/benchmarks.md).
 
-![End-to-end execution architecture](assets/workflow-run.svg)
+![End-to-end execution architecture](../../assets/workflow-run.svg)
 
 Only `fix.market` continues into market readers. `fix.misc` and
 `fix.unknown` are terminal routes; a route with no rows need not create a table.
@@ -147,7 +147,7 @@ and orders.
 
 ## Schema lineage
 
-![Schema lineage from logs to instruments, books, orders, and executions](assets/schema-lineage.svg)
+![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg)
 
 | Contract | Primary key | Partitions | Nested payloads |
 | --- | --- | --- | --- |
@@ -164,4 +164,4 @@ hour and the sort order do not already prune.
 
 The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
 types and metadata between stages, Iceberg owns table ids and snapshots, and
-the [binary identity contract](identity.md) keeps hashes cross-language stable.
+the [binary identity contract](../../contracts/identity.md) keeps hashes cross-language stable.

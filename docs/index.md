@@ -10,7 +10,7 @@ Arrow is the project's shared columnar boundary: Iceberg tables and encoded
 files sit on one side, while Spark, DataFrames, query engines, and SQL database
 drivers sit on the other. The distinction matters—Arrow is neither the store
 nor the engine, so each can change without replacing the in-memory contract.
-See [why rekep chooses Apache Arrow](arrow.md) for the sourced interoperability
+See [why rekep chooses Apache Arrow](overview/arrow.md) for the sourced interoperability
 details and the limits of zero-copy exchange.
 
 ## Workflow
@@ -79,33 +79,33 @@ assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
 ```
 
 The scalar example exposes each boundary. File-scale work keeps the same
-shapes in Arrow batches, as shown below and in the [pipeline guide](tasks.md).
+shapes in Arrow batches, as shown below and in the [pipeline guide](pipeline/index.md).
 
 ## Guides
 
 **Declaring data**
 
-- [Why Arrow](arrow.md): storage, database, and compute interoperability.
-- [Design](design.md): boundaries and maintenance rules.
-- [Types](types.md): `@scalar`, fields, and recursive casts.
-- [Contracts](contracts.md): the six portable schemas.
+- [Why Arrow](overview/arrow.md): storage, database, and compute interoperability.
+- [Design](overview/design.md): boundaries and maintenance rules.
+- [Types](contracts/types.md): `@scalar`, fields, and recursive casts.
+- [Contracts](contracts/index.md): the six portable schemas.
 - [Enums](enums/index.md): stored keys, values, and FIX spellings.
-- [Identity](identity.md): cross-language binary hashing.
+- [Identity](contracts/identity.md): cross-language binary hashing.
 
 **Parsing**
 
-- [FixMsg](fixmsg.md): streamed text parsing and routing.
-- [FIX](fix.md): registry-driven transcription.
-- [Configuring a parse](configuring.md): headers, rules, field readings.
+- [FixMsg](fix/fixmsg.md): streamed text parsing and routing.
+- [FIX](fix/index.md): registry-driven transcription.
+- [Configuring a parse](fix/configuring.md): headers, rules, field readings.
 
 **Downstream**
 
-- [Market](market.md): events, instruments, books, and audit rows.
-- [Iceberg](iceberg.md): streaming reads, writes, and maintenance.
-- [Pipeline](tasks.md): notebooks, configs, and Airflow.
-- [Airflow](airflow.md): deployment, runs, backfills, and operations.
-- [End-to-end run](workflow-run.md): execution evidence and schema lineage.
-- [Benchmarks](benchmarks.md): focused internal measurements.
+- [Market](market/index.md): events, instruments, books, and audit rows.
+- [Iceberg](storage/iceberg.md): streaming reads, writes, and maintenance.
+- [Pipeline](pipeline/index.md): notebooks, configs, and Airflow.
+- [Airflow](pipeline/operations/airflow.md): deployment, runs, backfills, and operations.
+- [End-to-end run](pipeline/operations/run.md): execution evidence and schema lineage.
+- [Benchmarks](storage/benchmarks.md): focused internal measurements.
 
 ## Install
 

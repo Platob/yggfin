@@ -40,6 +40,22 @@ def test_the_docs_carry_examples() -> None:
     assert len(EXAMPLES) >= 8
 
 
+def test_fix_transcribe_uses_the_published_registry_in_both_directions() -> None:
+    page = (DOCS / "fix" / "transcribe.md").read_text(encoding="utf-8")
+    script = (DOCS / "javascripts" / "fix-transcribe.js").read_text(encoding="utf-8")
+    config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
+
+    assert 'data-source="../../assets/fix-registry.json"' in page
+    for direction in ("decode", "encode"):
+        assert f"data-{direction}-form" in page
+        assert f"data-{direction}-rows" in page
+        assert f"data-{direction}-debug" in page
+    assert "field.encoded" in script
+    assert "field.decoded" in script
+    assert "stylesheets/fix-transcribe.css" in config
+    assert "javascripts/fix-transcribe.js" in config
+
+
 @pytest.mark.parametrize(("where", "source"), EXAMPLES, ids=[one for one, _ in EXAMPLES])
 def test_an_example_parses_and_imports_what_it_names(where: str, source: str) -> None:
     tree = ast.parse(source, filename=where)

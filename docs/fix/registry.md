@@ -3,7 +3,7 @@
 Search the repository's FIX components and fields. The catalog is rebuilt from
 `data/fix/` with every documentation deployment.
 
-<div class="fix-registry" data-fix-registry data-source="../assets/fix-registry.json"
+<div class="fix-registry" data-fix-registry data-source="../../assets/fix-registry.json"
      data-repository="https://github.com/Platob/yggfin/blob/main/data/fix">
   <p class="fix-registry__status" data-registry-status role="status" aria-live="polite">Loading registry…</p>
   <div data-registry-ready hidden>
@@ -17,7 +17,7 @@ Search the repository's FIX components and fields. The catalog is rebuilt from
     <nav class="fix-registry__jump" aria-label="Registry sections">
       <a href="#components">Components</a>
       <a href="#fields">Fields</a>
-      <a href="../fix/">Registry guide</a>
+      <a href="../">Registry guide</a>
     </nav>
 
     <section id="components" class="fix-registry__section" aria-labelledby="components-title">

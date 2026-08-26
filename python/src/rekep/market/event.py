@@ -641,7 +641,7 @@ class MarketEvent(Event):
     # 632 ms on `unix_partition` alone, 650 ms at bucket[8] and 671 ms at
     # bucket[16] -- slower, not faster -- while the file count went 72 to 576
     # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
-    # every consumer writes went 24 ms to 165 to 320. See docs/market.md.
+    # every consumer writes went 24 ms to 165 to 320. See docs/market/index.md.
     instrument_code: str = ""
     """Readable spelling of the instrument `instrument_xhash` names; empty when unstated."""
 

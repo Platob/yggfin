@@ -39,9 +39,11 @@ theme:
 extra_css:
   - stylesheets/terminal.css
   - stylesheets/fix-registry.css
+  - stylesheets/fix-transcribe.css
 
 extra_javascript:
   - javascripts/fix-registry.js
+  - javascripts/fix-transcribe.js
 
 hooks:
   - docs_hooks.py
@@ -49,12 +51,15 @@ hooks:
 nav:
   - Overview:
       - Start here: index.md
-      - Why Arrow: arrow.md
-      - Design rules: design.md
+      - Foundations:
+          - Why Arrow: overview/arrow.md
+          - Design rules: overview/design.md
   - Data contracts:
-      - Types: types.md
-      - Schema contracts: contracts.md
-      - Binary identities: identity.md
+      - Declarations:
+          - Types: contracts/types.md
+          - Schema contracts: contracts/index.md
+      - Identity:
+          - Binary identities: contracts/identity.md
   - Enums:
       - Overview: enums/index.md
       - Events:
@@ -71,27 +76,30 @@ nav:
           - Market kind: enums/market-kind.md
           - Time in force: enums/time-in-force.md
   - FIX and market:
-      - FixMsg: fixmsg.md
+      - Messages:
+          - FixMsg: fix/fixmsg.md
+          - Transcribe: fix/transcribe.md
       - FIX registry:
-          - Browse registry: fix-registry.md
-          - Registry guide: fix.md
-      - Parse configuration: configuring.md
-      - Market lifecycle: market.md
+          - Browse registry: fix/registry.md
+          - Registry guide: fix/index.md
+          - Parse configuration: fix/configuring.md
+      - Market:
+          - Lifecycle: market/index.md
   - Storage:
-      - Iceberg: iceberg.md
-      - Benchmarks: benchmarks.md
+      - Iceberg: storage/iceberg.md
+      - Benchmarks: storage/benchmarks.md
   - Pipeline:
-      - Overview: tasks.md
+      - Overview: pipeline/index.md
       - Operations:
-          - Airflow deployment: airflow.md
-          - End-to-end run: workflow-run.md
+          - Airflow deployment: pipeline/operations/airflow.md
+          - End-to-end run: pipeline/operations/run.md
       - Tasks:
-          - Parse messages: tasks/parse-messages.md
-          - Parse FIX: tasks/parse-fix.md
-          - Flatten instruments: tasks/flatten-instruments.md
-          - Parse market: tasks/parse-market.md
-          - Flatten orders: tasks/flatten-orders.md
-          - Flatten executions: tasks/flatten-executions.md
+          - Parse messages: pipeline/tasks/parse-messages.md
+          - Parse FIX: pipeline/tasks/parse-fix.md
+          - Flatten instruments: pipeline/tasks/flatten-instruments.md
+          - Parse market: pipeline/tasks/parse-market.md
+          - Flatten orders: pipeline/tasks/flatten-orders.md
+          - Flatten executions: pipeline/tasks/flatten-executions.md
 
 # Every page carries its own measurements, so the links into them are anchors
 # rather than page names -- and an anchor mkdocs cannot find is only logged at

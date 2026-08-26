@@ -164,7 +164,7 @@ class Instrument(Event):
     # other instrument has none. Last because Iceberg counts leaf columns in
     # declaration order for the bounds it collects, and a nested member
     # declared earlier pushes a flat one past the cutoff -- see
-    # `docs/market.md`.
+    # `docs/market/index.md`.
     legs: list[Leg] | None = None
     """The legs of a multileg instrument, in the order the venue sent them."""
 

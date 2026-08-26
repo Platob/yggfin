@@ -4,7 +4,7 @@ Apache Arrow is the shared in-memory contract in rekep. It is not a database,
 table format, or compute engine. It gives those systems a common columnar
 shape—schemas, arrays, and record batches—plus standard ways to exchange it.
 
-![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](assets/arrow-hub.svg)
+![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub.svg)
 
 ## The useful boundary
 

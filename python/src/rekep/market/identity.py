@@ -15,7 +15,7 @@ import xxhash
 #: The Arrow type every identifier in this package is.
 HASH = pyarrow.int64()
 
-#: The immutable wire protocol implemented here and in `docs/identity.md`.
+#: The immutable wire protocol implemented here and in `docs/contracts/identity.md`.
 IDENTITY_PROTOCOL = "rekep-identity-v1"
 
 #: An identifier nothing has computed yet. Zero rather than null, because

@@ -1,7 +1,7 @@
 # Schema contracts
 
 ![One declaration produces Arrow, a portable contract, and an Iceberg
-table](assets/compatibility-tree.svg)
+table](../assets/compatibility-tree.svg)
 
 `schemas/rekep/` publishes every persisted pipeline shape:
 

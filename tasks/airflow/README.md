@@ -1,6 +1,6 @@
 # Airflow
 
-The canonical [deployment and operations guide](../../docs/airflow.md) covers
+The canonical [deployment and operations guide](../../docs/pipeline/operations/airflow.md) covers
 installation, configuration, local validation, scheduling, historical
 backfills, Iceberg branches, distributed deployment, monitoring, retries, and
 troubleshooting.

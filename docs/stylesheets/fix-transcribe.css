@@ -1,0 +1,301 @@
+.fix-transcribe {
+  --transcribe-surface: color-mix(
+    in srgb,
+    var(--md-default-bg-color) 91%,
+    var(--md-default-fg-color)
+  );
+}
+
+.fix-transcribe__registry-count {
+  margin-left: auto;
+  align-self: center;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__section > p {
+  max-width: 58rem;
+  color: var(--registry-muted);
+}
+
+.fix-transcribe__form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.8rem;
+  margin: 0.8rem 0;
+}
+
+.fix-transcribe__editor,
+.fix-transcribe__output {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--registry-border);
+  background: var(--transcribe-surface);
+}
+
+.fix-transcribe__editor > label,
+.fix-transcribe__output-head > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--registry-yellow);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fix-transcribe textarea,
+.fix-transcribe select {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--registry-muted) 45%, transparent);
+  border-radius: 0;
+  outline: 0;
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+}
+
+.fix-transcribe textarea {
+  display: block;
+  min-height: 11rem;
+  padding: 0.7rem;
+  resize: vertical;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+.fix-transcribe textarea:focus,
+.fix-transcribe select:focus {
+  border-color: var(--registry-orange);
+  box-shadow: 0 0 0 1px var(--registry-orange);
+}
+
+.fix-transcribe__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+}
+
+.fix-transcribe__controls--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fix-transcribe__controls label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.fix-transcribe__controls label > span {
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fix-transcribe select {
+  min-height: 2.5rem;
+  padding: 0 0.5rem;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.68rem;
+}
+
+.fix-transcribe__actions,
+.fix-transcribe__output-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fix-transcribe__actions {
+  margin-top: 0.65rem;
+}
+
+.fix-transcribe button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  padding: 0.38rem 0.7rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--registry-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.62rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.fix-transcribe button[type="submit"] {
+  border-color: var(--registry-orange);
+  background: color-mix(in srgb, var(--registry-orange) 14%, transparent);
+  color: var(--registry-orange);
+}
+
+.fix-transcribe button:hover {
+  border-color: var(--registry-yellow);
+  color: var(--registry-yellow);
+  cursor: pointer;
+}
+
+.fix-transcribe button:focus-visible,
+.fix-transcribe textarea:focus-visible,
+.fix-transcribe select:focus-visible,
+.fix-transcribe summary:focus-visible {
+  outline: 2px solid var(--registry-yellow);
+  outline-offset: 2px;
+}
+
+.fix-transcribe__output {
+  display: flex;
+  flex-direction: column;
+}
+
+.fix-transcribe__output-head {
+  min-height: 2.5rem;
+  justify-content: space-between;
+}
+
+.fix-transcribe__output-head > span {
+  margin: 0;
+}
+
+.fix-transcribe__output-head button {
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+}
+
+.md-typeset .fix-transcribe pre {
+  min-height: 11rem;
+  max-height: 22rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--registry-orange) 32%, transparent);
+  border-left: 0.18rem solid var(--registry-orange);
+  border-radius: 0;
+  background: #101012;
+  color: var(--rekep-white);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.fix-transcribe .md-clipboard {
+  display: none;
+}
+
+.fix-transcribe__note {
+  margin: 0.55rem 0 0;
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+}
+
+.fix-transcribe__summary {
+  margin: 0.8rem 0;
+}
+
+.fix-transcribe__table-wrap {
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.fix-transcribe__table-wrap .fix-registry__table {
+  white-space: normal;
+}
+
+.fix-transcribe__table-wrap code {
+  white-space: nowrap;
+}
+
+.fix-transcribe__state {
+  display: inline-block;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--registry-muted) 44%, transparent);
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.55rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__state--resolved,
+.fix-transcribe__state--encoded {
+  border-color: color-mix(in srgb, var(--registry-yellow) 52%, transparent);
+  color: var(--registry-yellow);
+}
+
+.fix-transcribe__state--unknown-value,
+.fix-transcribe__state--version-required,
+.fix-transcribe__state--other-version {
+  border-color: color-mix(in srgb, var(--registry-orange) 58%, transparent);
+  color: var(--registry-orange);
+}
+
+.fix-transcribe__state--unresolved,
+.fix-transcribe__state--unparsed,
+.fix-transcribe__state--invalid-value {
+  border-color: color-mix(in srgb, var(--registry-red) 62%, transparent);
+  color: var(--registry-red);
+}
+
+.fix-transcribe__issues,
+.fix-transcribe__debug {
+  margin-top: 0.8rem;
+}
+
+.fix-transcribe__issues summary,
+.fix-transcribe__debug summary {
+  color: var(--registry-orange);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.64rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.fix-transcribe__debug .fix-transcribe__output-head {
+  margin: 0.5rem 0;
+}
+
+.md-typeset .fix-transcribe__debug pre {
+  min-height: 8rem;
+  max-height: 32rem;
+}
+
+@media screen and (max-width: 68rem) {
+  .fix-transcribe__form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 46rem) {
+  .fix-transcribe__controls,
+  .fix-transcribe__controls--three {
+    grid-template-columns: 1fr;
+  }
+
+  .fix-transcribe__actions {
+    flex-wrap: wrap;
+  }
+
+  .fix-transcribe__actions button {
+    flex: 1 1 auto;
+  }
+
+  .fix-transcribe__registry-count {
+    width: 100%;
+    margin: 0.2rem 0 0;
+  }
+}

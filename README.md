@@ -25,7 +25,7 @@ for messages in capture.read_arrow_reader():
 Arrow is the boundary between every stage. `@scalar` declarations define the
 in-memory schema, recursive casts, Iceberg projection, and portable YAML
 contract. FIX parsing preserves repeated tags, unknown keys, metadata, and
-structured components. The [Arrow interoperability guide](docs/arrow.md)
+structured components. The [Arrow interoperability guide](docs/overview/arrow.md)
 explains how that boundary connects Iceberg, Parquet, Avro, SQL databases,
 Spark, and DataFrame/query engines without claiming every exchange is
 zero-copy.

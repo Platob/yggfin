@@ -77,7 +77,7 @@ Arrow's zero-copy numeric path is enabled only on little-endian hosts. It
 raises clearly on a big-endian host; scalar `hash_of`, which writes byte order
 explicitly, remains portable there.
 
-The machine-readable [golden vectors](assets/identity-v1.json) pin conversion,
+The machine-readable [golden vectors](../assets/identity-v1.json) pin conversion,
 frame bytes, unsigned digest bits, and signed values. Python tests validate
 both scalar and Arrow builders against every vector.
 

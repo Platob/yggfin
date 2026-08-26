@@ -67,8 +67,8 @@ boundaries.
 
 - [Parse messages](tasks/parse-messages.md)
 - [Parse FIX](tasks/parse-fix.md)
-- [End-to-end run](workflow-run.md)
-- [Deploy and operate with Airflow](airflow.md)
+- [End-to-end run](operations/run.md)
+- [Deploy and operate with Airflow](operations/airflow.md)
 - [Flatten instruments](tasks/flatten-instruments.md)
 - [Parse market](tasks/parse-market.md)
 - [Flatten orders](tasks/flatten-orders.md)
@@ -96,6 +96,6 @@ dependency. Set `REKEP_ROOT` to the checkout and `REKEP_NOTEBOOK_OUTPUT` to an
 existing directory visible to every worker; the routing tasks read the
 executed notebooks from there.
 
-The [Airflow deployment and operations guide](airflow.md) covers the complete
+The [Airflow deployment and operations guide](operations/airflow.md) covers the complete
 runtime installation, local validation, scheduled runs, backfills, Iceberg
 branches, production storage, monitoring, retries, and troubleshooting.

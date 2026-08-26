@@ -6,10 +6,10 @@ fixture and current measurements.
 
 | page | implementation | command |
 | --- | --- | --- |
-| [Types](types.md) | Recursive Arrow casts | `bench_cast.py` |
-| [FixMsg](fixmsg.md) | Text files, Message rows, and FIX parsing | `bench_text_file.py` |
-| [FIX](fix.md) | Parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
-| [Market](market.md) | Identities, conversion, and book folding | `bench_market.py` |
+| [Types](../contracts/types.md) | Recursive Arrow casts | `bench_cast.py` |
+| [FixMsg](../fix/fixmsg.md) | Text files, Message rows, and FIX parsing | `bench_text_file.py` |
+| [FIX](../fix/index.md) | Parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
+| [Market](../market/index.md) | Identities, conversion, and book folding | `bench_market.py` |
 | [Iceberg](iceberg.md) | Reads, writes, merges, and maintenance | `bench_iceberg.py` |
 
 ```bash
@@ -24,7 +24,7 @@ uv run python benchmarks/bench_iceberg.py --quick
 Use warm repeated runs, retain adverse configurations, and report the counts a
 reader pays for—planned files, manifests, requests, and rows—beside elapsed
 time. Raw workflow warehouses are temporary; the compact measured fixture is
-recorded on [End-to-end run](workflow-run.md).
+recorded on [End-to-end run](../pipeline/operations/run.md).
 
 The market benchmark replays three book shapes -- deep, wide, and one order a
 level -- at `--rows` events each. Its representative fold also reports identity
@@ -96,7 +96,7 @@ Order hash, so dense-book throughput also measures that required linear
 identity input; duplicate-event shortcuts avoid the walk when no Book is
 emitted.
 
-The [notebook smoke run](workflow-run.md) exercises all six jobs, all three
+The [notebook smoke run](../pipeline/operations/run.md) exercises all six jobs, all three
 log routes, registry-backed instrument enrichment, book recovery rows,
 auditable rejection, and a zero-write replay. The bounded market benchmark
 separately rejected 10 of 200 malformed events and emitted 70 auditable

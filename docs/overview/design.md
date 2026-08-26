@@ -32,7 +32,7 @@ guessing would make bad data look valid.
 ## Keep identities portable
 
 All persisted identifiers are signed `int64`. Composite keys use the exact
-[binary frame](identity.md), not Python formatting or process-local hashes.
+[binary frame](../contracts/identity.md), not Python formatting or process-local hashes.
 Enums persist integer codes with their member table in field metadata, so an
 unknown future code is retained.
 
