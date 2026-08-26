@@ -15,6 +15,7 @@ import pyarrow.compute
 
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
+from rekep.fields.rows import dataclass_arrow_batch
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL, hash_arrow, hash_of
 
@@ -230,20 +231,20 @@ class Event(MarketConvertible):
     def into_arrow_reader(
         cls, events: Iterable[Self], batch_row_size: int = 65_536
     ) -> pyarrow.RecordBatchReader:
-        """Serialize event objects as bounded Arrow batches."""
+        """Serialize event objects as bounded, column-built Arrow batches."""
         if batch_row_size <= 0:
             raise ValueError("batch_row_size must be positive")
         schema = cls.into_field().into_arrow_schema()
 
         def batches() -> Iterator[pyarrow.RecordBatch]:
-            held: list[dict[str, Any]] = []
+            held: list[Self] = []
             for event in events:
-                held.append(event.into_dict())
+                held.append(event)
                 if len(held) >= batch_row_size:
-                    yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                    yield dataclass_arrow_batch(held, schema)
                     held.clear()
             if held:
-                yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                yield dataclass_arrow_batch(held, schema)
 
         return pyarrow.RecordBatchReader.from_batches(schema, batches())
 

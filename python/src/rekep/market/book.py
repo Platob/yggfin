@@ -7,7 +7,6 @@ import copy
 import dataclasses
 import functools
 import heapq
-import itertools
 import math
 from collections import deque
 from collections.abc import Iterable, Iterator
@@ -280,27 +279,6 @@ class Book(MarketEvent):
         """Fold translated events directly, for protocol adapters and tests."""
         return iter(BookIterator.from_events(events, **declared))
 
-    @classmethod
-    def into_arrow_reader(
-        cls, events: Iterable[Self], batch_row_size: int = 65_536
-    ) -> pyarrow.RecordBatchReader:
-        """Serialize books in bounded, column-built Arrow batches."""
-        if batch_row_size <= 0:
-            raise ValueError("batch_row_size must be positive")
-        schema = cls.into_field().into_arrow_schema()
-
-        def batches() -> Iterator[pyarrow.RecordBatch]:
-            held: list[Self] = []
-            for event in events:
-                held.append(event)
-                if len(held) >= batch_row_size:
-                    yield _book_arrow_batch(held, schema)
-                    held.clear()
-            if held:
-                yield _book_arrow_batch(held, schema)
-
-        return pyarrow.RecordBatchReader.from_batches(schema, batches())
-
     def into_deltas(self) -> Iterator[Order]:
         """Order state transitions carried by this book delta."""
         return iter(self.deltas)
@@ -490,38 +468,6 @@ def _derived(batch: Any, levels: str, into: tuple[str, str, str]) -> dict[str, A
         ),
         depth: compute.if_else(derive, lengths, batch.column(depth)),
     }
-
-
-_BOOK_STRUCT_LISTS = frozenset(
-    {"bid_levels", "ask_levels", "deltas", "executions", "bid_alive", "ask_alive"}
-)
-
-
-def _book_arrow_batch(books: list[Book], schema: pyarrow.Schema) -> pyarrow.RecordBatch:
-    """Build one Book batch by columns, including its nested struct lists."""
-    columns = []
-    for declared in schema:
-        values = [getattr(book, declared.name) for book in books]
-        if declared.name in _BOOK_STRUCT_LISTS:
-            columns.append(_struct_list_arrow(values, declared.type))
-        else:
-            columns.append(pyarrow.array(values, type=declared.type))
-    return pyarrow.RecordBatch.from_arrays(columns, schema=schema)
-
-
-def _struct_list_arrow(rows: list[list[Any]], declared: pyarrow.DataType) -> pyarrow.Array:
-    """Build one non-null list-of-struct column without row documents."""
-    offsets = [0, *itertools.accumulate(len(row) for row in rows)]
-    values = list(itertools.chain.from_iterable(rows))
-    struct = declared.value_type
-    children = [
-        pyarrow.array([getattr(value, member.name) for value in values], type=member.type)
-        for member in struct
-    ]
-    flattened = pyarrow.StructArray.from_arrays(children, fields=list(struct))
-    return pyarrow.ListArray.from_arrays(
-        pyarrow.array(offsets, type=pyarrow.int32()), flattened, type=declared
-    )
 
 
 # -- folding a book out of one instrument's events ---------------------------

@@ -1268,10 +1268,67 @@ def bench_fold(events: int, repeat: int) -> None:
         )
         return pyarrow.Table.from_batches([batch], schema=schema)
 
+    def column_projection() -> pyarrow.Table:
+        return Book.into_arrow_reader(sample, batch_row_size=len(sample)).read_all()
+
     generic, expected = timed(document_projection, repeat)
     assert expected.num_rows == len(sample)
+    columnar, built = timed(column_projection, repeat)
+    # Whole-table equality would compare the NaN prices the stream plants,
+    # which Arrow's `equals` refuses; `bench_event_arrow` proves byte equality
+    # on the same builder over NaN-free rows.
+    assert built.column("hash").equals(expected.column("hash"))
     print(f"\nBook to Arrow -- {len(sample):,} rows")
     report("generic document projection", generic, len(sample))
+    report("column-built into_arrow_reader", columnar, len(sample), against=generic)
+
+
+def bench_event_arrow(rows: int, repeat: int) -> None:
+    """Column-built event serialization against the dict-per-row reference."""
+    from rekep.enums import Currency, MarketKind, Side, State
+    from rekep.fields.rows import dataclass_arrow_batch
+    from rekep.market import Order
+
+    events = [
+        Order(
+            unix=UNIX + index * 1_000_000,
+            cunix=UNIX + index * 1_000_000,
+            runix=UNIX + index * 1_000_000,
+            side=Side.BID if index % 2 else Side.ASK,
+            px=100.0 + index % 97 * 0.01,
+            qty=float(index % 50 + 1),
+            order_id=f"O{index % 200}",
+            client_order_id=f"CL{index}",
+            state=State.NEW,
+            kind=MarketKind.LIMIT_ORDER,
+            codes={"symbol": f"S{index % 5000}"},
+            instrument_xhash=index % 5000 + 1,
+            instrument_code=f"S{index % 5000}",
+            px_unit="USD",
+            qty_unit="SHARES",
+            ccy=Currency.USD,
+            linked_events=[(UNIX, index + 1)],
+        ).identify()
+        for index in range(rows)
+    ]
+    schema = Order.into_field().into_arrow_schema()
+
+    def documents() -> pyarrow.RecordBatch:
+        return pyarrow.RecordBatch.from_pylist(
+            [event.into_dict() for event in events], schema=schema
+        )
+
+    def columnar() -> pyarrow.RecordBatch:
+        return dataclass_arrow_batch(events, schema)
+
+    # Verified before it is timed: the two builds must be the same batch.
+    assert columnar().equals(documents()), "the columnar build changed the batch"
+
+    generic, _ = timed(documents, repeat)
+    optimized, _ = timed(columnar, repeat)
+    print(f"\nEvent to Arrow -- {rows:,} orders")
+    report("dict per row through from_pylist", generic, rows)
+    report("column-built from members", optimized, rows, against=generic)
 
 
 def main() -> None:
@@ -1299,6 +1356,7 @@ def main() -> None:
     bench_fix(rows // 20, repeat)
     bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)
+    bench_event_arrow(rows, repeat)
     bench_from_logs(rows // 20, repeat)
     # Scalar market translation is deliberately included, so keep this sweep
     # bounded while `--rows` still scales it for a dedicated benchmark run.
