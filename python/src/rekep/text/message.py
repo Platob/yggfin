@@ -18,7 +18,7 @@ from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.kwargs import KWARGS, Kwarg
 
-_CONTRACT_METADATA = MappingProxyType({"version": "4"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _EVENT_CODE = pyarrow.int32()
 _NO_PROTOCOL = "OTHER"
 _DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
@@ -208,8 +208,7 @@ def _scalar_message_types(
     residual: list[Kwarg] = []
     ended = False
     for entry in kwargs:
-        key = entry.key.removeprefix("#")
-        folded = key.lower()
+        folded = entry.key.lower()
         if folded in _CHECKSUM_KEYS:
             ended = True
         is_wire = not ended and folded == "35"
@@ -238,9 +237,7 @@ def _message_types(stored: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]
     positions = sequence(len(entries))
     keys = compute.struct_field(entries, "key")
     values = compute.struct_field(entries, "value")
-    normalized = compute.utf8_lower(
-        compute.replace_substring_regex(keys, pattern=r"^#", replacement="")
-    )
+    normalized = compute.utf8_lower(keys)
     checksums = compute.fill_null(
         compute.is_in(normalized, value_set=pyarrow.array(_CHECKSUM_KEYS)), False
     )

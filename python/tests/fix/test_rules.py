@@ -271,6 +271,23 @@ def test_a_rule_set_round_trips_as_a_document(tmp_path: Path) -> None:
     assert Rules.from_yaml(path) == DEFAULT
 
 
+def test_configured_entry_separator_candidates_round_trip_as_literals() -> None:
+    configured = Rules.from_dict(
+        {
+            "rules": [
+                {
+                    "protocol": "VENDOR",
+                    "codec": "ul",
+                    "extra_entry_separators": [".*", "\x1e\x1f"],
+                }
+            ]
+        }
+    )
+
+    assert configured.rule("VENDOR").extra_entry_separators == (".*", "\x1e\x1f")
+    assert Rules.from_dict(configured.into_dict()) == configured
+
+
 def test_a_loaded_rule_set_overrides_the_default(tmp_path: Path) -> None:
     """A desk with its own bridge writes a document rather than patching this."""
     path = tmp_path / "rules.yml"

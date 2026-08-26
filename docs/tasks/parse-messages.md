@@ -17,13 +17,13 @@ Each `Message` row contains:
 - `hash`, the XXH3-64 identity of the exact UTF-8 `message` payload.
 
 Registry names, protocol versions, components and typed values do not belong
-to this stage. Numeric keys remain the numbers the line wrote, named keys
-retain their spelling after a leading `#` syntax marker is removed, and values
-remain text. MsgType metadata decides the event kind. Exact `include_msgtypes`
-and `exclude_msgtypes` filters run before argument splitting; the task excludes
-heartbeats (`0`) and test requests (`1`) by default. `technical_plugins` drops
-named operational sources such as Jolokia before persistence. `parse_fix` owns
-dictionary interpretation.
+to this stage. A leading `#` is removed from each key; values remain text.
+MsgType metadata decides the event kind. Exact `include_msgtypes` and
+`exclude_msgtypes` filters run before argument splitting. Both default to
+empty, so heartbeats (`0`), test requests (`1`) and other administrative
+messages are retained unless the caller excludes them. `technical_plugins`
+drops named operational sources such as Jolokia before persistence. `parse_fix`
+owns dictionary interpretation.
 
 ## Why the table is retained
 
@@ -71,8 +71,8 @@ message identities are parsed.
 
 `include_msgtypes` admits only exact discriminator values when non-empty;
 `exclude_msgtypes` removes exact values after that inclusion. Rows without a
-discriminator survive an empty include list. Both filters run before kwargs
-are split.
+discriminator survive an empty include list. Empty lists retain every MsgType.
+Both filters run before kwargs are split.
 
 `technical_plugins` names exact plugin codes to omit case-insensitively from
 the parsed stream before it is written. This source policy belongs to the task,
@@ -92,9 +92,8 @@ pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic ke
 splitter. A piped bridge without MsgType keeps its arguments and is `MISC`; an
 ordinary long log message with an incidental `A=1` skips the allocation.
 
-Message contract version 4 adds `protocol_code`; version 3 added `MsgType` and
-the early `etype`. Rebuild an existing `logs.messages` table after upgrading;
-version 2 rows have neither value for the `parse_fix` pushdown to select, and
+Message contract version 1 includes `protocol_code`, `MsgType`, and the early
+`etype`. Rebuild an existing `logs.messages` table when any is absent;
 `parse_fix` refuses that older physical schema rather than reporting an empty
 successful run.
 Tables created from the former task-level `static_values` declaration also

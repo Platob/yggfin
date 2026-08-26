@@ -70,7 +70,8 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["MsgType"].to_pylist() == ["D"]
-    assert [entry["key"] for entry in found["kwargs"].to_pylist()[0]] == ["8", "SIDE"]
+    residual = found["kwargs"].to_pylist()[0]
+    assert [entry["key"] for entry in residual] == ["8", "SIDE"]
 
 
 def test_a_regular_wire_kind_stays_authoritative_over_named_noise() -> None:

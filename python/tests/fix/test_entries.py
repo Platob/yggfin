@@ -180,6 +180,15 @@ def test_a_version_the_record_never_saw_has_no_declaration() -> None:
     assert _entry().into_field("4.2").fix["version"] == "4.2", "and it says which was asked"
 
 
+def test_message_usage_is_published_as_fix_msgtypes_metadata() -> None:
+    member = _entry(used_in=("ExecutionReport",)).into_field("4.2")
+
+    assert member is not None
+    assert json.loads(member.fix["msgtypes"]) == ["ExecutionReport"]
+    assert "used_in" not in member.fix
+    assert FieldEntry.from_fields([member], ["4.2"]).used_in == ("ExecutionReport",)
+
+
 def test_a_wildcard_record_answers_for_every_version() -> None:
     """What a field outside the standard has: one reading, whatever was negotiated."""
     entry = _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE, versions=(ANY_VERSION,))

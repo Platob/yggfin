@@ -29,10 +29,9 @@ it consumes those stored arguments instead of tokenizing the payload again.
 Long prose and diagnostics that contain neither a discriminator nor two
 delimiter-separated assignments skip tokenization entirely. Use
 `exclude_msgtypes=("0", "1")` on the text reader to discard operational
-traffic before argument tokenization.
+traffic before argument tokenization; the empty default retains it.
 
-The published `Message` contract is version 4. Required raw and FIX argument
-values plus the canonical FIX projection make the `FixMsg` contract version 6.
+The published `Message` and `FixMsg` contracts are version 1.
 `kwargs` keeps a raw audit sidecar only when a typed column cannot reproduce
 the source spelling, such as `0010.5000` stored as a numeric `10.5`.
 
@@ -61,17 +60,16 @@ timezone is not documented remains naive.
 ## Ordered residue
 
 A raw `Message.kwargs` and a resolved `FixMsg.kwargs` use the same `Kwarg`
-shape. The generic parser strips a leading argument marker, so `#SIDE` is
-stored as `SIDE`; it does not apply FIX aliases or dictionary meaning. The
-message discriminator is promoted to `Message.MsgType` and is not duplicated
-in the residual list.
+shape. The generic parser stores `#SIDE` as `SIDE`; the leading marker is
+dropped. The message discriminator is promoted to `Message.MsgType` and is not
+duplicated in the residual list.
 
 Each list item contains:
 
 - `tag`: a numeric key already present in the payload, a later resolved FIX
   tag, or `0` while unresolved;
-- `key`: the terminal spelling without `#`, canonicalized by the FIX stage
-  where the registry resolves it;
+- `key`: the terminal spelling without a leading `#`, canonicalized by the FIX
+  stage where the registry resolves it;
 - `value`: the value carried by the message;
 - `comp`: an indexed container prefix, such as `NoPartyIDs[0]`;
 - `namespace`: a non-indexed prefix, such as `TECH` in `TECH.CLIENTID`.

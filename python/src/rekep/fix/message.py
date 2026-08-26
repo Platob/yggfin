@@ -19,11 +19,10 @@ from rekep.fields.arrays import sequence
 SOH = "\x01"
 
 #: Stand-ins seen in real logs, in the order they are tried when a message
-#: does not say which it uses: the standard SOH first, then the printable
-#: substitutions tools make -- a pipe, the caret spelling of Ctrl-A, a bare
-#: caret, a semicolon. Order matters: `^A` must be tried before `^`, or a
-#: caret-A log reads every tag with an `A` glued to the front.
-SEPARATORS = (SOH, "|", "^A", "^", ";")
+#: does not say which it uses: the standard SOH first, then the printable and
+#: control substitutions tools make. Order matters: a multi-character
+#: candidate leads any candidate it contains, so `^A` is tried before `^`.
+SEPARATORS = (SOH, "|", "\x04\x03", "^A", "^", ";")
 
 #: What a bridge writes in front of every key, and -- where it writes nothing
 #: else -- what separates them: `#A=1#B=2` has no delimiter between its tokens
@@ -38,7 +37,7 @@ MARKER = "#"
 #: candidate and not whitespace -- so the value stops exactly where the
 #: separator starts. Spelled out for `_WS`'s reason, and shared, because the
 #: scalar reading of a separator and the vectorised one are one rule.
-_NOT_SEPARATOR = r"[^\x01|;^ \t\r\n\f\x0b]"
+_NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
 
 #: The guard that keeps the `8=` inside tag 18 or 58 from reading as a
 #: BeginString: the start of the text, or a character that is not a digit.
@@ -57,8 +56,8 @@ BEGIN_STRING = rf"{_NOT_A_TAG}8=FIXT?"
 #: capture omitted BeginString. Separators are explicit so prose `35=D` stays
 #: prose; `#` is both the rendered marker and a delimiter in compact logs.
 WIRE_MSG_TYPE = (
-    r"(?s)(?:^|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
-    r"[ \t\r\n\f\x0b]*[A-Za-z0-9]+[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
+    r"(?s)(?:^|\x04\x03|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
+    r"[ \t\r\n\f\x0b]*[A-Za-z0-9]+[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
 )
 
 #: `BEGIN_STRING` with the message after it captured: how a vectorised parse
@@ -163,14 +162,14 @@ _BRIDGE_NEXT = re.compile(_BRIDGE_TOKEN, re.ASCII)
 #: all: `parse_arrow_array` samples a column once by contract, so the rows that
 #: share a separator have to be handed to it together, and this is how a caller
 #: finds out which those are without reading a row in Python.
-SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
+SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 NAMED_SEPARATOR_VECTOR = (
     rf"(?s)(?:^|[^A-Za-z0-9])#?"
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
-    rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
+    rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 )
 _BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
-BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_PAIR_TOKEN}"
+BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_BRIDGE_PAIR_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -284,9 +283,10 @@ def _separator_at(text: str, index: int) -> str | None:
     """The separator starting at `index`, or None where nothing readable is."""
     if index >= len(text):
         return None
+    for candidate in SEPARATORS:
+        if text.startswith(candidate, index):
+            return candidate
     following = text[index]
-    if following == "^" and text[index + 1 : index + 2] == "A":
-        return "^A"
     return None if following.isspace() else following
 
 
@@ -294,20 +294,24 @@ def _separator_before(text: str, index: int) -> str:
     """The separator ending just before `index`; `MARKER` where the tokens abut."""
     if index < 1:
         return MARKER
-    if text[index - 2 : index] == "^A":
-        return "^A"
-    preceding = text[index - 1]
-    return preceding if preceding in SEPARATORS else MARKER
+    for candidate in SEPARATORS:
+        if text.endswith(candidate, 0, index):
+            return candidate
+    return MARKER
 
 
-def detect_entry_separator(text: str, separator: str) -> str | None:
+def detect_entry_separator(
+    text: str,
+    separator: str,
+    extra_entry_separators: Iterable[str] = (),
+) -> str | None:
     """The character a group *entry* is written with inside one token, if any."""
     for token in text.split(separator):
         head = _INDEXED_HEAD.match(token)
         if head is None:
             continue
         rest = token[head.end() :]
-        for candidate in SEPARATORS:
+        for candidate in _entry_separator_candidates(extra_entry_separators):
             if candidate in rest:
                 return candidate
     return None
@@ -319,6 +323,7 @@ def parse_pairs(
     *,
     named: bool | None = None,
     entry_separator: str | None = None,
+    extra_entry_separators: Iterable[str] = (),
 ) -> list[tuple[str, str]]:
     """Parse one ordered FIX payload without creating a second message model."""
     if isinstance(text, bytes):
@@ -334,7 +339,7 @@ def parse_pairs(
             text = text[bridge.start() :]
     separator = separator or detect_separator(text)
     if named and entry_separator is None:
-        entry_separator = detect_entry_separator(text, separator)
+        entry_separator = detect_entry_separator(text, separator, extra_entry_separators)
     pairs: list[tuple[str, str]] = []
     for token in text.split(separator):
         parsed = _parse_token(token, named)
@@ -506,6 +511,7 @@ def parse_arrow_array(
     *,
     named: bool | None = None,
     entry_separator: str | None = None,
+    extra_entry_separators: Iterable[str] = (),
 ) -> Any:
     """A column of FIX log lines as one `map<string, string>` per row."""
     if separator is None or named is None or entry_separator is None:
@@ -517,7 +523,7 @@ def parse_arrow_array(
         # second separator to look for depends on it: a wrapped bridge message
         # has a BeginString, so the sample would read it as wire and never look
         # inside an indexed token the caller is about to ask it to read.
-        sampled = _column_style(column, named)
+        sampled = _column_style(column, named, extra_entry_separators)
         separator = sampled[0] if separator is None else separator
         named = sampled[1] if named is None else named
         entry_separator = sampled[2] if entry_separator is None else entry_separator
@@ -528,6 +534,7 @@ def parse_arrow_array(
                 separator,
                 named=named,
                 entry_separator=entry_separator,
+                extra_entry_separators=extra_entry_separators,
             )
             for chunk in column.chunks
         ]
@@ -669,7 +676,10 @@ def parse_kwargs_array(
     return pyarrow.MapArray.from_arrays(offsets, keys, values)
 
 
-def kwargs_entry_separators(kwargs: Any) -> pyarrow.Array:
+def kwargs_entry_separators(
+    kwargs: Any,
+    extra_entry_separators: Iterable[str] = (),
+) -> pyarrow.Array:
     """Detect each row's indexed-entry separator from generic arguments."""
     if isinstance(kwargs, pyarrow.ChunkedArray):
         kwargs = kwargs.combine_chunks()
@@ -694,7 +704,7 @@ def kwargs_entry_separators(kwargs: Any) -> pyarrow.Array:
                 pyarrow.scalar(separator),
                 nothing,
             )
-            for separator in SEPARATORS
+            for separator in _entry_separator_candidates(extra_entry_separators)
         )
     )
     valid = compute.is_valid(separators)
@@ -710,6 +720,9 @@ def kwargs_entry_separators(kwargs: Any) -> pyarrow.Array:
 def _canonical_wire_pattern(separator: str) -> str | None:
     """Whole-row guard for the numeric wire fast path."""
     if len(separator) != 1:
+        # A negated character class can exclude one delimiter. RE2 has no
+        # lookaround for excluding a general multi-character literal, so those
+        # separators use the ordinary token path after the same literal split.
         return None
     escaped = re.escape(separator)
     value = rf"[^{escaped}\r\n]*"
@@ -786,9 +799,22 @@ def _entry_pairs(
     """The vectorised `_entry_members`: one token, several members."""
     compute = pyarrow.compute
     empty = pyarrow.scalar("")
-    chunks = compute.split_pattern(compute.if_else(indexed, value, empty), entry_separator)
+    nested = compute.if_else(indexed, value, empty)
+    trailing = compute.ends_with(nested, entry_separator)
+    trimmed = compute.utf8_slice_codeunits(
+        nested,
+        start=0,
+        stop=-len(entry_separator.encode("utf-8")),
+    )
+    chunks = compute.split_pattern(compute.if_else(trailing, trimmed, nested), entry_separator)
     counts = compute.fill_null(compute.list_value_length(chunks), 1).cast(pyarrow.int32())
     if not compute.any(compute.greater(counts, 1), min_count=0).as_py():
+        if compute.any(trailing, min_count=0).as_py():
+            return (
+                tags,
+                compute.utf8_trim_whitespace(compute.if_else(indexed, trimmed, value)),
+                None,
+            )
         return None
     taken, first = _expanded(counts)
     flat = chunks.values
@@ -911,7 +937,11 @@ def _is_checksum(key: str) -> bool:
     return terminal == CHECKSUM or terminal.lower() == _CHECKSUM_NAME
 
 
-def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, str | None]:
+def _column_style(
+    column: Any,
+    named: bool | None = None,
+    extra_entry_separators: Iterable[str] = (),
+) -> tuple[str, bool, str | None]:
     """`(separator, named, entry separator)` off the first non-empty line."""
     for value in column:
         if not value.is_valid:
@@ -932,7 +962,9 @@ def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, st
                 if bridge is not None:
                     text = text[bridge.start() :]
             separator = detect_separator(text)
-            entry = detect_entry_separator(text, separator) if reading else None
+            entry = (
+                detect_entry_separator(text, separator, extra_entry_separators) if reading else None
+            )
             return separator, reading, entry
     return SOH, False if named is None else named, None
 
@@ -1237,8 +1269,11 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
 def _entry_members(key: str, value: str, entry_separator: str) -> list[tuple[str, str]]:
     """One indexed token that carries a whole group entry, as its members."""
     head, _, rest = value.partition(entry_separator)
+    rest = rest.removesuffix(entry_separator)
     lead = key.rsplit(".", 1)[0]
     built = [(key, head.strip())]
+    if not rest:
+        return built
     for chunk in rest.split(entry_separator):
         member = _MEMBER.match(chunk)
         if member is None:
@@ -1246,6 +1281,12 @@ def _entry_members(key: str, value: str, entry_separator: str) -> list[tuple[str
         else:
             built.append((f"{lead}.{member['member']}", member["value"].strip()))
     return built
+
+
+def _entry_separator_candidates(extra: Iterable[str] = ()) -> tuple[str, ...]:
+    """Configured and default entry delimiters, longest literals first."""
+    unique = dict.fromkeys((*extra, *SEPARATORS))
+    return tuple(sorted((candidate for candidate in unique if candidate), key=len, reverse=True))
 
 
 @functools.lru_cache(maxsize=1024)

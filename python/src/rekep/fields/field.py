@@ -627,6 +627,21 @@ class Field(Convertible):
         described.update(self.nested())  # fields/item/key/value blocks read best last
         return described
 
+    def _dump_yaml(self, yaml: Any) -> str:
+        """Keep metadata and protocol maps in compact YAML flow form."""
+
+        class Dumper(yaml.SafeDumper):
+            pass
+
+        Dumper.add_representer(_FlowMap, _represent_flow_map)
+        return yaml.dump(
+            _yaml_document(self.into_dict()),
+            Dumper=Dumper,
+            sort_keys=False,
+            allow_unicode=True,
+            width=1_000_000,
+        )
+
     def kind(self) -> str:
         """How `into_dict` names this field's type."""
         return str(self.arrow_type)
@@ -1390,6 +1405,27 @@ def cast_reader(
 
 
 # -- helpers ----------------------------------------------------------------
+
+
+class _FlowMap(dict):
+    """A mapping rendered between braces in a Field YAML document."""
+
+
+def _yaml_document(value: Any, key: str | None = None) -> Any:
+    """Mark only metadata and protocol maps for compact YAML rendering."""
+    if isinstance(value, list):
+        return [_yaml_document(item) for item in value]
+    if not isinstance(value, Mapping):
+        return value
+    rendered = {name: _yaml_document(item, str(name)) for name, item in value.items()}
+    if key == "metadata" or (key is not None and key not in _DOCUMENT_KEYS):
+        return _FlowMap(rendered)
+    return rendered
+
+
+def _represent_flow_map(dumper: Any, value: _FlowMap) -> Any:
+    """Represent one marked map without an indented YAML block."""
+    return dumper.represent_mapping("tag:yaml.org,2002:map", value, flow_style=True)
 
 
 def decoded(metadata: Mapping[bytes, bytes] | None) -> dict[str, str]:

@@ -366,7 +366,10 @@ def test_msgtype_filters_are_forwarded_to_every_file(tmp_path: Path) -> None:
         "2026-08-14 00:05:04.000 [t] [plugin] (INFO) MsgType=8|ExecID=B|\n"
     )
 
-    table = TextFiles.from_folder(tmp_path).read_arrow_table(exclude_msgtypes=("0", "1"))
+    files = TextFiles.from_folder(tmp_path)
+    assert files.read_arrow_table().column("MsgType").to_pylist() == ["0", "D", "1", "8"]
+
+    table = files.read_arrow_table(exclude_msgtypes=("0", "1"))
 
     assert table.column("MsgType").to_pylist() == ["D", "8"]
 

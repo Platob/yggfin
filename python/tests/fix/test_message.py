@@ -351,11 +351,21 @@ def test_a_bridge_that_writes_nothing_between_its_tokens_is_separated_by_the_mar
     ]
 
 
-@pytest.mark.parametrize("between", ["|", ";", "^A", SOH])
+@pytest.mark.parametrize("between", ["|", ";", "^A", SOH, "\x04\x03"])
 def test_a_candidate_between_the_tokens_is_still_the_separator(between: str) -> None:
     """Only a candidate, though: anything else is a value, not a delimiter."""
     assert detect_separator(f"#A=1{between}#B=2") == between
     assert FixMsg.from_text(f"#A=1{between}#B=2").pairs == [("A", "1"), ("B", "2")]
+
+
+def test_a_multicharacter_wire_separator_uses_the_general_token_path() -> None:
+    separator = "\x04\x03"
+    line = separator.join(["8=FIX.4.4", "35=D", "54=1", "10=000", ""])
+
+    assert detect_separator(line) == separator
+    assert parse_arrow_array(pyarrow.array([line])).to_pylist() == [
+        [("8", "FIX.4.4"), ("35", "D"), ("54", "1"), ("10", "000")]
+    ]
 
 
 def test_both_separators_on_one_line_and_neither_is_the_other_s() -> None:
@@ -412,6 +422,28 @@ def test_a_stated_entry_separator_is_used_as_given() -> None:
     }
 
 
+def test_a_multicharacter_entry_separator_drops_its_terminal_empty_chunk() -> None:
+    separator = "\x04\x03"
+    value = separator.join(["PARTYID=99106.003", "PARTYROLE=clientid", ""])
+    line = f"#NOPARTYIDS[0]={value}|#SIDE=1"
+
+    assert detect_entry_separator(line, "|") == separator
+    assert FixMsg.from_text(line).pairs == [
+        ("NOPARTYIDS[0].PARTYID", "99106.003"),
+        ("NOPARTYIDS[0].PARTYROLE", "clientid"),
+        ("SIDE", "1"),
+    ]
+    single = f"#NOPARTYIDS[0]=PARTYID=99106.003{separator}|#SIDE=1"
+    assert (
+        parse_arrow_array(pyarrow.array([single])).to_pylist()[0]
+        == FixMsg.from_text(single).pairs
+        == [
+            ("NOPARTYIDS[0].PARTYID", "99106.003"),
+            ("SIDE", "1"),
+        ]
+    )
+
+
 def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
     """A parser that loses the malformed half of a line loses the record."""
     line = "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1"
@@ -432,6 +464,7 @@ def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
         "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1#SIDE=1",
         "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1|#SIDE=1",
         "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1",
+        "#NOPARTYIDS[0]=PARTYID=x\x04\x03PARTYROLE=clientid\x04\x03|#SIDE=1",
         "Side=1 | Price=41.25",
         "8=FIX.4.2|35=D|55=TTF|10=203|",
         "prose with nothing in it",

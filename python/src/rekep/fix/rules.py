@@ -53,6 +53,9 @@ class Rule(Convertible):
     entry_separator: str | None = None
     """What one indexed token writes between the members of a group entry; null detects it."""
 
+    extra_entry_separators: tuple[str, ...] = ()
+    """Additional literals considered when an indexed-entry separator is detected."""
+
     codec: str = "none"
     """How to read the line: `fix`, `ul`, or `none` for "do not"."""
 
@@ -63,6 +66,10 @@ class Rule(Convertible):
         """Keep direct string input as one pattern, never its characters."""
         if isinstance(self.patterns, str):
             self.patterns = [self.patterns]
+        if isinstance(self.extra_entry_separators, str):
+            self.extra_entry_separators = (self.extra_entry_separators,)
+        else:
+            self.extra_entry_separators = tuple(self.extra_entry_separators)
 
     @property
     def named(self) -> bool | None:

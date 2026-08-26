@@ -421,7 +421,7 @@ class FieldEntry(Convertible):
             ("value_names", dict(self.value_names)),
             ("event_types", {key: int(value) for key, value in self.event_types.items()}),
             ("states", {key: int(value) for key, value in self.states.items()}),
-            ("used_in", list(self.used_in)),
+            ("msgtypes", list(self.used_in)),
             ("components", list(self.components)),
         ):
             if value:
@@ -530,7 +530,7 @@ class FieldEntry(Convertible):
         used_in: list[str] = []
         components: list[str] = []
         for member in reversed(members):
-            for name in _json_sequence(member.fix.get("used_in")):
+            for name in _json_sequence(member.fix.get("msgtypes")):
                 if name not in used_in:
                     used_in.append(name)
             for name in _json_sequence(member.fix.get("components")):

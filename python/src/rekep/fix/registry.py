@@ -1604,7 +1604,7 @@ class FixRegistry(Convertible):
                 built.fix["note"] = note
             used = detail.get("used_in")
             if used:
-                built.fix["used_in"] = json.dumps(used, separators=(",", ":"))
+                built.fix["msgtypes"] = json.dumps(used, separators=(",", ":"))
             components = detail.get("components")
             if components:
                 built.fix["components"] = json.dumps(components, separators=(",", ":"))

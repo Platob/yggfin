@@ -37,16 +37,20 @@ def test_kwarg_is_the_required_ordered_argument_shape() -> None:
     assert Message.into_field().field("kwargs").item.arrow_type == field.arrow_type
 
 
-def test_a_direct_kwarg_normalizes_the_marker_and_required_value() -> None:
+def test_a_direct_kwarg_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
     plain = Kwarg(key="#SIDE", value=None)  # type: ignore[arg-type]
     nested = Kwarg(key="#NoPartyIDs[0].PartyID", value="ABC")
 
     assert (plain.key, plain.value) == ("SIDE", "")
     assert (nested.key, nested.comp) == ("PartyID", "NoPartyIDs[0]")
-    message = Message(kwargs=[plain, nested])
+    message = Message(  # type: ignore[list-item]
+        kwargs=[plain, nested, ("#PAIR", "1"), {"key": "#MAP", "value": "2"}]
+    )
     assert [(entry.key, entry.value) for entry in message.kwargs] == [
         ("SIDE", ""),
         ("PartyID", "ABC"),
+        ("PAIR", "1"),
+        ("MAP", "2"),
     ]
 
 

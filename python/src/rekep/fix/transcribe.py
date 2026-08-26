@@ -351,7 +351,11 @@ class FixCodec(Convertible):
                 entry_separator=rule.entry_separator,
             ).cast(_RAW_PAIRS)
 
-        groups = list(groups_of(kwargs_entry_separators(kwargs))) if rule.named else []
+        groups = (
+            list(groups_of(kwargs_entry_separators(kwargs, rule.extra_entry_separators)))
+            if rule.named
+            else []
+        )
         if len(groups) <= 1:
             entry_separator = groups[0][0].as_py() or None if groups else None
             return parse_kwargs_array(
@@ -441,6 +445,7 @@ class FixCodec(Convertible):
                 rule.separator,
                 named=rule.named,
                 entry_separator=rule.entry_separator,
+                extra_entry_separators=rule.extra_entry_separators,
             )
         # `parse_arrow_array` samples a column **once** and reads every row of
         # it that way -- which is right, and which is why a category is not a
@@ -454,7 +459,10 @@ class FixCodec(Convertible):
             # holds one session. Handed over as it stands rather than through a
             # `take` of every row, because that copy is the whole column.
             return parse_arrow_array(
-                messages, named=rule.named, entry_separator=rule.entry_separator
+                messages,
+                named=rule.named,
+                entry_separator=rule.entry_separator,
+                extra_entry_separators=rule.extra_entry_separators,
             )
         parts, positions = [], []
         for _, where in groups:
@@ -463,6 +471,7 @@ class FixCodec(Convertible):
                     compute.take(messages, where),
                     named=rule.named,
                     entry_separator=rule.entry_separator,
+                    extra_entry_separators=rule.extra_entry_separators,
                 )
             )
             positions.append(where)
@@ -542,10 +551,8 @@ class FixCodec(Convertible):
             *self.transcribe(keys, values, version),
         )
 
-    def transcribe(
-        self, keys: Any, values: Any, version: str | None = None
-    ) -> tuple[Any, Any, Any, Any, Any]:
-        """`(tag, key, value, namespace, comp)` for a run of parsed fields.
+    def transcribe(self, keys: Any, values: Any, version: str | None = None) -> tuple[Any, ...]:
+        """Resolved stored members for a run of parsed fields.
 
         The whole of what the dictionary adds to a field, in kernels and in one
         place, so nothing downstream resolves a name or reads an enumeration a
@@ -578,9 +585,8 @@ class FixCodec(Convertible):
 
         The same `KWARGS` struct at its unresolved fill level: `key`, `value`,
         `namespace` and `comp` are what the line spells, and `tag` is the
-        number only where the line spelled one -- `0` otherwise, which is what
-        says an entry is unresolved. No name is looked up and no value is
-        translated, so this needs no dictionary at all.
+        number only where the line spelled one -- `0` otherwise. No name is
+        looked up and no value is translated, so this needs no dictionary.
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
@@ -596,8 +602,8 @@ class FixCodec(Convertible):
             *self.structure(keys, values),
         )
 
-    def structure(self, keys: Any, values: Any) -> tuple[Any, Any, Any, Any, Any]:
-        """`(tag, key, value, namespace, comp)` from the spelling alone.
+    def structure(self, keys: Any, values: Any) -> tuple[Any, ...]:
+        """Stored argument members from the spelling alone.
 
         The dictionary-free half of `transcribe`, and the same split: whatever
         the line wrote in front of a name goes to `comp` when it is a group
@@ -661,9 +667,8 @@ class FixCodec(Convertible):
 
         A fill and not a shape conversion. Three members are filled -- `tag`,
         `key` canonicalized to the registry's spelling, `value` translated
-        where its field enumerates its values -- and `namespace` and `comp`
-        come through byte-identical, because where a field stood was settled
-        from the spelling alone.
+        where its field enumerates its values -- while `namespace` and `comp`
+        come through unchanged.
         """
         rows = len(kwargs)
         if isinstance(kwargs, pyarrow.ChunkedArray):

@@ -92,7 +92,7 @@ def test_a_log_line_is_an_event() -> None:
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
-    assert FixMsg.into_field_metadata() == {"version": "6"}
+    assert FixMsg.into_field_metadata() == {"version": "1"}
     with pytest.raises(TypeError):
         FixMsg.into_field_metadata()["version"] = "2"
 
@@ -347,7 +347,7 @@ def test_the_partition_is_the_hour_the_line_falls_in() -> None:
 def test_every_unix_column_declares_its_unit() -> None:
     for name in ("unix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
         metadata = FixMsg.into_field().field(name).metadata
-        assert metadata["unit"] == "nanosecond", name
+        assert metadata["unit"] == "ns", name
         assert metadata["epoch"] == "1970-01-01", name
     partition_metadata = FixMsg.into_field().field("unix_partition").metadata
     assert partition_metadata["unit"] == "second"
@@ -844,7 +844,7 @@ def test_staged_groups_preserve_malformed_continuations(registry: FixRegistry) -
     )
 
 
-def test_staged_wire_conversion_matches_wire_named_and_marker_rules(
+def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
     registry: FixRegistry,
 ) -> None:
     lines = [

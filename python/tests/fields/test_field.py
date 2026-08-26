@@ -338,6 +338,22 @@ def test_a_protocol_map_and_legacy_metadata_cannot_disagree() -> None:
         )
 
 
+def test_yaml_keeps_scalar_metadata_and_protocol_maps_inline() -> None:
+    original = Field(
+        name="side",
+        arrow_type=pyarrow.int32(),
+        nullable=False,
+        metadata={"unit": "code", "iceberg:primary_key": "true", "enum:name": "Side"},
+    )
+
+    rendered = original.into_yaml().decode().splitlines()
+
+    assert "metadata: {unit: code}" in rendered
+    assert "iceberg: {primary_key: 'true'}" in rendered
+    assert "enum: {name: Side}" in rendered
+    assert Field.from_yaml(original.into_yaml()) == original
+
+
 def test_a_dump_round_trips_through_plain_containers() -> None:
     assert Field.from_dict(Book.into_field().into_dict()) == Book.into_field()
 

@@ -54,7 +54,8 @@ protocols:
       pattern: '(?s)^<venue>'
       plugin_pattern: '^VenueBridge$'
       separator: ';'
-      codec: fix        # `fix` reads wire tags, `ul` rendered names, `none` neither
+      extra_entry_separators: ["\u001e\u001f"]
+      codec: ul         # `fix` reads wire tags, `ul` rendered names, `none` neither
     - protocol: OTHER
       pattern: ''       # empty patterns make this the fall-through
       codec: none
@@ -62,7 +63,8 @@ protocols:
 
 `Rules.into_default()` reads a FIX trading log: a wrapped bridge message, a
 wire message, a bridge message, known operational traffic, then everything
-else.
+else. `entry_separator` fixes one indexed-entry delimiter;
+`extra_entry_separators` extends literal auto-detection for that protocol.
 
 ## Which event a payload represents
 
@@ -158,9 +160,7 @@ from rekep import FieldRules, FixCodec, FixRegistry
 
 codec = FixCodec(
     registry=FixRegistry(cache_dir="data/fix", offline=True),
-    fields=FieldRules.from_dict(
-        {"rules": [{"field": "9999", "type": "timestamp[us, tz=UTC]"}]}
-    ),
+    fields=FieldRules.from_dict({"rules": [{"field": "9999", "type": "timestamp[us, tz=UTC]"}]}),
 )
 ```
 

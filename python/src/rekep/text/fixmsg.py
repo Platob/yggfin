@@ -57,7 +57,7 @@ from rekep.market.identity import NIL
 from rekep.text.message import Message
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "6"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 

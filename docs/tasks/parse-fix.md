@@ -59,5 +59,5 @@ Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
 metadata is read by `parse_messages` because `etype` is part of `Message`;
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage. The projected conversion requires
-the version 4 `MsgType`, `kwargs`, and `protocol_code` columns and refuses an
+the version 1 `MsgType`, `kwargs`, and `protocol_code` columns and refuses an
 older source table with a rebuild instruction.

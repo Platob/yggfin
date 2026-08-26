@@ -35,6 +35,7 @@ from rekep.fix.columns import (
     TYPES,
 )
 from rekep.fix.fields import fix_field
+from rekep.fix.message import kwargs_entry_separators
 from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
@@ -605,15 +606,17 @@ def test_chunked_mixed_separators_match_one_contiguous_column(codec: FixCodec) -
 def test_separator_detection_ignores_beginstring_text_inside_another_tag(
     codec: FixCodec,
 ) -> None:
+    control = "\x04\x03"
     messages = pyarrow.array(
         [
             "prefix 18=FIX.9 blah 8=FIX.4.3|35=D|",
             "prefix 18=FIX.9 blah 8=FIX.5.0SP1;35=8;",
+            control.join(["prefix 18=FIX.9 blah 8=FIX.4.4", "35=D", ""]),
         ]
     )
 
-    assert codec.separators_of(messages, False).to_pylist() == ["|", ";"]
-    assert codec.versions_of(messages, "FIX").to_pylist() == ["4.3", "5.0.SP1"]
+    assert codec.separators_of(messages, False).to_pylist() == ["|", ";", control]
+    assert codec.versions_of(messages, "FIX").to_pylist() == ["4.3", "5.0.SP1", "4.4"]
 
 
 def test_named_beginstrings_and_numeric_bridge_keys_detect_each_rows_separator(
@@ -1236,6 +1239,87 @@ PARTIES_WIRE = (
 def packaged() -> FixCodec:
     """A codec over the registry the wheel carries, and nothing else."""
     return FixCodec(registry=FixRegistry.from_builtin())
+
+
+def _packed_party_kwargs(separator: str) -> pyarrow.Array:
+    value = separator.join(
+        [
+            "PARTYID=99106.003",
+            "PARTYIDSOURCE=proprietary/customcode",
+            "PARTYROLE=clientid",
+            "",
+        ]
+    )
+    return _kwargs_array([[(0, "NOPARTYIDS[0]", value)]])
+
+
+def _parties_from_kwargs(
+    codec: FixCodec,
+    kwargs: pyarrow.Array,
+    protocol: str,
+) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array]:
+    pairs = codec.into_pairs_from_kwargs(kwargs, protocol)
+    resolved = codec.complete_kwargs(codec.into_message_kwargs(pairs), "4.4")
+    columns, residual = codec.into_component_columns(resolved, "4.4")
+    return pairs, columns["Parties"], residual
+
+
+def test_multicharacter_entry_separator_reaches_a_populated_component(
+    packaged: FixCodec,
+) -> None:
+    separator = "\x04\x03"
+    kwargs = _packed_party_kwargs(separator)
+
+    assert kwargs_entry_separators(kwargs).to_pylist() == [separator]
+    pairs, parties, residual = _parties_from_kwargs(packaged, kwargs, "UL")
+
+    assert _pairs(pairs) == [
+        ("NOPARTYIDS[0].PARTYID", "99106.003"),
+        ("NOPARTYIDS[0].PARTYIDSOURCE", "proprietary/customcode"),
+        ("NOPARTYIDS[0].PARTYROLE", "clientid"),
+    ]
+    assert parties.to_pylist() == [
+        [
+            {
+                "PartyID": "99106.003",
+                "PartyIDSource": "proprietary/customcode",
+                "PartyRole": 3,
+                "buffer": None,
+            }
+        ]
+    ]
+    assert residual.to_pylist() == [[]]
+
+
+def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec) -> None:
+    separator = ".*"
+    rules = Rules.from_dict(
+        {
+            "rules": [
+                {
+                    "protocol": "VENDOR",
+                    "codec": "ul",
+                    "extra_entry_separators": [separator],
+                }
+            ]
+        }
+    )
+    rule = rules.rule("VENDOR")
+    codec = FixCodec(registry=packaged.registry, rules=rules)
+    kwargs = _packed_party_kwargs(separator)
+
+    assert rule.extra_entry_separators == (separator,)
+    assert kwargs_entry_separators(kwargs, rule.extra_entry_separators).to_pylist() == [separator]
+    pairs, parties, residual = _parties_from_kwargs(codec, kwargs, "VENDOR")
+
+    assert _pairs(pairs)[-1] == ("NOPARTYIDS[0].PARTYROLE", "clientid")
+    assert parties.to_pylist()[0][0] == {
+        "PartyID": "99106.003",
+        "PartyIDSource": "proprietary/customcode",
+        "PartyRole": 3,
+        "buffer": None,
+    }
+    assert residual.to_pylist() == [[]]
 
 
 def _party_rows(codec: FixCodec, message: str, version: str) -> list[dict[str, object]] | None:

@@ -101,7 +101,7 @@ def test_the_partition_clock_is_narrower_than_the_instant() -> None:
     assert Order.into_field().field("unix_partition").arrow_type == pyarrow.int32()
     assert Order.into_field().field("unix").arrow_type == pyarrow.int64()
     assert Order.into_field().field("unix_partition").metadata["unit"] == "second"
-    assert Order.into_field().field("unix").metadata["unit"] == "nanosecond"
+    assert Order.into_field().field("unix").metadata["unit"] == "ns"
 
 
 def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:

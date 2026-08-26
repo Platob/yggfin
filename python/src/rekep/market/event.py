@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 #: `FixMsg` makes, for the same reason: a width or a zone that a downstream is
 #: picky about is a conversion per row, and an integer survives every one of
 #: them unchanged.
-UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
+UNIX: dict[str, str] = {"unit": "ns", "epoch": "1970-01-01"}
 
 #: What the compact partition clock holds. It stays an integer so identity
 #: partitions remain portable between Arrow and Iceberg engines.

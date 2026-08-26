@@ -18,8 +18,8 @@ from rekep.fields.arrays import (
 )
 from rekep.kwargs import KWARGS, Kwarg
 
-# A generic argument name. The marker only delimits a rendered argument; it is
-# not part of the key's identity and is removed from the stored spelling.
+# A generic argument name. Capture its marker so `Kwarg` can remove it while
+# preserving that normalization for protocol-specific conversion.
 _NAME = r"[A-Za-z_][A-Za-z0-9_.\-]*"
 _BARE_KEY = rf"(?:[0-9]+|{_NAME})(?:\[[^\]\r\n]+\])?(?:\.[A-Za-z0-9_.\-]+)?"
 _KEY = rf"#?{_BARE_KEY}"
@@ -214,6 +214,14 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     keys = compute.struct_field(parsed, "key")
     matched = compute.fill_null(compute.is_valid(keys), False)
     keys = compute.filter(keys, matched)
+    if separator == "#":
+        parents = compute.list_parent_indices(tokens)
+        marked = compute.take(use_marked, compute.filter(parents, matched))
+        keys = compute.if_else(
+            marked,
+            compute.binary_join_element_wise("#", keys, ""),
+            keys,
+        )
     values = compute.utf8_trim_whitespace(
         compute.fill_null(compute.filter(compute.struct_field(parsed, "value"), matched), "")
     )

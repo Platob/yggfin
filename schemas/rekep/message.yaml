@@ -1,69 +1,44 @@
 name: Message
 type: struct
 description: One log header, its provenance, and its protocol-neutral payload.
-metadata:
-  namespace: rekep.text.message
-  version: '4'
+metadata: {namespace: rekep.text.message, version: '1'}
 fields:
 - name: unix
   type: int64
   description: When the event happened, in whole nanoseconds since the epoch.
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
-  iceberg:
-    primary_key: 'true'
-    sort_key: asc
+  metadata: {unit: ns, epoch: '1970-01-01'}
+  iceberg: {primary_key: 'true', sort_key: asc}
 - name: unix_partition
   type: int32
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
-  metadata:
-    unit: second
-    epoch: '1970-01-01'
-  iceberg:
-    partition_key: identity
-    derived_from: unix
+  metadata: {unit: second, epoch: '1970-01-01'}
+  iceberg: {partition_key: identity, derived_from: unix}
 - name: etype
   type: int32
-  description: Which kind of event this is -- the one column a union of the tables
-    needs.
-  enum:
-    name: EventType
-    key_type: int32
-    value_type: utf8
-    values: '{"0":"UNKNOWN","10":"MISC","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+  description: Which kind of event this is -- the one column a union of the tables needs.
+  enum: {name: EventType, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","10":"MISC","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'}
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
+  metadata: {unit: ns, epoch: '1970-01-01'}
 - name: runix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
+  metadata: {unit: ns, epoch: '1970-01-01'}
 - name: eunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
+  metadata: {unit: ns, epoch: '1970-01-01'}
 - name: sunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
+  metadata: {unit: ns, epoch: '1970-01-01'}
 - name: hash
   type: int64
-  description: 'Digest of this version''s content: the same version, twice, is one
-    row.'
-  iceberg:
-    primary_key: 'true'
+  description: 'Digest of this version''s content: the same version, twice, is one row.'
+  iceberg: {primary_key: 'true'}
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
@@ -82,21 +57,14 @@ fields:
   description: Which version of `xhash` this is, counting up from the first.
 - name: state
   type: int32
-  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
-    is over.'
-  enum:
-    name: State
-    key_type: int32
-    value_type: utf8
-    values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
-    fix_values: '{"35":{"D":110,"F":240,"G":230,"9":0},"39":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"D":220,"E":230},"150":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"E":230,"F":310,"G":520,"H":510},"279":{"0":210,"1":200,"2":510,"3":510,"4":510,"5":200},"297":{"0":220,"1":510,"2":510,"3":510,"4":510,"5":610,"6":510,"7":530,"9":610,"10":100,"11":510,"12":200,"13":200,"14":510,"15":510,"16":200,"17":510,"18":200,"19":240,"21":410,"22":410,"23":530},"694":{"1":410,"2":200,"3":530,"4":200,"5":510,"6":510,"7":510,"8":510,"9":200,"10":200,"11":220,"12":510}}'
+  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over.'
+  enum: {name: State, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":110,"F":240,"G":230,"9":0},"39":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"D":220,"E":230},"150":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"E":230,"F":310,"G":520,"H":510},"279":{"0":210,"1":200,"2":510,"3":510,"4":510,"5":200},"297":{"0":220,"1":510,"2":510,"3":510,"4":510,"5":610,"6":510,"7":530,"9":610,"10":100,"11":510,"12":200,"13":200,"14":510,"15":510,"16":200,"17":510,"18":200,"19":240,"21":410,"22":410,"23":530},"694":{"1":410,"2":200,"3":530,"4":200,"5":510,"6":510,"7":510,"8":510,"9":200,"10":200,"11":220,"12":510}}'}
 - name: code
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
 - name: codes
   type: map
-  description: Every other identifier the source spelled, by the name that carried
-    it.
+  description: Every other identifier the source spelled, by the name that carried it.
   key:
     type: string
   value:
@@ -105,9 +73,7 @@ fields:
   type: int64
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
-  metadata:
-    unit: nanosecond
-    epoch: '1970-01-01'
+  metadata: {unit: ns, epoch: '1970-01-01'}
 - name: parent_hash
   type: list
   nullable: true
@@ -118,14 +84,7 @@ fields:
   type: int32
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
-  enum:
-    name: MIC
-    key_type: int32
-    value_type: utf8
-    values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
-    encoding: ascii-big-endian
-    max_bytes: '4'
-    pattern: '[A-Z0-9]{4}'
+  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, max_bytes: '4', pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
@@ -135,8 +94,7 @@ fields:
   description: Path of the log the row came from, as its filesystem addresses it.
 - name: source_rownum
   type: int64
-  description: 1-based physical line number of the header; 0 when not read from a
-    file.
+  description: 1-based physical line number of the header; 0 when not read from a file.
 - name: thread_name
   type: string
   description: Contents of the first bracketed header field.
@@ -145,8 +103,7 @@ fields:
   description: Contents of the second bracketed header field.
 - name: message
   type: string
-  description: Payload after the fixed log header, with continuation lines folded
-    in.
+  description: Payload after the fixed log header, with continuation lines folded in.
 - name: protocol_code
   type: string
   description: Protocol syntax detected without interpreting its fields.

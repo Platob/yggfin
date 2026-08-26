@@ -46,8 +46,10 @@ class Kwarg(Convertible, Mapping[str, Any]):
             self.comp = comp
         else:
             inferred = _terminal_tag(spelling)
-            self.namespace = None if self.namespace is None else str(self.namespace)
-            self.comp = None if self.comp is None else str(self.comp)
+            namespace = None if self.namespace is None else str(self.namespace)
+            comp = None if self.comp is None else str(self.comp)
+            self.namespace = None if namespace is None else namespace.removeprefix("#")
+            self.comp = None if comp is None else comp.removeprefix("#")
         self.tag = int(self.tag or inferred)
         self.key = spelling
         self.value = "" if self.value is None else str(self.value)
@@ -59,27 +61,17 @@ class Kwarg(Convertible, Mapping[str, Any]):
             return entry
         if isinstance(entry, Mapping):
             value = entry.get("value")
-            spelling = str(entry["key"]).removeprefix("#")
-            namespace = entry.get("namespace")
-            comp = entry.get("comp")
-            parsed = _key_parts(spelling) if namespace is None and comp is None else None
-            stored_tag = entry.get("tag")
-            inferred_tag = parsed[0] if parsed is not None else _terminal_tag(spelling)
             return cls(
-                tag=int(stored_tag or inferred_tag),
-                key=parsed[1] if parsed is not None else spelling,
+                tag=int(entry.get("tag") or 0),
+                key=str(entry["key"]),
                 value="" if value is None else str(value),
-                namespace=parsed[2] if parsed is not None else namespace,
-                comp=parsed[3] if parsed is not None else comp,
+                namespace=entry.get("namespace"),
+                comp=entry.get("comp"),
             )
         key, value = entry
-        tag, spelling, namespace, comp = _key_parts(str(key).removeprefix("#"))
         return cls(
-            tag=tag,
-            key=spelling,
+            key=str(key),
             value="" if value is None else str(value),
-            namespace=namespace,
-            comp=comp,
         )
 
     def __getitem__(self, name: str) -> Any:
@@ -121,7 +113,7 @@ class Kwarg(Convertible, Mapping[str, Any]):
         return pop_arrow(stored, names, case_sensitive=case_sensitive)
 
     @staticmethod
-    def structure_arrow(keys: Any, values: Any) -> tuple[Any, Any, Any, Any, Any]:
+    def structure_arrow(keys: Any, values: Any) -> tuple[Any, ...]:
         """Split key spellings into the stable argument members."""
         compute = pyarrow.compute
         keys = compute.replace_substring_regex(keys, pattern=r"^#", replacement="")

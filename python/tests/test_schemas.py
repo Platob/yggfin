@@ -19,7 +19,6 @@ PUBLISHED = {
     "order.yaml": Order,
     "execution.yaml": Execution,
 }
-VERSIONS = {"message.yaml": "4", "fixmsg.yaml": "6"}
 
 
 def test_only_pipeline_outputs_are_published() -> None:
@@ -30,9 +29,10 @@ def test_only_pipeline_outputs_are_published() -> None:
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
 def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
     contract = Field.from_(str(path))
+    assert path.read_bytes() == contract.into_yaml()
     assert Field.from_dict(contract.into_dict()) == contract
     assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == VERSIONS.get(path.name, "1")
+    assert contract.metadata["version"] == "1"
 
 
 @pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))

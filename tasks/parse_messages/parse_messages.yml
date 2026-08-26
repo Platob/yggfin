@@ -4,11 +4,11 @@ parameters:
   project_root: .
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
   source: data/capture
-  # MsgType metadata maps values to EventType codes and skips registry-declared
-  # technical traffic before a row reaches protocol translation.
+  # MsgType metadata maps values to EventType codes before protocol translation.
   fix_dictionary: data/fix
   # Protocol syntax classification. Null uses the shipped default rules; keep
-  # custom rules aligned with parse_fix.
+  # custom rules aligned with parse_fix. Rules may add literal nested-group
+  # delimiters through `extra_entry_separators`.
   protocols: null
   pattern: "*.log*"
   # The fixed header every line opens with, as a regex naming `timestamp`,
@@ -25,7 +25,7 @@ parameters:
   exclude_regexes: []
   # Exact FIX MsgTypes retained or dropped before key/value parsing.
   include_msgtypes: []
-  exclude_msgtypes: ["0", "1"]
+  exclude_msgtypes: []
   # Exact plugin codes excluded after parsing and before persistence.
   technical_plugins: [jolokia]
   start: null

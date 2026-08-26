@@ -55,6 +55,21 @@ nav:
       - Types: types.md
       - Schema contracts: contracts.md
       - Binary identities: identity.md
+  - Enums:
+      - Overview: enums/index.md
+      - Events:
+          - Event type: enums/event-type.md
+          - State: enums/state.md
+      - Instruments:
+          - Asset kind: enums/asset-kind.md
+          - Identifier source: enums/id-source.md
+          - Market identifier: enums/mic.md
+          - Currency: enums/currency.md
+          - Option kind: enums/option-kind.md
+      - Orders:
+          - Side: enums/side.md
+          - Market kind: enums/market-kind.md
+          - Time in force: enums/time-in-force.md
   - FIX and market:
       - FixMsg: fixmsg.md
       - FIX registry:

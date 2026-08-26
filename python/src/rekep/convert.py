@@ -142,8 +142,12 @@ class Convertible:
     ) -> bytes | None:
         """Write this instance to `target` as YAML, or return the bytes."""
         yaml = require("yaml", "yaml")
-        payload = yaml.safe_dump(self.into_dict(), sort_keys=False, allow_unicode=True)
+        payload = self._dump_yaml(yaml)
         return _write(payload.encode(), target, filesystem)
+
+    def _dump_yaml(self, yaml: Any) -> str:
+        """Encode this document with its YAML layout."""
+        return yaml.safe_dump(self.into_dict(), sort_keys=False, allow_unicode=True)
 
     def into_toml(
         self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None

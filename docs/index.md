@@ -36,6 +36,51 @@ Concrete stages are notebooks with adjacent YAML files under `tasks/`. The
 package owns reusable parsing, schemas, lifecycle logic, and storage adapters;
 it does not own deployment-specific jobs.
 
+## One record end to end
+
+```python
+from rekep import FixMsg, Message
+from rekep.market import Book, Execution, Order
+
+line = (
+    "8=FIX.4.4|35=8|52=20260821-10:30:00.250|"
+    "37=ORD-9|11=CL-7|17=EX-3|150=F|39=1|"
+    "55=BTC-USD|207=XCME|15=USD|54=1|38=10|44=100.5|"
+    "32=4|31=100.25|14=4|151=6|60=20260821-10:29:59.998|10=123"
+)
+
+# logs.messages: protocol-neutral source record
+message = Message(
+    message=line,
+    source_url="capture.log",
+    source_rownum=1,
+).identify()
+
+# fix.market: registry-resolved FIX record
+fixmsg = FixMsg.from_text(
+    message.message,
+    source_url=message.source_url,
+    source_rownum=message.source_rownum,
+)
+
+# market.orders and market.executions
+events = list(fixmsg.into_market_events(fix_version="4.4"))
+order = next(event for event in events if isinstance(event, Order))
+execution = next(event for event in events if isinstance(event, Execution))
+
+# market.instruments and market.books
+instrument = fixmsg.into_instrument(fix_version="4.4")
+book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
+
+assert message.MsgType == fixmsg.MsgType == "8"
+assert (order.client_order_id, order.qty) == ("CL-7", 6.0)
+assert (execution.exec_id, execution.qty, execution.px) == ("EX-3", 4.0, 100.25)
+assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
+```
+
+The scalar example exposes each boundary. File-scale work keeps the same
+shapes in Arrow batches, as shown below and in the [pipeline guide](tasks.md).
+
 ## Guides
 
 **Declaring data**
@@ -44,6 +89,7 @@ it does not own deployment-specific jobs.
 - [Design](design.md): boundaries and maintenance rules.
 - [Types](types.md): `@scalar`, fields, and recursive casts.
 - [Contracts](contracts.md): the six portable schemas.
+- [Enums](enums/index.md): stored keys, values, and FIX spellings.
 - [Identity](identity.md): cross-language binary hashing.
 
 **Parsing**

@@ -8,6 +8,8 @@ parameters:
   end: null
   fix_dictionary: data/fix
   null_values: ["", "null", "<null>", "n/a"]
+  # Each rule may extend indexed-group delimiter detection with
+  # `extra_entry_separators`; keep this document aligned with parse_messages.
   protocols: null
   # How named fields read, where a job says what the dictionary cannot: a
   # vendor tag that carries an instant, a value spelling only this estate

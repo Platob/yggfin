@@ -740,6 +740,16 @@ def test_msgtype_filters_run_before_kwarg_parsing(
     assert included.column("MsgType").to_pylist() == ["D"]
 
 
+def test_msgtype_filters_retain_administrative_messages_by_default(tmp_path: Path) -> None:
+    log = _timed_log(
+        tmp_path / "admin-msgtypes.txt",
+        ("2026-08-14 00:05:01.000", "35=0|Text=heartbeat|"),
+        ("2026-08-14 00:05:02.000", "MsgType=1|Text=test|"),
+    )
+
+    assert log.read_arrow_table().column("MsgType").to_pylist() == ["0", "1"]
+
+
 def test_time_filter_runs_before_payload_utf8_decoding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
