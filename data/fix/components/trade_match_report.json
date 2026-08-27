@@ -1,0 +1,154 @@
+{
+ "name": "TradeMatchReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeMatchReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeMatchReport",
+   "msgtype": "DC"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdMatchID",
+    "type": "string",
+    "fix": {
+     "tag": "880"
+    }
+   },
+   {
+    "name": "MatchType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "574"
+    }
+   },
+   {
+    "name": "TradeReportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "856"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "828"
+    }
+   },
+   {
+    "name": "TrdSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "829"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "VenueType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1430"
+    }
+   },
+   {
+    "name": "TradeMatchTimestamp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1888"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "MultiLegReportingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "442"
+    }
+   },
+   {
+    "name": "InstrmtMatchSideGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtMatchSideGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

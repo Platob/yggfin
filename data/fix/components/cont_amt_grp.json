@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ContAmtGrp"
+   "component": "ContAmtGrp",
+   "msgtypes": "[\"ExecutionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

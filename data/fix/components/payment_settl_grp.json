@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "PaymentSettlGrp"
+   "component": "PaymentSettlGrp",
+   "msgtypes": "[\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\"]"
   },
   "fields": [
    {

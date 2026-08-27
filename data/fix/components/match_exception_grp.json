@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "MatchExceptionGrp"
+   "component": "MatchExceptionGrp",
+   "msgtypes": "[\"Confirmation\",\"ConfirmationAck\"]"
   },
   "fields": [
    {

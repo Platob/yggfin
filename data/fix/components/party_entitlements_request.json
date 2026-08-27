@@ -1,0 +1,127 @@
+{
+ "name": "PartyEntitlementsRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyEntitlementsRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementsRequest",
+   "msgtype": "CU"
+  },
+  "fields": [
+   {
+    "name": "EntitlementRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1770"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "RequestedPartyRoleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestedPartyRoleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "EntitlementStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1883"
+    }
+   },
+   {
+    "name": "EntitlementTypeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "EntitlementTypeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "EntitlementPlatform",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1784"
+    }
+   },
+   {
+    "name": "InstrumentScopeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScopeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketSegmentScopeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketSegmentScopeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

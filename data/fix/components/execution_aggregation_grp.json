@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ExecutionAggregationGrp"
+   "component": "ExecutionAggregationGrp",
+   "msgtypes": "[\"TradeAggregationRequest\"]"
   },
   "fields": [
    {

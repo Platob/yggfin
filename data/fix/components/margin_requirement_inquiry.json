@@ -1,0 +1,138 @@
+{
+ "name": "MarginRequirementInquiry",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarginRequirementInquiry",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarginRequirementInquiry",
+   "msgtype": "CH"
+  },
+  "fields": [
+   {
+    "name": "MarginReqmtInqID",
+    "type": "string",
+    "fix": {
+     "tag": "1635"
+    }
+   },
+   {
+    "name": "MarginReqmtInqQualGrp",
+    "type": "struct",
+    "fix": {
+     "component": "MarginReqmtInqQualGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "ResponseTransportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "725"
+    }
+   },
+   {
+    "name": "ResponseDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "726"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "MarginClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1639"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

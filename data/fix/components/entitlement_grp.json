@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "EntitlementGrp"
+   "component": "EntitlementGrp",
+   "msgtypes": "[\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\"]"
   },
   "fields": [
    {

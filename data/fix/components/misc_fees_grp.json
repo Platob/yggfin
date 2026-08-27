@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "MiscFeesGrp"
+   "component": "MiscFeesGrp",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ExecutionReport\",\"MarketDefinition\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

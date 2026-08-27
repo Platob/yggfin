@@ -1,0 +1,146 @@
+{
+ "name": "PositionTransferInstructionAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PositionTransferInstructionAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionTransferInstructionAck",
+   "msgtype": "DM"
+  },
+  "fields": [
+   {
+    "name": "TransferInstructionID",
+    "type": "string",
+    "fix": {
+     "tag": "2436"
+    }
+   },
+   {
+    "name": "TransferID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2437"
+    }
+   },
+   {
+    "name": "TransferTransType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2439"
+    }
+   },
+   {
+    "name": "TransferType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2440"
+    }
+   },
+   {
+    "name": "TransferStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2442"
+    }
+   },
+   {
+    "name": "TransferRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2443"
+    }
+   },
+   {
+    "name": "TransferScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2441"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

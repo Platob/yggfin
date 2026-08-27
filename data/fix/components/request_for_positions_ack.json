@@ -1,0 +1,252 @@
+{
+ "name": "RequestForPositionsAck",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "RequestForPositionsAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RequestForPositionsAck",
+   "msgtype": "AO"
+  },
+  "fields": [
+   {
+    "name": "PosMaintRptID",
+    "type": "string",
+    "fix": {
+     "tag": "721"
+    }
+   },
+   {
+    "name": "PosReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "710"
+    }
+   },
+   {
+    "name": "TotalNumPosReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "727"
+    }
+   },
+   {
+    "name": "TotNumReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "911"
+    }
+   },
+   {
+    "name": "UnsolicitedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "325"
+    }
+   },
+   {
+    "name": "PosReqResult",
+    "type": "string",
+    "fix": {
+     "tag": "728"
+    }
+   },
+   {
+    "name": "PosReqStatus",
+    "type": "string",
+    "fix": {
+     "tag": "729"
+    }
+   },
+   {
+    "name": "PosReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "724"
+    }
+   },
+   {
+    "name": "MatchStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "573"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "SettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "120"
+    }
+   },
+   {
+    "name": "SettlCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2899"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ResponseTransportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "725"
+    }
+   },
+   {
+    "name": "ResponseDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "726"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,58 @@
+{
+ "name": "NetworkCounterpartySystemStatusResponse",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "NetworkCounterpartySystemStatusResponse",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NetworkCounterpartySystemStatusResponse",
+   "msgtype": "BD"
+  },
+  "fields": [
+   {
+    "name": "NetworkStatusResponseType",
+    "type": "string",
+    "fix": {
+     "tag": "937"
+    }
+   },
+   {
+    "name": "NetworkRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "933"
+    }
+   },
+   {
+    "name": "NetworkResponseID",
+    "type": "string",
+    "fix": {
+     "tag": "932"
+    }
+   },
+   {
+    "name": "LastNetworkResponseID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "934"
+    }
+   },
+   {
+    "name": "CompIDStatGrp",
+    "type": "struct",
+    "fix": {
+     "component": "CompIDStatGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

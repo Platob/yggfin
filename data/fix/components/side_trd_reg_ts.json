@@ -10,7 +10,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "SideTrdRegTS"
+   "component": "SideTrdRegTS",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

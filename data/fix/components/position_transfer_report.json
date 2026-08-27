@@ -1,0 +1,232 @@
+{
+ "name": "PositionTransferReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PositionTransferReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionTransferReport",
+   "msgtype": "DN"
+  },
+  "fields": [
+   {
+    "name": "TransferInstructionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2436"
+    }
+   },
+   {
+    "name": "TransferReportID",
+    "type": "string",
+    "fix": {
+     "tag": "2438"
+    }
+   },
+   {
+    "name": "TransferID",
+    "type": "string",
+    "fix": {
+     "tag": "2437"
+    }
+   },
+   {
+    "name": "TransferTransType",
+    "type": "string",
+    "fix": {
+     "tag": "2439"
+    }
+   },
+   {
+    "name": "TransferReportType",
+    "type": "string",
+    "fix": {
+     "tag": "2444"
+    }
+   },
+   {
+    "name": "TransferStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2442"
+    }
+   },
+   {
+    "name": "TransferRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2443"
+    }
+   },
+   {
+    "name": "TransferScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2441"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingTradePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1596"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

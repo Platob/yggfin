@@ -1,0 +1,172 @@
+{
+ "name": "SecurityMassStatus",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SecurityMassStatus",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityMassStatus",
+   "msgtype": "CO"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecurityStatusReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "324"
+    }
+   },
+   {
+    "name": "SecurityListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1465"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "InstrumentScope",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScope"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnsolicitedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "325"
+    }
+   },
+   {
+    "name": "SecurityMassTradingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1679"
+    }
+   },
+   {
+    "name": "FastMarketIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2447"
+    }
+   },
+   {
+    "name": "SecurityMassTradingEvent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1680"
+    }
+   },
+   {
+    "name": "MassHaltReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1681"
+    }
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1021"
+    }
+   },
+   {
+    "name": "MarketDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "264"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Adjustment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "334"
+    }
+   },
+   {
+    "name": "SecMassStatGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecMassStatGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

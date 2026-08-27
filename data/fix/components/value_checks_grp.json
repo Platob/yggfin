@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ValueChecksGrp"
+   "component": "ValueChecksGrp",
+   "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\"]"
   },
   "fields": [
    {

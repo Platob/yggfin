@@ -1,0 +1,122 @@
+{
+ "name": "PartyActionRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyActionRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyActionRequest",
+   "msgtype": "DH"
+  },
+  "fields": [
+   {
+    "name": "PartyActionRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2328"
+    }
+   },
+   {
+    "name": "PartyActionType",
+    "type": "string",
+    "fix": {
+     "tag": "2329"
+    }
+   },
+   {
+    "name": "ApplTestMessageIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2330"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "InstrumentScope",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScope"
+    },
+    "fields": []
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedPartyDetailGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedPartyDetailGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

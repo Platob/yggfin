@@ -266,9 +266,13 @@ class Shell:
         )
         self.console.rule(f"{len(entries)} component{'' if len(entries) == 1 else 's'}")
         self.console.table(
-            ("name", "versions"),
+            ("name", "msgtype", "versions"),
             [
-                (self.console.style(entry.name, "white"), ", ".join(entry.versions))
+                (
+                    self.console.style(entry.name, "white"),
+                    entry.msg_type or "",
+                    ", ".join(entry.versions),
+                )
                 for entry in entries[:PAGE]
             ],
         )

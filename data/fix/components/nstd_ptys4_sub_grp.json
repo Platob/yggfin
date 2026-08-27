@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "NstdPtys4SubGrp"
+   "component": "NstdPtys4SubGrp",
+   "msgtypes": "[\"ExecutionReport\"]"
   },
   "fields": [
    {

@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "MarketSegmentScopeGrp"
+   "component": "MarketSegmentScopeGrp",
+   "msgtypes": "[\"MarketDataRequest\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\"]"
   },
   "fields": [
    {

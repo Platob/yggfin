@@ -1,0 +1,380 @@
+{
+ "name": "CollateralRequest",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "CollateralRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CollateralRequest",
+   "msgtype": "AX"
+  },
+  "fields": [
+   {
+    "name": "CollReqID",
+    "type": "string",
+    "fix": {
+     "tag": "894"
+    }
+   },
+   {
+    "name": "CollAsgnReason",
+    "type": "string",
+    "fix": {
+     "tag": "895"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "ExpireTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "126"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "SecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "198"
+    }
+   },
+   {
+    "name": "SecondaryClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "526"
+    }
+   },
+   {
+    "name": "ExecCollGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ExecCollGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdCollGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdCollGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "Quantity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "53"
+    }
+   },
+   {
+    "name": "QtyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "854"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtCollGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtCollGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarginExcess",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "899"
+    }
+   },
+   {
+    "name": "TotalNetValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "900"
+    }
+   },
+   {
+    "name": "CashOutstanding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "901"
+    }
+   },
+   {
+    "name": "TrdRegTimestamps",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdRegTimestamps"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "MiscFeesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MiscFeesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Price",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "44"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "AccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "159"
+    }
+   },
+   {
+    "name": "EndAccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "920"
+    }
+   },
+   {
+    "name": "StartCash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "921"
+    }
+   },
+   {
+    "name": "EndCash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "922"
+    }
+   },
+   {
+    "name": "SpreadOrBenchmarkCurveData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SpreadOrBenchmarkCurveData"
+    },
+    "fields": []
+   },
+   {
+    "name": "Stipulations",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Stipulations"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

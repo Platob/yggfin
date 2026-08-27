@@ -1,0 +1,206 @@
+{
+ "name": "NewOrderList",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "NewOrderList",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NewOrderList",
+   "msgtype": "E"
+  },
+  "fields": [
+   {
+    "name": "ListID",
+    "type": "string",
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "BidID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "390"
+    }
+   },
+   {
+    "name": "ClientBidID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "391"
+    }
+   },
+   {
+    "name": "ProgRptReqs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "414"
+    }
+   },
+   {
+    "name": "BidType",
+    "type": "string",
+    "fix": {
+     "tag": "394"
+    }
+   },
+   {
+    "name": "ProgPeriodInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "415"
+    }
+   },
+   {
+    "name": "CancellationRights",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "480"
+    }
+   },
+   {
+    "name": "MoneyLaunderingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "481"
+    }
+   },
+   {
+    "name": "RegistID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "513"
+    }
+   },
+   {
+    "name": "ListExecInstType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "433"
+    }
+   },
+   {
+    "name": "ListExecInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "69"
+    }
+   },
+   {
+    "name": "ContingencyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1385"
+    }
+   },
+   {
+    "name": "EncodedListExecInstLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "352"
+    }
+   },
+   {
+    "name": "EncodedListExecInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "353"
+    }
+   },
+   {
+    "name": "AllowableOneSidednessPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "765"
+    }
+   },
+   {
+    "name": "AllowableOneSidednessValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "766"
+    }
+   },
+   {
+    "name": "AllowableOneSidednessCurr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "767"
+    }
+   },
+   {
+    "name": "ListManualOrderIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2401"
+    }
+   },
+   {
+    "name": "TotNoOrders",
+    "type": "string",
+    "fix": {
+     "tag": "68"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "RootParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RootParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ListOrdGrp",
+    "type": "struct",
+    "fix": {
+     "component": "ListOrdGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   }
+  ]
+ }
+}

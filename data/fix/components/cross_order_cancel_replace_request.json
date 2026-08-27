@@ -1,0 +1,547 @@
+{
+ "name": "CrossOrderCancelReplaceRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "CrossOrderCancelReplaceRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CrossOrderCancelReplaceRequest",
+   "msgtype": "t"
+  },
+  "fields": [
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "OrderRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2422"
+    }
+   },
+   {
+    "name": "CrossID",
+    "type": "string",
+    "fix": {
+     "tag": "548"
+    }
+   },
+   {
+    "name": "OrigCrossID",
+    "type": "string",
+    "fix": {
+     "tag": "551"
+    }
+   },
+   {
+    "name": "HostCrossID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "961"
+    }
+   },
+   {
+    "name": "CrossType",
+    "type": "string",
+    "fix": {
+     "tag": "549"
+    }
+   },
+   {
+    "name": "CrossPrioritization",
+    "type": "string",
+    "fix": {
+     "tag": "550"
+    }
+   },
+   {
+    "name": "RootParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RootParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "SideCrossOrdModGrp",
+    "type": "struct",
+    "fix": {
+     "component": "SideCrossOrdModGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "63"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "HandlInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "21"
+    }
+   },
+   {
+    "name": "ExecInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "18"
+    }
+   },
+   {
+    "name": "MinQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "110"
+    }
+   },
+   {
+    "name": "MinQtyMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1822"
+    }
+   },
+   {
+    "name": "MatchIncrement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1089"
+    }
+   },
+   {
+    "name": "MaxPriceLevels",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1090"
+    }
+   },
+   {
+    "name": "DisplayInstruction",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DisplayInstruction"
+    },
+    "fields": []
+   },
+   {
+    "name": "MaxFloor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "111"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "ExDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "100"
+    }
+   },
+   {
+    "name": "ExDestinationIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1133"
+    }
+   },
+   {
+    "name": "TrdgSesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdgSesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ProcessCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "81"
+    }
+   },
+   {
+    "name": "PrevClosePx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "140"
+    }
+   },
+   {
+    "name": "LocateReqd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "114"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TransBkdTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "483"
+    }
+   },
+   {
+    "name": "Stipulations",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Stipulations"
+    },
+    "fields": []
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "fix": {
+     "tag": "40"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "Price",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "44"
+    }
+   },
+   {
+    "name": "PriceProtectionScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1092"
+    }
+   },
+   {
+    "name": "StopPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "99"
+    }
+   },
+   {
+    "name": "TriggeringInstruction",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TriggeringInstruction"
+    },
+    "fields": []
+   },
+   {
+    "name": "SpreadOrBenchmarkCurveData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SpreadOrBenchmarkCurveData"
+    },
+    "fields": []
+   },
+   {
+    "name": "YieldData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "YieldData"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "IOIID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "23"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "59"
+    }
+   },
+   {
+    "name": "EffectiveTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "168"
+    }
+   },
+   {
+    "name": "ExpireDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "432"
+    }
+   },
+   {
+    "name": "ExpireTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "126"
+    }
+   },
+   {
+    "name": "GTBookingInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "427"
+    }
+   },
+   {
+    "name": "ExposureDuration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1629"
+    }
+   },
+   {
+    "name": "ExposureDurationUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1916"
+    }
+   },
+   {
+    "name": "TradingCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1815"
+    }
+   },
+   {
+    "name": "MaxShow",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "210"
+    }
+   },
+   {
+    "name": "PegInstructions",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PegInstructions"
+    },
+    "fields": []
+   },
+   {
+    "name": "DiscretionInstructions",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DiscretionInstructions"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetStrategy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "847"
+    }
+   },
+   {
+    "name": "StrategyParametersGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "StrategyParametersGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetStrategyParameters",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "848"
+    }
+   },
+   {
+    "name": "ParticipationRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "849"
+    }
+   },
+   {
+    "name": "CancellationRights",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "480"
+    }
+   },
+   {
+    "name": "MoneyLaunderingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "481"
+    }
+   },
+   {
+    "name": "RegistID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "513"
+    }
+   },
+   {
+    "name": "Designation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "494"
+    }
+   },
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   }
+  ]
+ }
+}

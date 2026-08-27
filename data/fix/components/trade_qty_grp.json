@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "TradeQtyGrp"
+   "component": "TradeQtyGrp",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

@@ -1,0 +1,59 @@
+{
+ "name": "UserResponse",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "UserResponse",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UserResponse",
+   "msgtype": "BF"
+  },
+  "fields": [
+   {
+    "name": "UserRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "923"
+    }
+   },
+   {
+    "name": "Username",
+    "type": "string",
+    "fix": {
+     "tag": "553"
+    }
+   },
+   {
+    "name": "UserStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "926"
+    }
+   },
+   {
+    "name": "ThrottleParamsGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ThrottleParamsGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UserStatusText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "927"
+    }
+   }
+  ]
+ }
+}

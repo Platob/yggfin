@@ -1,0 +1,30 @@
+{
+ "name": "Heartbeat",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "Heartbeat",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Heartbeat",
+   "msgtype": "0"
+  },
+  "fields": [
+   {
+    "name": "TestReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "112"
+    }
+   }
+  ]
+ }
+}

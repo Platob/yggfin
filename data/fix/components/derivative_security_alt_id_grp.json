@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "DerivativeSecurityAltIDGrp"
+   "component": "DerivativeSecurityAltIDGrp",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\"]"
   },
   "fields": [
    {

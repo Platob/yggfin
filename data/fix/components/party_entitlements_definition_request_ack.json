@@ -1,0 +1,81 @@
+{
+ "name": "PartyEntitlementsDefinitionRequestAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyEntitlementsDefinitionRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementsDefinitionRequestAck",
+   "msgtype": "DB"
+  },
+  "fields": [
+   {
+    "name": "EntitlementRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1770"
+    }
+   },
+   {
+    "name": "EntitlementRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "1882"
+    }
+   },
+   {
+    "name": "EntitlementRequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1881"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyEntitlementAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyEntitlementAckGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

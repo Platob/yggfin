@@ -1,0 +1,120 @@
+{
+ "name": "MarketDataIncrementalRefresh",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDataIncrementalRefresh",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataIncrementalRefresh",
+   "msgtype": "X"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1021"
+    }
+   },
+   {
+    "name": "MDFeedType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1022"
+    }
+   },
+   {
+    "name": "MDSubFeedType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1683"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "MDReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "262"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "MDIncGrp",
+    "type": "struct",
+    "fix": {
+     "component": "MDIncGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ApplQueueDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "813"
+    }
+   },
+   {
+    "name": "ApplQueueResolution",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "814"
+    }
+   },
+   {
+    "name": "RoutingGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RoutingGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

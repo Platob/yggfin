@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "TransactionAttributeGrp"
+   "component": "TransactionAttributeGrp",
+   "msgtypes": "[\"CollateralReport\",\"PositionReport\",\"TradeCaptureReport\"]"
   },
   "fields": [
    {

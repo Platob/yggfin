@@ -1,0 +1,65 @@
+{
+ "name": "PartyEntitlementsDefinitionRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyEntitlementsDefinitionRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementsDefinitionRequest",
+   "msgtype": "DA"
+  },
+  "fields": [
+   {
+    "name": "EntitlementRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1770"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyEntitlementUpdateGrp",
+    "type": "struct",
+    "fix": {
+     "component": "PartyEntitlementUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

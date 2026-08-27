@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "MDRjctGrp"
+   "component": "MDRjctGrp",
+   "msgtypes": "[\"MarketDataRequestReject\"]"
   },
   "fields": [
    {

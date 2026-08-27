@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "BidCompReqGrp"
+   "component": "BidCompReqGrp",
+   "msgtypes": "[\"BidRequest\"]"
   },
   "fields": [
    {

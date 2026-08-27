@@ -1,0 +1,58 @@
+{
+ "name": "AllocationInstructionAlertRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AllocationInstructionAlertRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AllocationInstructionAlertRequest",
+   "msgtype": "DU"
+  },
+  "fields": [
+   {
+    "name": "AllocRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2758"
+    }
+   },
+   {
+    "name": "AllocGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1730"
+    }
+   },
+   {
+    "name": "AvgPxGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1731"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

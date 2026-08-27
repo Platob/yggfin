@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "NstdPtysSubGrp"
+   "component": "NstdPtysSubGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"ApplicationMessageRequest\",\"ApplicationMessageRequestAck\",\"AssignmentReport\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"RegistrationInstructions\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

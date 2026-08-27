@@ -1,0 +1,277 @@
+{
+ "name": "MarketDefinition",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDefinition",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDefinition",
+   "msgtype": "BU"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1394"
+    }
+   },
+   {
+    "name": "MarketReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1393"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "MarketSegmentDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1396"
+    }
+   },
+   {
+    "name": "EncodedMktSegmDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1397"
+    }
+   },
+   {
+    "name": "EncodedMktSegmDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1398"
+    }
+   },
+   {
+    "name": "ParentMktSegmID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1325"
+    }
+   },
+   {
+    "name": "MarketSegmentStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2542"
+    }
+   },
+   {
+    "name": "MarketSegmentType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2543"
+    }
+   },
+   {
+    "name": "MarketSegmentSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2544"
+    }
+   },
+   {
+    "name": "InstrumentScopeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScopeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedMarketSegmentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedMarketSegmentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "BaseTradingRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "BaseTradingRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "OrdTypeRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrdTypeRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "TimeInForceRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TimeInForceRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExecInstRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ExecInstRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "AuctionTypeRuleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AuctionTypeRuleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketDataFeedTypes",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketDataFeedTypes"
+    },
+    "fields": []
+   },
+   {
+    "name": "MatchRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MatchRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "FlexProductEligibilityGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FlexProductEligibilityGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "MiscFeesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MiscFeesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "EffectiveBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2400"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

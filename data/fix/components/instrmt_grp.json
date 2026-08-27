@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "InstrmtGrp"
+   "component": "InstrmtGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Email\",\"News\"]"
   },
   "fields": [
    {

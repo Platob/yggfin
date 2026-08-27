@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "StatsIndGrp"
+   "component": "StatsIndGrp",
+   "msgtypes": "[\"MarketDataIncrementalRefresh\"]"
   },
   "fields": [
    {

@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ThrottleResponse"
+   "component": "ThrottleResponse",
+   "msgtypes": "[\"ExecutionReport\",\"MassOrderAck\",\"MassQuoteAck\",\"QuoteStatusReport\"]"
   },
   "fields": [
    {

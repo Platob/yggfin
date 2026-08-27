@@ -50,9 +50,10 @@ EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
 #: What a store of those twelve fields holds: two tag shards (the fixture's
-#: tags straddle 500), two components and the version index. Derived from the
-#: fixture, then pinned, so a layout that stopped sharding fails here.
-EXPECTED_DOCUMENTS = 5
+#: tags straddle 500), two components, one message and the version index.
+#: Derived from the fixture, then pinned, so a layout that stopped sharding
+#: fails here.
+EXPECTED_DOCUMENTS = 6
 
 #: Where the fixture's `Side <54>` lands: tags 0 to 499.
 SIDE_SHARD = "fields/000000.json"
@@ -466,8 +467,8 @@ def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> 
         names = opened.namelist()
     written = [path.relative_to(dumped).as_posix() for path in dumped.rglob("*.json")]
     assert sorted(names) == sorted(written)
-    # Twelve fields in two tag shards, two components and the version index.
-    # Not a size claim -- five documents of a few hundred bytes each cost more
+    # Twelve fields in two tag shards, three blocks and the version index.
+    # Not a size claim -- six documents of a few hundred bytes each cost more
     # in zip headers than deflating them saves, and what compresses is the
     # whole dictionary (`tests/test_data.py`), not a fixture.
     assert len(names) == EXPECTED_DOCUMENTS
@@ -894,6 +895,7 @@ def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
 
 
 def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> None:
+    """The reusable blocks, and only those: a message is not read through."""
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     registry.fields("4.4")
     components = registry.components("4.4")
@@ -903,6 +905,20 @@ def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> No
     assert opener.name == "NoPartyIDs"
     assert opener.fix.tag == 453
     assert is_group(opener), "a count tag opens the group it counts"
+
+
+def test_a_message_is_declared_and_found_by_its_msgtype(tmp_path: Path) -> None:
+    """One record, one folder, two ways in: the name, and the wire code."""
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry.fields("4.4")
+    report = registry.merged_component("AE")
+    assert report.name == "TradeCaptureReport" and report.msg_type == "AE"
+    assert registry.merged_component("tradecapturereport") is report
+    assert registry.message_records() == {"AE": report}
+    assert [member.name for member in report.members] == ["TrdType", "Parties"]
+    # And the block it carries knows it is carried by it.
+    assert registry.merged_component("Parties").msgtypes == ("TradeCaptureReport",)
+    assert registry.merged_component("PtysSubGrp").msgtypes == ("TradeCaptureReport",)
 
 
 def test_group_delimiters_come_off_the_declared_components() -> None:

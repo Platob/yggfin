@@ -1,0 +1,141 @@
+{
+ "name": "AccountSummaryReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AccountSummaryReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AccountSummaryReport",
+   "msgtype": "CQ"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "AccountSummaryReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1699"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "TotalNetValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "900"
+    }
+   },
+   {
+    "name": "MarginExcess",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "899"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "SettlementAmountGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlementAmountGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarginAmount",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarginAmount"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "CollateralAmountGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CollateralAmountGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PayCollectGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PayCollectGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

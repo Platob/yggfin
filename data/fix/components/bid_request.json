@@ -1,0 +1,258 @@
+{
+ "name": "BidRequest",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "BidRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BidRequest",
+   "msgtype": "k"
+  },
+  "fields": [
+   {
+    "name": "BidID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "390"
+    }
+   },
+   {
+    "name": "ClientBidID",
+    "type": "string",
+    "fix": {
+     "tag": "391"
+    }
+   },
+   {
+    "name": "BidRequestTransType",
+    "type": "string",
+    "fix": {
+     "tag": "374"
+    }
+   },
+   {
+    "name": "ListName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "392"
+    }
+   },
+   {
+    "name": "TotNoRelatedSym",
+    "type": "string",
+    "fix": {
+     "tag": "393"
+    }
+   },
+   {
+    "name": "BidType",
+    "type": "string",
+    "fix": {
+     "tag": "394"
+    }
+   },
+   {
+    "name": "NumTickets",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "395"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "SideValue1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "396"
+    }
+   },
+   {
+    "name": "SideValue2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "397"
+    }
+   },
+   {
+    "name": "BidDescReqGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "BidDescReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "BidCompReqGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "BidCompReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LiquidityIndType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "409"
+    }
+   },
+   {
+    "name": "WtAverageLiquidity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "410"
+    }
+   },
+   {
+    "name": "ExchangeForPhysical",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "411"
+    }
+   },
+   {
+    "name": "OutMainCntryUIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "412"
+    }
+   },
+   {
+    "name": "CrossPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "413"
+    }
+   },
+   {
+    "name": "ProgRptReqs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "414"
+    }
+   },
+   {
+    "name": "ProgPeriodInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "415"
+    }
+   },
+   {
+    "name": "IncTaxInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "416"
+    }
+   },
+   {
+    "name": "ForexReq",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "121"
+    }
+   },
+   {
+    "name": "NumBidders",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "417"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "BidTradeType",
+    "type": "string",
+    "fix": {
+     "tag": "418"
+    }
+   },
+   {
+    "name": "BasisPxType",
+    "type": "string",
+    "fix": {
+     "tag": "419"
+    }
+   },
+   {
+    "name": "StrikeTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "443"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

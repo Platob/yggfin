@@ -24,7 +24,7 @@ from rekep.fix.quickfix import (
     is_group,
     is_reference,
     members_of,
-    parse_components,
+    parse_declarations,
     parse_session,
     parse_spec,
     reference_member,
@@ -33,17 +33,18 @@ from rekep.fix.quickfix import (
 
 SPEC = (Path(__file__).parent / "fixtures" / "FIX44.xml").read_text()
 
-#: Derived from the fixture, then pinned: its fields, values, and components.
+#: Derived from the fixture, then pinned: its fields, values, and the blocks
+#: it declares -- two components and the one message.
 EXPECTED_FIELDS = 11
 EXPECTED_VALUES = 6
-EXPECTED_COMPONENTS = 2
+EXPECTED_DECLARATIONS = 3
 
 
 def test_the_fixture_is_the_shape_the_tests_assume() -> None:
     parsed = parse_spec(SPEC)
     assert len(parsed) == EXPECTED_FIELDS
     assert sum(len(field.values) for field in parsed.values()) == EXPECTED_VALUES
-    assert len(parse_components(SPEC)) == EXPECTED_COMPONENTS
+    assert len(parse_declarations(SPEC)) == EXPECTED_DECLARATIONS
 
 
 # -- which file is which version ----------------------------------------------
@@ -101,7 +102,7 @@ def test_a_document_that_is_not_a_spec_reads_as_nothing() -> None:
     assert parse_spec("") == {}
     assert parse_spec("<fix><fields>") == {}
     assert parse_spec("not xml at all") == {}
-    assert parse_components("<broken") == {}
+    assert parse_declarations("<broken") == {}
     assert parse_session("<broken") == ()
 
 
@@ -121,7 +122,7 @@ def test_a_field_missing_its_number_or_name_is_skipped_rather_than_guessed() -> 
 
 
 def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
-    parties = parse_components(SPEC)["Parties"]
+    parties = parse_declarations(SPEC)["Parties"]
     assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
     group = members_of(parties)[0]
     assert is_group(group)
@@ -138,7 +139,7 @@ def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
 
 
 def test_a_nested_group_is_its_own_component_declaration() -> None:
-    subgroup = parse_components(SPEC)["PtysSubGrp"]
+    subgroup = parse_declarations(SPEC)["PtysSubGrp"]
     group = members_of(subgroup)[0]
     assert is_group(group)
     assert (group.name, group.fix.tag) == ("NoPartySubIDs", 802)
@@ -151,7 +152,7 @@ def test_a_nested_group_is_its_own_component_declaration() -> None:
 def test_a_component_declaration_round_trips_as_a_typed_document() -> None:
     """The document is the declaration's own: a struct of structs and lists,
     so what comes back is the same tree and not a resemblance of it."""
-    parties = parse_components(SPEC)["Parties"]
+    parties = parse_declarations(SPEC)["Parties"]
     rebuilt = Field.from_dict(parties.into_dict())
     assert rebuilt == parties
     group = members_of(rebuilt)[0]
@@ -236,7 +237,7 @@ def test_a_component_refusing_an_unknown_field_names_the_path() -> None:
     </component></components><fields/></fix>
     """
     with pytest.raises(ValueError, match="Parties.*Missing"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 def test_recursive_components_are_refused_by_their_chain() -> None:
@@ -247,7 +248,7 @@ def test_recursive_components_are_refused_by_their_chain() -> None:
     </components><fields/></fix>
     """
     with pytest.raises(ValueError, match=r"A -> B -> A"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 def test_an_unknown_component_reference_names_its_owner() -> None:
@@ -257,7 +258,7 @@ def test_an_unknown_component_reference_names_its_owner() -> None:
     </components><fields/></fix>
     """
     with pytest.raises(ValueError, match="Parties.*Missing"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 # -- what every message carries -----------------------------------------------

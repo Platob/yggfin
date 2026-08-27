@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ApplIDRequestAckGrp"
+   "component": "ApplIDRequestAckGrp",
+   "msgtypes": "[\"ApplicationMessageRequestAck\"]"
   },
   "fields": [
    {

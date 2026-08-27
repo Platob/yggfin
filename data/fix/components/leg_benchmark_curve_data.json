@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "LegBenchmarkCurveData"
+   "component": "LegBenchmarkCurveData",
+   "msgtypes": "[\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
   "fields": [
    {

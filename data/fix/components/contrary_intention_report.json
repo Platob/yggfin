@@ -1,0 +1,123 @@
+{
+ "name": "ContraryIntentionReport",
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ContraryIntentionReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ContraryIntentionReport",
+   "msgtype": "BO"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "ContIntRptID",
+    "type": "string",
+    "fix": {
+     "tag": "977"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "LateIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "978"
+    }
+   },
+   {
+    "name": "InputSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "979"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExpirationQty",
+    "type": "struct",
+    "fix": {
+     "component": "ExpirationQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

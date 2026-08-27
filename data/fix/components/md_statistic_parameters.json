@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "MDStatisticParameters"
+   "component": "MDStatisticParameters",
+   "msgtypes": "[\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\"]"
   },
   "fields": [
    {

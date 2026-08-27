@@ -12,7 +12,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "OrderQtyData"
+   "component": "OrderQtyData",
+   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DontKnowTrade\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MassOrder\",\"MassOrderAck\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [
    {

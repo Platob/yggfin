@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "TrdgSesGrp"
+   "component": "TrdgSesGrp",
+   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"MarketDataRequest\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"RequestForPositions\"]"
   },
   "fields": [
    {

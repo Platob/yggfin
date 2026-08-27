@@ -1,0 +1,46 @@
+{
+ "name": "Logout",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "Logout",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Logout",
+   "msgtype": "5"
+  },
+  "fields": [
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

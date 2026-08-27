@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "CollInqQualGrp"
+   "component": "CollInqQualGrp",
+   "msgtypes": "[\"CollateralInquiry\",\"CollateralInquiryAck\"]"
   },
   "fields": [
    {

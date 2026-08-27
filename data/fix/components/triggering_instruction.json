@@ -10,7 +10,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "TriggeringInstruction"
+   "component": "TriggeringInstruction",
+   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\"]"
   },
   "fields": [
    {

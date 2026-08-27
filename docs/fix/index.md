@@ -92,7 +92,8 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
 fields/named.json     the fields FIX never numbered
-components/parties.json  one component, declared as a Field
+components/parties.json          one component, declared as a Field
+components/new_order_single.json a message, declared the same way
 ```
 
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
@@ -305,15 +306,17 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 `data/fix.zip` is the whole dictionary and stays beside the repository. The
 wheel ships `rekep/fix/registry.zip`, a projection of it holding the keys
 `rekep.fix.publish.PROJECTED` names -- numbered tags, the fields FIX never
-numbered that the log gives a column, and every version's component
-declarations, whole.
+numbered that the log gives a column, and every version's declarations,
+messages included, whole.
 
 A component says where a repeating group starts and ends, so a projection that
 selected its members alongside the fields would end the group somewhere else,
-and one that dropped them extracts no group at all.
+and one that dropped them extracts no group at all. The messages travel for
+their own reason: a wheel that could not say what a `D` is would send every
+reader after the full dictionary.
 
 `components()` answers `[]` for a version whose spec declares none -- nothing
-before 4.3 has a component -- and `None` for a store that was never asked;
+before 4.3 has a reusable block -- and `None` for a store that was never asked;
 `components_available()` is what tells them apart.
 
 It hands back the components a version declares **and** the ones their trees
@@ -321,10 +324,30 @@ reference: a record keeps the newest member tree, so 4.3's `Parties` is now
 the tree that reaches `PartySubID` through `PtysSubGrp` rather than naming it
 directly, and a reader without `PtysSubGrp` would split the group elsewhere.
 
-A component record that defines a message carries its `fix:msgtype` (`"D"`,
-`"8"`); a reusable block omits the key rather than writing it null. The
-published dictionary's components come from the spec's `<components>`, so
-none of them carries one today.
+### A message is a component
+
+Both spec sections are read into one folder of records, because the only
+difference between the two declarations is that a message carries the code it
+arrives under. So `merged_component()` answers for a name, one of its aliases,
+or a MsgType -- `merged_component("D")` and `merged_component("NewOrderSingle")`
+are the same record -- and `message_records()` is the whole `{MsgType: record}`
+index, newest declaration winning a code two names claim (`J` is `Allocation`
+through 4.2 and `AllocationInstruction` after).
+
+```python
+single = registry.merged_component("D")
+single.msg_type                        # 'D'
+[member.name for member in single.members][:3]
+# ['ClOrdID', 'SecondaryClOrdID', 'ClOrdLinkID']
+registry.component_field("D", "4.4")   # the whole message as one Arrow field
+```
+
+A reusable block omits `fix:msgtype` rather than writing it null, and carries
+`fix:msgtypes` instead: the messages whose trees reach it, derived on the
+collapse exactly as a field's `used_in` is scraped. `Parties` names the
+ninety-odd messages that carry it; six blocks name none, because the standard
+reaches them from the session header (`HopGrp`, `MsgTypeGrp`) or no longer
+reaches them at all.
 
 ### One shape for a field, a group and a message
 

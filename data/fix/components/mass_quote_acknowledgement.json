@@ -1,0 +1,141 @@
+{
+ "name": "MassQuoteAcknowledgement",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1"
+ ],
+ "declaration": {
+  "name": "MassQuoteAcknowledgement",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MassQuoteAcknowledgement",
+   "msgtype": "b"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "QuoteStatus",
+    "type": "string",
+    "fix": {
+     "tag": "297"
+    }
+   },
+   {
+    "name": "QuoteRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "300"
+    }
+   },
+   {
+    "name": "QuoteResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "301"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteCancelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "298"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "QuotSetAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuotSetAckGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

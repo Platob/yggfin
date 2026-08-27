@@ -1,0 +1,664 @@
+{
+ "name": "PositionReport",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PositionReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionReport",
+   "msgtype": "AP"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "PosMaintRptID",
+    "type": "string",
+    "fix": {
+     "tag": "721"
+    }
+   },
+   {
+    "name": "PositionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2618"
+    }
+   },
+   {
+    "name": "PosReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "710"
+    }
+   },
+   {
+    "name": "PosReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "724"
+    }
+   },
+   {
+    "name": "PosReportAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2364"
+    }
+   },
+   {
+    "name": "MarginReqmtInqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1635"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "TotalNumPosReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "727"
+    }
+   },
+   {
+    "name": "TotNumReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "911"
+    }
+   },
+   {
+    "name": "LastRptRequested",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "912"
+    }
+   },
+   {
+    "name": "PosReqResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "728"
+    }
+   },
+   {
+    "name": "UnsolicitedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "325"
+    }
+   },
+   {
+    "name": "RegulatoryReportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1934"
+    }
+   },
+   {
+    "name": "RegulatoryReportTypeBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2869"
+    }
+   },
+   {
+    "name": "TransactionAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TransactionAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdRegTimestamps",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdRegTimestamps"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "PreviousClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2084"
+    }
+   },
+   {
+    "name": "ClearingPortfolioID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2870"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "SettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "120"
+    }
+   },
+   {
+    "name": "SettlCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2899"
+    }
+   },
+   {
+    "name": "MessageEventSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1011"
+    }
+   },
+   {
+    "name": "ClearedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1832"
+    }
+   },
+   {
+    "name": "ContractRefPosType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1833"
+    }
+   },
+   {
+    "name": "PositionCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1834"
+    }
+   },
+   {
+    "name": "TerminatedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2101"
+    }
+   },
+   {
+    "name": "TerminationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2878"
+    }
+   },
+   {
+    "name": "IntraFirmTradeIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2373"
+    }
+   },
+   {
+    "name": "TradeContinuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1937"
+    }
+   },
+   {
+    "name": "TradeContinuationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2374"
+    }
+   },
+   {
+    "name": "EncodedTradeContinuationTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2372"
+    }
+   },
+   {
+    "name": "EncodedTradeContinuationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2371"
+    }
+   },
+   {
+    "name": "TradeCollateralization",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1936"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "TaxonomyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2375"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "SettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "730"
+    }
+   },
+   {
+    "name": "SettlPriceFxRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2366"
+    }
+   },
+   {
+    "name": "SettlForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2365"
+    }
+   },
+   {
+    "name": "SettlPriceUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1886"
+    }
+   },
+   {
+    "name": "SettlPriceUnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1887"
+    }
+   },
+   {
+    "name": "SettlPriceUnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2960"
+    }
+   },
+   {
+    "name": "SettlPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "731"
+    }
+   },
+   {
+    "name": "PriorSettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "734"
+    }
+   },
+   {
+    "name": "PositionContingentPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1595"
+    }
+   },
+   {
+    "name": "DiscountFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1592"
+    }
+   },
+   {
+    "name": "ValuationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2085"
+    }
+   },
+   {
+    "name": "ValuationTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2086"
+    }
+   },
+   {
+    "name": "ValuationBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2087"
+    }
+   },
+   {
+    "name": "MatchStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "573"
+    }
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CollateralAmountGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CollateralAmountGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CollateralizationValueDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2868"
+    }
+   },
+   {
+    "name": "PosUndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PosUndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   },
+   {
+    "name": "RegulatoryTradeIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RegulatoryTradeIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RegistStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "506"
+    }
+   },
+   {
+    "name": "DeliveryDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "743"
+    }
+   },
+   {
+    "name": "ModelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1434"
+    }
+   },
+   {
+    "name": "PriceDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "811"
+    }
+   },
+   {
+    "name": "RelatedTradeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedTradeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

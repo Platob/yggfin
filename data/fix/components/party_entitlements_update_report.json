@@ -1,0 +1,106 @@
+{
+ "name": "PartyEntitlementsUpdateReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyEntitlementsUpdateReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementsUpdateReport",
+   "msgtype": "CZ"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "EntitlementReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1771"
+    }
+   },
+   {
+    "name": "EntitlementRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1770"
+    }
+   },
+   {
+    "name": "TotNoParties",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1512"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyEntitlementUpdateGrp",
+    "type": "struct",
+    "fix": {
+     "component": "PartyEntitlementUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

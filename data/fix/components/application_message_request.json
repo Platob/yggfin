@@ -1,0 +1,74 @@
+{
+ "name": "ApplicationMessageRequest",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ApplicationMessageRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplicationMessageRequest",
+   "msgtype": "BW"
+  },
+  "fields": [
+   {
+    "name": "ApplReqID",
+    "type": "string",
+    "fix": {
+     "tag": "1346"
+    }
+   },
+   {
+    "name": "ApplReqType",
+    "type": "string",
+    "fix": {
+     "tag": "1347"
+    }
+   },
+   {
+    "name": "ApplIDRequestGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplIDRequestGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

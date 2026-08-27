@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "QuotQualGrp"
+   "component": "QuotQualGrp",
+   "msgtypes": "[\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\"]"
   },
   "fields": [
    {

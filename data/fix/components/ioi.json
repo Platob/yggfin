@@ -1,0 +1,307 @@
+{
+ "name": "IOI",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "IOI",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "IOI",
+   "msgtype": "6"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "IOIID",
+    "type": "string",
+    "fix": {
+     "tag": "23"
+    }
+   },
+   {
+    "name": "IOITransType",
+    "type": "string",
+    "fix": {
+     "tag": "28"
+    }
+   },
+   {
+    "name": "IOIRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "26"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "QtyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "854"
+    }
+   },
+   {
+    "name": "OrderQtyData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderQtyData"
+    },
+    "fields": []
+   },
+   {
+    "name": "IOIQty",
+    "type": "string",
+    "fix": {
+     "tag": "27"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "Stipulations",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Stipulations"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegIOIGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegIOIGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "PriceQualifierGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PriceQualifierGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Price",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "44"
+    }
+   },
+   {
+    "name": "ValidUntilTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "62"
+    }
+   },
+   {
+    "name": "IOIQltyInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "25"
+    }
+   },
+   {
+    "name": "IOINaturalFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "130"
+    }
+   },
+   {
+    "name": "IOIQualGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "IOIQualGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "URLLink",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "149"
+    }
+   },
+   {
+    "name": "RoutingGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RoutingGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SpreadOrBenchmarkCurveData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SpreadOrBenchmarkCurveData"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelativeValueGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelativeValueGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "YieldData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "YieldData"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

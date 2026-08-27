@@ -12,7 +12,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "YieldData"
+   "component": "YieldData",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradeCaptureReport\"]"
   },
   "fields": [
    {

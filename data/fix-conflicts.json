@@ -5,7 +5,7 @@
   "type": 214,
   "name": 40,
   "note": 18,
-  "members": 15,
+  "members": 65,
   "encoded": 135
  },
  "collapses": [
@@ -7814,7 +7814,7 @@
     },
     {
      "version": "4.3",
-     "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 — See Appendix 6-B )",
+     "reading": "BIC (Bank Identification Code\u2014Swift managed) code (ISO 9362 \u2014 See Appendix 6-B )",
      "key": "B"
     }
    ]
@@ -12964,6 +12964,46 @@
    ]
   },
   {
+   "name": "Advertisement",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "Shares"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "Shares"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "Shares"
+    }
+   ]
+  },
+  {
    "name": "AffectedOrdGrp",
    "tag": null,
    "part": "members",
@@ -12984,6 +13024,278 @@
    ]
   },
   {
+   "name": "Allocation",
+   "tag": null,
+   "part": "members",
+   "kept": "4.3",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.0",
+     "reading": "BrokerOfCredit"
+    },
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "DlvyInst"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.0",
+     "reading": "NoDlvyInst"
+    },
+    {
+     "version": "4.0",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.0",
+     "reading": "Shares"
+    },
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "BrokerOfCredit"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.1",
+     "reading": "Shares"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "BrokerOfCredit"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.2",
+     "reading": "Shares"
+    },
+    {
+     "version": "4.2",
+     "reading": "WaveNo"
+    }
+   ]
+  },
+  {
+   "name": "AllocationInstructionAck",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    }
+   ]
+  },
+  {
+   "name": "BidRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.2",
+     "reading": "TotalNumSecurities"
+    },
+    {
+     "version": "4.2",
+     "reading": "TradeType"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalNumSecurities"
+    },
+    {
+     "version": "4.3",
+     "reading": "TradeType"
+    }
+   ]
+  },
+  {
+   "name": "BidResponse",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "CrossOrderCancelReplaceRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestAmt"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestRate"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
    "name": "DerivativeInstrument",
    "tag": null,
    "part": "members",
@@ -12992,6 +13304,282 @@
     {
      "version": "5.0.SP1",
      "reading": "DerivativeFuturesValuationMethod"
+    }
+   ]
+  },
+  {
+   "name": "DerivativeSecurityList",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "TotalNumSecurities"
+    }
+   ]
+  },
+  {
+   "name": "DontKnowTrade",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "Email",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.0",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.3",
+     "reading": "LinesOfText"
+    }
+   ]
+  },
+  {
+   "name": "ExecutionReport",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecTransType"
+    },
+    {
+     "version": "4.0",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.0",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.0",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecTransType"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.1",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingAccount"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecTransType"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "LastShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.2",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.2",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "LegFutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "LegSettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
     }
    ]
   },
@@ -13128,6 +13716,86 @@
    ]
   },
   {
+   "name": "IOI",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "IOIOthSvc"
+    },
+    {
+     "version": "4.0",
+     "reading": "IOIShares"
+    },
+    {
+     "version": "4.0",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "IOIOthSvc"
+    },
+    {
+     "version": "4.1",
+     "reading": "IOIShares"
+    },
+    {
+     "version": "4.1",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "Benchmark"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "IOIShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "SpreadToBenchmark"
+    },
+    {
+     "version": "4.3",
+     "reading": "Benchmark"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    }
+   ]
+  },
+  {
    "name": "LegPreAllocGrp",
    "tag": null,
    "part": "members",
@@ -13140,6 +13808,354 @@
     {
      "version": "5.0",
      "reading": "LegSettlCurrency"
+    }
+   ]
+  },
+  {
+   "name": "ListCancelRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    }
+   ]
+  },
+  {
+   "name": "ListExecute",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    }
+   ]
+  },
+  {
+   "name": "ListStatus",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    }
+   ]
+  },
+  {
+   "name": "ListStatusRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    }
+   ]
+  },
+  {
+   "name": "ListStrikePrice",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.4",
+     "reading": "UndInstrmtStrkPxGrp"
+    },
+    {
+     "version": "5.0",
+     "reading": "UndInstrmtStrkPxGrp"
+    }
+   ]
+  },
+  {
+   "name": "Logon",
+   "tag": null,
+   "part": "members",
+   "kept": "4.4",
+   "dropped": [
+    {
+     "version": "FIXT1.1",
+     "reading": "DefaultApplExtID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "DefaultApplVerID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "DefaultCstmApplVerID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "DefaultVerIndicator"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncodedText"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncodedTextLen"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncryptedNewPassword"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncryptedNewPasswordLen"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncryptedPassword"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncryptedPasswordLen"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "EncryptedPasswordMethod"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "MsgTypeGrp"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "NewPassword"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "RefApplExtID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "RefApplVerID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "RefCstmApplVerID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "SessionStatus"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "Text"
+    }
+   ]
+  },
+  {
+   "name": "Logout",
+   "tag": null,
+   "part": "members",
+   "kept": "4.4",
+   "dropped": [
+    {
+     "version": "FIXT1.1",
+     "reading": "SessionStatus"
+    }
+   ]
+  },
+  {
+   "name": "MarketDataIncrementalRefresh",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenCloseSettleFlag"
+    },
+    {
+     "version": "4.2",
+     "reading": "TotalVolumeTraded"
+    },
+    {
+     "version": "4.3",
+     "reading": "OpenCloseSettleFlag"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTraded"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTradedDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTradedTime"
+    }
+   ]
+  },
+  {
+   "name": "MarketDataRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.3",
+     "reading": "OpenCloseSettleFlag"
+    }
+   ]
+  },
+  {
+   "name": "MarketDataSnapshotFullRefresh",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenCloseSettleFlag"
+    },
+    {
+     "version": "4.2",
+     "reading": "TotalVolumeTraded"
+    },
+    {
+     "version": "4.3",
+     "reading": "OpenCloseSettleFlag"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTraded"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTradedDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotalVolumeTradedTime"
+    }
+   ]
+  },
+  {
+   "name": "MassQuote",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "TotQuoteEntries"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingIDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingMaturityDay"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotQuoteEntries"
+    }
+   ]
+  },
+  {
+   "name": "MassQuoteAcknowledgement",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP1",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "TotQuoteEntries"
     }
    ]
   },
@@ -13164,6 +14180,1106 @@
     {
      "version": "5.0.SP1",
      "reading": "HaltReasonChar"
+    }
+   ]
+  },
+  {
+   "name": "NewOrderCross",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestAmt"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestRate"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "NewOrderList",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "ListNoOrds"
+    },
+    {
+     "version": "4.0",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.0",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.0",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "ListNoOrds"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.1",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.1",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.1",
+     "reading": "WaveNo"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingAccount"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.2",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.2",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestAmt"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestRate"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "NewOrderMultileg",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "LegFutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "LegSettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "NewOrderSingle",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.0",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.0",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.1",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.1",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingAccount"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.2",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.2",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestAmt"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestRate"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "IOIid"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "News",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.0",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "LinesOfText"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "RelatdSym"
+    },
+    {
+     "version": "4.3",
+     "reading": "LinesOfText"
+    }
+   ]
+  },
+  {
+   "name": "OrderCancelReject",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    }
+   ]
+  },
+  {
+   "name": "OrderCancelReplaceRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.0",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.0",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.1",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.1",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.1",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocShares"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingAccount"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClearingFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "CustomerOrFirm"
+    },
+    {
+     "version": "4.2",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "OpenClose"
+    },
+    {
+     "version": "4.2",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.2",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlmntTyp"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestAmt"
+    },
+    {
+     "version": "4.3",
+     "reading": "AccruedInterestRate"
+    },
+    {
+     "version": "4.3",
+     "reading": "DiscretionOffset"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "NetMoney"
+    },
+    {
+     "version": "4.3",
+     "reading": "PegDifference"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "Rule80A"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "OrderCancelRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "CxlType"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "SolicitedFlag"
+    }
+   ]
+  },
+  {
+   "name": "OrderMassActionReport",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "5.0.SP1",
+     "reading": "NotAffectedOrdersGrp"
+    }
+   ]
+  },
+  {
+   "name": "OrderMassCancelReport",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "OrigClOrdID"
+    },
+    {
+     "version": "5.0.SP1",
+     "reading": "NotAffectedOrdersGrp"
+    }
+   ]
+  },
+  {
+   "name": "OrderStatusRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.0",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "Quote",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "QuoteCancel",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "QuoteRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.0",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.1",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.1",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.1",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "QuoteRequestReject",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    },
+    {
+     "version": "4.3",
+     "reading": "QuantityType"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
+    }
+   ]
+  },
+  {
+   "name": "QuoteStatusReport",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "FutSettDate2"
+    }
+   ]
+  },
+  {
+   "name": "QuoteStatusRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "Side"
+    }
+   ]
+  },
+  {
+   "name": "RegistrationInstructions",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "RegistDetls"
+    }
+   ]
+  },
+  {
+   "name": "Reject",
+   "tag": null,
+   "part": "members",
+   "kept": "4.4",
+   "dropped": [
+    {
+     "version": "FIXT1.1",
+     "reading": "RefApplExtID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "RefApplVerID"
+    },
+    {
+     "version": "FIXT1.1",
+     "reading": "RefCstmApplVerID"
     }
    ]
   },
@@ -13196,6 +15312,454 @@
     {
      "version": "5.0",
      "reading": "TradingSessionSubID"
+    }
+   ]
+  },
+  {
+   "name": "SecurityDefinition",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "NoRelatedSym"
+    },
+    {
+     "version": "4.2",
+     "reading": "RatioQty"
+    },
+    {
+     "version": "4.2",
+     "reading": "Side"
+    },
+    {
+     "version": "4.2",
+     "reading": "TotalNumSecurities"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingIDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingMaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "SecurityDefinitionRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.2",
+     "reading": "NoRelatedSym"
+    },
+    {
+     "version": "4.2",
+     "reading": "RatioQty"
+    },
+    {
+     "version": "4.2",
+     "reading": "Side"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingIDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "UnderlyingMaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "SecurityList",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "TotalNumSecurities"
+    }
+   ]
+  },
+  {
+   "name": "SecurityStatus",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "HaltReasonChar"
+    },
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    },
+    {
+     "version": "4.3",
+     "reading": "HaltReasonChar"
+    },
+    {
+     "version": "4.4",
+     "reading": "HaltReasonChar"
+    },
+    {
+     "version": "5.0",
+     "reading": "HaltReasonChar"
+    },
+    {
+     "version": "5.0.SP1",
+     "reading": "HaltReasonChar"
+    }
+   ]
+  },
+  {
+   "name": "SecurityStatusRequest",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.2",
+     "reading": "IDSource"
+    },
+    {
+     "version": "4.2",
+     "reading": "MaturityDay"
+    }
+   ]
+  },
+  {
+   "name": "SecurityTypes",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "TotalNumSecurityTypes"
+    }
+   ]
+  },
+  {
+   "name": "SettlementInstructions",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.1",
+     "reading": "AllocAccount"
+    },
+    {
+     "version": "4.1",
+     "reading": "AllocID"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentAcctName"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentAcctNum"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentCode"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentContactName"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentContactPhone"
+    },
+    {
+     "version": "4.1",
+     "reading": "CashSettlAgentName"
+    },
+    {
+     "version": "4.1",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.1",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.1",
+     "reading": "LastMkt"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentAcctName"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentAcctNum"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentCode"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentContactName"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentContactPhone"
+    },
+    {
+     "version": "4.1",
+     "reading": "SecuritySettlAgentName"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlBrkrCode"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlDepositoryCode"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlInstCode"
+    },
+    {
+     "version": "4.1",
+     "reading": "SettlLocation"
+    },
+    {
+     "version": "4.1",
+     "reading": "TradeDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocAccount"
+    },
+    {
+     "version": "4.2",
+     "reading": "AllocID"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentAcctName"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentAcctNum"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentCode"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentContactName"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentContactPhone"
+    },
+    {
+     "version": "4.2",
+     "reading": "CashSettlAgentName"
+    },
+    {
+     "version": "4.2",
+     "reading": "ClientID"
+    },
+    {
+     "version": "4.2",
+     "reading": "ExecBroker"
+    },
+    {
+     "version": "4.2",
+     "reading": "LastMkt"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentAcctName"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentAcctNum"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentCode"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentContactName"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentContactPhone"
+    },
+    {
+     "version": "4.2",
+     "reading": "SecuritySettlAgentName"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlBrkrCode"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlDepositoryCode"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlInstCode"
+    },
+    {
+     "version": "4.2",
+     "reading": "SettlLocation"
+    },
+    {
+     "version": "4.2",
+     "reading": "TradeDate"
+    },
+    {
+     "version": "4.2",
+     "reading": "TradingSessionID"
+    },
+    {
+     "version": "4.3",
+     "reading": "AllocAccount"
+    },
+    {
+     "version": "4.3",
+     "reading": "AllocID"
+    },
+    {
+     "version": "4.3",
+     "reading": "CardIssNo"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentAcctName"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentAcctNum"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentCode"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentContactName"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentContactPhone"
+    },
+    {
+     "version": "4.3",
+     "reading": "CashSettlAgentName"
+    },
+    {
+     "version": "4.3",
+     "reading": "IndividualAllocID"
+    },
+    {
+     "version": "4.3",
+     "reading": "LastMkt"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentAcctName"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentAcctNum"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentCode"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentContactName"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentContactPhone"
+    },
+    {
+     "version": "4.3",
+     "reading": "SecuritySettlAgentName"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlBrkrCode"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlDepositoryCode"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlInstCode"
+    },
+    {
+     "version": "4.3",
+     "reading": "TradeDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "TradingSessionID"
+    },
+    {
+     "version": "4.3",
+     "reading": "TradingSessionSubID"
+    }
+   ]
+  },
+  {
+   "name": "TradeCaptureReport",
+   "tag": null,
+   "part": "members",
+   "kept": "5.0.SP2",
+   "dropped": [
+    {
+     "version": "4.3",
+     "reading": "FutSettDate"
+    },
+    {
+     "version": "4.3",
+     "reading": "SettlmntTyp"
     }
    ]
   },

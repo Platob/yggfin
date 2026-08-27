@@ -1,0 +1,98 @@
+{
+ "name": "RegistrationInstructionsResponse",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "RegistrationInstructionsResponse",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RegistrationInstructionsResponse",
+   "msgtype": "p"
+  },
+  "fields": [
+   {
+    "name": "RegistID",
+    "type": "string",
+    "fix": {
+     "tag": "513"
+    }
+   },
+   {
+    "name": "RegistTransType",
+    "type": "string",
+    "fix": {
+     "tag": "514"
+    }
+   },
+   {
+    "name": "RegistRefID",
+    "type": "string",
+    "fix": {
+     "tag": "508"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "RegistStatus",
+    "type": "string",
+    "fix": {
+     "tag": "506"
+    }
+   },
+   {
+    "name": "RegistRejReasonCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "507"
+    }
+   },
+   {
+    "name": "RegistRejReasonText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "496"
+    }
+   }
+  ]
+ }
+}

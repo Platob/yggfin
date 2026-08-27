@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "PartyEntitlementGrp"
+   "component": "PartyEntitlementGrp",
+   "msgtypes": "[\"PartyEntitlementsReport\"]"
   },
   "fields": [
    {

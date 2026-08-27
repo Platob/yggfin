@@ -10,7 +10,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "UnderlyingAmount"
+   "component": "UnderlyingAmount",
+   "msgtypes": "[\"PositionReport\"]"
   },
   "fields": [
    {

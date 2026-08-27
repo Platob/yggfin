@@ -1,0 +1,201 @@
+{
+ "name": "MassOrder",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MassOrder",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MassOrder",
+   "msgtype": "DJ"
+  },
+  "fields": [
+   {
+    "name": "MassOrderRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2423"
+    }
+   },
+   {
+    "name": "OrderResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2427"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradingCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1815"
+    }
+   },
+   {
+    "name": "ClearingAccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1816"
+    }
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "528"
+    }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   },
+   {
+    "name": "CustOrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "582"
+    }
+   },
+   {
+    "name": "ManualOrderIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1028"
+    }
+   },
+   {
+    "name": "CustOrderHandlingInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1031"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   },
+   {
+    "name": "TotNoOrderEntries",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2432"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "OrderEntryGrp",
+    "type": "struct",
+    "fix": {
+     "component": "OrderEntryGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

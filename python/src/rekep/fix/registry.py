@@ -52,7 +52,7 @@ from rekep.fix.quickfix import (
     is_group,
     is_reference,
     members_of,
-    parse_components,
+    parse_declarations,
     parse_session,
     parse_spec,
     spec_name,
@@ -773,7 +773,7 @@ class FixRegistry(Convertible):
             document = self._spec_document(version)
             declarations[version] = self._scrape_version(version, document)
             sessions[version] = parse_session(document)
-            components[version] = tuple(parse_components(document).values())
+            components[version] = tuple(parse_declarations(document).values())
         entries, component_records, report = collapse(order, declarations, components)
         self._write(documents_of(order, entries, component_records, sessions, components))
         self.__dict__["_conflicts"] = report
@@ -859,7 +859,7 @@ class FixRegistry(Convertible):
             version,
             fields,
             parse_session(document),
-            tuple(parse_components(document).values()),
+            tuple(parse_declarations(document).values()),
         )
         self._indexes.pop(version, None)
         return fields
@@ -1044,7 +1044,7 @@ class FixRegistry(Convertible):
                     member.fix.enumerated = _named_values(member.fix.enumerated, known.values)
                     enriched += 1
             session = parse_session(document) or self.session(version)
-            components = list(parse_components(document).values())
+            components = list(parse_declarations(document).values())
             if not components and not spec:
                 # A spec that could not be read says nothing about components,
                 # so what is stored stands. One that *was* read and declares
@@ -1224,8 +1224,22 @@ class FixRegistry(Convertible):
         return MappingProxyType({entry.fix.canonical: entry for entry in self._entries[0].values()})
 
     def component_records(self) -> Mapping[str, ComponentRecord]:
-        """Every component identity this registry holds, keyed by canonical name."""
+        """Every component identity this registry holds, keyed by canonical name.
+
+        Messages are among them: a message is a component that arrives on the
+        wire under a code, so `record.msg_type` is what tells the two apart
+        and `message_records()` is the index keyed by that code.
+        """
         return MappingProxyType({entry.name: entry for entry in self._entries[1].values()})
+
+    def message_records(self) -> Mapping[str, ComponentRecord]:
+        """Every message this registry holds, keyed by the MsgType it arrives under.
+
+        Newest declaration wins a code two names claim: `J` is `Allocation`
+        through 4.2 and `AllocationInstruction` after, and a reader parsing
+        today's traffic wants the reading today's traffic is written to.
+        """
+        return self._messages
 
     def merged_fields(self) -> Mapping[str, Field]:
         """The whole unified field table: `{canonical name: merged declaration}`.
@@ -1243,11 +1257,20 @@ class FixRegistry(Convertible):
         )
 
     def merged_component(self, name: str) -> ComponentRecord:
-        """One component across every version it is declared for."""
+        """One component across every version it is declared for.
+
+        A name, one of its aliases, or a MsgType: a message is a component
+        here, so `merged_component("D")` and `merged_component("NewOrderSingle")`
+        answer the same record. The code is tried second, because a spelling
+        somebody wrote down beats one this reads out of a wire value.
+        """
         wanted = fold(name)
         for entry in self._entries[1].values():
             if wanted in {fold(spelled) for spelled in entry.spellings()}:
                 return entry
+        found = self.message_records().get(str(name))
+        if found is not None:
+            return found
         raise KeyError(f"no FIX component {name!r} in any version")
 
     def component_field(self, name: str, version: str) -> Field | None:
@@ -1342,6 +1365,19 @@ class FixRegistry(Convertible):
     def _entries(self) -> tuple[dict[int | str, Field], dict[str, ComponentRecord]]:
         """Every record this store holds, keyed as the store keys them."""
         return self._layout.field_records, self._layout.component_records
+
+    @cached_property
+    def _messages(self) -> Mapping[str, ComponentRecord]:
+        """`{MsgType: record}`, built once: a lookup by code walks no records."""
+        found: dict[str, ComponentRecord] = {}
+        for entry in self._entries[1].values():
+            code = entry.msg_type
+            if not code:
+                continue
+            held = found.get(code)
+            if held is None or newest_rank(entry.newest) > newest_rank(held.newest):
+                found[code] = entry
+        return MappingProxyType(found)
 
     @cached_property
     def _resolutions(self) -> dict[str, Field]:
@@ -1648,7 +1684,7 @@ class FixRegistry(Convertible):
                 version,
                 stored,
                 parse_session(document) or self.session(version),
-                list(parse_components(document).values()),
+                list(parse_declarations(document).values()),
             )
             refreshed = True
         return refreshed
@@ -1896,9 +1932,9 @@ class FixRegistry(Convertible):
         self._indexes.clear()
         self._scalars.clear()
         self.__dict__.pop("_entries", None)
+        self.__dict__.pop("_messages", None)
         self.__dict__.pop("_resolutions", None)
         self.__dict__.pop("_msg_type_event_types", None)
-        self.__dict__.pop("_msg_types", None)
         self.__dict__.pop("_state_values", None)
         self.__dict__.pop("_group_count_tags", None)
         self.__dict__["_revision"] = self.revision + 1

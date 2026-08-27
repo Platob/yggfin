@@ -1,0 +1,100 @@
+{
+ "name": "BusinessMessageReject",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "BusinessMessageReject",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BusinessMessageReject",
+   "msgtype": "j"
+  },
+  "fields": [
+   {
+    "name": "RefSeqNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "45"
+    }
+   },
+   {
+    "name": "RefMsgType",
+    "type": "string",
+    "fix": {
+     "tag": "372"
+    }
+   },
+   {
+    "name": "RefApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1130"
+    }
+   },
+   {
+    "name": "RefApplExtID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1406"
+    }
+   },
+   {
+    "name": "RefCstmApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1131"
+    }
+   },
+   {
+    "name": "BusinessRejectRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "379"
+    }
+   },
+   {
+    "name": "BusinessRejectReason",
+    "type": "string",
+    "fix": {
+     "tag": "380"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

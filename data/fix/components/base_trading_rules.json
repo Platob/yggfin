@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "BaseTradingRules"
+   "component": "BaseTradingRules",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
   "fields": [
    {

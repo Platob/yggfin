@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "CpctyConfGrp"
+   "component": "CpctyConfGrp",
+   "msgtypes": "[\"Confirmation\"]"
   },
   "fields": [
    {

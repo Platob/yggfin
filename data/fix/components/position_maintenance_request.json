@@ -1,0 +1,278 @@
+{
+ "name": "PositionMaintenanceRequest",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PositionMaintenanceRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionMaintenanceRequest",
+   "msgtype": "AL"
+  },
+  "fields": [
+   {
+    "name": "PosReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "710"
+    }
+   },
+   {
+    "name": "PosTransType",
+    "type": "string",
+    "fix": {
+     "tag": "709"
+    }
+   },
+   {
+    "name": "PosMaintAction",
+    "type": "string",
+    "fix": {
+     "tag": "712"
+    }
+   },
+   {
+    "name": "OrigPosReqRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "713"
+    }
+   },
+   {
+    "name": "PosMaintRptRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "714"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdgSesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdgSesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   },
+   {
+    "name": "AdjustmentType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "718"
+    }
+   },
+   {
+    "name": "ContraryInstructionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "719"
+    }
+   },
+   {
+    "name": "PriorSpreadIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "720"
+    }
+   },
+   {
+    "name": "ThresholdAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "834"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "SettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "120"
+    }
+   },
+   {
+    "name": "SettlCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2899"
+    }
+   }
+  ]
+ }
+}

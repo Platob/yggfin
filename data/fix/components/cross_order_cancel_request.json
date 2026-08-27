@@ -1,0 +1,131 @@
+{
+ "name": "CrossOrderCancelRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "CrossOrderCancelRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CrossOrderCancelRequest",
+   "msgtype": "u"
+  },
+  "fields": [
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "OrderRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2422"
+    }
+   },
+   {
+    "name": "CrossID",
+    "type": "string",
+    "fix": {
+     "tag": "548"
+    }
+   },
+   {
+    "name": "OrigCrossID",
+    "type": "string",
+    "fix": {
+     "tag": "551"
+    }
+   },
+   {
+    "name": "HostCrossID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "961"
+    }
+   },
+   {
+    "name": "CrossType",
+    "type": "string",
+    "fix": {
+     "tag": "549"
+    }
+   },
+   {
+    "name": "CrossPrioritization",
+    "type": "string",
+    "fix": {
+     "tag": "550"
+    }
+   },
+   {
+    "name": "RootParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RootParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "SideCrossOrdCxlGrp",
+    "type": "struct",
+    "fix": {
+     "component": "SideCrossOrdCxlGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   }
+  ]
+ }
+}

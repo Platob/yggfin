@@ -10,7 +10,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "RootSubParties"
+   "component": "RootSubParties",
+   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"NewOrderCross\",\"NewOrderList\",\"QuoteRequest\",\"QuoteRequestReject\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

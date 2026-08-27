@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "OrderAttributeGrp"
+   "component": "OrderAttributeGrp",
+   "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [
    {

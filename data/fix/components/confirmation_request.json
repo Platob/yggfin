@@ -1,0 +1,122 @@
+{
+ "name": "ConfirmationRequest",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ConfirmationRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ConfirmationRequest",
+   "msgtype": "BH"
+  },
+  "fields": [
+   {
+    "name": "ConfirmReqID",
+    "type": "string",
+    "fix": {
+     "tag": "859"
+    }
+   },
+   {
+    "name": "ConfirmType",
+    "type": "string",
+    "fix": {
+     "tag": "773"
+    }
+   },
+   {
+    "name": "OrdAllocGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrdAllocGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "AllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "70"
+    }
+   },
+   {
+    "name": "SecondaryAllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "793"
+    }
+   },
+   {
+    "name": "IndividualAllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "467"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "AllocAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "79"
+    }
+   },
+   {
+    "name": "AllocAcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "661"
+    }
+   },
+   {
+    "name": "AllocAccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "798"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

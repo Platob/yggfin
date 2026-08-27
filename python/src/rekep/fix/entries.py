@@ -351,8 +351,21 @@ class ComponentRecord(Convertible):
 
     @property
     def msg_type(self) -> str:
-        """The message type this declaration defines, where it defines one."""
+        """The message type this declaration defines, where it defines one.
+
+        A message carries the code it arrives under; a reusable block leaves
+        it empty, which is the one difference between the two declarations.
+        """
         return self.declaration.fix.msgtype
+
+    @property
+    def msgtypes(self) -> tuple[str, ...]:
+        """The messages that carry this block, as a field's `used_in` reads.
+
+        Derived on the collapse rather than scraped, and empty for a message:
+        a message is what carries a block, not something a block is carried by.
+        """
+        return self.declaration.fix.msgtypes
 
     @property
     def slug(self) -> str:
@@ -370,8 +383,13 @@ class ComponentRecord(Convertible):
         return newest_of(self.versions)
 
     def declares(self, version: str) -> bool:
-        """Whether this component holds for `version`."""
-        return version in self.versions
+        """Whether this component holds for `version`.
+
+        `ANY_VERSION` answers for every version, exactly as a field record's
+        does: a block declared outside the standard's versioning is declared
+        for whatever a caller asks about.
+        """
+        return version in self.versions or ANY_VERSION in self.versions
 
     def spellings(self) -> tuple[str, ...]:
         """Every name this record answers to, in resolution order."""

@@ -652,9 +652,20 @@ class ShardedLayout:
         spec" against "its spec declares none" -- and telling them apart is
         what makes a stale artifact detectable instead of silently extracting
         nothing. The version list is what remembers which.
+
+        Messages are not among them, and do not seed the closure. A record
+        keeps the newest member tree, so 4.2's `Allocation` is the tree
+        5.0.SP2 declares -- and seeding from it would answer that 4.2 has
+        `Parties`, whose group 4.2 traffic does not carry. The reusable
+        blocks are what a group is read through; `merged_component()` and
+        `message_records()` are how a message is asked about.
         """
         held = self.component_records
-        wanted = {entry.folded for entry in held.values() if entry.declares(version)}
+        wanted = {
+            entry.folded
+            for entry in held.values()
+            if entry.declares(version) and not entry.msg_type
+        }
         if not wanted:
             return [] if self.declared(version) else None
         by_name = {entry.folded: entry for entry in held.values()}
@@ -756,6 +767,21 @@ class ShardedLayout:
                 self.store_component(dataclasses.replace(entry, versions=remaining))
             else:
                 self.remove_component(slug)
+        self._store_carriage()
+
+    def _store_carriage(self) -> None:
+        """Tell every block which messages carry it, once the trees settled.
+
+        The same derivation a bulk collapse makes, run where a scrape folds
+        one version at a time -- otherwise a store built a version at a time
+        would answer `msgtypes` differently from one built in a single pass.
+        Only what changed is written, so this costs nothing on a version whose
+        messages reach the same blocks.
+        """
+        held = self.component_records
+        for slug, entry in _used_in(held, {one.folded: one for one in held.values()}).items():
+            if entry is not held[slug]:
+                self.store_component(entry)
 
 
 def field_document(record: Field) -> str:
@@ -1083,7 +1109,52 @@ def collapse(
     by_component = {entry.folded: entry for entry in component_records.values()}
     for slug, entry in component_records.items():
         collapses.extend(_component_collapses(entry, component_readings[slug], by_component))
+    component_records = _used_in(component_records, by_component)
     return entries, component_records, ConflictReport(tuple(collapses), tuple(collisions))
+
+
+def _used_in(
+    component_records: Mapping[str, ComponentRecord],
+    by_component: Mapping[str, ComponentRecord],
+) -> dict[str, ComponentRecord]:
+    """Every reusable block, told which messages carry it.
+
+    A field record carries `used_in` because the dictionary writes it down for
+    a field and nobody writes it down for a component -- so it is derived here
+    from the only source that knows: the message trees themselves, and the
+    components those reference, however deeply. It is the same question and
+    the same answer shape, so a component answers `msgtypes` exactly as a
+    field does rather than needing a walk of its own at every call site.
+
+    A message is left alone: it does not carry itself, and no message
+    references another.
+    """
+    used: dict[str, set[str]] = {}
+    for entry in component_records.values():
+        if not entry.msg_type:
+            continue
+        for key in component_closure(
+            (fold(member.name) for member, _ in walk(entry.declaration) if is_reference(member)),
+            by_component,
+        ):
+            reached = by_component.get(key)
+            if reached is not None and not reached.msg_type:
+                used.setdefault(reached.folded, set()).add(entry.name)
+    built: dict[str, ComponentRecord] = {}
+    for slug, entry in component_records.items():
+        names = tuple(sorted(used.get(entry.folded, ())))
+        if names == entry.msgtypes:
+            # Unchanged, and the same object: a caller storing what changed
+            # writes nothing for a block whose messages did not move.
+            built[slug] = entry
+            continue
+        declared = record_copy(entry.declaration)
+        if names:
+            declared.fix.msgtypes = list(names)
+        else:
+            declared.fix.pop("msgtypes", None)
+        built[slug] = dataclasses.replace(entry, declaration=declared)
+    return built
 
 
 def _field_collapses(record: Field, found: Sequence[tuple[str, Field]]) -> list[Collapse]:

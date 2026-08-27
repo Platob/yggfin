@@ -1,0 +1,146 @@
+{
+ "name": "PayManagementRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PayManagementRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PayManagementRequest",
+   "msgtype": "DY"
+  },
+  "fields": [
+   {
+    "name": "PayRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2812"
+    }
+   },
+   {
+    "name": "PayRequestTransType",
+    "type": "string",
+    "fix": {
+     "tag": "2811"
+    }
+   },
+   {
+    "name": "PayRequestRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2810"
+    }
+   },
+   {
+    "name": "CancelText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2807"
+    }
+   },
+   {
+    "name": "EncodedCancelTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2809"
+    }
+   },
+   {
+    "name": "EncodedCancelText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2808"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedTradeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedTradeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "PostTradePayment",
+    "type": "struct",
+    "fix": {
+     "component": "PostTradePayment"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlDetails"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

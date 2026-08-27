@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ThrottleParamsGrp"
+   "component": "ThrottleParamsGrp",
+   "msgtypes": "[\"UserNotification\",\"UserResponse\"]"
   },
   "fields": [
    {

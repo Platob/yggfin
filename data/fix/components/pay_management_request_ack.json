@@ -1,0 +1,31 @@
+{
+ "name": "PayManagementRequestAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PayManagementRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PayManagementRequestAck",
+   "msgtype": "DZ"
+  },
+  "fields": [
+   {
+    "name": "PayRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2812"
+    }
+   },
+   {
+    "name": "PayRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2813"
+    }
+   }
+  ]
+ }
+}

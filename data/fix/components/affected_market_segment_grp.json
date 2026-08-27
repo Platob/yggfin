@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "AffectedMarketSegmentGrp"
+   "component": "AffectedMarketSegmentGrp",
+   "msgtypes": "[\"OrderMassActionReport\"]"
   },
   "fields": [
    {

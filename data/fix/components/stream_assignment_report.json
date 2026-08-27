@@ -1,0 +1,49 @@
+{
+ "name": "StreamAssignmentReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "StreamAssignmentReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamAssignmentReport",
+   "msgtype": "CD"
+  },
+  "fields": [
+   {
+    "name": "StreamAsgnRptID",
+    "type": "string",
+    "fix": {
+     "tag": "1501"
+    }
+   },
+   {
+    "name": "StreamAsgnReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1498"
+    }
+   },
+   {
+    "name": "StreamAsgnReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1497"
+    }
+   },
+   {
+    "name": "StrmAsgnRptGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "StrmAsgnRptGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

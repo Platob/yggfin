@@ -1,0 +1,129 @@
+{
+ "name": "TradeAggregationRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeAggregationRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeAggregationRequest",
+   "msgtype": "DW"
+  },
+  "fields": [
+   {
+    "name": "TradeAggregationRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2786"
+    }
+   },
+   {
+    "name": "TradeAggregationRequestRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2787"
+    }
+   },
+   {
+    "name": "TradeAggregationTransType",
+    "type": "string",
+    "fix": {
+     "tag": "2788"
+    }
+   },
+   {
+    "name": "AggregatedQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2789"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "AvgPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6"
+    }
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "PricePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2349"
+    }
+   },
+   {
+    "name": "OrderAggregationGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderAggregationGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExecutionAggregationGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ExecutionAggregationGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

@@ -1,0 +1,101 @@
+{
+ "name": "SettlementInstructions",
+ "versions": [
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SettlementInstructions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlementInstructions",
+   "msgtype": "T"
+  },
+  "fields": [
+   {
+    "name": "SettlInstMsgID",
+    "type": "string",
+    "fix": {
+     "tag": "777"
+    }
+   },
+   {
+    "name": "SettlInstReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "791"
+    }
+   },
+   {
+    "name": "SettlInstMode",
+    "type": "string",
+    "fix": {
+     "tag": "160"
+    }
+   },
+   {
+    "name": "SettlInstReqRejCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "792"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "SettlInstGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlInstGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

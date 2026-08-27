@@ -1,0 +1,29 @@
+{
+ "name": "TestRequest",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "TestRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TestRequest",
+   "msgtype": "1"
+  },
+  "fields": [
+   {
+    "name": "TestReqID",
+    "type": "string",
+    "fix": {
+     "tag": "112"
+    }
+   }
+  ]
+ }
+}

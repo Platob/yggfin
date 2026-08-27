@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "PreAllocMlegGrp"
+   "component": "PreAllocMlegGrp",
+   "msgtypes": "[\"MultilegOrderCancelReplace\",\"NewOrderMultileg\"]"
   },
   "fields": [
    {

@@ -221,7 +221,7 @@ python/src/rekep/
   console.py    terminal styling: colour, boxes, tables, spinners
   times.py      one reading of "an instant", whatever spelled it
 schemas/rekep/  the five persisted output contracts
-data/fix/       the FIX dictionary: tag-range shards, and components
+data/fix/       the FIX dictionary: tag-range shards, components, messages
 tasks/          notebooks, adjacent YAML, and Airflow DAG
 ```
 

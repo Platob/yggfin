@@ -12,7 +12,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "CommissionData"
+   "component": "CommissionData",
+   "msgtypes": "[\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"BidResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [
    {

@@ -31,7 +31,7 @@ CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
         "type": 214,
         "name": 40,
         "note": 18,
-        "members": 15,
+        "members": 65,
         "encoded": 135,
     }
 )

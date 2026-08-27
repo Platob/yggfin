@@ -1,0 +1,63 @@
+{
+ "name": "PayManagementReportAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PayManagementReportAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PayManagementReportAck",
+   "msgtype": "EB"
+  },
+  "fields": [
+   {
+    "name": "PayReportID",
+    "type": "string",
+    "fix": {
+     "tag": "2799"
+    }
+   },
+   {
+    "name": "PayReportStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2806"
+    }
+   },
+   {
+    "name": "PayDisputeReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2800"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   }
+  ]
+ }
+}

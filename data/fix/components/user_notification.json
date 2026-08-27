@@ -1,0 +1,67 @@
+{
+ "name": "UserNotification",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "UserNotification",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UserNotification",
+   "msgtype": "CB"
+  },
+  "fields": [
+   {
+    "name": "UsernameGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UsernameGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UserStatus",
+    "type": "string",
+    "fix": {
+     "tag": "926"
+    }
+   },
+   {
+    "name": "ThrottleParamsGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ThrottleParamsGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

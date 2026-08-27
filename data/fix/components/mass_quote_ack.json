@@ -1,0 +1,188 @@
+{
+ "name": "MassQuoteAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MassQuoteAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MassQuoteAck",
+   "msgtype": "b"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "QuoteStatus",
+    "type": "string",
+    "fix": {
+     "tag": "297"
+    }
+   },
+   {
+    "name": "QuoteRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "300"
+    }
+   },
+   {
+    "name": "QuoteResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "301"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteCancelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "298"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "ComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2404"
+    }
+   },
+   {
+    "name": "EncodedComplianceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2351"
+    }
+   },
+   {
+    "name": "EncodedComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2352"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "QuotSetAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuotSetAckGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ThrottleResponse",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ThrottleResponse"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

@@ -1,0 +1,130 @@
+{
+ "name": "Logon",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "Logon",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Logon",
+   "msgtype": "A"
+  },
+  "fields": [
+   {
+    "name": "EncryptMethod",
+    "type": "string",
+    "fix": {
+     "tag": "98"
+    }
+   },
+   {
+    "name": "HeartBtInt",
+    "type": "string",
+    "fix": {
+     "tag": "108"
+    }
+   },
+   {
+    "name": "RawDataLength",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "95"
+    }
+   },
+   {
+    "name": "RawData",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "96"
+    }
+   },
+   {
+    "name": "ResetSeqNumFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "141"
+    }
+   },
+   {
+    "name": "NextExpectedMsgSeqNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "789"
+    }
+   },
+   {
+    "name": "MaxMessageSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "383"
+    }
+   },
+   {
+    "name": "NoMsgTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "384"
+    },
+    "item": {
+     "name": "MsgType",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefMsgType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "372"
+       }
+      },
+      {
+       "name": "MsgDirection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "385"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "TestMessageIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "464"
+    }
+   },
+   {
+    "name": "Username",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "553"
+    }
+   },
+   {
+    "name": "Password",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "554"
+    }
+   }
+  ]
+ }
+}

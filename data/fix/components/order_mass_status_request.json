@@ -1,0 +1,111 @@
+{
+ "name": "OrderMassStatusRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "OrderMassStatusRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderMassStatusRequest",
+   "msgtype": "AF"
+  },
+  "fields": [
+   {
+    "name": "MassStatusReqID",
+    "type": "string",
+    "fix": {
+     "tag": "584"
+    }
+   },
+   {
+    "name": "MassStatusReqType",
+    "type": "string",
+    "fix": {
+     "tag": "585"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingInstrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingInstrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   }
+  ]
+ }
+}

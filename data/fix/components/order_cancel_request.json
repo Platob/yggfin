@@ -1,0 +1,249 @@
+{
+ "name": "OrderCancelRequest",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "OrderCancelRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderCancelRequest",
+   "msgtype": "F"
+  },
+  "fields": [
+   {
+    "name": "OrderRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2422"
+    }
+   },
+   {
+    "name": "OrigClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41"
+    }
+   },
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "SecondaryClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "526"
+    }
+   },
+   {
+    "name": "ClOrdLinkID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "583"
+    }
+   },
+   {
+    "name": "ListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "OrigOrdModTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "586"
+    }
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "ExDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "100"
+    }
+   },
+   {
+    "name": "ExDestinationIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1133"
+    }
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "OrderQtyData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderQtyData"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "ComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2404"
+    }
+   },
+   {
+    "name": "EncodedComplianceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2351"
+    }
+   },
+   {
+    "name": "EncodedComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2352"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

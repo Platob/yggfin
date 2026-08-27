@@ -1,0 +1,125 @@
+{
+ "name": "RegistrationInstructions",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "RegistrationInstructions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RegistrationInstructions",
+   "msgtype": "o"
+  },
+  "fields": [
+   {
+    "name": "RegistID",
+    "type": "string",
+    "fix": {
+     "tag": "513"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "RegistTransType",
+    "type": "string",
+    "fix": {
+     "tag": "514"
+    }
+   },
+   {
+    "name": "RegistRefID",
+    "type": "string",
+    "fix": {
+     "tag": "508"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "RegistAcctType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "493"
+    }
+   },
+   {
+    "name": "TaxAdvantageType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "495"
+    }
+   },
+   {
+    "name": "OwnershipType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "517"
+    }
+   },
+   {
+    "name": "RgstDtlsGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RgstDtlsGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RgstDistInstGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RgstDistInstGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

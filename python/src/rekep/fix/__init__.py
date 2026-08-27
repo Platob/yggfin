@@ -75,7 +75,7 @@ from rekep.fix.message import (
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SPEC_VERSIONS,
-    parse_components,
+    parse_declarations,
     parse_session,
     parse_spec,
     spec_name,
@@ -179,7 +179,7 @@ __all__ = [
     "message_bodies",
     "named_columns",
     "parse_arrow_array",
-    "parse_components",
+    "parse_declarations",
     "parse_session",
     "parse_spec",
     "record_copy",

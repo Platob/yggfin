@@ -1,0 +1,77 @@
+{
+ "name": "Reject",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "Reject",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Reject",
+   "msgtype": "3"
+  },
+  "fields": [
+   {
+    "name": "RefSeqNum",
+    "type": "string",
+    "fix": {
+     "tag": "45"
+    }
+   },
+   {
+    "name": "RefTagID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "371"
+    }
+   },
+   {
+    "name": "RefMsgType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "372"
+    }
+   },
+   {
+    "name": "SessionRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "373"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "SettlInstructionsData"
+   "component": "SettlInstructionsData",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"Confirmation\",\"SettlementInstructions\"]"
   },
   "fields": [
    {

@@ -9,7 +9,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ApplicationSequenceControl"
+   "component": "ApplicationSequenceControl",
+   "msgtypes": "[\"AccountSummaryReport\",\"AssignmentReport\",\"ContraryIntentionReport\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"ExecutionReport\",\"IOI\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataReport\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"MassOrderAck\",\"News\",\"PartyDetailsListReport\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsUpdateReport\",\"PositionReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityTypes\",\"SettlementObligationReport\",\"TradeCaptureReport\",\"TradeMatchReport\",\"TradeMatchReportAck\",\"TradingSessionList\",\"TradingSessionListUpdateReport\",\"TradingSessionStatus\"]"
   },
   "fields": [
    {

@@ -169,7 +169,9 @@ def test_an_unknown_verb_is_reported_rather_than_ignored(store: Offline) -> None
 
 
 def test_components_and_component_read_the_declaration(store: Offline) -> None:
-    assert "FakeParties" in _run(store, "components", "quit")
+    listed = _run(store, "components", "quit")
+    assert "FakeParties" in listed
+    assert "msgtype" in listed, "a message is listed here too, and the code says which"
     printed = _run(store, "component FakeParties", "quit")
     assert "NoFakeParties" in printed
     assert "required" in printed, "the spec's own rule, which is what nullability reads"

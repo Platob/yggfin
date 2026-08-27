@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "PositionQty"
+   "component": "PositionQty",
+   "msgtypes": "[\"AdjustedPositionReport\",\"AssignmentReport\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\"]"
   },
   "fields": [
    {

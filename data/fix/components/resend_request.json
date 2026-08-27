@@ -1,0 +1,36 @@
+{
+ "name": "ResendRequest",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "ResendRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ResendRequest",
+   "msgtype": "2"
+  },
+  "fields": [
+   {
+    "name": "BeginSeqNo",
+    "type": "string",
+    "fix": {
+     "tag": "7"
+    }
+   },
+   {
+    "name": "EndSeqNo",
+    "type": "string",
+    "fix": {
+     "tag": "16"
+    }
+   }
+  ]
+ }
+}

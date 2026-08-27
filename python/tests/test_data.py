@@ -86,7 +86,10 @@ VERSIONS: list[str] = INDEX["versions"]
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
 EXPECTED_FIELD_RECORDS = 6074
-EXPECTED_COMPONENT_FILES = 730
+EXPECTED_COMPONENT_FILES = 900
+#: Of which these are messages: a message is a component that arrives under a
+#: MsgType, and the 171st is the dictionary's own `RekepInstrument <U1>`.
+EXPECTED_MESSAGE_FILES = 171
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"
@@ -207,12 +210,34 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     assert parties["name"] == "Parties"
     assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
     declared = parties["declaration"]
-    assert declared["type"] == "struct" and declared["fix"] == {"component": "Parties"}
+    assert declared["type"] == "struct" and declared["fix"]["component"] == "Parties"
     assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
+    carried = json.loads(declared["fix"]["msgtypes"])
+    assert {"NewOrderSingle", "ExecutionReport"} <= set(carried), "which messages carry it"
+    assert carried == sorted(carried)
     group = declared["fields"][0]
     assert group["name"] == "NoPartyIDs"
     assert group["type"] == "list" and group["fix"]["tag"] == "453"
     assert group["item"]["fields"][0]["name"] == "PartyID"
+
+
+def test_a_message_is_stored_as_the_component_it_is() -> None:
+    """One folder, one record shape: the MsgType is the whole difference."""
+    single = members("components")["new_order_single"]
+    assert single["name"] == "NewOrderSingle"
+    declared = single["declaration"]
+    assert declared["fix"]["msgtype"] == "D"
+    assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
+    assert [member["name"] for member in declared["fields"][:4]] == [
+        "ClOrdID",
+        "OrderRequestID",
+        "SecondaryClOrdID",
+        "ClOrdLinkID",
+    ], "the newest tree, as every record here keeps"
+    stored = members("components")
+    messages = [one for one in stored.values() if one["declaration"]["fix"].get("msgtype")]
+    assert len(messages) == EXPECTED_MESSAGE_FILES
+    assert len(stored) == EXPECTED_COMPONENT_FILES
 
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
@@ -333,11 +358,14 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    # Just over half of the published dictionary for two fields, and nearly all
-    # of the remainder is component declarations: those travel whole rather than being
+    # Three quarters of the published dictionary for two fields, and nearly all
+    # of the remainder is declarations: those travel whole rather than being
     # selected with the fields, because a component says where a repeating
     # group starts and ends and a tree missing members would end it elsewhere.
-    assert target.stat().st_size < DATA.stat().st_size * 60 // 100
+    # The messages are the bulk of them, and travel for the same reason: a
+    # projection that could not say what a `D` is would be one every reader
+    # had to fetch the whole dictionary to get past.
+    assert target.stat().st_size < DATA.stat().st_size * 80 // 100
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
     assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"

@@ -250,26 +250,35 @@ def parse_spec(document: str) -> dict[int, SpecField]:
     return found
 
 
-def parse_components(document: str) -> dict[str, Field]:
-    """Reusable components in one QuickFIX document, preserving their tree.
+def parse_declarations(document: str) -> dict[str, Field]:
+    """Every block one QuickFIX document declares, preserving its tree.
 
-    A declaration that names a message type carries it; `<components>` entries
-    never do, so the published dictionary's components all leave it empty.
+    Both sections, because a message *is* a component: `<components>` are the
+    reusable blocks and `<messages>` are the blocks that arrive on the wire,
+    and the only difference between the two declarations is that a message
+    carries the `msgtype` naming it. Reading them apart meant a message's
+    member tree was the one shape this package could not be asked about, and
+    two merges to keep in step where the versions disagree.
+
+    The two namespaces do not overlap in any published version -- checked
+    here rather than assumed, because a message shadowing a component would
+    silently answer for it.
     """
     root = _root(document)
     if root is None:
         return {}
     tags = {field.name: field.tag for field in parse_spec(document).values()}
     found: dict[str, Field] = {}
-    for element in root.findall("./components/component"):
-        name = _element_name(element, "component")
-        if name in found:
-            raise ValueError(f"FIX component {name!r} is declared twice")
-        found[name] = block(
-            name,
-            _component_members(element, tags, (name,)),
-            str(element.get("msgtype") or ""),
-        )
+    for owner, path in (("component", "./components/component"), ("message", "./messages/message")):
+        for element in root.findall(path):
+            name = _element_name(element, owner)
+            if name in found:
+                raise ValueError(f"FIX {owner} {name!r} is declared twice")
+            found[name] = block(
+                name,
+                _component_members(element, tags, (name,)),
+                str(element.get("msgtype") or ""),
+            )
     _check_component_refs(found)
     return found
 

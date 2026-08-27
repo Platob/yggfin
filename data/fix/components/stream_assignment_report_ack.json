@@ -1,0 +1,63 @@
+{
+ "name": "StreamAssignmentReportACK",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "StreamAssignmentReportACK",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamAssignmentReportACK",
+   "msgtype": "CE"
+  },
+  "fields": [
+   {
+    "name": "StreamAsgnAckType",
+    "type": "string",
+    "fix": {
+     "tag": "1503"
+    }
+   },
+   {
+    "name": "StreamAsgnRptID",
+    "type": "string",
+    "fix": {
+     "tag": "1501"
+    }
+   },
+   {
+    "name": "StreamAsgnRejReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1502"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

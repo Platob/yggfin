@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "QuotReqLegsGrp"
+   "component": "QuotReqLegsGrp",
+   "msgtypes": "[\"QuoteRequest\",\"QuoteRequestReject\"]"
   },
   "fields": [
    {

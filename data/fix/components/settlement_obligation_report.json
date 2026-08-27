@@ -1,0 +1,97 @@
+{
+ "name": "SettlementObligationReport",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SettlementObligationReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlementObligationReport",
+   "msgtype": "BQ"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SettlementCycleNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1153"
+    }
+   },
+   {
+    "name": "SettlObligMsgID",
+    "type": "string",
+    "fix": {
+     "tag": "1160"
+    }
+   },
+   {
+    "name": "SettlObligMode",
+    "type": "string",
+    "fix": {
+     "tag": "1159"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "SettlObligationInstructions",
+    "type": "struct",
+    "fix": {
+     "component": "SettlObligationInstructions"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

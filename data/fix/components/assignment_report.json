@@ -1,0 +1,280 @@
+{
+ "name": "AssignmentReport",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AssignmentReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AssignmentReport",
+   "msgtype": "AW"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "AsgnRptID",
+    "type": "string",
+    "fix": {
+     "tag": "833"
+    }
+   },
+   {
+    "name": "PosReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "710"
+    }
+   },
+   {
+    "name": "TotNumAssignmentReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "832"
+    }
+   },
+   {
+    "name": "LastRptRequested",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "912"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   },
+   {
+    "name": "ThresholdAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "834"
+    }
+   },
+   {
+    "name": "SettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "730"
+    }
+   },
+   {
+    "name": "SettlPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "731"
+    }
+   },
+   {
+    "name": "UnderlyingSettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "732"
+    }
+   },
+   {
+    "name": "PriorSettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "734"
+    }
+   },
+   {
+    "name": "PositionContingentPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1595"
+    }
+   },
+   {
+    "name": "ExpireDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "432"
+    }
+   },
+   {
+    "name": "AssignmentMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "744"
+    }
+   },
+   {
+    "name": "AssignmentUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "745"
+    }
+   },
+   {
+    "name": "OpenInterest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "746"
+    }
+   },
+   {
+    "name": "ExerciseMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "747"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "SettlSessSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "717"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

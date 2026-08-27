@@ -1,0 +1,158 @@
+{
+ "name": "MarketDataRequest",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDataRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataRequest",
+   "msgtype": "V"
+  },
+  "fields": [
+   {
+    "name": "MDReqID",
+    "type": "string",
+    "fix": {
+     "tag": "262"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketDepth",
+    "type": "string",
+    "fix": {
+     "tag": "264"
+    }
+   },
+   {
+    "name": "MDUpdateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "265"
+    }
+   },
+   {
+    "name": "AggregatedBook",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "266"
+    }
+   },
+   {
+    "name": "OpenCloseSettlFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "286"
+    }
+   },
+   {
+    "name": "Scope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "546"
+    }
+   },
+   {
+    "name": "MDImplicitDelete",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "547"
+    }
+   },
+   {
+    "name": "MDReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "MDReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketSegmentScopeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketSegmentScopeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtMDReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "InstrmtMDReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdgSesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdgSesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ApplQueueAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "815"
+    }
+   },
+   {
+    "name": "ApplQueueMax",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "812"
+    }
+   },
+   {
+    "name": "MDQuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1070"
+    }
+   },
+   {
+    "name": "FastMarketIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2447"
+    }
+   }
+  ]
+ }
+}

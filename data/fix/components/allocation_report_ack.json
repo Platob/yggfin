@@ -1,0 +1,263 @@
+{
+ "name": "AllocationReportAck",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AllocationReportAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AllocationReportAck",
+   "msgtype": "AT"
+  },
+  "fields": [
+   {
+    "name": "AllocReportID",
+    "type": "string",
+    "fix": {
+     "tag": "755"
+    }
+   },
+   {
+    "name": "AllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "70"
+    }
+   },
+   {
+    "name": "AllocRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2758"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "AvgPxIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "819"
+    }
+   },
+   {
+    "name": "Quantity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "53"
+    }
+   },
+   {
+    "name": "AllocTransType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "71"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecondaryAllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "793"
+    }
+   },
+   {
+    "name": "AllocGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1730"
+    }
+   },
+   {
+    "name": "FirmGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1728"
+    }
+   },
+   {
+    "name": "AvgPxGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1731"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "AllocStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "87"
+    }
+   },
+   {
+    "name": "AllocRejCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "88"
+    }
+   },
+   {
+    "name": "AllocReportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "794"
+    }
+   },
+   {
+    "name": "AllocIntermedReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "808"
+    }
+   },
+   {
+    "name": "MatchStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "573"
+    }
+   },
+   {
+    "name": "CustOrderHandlingInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1031"
+    }
+   },
+   {
+    "name": "OrderHandlingInstSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1032"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "RegulatoryTradeIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RegulatoryTradeIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "AllocAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AllocAckGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

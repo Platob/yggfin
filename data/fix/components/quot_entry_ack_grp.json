@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "QuotEntryAckGrp"
+   "component": "QuotEntryAckGrp",
+   "msgtypes": "[\"MassQuoteAck\",\"MassQuoteAcknowledgement\"]"
   },
   "fields": [
    {

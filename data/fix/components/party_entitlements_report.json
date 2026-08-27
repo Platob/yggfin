@@ -1,0 +1,130 @@
+{
+ "name": "PartyEntitlementsReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyEntitlementsReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementsReport",
+   "msgtype": "CV"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "EntitlementReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1771"
+    }
+   },
+   {
+    "name": "EntitlementRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1770"
+    }
+   },
+   {
+    "name": "RequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1511"
+    }
+   },
+   {
+    "name": "TotNoParties",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1512"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "PartyEntitlementGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyEntitlementGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   }
+  ]
+ }
+}

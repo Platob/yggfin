@@ -11,7 +11,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "CompIDStatGrp"
+   "component": "CompIDStatGrp",
+   "msgtypes": "[\"NetworkCounterpartySystemStatusResponse\"]"
   },
   "fields": [
    {

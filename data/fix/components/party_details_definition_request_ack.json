@@ -1,0 +1,81 @@
+{
+ "name": "PartyDetailsDefinitionRequestAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyDetailsDefinitionRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailsDefinitionRequestAck",
+   "msgtype": "CY"
+  },
+  "fields": [
+   {
+    "name": "PartyDetailsListRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1505"
+    }
+   },
+   {
+    "name": "PartyDetailRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "1878"
+    }
+   },
+   {
+    "name": "PartyDetailRequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1877"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyDetailAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyDetailAckGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

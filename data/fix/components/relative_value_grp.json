@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "RelativeValueGrp"
+   "component": "RelativeValueGrp",
+   "msgtypes": "[\"ExecutionReport\",\"IOI\",\"Quote\"]"
   },
   "fields": [
    {

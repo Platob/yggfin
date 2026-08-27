@@ -1,0 +1,104 @@
+{
+ "name": "MarketDataReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDataReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataReport",
+   "msgtype": "DR"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "MDReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "963"
+    }
+   },
+   {
+    "name": "MDReportEvent",
+    "type": "string",
+    "fix": {
+     "tag": "2535"
+    }
+   },
+   {
+    "name": "MDReportCount",
+    "type": "string",
+    "fix": {
+     "tag": "2536"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TotNumReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "911"
+    }
+   },
+   {
+    "name": "TotNoMarketSegmentReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2537"
+    }
+   },
+   {
+    "name": "TotNoInstrumentReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2538"
+    }
+   },
+   {
+    "name": "TotNoPartyDetailReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2539"
+    }
+   },
+   {
+    "name": "TotNoEntitlementReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2540"
+    }
+   },
+   {
+    "name": "TotNoRiskLimitReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2541"
+    }
+   }
+  ]
+ }
+}

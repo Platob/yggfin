@@ -8,7 +8,8 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "StrmAsgnRptInstrmtGrp"
+   "component": "StrmAsgnRptInstrmtGrp",
+   "msgtypes": "[\"StreamAssignmentReport\"]"
   },
   "fields": [
    {
