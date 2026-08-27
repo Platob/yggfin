@@ -22,3 +22,27 @@ The Arrow kernels -- `h64_arrow` over a seconds column and a payload column,
 `seconds_arrow` and `digest_arrow` for the halves -- produce bit-identical
 values to the Python builders row for row, walking the payload buffer once
 without framing or copying.
+
+## One hundred and twenty-eight bits
+
+`h128` couples epoch **microseconds** over an XXH64 digest: the clock keeps
+the high sixty-four bits, so a column still orders by time, with microsecond
+resolution and a digest wide enough that a collision inside one microsecond
+is not something a feed meets.
+
+```python
+from rekep.txhash import digest64_of, h128, micros_of
+
+wide = h128(1_700_000_000_000_000, b"payload")
+assert micros_of(wide) == 1_700_000_000_000_000
+assert wide < 10**38
+```
+
+The value fits `decimal128(38, 0)`, which is the Arrow type a wide hash
+column stores -- an exact integer, no scale. `micros_of` and `digest64_of`
+read the halves back, and `micros_arrow` and `digest64_arrow` do the same
+for a column.
+
+The wide builders mirror the narrow ones over the same framing:
+`h128_arrow_arrays` over several columns and a clock, `h128_arrow_batch`
+with selectors, and `h128_dataclass` for one row.
