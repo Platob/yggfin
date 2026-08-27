@@ -120,6 +120,50 @@ def test_an_ascii_enum_declares_one_arrow_extension_singleton() -> None:
     assert EventType.into_arrow_type() is not declared
 
 
+def test_currency_reads_the_previous_generations_stored_ids() -> None:
+    """The earlier release wrote `CCCn` -- three letters and a decimal digit.
+
+    The letters name the currency and the digit drops, so a stored column
+    from before the recode still reads back; an id neither generation wrote
+    stays unknown, and `from_int` stays exact for filter parity."""
+    legacy_usd = int.from_bytes(b"USD0", "big")
+    assert Currency.from_stored(legacy_usd) is Currency.USD
+    assert Currency.from_stored(int.from_bytes(b"EUR2", "big")) is Currency.EUR
+    assert Currency.from_str(legacy_usd) is Currency.USD, "replay normalization heals too"
+    assert Currency.from_int(legacy_usd) is Currency.UNKNOWN, "the strict reader does not"
+    assert Currency.from_stored(999) is Currency.UNKNOWN
+
+
+def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
+    """`$` lands as USD whichever path parsed the message."""
+    from rekep.text.fixmsg import _currency_arrow
+
+    spellings = ["$", "US$", "USD", " eur ", "TRY", "bad!"]
+    kernel = _currency_arrow(pyarrow.array(spellings)).to_pylist()
+    scalar = [int(Currency.from_fix(value)) for value in spellings]
+    assert kernel == scalar
+    assert kernel[0] == kernel[1] == int(Currency.USD)
+
+
+def test_two_enums_sharing_a_name_cannot_disagree_on_storage() -> None:
+    """Arrow's registry is name-keyed: same name and width share the wire
+    identity; a differing width refuses instead of silently truncating."""
+
+    class FakeSameName(enum_module.AsciiInt32):
+        UNKNOWN = 0
+        ONE = "ONE"
+
+    first = FakeSameName.into_arrow_type()
+
+    class FakeSameName(enum_module.AsciiInt64):  # noqa: F811
+        UNKNOWN = 0
+        ONE = "ONE"
+
+    with pytest.raises(TypeError, match="storage widths"):
+        FakeSameName.into_arrow_type()
+    assert first.storage_type == pyarrow.int32()
+
+
 def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
     class Route(enum_module.AsciiInt64):
         UNKNOWN = 0

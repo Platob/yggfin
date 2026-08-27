@@ -231,7 +231,7 @@ def test_an_arrow_field_round_trips() -> None:
     assert Field.from_arrow_field(original).into_arrow_field().equals(original)
 
 
-def test_from_data_type_names_a_bare_type() -> None:
+def test_from_arrow_type_names_a_bare_type() -> None:
     built = Field.from_arrow_type(pyarrow.int32(), "size")
     assert (built.name, built.dtype, built.nullable) == ("size", pyarrow.int32(), False)
 

@@ -117,9 +117,9 @@ def test_fix_metadata_reads_and_writes_typed_values() -> None:
     assert built.metadata["fix:tag"] == "55"
     built.fix.tag = None
     assert "fix:tag" not in built.metadata
-    built.fix.values = {"1": "Buy"}
+    built.fix.meanings = {"1": "Buy"}
     assert built.metadata["fix:values"] == '{"1":"Buy"}'
-    assert built.fix.values == {"1": "Buy"}
+    assert built.fix.meanings == {"1": "Buy"}
     built.fix.versions = ["4.4", "4.2"]
     assert built.fix.versions == ("4.4", "4.2")
     built.fix.versions = ()
@@ -184,5 +184,13 @@ def test_the_enum_view_reads_a_market_declaration() -> None:
     assert currency.name == "Currency"
     assert currency.byte_width == 4
     assert currency.encoding == "ascii-big-endian"
-    assert currency.values["0"] == "UNKNOWN"
+    assert currency.members["0"] == "UNKNOWN"
     assert currency.aliases["$"] == "USD"
+
+
+def test_the_typed_views_stay_the_mapping_they_advertise() -> None:
+    """A decoded map never shadows a mapping method: `.values()` still answers."""
+    built = make_field()
+    assert sorted(built.fix.values()) == ["54", "char"]
+    assert sorted(built.enum.values()) == []
+    assert built.fix.meanings == {}, "the decoded map answers under its own name"

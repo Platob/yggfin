@@ -186,9 +186,12 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     kinds = {type(value) for value in values.values()}
     keys = built.enum
     keys.name = declared.__name__
-    keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
+    if isinstance(declared, type) and issubclass(declared, AsciiInt32):
+        keys.key_type = str(declared.into_arrow_type().storage_type)
+    else:
+        keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
     keys.value_type = "utf8"
-    keys.values = {str(value): name for name, value in values.items()}
+    keys.members = {str(value): name for name, value in values.items()}
     mapping = getattr(declared, "fix_mapping", None)
     if mapping is not None:
         keys.fix_values = {

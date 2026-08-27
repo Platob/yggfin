@@ -7,9 +7,11 @@ containers above rebuild exactly as assigning `metadata` would.
 
 The subclasses are the vocabularies. `FixMetadata`, `IcebergMetadata` and
 `EnumMetadata` spell each protocol's keys as typed properties -- `fix.tag`
-is an `int`, `iceberg.primary_key` a `bool`, `enum.values` a decoded map --
-so a reader never re-derives a key's encoding at a call site, and a writer
-cannot spell it two ways.
+is an `int`, `iceberg.primary_key` a `bool`, `enum.members` the decoded
+`values` map -- so a reader never re-derives a key's encoding at a call
+site, and a writer cannot spell it two ways. A decoded map whose stored key
+would shadow a mapping method (`values`) answers under its own name, so the
+view stays the `MutableMapping` it advertises.
 """
 
 from __future__ import annotations
@@ -158,7 +160,7 @@ class _Document:
 
 
 class FixMetadata(ProtocolMetadata):
-    """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.values`.
+    """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.meanings`.
 
     What a registry record states about a field, read off the field itself
     -- the step that lets a generic `Field` carry a record whole, without a
@@ -175,7 +177,7 @@ class FixMetadata(ProtocolMetadata):
     column = _Text()
     note = _Text()
     component = _Text()
-    values = _Document()
+    meanings = _Document("values")
     value_names = _Document()
     versions = _Document(shape=tuple)
     msgtypes = _Document(shape=tuple)
@@ -315,7 +317,7 @@ class EnumMetadata(ProtocolMetadata):
     padding = _Text()
     pattern = _Text()
     byte_width = _Number()
-    values = _Document()
+    members = _Document("values")
     aliases = _Document()
     fix_values = _Document()
     fix_aliases = _Document()

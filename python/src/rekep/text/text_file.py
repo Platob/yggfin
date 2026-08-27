@@ -824,9 +824,9 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
-    micros = compute.divide(
-        rows.column("unix"), TimestampField.factor_of("us")
-    ).cast(pyarrow.int64())
+    micros = compute.divide(rows.column("unix"), TimestampField.factor_of("us")).cast(
+        pyarrow.int64()
+    )
     if timezone and os.name == "nt":
         stamps = _windows_local_micros(micros, timezone).cast(pyarrow.timestamp("us"))
     else:

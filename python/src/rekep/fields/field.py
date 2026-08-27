@@ -154,12 +154,24 @@ class Field(Convertible):
     ) -> Field:
         """Redirect to the subclass `dtype` calls for.
 
-        Declared here rather than in a factory so that every path that builds a
-        field -- `Field(...)`, `from_arrow_field`, `from_dict`, a builder --
-        lands on the right class without any of them having to know the rule.
-        Asking for a subclass explicitly is honoured as written.
+        Declared here rather than in a factory so that every path that builds
+        a field -- `Field(...)`, `from_arrow_field`, `from_dict`, a builder,
+        `dataclasses.replace` -- lands on the right class without any of them
+        having to know the rule. The package's own kind classes follow the
+        type: replacing a timestamp field's dtype with a date re-dispatches,
+        so equality with a fresh declaration holds. A subclass declared
+        outside the dispatch table is honoured as written.
         """
-        return object.__new__(_class_for(dtype) if cls is Field else cls)
+        if cls is Field:
+            return object.__new__(_class_for(dtype))
+        if cls in _kind_classes():
+            wanted = _class_for(dtype)
+            if wanted is not cls:
+                # A sideways re-dispatch builds the field whole: Python only
+                # runs `__init__` when `__new__` answers an instance of `cls`,
+                # and this answer deliberately is not one.
+                return wanted(name, dtype, nullable, metadata)
+        return object.__new__(cls)
 
     def __post_init__(self) -> None:
         """Normalise metadata to a plain `str -> str` dict, never None.
@@ -1549,6 +1561,12 @@ _KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
     (pyarrow.types.is_list, "ListField"),
     (pyarrow.types.is_timestamp, "TimestampField"),
 )
+
+
+@functools.cache
+def _kind_classes() -> frozenset[type]:
+    """The classes the dispatch table owns -- the ones that follow the type."""
+    return frozenset(globals()[name] for _, name in _KINDS)
 
 
 def _class_for(dtype: pyarrow.DataType | None) -> type[Field]:

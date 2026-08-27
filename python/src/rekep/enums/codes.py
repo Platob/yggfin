@@ -535,6 +535,34 @@ class Currency(AsciiInt32):
     def schema_metadata(cls) -> dict[str, str]:
         return {**super().schema_metadata(), "pattern": "[A-Z]{3}"}
 
+    @classmethod
+    def from_stored(cls, value: Any, default: Self | None = None) -> Self:
+        """Read a stored id: today's packing, or the previous release's `CCCn`.
+
+        The earlier generation wrote three letters and an ASCII decimal-count
+        digit into the fourth byte; the letters name the currency and the
+        digit -- a minor-unit convention this enum no longer stores -- drops.
+        Anything else is `UNKNOWN` (or `default`).
+        """
+        member = cls.from_int(value, default=None)
+        if member is not cls.UNKNOWN:
+            return member
+        try:
+            packed = int(value)
+        except (TypeError, ValueError):
+            return default if default is not None else cls.UNKNOWN
+        if 0 <= packed < 1 << 32:
+            raw = packed.to_bytes(4, "big")
+            if 0x30 <= raw[3] <= 0x39:
+                try:
+                    letters = raw[:3].decode("ascii")
+                except UnicodeDecodeError:
+                    letters = ""
+                parsed = cls._from_text(letters)
+                if parsed is not cls.UNKNOWN:
+                    return parsed
+        return default if default is not None else cls.UNKNOWN
+
     UNKNOWN = 0, ""
     """No currency was present."""
 

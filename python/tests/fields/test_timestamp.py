@@ -54,3 +54,16 @@ def test_a_second_clock_widens_exactly() -> None:
     seconds = pyarrow.array([1_700_000_000], pyarrow.timestamp("s"))
     assert TimestampField.into_unix_arrow(seconds).to_pylist() == [1_700_000_000_000_000_000]
     assert TimestampField.into_unix_arrow(seconds, "ms").to_pylist() == [1_700_000_000_000]
+
+
+def test_replacing_the_dtype_re_dispatches_the_kind() -> None:
+    """`dataclasses.replace` follows the type, so a retyped field equals a
+    fresh declaration instead of staying a mislabeled timestamp."""
+    import dataclasses
+
+    stamp = Field(name="when", dtype=pyarrow.timestamp("ns"))
+    retyped = dataclasses.replace(stamp, dtype=pyarrow.date32())
+    assert type(retyped) is Field
+    assert retyped == Field(name="when", dtype=pyarrow.date32())
+    still = dataclasses.replace(stamp, name="later")
+    assert isinstance(still, TimestampField) and still.unit == "ns"

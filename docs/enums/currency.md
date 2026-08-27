@@ -14,6 +14,11 @@ simply zero, and no decimal count rides in the value. `Currency.register`
 accepts another ISO 4217 alphabetic code; the table lists the built-in
 members.
 
+An earlier release stored `CCCn` -- the letters plus an ASCII decimal-count
+digit in the fourth byte. `Currency.from_stored` (and the replay readers
+built on `from_str`) still read that generation: the letters name the
+currency and the digit drops. `from_int` stays exact on today's codes.
+
 | Key | Stored value |
 | --- | ---: |
 | `UNKNOWN` | 0 |

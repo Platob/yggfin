@@ -14,7 +14,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.enums import MIC, EventType, IdSource, OptionKind, Side
+from rekep.enums import MIC, Currency, EventType, IdSource, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -2121,11 +2121,17 @@ def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
     """Canonical normalized currency text packed into its persisted int32.
 
     Three letters big-endian with a NUL fourth byte -- exactly
-    `Currency._pack` -- so the kernel and the scalar write one value.
+    `Currency._pack`, aliases resolved through the same table the scalar
+    readers use -- so the kernel and the scalar write one value.
     """
     compute = pyarrow.compute
     text = values.cast(pyarrow.string(), safe=False)
     canonical = compute.utf8_upper(compute.utf8_trim_whitespace(text))
+    aliases = Currency.aliased_codes()
+    if aliases:
+        position = compute.index_in(canonical, value_set=pyarrow.array(list(aliases)))
+        resolved = compute.take(pyarrow.array(list(aliases.values())), position)
+        canonical = compute.coalesce(resolved, canonical)
     valid = compute.fill_null(compute.match_substring_regex(canonical, r"^[A-Z]{3}$"), False)
     alphabet = pyarrow.array(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     packed = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(values))

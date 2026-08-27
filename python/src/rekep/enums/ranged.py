@@ -27,9 +27,11 @@ _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
 
 #: The extension singleton of every ASCII enum that has asked for one, by the
-#: enum's name -- what `__arrow_ext_deserialize__` hands back so a round trip
-#: through IPC lands on the same instance.
-_ASCII_TYPES: dict[str, AsciiType] = {}
+#: enum class itself; `_ASCII_NAMED` holds the same instances by extension
+#: name, which is what `__arrow_ext_deserialize__` resolves and what guards
+#: two same-named enums from silently sharing a storage width.
+_ASCII_TYPES: dict[type, AsciiType] = {}
+_ASCII_NAMED: dict[str, AsciiType] = {}
 
 
 class Ranged(enum.IntEnum):
@@ -112,7 +114,7 @@ class AsciiType(pyarrow.ExtensionType):
         cls, storage_type: pyarrow.DataType, serialized: bytes
     ) -> AsciiType:
         named = serialized.decode("utf-8")
-        known = _ASCII_TYPES.get(named)
+        known = _ASCII_NAMED.get(named)
         return known if known is not None else cls(storage_type, named)
 
 
@@ -177,12 +179,14 @@ class AsciiInt32(enum.IntEnum):
         """Parse a spelling: a member name, an alias, or a code.
 
         An open vocabulary registers a valid code it had not seen; a closed
-        one answers `UNKNOWN` for anything not compiled.
+        one answers `UNKNOWN` for anything not compiled. An integer here is
+        a stored id and reads through `from_stored`, so a value a previous
+        release wrote still names its member.
         """
         if isinstance(value, cls):
             return value
         if isinstance(value, int):
-            return cls.from_int(value)
+            return cls.from_stored(value)
         return cls._from_text(str(value) if value is not None else "")
 
     @classmethod
@@ -224,8 +228,11 @@ class AsciiInt32(enum.IntEnum):
         The exact wire code first and case-sensitively. Where that misses, a
         word spelling of a *compiled* member answers -- bridges render
         `SIDE=buy` and `TIMEINFORCE=gtd` where the wire says `1` and `6` --
-        and nothing here registers a new code: an unknown value is the
-        default, not a member invented from wire noise.
+        and a closed set registers nothing: an unknown value is the default,
+        not a member invented from wire noise. An open vocabulary with no
+        declared wire codes speaks its own codes on the wire, so its values
+        parse as spellings -- aliases resolve, and a well-formed unlisted
+        code registers.
         """
         raw = str(value).strip() if value is not None else ""
         known = cls._fix_codes().get(raw)
@@ -321,15 +328,29 @@ class AsciiInt32(enum.IntEnum):
         IPC; the underlying storage stays the plain integer column every
         engine reads.
         """
-        found = _ASCII_TYPES.get(cls.__name__)
-        if found is None:
-            storage = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
-            found = AsciiType(storage, cls.__name__)
-            _ASCII_TYPES[cls.__name__] = found
-            try:
-                pyarrow.register_extension_type(found)
-            except pyarrow.lib.ArrowKeyError:
-                pass
+        found = _ASCII_TYPES.get(cls)
+        if found is not None:
+            return found
+        storage = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
+        named = _ASCII_NAMED.get(cls.__name__)
+        if named is not None:
+            # Arrow's registry is name-keyed, so two enums spelling one name
+            # share one wire identity -- fine while they agree on storage,
+            # silent corruption the moment they do not.
+            if named.storage_type != storage:
+                raise TypeError(
+                    f"two ASCII enums named {cls.__name__!r} declare different "
+                    f"storage widths: {named.storage_type} and {storage}"
+                )
+            _ASCII_TYPES[cls] = named
+            return named
+        found = AsciiType(storage, cls.__name__)
+        _ASCII_TYPES[cls] = found
+        _ASCII_NAMED[cls.__name__] = found
+        try:
+            pyarrow.register_extension_type(found)
+        except pyarrow.lib.ArrowKeyError:
+            pass
         return found
 
     @classmethod
@@ -397,12 +418,17 @@ class AsciiInt32(enum.IntEnum):
         return raw.strip().upper()
 
     @classmethod
+    def aliased_codes(cls) -> dict[str, str]:
+        """Every alias this enum resolves, normalized spelling to code."""
+        return {**cls._built_in_aliases(), **_ASCII_ALIASES.get(cls, {})}
+
+    @classmethod
     def _canonical(cls, raw: str) -> str:
         text = cls._normalise(raw)
         named = cls.__members__.get(text)
         if named is not None:
             return named.code
-        aliased = {**cls._built_in_aliases(), **_ASCII_ALIASES.get(cls, {})}.get(text, text)
+        aliased = cls.aliased_codes().get(text, text)
         named = cls.__members__.get(aliased)
         if named is not None:
             return named.code
