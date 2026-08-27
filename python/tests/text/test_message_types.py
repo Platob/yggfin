@@ -27,12 +27,10 @@ def test_a_mapped_message_type_assigns_its_registry_event_type() -> None:
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
 
 
-def test_the_configured_spelling_may_be_a_name_a_mnemonic_or_a_stored_id() -> None:
-    """A config written as the member's name, its mnemonic, or an id it has
-    stored -- today's packed code, or the ordinal a previous release wrote --
-    all land in the column as today's code. `EXECUTED` is the one spelling
-    where mnemonic and member name differ; both answer."""
-    for spelled in ("ORDER", "order", 110, "110", int(EventType.ORDER)):
+def test_the_configured_spelling_may_be_a_name_a_mnemonic_or_a_code() -> None:
+    """A config written as the member's name, its mnemonic, or its stored code
+    all land in the column as that code."""
+    for spelled in ("ORDER", "order", int(EventType.ORDER), str(int(EventType.ORDER))):
         found = Message.parse_arrow(
             pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string()), {"D": spelled}
         )

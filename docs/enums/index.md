@@ -41,8 +41,8 @@ enum name and the complete stored-value lookup under `enum:*` metadata.
 | [MarketKind](market-kind.md) | Pricing and execution semantics. |
 | [TimeInForce](time-in-force.md) | Order lifetime. |
 
-Every code is built on one base -- the public `AsciiInt32` and its eight-byte
-`AsciiInt64` -- and packs its readable spelling into the stored integer,
+Every code is built on one base -- the public `Ascii32` and its eight-byte
+`Ascii64` -- and packs its readable spelling into the stored integer,
 right-justified with leading NULs, so a short code stores as the plain
 integer of its own bytes.
 

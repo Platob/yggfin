@@ -782,11 +782,8 @@ def _states(mapping: Any) -> dict[str, State]:
 def _enum_value(enum_type: Any, value: Any) -> Any:
     """Read an enum name, id, or the explicit pair stored in registry JSON.
 
-    The name is authoritative in the explicit pair: a store written before a
-    member's stored id changed still names the same meaning, so the id only
-    has to be one that member has ever stored. A bare id follows the same
-    rule through `from_stored`; an id no member has ever stored is refused
-    rather than read as a degraded member.
+    The name and the id must agree; an id no member stores is refused rather
+    than read as a degraded member.
     """
     if isinstance(value, Mapping):
         if set(value) != {"name", "id"}:
@@ -798,28 +795,15 @@ def _enum_value(enum_type: Any, value: Any) -> Any:
         if type(identifier) is not int:
             raise ValueError("an enum object needs an integer id")
         named = enum_type[name.upper()]
-        if _stored_member(enum_type, identifier) is not named:
+        if identifier != int(named):
             raise ValueError("an enum name and id disagree")
         return named
     parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
     if isinstance(parsed, str):
         return enum_type[parsed.upper()]
-    member = _stored_member(enum_type, parsed)
-    if member is None:
-        raise ValueError("no member has ever stored this id")
-    return member
-
-
-def _stored_member(enum_type: Any, identifier: Any) -> Any:
-    """The member `identifier` names in any generation, or None for none.
-
-    Zero is the one id every vocabulary shares: it is `UNKNOWN`, and it
-    always was.
-    """
-    stored = getattr(enum_type, "from_stored", None)
-    member = enum_type(identifier) if stored is None else stored(identifier)
-    if int(member) == 0 and int(identifier) != 0:
-        return None
+    member = enum_type(parsed)
+    if int(member) != int(parsed):
+        raise ValueError("no member stores this id")
     return member
 
 

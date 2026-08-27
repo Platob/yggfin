@@ -1,12 +1,10 @@
 """The base every stable code is built on: ASCII packed into one integer.
 
-A code packs a fixed width of characters -- right-justified, padded with
-leading NULs -- into the integer the column stores, so the stored value is
-readable without a lookup and exact under a pushed code-set filter. Order
-is a separate fact: a member may declare a *rank*, and a vocabulary that
-ranks in hundred-wide bands answers "what does this broadly mean" through
-`band` and "which codes rank at least this" through `ranked_at_least`,
-without the stored value having to be an ordinal.
+A code packs left-justified into a fixed width, padded with trailing NULs,
+so the stored integer reads back as text and orders exactly as the text
+does. A member may also declare a *rank*, and a vocabulary ranked in
+hundred-wide bands answers `band` and the pushed code sets
+`ranked_at_least`, `ranked_below` and `ranked_between`.
 """
 
 from __future__ import annotations
@@ -33,18 +31,17 @@ _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
 
 
-class AsciiInt32(enum.IntEnum):
+class Ascii32(enum.IntEnum):
     """A printable ASCII code packed big-endian into the `int32` it stores.
 
-    The code sits right-justified -- padded with leading NULs to exactly
-    four bytes -- so every spelling has one stored value, a raw column dump
-    reads back as text, and `EUR` stores as `\0EUR`: the plain integer of
-    its own bytes, below every four-letter code.
-    The set is closed by default -- a stored integer either is a compiled
-    code or it is `UNKNOWN`, keeping a Python answer and a pushed code-set
-    filter on the same rows. A vocabulary that must learn codes at runtime
-    (`MIC`, `Currency`) opts in through `_registers_unknown`, and even there
-    only an exact round-trip of the stored bytes registers.
+    The code sits left-justified, padded with trailing NULs to exactly four
+    bytes, so the stored integer orders exactly as the text does and a raw
+    column dump reads back as its spelling. The set is closed by default: a
+    stored integer is a compiled code or it is `UNKNOWN`, which keeps a
+    Python answer and a pushed code-set filter on the same rows. A
+    vocabulary that learns codes at runtime (`MIC`, `Currency`) opts in
+    through `_registers_unknown`, and even there only an exact round trip of
+    the stored bytes registers.
     """
 
     BYTE_WIDTH = enum.nonmember(4)
@@ -100,24 +97,21 @@ class AsciiInt32(enum.IntEnum):
         """Parse a spelling: a member name, an alias, or a code.
 
         An open vocabulary registers a valid code it had not seen; a closed
-        one answers `UNKNOWN` for anything not compiled. An integer here is
-        a stored id and reads through `from_stored`, so a value a previous
-        release wrote still names its member.
+        one answers `UNKNOWN`. An integer is a stored code.
         """
         if isinstance(value, cls):
             return value
         if isinstance(value, int):
-            return cls.from_stored(value)
+            return cls.from_int(value)
         return cls._from_text(str(value) if value is not None else "")
 
     @classmethod
     def from_int(cls, value: Any, default: Self | None = None) -> Self:
-        """Decode a stored integer exactly: a known code, or `UNKNOWN`.
+        """Decode a stored integer: a known code, or `UNKNOWN`.
 
-        A compiled or already-registered code answers directly. An open
-        vocabulary also reads a well-formed unknown code back as a newly
-        registered member -- exactly the bytes stored, never a respelling --
-        while a closed one answers only on its compiled codes, so the scalar
+        An open vocabulary reads a well-formed unknown code back as a newly
+        registered member -- exactly the bytes stored, never a respelling.
+        A closed one answers only on its compiled codes, so the scalar
         reader and a pushed code-set filter keep the same rows.
         """
         try:
@@ -146,14 +140,11 @@ class AsciiInt32(enum.IntEnum):
     def from_fix(cls, value: Any, default: Self | None = None) -> Self:
         """Parse a short protocol value.
 
-        The exact wire code first and case-sensitively. Where that misses, a
-        word spelling of a *compiled* member answers -- bridges render
-        `SIDE=buy` and `TIMEINFORCE=gtd` where the wire says `1` and `6` --
-        and a closed set registers nothing: an unknown value is the default,
-        not a member invented from wire noise. An open vocabulary with no
-        declared wire codes speaks its own codes on the wire, so its values
-        parse as spellings -- aliases resolve, and a well-formed unlisted
-        code registers.
+        The exact wire code first, case-sensitively; where that misses, a
+        word spelling of a *compiled* member answers, because bridges render
+        `SIDE=buy` where the wire says `1`. A vocabulary with no declared
+        wire codes speaks its own codes there, so its values parse as
+        spellings.
         """
         raw = str(value).strip() if value is not None else ""
         known = cls._fix_codes().get(raw)
@@ -168,83 +159,11 @@ class AsciiInt32(enum.IntEnum):
         return default if parsed is cls.UNKNOWN and default is not None else parsed
 
     @classmethod
-    def from_stored(cls, value: Any, default: Self | None = None) -> Self:
-        """Read a stored id from any generation this vocabulary has written.
-
-        A column outlives the release that filled it, so reading one means
-        reading every id it may hold: today's packed code first, then the
-        rank -- which is what an ordinal release stored -- and finally the
-        bytes themselves, read as a code under any padding or width this
-        family has used. A spelling a member has since been renamed away
-        from resolves through its aliases, so `ORDR` still names the kind
-        now spelled `ORDER`. Anything no generation ever wrote is `UNKNOWN`
-        (or `default`).
-
-        `from_int` stays the strict reader: it answers only on today's codes,
-        which is what keeps a Python answer and a pushed code-set filter on
-        the same rows.
-        """
-        member = cls.from_int(value, default=None)
-        if member is not cls.UNKNOWN:
-            return member
-        try:
-            packed = int(value)
-        except (TypeError, ValueError):
-            return default if default is not None else cls.UNKNOWN
-        ranked = cls.ranked().get(packed)
-        if ranked is not None:
-            return ranked
-        superseded = cls._from_superseded(packed)
-        if superseded is not None:
-            return superseded
-        return default if default is not None else cls.UNKNOWN
-
-    @classmethod
-    def _from_superseded(cls, packed: int) -> Self | None:
-        """The member an earlier packing of this code stored, if any.
-
-        Every generation stored the same thing -- printable ASCII bytes of a
-        code, padded with NULs -- and differed only in which side the
-        padding sat on and how wide the integer was. So the bytes are read
-        back at each width this family has used, from either end, and the
-        text is resolved through the ordinary spelling path.
-
-        Only bytes a generation would actually have written answer: packing
-        canonicalizes a spelling before storing it, so anything that is not
-        already canonical was never a stored id and is left unknown rather
-        than respelled into a member.
-        """
-        for width in cls._stored_widths():
-            if packed < -(1 << (8 * width - 1)) or packed >= 1 << (8 * width):
-                continue
-            raw = (packed & ((1 << (8 * width)) - 1)).to_bytes(width, "big")
-            for text in (raw.lstrip(b"\0"), raw.rstrip(b"\0")):
-                if not text or b"\0" in text:
-                    continue
-                try:
-                    spelled = text.decode("ascii")
-                except UnicodeDecodeError:
-                    continue
-                if spelled != cls._normalise(spelled):
-                    continue
-                found = cls._from_text(spelled)
-                if found is not cls.UNKNOWN:
-                    return found
-        return None
-
-    @classmethod
-    def _stored_widths(cls) -> tuple[int, ...]:
-        """Byte widths this vocabulary's stored ids have ever used, widest first."""
-        return tuple(width for width in (8, 4) if width <= cls.BYTE_WIDTH)
-
-    @classmethod
     def register(cls, value: str, *, aliases: Any = ()) -> Self:
         """Register one code and optional source aliases.
 
-        Open vocabularies only: a closed set's codes are compiled, and asking
-        it to learn one is a programming error rather than data. A value that
-        does not spell a valid code is `UNKNOWN`, not an exception -- the
-        callers sit on data paths.
+        Open vocabularies only. A value that does not spell a valid code is
+        `UNKNOWN`, not an exception: the callers sit on data paths.
         """
         if not cls._registers_unknown():
             raise TypeError(f"{cls.__name__} is a closed set; its codes are compiled")
@@ -264,20 +183,13 @@ class AsciiInt32(enum.IntEnum):
 
     # -- lookups ------------------------------------------------------------
 
-    @classmethod
-    @functools.cache
-    def ranked(cls) -> Mapping[int, Self]:
-        """Compiled members by declared rank -- the ids an ordinal release stored."""
-        return MappingProxyType({member._rank: member for member in cls})
-
     @property
     def band(self) -> Self:
         """The band-floor member this code's rank sits in, or the code itself.
 
-        A vocabulary that declares ranks in hundred-wide bands says what a
-        detailed code broadly means -- `FILLED` is a `DONE` -- without the
-        stored value having to be an ordinal. One that ranks each member by
-        its own packed code declares no bands, so every code is its own.
+        A ranked vocabulary says what a detailed code broadly means --
+        `FILLED` is a `DONE`. One that ranks each member by its own packed
+        code declares no floors, so every code is its own band.
         """
         return type(self)._bands().get(self._rank // self.WIDTH * self.WIDTH, self)
 
@@ -290,12 +202,7 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def ranked_at_least(cls, floor: Self) -> tuple[int, ...]:
-        """Stored codes ranked at or above `floor`, for a pushed scan filter.
-
-        What replaces a range predicate over the stored value: the codes are
-        mnemonics rather than ordinals, so a scan names the finite set it
-        wants instead of a boundary.
-        """
+        """Stored codes ranked at or above `floor`, for a pushed scan filter."""
         return tuple(int(member) for member in cls if member._rank >= floor._rank)
 
     @classmethod
@@ -313,10 +220,8 @@ class AsciiInt32(enum.IntEnum):
     def worded_codes(cls) -> Mapping[str, Self]:
         """Wire-backed compiled members by normalized name and built-in alias.
 
-        Only members that carry a FIX code: the wire spelling a code misses
-        resolves here when a human wrote the meaning out, and to nothing
-        otherwise. A member with no code -- `TimeInForce`'s ordering markers
-        -- is not something a wire value can mean, so it never answers.
+        Only members carrying a FIX code, so an ordering marker a wire value
+        can never mean does not answer.
         """
         found: dict[str, Self] = {
             name: member for name, member in cls.__members__.items() if member and member._fix_code
@@ -332,15 +237,9 @@ class AsciiInt32(enum.IntEnum):
     @classmethod
     @functools.cache
     def into_arrow_type(cls) -> pyarrow.DictionaryType:
-        """This enum's Arrow dictionary type, one instance per enum.
-
-        A dictionary of the readable codes, indexed as wide as the packed
-        value a column stores -- `int32` or `int64` by declared width -- so
-        the index type is also the storage a builder declares for the column
-        and `into_arrow_array` renders a stored column into this type.
-        Nothing registers with Arrow: a dictionary type is a plain value
-        type every engine already speaks.
-        """
+        """This enum's Arrow type: a dictionary of its codes, indexed as wide
+        as the packed value a column stores, so the index type is also the
+        storage a builder declares."""
         index = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
         return pyarrow.dictionary(index, pyarrow.utf8())
 
@@ -348,10 +247,9 @@ class AsciiInt32(enum.IntEnum):
     def into_arrow_array(cls, values: Any) -> pyarrow.DictionaryArray:
         """A stored code column rendered as this enum spelled out.
 
-        Arrow indexes a dictionary by position, not by the value stored, so
-        the packed codes are resolved to members and the members to their
-        spellings; a code no generation of this vocabulary wrote renders as
-        null rather than as a number nobody can read.
+        Arrow indexes a dictionary by position, not by the stored value, so
+        the codes resolve to members and the members to their spellings; an
+        unknown code renders as null.
         """
         compute = pyarrow.compute
         column = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
@@ -370,7 +268,7 @@ class AsciiInt32(enum.IntEnum):
         metadata = {
             "encoding": "ascii-big-endian",
             "byte_width": str(cls.BYTE_WIDTH),
-            "padding": "nul-left",
+            "padding": "nul-right",
         }
         aliases = {
             **{
@@ -422,8 +320,7 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def _missing_(cls, value: Any) -> Self:
-        """`Code(value)` reads a value, so it reads every generation of one."""
-        return cls.from_str(value) if isinstance(value, str) else cls.from_stored(value)
+        return cls.from_str(value) if isinstance(value, str) else cls.from_int(value)
 
     @classmethod
     def _normalise(cls, raw: str) -> str:
@@ -457,14 +354,14 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def _pack(cls, text: str) -> int:
-        raw = text.encode("ascii").rjust(cls.BYTE_WIDTH, b"\0")
+        raw = text.encode("ascii").ljust(cls.BYTE_WIDTH, b"\0")
         return int.from_bytes(raw, "big", signed=True)
 
     @classmethod
     def _decode(cls, packed: int) -> str:
         width = cls.BYTE_WIDTH
         raw = (packed & ((1 << (8 * width)) - 1)).to_bytes(width, "big")
-        text = raw.lstrip(b"\0")
+        text = raw.rstrip(b"\0")
         if b"\0" in text:
             raise UnicodeDecodeError("ascii", raw, 0, width, "embedded NUL")
         return text.decode("ascii")
@@ -483,12 +380,10 @@ class AsciiInt32(enum.IntEnum):
         return {member._fix_code: member for member in cls if member._fix_code}
 
 
-class AsciiInt64(AsciiInt32):
+class Ascii64(Ascii32):
     """An ASCII code of up to eight bytes stored as one signed `int64`.
 
-    Exactly `AsciiInt32` with twice the width: same packing, same parsers,
-    same closed-by-default registration -- for vocabularies whose codes
-    outgrow four characters.
+    `Ascii32` at twice the width, for codes that outgrow four characters.
     """
 
     BYTE_WIDTH = enum.nonmember(8)

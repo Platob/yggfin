@@ -440,10 +440,9 @@ def _msg_type_probe(
 def _event_code(value: EventType | int | str) -> int:
     """One configurable event spelling as its stable stored integer.
 
-    A member, its name (`ORDER`), any mnemonic it has answered to (`ORDR`),
-    or an id any generation stored -- all converted to today's code. A
-    spelling no member answers to is refused rather than written into the
-    column as a dead code every reader maps to `UNKNOWN`.
+    A member, its name, its mnemonic, or its stored code. A spelling no
+    member answers to is refused rather than written into the column as a
+    dead code every reader maps to `UNKNOWN`.
     """
     if isinstance(value, EventType):
         return int(value)
@@ -454,7 +453,7 @@ def _event_code(value: EventType | int | str) -> int:
         if member is EventType.UNKNOWN and str(value).strip().upper() != "UNKNOWN":
             raise ValueError(f"unknown EventType spelling {value!r}") from None
         return int(member)
-    member = EventType.from_stored(code)
+    member = EventType.from_int(code)
     if member is EventType.UNKNOWN and code != 0:
-        raise ValueError(f"no EventType has ever stored id {code}")
+        raise ValueError(f"no EventType stores id {code}")
     return int(member)

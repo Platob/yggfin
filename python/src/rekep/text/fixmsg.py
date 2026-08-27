@@ -2125,9 +2125,9 @@ def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
 def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
     """Canonical normalized currency text packed into its persisted int32.
 
-    Three letters big-endian below a leading NUL byte -- exactly
-    `Currency._pack`, aliases resolved through the same table the scalar
-    readers use -- so the kernel and the scalar write one value.
+    Three letters big-endian above a trailing NUL -- exactly `Currency._pack`,
+    aliases resolved through the table the scalar readers use, so the kernel
+    and the scalar write one value.
     """
     compute = pyarrow.compute
     text = values.cast(pyarrow.string(), safe=False)
@@ -2140,7 +2140,7 @@ def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
     valid = compute.fill_null(compute.match_substring_regex(canonical, r"^[A-Z]{3}$"), False)
     alphabet = pyarrow.array(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     packed = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(values))
-    for index, multiplier in enumerate((1 << 16, 1 << 8, 1)):
+    for index, multiplier in enumerate((1 << 24, 1 << 16, 1 << 8)):
         character = compute.utf8_slice_codeunits(canonical, start=index, stop=index + 1)
         byte = compute.add(compute.index_in(character, value_set=alphabet), 65).cast(
             pyarrow.int32()

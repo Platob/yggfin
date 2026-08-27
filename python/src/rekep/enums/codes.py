@@ -14,10 +14,10 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from rekep.enums.ascii_codes import AsciiInt32, AsciiInt64
+from rekep.enums.ascii_codes import Ascii32, Ascii64
 
 
-class AssetKind(AsciiInt64):
+class AssetKind(Ascii64):
     """Tradable asset kind, banded by settlement."""
 
     UNKNOWN = 0
@@ -48,7 +48,7 @@ class AssetKind(AsciiInt64):
         return self.rank >= AssetKind.DERIVATIVE.rank
 
 
-class EventType(AsciiInt64):
+class EventType(Ascii64):
     """Event kind stored as an eight-byte ASCII mnemonic, banded by rank.
 
     Eight bytes buy explicit spellings -- `ORDER`, `QUOTE`, `EXECUTED` --
@@ -70,30 +70,13 @@ class EventType(AsciiInt64):
     INSTRUMENT_STATE = "ISTATE", "", 400
     INSTRUMENT = "INSTRMT", "", 410
 
-    @classmethod
-    def _built_in_aliases(cls) -> dict[str, str]:
-        """The four-byte mnemonics an earlier release stored, by what they meant.
-
-        Eight bytes bought the explicit spellings; a store or a config still
-        written in the abbreviations resolves to the same members.
-        """
-        return {
-            "ORDR": "ORDER",
-            "INTE": "INTENT",
-            "QUOT": "QUOTE",
-            "EXEC": "EXECUTION",
-            "STAT": "STATE",
-            "ISTA": "INSTRUMENT_STATE",
-            "INST": "INSTRUMENT",
-        }
-
     @property
     def is_snapshot(self) -> bool:
         """Whether the row is a state rather than an occurrence."""
         return self._rank >= EventType.STATE._rank
 
 
-class IdSource(AsciiInt64):
+class IdSource(Ascii64):
     """Instrument identifier scheme, banded by issuer."""
 
     UNKNOWN = 0
@@ -131,7 +114,7 @@ class IdSource(AsciiInt64):
         return self.band is IdSource.REGISTERED
 
 
-class MarketKind(AsciiInt64):
+class MarketKind(Ascii64):
     """Order pricing and execution semantics, in stable bands."""
 
     UNKNOWN = 0
@@ -271,7 +254,7 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 }
 
 
-class OptionKind(AsciiInt64):
+class OptionKind(Ascii64):
     """Option direction read from FIX `PutOrCall <201>`."""
 
     UNKNOWN = 0
@@ -279,13 +262,15 @@ class OptionKind(AsciiInt64):
     CALL = "CALL", "1", 200
 
 
-class State(AsciiInt64):
+class State(Ascii64):
     """Event lifecycle, ordered by completion.
 
-    The stored value is the readable mnemonic; the completion order rides in
-    each member's rank, so "still live" and "finished" are rank questions
-    and a storage scan filters on the code sets `ranked_at_least`,
-    `ranked_below` and `ranked_between` spell.
+    Each code carries its rank as a two-digit prefix, so the stored value
+    sorts exactly as the lifecycle does: `21NEW` before `41FILLED`, every
+    live state below every terminal one. "Still live" and "finished" are
+    rank questions, and a storage scan filters on the code sets
+    `ranked_at_least`, `ranked_below` and `ranked_between` spell -- or on a
+    range, which the ordering now makes honest.
     """
 
     #: The rank the terminal states begin at.
@@ -293,51 +278,51 @@ class State(AsciiInt64):
 
     UNKNOWN = 0
     """Nothing has been stated."""
-    PENDING = "PENDING", "", 100
+    PENDING = "10PENDNG", "", 100
     """Band floor: requested but not acknowledged."""
-    PENDING_NEW = "PENDNEW", "", 110
+    PENDING_NEW = "11PNDNEW", "", 110
     """Awaiting first venue acknowledgement."""
-    OPEN = "OPEN", "", 200
+    OPEN = "20OPEN", "", 200
     """Band floor: live at the venue."""
-    NEW = "NEW", "", 210
+    NEW = "21NEW", "", 210
     """Acknowledged and working."""
-    ACCEPTED = "ACCEPTED", "", 220
+    ACCEPTED = "22ACCEPT", "", 220
     """Accepted but not yet working."""
-    PENDING_REPLACE = "PENDRPLC", "", 230
+    PENDING_REPLACE = "23PNDRPL", "", 230
     """Amendment pending while the original remains live."""
-    PENDING_CANCEL = "PENDCNCL", "", 240
+    PENDING_CANCEL = "24PNDCNL", "", 240
     """Cancellation pending while the order remains live."""
-    SUSPENDED = "SUSPEND", "", 250
+    SUSPENDED = "25SUSPND", "", 250
     """Held by the venue and resumable."""
-    STOPPED = "STOPPED", "", 260
+    STOPPED = "26STOPPD", "", 260
     """Stopped at a price awaiting a trade."""
-    PARTIAL = "PARTIAL", "", 300
+    PARTIAL = "30PARTL", "", 300
     """Band floor: live and partly complete."""
-    PARTIALLY_FILLED = "PARTFILL", "", 310
+    PARTIALLY_FILLED = "31PRTFIL", "", 310
     """Some quantity traded; the rest remains live."""
-    DONE = "DONE", "", 400
+    DONE = "40DONE", "", 400
     """Band floor and first terminal state."""
-    FILLED = "FILLED", "", 410
+    FILLED = "41FILLED", "", 410
     """Every share traded."""
-    DONE_FOR_DAY = "DONEDAY", "", 420
+    DONE_FOR_DAY = "42DONEDY", "", 420
     """Over for the session."""
-    CALCULATED = "CALCULTD", "", 430
+    CALCULATED = "43CALCD", "", 430
     """Priced and closed by the venue."""
-    CLOSED = "CLOSED", "", 500
+    CLOSED = "50CLOSED", "", 500
     """Band floor: over without completion."""
-    CANCELLED = "CANCELED", "", 510
+    CANCELLED = "51CANCLD", "", 510
     """Withdrawn before completion."""
-    REPLACED = "REPLACED", "", 520
+    REPLACED = "52REPLCD", "", 520
     """Superseded by an amendment."""
-    EXPIRED = "EXPIRED", "", 530
+    EXPIRED = "53EXPIRD", "", 530
     """Reached expiry while live."""
-    INTERNAL_EXPIRED = "INTEXPRD", "", 540
+    INTERNAL_EXPIRED = "54INTEXP", "", 540
     """Expired locally after one day without a newer observation."""
-    FAILED = "FAILED", "", 600
+    FAILED = "60FAILED", "", 600
     """Band floor: refused."""
-    REJECTED = "REJECTED", "", 610
+    REJECTED = "61REJCTD", "", 610
     """Refused; reason fields explain why."""
-    INTERNAL_REJECTED = "INTREJCT", "", 620
+    INTERNAL_REJECTED = "62INTREJ", "", 620
     """Refused by this pipeline before it could change market state."""
 
     @classmethod
@@ -457,7 +442,7 @@ class State(AsciiInt64):
         return tuple(int(member) for member in cls if member.is_terminal)
 
 
-class MIC(AsciiInt32):
+class MIC(Ascii32):
     """ISO 10383 code stored as four ASCII bytes in one `int32`."""
 
     _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9]{4}$"))
@@ -514,7 +499,7 @@ class MIC(AsciiInt32):
         return compute.coalesce(*encoded)
 
 
-class Currency(AsciiInt32):
+class Currency(Ascii32):
     """ISO 4217 alphabetic code stored as three ASCII letters.
 
     Packed like every other ASCII code -- NUL-padded to the storage width --
@@ -545,30 +530,6 @@ class Currency(AsciiInt32):
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
         return {**super().schema_metadata(), "pattern": "[A-Z]{3}"}
-
-    @classmethod
-    def _from_superseded(cls, packed: int) -> Self | None:
-        """A currency an earlier generation stored, including the `CCCn` one.
-
-        Beyond the paddings every code shares, one generation wrote three
-        letters and an ASCII decimal-count digit into the fourth byte; the
-        letters name the currency and the digit -- a minor-unit convention
-        this enum no longer stores -- drops.
-        """
-        found = super()._from_superseded(packed)
-        if found is not None:
-            return found
-        if 0 <= packed < 1 << 32:
-            raw = packed.to_bytes(4, "big")
-            if 0x30 <= raw[3] <= 0x39:
-                try:
-                    letters = raw[:3].decode("ascii")
-                except UnicodeDecodeError:
-                    return None
-                parsed = cls._from_text(letters)
-                if parsed is not cls.UNKNOWN:
-                    return parsed
-        return None
 
     UNKNOWN = 0, ""
     """No currency was present."""
@@ -604,7 +565,7 @@ class Currency(AsciiInt32):
     XXX = "XXX"
 
 
-class Side(AsciiInt32):
+class Side(Ascii32):
     """Direction stored as a four-byte ASCII mnemonic."""
 
     UNKNOWN = 0
@@ -676,7 +637,7 @@ class Side(AsciiInt32):
         return self
 
 
-class TimeInForce(AsciiInt32):
+class TimeInForce(Ascii32):
     """Order lifetime stored as a ranked four-byte ASCII mnemonic."""
 
     UNKNOWN = 0, "", 0

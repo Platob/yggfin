@@ -306,47 +306,6 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
     assert json.loads(metadata["states"]) == {"D": int(State.PENDING_NEW)}
 
 
-def test_a_record_written_before_the_event_recode_still_reads_by_name() -> None:
-    """The explicit pair's name is authoritative: the ordinal id a previous
-    release stored is each member's rank, so the pair agrees instead of
-    raising, and a bare ordinal resolves the same way."""
-    entry = _entry(
-        name="MsgType",
-        tag=35,
-        event_types={
-            "8": {"name": "EXECUTION", "id": 210},  # type: ignore[dict-item]
-            "D": {"name": "ORDER", "id": 110},  # type: ignore[dict-item]
-            "W": 320,  # type: ignore[dict-item]
-        },
-    )
-    assert entry.event_types == {
-        "8": EventType.EXECUTION,
-        "D": EventType.ORDER,
-        "W": EventType.BOOK,
-    }
-
-
-def test_a_record_from_any_generation_of_ids_still_loads() -> None:
-    """Every packing this vocabulary has written names the same members, so a
-    warm cache from any release keeps reading."""
-    entry = _entry(
-        name="MsgType",
-        tag=35,
-        event_types={
-            "8": {"name": "EXECUTION", "id": int.from_bytes(b"EXEC", "big")},  # type: ignore[dict-item]
-            "D": {"name": "ORDER", "id": 110},  # type: ignore[dict-item]
-            "W": int.from_bytes(b"BOOK", "big"),  # type: ignore[dict-item]
-        },
-    )
-    assert entry.event_types == {
-        "8": EventType.EXECUTION,
-        "D": EventType.ORDER,
-        "W": EventType.BOOK,
-    }
-    lifecycle = _entry(name="OrdStatus", tag=39, states={"A": 110, "2": 410})  # type: ignore[dict-item]
-    assert lifecycle.states == {"A": State.PENDING_NEW, "2": State.FILLED}
-
-
 def test_an_id_no_event_kind_has_ever_stored_is_refused() -> None:
     """A dead id must not load as a silently degraded member."""
     with pytest.raises(ValueError, match="unknown EventType"):

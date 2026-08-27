@@ -10,7 +10,7 @@ from typing import Any
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.enums import AsciiInt32
+from rekep.enums import Ascii32
 from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
 
@@ -26,7 +26,7 @@ class MarketFieldBuilder(FieldBuilder):
         carries. Checked first because the base sees an `IntEnum` as Python
         `int64`.
         """
-        if isinstance(annotation, type) and issubclass(annotation, AsciiInt32):
+        if isinstance(annotation, type) and issubclass(annotation, Ascii32):
             return annotation.into_arrow_type().index_type
         return super().scalar(annotation)
 
@@ -48,7 +48,7 @@ class MarketFieldBuilder(FieldBuilder):
         declared = enum_of(annotation)
         if declared is not None:
             describe_enum(built, declared)
-        if isinstance(declared, type) and issubclass(declared, AsciiInt32):
+        if isinstance(declared, type) and issubclass(declared, Ascii32):
             built.protocol(ENUM).update(declared.schema_metadata())
         return built
 
@@ -185,7 +185,7 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     kinds = {type(value) for value in values.values()}
     keys = built.enum
     keys.name = declared.__name__
-    if isinstance(declared, type) and issubclass(declared, AsciiInt32):
+    if isinstance(declared, type) and issubclass(declared, Ascii32):
         keys.key_type = str(declared.into_arrow_type().index_type)
     else:
         keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"

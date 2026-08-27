@@ -57,11 +57,11 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         TimeInForce,
     )
     assert {kind.__module__ for kind in codes} == {"rekep.enums.codes"}
-    assert enum_module.AsciiInt32.__module__ == "rekep.enums.ascii_codes"
+    assert enum_module.Ascii32.__module__ == "rekep.enums.ascii_codes"
     assert {name for name in dir(rekep.enums) if not name.startswith("_")} == {
         *(kind.__name__ for kind in codes),
-        "AsciiInt32",
-        "AsciiInt64",
+        "Ascii32",
+        "Ascii64",
         "ascii_codes",
         "codes",
     }
@@ -88,8 +88,9 @@ def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
 
 
 def test_currency_is_three_letters_padded_like_every_other_ascii_code() -> None:
-    """The leading NUL means the value is the plain integer of the letters."""
-    assert int(Currency.EUR) == int.from_bytes(b"\0EUR", "big") == int.from_bytes(b"EUR", "big")
+    """Trailing NULs, so the stored integer orders as the text does."""
+    assert int(Currency.EUR) == int.from_bytes(b"EUR\0", "big")
+    assert int(Currency.from_str("EUA")) < int(Currency.EUR), "and sorts alphabetically"
     assert Currency.EUR.code == Currency.EUR.into_fix() == "EUR"
     assert Currency.from_int(int(Currency.EUR)) is Currency.EUR
     assert Currency.from_str("EUR2") is Currency.UNKNOWN, "no decimal digit rides in the code"
@@ -112,7 +113,7 @@ def test_a_closed_set_refuses_registration_and_an_open_one_reads_exact_bytes() -
     """One base for every ASCII code: openness is the only knob."""
     with pytest.raises(TypeError, match="closed set"):
         Side.register("MID")
-    respelled = int.from_bytes(b"usd\0", "big")
+    respelled = int.from_bytes(b"\0usd", "big")
     assert Currency.from_int(respelled) is Currency.UNKNOWN, "stored bytes are never respelled"
 
 
@@ -123,58 +124,6 @@ def test_an_ascii_enum_declares_one_arrow_dictionary_type() -> None:
     assert declared is Currency.into_arrow_type()
     assert declared == pyarrow.dictionary(pyarrow.int32(), pyarrow.utf8())
     assert EventType.into_arrow_type() == pyarrow.dictionary(pyarrow.int64(), pyarrow.utf8())
-
-
-def test_currency_reads_the_previous_generations_stored_ids() -> None:
-    """The earlier release wrote `CCCn` -- three letters and a decimal digit.
-
-    The letters name the currency and the digit drops, so a stored column
-    from before the recode still reads back; an id neither generation wrote
-    stays unknown, and `from_int` stays exact for filter parity."""
-    legacy_usd = int.from_bytes(b"USD0", "big")
-    assert Currency.from_stored(legacy_usd) is Currency.USD
-    assert Currency.from_stored(int.from_bytes(b"EUR2", "big")) is Currency.EUR
-    assert Currency.from_str(legacy_usd) is Currency.USD, "replay normalization heals too"
-    assert Currency.from_int(legacy_usd) is Currency.UNKNOWN, "the strict reader does not"
-    assert Currency.from_stored(999) is Currency.UNKNOWN
-
-
-def test_every_generation_of_a_stored_code_reads_back() -> None:
-    """A column outlives the release that filled it. Whatever padding, width
-    or spelling a generation used, the id still names its member -- while
-    `from_int` stays exact on today's codes, which is what keeps a Python
-    answer and a pushed code-set filter on the same rows."""
-    generations = {
-        Currency: (int.from_bytes(b"EUR\0", "big"), int.from_bytes(b"EUR2", "big")),
-        Side: (int.from_bytes(b"BUY\0", "big"),),
-        TimeInForce: (int.from_bytes(b"IOC\0", "big"),),
-        EventType: (int.from_bytes(b"ORDR", "big"), 110),
-        State: (410,),
-    }
-    wanted = {
-        Currency: Currency.EUR,
-        Side: Side.BUY,
-        TimeInForce: TimeInForce.IOC,
-        EventType: EventType.ORDER,
-        State: State.FILLED,
-    }
-    for declared, stored in generations.items():
-        for identifier in stored:
-            assert declared.from_stored(identifier) is wanted[declared], (declared, identifier)
-            assert declared(identifier) is wanted[declared], "and through the constructor"
-            if identifier != int(wanted[declared]):
-                assert declared.from_int(identifier) is declared.UNKNOWN, "the strict reader"
-    assert Currency.from_stored(-12345) is Currency.UNKNOWN
-    assert State.from_stored(999) is State.UNKNOWN
-
-
-def test_an_event_kind_answers_to_the_mnemonic_it_used_to_store() -> None:
-    """Eight bytes bought the explicit spellings; the abbreviations still name
-    the same kinds, so a config or a store written in them keeps working."""
-    assert EventType.from_str("ORDR") is EventType.ORDER
-    assert EventType.from_str("exec") is EventType.EXECUTION
-    assert EventType.from_str("ISTA") is EventType.INSTRUMENT_STATE
-    assert EventType.ORDER.code == "ORDER", "and today's code is the explicit one"
 
 
 def test_a_vocabulary_that_does_not_band_is_its_own_band() -> None:
@@ -193,7 +142,7 @@ def test_a_code_column_renders_as_the_enum_spelled_out() -> None:
     stored = pyarrow.array([int(State.FILLED), int(State.NEW), 999], pyarrow.int64())
     rendered = State.into_arrow_array(stored)
     assert rendered.type == State.into_arrow_type()
-    assert rendered.to_pylist() == ["FILLED", "NEW", None]
+    assert rendered.to_pylist() == [State.FILLED.code, State.NEW.code, None]
     narrow = Currency.into_arrow_array(pyarrow.array([int(Currency.USD)], pyarrow.int32()))
     assert narrow.type == Currency.into_arrow_type()
     assert narrow.to_pylist() == ["USD"]
@@ -211,13 +160,13 @@ def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
 
 
 def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
-    class Route(enum_module.AsciiInt64):
+    class Route(enum_module.Ascii64):
         UNKNOWN = 0
         SMART = "SMART"
         DARKPOOL = "DARKPOOL"
 
     assert int(Route.DARKPOOL) == int.from_bytes(b"DARKPOOL", "big", signed=True)
-    assert int(Route.SMART) == int.from_bytes(b"SMART", "big", signed=True)
+    assert int(Route.SMART) == int.from_bytes(b"SMART\0\0\0", "big", signed=True)
     assert Route.from_str(" smart ") is Route.SMART
     assert Route.from_int(int(Route.DARKPOOL)) is Route.DARKPOOL
     assert Route.from_str("TOOLONGCODE") is Route.UNKNOWN
@@ -248,36 +197,36 @@ def test_mic_columns_pack_in_kernels_and_keep_invalid_values_null() -> None:
 #: year's worth of stored orders.
 STATE_CODES = {
     "UNKNOWN": 0,
-    "PENDING": int.from_bytes(b"PENDING", "big"),
-    "PENDING_NEW": int.from_bytes(b"PENDNEW", "big"),
-    "OPEN": int.from_bytes(b"OPEN", "big"),
-    "NEW": int.from_bytes(b"NEW", "big"),
-    "ACCEPTED": int.from_bytes(b"ACCEPTED", "big"),
-    "PENDING_REPLACE": int.from_bytes(b"PENDRPLC", "big"),
-    "PENDING_CANCEL": int.from_bytes(b"PENDCNCL", "big"),
-    "SUSPENDED": int.from_bytes(b"SUSPEND", "big"),
-    "STOPPED": int.from_bytes(b"STOPPED", "big"),
-    "PARTIAL": int.from_bytes(b"PARTIAL", "big"),
-    "PARTIALLY_FILLED": int.from_bytes(b"PARTFILL", "big"),
-    "DONE": int.from_bytes(b"DONE", "big"),
-    "FILLED": int.from_bytes(b"FILLED", "big"),
-    "DONE_FOR_DAY": int.from_bytes(b"DONEDAY", "big"),
-    "CALCULATED": int.from_bytes(b"CALCULTD", "big"),
-    "CLOSED": int.from_bytes(b"CLOSED", "big"),
-    "CANCELLED": int.from_bytes(b"CANCELED", "big"),
-    "REPLACED": int.from_bytes(b"REPLACED", "big"),
-    "EXPIRED": int.from_bytes(b"EXPIRED", "big"),
-    "INTERNAL_EXPIRED": int.from_bytes(b"INTEXPRD", "big"),
-    "FAILED": int.from_bytes(b"FAILED", "big"),
-    "REJECTED": int.from_bytes(b"REJECTED", "big"),
-    "INTERNAL_REJECTED": int.from_bytes(b"INTREJCT", "big"),
+    "PENDING": int.from_bytes(b"10PENDNG".ljust(8, b"\0"), "big"),
+    "PENDING_NEW": int.from_bytes(b"11PNDNEW".ljust(8, b"\0"), "big"),
+    "OPEN": int.from_bytes(b"20OPEN".ljust(8, b"\0"), "big"),
+    "NEW": int.from_bytes(b"21NEW".ljust(8, b"\0"), "big"),
+    "ACCEPTED": int.from_bytes(b"22ACCEPT".ljust(8, b"\0"), "big"),
+    "PENDING_REPLACE": int.from_bytes(b"23PNDRPL".ljust(8, b"\0"), "big"),
+    "PENDING_CANCEL": int.from_bytes(b"24PNDCNL".ljust(8, b"\0"), "big"),
+    "SUSPENDED": int.from_bytes(b"25SUSPND".ljust(8, b"\0"), "big"),
+    "STOPPED": int.from_bytes(b"26STOPPD".ljust(8, b"\0"), "big"),
+    "PARTIAL": int.from_bytes(b"30PARTL".ljust(8, b"\0"), "big"),
+    "PARTIALLY_FILLED": int.from_bytes(b"31PRTFIL".ljust(8, b"\0"), "big"),
+    "DONE": int.from_bytes(b"40DONE".ljust(8, b"\0"), "big"),
+    "FILLED": int.from_bytes(b"41FILLED".ljust(8, b"\0"), "big"),
+    "DONE_FOR_DAY": int.from_bytes(b"42DONEDY".ljust(8, b"\0"), "big"),
+    "CALCULATED": int.from_bytes(b"43CALCD".ljust(8, b"\0"), "big"),
+    "CLOSED": int.from_bytes(b"50CLOSED".ljust(8, b"\0"), "big"),
+    "CANCELLED": int.from_bytes(b"51CANCLD".ljust(8, b"\0"), "big"),
+    "REPLACED": int.from_bytes(b"52REPLCD".ljust(8, b"\0"), "big"),
+    "EXPIRED": int.from_bytes(b"53EXPIRD".ljust(8, b"\0"), "big"),
+    "INTERNAL_EXPIRED": int.from_bytes(b"54INTEXP".ljust(8, b"\0"), "big"),
+    "FAILED": int.from_bytes(b"60FAILED".ljust(8, b"\0"), "big"),
+    "REJECTED": int.from_bytes(b"61REJCTD".ljust(8, b"\0"), "big"),
+    "INTERNAL_REJECTED": int.from_bytes(b"62INTREJ".ljust(8, b"\0"), "big"),
 }
 
 #: The same, for the side of a market. `BID` and `ASK` are aliases and so do
 #: not appear: an alias has no value of its own to pin.
 SIDE_CODES = {
     "UNKNOWN": 0,
-    "BUY": int.from_bytes(b"BUY", "big"),
+    "BUY": int.from_bytes(b"BUY\0", "big"),
     "BUY_MINUS": int.from_bytes(b"BYMN", "big"),
     "BORROW": int.from_bytes(b"BORR", "big"),
     "SUBSCRIBE": int.from_bytes(b"SUBS", "big"),
@@ -314,8 +263,8 @@ def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
 
 
 def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
-    assert int(TimeInForce.IOC).to_bytes(4, "big") == b"\0IOC"
-    assert int(TimeInForce.GTC).to_bytes(4, "big") == b"\0GTC"
+    assert int(TimeInForce.IOC).to_bytes(4, "big") == b"IOC\0"
+    assert int(TimeInForce.GTC).to_bytes(4, "big") == b"GTC\0"
     assert TimeInForce.from_str("immediate_or_cancel") is TimeInForce.IOC
     assert TimeInForce.from_str("good_till_cancelled") is TimeInForce.GTC
     assert TimeInForce.from_int(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
@@ -432,15 +381,6 @@ def test_a_rank_is_a_band_offset_and_the_codes_are_unique(declared: type) -> Non
         assert member.band.rank == member.rank // declared.WIDTH * declared.WIDTH
 
 
-def test_a_stored_state_reads_back_from_either_generation_of_id() -> None:
-    """Ranks are the ordinals the banded release stored, so an old column still
-    names its member; a strict read of today's codes stays exact."""
-    assert State.from_stored(410) is State.FILLED
-    assert State.from_stored(int(State.FILLED)) is State.FILLED
-    assert State.from_stored(9999) is State.UNKNOWN
-    assert State.from_int(410) is State.UNKNOWN, "the strict reader answers on codes"
-
-
 def test_a_code_no_state_spells_reads_as_unknown_rather_than_raising() -> None:
     """A column is an integer, so a reader must survive anything that lands in it."""
     assert State.from_int(9999) is State.UNKNOWN
@@ -506,7 +446,7 @@ def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
     """The stored value is the mnemonic; band order rides in ranks, and a
     pushed scan filters on the finite code sets the ranks spell."""
     assert EventType.ORDER.code == "ORDER"
-    assert int(EventType.ORDER) == int.from_bytes(b"ORDER", "big", signed=True)
+    assert int(EventType.ORDER) == int.from_bytes(b"ORDER\0\0\0", "big", signed=True)
     assert EventType.EXECUTION.code == "EXECUTED", "eight bytes buy the explicit spelling"
     assert EventType.ORDER.band is EventType.INTENT
     assert EventType.MISC.band is EventType.UNKNOWN
@@ -524,22 +464,12 @@ def test_a_stored_event_code_decodes_exactly_or_not_at_all() -> None:
     """The mnemonic set is closed: near-miss bytes are not respelled into a
     member, so a Python answer and a pushed code-set filter keep the same
     rows."""
-    respelled = int.from_bytes(b"order", "big", signed=True)
+    respelled = int.from_bytes(b"order".ljust(8, b"\0"), "big", signed=True)
     assert EventType.from_int(respelled) is EventType.UNKNOWN
     assert EventType(respelled) is EventType.UNKNOWN
     assert EventType.from_int(int(EventType.ORDER)) is EventType.ORDER
     assert respelled not in EventType.ranked_at_least(EventType.INTENT)
     assert respelled not in EventType.ranked_below(EventType.INTENT)
-
-
-def test_from_stored_reads_either_generation_of_id() -> None:
-    """Ranks are the ids an ordinal release stored, so an old store's id
-    still names its member; an id no member has ever stored stays unknown."""
-    assert EventType.from_stored(110) is EventType.ORDER
-    assert EventType.from_stored(210) is EventType.EXECUTION
-    assert EventType.from_stored(int(EventType.EXECUTION)) is EventType.EXECUTION
-    assert EventType.from_stored(0) is EventType.UNKNOWN
-    assert EventType.from_stored(999) is EventType.UNKNOWN
 
 
 def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:

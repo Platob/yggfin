@@ -190,7 +190,7 @@ class FixMetadata(ProtocolMetadata):
         declared = self.get("event_types")
         if not declared:
             return {}
-        return {key: EventType.from_stored(value) for key, value in json.loads(declared).items()}
+        return {key: EventType.from_int(value) for key, value in json.loads(declared).items()}
 
     @event_types.setter
     def event_types(self, value: Mapping[str, Any] | None) -> None:
@@ -206,7 +206,7 @@ class FixMetadata(ProtocolMetadata):
         declared = self.get("states")
         if not declared:
             return {}
-        return {key: State.from_stored(value) for key, value in json.loads(declared).items()}
+        return {key: State.from_int(value) for key, value in json.loads(declared).items()}
 
     @states.setter
     def states(self, value: Mapping[str, Any] | None) -> None:

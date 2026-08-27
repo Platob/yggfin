@@ -10,7 +10,7 @@ from collections.abc import Iterable, Iterator
 from typing import Annotated, Any
 
 from rekep.enums import (
-    AsciiInt32,
+    Ascii32,
     AssetKind,
     Currency,
     EventType,
@@ -210,7 +210,7 @@ class Instrument(Event):
                 continue
             # A code that is `UNKNOWN` is not knowledge, and the zero every
             # stable code starts at is what says so.
-            if isinstance(mine, AsciiInt32) and (not theirs or mine):
+            if isinstance(mine, Ascii32) and (not theirs or mine):
                 continue
             if mine in (None, "", NIL) or not mine:
                 filled[name] = theirs
