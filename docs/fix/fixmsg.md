@@ -99,7 +99,12 @@ Structured FIX components also use their FIX spellings:
 
 `FixMsg.get` reads promoted columns and `kwargs` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,
-component path or namespace-qualified key.
+component path or namespace-qualified key. A key no registry record explains
+still answers typed where its value spells one of five unambiguous shapes --
+integer, float, dashed date, clock time, boolean word -- and stays text
+otherwise; the raw spelling is kept either way. That is a floor under
+registry promotion, not a replacement: a field worth a real typed column
+gets one through `rekep fix registry promote`.
 
 `direction` says which way a line moved where its header verb says so --
 `Receiving : 8=FIX...` reads False, `Sending : ...` True -- resolved at the

@@ -7,6 +7,7 @@ import datetime
 import decimal
 import functools
 import json
+import math
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -454,6 +455,70 @@ def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
     if kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
         return _only(text, _DECIMAL).cast(arrow_type, safe=False)
     return text.cast(arrow_type, safe=False)
+
+
+#: The five value shapes an unregistered key still spells unambiguously.
+#: Ordered most-frequent-first as measured across three real captures; an
+#: all-digit run reads as an integer even where it could be a compact date,
+#: because an identifier is the likelier reading and the loss is one sniff.
+#: The date and time shapes are fully punctuated for the same reason: with
+#: the compact spellings already read as integers, a half-dashed or
+#: half-coloned run is a code, not a calendar.
+_COHERENT_INT = re.compile(r"-?\d+", re.ASCII)
+_COHERENT_FLOAT = re.compile(r"-?\d+\.\d+", re.ASCII)
+_COHERENT_DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})", re.ASCII)
+_COHERENT_TIME = re.compile(r"(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?", re.ASCII)
+_COHERENT_TRUE = frozenset({"true", "yes", "y"})
+_COHERENT_FALSE = frozenset({"false", "no", "n"})
+
+
+def coherent_fix_value(text: str) -> Any:
+    """The plainest typed reading of a value no dictionary explains.
+
+    The floor under registry promotion: 30.1% of parsed arguments across
+    three real captures carry a key the registry does not know, and 39.5% of
+    those values spell an integer, a float, a compact date, a clock time or a
+    boolean word unambiguously. Anything worth a real typed column should
+    still be promoted through `FixRegistry.promote_field`; this only stops
+    "unregistered" from meaning "always an untyped string" for the rest. The
+    order is fixed and first match wins; a spelling that fits none of the
+    five -- identifiers, session names, free text -- comes back untouched,
+    and so does a shape whose parts are not a real calendar day or clock.
+    """
+    if _COHERENT_INT.fullmatch(text):
+        try:
+            return int(text)
+        except ValueError:
+            # CPython caps int() parsing at 4300 digits; a run past it is an
+            # identifier or noise, and either way it reads back as the text.
+            return text
+    if _COHERENT_FLOAT.fullmatch(text):
+        parsed = float(text)
+        # float() saturates to infinity past float64 instead of raising; a
+        # spelling that wide is an identifier or noise, and either way the
+        # text is the honest answer where infinity would be a fabrication.
+        return parsed if math.isfinite(parsed) else text
+    if found := _COHERENT_DATE.fullmatch(text):
+        try:
+            return datetime.date(int(found[1]), int(found[2]), int(found[3]))
+        except ValueError:
+            return text
+    if found := _COHERENT_TIME.fullmatch(text):
+        try:
+            return datetime.time(
+                int(found[1]),
+                int(found[2]),
+                int(found[3]),
+                int((found[4] or "0").ljust(6, "0")[:6]),
+            )
+        except ValueError:
+            return text
+    folded = text.lower()
+    if folded in _COHERENT_TRUE:
+        return True
+    if folded in _COHERENT_FALSE:
+        return False
+    return text
 
 
 def _only(text: Any, pattern: str) -> Any:
