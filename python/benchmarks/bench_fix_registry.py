@@ -33,12 +33,19 @@ QUESTIONS: dict[str, Callable[[FixRegistry], object]] = {
 
 
 def unpacked(into: pathlib.Path) -> pathlib.Path:
-    """The archive's members as a directory of files: the other store, same bytes."""
+    """The archive's members as a directory of files: the other store, same bytes.
+
+    Layout and all: a shard is `fields/000000.json` in both stores, and a
+    directory holding it under any other name is not the same store -- it is
+    an empty one, which answers every question below with a scrape.
+    """
     directory = into / "fix"
     directory.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(ARCHIVE) as archive:
         for name in archive.namelist():
-            (directory / name.rsplit("/", 1)[-1]).write_bytes(archive.read(name))
+            target = directory / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(archive.read(name))
     return directory
 
 
@@ -76,9 +83,14 @@ def sweep_size(folder: pathlib.Path, repeat: int) -> None:
     default, and these rows are why.
     """
     print(f"\nsize and publishing, best of {repeat}")
-    loose = sum(path.stat().st_size for path in folder.glob("*.json"))
+    # `rglob`, because the store is a tree: the shards and the components sit
+    # in their own folders, and a flat glob measures the version index alone.
+    loose = sum(path.stat().st_size for path in folder.rglob("*.json"))
     print(f"{'directory of JSON':>32} {loose / 1e6:>8.2f} MB")
-    documents = {path.name: path.read_bytes() for path in sorted(folder.glob("*.json"))}
+    documents = {
+        path.relative_to(folder).as_posix(): path.read_bytes()
+        for path in sorted(folder.rglob("*.json"))
+    }
     with tempfile.TemporaryDirectory() as scratch:
         for level in (None, 0, 1, 6, 9):
             target = pathlib.Path(scratch) / f"level{level}.zip"

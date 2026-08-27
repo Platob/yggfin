@@ -315,6 +315,51 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
         FixMsg.from_message_batch(["8=FIX.4.4|35=D|10=000"])
 
 
+def _widened(batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
+    """The batch as an Iceberg scan hands it back: every string 64-bit wide."""
+
+    def wide(dtype: pyarrow.DataType) -> pyarrow.DataType:
+        if pyarrow.types.is_string(dtype):
+            return pyarrow.large_string()
+        if pyarrow.types.is_list(dtype):
+            return pyarrow.large_list(pyarrow.field(dtype.field(0).name, wide(dtype.field(0).type)))
+        if pyarrow.types.is_struct(dtype):
+            return pyarrow.struct([member.with_type(wide(member.type)) for member in dtype])
+        return dtype
+
+    schema = pyarrow.schema([member.with_type(wide(member.type)) for member in batch.schema])
+    return pyarrow.RecordBatch.from_arrays(
+        [column.cast(member.type) for column, member in zip(batch.columns, schema, strict=True)],
+        schema=schema,
+    )
+
+
+def test_a_batch_scanned_back_out_of_storage_transcribes_the_same() -> None:
+    """The whole `parse_fix` stage reads its rows back through a scan, which
+    hands `large_string` back where the raw contract says `string` -- and the
+    kernels this path builds its own constants for refuse the mix."""
+    rows = [
+        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", runix=1),
+        Message(message="plain prose", runix=2),
+    ]
+    fresh = FixMsg.from_message_batch(rows)
+    stored = _widened(Message.into_arrow_reader(rows).read_all().to_batches()[0])
+    assert stored.column("message").type == pyarrow.large_string(), "the fixture is the wide one"
+    assert FixMsg.from_message_batch(stored).equals(fresh)
+
+
+def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
+    """`parse_fix` projects `message` away and parses the stored entries. The
+    declaration must not fill it back in: an all-null text column would send
+    the classifier down the path that reads text, over rows that have none."""
+    rows = [Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01", runix=1)]
+    raw = Message.into_arrow_reader(rows).read_all().to_batches()[0]
+    projected = raw.select([name for name in raw.schema.names if name != "message"])
+    parsed = FixMsg.from_message_batch(_widened(projected))
+    assert "message" not in parsed.schema.names or parsed.column("message").null_count == 1
+    assert parsed.column("ClOrdID").to_pylist() == ["C1"], "the stored entries still parse"
+
+
 def test_a_stored_field_reads_through_its_own_structure() -> None:
     """A stored argument's split -- tag, name, namespace -- is the read's:
     no spelling is rendered and re-split on the way to an answer."""

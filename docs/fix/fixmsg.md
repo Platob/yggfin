@@ -44,6 +44,13 @@ The `FixMsg` conversion owns dictionary resolution, structured components,
 event time and market identities; it consumes those stored arguments instead
 of tokenizing the payload again.
 
+A batch reaches it either fresh off the text reader or scanned back out of
+Iceberg, which hands `large_string` back where the contract says `string`.
+The conversion brings the batch onto the `Message` declaration first, so the
+kernels below it never meet two widths of the same column -- narrowed to the
+columns the batch has, because this stage is read with `message` projected
+away and filling it back in would invent the text the reader left behind.
+
 It classifies each line with the codec's own rules, and the stored
 `protocol_code` fills only the rows those rules call `OTHER`: an enrichment
 echo whose `MSGTYPE=` is real but whose `#` markers are absent parses as the

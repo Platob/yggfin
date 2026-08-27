@@ -535,3 +535,35 @@ def test_merge_with_recurses_into_a_member() -> None:
         pyarrow.schema([pyarrow.field("venue", struct_of(mic=pyarrow.string()))])
     )
     assert target.merge_with(other).field("venue").names == ["mic", "desk"]
+
+
+# -- narrowed: the declaration's reading of what a batch actually has --------
+
+
+def test_narrowed_keeps_only_the_columns_the_batch_carries() -> None:
+    """A projected read left `venue` behind; filling it would invent one."""
+    batch = batch_of(symbol=["A"], size=[1])
+    narrow = Tick.into_field().narrowed(batch.schema)
+    assert narrow.names == ["symbol", "size"]
+    assert narrow.cast_arrow_batch(batch).column("size").type == pyarrow.int32()
+
+
+def test_narrowed_gives_a_wide_column_the_declared_type() -> None:
+    """What a scan hands back: `large_string` where the contract says `string`."""
+    batch = pyarrow.RecordBatch.from_pydict(
+        {"symbol": pyarrow.array(["A"], pyarrow.large_string())}
+    )
+    cast = Tick.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
+    assert cast.column("symbol").type == pyarrow.string()
+
+
+def test_narrowed_leaves_a_column_it_does_not_declare_as_it_arrived() -> None:
+    batch = batch_of(symbol=["A"], desk=["EQ"])
+    narrow = Tick.into_field().narrowed(batch.schema)
+    assert narrow.names == ["symbol", "desk"]
+    assert narrow.field("desk").dtype == pyarrow.string()
+
+
+def test_narrowed_keeps_the_batch_order_and_not_the_declaration_order() -> None:
+    batch = batch_of(size=[1], symbol=["A"])
+    assert Tick.into_field().narrowed(batch.schema).names == ["size", "symbol"]

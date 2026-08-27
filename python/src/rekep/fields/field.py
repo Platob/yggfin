@@ -1533,6 +1533,32 @@ class StructField(Field):
         """`merged`, as the Arrow schema it produces."""
         return self.merged(incoming).arrow_schema
 
+    def narrowed(self, incoming: Any) -> StructField:
+        """This field's reading of the columns `incoming` actually has.
+
+        `merged` widens, which is what a *write* wants: every member this
+        field declares survives, and one the batch is missing is filled with
+        nulls. A projected read is the other direction -- a column absent
+        from the batch is one the reader chose not to select, and filling it
+        invents data -- so this keeps the incoming columns in their own
+        order and gives each the type, the nullability and the comment this
+        field declares for it. Anything this field does not declare stays as
+        it arrived.
+
+        Together with `cast_arrow_batch` it is how a batch read back from
+        storage is brought onto the declaration without inventing a column:
+        a `large_string` a scan hands back becomes the `string` the schema
+        says, and a projection stays a projection.
+        """
+        declared = self._by_name
+        members = [declared.get(member.name, member) for member in Field.from_(incoming).fields]
+        return Field(
+            name=self.name,
+            dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
+            nullable=self.nullable,
+            metadata=dict(self.metadata),
+        )
+
     def _path(self, name: str) -> str:
         """A member's name, prefixed by this field's when it has one."""
         return f"{self.name}.{name}" if self.name else name

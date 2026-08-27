@@ -1076,6 +1076,15 @@ class FixMsg(Message):
         """Transcribe one classified raw `Message` batch under a FIX codec."""
         if not isinstance(batch, pyarrow.RecordBatch):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
+        # A batch scanned back out of Iceberg carries `large_string` where the
+        # raw contract says `string`, and the vectorized path below joins those
+        # columns against constants it builds itself -- which Arrow refuses
+        # across the two widths. The declaration is the one reading, so the
+        # batch is brought onto it here rather than at each kernel. Narrowed
+        # and not merged: this stage is read with `message` projected away, and
+        # filling a column the reader did not select would invent the text it
+        # deliberately left behind.
+        batch = Message.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
         rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
         columns.update(_session_batch_columns(columns))

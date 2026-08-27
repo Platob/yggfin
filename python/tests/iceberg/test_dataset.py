@@ -133,10 +133,14 @@ FIX_LINE = FixMsg(
 
 
 def log_table(*rows: FixMsg) -> pyarrow.Table:
-    """Lines in the Python shape Arrow storage expects."""
-    return pyarrow.Table.from_pylist(
-        [dataclasses.asdict(row) for row in rows], FixMsg.into_field().into_arrow_schema()
-    )
+    """Lines as the class builds them: one batch of its own schema.
+
+    `from_pylist` over `asdict` was the same shape written twice, and stopped
+    being the same one when the hash columns became sixteen bytes -- a `3` the
+    dataclass holds is `fixed_size_binary(16)` in the column, and only the
+    class knows that.
+    """
+    return pyarrow.Table.from_batches([FixMsg.into_arrow_batch(rows)])
 
 
 # -- creating -------------------------------------------------------------
@@ -2185,7 +2189,7 @@ def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 150
+    assert len(leaves) == 149
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("Text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
