@@ -43,7 +43,8 @@ the complete stored-value lookup under `enum:*` metadata.
 `Ranged` enums use hundred-wide bands. An unknown stored value resolves to its
 band floor, so new detailed codes retain their broad meaning. ASCII enums --
 built on the public `AsciiInt32` and `AsciiInt64` bases -- pack their readable
-code into the stored integer, NUL-padded to the storage width; their pages
-show both forms. An ASCII enum's Arrow shape is one extension singleton,
-`EnumName.into_arrow_type()`, whose storage stays the plain integer column
-every engine reads.
+code into the stored integer, right-justified with leading NULs, so a short
+code stores as the plain integer of its own bytes; their pages show both
+forms. An ASCII enum's Arrow shape, `EnumName.into_arrow_type()`, is one
+cached dictionary type -- the packed integer indexing the readable codes --
+while columns store the plain integer every engine reads.

@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from rekep.enums.ranged import AsciiInt32, Ranged
+from rekep.enums.ranged import AsciiInt32, AsciiInt64, Ranged
 
 
 class AssetKind(Ranged):
@@ -48,28 +48,29 @@ class AssetKind(Ranged):
         return self >= AssetKind.DERIVATIVE
 
 
-class EventType(AsciiInt32):
-    """Event kind stored as a four-byte ASCII mnemonic, banded by rank.
+class EventType(AsciiInt64):
+    """Event kind stored as an eight-byte ASCII mnemonic, banded by rank.
 
-    The stored value is the readable mnemonic; the band order the row
-    predicates reason over rides in each member's rank, so a kind question
-    compares ranks and a storage scan filters on the finite code sets
-    `ranked_at_least`/`ranked_below` spell.
+    Eight bytes buy explicit spellings -- `ORDER`, `QUOTE`, `EXECUTED` --
+    where four forced abbreviations. The stored value is the readable
+    mnemonic; the band order the row predicates reason over rides in each
+    member's rank, so a kind question compares ranks and a storage scan
+    filters on the finite code sets `ranked_at_least`/`ranked_below` spell.
     """
 
     WIDTH = enum.nonmember(100)
 
     UNKNOWN = 0
     MISC = "MISC", "", 10
-    INTENT = "INTE", "", 100
-    ORDER = "ORDR", "", 110
-    QUOTE = "QUOT", "", 120
+    INTENT = "INTENT", "", 100
+    ORDER = "ORDER", "", 110
+    QUOTE = "QUOTE", "", 120
     FACT = "FACT", "", 200
-    EXECUTION = "EXEC", "", 210
-    STATE = "STAT", "", 300
+    EXECUTION = "EXECUTED", "", 210
+    STATE = "STATE", "", 300
     BOOK = "BOOK", "", 320
-    INSTRUMENT_STATE = "ISTA", "", 400
-    INSTRUMENT = "INST", "", 410
+    INSTRUMENT_STATE = "ISTATE", "", 400
+    INSTRUMENT = "INSTRMT", "", 410
 
     @property
     def band(self) -> EventType:

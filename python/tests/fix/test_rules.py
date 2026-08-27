@@ -279,13 +279,13 @@ def test_categories_agree_on_codes_no_member_spells() -> None:
     """Case-variant packed bytes, a previous release's ordinal ids, junk:
     the scalar rule and the kernel answer identically on every one, because
     `from_int` answers only on the compiled codes the kernel's sets hold."""
-    respelled = int.from_bytes(b"ordr", "big", signed=True)
+    respelled = int.from_bytes(b"order", "big", signed=True)
     etypes = [respelled, 110, 210, 410, 999, -1, 0]
     for protocol in (None, "FIX"):
         scalar = [DEFAULT.category_of(protocol, etype) for etype in etypes]
         vector = DEFAULT.into_arrow_category_array(
             pyarrow.array([protocol] * len(etypes), pyarrow.string()),
-            pyarrow.array(etypes, pyarrow.int32()),
+            pyarrow.array(etypes, pyarrow.int64()),
         )
         assert vector.to_pylist() == scalar
     assert DEFAULT.category_of("FIX", respelled) == MISC_CATEGORY

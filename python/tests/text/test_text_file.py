@@ -531,7 +531,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unix_partition").type == pyarrow.int32()
     assert schema.field("hash").type == pyarrow.int64()
-    assert schema.field("etype").type == pyarrow.int32()
+    assert schema.field("etype").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
 

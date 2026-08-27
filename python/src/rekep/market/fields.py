@@ -26,7 +26,7 @@ class MarketFieldBuilder(FieldBuilder):
         first because the base sees an `IntEnum` as Python `int64`.
         """
         if isinstance(annotation, type) and issubclass(annotation, AsciiInt32):
-            return annotation.into_arrow_type().storage_type
+            return annotation.into_arrow_type().index_type
         if isinstance(annotation, type) and issubclass(annotation, Ranged):
             return pyarrow.int32()
         return super().scalar(annotation)
@@ -187,7 +187,7 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     keys = built.enum
     keys.name = declared.__name__
     if isinstance(declared, type) and issubclass(declared, AsciiInt32):
-        keys.key_type = str(declared.into_arrow_type().storage_type)
+        keys.key_type = str(declared.into_arrow_type().index_type)
     else:
         keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
     keys.value_type = "utf8"

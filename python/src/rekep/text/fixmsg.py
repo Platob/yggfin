@@ -65,7 +65,7 @@ from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
 from rekep.market.identity import NIL
 from rekep.text.message import Message
 
-_EVENT_CODE = pyarrow.int32()
+_EVENT_CODE = pyarrow.int64()
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
@@ -2120,7 +2120,7 @@ def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
 def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
     """Canonical normalized currency text packed into its persisted int32.
 
-    Three letters big-endian with a NUL fourth byte -- exactly
+    Three letters big-endian below a leading NUL byte -- exactly
     `Currency._pack`, aliases resolved through the same table the scalar
     readers use -- so the kernel and the scalar write one value.
     """
@@ -2135,7 +2135,7 @@ def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
     valid = compute.fill_null(compute.match_substring_regex(canonical, r"^[A-Z]{3}$"), False)
     alphabet = pyarrow.array(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     packed = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(values))
-    for index, multiplier in enumerate((1 << 24, 1 << 16, 1 << 8)):
+    for index, multiplier in enumerate((1 << 16, 1 << 8, 1)):
         character = compute.utf8_slice_codeunits(canonical, start=index, stop=index + 1)
         byte = compute.add(compute.index_in(character, value_set=alphabet), 65).cast(
             pyarrow.int32()

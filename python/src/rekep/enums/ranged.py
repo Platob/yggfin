@@ -2,9 +2,10 @@
 
 Two mechanisms, and which one a code uses is a property of the code. A banded
 integer orders its members and degrades an unknown value to its band; an
-ASCII mnemonic packs a fixed width of characters -- NUL-padded on the right
--- into the integer the column stores, so the stored value is readable
-without a lookup and exact under a pushed code-set filter.
+ASCII mnemonic packs a fixed width of characters -- right-justified, padded
+with leading NULs -- into the integer the column stores, so the stored
+value is readable without a lookup, exact under a pushed code-set filter,
+and a shorter code sorts before every longer one it prefixes.
 """
 
 from __future__ import annotations
@@ -25,13 +26,6 @@ import pyarrow
 _ASCII_REGISTERED_LIMIT = 4_096
 _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
-
-#: The extension singleton of every ASCII enum that has asked for one, by the
-#: enum class itself; `_ASCII_NAMED` holds the same instances by extension
-#: name, which is what `__arrow_ext_deserialize__` resolves and what guards
-#: two same-named enums from silently sharing a storage width.
-_ASCII_TYPES: dict[type, AsciiType] = {}
-_ASCII_NAMED: dict[str, AsciiType] = {}
 
 
 class Ranged(enum.IntEnum):
@@ -93,36 +87,13 @@ class Ranged(enum.IntEnum):
         return {member._fix_code: member for member in cls if member._fix_code}
 
 
-class AsciiType(pyarrow.ExtensionType):
-    """One ASCII enum's Arrow type: its integer storage, named for the enum.
-
-    A singleton per enum: `into_arrow_type` builds it once, registers it with
-    Arrow under `rekep.ascii.<Name>`, and always answers with that same
-    instance -- so two schemas naming one enum share one type, and an IPC
-    round trip resolves back to it.
-    """
-
-    def __init__(self, storage: pyarrow.DataType, name: str) -> None:
-        self._ascii_name = name
-        super().__init__(storage, f"rekep.ascii.{name}")
-
-    def __arrow_ext_serialize__(self) -> bytes:
-        return self._ascii_name.encode("utf-8")
-
-    @classmethod
-    def __arrow_ext_deserialize__(
-        cls, storage_type: pyarrow.DataType, serialized: bytes
-    ) -> AsciiType:
-        named = serialized.decode("utf-8")
-        known = _ASCII_NAMED.get(named)
-        return known if known is not None else cls(storage_type, named)
-
-
 class AsciiInt32(enum.IntEnum):
     """A printable ASCII code packed big-endian into the `int32` it stores.
 
-    The code is NUL-padded on the right to exactly four bytes, so every
-    spelling has one stored value and a raw column dump reads back as text.
+    The code sits right-justified -- padded with leading NULs to exactly
+    four bytes -- so every spelling has one stored value, a raw column dump
+    reads back as text, and `EUR` stores as `\0EUR`: the plain integer of
+    its own bytes, below every four-letter code.
     The set is closed by default -- a stored integer either is a compiled
     code or it is `UNKNOWN`, keeping a Python answer and a pushed code-set
     filter on the same rows. A vocabulary that must learn codes at runtime
@@ -321,37 +292,18 @@ class AsciiInt32(enum.IntEnum):
     # -- the shape a column declares ----------------------------------------
 
     @classmethod
-    def into_arrow_type(cls) -> AsciiType:
-        """This enum's Arrow extension type, one instance per enum.
+    @functools.cache
+    def into_arrow_type(cls) -> pyarrow.DictionaryType:
+        """This enum's Arrow dictionary type, one instance per enum.
 
-        Registered with Arrow on first ask, so a schema carrying it survives
-        IPC; the underlying storage stays the plain integer column every
-        engine reads.
+        The index type is the packed integer the column stores -- `int32` or
+        `int64` by declared width -- and the values are the readable codes,
+        so a dictionary-encoded rendering of the column is the enum spelled
+        out. Nothing registers with Arrow: a dictionary type is a plain
+        value type every engine already speaks.
         """
-        found = _ASCII_TYPES.get(cls)
-        if found is not None:
-            return found
-        storage = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
-        named = _ASCII_NAMED.get(cls.__name__)
-        if named is not None:
-            # Arrow's registry is name-keyed, so two enums spelling one name
-            # share one wire identity -- fine while they agree on storage,
-            # silent corruption the moment they do not.
-            if named.storage_type != storage:
-                raise TypeError(
-                    f"two ASCII enums named {cls.__name__!r} declare different "
-                    f"storage widths: {named.storage_type} and {storage}"
-                )
-            _ASCII_TYPES[cls] = named
-            return named
-        found = AsciiType(storage, cls.__name__)
-        _ASCII_TYPES[cls] = found
-        _ASCII_NAMED[cls.__name__] = found
-        try:
-            pyarrow.register_extension_type(found)
-        except pyarrow.lib.ArrowKeyError:
-            pass
-        return found
+        index = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
+        return pyarrow.dictionary(index, pyarrow.utf8())
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
@@ -359,7 +311,7 @@ class AsciiInt32(enum.IntEnum):
         metadata = {
             "encoding": "ascii-big-endian",
             "byte_width": str(cls.BYTE_WIDTH),
-            "padding": "nul-right",
+            "padding": "nul-left",
         }
         aliases = {
             **{
@@ -445,14 +397,14 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def _pack(cls, text: str) -> int:
-        raw = text.encode("ascii").ljust(cls.BYTE_WIDTH, b"\0")
+        raw = text.encode("ascii").rjust(cls.BYTE_WIDTH, b"\0")
         return int.from_bytes(raw, "big", signed=True)
 
     @classmethod
     def _decode(cls, packed: int) -> str:
         width = cls.BYTE_WIDTH
         raw = (packed & ((1 << (8 * width)) - 1)).to_bytes(width, "big")
-        text = raw.rstrip(b"\0")
+        text = raw.lstrip(b"\0")
         if b"\0" in text:
             raise UnicodeDecodeError("ascii", raw, 0, width, "embedded NUL")
         return text.decode("ascii")

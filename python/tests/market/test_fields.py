@@ -219,7 +219,7 @@ def test_enum_key_and_value_types_are_explicit() -> None:
     assert currency["value_type"] == "utf8"
     assert currency["encoding"] == "ascii-big-endian"
     assert currency["byte_width"] == "4"
-    assert currency["padding"] == "nul-right"
+    assert currency["padding"] == "nul-left"
     assert currency["pattern"] == "[A-Z]{3}"
     assert "dynamic" not in currency
 
@@ -227,7 +227,7 @@ def test_enum_key_and_value_types_are_explicit() -> None:
         metadata = describe_enum_metadata(declared)
         assert metadata["encoding"] == "ascii-big-endian"
         assert metadata["byte_width"] == "4"
-        assert metadata["padding"] == "nul-right"
+        assert metadata["padding"] == "nul-left"
     assert json.loads(describe_enum_metadata(Side)["fix_aliases"])["1"] == "BUY"
     assert json.loads(describe_enum_metadata(TimeInForce)["fix_aliases"])["3"] == "IOC"
     aliases = json.loads(describe_enum_metadata(Side)["aliases"])

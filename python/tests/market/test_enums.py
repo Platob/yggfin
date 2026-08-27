@@ -85,7 +85,8 @@ def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
 
 
 def test_currency_is_three_letters_padded_like_every_other_ascii_code() -> None:
-    assert int(Currency.EUR) == int.from_bytes(b"EUR\0", "big")
+    """The leading NUL means the value is the plain integer of the letters."""
+    assert int(Currency.EUR) == int.from_bytes(b"\0EUR", "big") == int.from_bytes(b"EUR", "big")
     assert Currency.EUR.code == Currency.EUR.into_fix() == "EUR"
     assert Currency.from_int(int(Currency.EUR)) is Currency.EUR
     assert Currency.from_str("EUR2") is Currency.UNKNOWN, "no decimal digit rides in the code"
@@ -112,12 +113,13 @@ def test_a_closed_set_refuses_registration_and_an_open_one_reads_exact_bytes() -
     assert Currency.from_int(respelled) is Currency.UNKNOWN, "stored bytes are never respelled"
 
 
-def test_an_ascii_enum_declares_one_arrow_extension_singleton() -> None:
+def test_an_ascii_enum_declares_one_arrow_dictionary_type() -> None:
+    """A plain value type every engine speaks: packed integers indexing the
+    readable codes, one cached instance per enum, nothing registered."""
     declared = Currency.into_arrow_type()
     assert declared is Currency.into_arrow_type()
-    assert declared.storage_type == pyarrow.int32()
-    assert declared.extension_name == "rekep.ascii.Currency"
-    assert EventType.into_arrow_type() is not declared
+    assert declared == pyarrow.dictionary(pyarrow.int32(), pyarrow.utf8())
+    assert EventType.into_arrow_type() == pyarrow.dictionary(pyarrow.int64(), pyarrow.utf8())
 
 
 def test_currency_reads_the_previous_generations_stored_ids() -> None:
@@ -145,25 +147,6 @@ def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
     assert kernel[0] == kernel[1] == int(Currency.USD)
 
 
-def test_two_enums_sharing_a_name_cannot_disagree_on_storage() -> None:
-    """Arrow's registry is name-keyed: same name and width share the wire
-    identity; a differing width refuses instead of silently truncating."""
-
-    class FakeSameName(enum_module.AsciiInt32):
-        UNKNOWN = 0
-        ONE = "ONE"
-
-    first = FakeSameName.into_arrow_type()
-
-    class FakeSameName(enum_module.AsciiInt64):  # noqa: F811
-        UNKNOWN = 0
-        ONE = "ONE"
-
-    with pytest.raises(TypeError, match="storage widths"):
-        FakeSameName.into_arrow_type()
-    assert first.storage_type == pyarrow.int32()
-
-
 def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
     class Route(enum_module.AsciiInt64):
         UNKNOWN = 0
@@ -171,11 +154,11 @@ def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
         DARKPOOL = "DARKPOOL"
 
     assert int(Route.DARKPOOL) == int.from_bytes(b"DARKPOOL", "big", signed=True)
-    assert int(Route.SMART) == int.from_bytes(b"SMART\0\0\0", "big", signed=True)
+    assert int(Route.SMART) == int.from_bytes(b"SMART", "big", signed=True)
     assert Route.from_str(" smart ") is Route.SMART
     assert Route.from_int(int(Route.DARKPOOL)) is Route.DARKPOOL
     assert Route.from_str("TOOLONGCODE") is Route.UNKNOWN
-    assert Route.into_arrow_type().storage_type == pyarrow.int64()
+    assert Route.into_arrow_type().index_type == pyarrow.int64()
 
 
 def test_generic_packed_codes_are_strict_ascii() -> None:
@@ -230,7 +213,7 @@ STATE_CODES = {
 #: not appear: an alias has no value of its own to pin.
 SIDE_CODES = {
     "UNKNOWN": 0,
-    "BUY": int.from_bytes(b"BUY\0", "big"),
+    "BUY": int.from_bytes(b"BUY", "big"),
     "BUY_MINUS": int.from_bytes(b"BYMN", "big"),
     "BORROW": int.from_bytes(b"BORR", "big"),
     "SUBSCRIBE": int.from_bytes(b"SUBS", "big"),
@@ -267,8 +250,8 @@ def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
 
 
 def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
-    assert int(TimeInForce.IOC).to_bytes(4, "big") == b"IOC\0"
-    assert int(TimeInForce.GTC).to_bytes(4, "big") == b"GTC\0"
+    assert int(TimeInForce.IOC).to_bytes(4, "big") == b"\0IOC"
+    assert int(TimeInForce.GTC).to_bytes(4, "big") == b"\0GTC"
     assert TimeInForce.from_str("immediate_or_cancel") is TimeInForce.IOC
     assert TimeInForce.from_str("good_till_cancelled") is TimeInForce.GTC
     assert TimeInForce.from_int(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
@@ -458,8 +441,9 @@ def test_an_option_kind_reads_the_fix_characters_it_is_written_as() -> None:
 def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
     """The stored value is the mnemonic; band order rides in ranks, and a
     pushed scan filters on the finite code sets the ranks spell."""
-    assert EventType.ORDER.code == "ORDR"
-    assert int(EventType.ORDER) == int.from_bytes(b"ORDR", "big", signed=True)
+    assert EventType.ORDER.code == "ORDER"
+    assert int(EventType.ORDER) == int.from_bytes(b"ORDER", "big", signed=True)
+    assert EventType.EXECUTION.code == "EXECUTED", "eight bytes buy the explicit spelling"
     assert EventType.ORDER.band is EventType.INTENT
     assert EventType.MISC.band is EventType.UNKNOWN
     market = EventType.ranked_at_least(EventType.INTENT)
@@ -476,7 +460,7 @@ def test_a_stored_event_code_decodes_exactly_or_not_at_all() -> None:
     """The mnemonic set is closed: near-miss bytes are not respelled into a
     member, so a Python answer and a pushed code-set filter keep the same
     rows."""
-    respelled = int.from_bytes(b"ordr", "big", signed=True)
+    respelled = int.from_bytes(b"order", "big", signed=True)
     assert EventType.from_int(respelled) is EventType.UNKNOWN
     assert EventType(respelled) is EventType.UNKNOWN
     assert EventType.from_int(int(EventType.ORDER)) is EventType.ORDER

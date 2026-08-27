@@ -331,12 +331,12 @@ class Rules(Convertible):
         if not rows:
             return pyarrow.array([], pyarrow.string())
 
-        event_codes = compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0)
+        event_codes = compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0)
         market = compute.fill_null(
             compute.is_in(
                 event_codes,
                 value_set=pyarrow.array(
-                    sorted(EventType.ranked_at_least(EventType.INTENT)), pyarrow.int32()
+                    sorted(EventType.ranked_at_least(EventType.INTENT)), pyarrow.int64()
                 ),
             ),
             False,

@@ -20,7 +20,7 @@ from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
-_EVENT_CODE = pyarrow.int32()
+_EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
 _DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
 _TOKEN_START = r"(?:^|\^A|[\x01|^;#])"

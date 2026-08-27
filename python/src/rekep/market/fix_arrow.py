@@ -575,7 +575,7 @@ def _orders(
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unix_partition": shared.take(shared.unix_partition, where),
-        "etype": _constant(len(where), int(EventType.ORDER), pyarrow.int32()),
+        "etype": _constant(len(where), int(EventType.ORDER), pyarrow.int64()),
         "cunix": unix,
         "runix": shared.take(shared.runix, where),
         "eunix": eunix,
@@ -756,7 +756,7 @@ def _executions(
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unix_partition": shared.take(shared.unix_partition, where),
-        "etype": _constant(rows, int(EventType.EXECUTION), pyarrow.int32()),
+        "etype": _constant(rows, int(EventType.EXECUTION), pyarrow.int64()),
         "cunix": unix,
         "runix": shared.take(shared.runix, where),
         "hash": event_hash,

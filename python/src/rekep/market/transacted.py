@@ -226,7 +226,7 @@ class Stamped:
         if etypes is None:
             return cls._arrow_rank_of(kinds, preferred_types(None), unranked)
         codes = compute.take(
-            compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0), parents
+            compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0), parents
         )
         rank = pyarrow.repeat(unranked, len(parents))
         for code in compute.unique(codes).to_pylist():
