@@ -276,6 +276,36 @@ def test_a_stored_field_reads_through_its_own_structure() -> None:
     assert row.pairs == [("35", "D"), ("55", "IBM"), ("TECH.CLIENTID", "A1")]
 
 
+def test_an_exotic_stored_spelling_renders_verbatim() -> None:
+    """The stored spelling is the projection's, byte for byte: a zero-padded
+    index, a dotted key under an explicit lead, and a double lead all render
+    exactly as stored -- and still answer the accessor under that spelling."""
+    row = FixMsg(
+        MsgType="D",
+        kwargs=[
+            {"key": "Side[03]", "value": "1"},
+            {"key": "a.b[0]", "namespace": "X", "value": "2"},
+            {"key": "PartyID", "namespace": "TECH", "comp": "NoPartyIDs[0]", "value": "P"},
+        ],
+    )
+
+    assert row.pairs == [
+        ("35", "D"),
+        ("Side[03]", "1"),
+        ("X.a.b[0]", "2"),
+        ("TECH.PartyID", "P"),
+    ]
+    assert row.get("X.a.b[0]").raw == "2"
+    assert [reading.raw for reading in row.readings("Side")] == ["1"]
+
+
+def test_a_component_buffer_key_renders_verbatim() -> None:
+    """A member kept as text keeps its spelling: `007` is not tag `7`."""
+    row = FixMsg(Parties=[{"PartyID": "A", "buffer": {"007": "x", "[0]": "y"}}])
+
+    assert row.pairs == [("453", "1"), ("448", "A"), ("007", "x"), ("[0]", "y")]
+
+
 def test_an_unlinked_row_reads_through_the_packaged_dictionary() -> None:
     assert FixMsg().registry is FixRegistry.from_builtin()
     assert FixMsg.from_text("8=FIX.4.4|35=D|10=000").registry is FixRegistry.from_builtin()

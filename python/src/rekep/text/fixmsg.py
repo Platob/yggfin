@@ -785,10 +785,9 @@ class FixMsg(Message):
         `Entry` -- so a field read never re-splits a spelling the stored
         shape already holds apart.
         """
-        stored_entries = [
-            Entry.from_stored(Kwarg.from_stored(entry)) for entry in self.kwargs or ()
-        ]
-        stored = [(_entry_key(entry), entry.value) for entry in stored_entries]
+        stored_fields = [_stored_field(Kwarg.from_stored(entry)) for entry in self.kwargs or ()]
+        stored_entries = [entry for _, entry in stored_fields]
+        stored = [(key, entry.value) for key, entry in stored_fields]
         stored_resolved = access.tagged_pairs(stored)
         stored_identities = {
             _pair_identity(pair[0])
@@ -816,15 +815,16 @@ class FixMsg(Message):
         ]
         promoted = [pair for pair, kept in zip(promoted, keep_promoted, strict=True) if kept]
 
-        component_entries: list[Entry] = []
+        component_fields: list[tuple[str, Entry]] = []
         for column, count_name, row_type in _component_groups():
             entries = getattr(self, column, None)
             if entries is None:
                 continue
             count = _tag_of(count_name)
             if _pair_identity(str(count)) not in stored_identities:
-                component_entries.extend(_component_fields(count, entries, row_type))
-        components = [(_entry_key(entry), entry.value) for entry in component_entries]
+                component_fields.extend(_component_fields(count, entries, row_type))
+        component_entries = [entry for _, entry in component_fields]
+        components = [(key, entry.value) for key, entry in component_fields]
 
         # The promoted discriminator re-enters at its wire-legal position:
         # after the leading BeginString/BodyLength run the raw stage left in
@@ -2222,7 +2222,7 @@ def _tag_of(name: str) -> int:
 
 
 def _entry_key(entry: Entry) -> str:
-    """One entry's source spelling: the rule `_stored_pairs` renders by."""
+    """One entry's split re-rendered: what `_stored_field`'s guard compares."""
     name = entry.name if entry.index is None else f"{entry.name}[{entry.index}]"
     if entry.lead:
         return f"{entry.lead}.{name}"
@@ -2231,9 +2231,45 @@ def _entry_key(entry: Entry) -> str:
     return name
 
 
-def _component_fields(count_tag: int, entries: Sequence[Any], row_type: type[Any]) -> list[Entry]:
-    """One typed component restored as a valid count-led repeating group."""
-    fields: list[Entry] = [Entry(tag=count_tag, name=str(count_tag), value=len(entries))]
+def _kwarg_key(entry: Kwarg) -> str:
+    """One stored argument's verbatim spelling: the rule `_stored_pairs` renders by."""
+    lead = entry.namespace or entry.comp
+    if lead:
+        return f"{lead}.{entry.key}"
+    if "[" in entry.key:
+        return entry.key
+    if entry.tag:
+        return str(entry.tag)
+    return entry.key
+
+
+def _stored_field(entry: Kwarg) -> tuple[str, Entry]:
+    """One stored argument as its verbatim spelling and its ready entry.
+
+    The spelling is the stored one, byte for byte. The structural split
+    serves only where it re-renders to exactly that spelling -- a zero-padded
+    index, a dotted key under an explicit lead, or a double lead re-parses
+    the spelling instead, which is how the projection read such an entry
+    before ready entries rode along.
+    """
+    key = _kwarg_key(entry)
+    built = Entry.from_stored(entry)
+    if _entry_key(built) != key:
+        built = Entry.from_pair(key, built.value)
+    return key, built
+
+
+def _component_fields(
+    count_tag: int, entries: Sequence[Any], row_type: type[Any]
+) -> list[tuple[str, Entry]]:
+    """One typed component restored as a valid count-led repeating group.
+
+    `(spelling, entry)` per field: a constructed member spells as its tag,
+    and a `buffer` key keeps its stored spelling byte for byte.
+    """
+    fields: list[tuple[str, Entry]] = [
+        (str(count_tag), Entry(tag=count_tag, name=str(count_tag), value=len(entries)))
+    ]
     members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
@@ -2250,9 +2286,9 @@ def _component_fields(count_tag: int, entries: Sequence[Any], row_type: type[Any
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
                 tag = int(member.fix["tag"])
-                fields.append(Entry(tag=tag, name=str(tag), value=value))
+                fields.append((str(tag), Entry(tag=tag, name=str(tag), value=value)))
         for key, value in buffered.items():
-            fields.append(Entry.from_pair(key, value))
+            fields.append((str(key), Entry.from_pair(str(key), value)))
     return fields
 
 
