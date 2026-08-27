@@ -6,32 +6,50 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLinesOfText",
-   "required": false,
-   "tag": 33,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": true,
-     "tag": 58
+ "declaration": {
+  "name": "LinesOfTextGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LinesOfTextGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLinesOfText",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "33"
     },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Text",
+       "type": "string",
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

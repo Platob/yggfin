@@ -6,26 +6,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradingSessions",
-   "required": false,
-   "tag": 386,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradingSessionID",
-     "required": false,
-     "tag": 336
+ "declaration": {
+  "name": "TrdgSesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdgSesGrp"
+  },
+  "fields": [
+   {
+    "name": "NoTradingSessions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "386"
     },
-    {
-     "kind": "field",
-     "name": "TradingSessionSubID",
-     "required": false,
-     "tag": 625
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

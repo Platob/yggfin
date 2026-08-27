@@ -3,36 +3,54 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "FloatingRateIndexID",
-   "required": false,
-   "tag": 2731
+ "declaration": {
+  "name": "FloatingRateIndex",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FloatingRateIndex"
   },
-  {
-   "kind": "field",
-   "name": "FloatingRateIndexIDSource",
-   "required": false,
-   "tag": 2732
-  },
-  {
-   "kind": "field",
-   "name": "FloatingRateIndexCurveUnit",
-   "required": false,
-   "tag": 2730
-  },
-  {
-   "kind": "field",
-   "name": "FloatingRateIndexCurvePeriod",
-   "required": false,
-   "tag": 2728
-  },
-  {
-   "kind": "field",
-   "name": "FloatingRateIndexCurveSpread",
-   "required": false,
-   "tag": 2729
-  }
- ]
+  "fields": [
+   {
+    "name": "FloatingRateIndexID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2731"
+    }
+   },
+   {
+    "name": "FloatingRateIndexIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2732"
+    }
+   },
+   {
+    "name": "FloatingRateIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2730"
+    }
+   },
+   {
+    "name": "FloatingRateIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2728"
+    }
+   },
+   {
+    "name": "FloatingRateIndexCurveSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2729"
+    }
+   }
+  ]
+ }
 }

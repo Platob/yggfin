@@ -321,6 +321,9 @@ class FixMetadata(ProtocolMetadata):
     column = _Text()
     note = _Text()
     component = _Text()
+    #: The message type a declaration defines, where it defines one -- `"D"`,
+    #: `"8"`. Empty for a reusable component, which is what most blocks are.
+    msgtype = _Text()
     versions = _Document(shape=tuple)
     msgtypes = _Document(shape=tuple)
     components = _Document(shape=tuple)

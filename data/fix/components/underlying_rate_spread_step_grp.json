@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingRateSpreadSteps",
-   "required": false,
-   "tag": 43005,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingRateSpreadStepDate",
-     "required": false,
-     "tag": 43006
+ "declaration": {
+  "name": "UnderlyingRateSpreadStepGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingRateSpreadStepGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingRateSpreadSteps",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43005"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingRateSpreadStepValue",
-     "required": false,
-     "tag": 43007
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingRateSpreadStepDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43006"
+       }
+      },
+      {
+       "name": "UnderlyingRateSpreadStepValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43007"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,56 +3,83 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrderEvents",
-   "required": false,
-   "tag": 1795,
-   "members": [
-    {
-     "kind": "field",
-     "name": "OrderEventType",
-     "required": false,
-     "tag": 1796
+ "declaration": {
+  "name": "OrderEventGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderEventGrp"
+  },
+  "fields": [
+   {
+    "name": "NoOrderEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1795"
     },
-    {
-     "kind": "field",
-     "name": "OrderEventExecID",
-     "required": false,
-     "tag": 1797
-    },
-    {
-     "kind": "field",
-     "name": "OrderEventReason",
-     "required": false,
-     "tag": 1798
-    },
-    {
-     "kind": "field",
-     "name": "OrderEventPx",
-     "required": false,
-     "tag": 1799
-    },
-    {
-     "kind": "field",
-     "name": "OrderEventQty",
-     "required": false,
-     "tag": 1800
-    },
-    {
-     "kind": "field",
-     "name": "OrderEventLiquidityIndicator",
-     "required": false,
-     "tag": 1801
-    },
-    {
-     "kind": "field",
-     "name": "OrderEventText",
-     "required": false,
-     "tag": 1802
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1796"
+       }
+      },
+      {
+       "name": "OrderEventExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1797"
+       }
+      },
+      {
+       "name": "OrderEventReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1798"
+       }
+      },
+      {
+       "name": "OrderEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1799"
+       }
+      },
+      {
+       "name": "OrderEventQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1800"
+       }
+      },
+      {
+       "name": "OrderEventLiquidityIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1801"
+       }
+      },
+      {
+       "name": "OrderEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1802"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

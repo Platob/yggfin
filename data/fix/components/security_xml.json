@@ -4,24 +4,38 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "SecurityXMLLen",
-   "required": false,
-   "tag": 1184
+ "declaration": {
+  "name": "SecurityXML",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityXML"
   },
-  {
-   "kind": "field",
-   "name": "SecurityXML",
-   "required": false,
-   "tag": 1185
-  },
-  {
-   "kind": "field",
-   "name": "SecurityXMLSchema",
-   "required": false,
-   "tag": 1186
-  }
- ]
+  "fields": [
+   {
+    "name": "SecurityXMLLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1184"
+    }
+   },
+   {
+    "name": "SecurityXML",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1185"
+    }
+   },
+   {
+    "name": "SecurityXMLSchema",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1186"
+    }
+   }
+  ]
+ }
 }

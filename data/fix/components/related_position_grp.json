@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedPositions",
-   "required": false,
-   "tag": 1861,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RelatedPositionID",
-     "required": false,
-     "tag": 1862
+ "declaration": {
+  "name": "RelatedPositionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelatedPositionGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedPositions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1861"
     },
-    {
-     "kind": "field",
-     "name": "RelatedPositionIDSource",
-     "required": false,
-     "tag": 1863
-    },
-    {
-     "kind": "field",
-     "name": "RelatedPositionDate",
-     "required": false,
-     "tag": 1864
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedPositionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1862"
+       }
+      },
+      {
+       "name": "RelatedPositionIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1863"
+       }
+      },
+      {
+       "name": "RelatedPositionDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1864"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

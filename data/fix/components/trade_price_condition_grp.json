@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradePriceConditions",
-   "required": false,
-   "tag": 1838,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradePriceCondition",
-     "required": false,
-     "tag": 1839
+ "declaration": {
+  "name": "TradePriceConditionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradePriceConditionGrp"
+  },
+  "fields": [
+   {
+    "name": "NoTradePriceConditions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1838"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradePriceCondition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1839"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

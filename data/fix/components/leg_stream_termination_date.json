@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateUnadjusted",
-   "required": false,
-   "tag": 40257
+ "declaration": {
+  "name": "LegStreamTerminationDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStreamTerminationDate"
   },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateBusinessDayConvention",
-   "required": false,
-   "tag": 40258
-  },
-  {
-   "kind": "component",
-   "name": "LegStreamTerminationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateRelativeTo",
-   "required": false,
-   "tag": 40260
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateOffsetPeriod",
-   "required": false,
-   "tag": 40261
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateOffsetUnit",
-   "required": false,
-   "tag": 40262
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateOffsetDayType",
-   "required": false,
-   "tag": 40263
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamTerminationDateAdjusted",
-   "required": false,
-   "tag": 40264
-  }
- ]
+  "fields": [
+   {
+    "name": "LegStreamTerminationDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40257"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40258"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegStreamTerminationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegStreamTerminationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40260"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40261"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40262"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40263"
+    }
+   },
+   {
+    "name": "LegStreamTerminationDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40264"
+    }
+   }
+  ]
+ }
 }

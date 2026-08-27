@@ -3,109 +3,156 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegExecs",
-   "required": false,
-   "tag": 1892,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegRefID",
-     "required": false,
-     "tag": 654
+ "declaration": {
+  "name": "TrdInstrmtLegExecGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdInstrmtLegExecGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegExecs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1892"
     },
-    {
-     "kind": "field",
-     "name": "LegExecID",
-     "required": false,
-     "tag": 1893
-    },
-    {
-     "kind": "field",
-     "name": "LegExecRefID",
-     "required": false,
-     "tag": 1901
-    },
-    {
-     "kind": "field",
-     "name": "LegTradeID",
-     "required": false,
-     "tag": 1894
-    },
-    {
-     "kind": "field",
-     "name": "LegTradeReportID",
-     "required": false,
-     "tag": 1895
-    },
-    {
-     "kind": "field",
-     "name": "LegOrderQty",
-     "required": false,
-     "tag": 685
-    },
-    {
-     "kind": "field",
-     "name": "LegPositionEffect",
-     "required": false,
-     "tag": 564
-    },
-    {
-     "kind": "field",
-     "name": "LegCoveredOrUncovered",
-     "required": false,
-     "tag": 565
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties3",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegLastPx",
-     "required": false,
-     "tag": 637
-    },
-    {
-     "kind": "field",
-     "name": "LegPriceType",
-     "required": false,
-     "tag": 686
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlCurrency",
-     "required": false,
-     "tag": 675
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2900
-    },
-    {
-     "kind": "field",
-     "name": "LegShortSaleExemptionReason",
-     "required": false,
-     "tag": 1689
-    },
-    {
-     "kind": "field",
-     "name": "LegLastQty",
-     "required": false,
-     "tag": 1418
-    },
-    {
-     "kind": "field",
-     "name": "LegQtyType",
-     "required": false,
-     "tag": 1591
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "654"
+       }
+      },
+      {
+       "name": "LegExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1893"
+       }
+      },
+      {
+       "name": "LegExecRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1901"
+       }
+      },
+      {
+       "name": "LegTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1894"
+       }
+      },
+      {
+       "name": "LegTradeReportID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1895"
+       }
+      },
+      {
+       "name": "LegOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "685"
+       }
+      },
+      {
+       "name": "LegPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "564"
+       }
+      },
+      {
+       "name": "LegCoveredOrUncovered",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "565"
+       }
+      },
+      {
+       "name": "NestedParties3",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties3"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegLastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "637"
+       }
+      },
+      {
+       "name": "LegPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "686"
+       }
+      },
+      {
+       "name": "LegSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "675"
+       }
+      },
+      {
+       "name": "LegSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2900"
+       }
+      },
+      {
+       "name": "LegShortSaleExemptionReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1689"
+       }
+      },
+      {
+       "name": "LegLastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1418"
+       }
+      },
+      {
+       "name": "LegQtyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1591"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

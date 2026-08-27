@@ -6,142 +6,207 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegs",
-   "required": false,
-   "tag": 555,
-   "members": [
-    {
-     "kind": "component",
-     "name": "InstrumentLeg",
-     "required": false
+ "declaration": {
+  "name": "LegOrdGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegOrdGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "555"
     },
-    {
-     "kind": "field",
-     "name": "LegOrderQty",
-     "required": false,
-     "tag": 685
-    },
-    {
-     "kind": "field",
-     "name": "LegQty",
-     "required": false,
-     "tag": 687
-    },
-    {
-     "kind": "field",
-     "name": "LegSwapType",
-     "required": false,
-     "tag": 690
-    },
-    {
-     "kind": "component",
-     "name": "LegStipulations",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegAllocID",
-     "required": false,
-     "tag": 1366
-    },
-    {
-     "kind": "component",
-     "name": "LegPreAllocGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegAccount",
-     "required": false,
-     "tag": 2680
-    },
-    {
-     "kind": "field",
-     "name": "LegClearingAccountType",
-     "required": false,
-     "tag": 1817
-    },
-    {
-     "kind": "field",
-     "name": "LegPositionEffect",
-     "required": false,
-     "tag": 564
-    },
-    {
-     "kind": "field",
-     "name": "LegCoveredOrUncovered",
-     "required": false,
-     "tag": 565
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegRefID",
-     "required": false,
-     "tag": 654
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlType",
-     "required": false,
-     "tag": 587
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlDate",
-     "required": false,
-     "tag": 588
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlCurrency",
-     "required": false,
-     "tag": 675
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2900
-    },
-    {
-     "kind": "field",
-     "name": "LegVolatility",
-     "required": false,
-     "tag": 1379
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendYield",
-     "required": false,
-     "tag": 1381
-    },
-    {
-     "kind": "field",
-     "name": "LegCurrencyRatio",
-     "required": false,
-     "tag": 1383
-    },
-    {
-     "kind": "field",
-     "name": "LegExecInst",
-     "required": false,
-     "tag": 1384
-    },
-    {
-     "kind": "field",
-     "name": "LegShortSaleExemptionReason",
-     "required": false,
-     "tag": 1689
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "685"
+       }
+      },
+      {
+       "name": "LegQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "687"
+       }
+      },
+      {
+       "name": "LegSwapType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "690"
+       }
+      },
+      {
+       "name": "LegStipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1366"
+       }
+      },
+      {
+       "name": "LegPreAllocGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPreAllocGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2680"
+       }
+      },
+      {
+       "name": "LegClearingAccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1817"
+       }
+      },
+      {
+       "name": "LegPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "564"
+       }
+      },
+      {
+       "name": "LegCoveredOrUncovered",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "565"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "654"
+       }
+      },
+      {
+       "name": "LegSettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "587"
+       }
+      },
+      {
+       "name": "LegSettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "588"
+       }
+      },
+      {
+       "name": "LegSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "675"
+       }
+      },
+      {
+       "name": "LegSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2900"
+       }
+      },
+      {
+       "name": "LegVolatility",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1379"
+       }
+      },
+      {
+       "name": "LegDividendYield",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1381"
+       }
+      },
+      {
+       "name": "LegCurrencyRatio",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1383"
+       }
+      },
+      {
+       "name": "LegExecInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1384"
+       }
+      },
+      {
+       "name": "LegShortSaleExemptionReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1689"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

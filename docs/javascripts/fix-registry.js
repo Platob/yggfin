@@ -88,7 +88,9 @@
     const componentFields = new Map();
 
     components.forEach((component) => {
-      component._members = flattenMembers(component.members);
+      component._tree = fixDeclaration.members(component.declaration);
+      component._msgType = fixDeclaration.msgType(component.declaration);
+      component._members = flattenMembers(component._tree);
       component._shape = componentShape(component);
       component._search = normalized(JSON.stringify(component));
       component._members
@@ -287,7 +289,7 @@
           (component) => `<tr>
             <td><a class="fix-registry__name" href="${href("component", component.name)}">${escape(component.name)}</a></td>
             <td>${badge(shapeLabel(component._shape))}</td>
-            <td>${component.msg_type ? `<code>${escape(component.msg_type)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
+            <td>${component._msgType ? `<code>${escape(component._msgType)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
             <td>${chips(component.versions)}</td>
             <td>${number.format(component._members.length)}</td>
           </tr>`,
@@ -386,14 +388,14 @@
         </header>
         <dl>
           <dt>Versions</dt><dd>${chips(component.versions)}</dd>
-          <dt>MsgType</dt><dd>${component.msg_type ? `<code>${escape(component.msg_type)}</code>` : "—"}</dd>
+          <dt>MsgType</dt><dd>${component._msgType ? `<code>${escape(component._msgType)}</code>` : "—"}</dd>
           <dt>Members</dt><dd>${number.format(component._members.length)}</dd>
           ${aliasDefinition(component.aliases)}
         </dl>
         ${owners.length ? `<h4>Referenced by components</h4><p>${owners.map((owner) => componentLink(owner.name)).join(" · ")}</p>` : ""}
         ${relatedFields.length ? `<h4>Fields</h4><p>${relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`).join(" · ")}</p>` : ""}
         <h4>Member tree</h4>
-        ${memberTree(component.members)}
+        ${memberTree(component._tree)}
         <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/components/${component.slug}.json`)}">View repository record →</a>`;
       componentDetail.hidden = false;
     }
@@ -566,8 +568,8 @@
   }
 
   function componentShape(component) {
-    if (component.msg_type) return "message";
-    const kinds = new Set(flattenMembers(component.members).map((member) => member.kind));
+    if (component._msgType) return "message";
+    const kinds = new Set(component._members.map((member) => member.kind));
     if (kinds.has("group")) return "repeating";
     if (kinds.has("component")) return "composed";
     return "flat";

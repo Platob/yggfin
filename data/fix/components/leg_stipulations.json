@@ -6,26 +6,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegStipulations",
-   "required": false,
-   "tag": 683,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStipulationType",
-     "required": false,
-     "tag": 688
+ "declaration": {
+  "name": "LegStipulations",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStipulations"
+  },
+  "fields": [
+   {
+    "name": "NoLegStipulations",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "683"
     },
-    {
-     "kind": "field",
-     "name": "LegStipulationValue",
-     "required": false,
-     "tag": 689
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "688"
+       }
+      },
+      {
+       "name": "LegStipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "689"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

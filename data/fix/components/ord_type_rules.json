@@ -4,20 +4,35 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrdTypeRules",
-   "required": false,
-   "tag": 1237,
-   "members": [
-    {
-     "kind": "field",
-     "name": "OrdType",
-     "required": false,
-     "tag": 40
+ "declaration": {
+  "name": "OrdTypeRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrdTypeRules"
+  },
+  "fields": [
+   {
+    "name": "NoOrdTypeRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1237"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -37,6 +37,7 @@ from rekep.fix.columns import (
 )
 from rekep.fix.fields import fix_field
 from rekep.fix.message import stored_entry_separators
+from rekep.fix.quickfix import members_of
 from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
@@ -1335,7 +1336,7 @@ def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCod
     registry = packaged.registry
     declared = [version for version in registry.versions if registry.components(version)]
     assert declared == ["5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3", "FIXT1.1"]
-    assert registry.component("Parties", "4.4").members[0].tag == 453
+    assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
 
 
 def test_the_packaged_registry_extracts_parties_from_a_wire_message(

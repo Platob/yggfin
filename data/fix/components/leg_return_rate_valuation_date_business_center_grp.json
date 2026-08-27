@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegReturnRateValuationDateBusinessCenters",
-   "required": false,
-   "tag": 42569,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegReturnRateValuationDateBusinessCenter",
-     "required": false,
-     "tag": 42570
+ "declaration": {
+  "name": "LegReturnRateValuationDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegReturnRateValuationDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegReturnRateValuationDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42569"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRateValuationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42570"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAffectedMarketSegments",
-   "required": false,
-   "tag": 1791,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AffectedMarketSegmentID",
-     "required": false,
-     "tag": 1792
+ "declaration": {
+  "name": "AffectedMarketSegmentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AffectedMarketSegmentGrp"
+  },
+  "fields": [
+   {
+    "name": "NoAffectedMarketSegments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1791"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AffectedMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1792"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

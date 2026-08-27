@@ -3,110 +3,155 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoClearingPriceParameters",
-   "required": false,
-   "tag": 2580,
-   "members": [
-    {
-     "kind": "field",
-     "name": "BusinessDayType",
-     "required": false,
-     "tag": 2581
+ "declaration": {
+  "name": "ClearingPriceParametersGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ClearingPriceParametersGrp"
+  },
+  "fields": [
+   {
+    "name": "NoClearingPriceParameters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2580"
     },
-    {
-     "kind": "field",
-     "name": "ClearingPriceOffset",
-     "required": false,
-     "tag": 2582
-    },
-    {
-     "kind": "field",
-     "name": "VegaMultiplier",
-     "required": false,
-     "tag": 2583
-    },
-    {
-     "kind": "field",
-     "name": "AnnualTradingBusinessDays",
-     "required": false,
-     "tag": 2584
-    },
-    {
-     "kind": "field",
-     "name": "TotalTradingBusinessDays",
-     "required": false,
-     "tag": 2585
-    },
-    {
-     "kind": "field",
-     "name": "TradingBusinessDays",
-     "required": false,
-     "tag": 2586
-    },
-    {
-     "kind": "field",
-     "name": "StandardVariance",
-     "required": false,
-     "tag": 2588
-    },
-    {
-     "kind": "field",
-     "name": "RealizedVariance",
-     "required": false,
-     "tag": 2587
-    },
-    {
-     "kind": "field",
-     "name": "RelatedClosePrice",
-     "required": false,
-     "tag": 2589
-    },
-    {
-     "kind": "field",
-     "name": "RiskFreeRate",
-     "required": false,
-     "tag": 1190
-    },
-    {
-     "kind": "field",
-     "name": "OvernightInterestRate",
-     "required": false,
-     "tag": 2590
-    },
-    {
-     "kind": "field",
-     "name": "AccumulatedReturnModifiedVariationMargin",
-     "required": false,
-     "tag": 2591
-    },
-    {
-     "kind": "field",
-     "name": "DiscountFactor",
-     "required": false,
-     "tag": 1592
-    },
-    {
-     "kind": "field",
-     "name": "Volatility",
-     "required": false,
-     "tag": 1188
-    },
-    {
-     "kind": "field",
-     "name": "ClearingSettlPrice",
-     "required": false,
-     "tag": 2528
-    },
-    {
-     "kind": "field",
-     "name": "CalculationMethod",
-     "required": false,
-     "tag": 2592
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "BusinessDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2581"
+       }
+      },
+      {
+       "name": "ClearingPriceOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2582"
+       }
+      },
+      {
+       "name": "VegaMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2583"
+       }
+      },
+      {
+       "name": "AnnualTradingBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2584"
+       }
+      },
+      {
+       "name": "TotalTradingBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2585"
+       }
+      },
+      {
+       "name": "TradingBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2586"
+       }
+      },
+      {
+       "name": "StandardVariance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2588"
+       }
+      },
+      {
+       "name": "RealizedVariance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2587"
+       }
+      },
+      {
+       "name": "RelatedClosePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2589"
+       }
+      },
+      {
+       "name": "RiskFreeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1190"
+       }
+      },
+      {
+       "name": "OvernightInterestRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2590"
+       }
+      },
+      {
+       "name": "AccumulatedReturnModifiedVariationMargin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2591"
+       }
+      },
+      {
+       "name": "DiscountFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1592"
+       }
+      },
+      {
+       "name": "Volatility",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1188"
+       }
+      },
+      {
+       "name": "ClearingSettlPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2528"
+       }
+      },
+      {
+       "name": "CalculationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2592"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

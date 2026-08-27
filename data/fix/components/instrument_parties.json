@@ -5,43 +5,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoInstrumentParties",
-   "required": false,
-   "tag": 1018,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentPartyID",
-     "required": false,
-     "tag": 1019
+ "declaration": {
+  "name": "InstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentParties"
+  },
+  "fields": [
+   {
+    "name": "NoInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1018"
     },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyIDSource",
-     "required": false,
-     "tag": 1050
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyRole",
-     "required": false,
-     "tag": 1051
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2378
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1019"
+       }
+      },
+      {
+       "name": "InstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1050"
+       }
+      },
+      {
+       "name": "InstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1051"
+       }
+      },
+      {
+       "name": "InstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2378"
+       }
+      },
+      {
+       "name": "InstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

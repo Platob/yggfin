@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrderAttributes",
-   "required": false,
-   "tag": 2593,
-   "members": [
-    {
-     "kind": "field",
-     "name": "OrderAttributeType",
-     "required": false,
-     "tag": 2594
+ "declaration": {
+  "name": "OrderAttributeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderAttributeGrp"
+  },
+  "fields": [
+   {
+    "name": "NoOrderAttributes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2593"
     },
-    {
-     "kind": "field",
-     "name": "OrderAttributeValue",
-     "required": false,
-     "tag": 2595
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2594"
+       }
+      },
+      {
+       "name": "OrderAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2595"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

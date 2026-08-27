@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyRelationships",
-   "required": false,
-   "tag": 1514,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartyRelationship",
-     "required": false,
-     "tag": 1515
+ "declaration": {
+  "name": "PartyRelationshipGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRelationshipGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPartyRelationships",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1514"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyRelationship",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1515"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

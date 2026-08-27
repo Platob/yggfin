@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTrdRegPublications",
-   "required": false,
-   "tag": 2668,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TrdRegPublicationType",
-     "required": false,
-     "tag": 2669
+ "declaration": {
+  "name": "TrdRegPublicationGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdRegPublicationGrp"
+  },
+  "fields": [
+   {
+    "name": "NoTrdRegPublications",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2668"
     },
-    {
-     "kind": "field",
-     "name": "TrdRegPublicationReason",
-     "required": false,
-     "tag": 2670
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegPublicationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2669"
+       }
+      },
+      {
+       "name": "TrdRegPublicationReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2670"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

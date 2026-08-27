@@ -5,32 +5,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoStrategyParameters",
-   "required": false,
-   "tag": 957,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StrategyParameterName",
-     "required": false,
-     "tag": 958
+ "declaration": {
+  "name": "StrategyParametersGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StrategyParametersGrp"
+  },
+  "fields": [
+   {
+    "name": "NoStrategyParameters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "957"
     },
-    {
-     "kind": "field",
-     "name": "StrategyParameterType",
-     "required": false,
-     "tag": 959
-    },
-    {
-     "kind": "field",
-     "name": "StrategyParameterValue",
-     "required": false,
-     "tag": 960
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StrategyParameterName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "958"
+       }
+      },
+      {
+       "name": "StrategyParameterType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "959"
+       }
+      },
+      {
+       "name": "StrategyParameterValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "960"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

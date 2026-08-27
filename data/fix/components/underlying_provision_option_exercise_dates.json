@@ -3,124 +3,176 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseBusinessDayConvention",
-   "required": false,
-   "tag": 42115
+ "declaration": {
+  "name": "UnderlyingProvisionOptionExerciseDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionOptionExerciseDates"
   },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionOptionExerciseBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionOptionExerciseFixedDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetPeriod",
-   "required": false,
-   "tag": 42116
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetUnit",
-   "required": false,
-   "tag": 42117
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseFrequencyPeriod",
-   "required": false,
-   "tag": 42118
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseFrequencyUnit",
-   "required": false,
-   "tag": 42119
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateUnadjusted",
-   "required": false,
-   "tag": 42120
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateRelativeTo",
-   "required": false,
-   "tag": 42121
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateOffsetPeriod",
-   "required": false,
-   "tag": 42122
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateOffsetUnit",
-   "required": false,
-   "tag": 42123
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateOffsetDayType",
-   "required": false,
-   "tag": 42124
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseStartDateAdjusted",
-   "required": false,
-   "tag": 42125
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExercisePeriodSkip",
-   "required": false,
-   "tag": 42126
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseBoundsFirstDateUnadjusted",
-   "required": false,
-   "tag": 42127
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseBoundsLastDateUnadjusted",
-   "required": false,
-   "tag": 42128
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseEarliestTime",
-   "required": false,
-   "tag": 42129
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseEarliestTimeBusinessCenter",
-   "required": false,
-   "tag": 42130
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseLatestTime",
-   "required": false,
-   "tag": 42131
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExerciseLatestTimeBusinessCenter",
-   "required": false,
-   "tag": 42132
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingProvisionOptionExerciseBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42115"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionOptionExerciseBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseFixedDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionOptionExerciseFixedDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42116"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42117"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42118"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42119"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42120"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42121"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42122"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42123"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42124"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42125"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExercisePeriodSkip",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42126"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseBoundsFirstDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42127"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseBoundsLastDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42128"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseEarliestTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42129"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseEarliestTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42130"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseLatestTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42131"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseLatestTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42132"
+    }
+   }
+  ]
+ }
 }

@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateUnadjusted",
-   "required": false,
-   "tag": 42488
+ "declaration": {
+  "name": "LegPaymentStubEndDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStubEndDate"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateBusinessDayConvention",
-   "required": false,
-   "tag": 42489
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStubEndDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateRelativeTo",
-   "required": false,
-   "tag": 42490
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateOffsetPeriod",
-   "required": false,
-   "tag": 42491
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateOffsetUnit",
-   "required": false,
-   "tag": 42492
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateOffsetDayType",
-   "required": false,
-   "tag": 42493
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubEndDateAdjusted",
-   "required": false,
-   "tag": 42494
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStubEndDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42488"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42489"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStubEndDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStubEndDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42490"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42491"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42492"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42493"
+    }
+   },
+   {
+    "name": "LegPaymentStubEndDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42494"
+    }
+   }
+  ]
+ }
 }

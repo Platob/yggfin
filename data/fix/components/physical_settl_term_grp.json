@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPhysicalSettlTerms",
-   "required": false,
-   "tag": 40204,
-   "members": [
-    {
-     "kind": "component",
-     "name": "PhysicalSettlDeliverableObligationGrp",
-     "required": false
+ "declaration": {
+  "name": "PhysicalSettlTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PhysicalSettlTermGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPhysicalSettlTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40204"
     },
-    {
-     "kind": "field",
-     "name": "PhysicalSettlCurrency",
-     "required": false,
-     "tag": 40205
-    },
-    {
-     "kind": "field",
-     "name": "PhysicalSettlBusinessDays",
-     "required": false,
-     "tag": 40206
-    },
-    {
-     "kind": "field",
-     "name": "PhysicalSettlMaximumBusinessDays",
-     "required": false,
-     "tag": 40207
-    },
-    {
-     "kind": "field",
-     "name": "PhysicalSettlTermXID",
-     "required": false,
-     "tag": 40208
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40205"
+       }
+      },
+      {
+       "name": "PhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40206"
+       }
+      },
+      {
+       "name": "PhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40207"
+       }
+      },
+      {
+       "name": "PhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40208"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

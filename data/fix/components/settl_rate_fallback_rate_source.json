@@ -3,18 +3,30 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "SettlRateFallbackRateSource",
-   "required": false,
-   "tag": 40373
+ "declaration": {
+  "name": "SettlRateFallbackRateSource",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlRateFallbackRateSource"
   },
-  {
-   "kind": "field",
-   "name": "SettlRateFallbackReferencePage",
-   "required": false,
-   "tag": 40655
-  }
- ]
+  "fields": [
+   {
+    "name": "SettlRateFallbackRateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40373"
+    }
+   },
+   {
+    "name": "SettlRateFallbackReferencePage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40655"
+    }
+   }
+  ]
+ }
 }

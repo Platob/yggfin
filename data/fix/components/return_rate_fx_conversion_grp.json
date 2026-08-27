@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRateFXConversions",
-   "required": false,
-   "tag": 42731,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRateFXCurrencySymbol",
-     "required": false,
-     "tag": 42732
+ "declaration": {
+  "name": "ReturnRateFXConversionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRateFXConversionGrp"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRateFXConversions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42731"
     },
-    {
-     "kind": "field",
-     "name": "ReturnRateFXRate",
-     "required": false,
-     "tag": 42733
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateFXRateCalc",
-     "required": false,
-     "tag": 42734
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateFXCurrencySymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42732"
+       }
+      },
+      {
+       "name": "ReturnRateFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42733"
+       }
+      },
+      {
+       "name": "ReturnRateFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42734"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

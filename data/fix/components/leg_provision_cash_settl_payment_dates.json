@@ -3,58 +3,88 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateBusinessDayConvention",
-   "required": false,
-   "tag": 40516
+ "declaration": {
+  "name": "LegProvisionCashSettlPaymentDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionCashSettlPaymentDates"
   },
-  {
-   "kind": "component",
-   "name": "LegProvisionCashSettlPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateRelativeTo",
-   "required": false,
-   "tag": 40518
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 40519
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 40520
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 40521
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateRangeFirst",
-   "required": false,
-   "tag": 40522
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlPaymentDateRangeLast",
-   "required": false,
-   "tag": 40523
-  },
-  {
-   "kind": "component",
-   "name": "LegProvisionCashSettlPaymentFixedDateGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "LegProvisionCashSettlPaymentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40516"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionCashSettlPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40518"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40519"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40520"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40521"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateRangeFirst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40522"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentDateRangeLast",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40523"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlPaymentFixedDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionCashSettlPaymentFixedDateGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

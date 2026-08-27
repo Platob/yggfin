@@ -4,30 +4,46 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PriceLimitType",
-   "required": false,
-   "tag": 1306
+ "declaration": {
+  "name": "PriceLimits",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PriceLimits"
   },
-  {
-   "kind": "field",
-   "name": "LowLimitPrice",
-   "required": false,
-   "tag": 1148
-  },
-  {
-   "kind": "field",
-   "name": "HighLimitPrice",
-   "required": false,
-   "tag": 1149
-  },
-  {
-   "kind": "field",
-   "name": "TradingReferencePrice",
-   "required": false,
-   "tag": 1150
-  }
- ]
+  "fields": [
+   {
+    "name": "PriceLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1306"
+    }
+   },
+   {
+    "name": "LowLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1148"
+    }
+   },
+   {
+    "name": "HighLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1149"
+    }
+   },
+   {
+    "name": "TradingReferencePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1150"
+    }
+   }
+  ]
+ }
 }

@@ -3,272 +3,385 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingComplexEvents",
-   "required": false,
-   "tag": 2045,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventType",
-     "required": false,
-     "tag": 2046
+ "declaration": {
+  "name": "UnderlyingComplexEvents",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEvents"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingComplexEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2045"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutPaySide",
-     "required": false,
-     "tag": 2261
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutReceiveSide",
-     "required": false,
-     "tag": 2262
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutUnderlier",
-     "required": false,
-     "tag": 2263
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutAmount",
-     "required": false,
-     "tag": 2047
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutPercentage",
-     "required": false,
-     "tag": 2264
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutTime",
-     "required": false,
-     "tag": 2265
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutCurrency",
-     "required": false,
-     "tag": 2266
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
-     "required": false,
-     "tag": 2947
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPrice",
-     "required": false,
-     "tag": 2048
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPricePercentage",
-     "required": false,
-     "tag": 2267
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPriceBoundaryMethod",
-     "required": false,
-     "tag": 2049
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPriceBoundaryPrecision",
-     "required": false,
-     "tag": 2050
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPriceTimeType",
-     "required": false,
-     "tag": 2051
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCondition",
-     "required": false,
-     "tag": 2052
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventDates",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCurrencyOne",
-     "required": false,
-     "tag": 2268
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCurrencyOneCodeSource",
-     "required": false,
-     "tag": 2948
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCurrencyTwo",
-     "required": false,
-     "tag": 2269
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
-     "required": false,
-     "tag": 2949
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventQuoteBasis",
-     "required": false,
-     "tag": 2270
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventFixedFXRate",
-     "required": false,
-     "tag": 2271
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventSpotRate",
-     "required": false,
-     "tag": 2419
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventForwardPoints",
-     "required": false,
-     "tag": 2420
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDeterminationMethod",
-     "required": false,
-     "tag": 2272
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCalculationAgent",
-     "required": false,
-     "tag": 2273
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventStrikePrice",
-     "required": false,
-     "tag": 2274
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventStrikeFactor",
-     "required": false,
-     "tag": 2275
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventStrikeNumberOfOptions",
-     "required": false,
-     "tag": 2276
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventRateSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventRelativeDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventPeriodGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventsXIDRef",
-     "required": false,
-     "tag": 2277
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventNotifyingParty",
-     "required": false,
-     "tag": 2278
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventBusinessCenter",
-     "required": false,
-     "tag": 2279
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventStandardSources",
-     "required": false,
-     "tag": 2280
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventMinimumSources",
-     "required": false,
-     "tag": 2281
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventCreditEventSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventCreditEventGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventFuturesPriceValuation",
-     "required": false,
-     "tag": 2611
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventOptionsPriceValuation",
-     "required": false,
-     "tag": 2612
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
-     "required": false,
-     "tag": 2613
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventXID",
-     "required": false,
-     "tag": 2282
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventXIDRef",
-     "required": false,
-     "tag": 2283
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2046"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2261"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2262"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutUnderlier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2263"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2047"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutPercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2264"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2265"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2266"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2947"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2048"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPricePercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2267"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceBoundaryMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2049"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceBoundaryPrecision",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2050"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2051"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCondition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2052"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyOne",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2268"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyOneCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2948"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyTwo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2269"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2949"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventQuoteBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2270"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventFixedFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2271"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventSpotRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2419"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventForwardPoints",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2420"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2272"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2273"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2274"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikeFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2275"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikeNumberOfOptions",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2276"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventRateSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventRateSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventRelativeDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventRelativeDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventPeriodGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventPeriodGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventsXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2277"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventNotifyingParty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2278"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2279"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2280"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2281"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventCreditEventSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventCreditEventGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventFuturesPriceValuation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2611"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventOptionsPriceValuation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2612"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2613"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2282"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2283"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

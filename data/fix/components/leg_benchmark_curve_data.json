@@ -6,42 +6,62 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegBenchmarkCurveCurrency",
-   "required": false,
-   "tag": 676
+ "declaration": {
+  "name": "LegBenchmarkCurveData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegBenchmarkCurveData"
   },
-  {
-   "kind": "field",
-   "name": "LegBenchmarkCurveCurrencyCodeSource",
-   "required": false,
-   "tag": 2951
-  },
-  {
-   "kind": "field",
-   "name": "LegBenchmarkCurveName",
-   "required": false,
-   "tag": 677
-  },
-  {
-   "kind": "field",
-   "name": "LegBenchmarkCurvePoint",
-   "required": false,
-   "tag": 678
-  },
-  {
-   "kind": "field",
-   "name": "LegBenchmarkPrice",
-   "required": false,
-   "tag": 679
-  },
-  {
-   "kind": "field",
-   "name": "LegBenchmarkPriceType",
-   "required": false,
-   "tag": 680
-  }
- ]
+  "fields": [
+   {
+    "name": "LegBenchmarkCurveCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "676"
+    }
+   },
+   {
+    "name": "LegBenchmarkCurveCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2951"
+    }
+   },
+   {
+    "name": "LegBenchmarkCurveName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "677"
+    }
+   },
+   {
+    "name": "LegBenchmarkCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "678"
+    }
+   },
+   {
+    "name": "LegBenchmarkPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "679"
+    }
+   },
+   {
+    "name": "LegBenchmarkPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "680"
+    }
+   }
+  ]
+ }
 }

@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "CashSettlDateUnadjusted",
-   "required": false,
-   "tag": 42207
+ "declaration": {
+  "name": "CashSettlDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CashSettlDate"
   },
-  {
-   "kind": "field",
-   "name": "CashSettlDateBusinessDayConvention",
-   "required": false,
-   "tag": 42208
-  },
-  {
-   "kind": "component",
-   "name": "CashSettlDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "CashSettlDateRelativeTo",
-   "required": false,
-   "tag": 42209
-  },
-  {
-   "kind": "field",
-   "name": "CashSettlDateOffsetPeriod",
-   "required": false,
-   "tag": 42210
-  },
-  {
-   "kind": "field",
-   "name": "CashSettlDateOffsetUnit",
-   "required": false,
-   "tag": 42211
-  },
-  {
-   "kind": "field",
-   "name": "CashSettlDateOffsetDayType",
-   "required": false,
-   "tag": 42212
-  },
-  {
-   "kind": "field",
-   "name": "CashSettlDateAdjusted",
-   "required": false,
-   "tag": 42213
-  }
- ]
+  "fields": [
+   {
+    "name": "CashSettlDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42207"
+    }
+   },
+   {
+    "name": "CashSettlDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42208"
+    }
+   },
+   {
+    "name": "CashSettlDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CashSettlDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CashSettlDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42209"
+    }
+   },
+   {
+    "name": "CashSettlDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42210"
+    }
+   },
+   {
+    "name": "CashSettlDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42211"
+    }
+   },
+   {
+    "name": "CashSettlDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42212"
+    }
+   },
+   {
+    "name": "CashSettlDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42213"
+    }
+   }
+  ]
+ }
 }

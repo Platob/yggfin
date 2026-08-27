@@ -6,48 +6,74 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoQuoteSets",
-   "required": false,
-   "tag": 296,
-   "members": [
-    {
-     "kind": "field",
-     "name": "QuoteSetID",
-     "required": true,
-     "tag": 302
+ "declaration": {
+  "name": "QuotSetGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuotSetGrp"
+  },
+  "fields": [
+   {
+    "name": "NoQuoteSets",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "296"
     },
-    {
-     "kind": "component",
-     "name": "UnderlyingInstrument",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "QuoteSetValidUntilTime",
-     "required": false,
-     "tag": 367
-    },
-    {
-     "kind": "field",
-     "name": "TotNoQuoteEntries",
-     "required": true,
-     "tag": 304
-    },
-    {
-     "kind": "field",
-     "name": "LastFragment",
-     "required": false,
-     "tag": 893
-    },
-    {
-     "kind": "component",
-     "name": "QuotEntryGrp",
-     "required": true
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteSetID",
+       "type": "string",
+       "fix": {
+        "tag": "302"
+       }
+      },
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "QuoteSetValidUntilTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "367"
+       }
+      },
+      {
+       "name": "TotNoQuoteEntries",
+       "type": "string",
+       "fix": {
+        "tag": "304"
+       }
+      },
+      {
+       "name": "LastFragment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "893"
+       }
+      },
+      {
+       "name": "QuotEntryGrp",
+       "type": "struct",
+       "fix": {
+        "component": "QuotEntryGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

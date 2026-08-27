@@ -4,67 +4,100 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoFills",
-   "required": false,
-   "tag": 1362,
-   "members": [
-    {
-     "kind": "field",
-     "name": "FillExecID",
-     "required": false,
-     "tag": 1363
+ "declaration": {
+  "name": "FillsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FillsGrp"
+  },
+  "fields": [
+   {
+    "name": "NoFills",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1362"
     },
-    {
-     "kind": "field",
-     "name": "FillPx",
-     "required": false,
-     "tag": 1364
-    },
-    {
-     "kind": "field",
-     "name": "FillQty",
-     "required": false,
-     "tag": 1365
-    },
-    {
-     "kind": "field",
-     "name": "FillMatchID",
-     "required": false,
-     "tag": 2673
-    },
-    {
-     "kind": "field",
-     "name": "FillMatchSubID",
-     "required": false,
-     "tag": 2674
-    },
-    {
-     "kind": "field",
-     "name": "FillLiquidityInd",
-     "required": false,
-     "tag": 1443
-    },
-    {
-     "kind": "field",
-     "name": "FillYieldType",
-     "required": false,
-     "tag": 1622
-    },
-    {
-     "kind": "field",
-     "name": "FillYield",
-     "required": false,
-     "tag": 1623
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties4",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "FillExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1363"
+       }
+      },
+      {
+       "name": "FillPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1364"
+       }
+      },
+      {
+       "name": "FillQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1365"
+       }
+      },
+      {
+       "name": "FillMatchID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2673"
+       }
+      },
+      {
+       "name": "FillMatchSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2674"
+       }
+      },
+      {
+       "name": "FillLiquidityInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1443"
+       }
+      },
+      {
+       "name": "FillYieldType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1622"
+       }
+      },
+      {
+       "name": "FillYield",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1623"
+       }
+      },
+      {
+       "name": "NestedParties4",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties4"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

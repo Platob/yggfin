@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateUnadjusted",
-   "required": false,
-   "tag": 40065
+ "declaration": {
+  "name": "StreamTerminationDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamTerminationDate"
   },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateBusinessDayConvention",
-   "required": false,
-   "tag": 40066
-  },
-  {
-   "kind": "component",
-   "name": "StreamTerminationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateRelativeTo",
-   "required": false,
-   "tag": 40068
-  },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateOffsetPeriod",
-   "required": false,
-   "tag": 40069
-  },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateOffsetUnit",
-   "required": false,
-   "tag": 40070
-  },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateOffsetDayType",
-   "required": false,
-   "tag": 40071
-  },
-  {
-   "kind": "field",
-   "name": "StreamTerminationDateAdjusted",
-   "required": false,
-   "tag": 40072
-  }
- ]
+  "fields": [
+   {
+    "name": "StreamTerminationDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40065"
+    }
+   },
+   {
+    "name": "StreamTerminationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40066"
+    }
+   },
+   {
+    "name": "StreamTerminationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "StreamTerminationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "StreamTerminationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40068"
+    }
+   },
+   {
+    "name": "StreamTerminationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40069"
+    }
+   },
+   {
+    "name": "StreamTerminationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40070"
+    }
+   },
+   {
+    "name": "StreamTerminationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40071"
+    }
+   },
+   {
+    "name": "StreamTerminationDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40072"
+    }
+   }
+  ]
+ }
 }

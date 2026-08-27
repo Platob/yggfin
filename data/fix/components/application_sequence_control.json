@@ -4,30 +4,46 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "ApplID",
-   "required": false,
-   "tag": 1180
+ "declaration": {
+  "name": "ApplicationSequenceControl",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplicationSequenceControl"
   },
-  {
-   "kind": "field",
-   "name": "ApplSeqNum",
-   "required": false,
-   "tag": 1181
-  },
-  {
-   "kind": "field",
-   "name": "ApplLastSeqNum",
-   "required": false,
-   "tag": 1350
-  },
-  {
-   "kind": "field",
-   "name": "ApplResendFlag",
-   "required": false,
-   "tag": 1352
-  }
- ]
+  "fields": [
+   {
+    "name": "ApplID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1180"
+    }
+   },
+   {
+    "name": "ApplSeqNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1181"
+    }
+   },
+   {
+    "name": "ApplLastSeqNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1350"
+    }
+   },
+   {
+    "name": "ApplResendFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1352"
+    }
+   }
+  ]
+ }
 }

@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRateValuationDates",
-   "required": false,
-   "tag": 42772,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDate",
-     "required": false,
-     "tag": 42773
+ "declaration": {
+  "name": "ReturnRateValuationDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRateValuationDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRateValuationDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42772"
     },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateType",
-     "required": false,
-     "tag": 42774
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateValuationDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42773"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42774"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

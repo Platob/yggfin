@@ -6,25 +6,44 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyings",
-   "required": false,
-   "tag": 711,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingInstrument",
-     "required": false
+ "declaration": {
+  "name": "UndInstrmtCollGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UndInstrmtCollGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyings",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "711"
     },
-    {
-     "kind": "field",
-     "name": "CollAction",
-     "required": false,
-     "tag": 944
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "CollAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "944"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

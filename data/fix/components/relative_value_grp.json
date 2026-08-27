@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelativeValues",
-   "required": false,
-   "tag": 2529,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RelativeValueType",
-     "required": false,
-     "tag": 2530
+ "declaration": {
+  "name": "RelativeValueGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelativeValueGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelativeValues",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2529"
     },
-    {
-     "kind": "field",
-     "name": "RelativeValue",
-     "required": false,
-     "tag": 2531
-    },
-    {
-     "kind": "field",
-     "name": "RelativeValueSide",
-     "required": false,
-     "tag": 2532
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelativeValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2530"
+       }
+      },
+      {
+       "name": "RelativeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2531"
+       }
+      },
+      {
+       "name": "RelativeValueSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2532"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

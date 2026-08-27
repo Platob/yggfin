@@ -6,38 +6,59 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoCompIDs",
-   "required": false,
-   "tag": 936,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RefCompID",
-     "required": false,
-     "tag": 930
+ "declaration": {
+  "name": "CompIDReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CompIDReqGrp"
+  },
+  "fields": [
+   {
+    "name": "NoCompIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "936"
     },
-    {
-     "kind": "field",
-     "name": "RefSubID",
-     "required": false,
-     "tag": 931
-    },
-    {
-     "kind": "field",
-     "name": "LocationID",
-     "required": false,
-     "tag": 283
-    },
-    {
-     "kind": "field",
-     "name": "DeskID",
-     "required": false,
-     "tag": 284
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefCompID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "930"
+       }
+      },
+      {
+       "name": "RefSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "931"
+       }
+      },
+      {
+       "name": "LocationID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "283"
+       }
+      },
+      {
+       "name": "DeskID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "284"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

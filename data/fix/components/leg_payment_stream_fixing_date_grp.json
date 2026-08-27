@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentStreamFixingDates",
-   "required": false,
-   "tag": 42459,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFixingDate",
-     "required": false,
-     "tag": 42460
+ "declaration": {
+  "name": "LegPaymentStreamFixingDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamFixingDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentStreamFixingDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42459"
     },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFixingDateType",
-     "required": false,
-     "tag": 42461
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42460"
+       }
+      },
+      {
+       "name": "LegPaymentStreamFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42461"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

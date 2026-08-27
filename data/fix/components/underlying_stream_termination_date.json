@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateUnadjusted",
-   "required": false,
-   "tag": 40548
+ "declaration": {
+  "name": "UnderlyingStreamTerminationDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStreamTerminationDate"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateBusinessDayConvention",
-   "required": false,
-   "tag": 40549
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamTerminationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateRelativeTo",
-   "required": false,
-   "tag": 40551
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateOffsetPeriod",
-   "required": false,
-   "tag": 40552
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateOffsetUnit",
-   "required": false,
-   "tag": 40553
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateOffsetDayType",
-   "required": false,
-   "tag": 40554
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamTerminationDateAdjusted",
-   "required": false,
-   "tag": 40555
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingStreamTerminationDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40548"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40549"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamTerminationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40551"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40552"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40553"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40554"
+    }
+   },
+   {
+    "name": "UnderlyingStreamTerminationDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40555"
+    }
+   }
+  ]
+ }
 }

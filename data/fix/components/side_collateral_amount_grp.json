@@ -3,109 +3,156 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSideCollateralAmounts",
-   "required": false,
-   "tag": 2691,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SideCurrentCollateralAmount",
-     "required": false,
-     "tag": 2702
+ "declaration": {
+  "name": "SideCollateralAmountGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SideCollateralAmountGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSideCollateralAmounts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2691"
     },
-    {
-     "kind": "field",
-     "name": "SideCollateralCurrency",
-     "required": false,
-     "tag": 2695
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralCurrencyCodeSource",
-     "required": false,
-     "tag": 2930
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralAmountType",
-     "required": false,
-     "tag": 2694
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralFXRate",
-     "required": false,
-     "tag": 2696
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralFXRateCalc",
-     "required": false,
-     "tag": 2697
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralType",
-     "required": false,
-     "tag": 2701
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralAmountMarketSegmentID",
-     "required": false,
-     "tag": 2693
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralAmountMarketID",
-     "required": false,
-     "tag": 2692
-    },
-    {
-     "kind": "field",
-     "name": "SideHaircutIndicator",
-     "required": false,
-     "tag": 2703
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralPortfolioID",
-     "required": false,
-     "tag": 2700
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralPercentOverage",
-     "required": false,
-     "tag": 2699
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralMarketPrice",
-     "required": false,
-     "tag": 2698
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralReinvestmentRate",
-     "required": false,
-     "tag": 2862
-    },
-    {
-     "kind": "component",
-     "name": "SideCollateralReinvestmentGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SideUnderlyingRefID",
-     "required": false,
-     "tag": 2863
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideCurrentCollateralAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2702"
+       }
+      },
+      {
+       "name": "SideCollateralCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2695"
+       }
+      },
+      {
+       "name": "SideCollateralCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2930"
+       }
+      },
+      {
+       "name": "SideCollateralAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2694"
+       }
+      },
+      {
+       "name": "SideCollateralFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2696"
+       }
+      },
+      {
+       "name": "SideCollateralFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2697"
+       }
+      },
+      {
+       "name": "SideCollateralType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2701"
+       }
+      },
+      {
+       "name": "SideCollateralAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2693"
+       }
+      },
+      {
+       "name": "SideCollateralAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2692"
+       }
+      },
+      {
+       "name": "SideHaircutIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2703"
+       }
+      },
+      {
+       "name": "SideCollateralPortfolioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2700"
+       }
+      },
+      {
+       "name": "SideCollateralPercentOverage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2699"
+       }
+      },
+      {
+       "name": "SideCollateralMarketPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2698"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2862"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SideCollateralReinvestmentGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SideUnderlyingRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2863"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

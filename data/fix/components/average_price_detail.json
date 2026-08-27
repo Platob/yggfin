@@ -3,24 +3,38 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "AveragePriceType",
-   "required": false,
-   "tag": 2763
+ "declaration": {
+  "name": "AveragePriceDetail",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AveragePriceDetail"
   },
-  {
-   "kind": "field",
-   "name": "AveragePriceStartTime",
-   "required": false,
-   "tag": 2764
-  },
-  {
-   "kind": "field",
-   "name": "AveragePriceEndTime",
-   "required": false,
-   "tag": 2765
-  }
- ]
+  "fields": [
+   {
+    "name": "AveragePriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2763"
+    }
+   },
+   {
+    "name": "AveragePriceStartTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2764"
+    }
+   },
+   {
+    "name": "AveragePriceEndTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2765"
+    }
+   }
+  ]
+ }
 }

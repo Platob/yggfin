@@ -6,26 +6,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingStips",
-   "required": false,
-   "tag": 887,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingStipType",
-     "required": false,
-     "tag": 888
+ "declaration": {
+  "name": "UnderlyingStipulations",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStipulations"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingStips",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "887"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingStipValue",
-     "required": false,
-     "tag": 889
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStipType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "888"
+       }
+      },
+      {
+       "name": "UnderlyingStipValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "889"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

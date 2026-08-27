@@ -6,31 +6,52 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDlvyInst",
-   "required": false,
-   "tag": 85,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SettlInstSource",
-     "required": false,
-     "tag": 165
+ "declaration": {
+  "name": "DlvyInstGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DlvyInstGrp"
+  },
+  "fields": [
+   {
+    "name": "NoDlvyInst",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "85"
     },
-    {
-     "kind": "field",
-     "name": "DlvyInstType",
-     "required": false,
-     "tag": 787
-    },
-    {
-     "kind": "component",
-     "name": "SettlParties",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlInstSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "165"
+       }
+      },
+      {
+       "name": "DlvyInstType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "787"
+       }
+      },
+      {
+       "name": "SettlParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlParties"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

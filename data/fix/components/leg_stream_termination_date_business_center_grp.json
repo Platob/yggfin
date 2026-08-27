@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegStreamTerminationDateBusinessCenters",
-   "required": false,
-   "tag": 40943,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStreamTerminationDateBusinessCenter",
-     "required": false,
-     "tag": 40259
+ "declaration": {
+  "name": "LegStreamTerminationDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStreamTerminationDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegStreamTerminationDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40943"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamTerminationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40259"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

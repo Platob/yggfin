@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegProvisionOptionExerciseFixedDates",
-   "required": false,
-   "tag": 40495,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExerciseFixedDate",
-     "required": false,
-     "tag": 40496
+ "declaration": {
+  "name": "LegProvisionOptionExerciseFixedDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionOptionExerciseFixedDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegProvisionOptionExerciseFixedDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40495"
     },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExerciseFixedDateType",
-     "required": false,
-     "tag": 40497
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionOptionExerciseFixedDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40496"
+       }
+      },
+      {
+       "name": "LegProvisionOptionExerciseFixedDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40497"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

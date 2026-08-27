@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingCashSettlDealers",
-   "required": false,
-   "tag": 42039,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingCashSettlDealer",
-     "required": false,
-     "tag": 42040
+ "declaration": {
+  "name": "UnderlyingCashSettlDealerGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingCashSettlDealerGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingCashSettlDealers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42039"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingCashSettlDealer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42040"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

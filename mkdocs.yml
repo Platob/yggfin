@@ -44,6 +44,7 @@ extra_css:
   - stylesheets/fix-transcribe.css
 
 extra_javascript:
+  - javascripts/fix-declaration.js
   - javascripts/fix-registry.js
   - javascripts/fix-transcribe.js
 

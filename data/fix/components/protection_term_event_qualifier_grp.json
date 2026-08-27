@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProtectionTermEventQualifiers",
-   "required": false,
-   "tag": 40199,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventQualifier",
-     "required": false,
-     "tag": 40200
+ "declaration": {
+  "name": "ProtectionTermEventQualifierGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProtectionTermEventQualifierGrp"
+  },
+  "fields": [
+   {
+    "name": "NoProtectionTermEventQualifiers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40199"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermEventQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40200"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

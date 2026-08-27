@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
-   "required": false,
-   "tag": 42112,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseFixedDate",
-     "required": false,
-     "tag": 42113
+ "declaration": {
+  "name": "UnderlyingProvisionOptionExerciseFixedDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionOptionExerciseFixedDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42112"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseFixedDateType",
-     "required": false,
-     "tag": 42114
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionOptionExerciseFixedDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42113"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseFixedDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42114"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

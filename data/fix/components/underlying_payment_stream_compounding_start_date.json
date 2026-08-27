@@ -3,42 +3,62 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateUnadjusted",
-   "required": false,
-   "tag": 42941
+ "declaration": {
+  "name": "UnderlyingPaymentStreamCompoundingStartDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamCompoundingStartDate"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateRelativeTo",
-   "required": false,
-   "tag": 42942
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetPeriod",
-   "required": false,
-   "tag": 42943
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetUnit",
-   "required": false,
-   "tag": 42944
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetDayType",
-   "required": false,
-   "tag": 42945
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingStartDateAdjusted",
-   "required": false,
-   "tag": 42946
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42941"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42942"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42943"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42944"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42945"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42946"
+    }
+   }
+  ]
+ }
 }

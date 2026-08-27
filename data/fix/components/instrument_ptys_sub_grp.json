@@ -5,26 +5,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoInstrumentPartySubIDs",
-   "required": false,
-   "tag": 1052,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentPartySubID",
-     "required": false,
-     "tag": 1053
+ "declaration": {
+  "name": "InstrumentPtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentPtysSubGrp"
+  },
+  "fields": [
+   {
+    "name": "NoInstrumentPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1052"
     },
-    {
-     "kind": "field",
-     "name": "InstrumentPartySubIDType",
-     "required": false,
-     "tag": 1054
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1053"
+       }
+      },
+      {
+       "name": "InstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1054"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

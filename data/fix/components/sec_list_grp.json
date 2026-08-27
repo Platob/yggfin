@@ -6,121 +6,200 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+ "declaration": {
+  "name": "SecListGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecListGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "InstrumentExtension",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SecurityClassificationGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SecurityTradingRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "StrikeRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "component",
-     "name": "Stipulations",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "InstrmtLegSecListGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedInstrumentGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SpreadOrBenchmarkCurveData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "YieldData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PriceMovementGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "RelSymTransactTime",
-     "required": false,
-     "tag": 1504
-    },
-    {
-     "kind": "field",
-     "name": "NumOfSimpleInstruments",
-     "required": false,
-     "tag": 1606
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecurityClassificationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecurityClassificationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecurityTradingRules",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecurityTradingRules"
+       },
+       "fields": []
+      },
+      {
+       "name": "StrikeRules",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StrikeRules"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "Stipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Stipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegSecListGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegSecListGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedInstrumentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedInstrumentGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "YieldData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "YieldData"
+       },
+       "fields": []
+      },
+      {
+       "name": "PriceMovementGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PriceMovementGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelSymTransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1504"
+       }
+      },
+      {
+       "name": "NumOfSimpleInstruments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1606"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

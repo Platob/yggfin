@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMarketDisruptionFallbacks",
-   "required": false,
-   "tag": 41094,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackType",
-     "required": false,
-     "tag": 41095
+ "declaration": {
+  "name": "MarketDisruptionFallbackGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDisruptionFallbackGrp"
+  },
+  "fields": [
+   {
+    "name": "NoMarketDisruptionFallbacks",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41094"
     },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackValue",
-     "required": false,
-     "tag": 40992
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarketDisruptionFallbackType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41095"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40992"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

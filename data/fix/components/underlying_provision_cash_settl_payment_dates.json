@@ -3,58 +3,88 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateBusinessDayConvention",
-   "required": false,
-   "tag": 42092
+ "declaration": {
+  "name": "UnderlyingProvisionCashSettlPaymentDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionCashSettlPaymentDates"
   },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateRelativeTo",
-   "required": false,
-   "tag": 42093
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 42094
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 42095
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 42096
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateRangeFirst",
-   "required": false,
-   "tag": 42097
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionCashSettlPaymentDateRangeLast",
-   "required": false,
-   "tag": 42098
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionCashSettlPaymentFixedDateGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42092"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionCashSettlPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42093"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42094"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42095"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42096"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateRangeFirst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42097"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateRangeLast",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42098"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentFixedDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionCashSettlPaymentFixedDateGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

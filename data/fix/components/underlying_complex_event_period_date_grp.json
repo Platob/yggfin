@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingComplexEventPeriodDateTimes",
-   "required": false,
-   "tag": 41726,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPeriodDate",
-     "required": false,
-     "tag": 41727
+ "declaration": {
+  "name": "UnderlyingComplexEventPeriodDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEventPeriodDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingComplexEventPeriodDateTimes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41726"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventPeriodTime",
-     "required": false,
-     "tag": 41728
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventPeriodDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41727"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPeriodTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41728"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

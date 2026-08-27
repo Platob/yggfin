@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingMarketDisruptionEvents",
-   "required": false,
-   "tag": 41864,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionEvent",
-     "required": false,
-     "tag": 41865
+ "declaration": {
+  "name": "UnderlyingMarketDisruptionEventGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingMarketDisruptionEventGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingMarketDisruptionEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41864"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionValue",
-     "required": false,
-     "tag": 41338
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingMarketDisruptionEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41865"
+       }
+      },
+      {
+       "name": "UnderlyingMarketDisruptionValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41338"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

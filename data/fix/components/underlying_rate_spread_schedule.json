@@ -3,17 +3,31 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingRateSpreadInitialValue",
-   "required": false,
-   "tag": 43004
+ "declaration": {
+  "name": "UnderlyingRateSpreadSchedule",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingRateSpreadSchedule"
   },
-  {
-   "kind": "component",
-   "name": "UnderlyingRateSpreadStepGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingRateSpreadInitialValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43004"
+    }
+   },
+   {
+    "name": "UnderlyingRateSpreadStepGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingRateSpreadStepGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

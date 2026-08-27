@@ -3,159 +3,225 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegAgreementDesc",
-   "required": false,
-   "tag": 2497
+ "declaration": {
+  "name": "LegFinancingDetails",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegFinancingDetails"
   },
-  {
-   "kind": "field",
-   "name": "LegAgreementID",
-   "required": false,
-   "tag": 2498
-  },
-  {
-   "kind": "field",
-   "name": "LegAgreementVersion",
-   "required": false,
-   "tag": 2499
-  },
-  {
-   "kind": "field",
-   "name": "LegAgreementDate",
-   "required": false,
-   "tag": 2496
-  },
-  {
-   "kind": "field",
-   "name": "LegAgreementCurrency",
-   "required": false,
-   "tag": 2495
-  },
-  {
-   "kind": "field",
-   "name": "LegAgreementCurrencyCodeSource",
-   "required": false,
-   "tag": 2953
-  },
-  {
-   "kind": "field",
-   "name": "LegMasterConfirmationDesc",
-   "required": false,
-   "tag": 2511
-  },
-  {
-   "kind": "field",
-   "name": "LegMasterConfirmationDate",
-   "required": false,
-   "tag": 2510
-  },
-  {
-   "kind": "field",
-   "name": "LegMasterConfirmationAnnexDesc",
-   "required": false,
-   "tag": 2512
-  },
-  {
-   "kind": "field",
-   "name": "LegMasterConfirmationAnnexDate",
-   "required": false,
-   "tag": 2509
-  },
-  {
-   "kind": "field",
-   "name": "LegBrokerConfirmationDesc",
-   "required": false,
-   "tag": 2500
-  },
-  {
-   "kind": "component",
-   "name": "LegFinancingContractualDefinitionsGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegFinancingTermSupplementGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegFinancingContractualMatrixGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegCreditSupportAgreementDesc",
-   "required": false,
-   "tag": 2502
-  },
-  {
-   "kind": "field",
-   "name": "LegCreditSupportAgreementDate",
-   "required": false,
-   "tag": 2501
-  },
-  {
-   "kind": "field",
-   "name": "LegCreditSupportAgreementID",
-   "required": false,
-   "tag": 2503
-  },
-  {
-   "kind": "field",
-   "name": "LegGoverningLaw",
-   "required": false,
-   "tag": 2507
-  },
-  {
-   "kind": "field",
-   "name": "LegDocumentationText",
-   "required": false,
-   "tag": 2505
-  },
-  {
-   "kind": "field",
-   "name": "EncodedLegDocumentationTextLen",
-   "required": false,
-   "tag": 2494
-  },
-  {
-   "kind": "field",
-   "name": "EncodedLegDocumentationText",
-   "required": false,
-   "tag": 2493
-  },
-  {
-   "kind": "field",
-   "name": "LegTerminationType",
-   "required": false,
-   "tag": 2514
-  },
-  {
-   "kind": "field",
-   "name": "LegStartDate",
-   "required": false,
-   "tag": 2513
-  },
-  {
-   "kind": "field",
-   "name": "LegEndDate",
-   "required": false,
-   "tag": 2506
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryType",
-   "required": false,
-   "tag": 2504
-  },
-  {
-   "kind": "field",
-   "name": "LegMarginRatio",
-   "required": false,
-   "tag": 2508
-  }
- ]
+  "fields": [
+   {
+    "name": "LegAgreementDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2497"
+    }
+   },
+   {
+    "name": "LegAgreementID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2498"
+    }
+   },
+   {
+    "name": "LegAgreementVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2499"
+    }
+   },
+   {
+    "name": "LegAgreementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2496"
+    }
+   },
+   {
+    "name": "LegAgreementCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2495"
+    }
+   },
+   {
+    "name": "LegAgreementCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2953"
+    }
+   },
+   {
+    "name": "LegMasterConfirmationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2511"
+    }
+   },
+   {
+    "name": "LegMasterConfirmationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2510"
+    }
+   },
+   {
+    "name": "LegMasterConfirmationAnnexDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2512"
+    }
+   },
+   {
+    "name": "LegMasterConfirmationAnnexDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2509"
+    }
+   },
+   {
+    "name": "LegBrokerConfirmationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2500"
+    }
+   },
+   {
+    "name": "LegFinancingContractualDefinitionsGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegFinancingContractualDefinitionsGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegFinancingTermSupplementGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegFinancingTermSupplementGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegFinancingContractualMatrixGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegFinancingContractualMatrixGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegCreditSupportAgreementDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2502"
+    }
+   },
+   {
+    "name": "LegCreditSupportAgreementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2501"
+    }
+   },
+   {
+    "name": "LegCreditSupportAgreementID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2503"
+    }
+   },
+   {
+    "name": "LegGoverningLaw",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2507"
+    }
+   },
+   {
+    "name": "LegDocumentationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2505"
+    }
+   },
+   {
+    "name": "EncodedLegDocumentationTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2494"
+    }
+   },
+   {
+    "name": "EncodedLegDocumentationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2493"
+    }
+   },
+   {
+    "name": "LegTerminationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2514"
+    }
+   },
+   {
+    "name": "LegStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2513"
+    }
+   },
+   {
+    "name": "LegEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2506"
+    }
+   },
+   {
+    "name": "LegDeliveryType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2504"
+    }
+   },
+   {
+    "name": "LegMarginRatio",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2508"
+    }
+   }
+  ]
+ }
 }

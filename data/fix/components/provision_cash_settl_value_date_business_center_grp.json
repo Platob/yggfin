@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProvisionCashSettlValueDateBusinessCenters",
-   "required": false,
-   "tag": 40953,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateBusinessCenter",
-     "required": false,
-     "tag": 40117
+ "declaration": {
+  "name": "ProvisionCashSettlValueDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProvisionCashSettlValueDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoProvisionCashSettlValueDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40953"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionCashSettlValueDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40117"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

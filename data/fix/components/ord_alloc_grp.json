@@ -6,73 +6,108 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrders",
-   "required": false,
-   "tag": 73,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": false,
-     "tag": 11
+ "declaration": {
+  "name": "OrdAllocGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrdAllocGrp"
+  },
+  "fields": [
+   {
+    "name": "NoOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "73"
     },
-    {
-     "kind": "field",
-     "name": "OrderID",
-     "required": false,
-     "tag": 37
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryOrderID",
-     "required": false,
-     "tag": 198
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryClOrdID",
-     "required": false,
-     "tag": 526
-    },
-    {
-     "kind": "field",
-     "name": "ListID",
-     "required": false,
-     "tag": 66
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties2",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "OrderQty",
-     "required": false,
-     "tag": 38
-    },
-    {
-     "kind": "field",
-     "name": "OrderAvgPx",
-     "required": false,
-     "tag": 799
-    },
-    {
-     "kind": "field",
-     "name": "OrderBookingQty",
-     "required": false,
-     "tag": 800
-    },
-    {
-     "kind": "field",
-     "name": "OrdType",
-     "required": false,
-     "tag": 40
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "SecondaryOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "198"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "ListID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "66"
+       }
+      },
+      {
+       "name": "NestedParties2",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties2"
+       },
+       "fields": []
+      },
+      {
+       "name": "OrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "38"
+       }
+      },
+      {
+       "name": "OrderAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "799"
+       }
+      },
+      {
+       "name": "OrderBookingQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "800"
+       }
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

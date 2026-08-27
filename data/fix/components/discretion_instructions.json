@@ -6,48 +6,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DiscretionInst",
-   "required": false,
-   "tag": 388
+ "declaration": {
+  "name": "DiscretionInstructions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DiscretionInstructions"
   },
-  {
-   "kind": "field",
-   "name": "DiscretionOffsetValue",
-   "required": false,
-   "tag": 389
-  },
-  {
-   "kind": "field",
-   "name": "DiscretionMoveType",
-   "required": false,
-   "tag": 841
-  },
-  {
-   "kind": "field",
-   "name": "DiscretionOffsetType",
-   "required": false,
-   "tag": 842
-  },
-  {
-   "kind": "field",
-   "name": "DiscretionLimitType",
-   "required": false,
-   "tag": 843
-  },
-  {
-   "kind": "field",
-   "name": "DiscretionRoundDirection",
-   "required": false,
-   "tag": 844
-  },
-  {
-   "kind": "field",
-   "name": "DiscretionScope",
-   "required": false,
-   "tag": 846
-  }
- ]
+  "fields": [
+   {
+    "name": "DiscretionInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "388"
+    }
+   },
+   {
+    "name": "DiscretionOffsetValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "389"
+    }
+   },
+   {
+    "name": "DiscretionMoveType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "841"
+    }
+   },
+   {
+    "name": "DiscretionOffsetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "842"
+    }
+   },
+   {
+    "name": "DiscretionLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "843"
+    }
+   },
+   {
+    "name": "DiscretionRoundDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "844"
+    }
+   },
+   {
+    "name": "DiscretionScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "846"
+    }
+   }
+  ]
+ }
 }

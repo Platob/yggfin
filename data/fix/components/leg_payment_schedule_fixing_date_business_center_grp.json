@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentScheduleFixingDateBusinessCenters",
-   "required": false,
-   "tag": 40927,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentScheduleFixingDateBusinessCenter",
-     "required": false,
-     "tag": 40400
+ "declaration": {
+  "name": "LegPaymentScheduleFixingDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentScheduleFixingDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentScheduleFixingDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40927"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentScheduleFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40400"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingReturnRatePrices",
-   "required": false,
-   "tag": 43064,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRatePriceBasis",
-     "required": false,
-     "tag": 43065
+ "declaration": {
+  "name": "UnderlyingReturnRatePriceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingReturnRatePriceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingReturnRatePrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43064"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRatePrice",
-     "required": false,
-     "tag": 43066
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRatePriceCurrency",
-     "required": false,
-     "tag": 43067
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRatePriceType",
-     "required": false,
-     "tag": 43068
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRatePriceBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43065"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43066"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43067"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43068"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

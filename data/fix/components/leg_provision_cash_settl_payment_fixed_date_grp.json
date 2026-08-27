@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegProvisionCashSettlPaymentDates",
-   "required": false,
-   "tag": 40473,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlPaymentDate",
-     "required": false,
-     "tag": 40474
+ "declaration": {
+  "name": "LegProvisionCashSettlPaymentFixedDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionCashSettlPaymentFixedDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegProvisionCashSettlPaymentDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40473"
     },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlPaymentDateType",
-     "required": false,
-     "tag": 40475
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionCashSettlPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40474"
+       }
+      },
+      {
+       "name": "LegProvisionCashSettlPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40475"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

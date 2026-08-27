@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegBusinessCenters",
-   "required": false,
-   "tag": 40923,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegBusinessCenter",
-     "required": false,
-     "tag": 40924
+ "declaration": {
+  "name": "LegBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40923"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40924"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

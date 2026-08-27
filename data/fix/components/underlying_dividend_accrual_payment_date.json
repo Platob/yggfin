@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateRelativeTo",
-   "required": false,
-   "tag": 42819
+ "declaration": {
+  "name": "UnderlyingDividendAccrualPaymentDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendAccrualPaymentDate"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 42820
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 42821
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 42822
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateUnadjusted",
-   "required": false,
-   "tag": 42823
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateBusinessDayConvention",
-   "required": false,
-   "tag": 42824
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAccrualPaymentDateAdjusted",
-   "required": false,
-   "tag": 42825
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42819"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42820"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42821"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42822"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42823"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42824"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingDividendAccrualPaymentDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42825"
+    }
+   }
+  ]
+ }
 }

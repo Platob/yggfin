@@ -6,42 +6,69 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyings",
-   "required": false,
-   "tag": 711,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingInstrument",
-     "required": false
+ "declaration": {
+  "name": "PosUndInstrmtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PosUndInstrmtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyings",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "711"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlPrice",
-     "required": false,
-     "tag": 732
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlPriceType",
-     "required": false,
-     "tag": 733
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingDeliveryAmount",
-     "required": false,
-     "tag": 1037
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingAmount",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingSettlPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "732"
+       }
+      },
+      {
+       "name": "UnderlyingSettlPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "733"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1037"
+       }
+      },
+      {
+       "name": "UnderlyingAmount",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingAmount"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

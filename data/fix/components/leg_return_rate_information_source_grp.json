@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegReturnRateInformationSources",
-   "required": false,
-   "tag": 42560,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegReturnRateInformationSource",
-     "required": false,
-     "tag": 42561
+ "declaration": {
+  "name": "LegReturnRateInformationSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegReturnRateInformationSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegReturnRateInformationSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42560"
     },
-    {
-     "kind": "field",
-     "name": "LegReturnRateReferencePage",
-     "required": false,
-     "tag": 42562
-    },
-    {
-     "kind": "field",
-     "name": "LegReturnRateReferencePageHeading",
-     "required": false,
-     "tag": 42563
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRateInformationSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42561"
+       }
+      },
+      {
+       "name": "LegReturnRateReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42562"
+       }
+      },
+      {
+       "name": "LegReturnRateReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42563"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

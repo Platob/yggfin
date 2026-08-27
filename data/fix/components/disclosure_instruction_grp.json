@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDisclosureInstructions",
-   "required": false,
-   "tag": 1812,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DisclosureType",
-     "required": false,
-     "tag": 1813
+ "declaration": {
+  "name": "DisclosureInstructionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DisclosureInstructionGrp"
+  },
+  "fields": [
+   {
+    "name": "NoDisclosureInstructions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1812"
     },
-    {
-     "kind": "field",
-     "name": "DisclosureInstruction",
-     "required": false,
-     "tag": 1814
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DisclosureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1813"
+       }
+      },
+      {
+       "name": "DisclosureInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1814"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

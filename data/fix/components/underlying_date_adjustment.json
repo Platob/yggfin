@@ -3,23 +3,39 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingBusinessDayConvention",
-   "required": false,
-   "tag": 40964
+ "declaration": {
+  "name": "UnderlyingDateAdjustment",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDateAdjustment"
   },
-  {
-   "kind": "component",
-   "name": "UnderlyingBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDateRollConvention",
-   "required": false,
-   "tag": 40965
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40964"
+    }
+   },
+   {
+    "name": "UnderlyingBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingDateRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40965"
+    }
+   }
+  ]
+ }
 }

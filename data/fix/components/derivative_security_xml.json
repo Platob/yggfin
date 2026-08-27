@@ -4,24 +4,38 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DerivativeSecurityXMLLen",
-   "required": false,
-   "tag": 1282
+ "declaration": {
+  "name": "DerivativeSecurityXML",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeSecurityXML"
   },
-  {
-   "kind": "field",
-   "name": "DerivativeSecurityXML",
-   "required": false,
-   "tag": 1283
-  },
-  {
-   "kind": "field",
-   "name": "DerivativeSecurityXMLSchema",
-   "required": false,
-   "tag": 1284
-  }
- ]
+  "fields": [
+   {
+    "name": "DerivativeSecurityXMLLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1282"
+    }
+   },
+   {
+    "name": "DerivativeSecurityXML",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1283"
+    }
+   },
+   {
+    "name": "DerivativeSecurityXMLSchema",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1284"
+    }
+   }
+  ]
+ }
 }

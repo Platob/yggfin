@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoContractualMatrices",
-   "required": false,
-   "tag": 40042,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ContractualMatrixSource",
-     "required": false,
-     "tag": 40043
+ "declaration": {
+  "name": "FinancingContractualMatrixGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FinancingContractualMatrixGrp"
+  },
+  "fields": [
+   {
+    "name": "NoContractualMatrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40042"
     },
-    {
-     "kind": "field",
-     "name": "ContractualMatrixDate",
-     "required": false,
-     "tag": 40044
-    },
-    {
-     "kind": "field",
-     "name": "ContractualMatrixTerm",
-     "required": false,
-     "tag": 40045
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40043"
+       }
+      },
+      {
+       "name": "ContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40044"
+       }
+      },
+      {
+       "name": "ContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40045"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

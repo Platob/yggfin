@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingComplexEventRateSources",
-   "required": false,
-   "tag": 41732,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventRateSource",
-     "required": false,
-     "tag": 41733
+ "declaration": {
+  "name": "UnderlyingComplexEventRateSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEventRateSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingComplexEventRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41732"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventRateSourceType",
-     "required": false,
-     "tag": 41734
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventReferencePage",
-     "required": false,
-     "tag": 41735
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventReferencePageHeading",
-     "required": false,
-     "tag": 41736
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41733"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventRateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41734"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41735"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41736"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

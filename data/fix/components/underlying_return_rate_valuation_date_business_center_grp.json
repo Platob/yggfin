@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
-   "required": false,
-   "tag": 43069,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateValuationDateBusinessCenter",
-     "required": false,
-     "tag": 43070
+ "declaration": {
+  "name": "UnderlyingReturnRateValuationDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingReturnRateValuationDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43069"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43070"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoClearingAccountTypes",
-   "required": false,
-   "tag": 1918,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ClearingAccountType",
-     "required": false,
-     "tag": 1816
+ "declaration": {
+  "name": "ClearingAccountTypeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ClearingAccountTypeGrp"
+  },
+  "fields": [
+   {
+    "name": "NoClearingAccountTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1918"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClearingAccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1816"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

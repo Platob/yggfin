@@ -6,86 +6,123 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTrdRegTimestamps",
-   "required": false,
-   "tag": 768,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TrdRegTimestamp",
-     "required": false,
-     "tag": 769
+ "declaration": {
+  "name": "TrdRegTimestamps",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdRegTimestamps"
+  },
+  "fields": [
+   {
+    "name": "NoTrdRegTimestamps",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "768"
     },
-    {
-     "kind": "field",
-     "name": "TrdRegTimestampType",
-     "required": false,
-     "tag": 770
-    },
-    {
-     "kind": "field",
-     "name": "TrdRegTimestampOrigin",
-     "required": false,
-     "tag": 771
-    },
-    {
-     "kind": "field",
-     "name": "TrdRegTimestampManualIndicator",
-     "required": false,
-     "tag": 2839
-    },
-    {
-     "kind": "field",
-     "name": "DeskType",
-     "required": false,
-     "tag": 1033
-    },
-    {
-     "kind": "field",
-     "name": "DeskTypeSource",
-     "required": false,
-     "tag": 1034
-    },
-    {
-     "kind": "field",
-     "name": "DeskOrderHandlingInst",
-     "required": false,
-     "tag": 1035
-    },
-    {
-     "kind": "field",
-     "name": "InformationBarrierID",
-     "required": false,
-     "tag": 1727
-    },
-    {
-     "kind": "field",
-     "name": "NBBOEntryType",
-     "required": false,
-     "tag": 2831
-    },
-    {
-     "kind": "field",
-     "name": "NBBOPrice",
-     "required": false,
-     "tag": 2832
-    },
-    {
-     "kind": "field",
-     "name": "NBBOQty",
-     "required": false,
-     "tag": 2833
-    },
-    {
-     "kind": "field",
-     "name": "NBBOSource",
-     "required": false,
-     "tag": 2834
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "769"
+       }
+      },
+      {
+       "name": "TrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "770"
+       }
+      },
+      {
+       "name": "TrdRegTimestampOrigin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "771"
+       }
+      },
+      {
+       "name": "TrdRegTimestampManualIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2839"
+       }
+      },
+      {
+       "name": "DeskType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1033"
+       }
+      },
+      {
+       "name": "DeskTypeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1034"
+       }
+      },
+      {
+       "name": "DeskOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1035"
+       }
+      },
+      {
+       "name": "InformationBarrierID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1727"
+       }
+      },
+      {
+       "name": "NBBOEntryType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2831"
+       }
+      },
+      {
+       "name": "NBBOPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2832"
+       }
+      },
+      {
+       "name": "NBBOQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2833"
+       }
+      },
+      {
+       "name": "NBBOSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2834"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

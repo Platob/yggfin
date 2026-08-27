@@ -3,122 +3,171 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegAdditionalTermBondRefs",
-   "required": false,
-   "tag": 41316,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondSecurityID",
-     "required": false,
-     "tag": 41317
+ "declaration": {
+  "name": "LegAdditionalTermBondRefGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegAdditionalTermBondRefGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegAdditionalTermBondRefs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41316"
     },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondSecurityIDSource",
-     "required": false,
-     "tag": 41318
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondDesc",
-     "required": false,
-     "tag": 41319
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegAdditionalTermBondDescLen",
-     "required": false,
-     "tag": 41320
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegAdditionalTermBondDesc",
-     "required": false,
-     "tag": 41321
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCurrency",
-     "required": false,
-     "tag": 41322
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondIssuer",
-     "required": false,
-     "tag": 41323
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegAdditionalTermBondIssuerLen",
-     "required": false,
-     "tag": 41324
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegAdditionalTermBondIssuer",
-     "required": false,
-     "tag": 41325
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondSeniority",
-     "required": false,
-     "tag": 41326
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCouponType",
-     "required": false,
-     "tag": 41327
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCouponRate",
-     "required": false,
-     "tag": 41328
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondMaturityDate",
-     "required": false,
-     "tag": 41329
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondParValue",
-     "required": false,
-     "tag": 41330
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCurrentTotalIssuedAmount",
-     "required": false,
-     "tag": 41331
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCouponFrequencyPeriod",
-     "required": false,
-     "tag": 41332
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondCouponFrequencyUnit",
-     "required": false,
-     "tag": 41333
-    },
-    {
-     "kind": "field",
-     "name": "LegAdditionalTermBondDayCount",
-     "required": false,
-     "tag": 41334
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegAdditionalTermBondSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41317"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41318"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41319"
+       }
+      },
+      {
+       "name": "EncodedLegAdditionalTermBondDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41320"
+       }
+      },
+      {
+       "name": "EncodedLegAdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41321"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41322"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41323"
+       }
+      },
+      {
+       "name": "EncodedLegAdditionalTermBondIssuerLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41324"
+       }
+      },
+      {
+       "name": "EncodedLegAdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41325"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondSeniority",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41326"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCouponType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41327"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCouponRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41328"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondMaturityDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41329"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondParValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41330"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCurrentTotalIssuedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41331"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCouponFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41332"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondCouponFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41333"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondDayCount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41334"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -86,8 +86,16 @@ class FieldBuilder:
             raise TypeError(f"{cls.__name__} must be a dataclass to be projected onto Arrow")
         hints = get_type_hints(cls, include_extras=True)
         described = docstring_attributes(cls)
+        # A class may spell a column its attribute cannot: FIX tag 236 is
+        # `Yield`, and `yield` is a statement. Everything else is itself.
+        columns_of = getattr(cls, "into_field_columns", None)
+        columns = dict(columns_of()) if callable(columns_of) else {}
         return [
-            self.field(member.name, hints[member.name], description=described.get(member.name))
+            self.field(
+                columns.get(member.name, member.name),
+                hints[member.name],
+                description=described.get(member.name),
+            )
             for member in dataclasses.fields(cls)
         ]
 

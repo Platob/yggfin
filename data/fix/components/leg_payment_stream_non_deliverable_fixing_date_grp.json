@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegNonDeliverableFixingDates",
-   "required": false,
-   "tag": 40367,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegNonDeliverableFixingDate",
-     "required": false,
-     "tag": 40368
+ "declaration": {
+  "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamNonDeliverableFixingDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegNonDeliverableFixingDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40367"
     },
-    {
-     "kind": "field",
-     "name": "LegNonDeliverableFixingDateType",
-     "required": false,
-     "tag": 40369
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegNonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40368"
+       }
+      },
+      {
+       "name": "LegNonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40369"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

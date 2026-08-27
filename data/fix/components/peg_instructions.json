@@ -6,72 +6,102 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PegOffsetValue",
-   "required": false,
-   "tag": 211
+ "declaration": {
+  "name": "PegInstructions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PegInstructions"
   },
-  {
-   "kind": "field",
-   "name": "PegPriceType",
-   "required": false,
-   "tag": 1094
-  },
-  {
-   "kind": "field",
-   "name": "PegMoveType",
-   "required": false,
-   "tag": 835
-  },
-  {
-   "kind": "field",
-   "name": "PegOffsetType",
-   "required": false,
-   "tag": 836
-  },
-  {
-   "kind": "field",
-   "name": "PegLimitType",
-   "required": false,
-   "tag": 837
-  },
-  {
-   "kind": "field",
-   "name": "PegRoundDirection",
-   "required": false,
-   "tag": 838
-  },
-  {
-   "kind": "field",
-   "name": "PegScope",
-   "required": false,
-   "tag": 840
-  },
-  {
-   "kind": "field",
-   "name": "PegSecurityIDSource",
-   "required": false,
-   "tag": 1096
-  },
-  {
-   "kind": "field",
-   "name": "PegSecurityID",
-   "required": false,
-   "tag": 1097
-  },
-  {
-   "kind": "field",
-   "name": "PegSymbol",
-   "required": false,
-   "tag": 1098
-  },
-  {
-   "kind": "field",
-   "name": "PegSecurityDesc",
-   "required": false,
-   "tag": 1099
-  }
- ]
+  "fields": [
+   {
+    "name": "PegOffsetValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "211"
+    }
+   },
+   {
+    "name": "PegPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1094"
+    }
+   },
+   {
+    "name": "PegMoveType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "835"
+    }
+   },
+   {
+    "name": "PegOffsetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "836"
+    }
+   },
+   {
+    "name": "PegLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "837"
+    }
+   },
+   {
+    "name": "PegRoundDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "838"
+    }
+   },
+   {
+    "name": "PegScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "840"
+    }
+   },
+   {
+    "name": "PegSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1096"
+    }
+   },
+   {
+    "name": "PegSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1097"
+    }
+   },
+   {
+    "name": "PegSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1098"
+    }
+   },
+   {
+    "name": "PegSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1099"
+    }
+   }
+  ]
+ }
 }

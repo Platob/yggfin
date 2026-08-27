@@ -3,120 +3,173 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrderEntries",
-   "required": false,
-   "tag": 2428,
-   "members": [
-    {
-     "kind": "field",
-     "name": "OrdStatus",
-     "required": false,
-     "tag": 39
+ "declaration": {
+  "name": "OrderEntryAckGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderEntryAckGrp"
+  },
+  "fields": [
+   {
+    "name": "NoOrderEntries",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2428"
     },
-    {
-     "kind": "field",
-     "name": "ExecType",
-     "required": false,
-     "tag": 150
-    },
-    {
-     "kind": "field",
-     "name": "ExecTypeReason",
-     "required": false,
-     "tag": 2431
-    },
-    {
-     "kind": "field",
-     "name": "OrderEntryAction",
-     "required": false,
-     "tag": 2429
-    },
-    {
-     "kind": "field",
-     "name": "OrderEntryID",
-     "required": false,
-     "tag": 2430
-    },
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": false,
-     "tag": 11
-    },
-    {
-     "kind": "field",
-     "name": "OrigClOrdID",
-     "required": false,
-     "tag": 41
-    },
-    {
-     "kind": "field",
-     "name": "OrderID",
-     "required": false,
-     "tag": 37
-    },
-    {
-     "kind": "field",
-     "name": "OrdRejReason",
-     "required": false,
-     "tag": 103
-    },
-    {
-     "kind": "field",
-     "name": "CumQty",
-     "required": false,
-     "tag": 14
-    },
-    {
-     "kind": "field",
-     "name": "LeavesQty",
-     "required": false,
-     "tag": 151
-    },
-    {
-     "kind": "field",
-     "name": "CxlQty",
-     "required": false,
-     "tag": 84
-    },
-    {
-     "kind": "field",
-     "name": "OrdType",
-     "required": false,
-     "tag": 40
-    },
-    {
-     "kind": "field",
-     "name": "Price",
-     "required": false,
-     "tag": 44
-    },
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": false,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "TimeInForce",
-     "required": false,
-     "tag": 59
-    },
-    {
-     "kind": "component",
-     "name": "OrderQtyData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrdStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "39"
+       }
+      },
+      {
+       "name": "ExecType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "150"
+       }
+      },
+      {
+       "name": "ExecTypeReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2431"
+       }
+      },
+      {
+       "name": "OrderEntryAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2429"
+       }
+      },
+      {
+       "name": "OrderEntryID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2430"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrdRejReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "103"
+       }
+      },
+      {
+       "name": "CumQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "14"
+       }
+      },
+      {
+       "name": "LeavesQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "151"
+       }
+      },
+      {
+       "name": "CxlQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "84"
+       }
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "TimeInForce",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "59"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

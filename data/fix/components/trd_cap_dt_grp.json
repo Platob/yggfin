@@ -6,32 +6,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDates",
-   "required": false,
-   "tag": 580,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradeDate",
-     "required": false,
-     "tag": 75
+ "declaration": {
+  "name": "TrdCapDtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdCapDtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "580"
     },
-    {
-     "kind": "field",
-     "name": "LastUpdateTime",
-     "required": false,
-     "tag": 779
-    },
-    {
-     "kind": "field",
-     "name": "TransactTime",
-     "required": false,
-     "tag": 60
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "75"
+       }
+      },
+      {
+       "name": "LastUpdateTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "779"
+       }
+      },
+      {
+       "name": "TransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "60"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

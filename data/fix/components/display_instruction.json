@@ -5,66 +5,94 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DisplayQty",
-   "required": false,
-   "tag": 1138
+ "declaration": {
+  "name": "DisplayInstruction",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DisplayInstruction"
   },
-  {
-   "kind": "field",
-   "name": "SecondaryDisplayQty",
-   "required": false,
-   "tag": 1082
-  },
-  {
-   "kind": "field",
-   "name": "InitialDisplayQty",
-   "required": false,
-   "tag": 1608
-  },
-  {
-   "kind": "field",
-   "name": "CurrentDisplayPrice",
-   "required": false,
-   "tag": 2828
-  },
-  {
-   "kind": "field",
-   "name": "DisplayWhen",
-   "required": false,
-   "tag": 1083
-  },
-  {
-   "kind": "field",
-   "name": "DisplayMethod",
-   "required": false,
-   "tag": 1084
-  },
-  {
-   "kind": "field",
-   "name": "DisplayLowQty",
-   "required": false,
-   "tag": 1085
-  },
-  {
-   "kind": "field",
-   "name": "DisplayHighQty",
-   "required": false,
-   "tag": 1086
-  },
-  {
-   "kind": "field",
-   "name": "DisplayMinIncr",
-   "required": false,
-   "tag": 1087
-  },
-  {
-   "kind": "field",
-   "name": "RefreshQty",
-   "required": false,
-   "tag": 1088
-  }
- ]
+  "fields": [
+   {
+    "name": "DisplayQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1138"
+    }
+   },
+   {
+    "name": "SecondaryDisplayQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1082"
+    }
+   },
+   {
+    "name": "InitialDisplayQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1608"
+    }
+   },
+   {
+    "name": "CurrentDisplayPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2828"
+    }
+   },
+   {
+    "name": "DisplayWhen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1083"
+    }
+   },
+   {
+    "name": "DisplayMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1084"
+    }
+   },
+   {
+    "name": "DisplayLowQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1085"
+    }
+   },
+   {
+    "name": "DisplayHighQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1086"
+    }
+   },
+   {
+    "name": "DisplayMinIncr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1087"
+    }
+   },
+   {
+    "name": "RefreshQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1088"
+    }
+   }
+  ]
+ }
 }

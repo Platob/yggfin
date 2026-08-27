@@ -3,18 +3,30 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamFormulaImageLength",
-   "required": false,
-   "tag": 42652
+ "declaration": {
+  "name": "PaymentStreamFormulaImage",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamFormulaImage"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStreamFormulaImage",
-   "required": false,
-   "tag": 42653
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamFormulaImageLength",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42652"
+    }
+   },
+   {
+    "name": "PaymentStreamFormulaImage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42653"
+    }
+   }
+  ]
+ }
 }

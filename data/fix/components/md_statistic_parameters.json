@@ -3,245 +3,332 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "MDStatisticType",
-   "required": true,
-   "tag": 2456
+ "declaration": {
+  "name": "MDStatisticParameters",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MDStatisticParameters"
   },
-  {
-   "kind": "field",
-   "name": "MDStatisticScope",
-   "required": true,
-   "tag": 2457
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticSubScope",
-   "required": false,
-   "tag": 2458
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticScopeType",
-   "required": false,
-   "tag": 2459
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticName",
-   "required": false,
-   "tag": 2454
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticDesc",
-   "required": false,
-   "tag": 2455
-  },
-  {
-   "kind": "field",
-   "name": "EncodedMDStatisticDescLen",
-   "required": false,
-   "tag": 2481
-  },
-  {
-   "kind": "field",
-   "name": "EncodedMDStatisticDesc",
-   "required": false,
-   "tag": 2482
-  },
-  {
-   "kind": "field",
-   "name": "MarketDepth",
-   "required": false,
-   "tag": 264
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticFrequencyPeriod",
-   "required": false,
-   "tag": 2460
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticFrequencyUnit",
-   "required": false,
-   "tag": 2461
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticDelayPeriod",
-   "required": false,
-   "tag": 2462
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticDelayUnit",
-   "required": false,
-   "tag": 2463
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticIntervalType",
-   "required": true,
-   "tag": 2464
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticIntervalTypeUnit",
-   "required": false,
-   "tag": 2465
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticIntervalPeriod",
-   "required": false,
-   "tag": 2466
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticIntervalUnit",
-   "required": false,
-   "tag": 2467
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticStartDate",
-   "required": false,
-   "tag": 2468
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticEndDate",
-   "required": false,
-   "tag": 2469
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticStartTime",
-   "required": false,
-   "tag": 2470
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticEndTime",
-   "required": false,
-   "tag": 2471
-  },
-  {
-   "kind": "field",
-   "name": "MDStatisticRatioType",
-   "required": false,
-   "tag": 2472
-  },
-  {
-   "kind": "component",
-   "name": "NestedParties",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "AnnualTradingBusinessDays",
-   "required": false,
-   "tag": 2584
-  },
-  {
-   "kind": "field",
-   "name": "TradingCapacity",
-   "required": false,
-   "tag": 1815
-  },
-  {
-   "kind": "field",
-   "name": "OrdType",
-   "required": false,
-   "tag": 40
-  },
-  {
-   "kind": "field",
-   "name": "TimeInForce",
-   "required": false,
-   "tag": 59
-  },
-  {
-   "kind": "field",
-   "name": "QuoteCondition",
-   "required": false,
-   "tag": 276
-  },
-  {
-   "kind": "field",
-   "name": "TradeCondition",
-   "required": false,
-   "tag": 277
-  },
-  {
-   "kind": "field",
-   "name": "Side",
-   "required": false,
-   "tag": 54
-  },
-  {
-   "kind": "field",
-   "name": "TradeInputSource",
-   "required": false,
-   "tag": 578
-  },
-  {
-   "kind": "field",
-   "name": "TradingSessionID",
-   "required": false,
-   "tag": 336
-  },
-  {
-   "kind": "field",
-   "name": "TradingSessionSubID",
-   "required": false,
-   "tag": 625
-  },
-  {
-   "kind": "field",
-   "name": "MDOriginType",
-   "required": false,
-   "tag": 1024
-  },
-  {
-   "kind": "field",
-   "name": "MDValueTier",
-   "required": false,
-   "tag": 2711
-  },
-  {
-   "kind": "field",
-   "name": "TradSesMethod",
-   "required": false,
-   "tag": 338
-  },
-  {
-   "kind": "field",
-   "name": "MDFeedType",
-   "required": false,
-   "tag": 1022
-  },
-  {
-   "kind": "field",
-   "name": "ExposureDuration",
-   "required": false,
-   "tag": 1629
-  },
-  {
-   "kind": "field",
-   "name": "ExposureDurationUnit",
-   "required": false,
-   "tag": 1916
-  },
-  {
-   "kind": "field",
-   "name": "AggressorIndicator",
-   "required": false,
-   "tag": 1057
-  }
- ]
+  "fields": [
+   {
+    "name": "MDStatisticType",
+    "type": "string",
+    "fix": {
+     "tag": "2456"
+    }
+   },
+   {
+    "name": "MDStatisticScope",
+    "type": "string",
+    "fix": {
+     "tag": "2457"
+    }
+   },
+   {
+    "name": "MDStatisticSubScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2458"
+    }
+   },
+   {
+    "name": "MDStatisticScopeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2459"
+    }
+   },
+   {
+    "name": "MDStatisticName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2454"
+    }
+   },
+   {
+    "name": "MDStatisticDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2455"
+    }
+   },
+   {
+    "name": "EncodedMDStatisticDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2481"
+    }
+   },
+   {
+    "name": "EncodedMDStatisticDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2482"
+    }
+   },
+   {
+    "name": "MarketDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "264"
+    }
+   },
+   {
+    "name": "MDStatisticFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2460"
+    }
+   },
+   {
+    "name": "MDStatisticFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2461"
+    }
+   },
+   {
+    "name": "MDStatisticDelayPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2462"
+    }
+   },
+   {
+    "name": "MDStatisticDelayUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2463"
+    }
+   },
+   {
+    "name": "MDStatisticIntervalType",
+    "type": "string",
+    "fix": {
+     "tag": "2464"
+    }
+   },
+   {
+    "name": "MDStatisticIntervalTypeUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2465"
+    }
+   },
+   {
+    "name": "MDStatisticIntervalPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2466"
+    }
+   },
+   {
+    "name": "MDStatisticIntervalUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2467"
+    }
+   },
+   {
+    "name": "MDStatisticStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2468"
+    }
+   },
+   {
+    "name": "MDStatisticEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2469"
+    }
+   },
+   {
+    "name": "MDStatisticStartTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2470"
+    }
+   },
+   {
+    "name": "MDStatisticEndTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2471"
+    }
+   },
+   {
+    "name": "MDStatisticRatioType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2472"
+    }
+   },
+   {
+    "name": "NestedParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "NestedParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "AnnualTradingBusinessDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2584"
+    }
+   },
+   {
+    "name": "TradingCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1815"
+    }
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40"
+    }
+   },
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "59"
+    }
+   },
+   {
+    "name": "QuoteCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "276"
+    }
+   },
+   {
+    "name": "TradeCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "277"
+    }
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "TradeInputSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "578"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "MDOriginType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1024"
+    }
+   },
+   {
+    "name": "MDValueTier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2711"
+    }
+   },
+   {
+    "name": "TradSesMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "338"
+    }
+   },
+   {
+    "name": "MDFeedType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1022"
+    }
+   },
+   {
+    "name": "ExposureDuration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1629"
+    }
+   },
+   {
+    "name": "ExposureDurationUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1916"
+    }
+   },
+   {
+    "name": "AggressorIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1057"
+    }
+   }
+  ]
+ }
 }

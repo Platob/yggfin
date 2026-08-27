@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegInstrumentPartySubIDs",
-   "required": false,
-   "tag": 2258,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartySubID",
-     "required": false,
-     "tag": 2259
+ "declaration": {
+  "name": "LegInstrumentPtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegInstrumentPtysSubGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegInstrumentPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2258"
     },
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartySubIDType",
-     "required": false,
-     "tag": 2260
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegInstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2259"
+       }
+      },
+      {
+       "name": "LegInstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2260"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

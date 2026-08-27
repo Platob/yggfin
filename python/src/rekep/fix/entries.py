@@ -18,7 +18,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -34,8 +34,8 @@ from rekep.fields.metadata import (
     encodings_of,
     values_of,
 )
+from rekep.fix import quickfix
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecGroup, SpecMember
 
 #: The version list of a record that holds for every version, which is what a
 #: field outside the standard has: a bridge renders `TECH.CLIENTID` the same
@@ -478,14 +478,18 @@ class FieldEntry(Convertible):
 
 @dataclasses.dataclass(frozen=True)
 class ComponentEntry(Convertible):
-    """One component identity: one member tree, and the versions declaring it."""
+    """One component identity: one declaration, and the versions declaring it.
+
+    The declaration is a `Field`, which is what a component *is*: a struct of
+    its members, a list where one of them repeats, and an empty struct where
+    it defers to a block declared elsewhere. One shape for a field, a group
+    and a message, so nothing here has a second tree to keep in step.
+    """
 
     name: str
     versions: tuple[str, ...] = ()
-    members: tuple[SpecMember, ...] = ()
-    #: The message type this component defines, where it defines one -- `"D"`,
-    #: `"8"`. Empty, and absent from the document, for a reusable component.
-    msg_type: str = ""
+    #: This component as one Field, in wire order, references unexpanded.
+    declaration: Field = dataclasses.field(default_factory=lambda: quickfix.block("", ()))
     aliases: tuple[Alias, ...] = ()
 
     def __post_init__(self) -> None:
@@ -495,7 +499,20 @@ class ComponentEntry(Convertible):
         if not self.versions:
             raise ValueError(f"FIX component {self.name!r} is declared for no version")
         object.__setattr__(self, "versions", canonical_versions(self.versions))
-        object.__setattr__(self, "members", tuple(self.members))
+        if self.declaration.name != self.name:
+            object.__setattr__(
+                self, "declaration", dataclasses.replace(self.declaration, name=self.name)
+            )
+
+    @property
+    def members(self) -> tuple[Field, ...]:
+        """The declaration's members, in wire order."""
+        return quickfix.members_of(self.declaration)
+
+    @property
+    def msg_type(self) -> str:
+        """The message type this declaration defines, where it defines one."""
+        return self.declaration.fix.msgtype
 
     @property
     def slug(self) -> str:
@@ -523,11 +540,11 @@ class ComponentEntry(Convertible):
             found.setdefault(alias.folded, alias.name)
         return tuple(found.values())
 
-    def into_component(self, version: str = "") -> SpecComponent | None:
+    def into_component(self, version: str = "") -> Field | None:
         """This component's declaration, or None for a version it has none for."""
         if version and not self.declares(version):
             return None
-        return SpecComponent(name=self.name, members=self.members, msg_type=self.msg_type)
+        return self.declaration
 
     def into_field(
         self,
@@ -547,7 +564,7 @@ class ComponentEntry(Convertible):
         """
         if not self.declares(version):
             return None
-        members = _component_fields(self.members, types or {}, components or {}, frozenset())
+        members = _component_fields(self.declaration, types or {}, components or {}, frozenset())
         return Field(
             name=snake_of(self.name),
             dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
@@ -563,7 +580,7 @@ class ComponentEntry(Convertible):
         two readers of one declaration come to disagree.
         """
         found: dict[str, tuple[str, ...]] = {}
-        for member, path in _walk(self.members, ()):
+        for member, path in quickfix.walk(self.declaration):
             found.setdefault(member.name, path)
         return found
 
@@ -574,39 +591,45 @@ class ComponentEntry(Convertible):
         so, and it is what tells one entry from the next.
         """
         found: dict[tuple[str, ...], str] = {}
-        for member, path in _walk(self.members, ()):
-            if isinstance(member, SpecGroup) and member.members:
-                found[(*path, member.name)] = member.members[0].name
+        for member, path in quickfix.walk(self.declaration):
+            if quickfix.is_group(member):
+                entry = quickfix.members_of(quickfix.entry_of(member))
+                if entry:
+                    found[(*path, member.name)] = entry[0].name
         return found
 
     def into_dict(self) -> dict[str, Any]:
-        """The record as its file holds it."""
+        """The record as its file holds it.
+
+        The declaration is a `Field`, so its document is the one every other
+        declaration in this package writes -- a struct with its members, a
+        list with its item -- and a component file reads like a contract file
+        because it is one.
+        """
         return _document(
             {
                 "name": self.name,
-                "msg_type": self.msg_type,
                 "versions": list(self.versions),
                 "aliases": [alias.into_dict() for alias in self.aliases],
-                "members": [member.into_dict() for member in self.members],
+                "declaration": self.declaration.into_dict(),
             }
         )
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
         """Build one record from its stored document."""
-        members = mapping.get("members", ())
-        if not isinstance(members, list | tuple):
-            raise TypeError("a FIX component record's members must be a sequence")
+        declared = mapping.get("declaration")
+        if not isinstance(declared, Mapping):
+            raise TypeError("a FIX component record's declaration must be a document")
         return cls(
             name=str(mapping.get("name") or ""),
             versions=tuple(str(version) for version in mapping.get("versions") or ()),
-            members=tuple(SpecMember.from_dict(member) for member in members),
-            msg_type=str(mapping.get("msg_type") or ""),
+            declaration=Field.from_dict(declared),
             aliases=_aliases_of(mapping.get("aliases")),
         )
 
     @classmethod
-    def from_components(cls, declared: Sequence[SpecComponent], versions: Sequence[str]) -> Self:
+    def from_components(cls, declared: Sequence[Field], versions: Sequence[str]) -> Self:
         """One record out of the same component read from several versions.
 
         `declared` and `versions` run **oldest first** together, so the newest
@@ -619,22 +642,27 @@ class ComponentEntry(Convertible):
         return cls(
             name=latest.name,
             versions=tuple(versions),
-            members=latest.members,
-            msg_type=latest.msg_type,
+            declaration=latest,
         )
 
 
 def _component_fields(
-    members: Sequence[SpecMember],
+    declared: Field,
     types: Mapping[str, Any],
     components: Mapping[str, ComponentEntry],
     seen: frozenset[str],
 ) -> list[Field]:
-    """One level of a component tree as Arrow fields, `required` and all."""
+    """One level of a declaration as Arrow fields, `required` and all.
+
+    The Arrow projection is where a reference *is* expanded: its fields
+    arrive inline on the wire, so that is where they belong in a column. The
+    stored declaration keeps the reference, because expanding it there turns
+    three thousand members into a hundred and twenty thousand.
+    """
     built: list[Field] = []
-    for member in members:
-        if isinstance(member, SpecGroup):
-            item = _component_fields(member.members, types, components, seen)
+    for member in quickfix.members_of(declared):
+        if quickfix.is_group(member):
+            item = _component_fields(quickfix.entry_of(member), types, components, seen)
             built.append(
                 Field(
                     name=snake_of(member.name),
@@ -645,23 +673,22 @@ def _component_fields(
                             nullable=False,
                         )
                     ),
-                    nullable=not member.required,
+                    nullable=member.nullable is not False,
                     metadata={"fix:name": member.name},
                 )
             )
-        elif isinstance(member, SpecComponentRef):
+        elif quickfix.is_reference(member):
             key = fold(member.name)
             nested = components.get(key)
             if nested is None or key in seen:
                 continue
-            built.extend(_component_fields(nested.members, types, components, seen | {key}))
+            built.extend(_component_fields(nested.declaration, types, components, seen | {key}))
         else:
-            dtype = types.get(member.name) or pyarrow.string()
             built.append(
                 Field(
                     name=snake_of(member.name),
-                    dtype=dtype,
-                    nullable=not member.required,
+                    dtype=types.get(member.name) or pyarrow.string(),
+                    nullable=member.nullable is not False,
                     metadata={"fix:name": member.name},
                 )
             )
@@ -772,17 +799,6 @@ def _enum_value(enum_type: Any, value: Any) -> Any:
 def _enum_document(mapping: Mapping[str, Any]) -> dict[str, dict[str, str | int]]:
     """Enum mappings with a readable name and stable integer id."""
     return {str(key): {"name": value.name, "id": int(value)} for key, value in mapping.items()}
-
-
-def _walk(
-    members: Iterable[SpecMember], path: tuple[str, ...]
-) -> Iterator[tuple[SpecMember, tuple[str, ...]]]:
-    """Every member under `members`, with the groups it sits inside."""
-    for member in members:
-        yield member, path
-        nested = getattr(member, "members", ())
-        if nested:
-            yield from _walk(nested, (*path, member.name))
 
 
 def _json(value: Any) -> str:

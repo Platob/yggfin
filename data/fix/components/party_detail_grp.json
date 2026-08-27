@@ -3,59 +3,94 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyDetails",
-   "required": false,
-   "tag": 1671,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartyDetailID",
-     "required": false,
-     "tag": 1691
+ "declaration": {
+  "name": "PartyDetailGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPartyDetails",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1671"
     },
-    {
-     "kind": "field",
-     "name": "PartyDetailIDSource",
-     "required": false,
-     "tag": 1692
-    },
-    {
-     "kind": "field",
-     "name": "PartyDetailRole",
-     "required": false,
-     "tag": 1693
-    },
-    {
-     "kind": "field",
-     "name": "PartyDetailRoleQualifier",
-     "required": false,
-     "tag": 1674
-    },
-    {
-     "kind": "component",
-     "name": "PartyDetailSubGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PartyDetailAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedPartyDetailGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PartyDetailStatus",
-     "required": false,
-     "tag": 1672
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1691"
+       }
+      },
+      {
+       "name": "PartyDetailIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1692"
+       }
+      },
+      {
+       "name": "PartyDetailRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1693"
+       }
+      },
+      {
+       "name": "PartyDetailRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1674"
+       }
+      },
+      {
+       "name": "PartyDetailSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailSubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PartyDetailAltIDGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailAltIDGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedPartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedPartyDetailGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PartyDetailStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1672"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

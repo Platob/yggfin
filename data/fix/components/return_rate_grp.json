@@ -3,184 +3,263 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRates",
-   "required": false,
-   "tag": 42735,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRatePriceSequence",
-     "required": false,
-     "tag": 42736
+ "declaration": {
+  "name": "ReturnRateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42735"
     },
-    {
-     "kind": "field",
-     "name": "ReturnRateCommissionBasis",
-     "required": false,
-     "tag": 42737
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateCommissionAmount",
-     "required": false,
-     "tag": 42738
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateCommissionCurrency",
-     "required": false,
-     "tag": 42739
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateTotalCommissionPerTrade",
-     "required": false,
-     "tag": 42740
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateDeterminationMethod",
-     "required": false,
-     "tag": 42741
-    },
-    {
-     "kind": "component",
-     "name": "ReturnRatePriceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ReturnRateFXConversionGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateAmountRelativeTo",
-     "required": false,
-     "tag": 42742
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteMeasureType",
-     "required": false,
-     "tag": 42743
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteUnits",
-     "required": false,
-     "tag": 42744
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteMethod",
-     "required": false,
-     "tag": 42745
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteCurrency",
-     "required": false,
-     "tag": 42746
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteCurrencyType",
-     "required": false,
-     "tag": 42747
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteTimeType",
-     "required": false,
-     "tag": 42748
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteTime",
-     "required": false,
-     "tag": 42749
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteDate",
-     "required": false,
-     "tag": 42750
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteExpirationTime",
-     "required": false,
-     "tag": 42751
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteBusinessCenter",
-     "required": false,
-     "tag": 42752
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuoteExchange",
-     "required": false,
-     "tag": 42753
-    },
-    {
-     "kind": "component",
-     "name": "ReturnRateInformationSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateQuotePricingModel",
-     "required": false,
-     "tag": 42754
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateCashFlowType",
-     "required": false,
-     "tag": 42755
-    },
-    {
-     "kind": "component",
-     "name": "ReturnRateDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationTimeType",
-     "required": false,
-     "tag": 42756
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationTime",
-     "required": false,
-     "tag": 42757
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationTimeBusinessCenter",
-     "required": false,
-     "tag": 42758
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationPriceOption",
-     "required": false,
-     "tag": 42759
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateFinalPriceFallback",
-     "required": false,
-     "tag": 42760
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRatePriceSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42736"
+       }
+      },
+      {
+       "name": "ReturnRateCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42737"
+       }
+      },
+      {
+       "name": "ReturnRateCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42738"
+       }
+      },
+      {
+       "name": "ReturnRateCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42739"
+       }
+      },
+      {
+       "name": "ReturnRateTotalCommissionPerTrade",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42740"
+       }
+      },
+      {
+       "name": "ReturnRateDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42741"
+       }
+      },
+      {
+       "name": "ReturnRatePriceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRatePriceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ReturnRateFXConversionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRateFXConversionGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ReturnRateAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42742"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteMeasureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42743"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42744"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42745"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42746"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteCurrencyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42747"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42748"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42749"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42750"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteExpirationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42751"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42752"
+       }
+      },
+      {
+       "name": "ReturnRateQuoteExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42753"
+       }
+      },
+      {
+       "name": "ReturnRateInformationSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRateInformationSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ReturnRateQuotePricingModel",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42754"
+       }
+      },
+      {
+       "name": "ReturnRateCashFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42755"
+       }
+      },
+      {
+       "name": "ReturnRateDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRateDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ReturnRateValuationTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42756"
+       }
+      },
+      {
+       "name": "ReturnRateValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42757"
+       }
+      },
+      {
+       "name": "ReturnRateValuationTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42758"
+       }
+      },
+      {
+       "name": "ReturnRateValuationPriceOption",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42759"
+       }
+      },
+      {
+       "name": "ReturnRateFinalPriceFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42760"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

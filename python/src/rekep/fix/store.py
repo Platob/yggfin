@@ -45,7 +45,7 @@ from rekep.fix.entries import (
     newest_rank,
     slug_of,
 )
-from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecMember
+from rekep.fix.quickfix import is_reference, walk
 from rekep.require import require
 from rekep.urls import LOCAL, Url
 
@@ -636,7 +636,7 @@ class ShardedLayout:
         # offline registry to the network for a version it already holds.
         return [] if self.stored(version) else None
 
-    def components(self, version: str) -> list[SpecComponent] | None:
+    def components(self, version: str) -> list[Field] | None:
         """What it takes to read one version's components, by name; None when it has none.
 
         The components that version declares, *and* the ones their trees
@@ -699,7 +699,7 @@ class ShardedLayout:
         version: str,
         fields: Sequence[Field],
         session: Sequence[tuple[str, bool]] = (),
-        components: Sequence[SpecComponent] | None = None,
+        components: Sequence[Field] | None = None,
         url: str = "",
     ) -> None:
         """Fold one whole version into the records already stored.
@@ -735,7 +735,7 @@ class ShardedLayout:
         self.store_stored(version)
         self.store_session(version, session)
 
-    def _store_components(self, version: str, components: Sequence[SpecComponent]) -> None:
+    def _store_components(self, version: str, components: Sequence[Field]) -> None:
         """Fold one version's component declarations into the records."""
         declared = {found.name for found in components}
         for found in components:
@@ -833,9 +833,7 @@ def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEnt
     )
 
 
-def fold_component(
-    held: ComponentEntry | None, declared: SpecComponent, version: str
-) -> ComponentEntry:
+def fold_component(held: ComponentEntry | None, declared: Field, version: str) -> ComponentEntry:
     """One version's component folded into the record that owns it."""
     fresh = ComponentEntry.from_components([declared], [version])
     if held is None:
@@ -1014,7 +1012,7 @@ class ConflictReport(Convertible):
 def collapse(
     order: Sequence[str],
     fields: Mapping[str, Sequence[Field]],
-    components: Mapping[str, Sequence[SpecComponent]],
+    components: Mapping[str, Sequence[Field]],
 ) -> tuple[dict[int | str, FieldEntry], dict[str, ComponentEntry], ConflictReport]:
     """Per-version declarations as cross-version records, and what that cost.
 
@@ -1063,7 +1061,7 @@ def collapse(
         defaults = {code: state for code, state in mapping.items() if code in declared}
         entries[tag] = dataclasses.replace(entry, states={**defaults, **entry.states})
 
-    component_readings: dict[str, list[tuple[str, SpecComponent]]] = {}
+    component_readings: dict[str, list[tuple[str, Field]]] = {}
     for version in order:
         for declared in components.get(version, ()):
             component_readings.setdefault(slug_of(declared.name), []).append((version, declared))
@@ -1145,16 +1143,14 @@ def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentEntr
         if entry is None:
             continue
         pending.extend(
-            fold(member.name)
-            for member in _members_of(entry.members)
-            if isinstance(member, SpecComponentRef)
+            fold(member.name) for member, _ in walk(entry.declaration) if is_reference(member)
         )
     return found
 
 
 def _component_collapses(
     entry: ComponentEntry,
-    found: Sequence[tuple[str, SpecComponent]],
+    found: Sequence[tuple[str, Field]],
     by_name: Mapping[str, ComponentEntry],
 ) -> list[Collapse]:
     """Members an older version declared that the newest tree no longer reaches.
@@ -1163,33 +1159,26 @@ def _component_collapses(
     component is still read, and reporting it as dropped would send a reader
     looking for a loss that is not there.
     """
-    kept = _reachable(entry.members, by_name)
+    kept = _reachable(entry.declaration, by_name)
     dropped = tuple(
         Dropped(version, name)
         for version, declared in found
-        for name in sorted(_reachable(declared.members, by_name) - kept)
+        for name in sorted(_reachable(declared, by_name) - kept)
     )
     return [Collapse(entry.name, MEMBERS, entry.newest, dropped)] if dropped else []
 
 
-def _reachable(members: Sequence[SpecMember], by_name: Mapping[str, ComponentEntry]) -> set[str]:
+def _reachable(declared: Field, by_name: Mapping[str, ComponentEntry]) -> set[str]:
     """Every member name one tree reads, following the components it references."""
-    found = {member.name for member in _members_of(members)}
+    found = {member.name for member, _ in walk(declared)}
     for key in component_closure(
-        (fold(one.name) for one in _members_of(members) if isinstance(one, SpecComponentRef)),
+        (fold(member.name) for member, _ in walk(declared) if is_reference(member)),
         by_name,
     ):
         entry = by_name.get(key)
         if entry is not None:
-            found.update(member.name for member in _members_of(entry.members))
+            found.update(member.name for member, _ in walk(entry.declaration))
     return found
-
-
-def _members_of(members: Sequence[SpecMember]) -> Iterable[SpecMember]:
-    """Every member under `members`, however deeply a group nests it."""
-    for member in members:
-        yield member
-        yield from _members_of(getattr(member, "members", ()))
 
 
 def _aliased(

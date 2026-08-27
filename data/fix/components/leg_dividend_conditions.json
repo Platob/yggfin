@@ -3,146 +3,210 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegDividendReinvestmentIndicator",
-   "required": false,
-   "tag": 42337
+ "declaration": {
+  "name": "LegDividendConditions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDividendConditions"
   },
-  {
-   "kind": "field",
-   "name": "LegDividendEntitlementEvent",
-   "required": false,
-   "tag": 42338
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAmountType",
-   "required": false,
-   "tag": 42339
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendUnderlierRefID",
-   "required": false,
-   "tag": 42340
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendPeriodGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegExtraordinaryDividendPartySide",
-   "required": false,
-   "tag": 42341
-  },
-  {
-   "kind": "field",
-   "name": "LegExtraordinaryDividendAmountType",
-   "required": false,
-   "tag": 42342
-  },
-  {
-   "kind": "field",
-   "name": "LegExtraordinaryDividendCurrency",
-   "required": false,
-   "tag": 42343
-  },
-  {
-   "kind": "field",
-   "name": "LegExtraordinaryDividendDeterminationMethod",
-   "required": false,
-   "tag": 42344
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendFXTriggerDate",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendAccrualFloatingRate",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualFixedRate",
-   "required": false,
-   "tag": 42345
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendAccrualPaymentDate",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCompoundingMethod",
-   "required": false,
-   "tag": 42346
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendNumOfIndexUnits",
-   "required": false,
-   "tag": 42347
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCashPercentage",
-   "required": false,
-   "tag": 42348
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCashEquivalentPercentage",
-   "required": false,
-   "tag": 42349
-  },
-  {
-   "kind": "field",
-   "name": "LegNonCashDividendTreatment",
-   "required": false,
-   "tag": 42350
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendComposition",
-   "required": false,
-   "tag": 42351
-  },
-  {
-   "kind": "field",
-   "name": "LegSpecialDividendsIndicator",
-   "required": false,
-   "tag": 42352
-  },
-  {
-   "kind": "field",
-   "name": "LegMaterialDividendsIndicator",
-   "required": false,
-   "tag": 42353
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionsExchangeDividendsIndicator",
-   "required": false,
-   "tag": 42354
-  },
-  {
-   "kind": "field",
-   "name": "LegAdditionalDividendsIndicator",
-   "required": false,
-   "tag": 42355
-  },
-  {
-   "kind": "field",
-   "name": "LegAllDividendsIndicator",
-   "required": false,
-   "tag": 42356
-  }
- ]
+  "fields": [
+   {
+    "name": "LegDividendReinvestmentIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42337"
+    }
+   },
+   {
+    "name": "LegDividendEntitlementEvent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42338"
+    }
+   },
+   {
+    "name": "LegDividendAmountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42339"
+    }
+   },
+   {
+    "name": "LegDividendUnderlierRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42340"
+    }
+   },
+   {
+    "name": "LegDividendPeriodGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendPeriodGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegExtraordinaryDividendPartySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42341"
+    }
+   },
+   {
+    "name": "LegExtraordinaryDividendAmountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42342"
+    }
+   },
+   {
+    "name": "LegExtraordinaryDividendCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42343"
+    }
+   },
+   {
+    "name": "LegExtraordinaryDividendDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42344"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendFXTriggerDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDividendAccrualFloatingRate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendAccrualFloatingRate"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDividendAccrualFixedRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42345"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendAccrualPaymentDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDividendCompoundingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42346"
+    }
+   },
+   {
+    "name": "LegDividendNumOfIndexUnits",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42347"
+    }
+   },
+   {
+    "name": "LegDividendCashPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42348"
+    }
+   },
+   {
+    "name": "LegDividendCashEquivalentPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42349"
+    }
+   },
+   {
+    "name": "LegNonCashDividendTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42350"
+    }
+   },
+   {
+    "name": "LegDividendComposition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42351"
+    }
+   },
+   {
+    "name": "LegSpecialDividendsIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42352"
+    }
+   },
+   {
+    "name": "LegMaterialDividendsIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42353"
+    }
+   },
+   {
+    "name": "LegOptionsExchangeDividendsIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42354"
+    }
+   },
+   {
+    "name": "LegAdditionalDividendsIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42355"
+    }
+   },
+   {
+    "name": "LegAllDividendsIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42356"
+    }
+   }
+  ]
+ }
 }

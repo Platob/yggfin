@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingOptionExerciseDates",
-   "required": false,
-   "tag": 41841,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseDate",
-     "required": false,
-     "tag": 41842
+ "declaration": {
+  "name": "UnderlyingOptionExerciseDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingOptionExerciseDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingOptionExerciseDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41841"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseDateType",
-     "required": false,
-     "tag": 41843
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingOptionExerciseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41842"
+       }
+      },
+      {
+       "name": "UnderlyingOptionExerciseDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41843"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

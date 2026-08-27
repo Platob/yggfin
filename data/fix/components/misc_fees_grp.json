@@ -6,67 +6,100 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMiscFees",
-   "required": false,
-   "tag": 136,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MiscFeeAmt",
-     "required": false,
-     "tag": 137
+ "declaration": {
+  "name": "MiscFeesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MiscFeesGrp"
+  },
+  "fields": [
+   {
+    "name": "NoMiscFees",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "136"
     },
-    {
-     "kind": "field",
-     "name": "MiscFeeCurr",
-     "required": false,
-     "tag": 138
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeType",
-     "required": false,
-     "tag": 139
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeQualifier",
-     "required": false,
-     "tag": 2712
-    },
-    {
-     "kind": "component",
-     "name": "MiscFeesSubGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeBasis",
-     "required": false,
-     "tag": 891
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeRate",
-     "required": false,
-     "tag": 2216
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeAmountDue",
-     "required": false,
-     "tag": 2217
-    },
-    {
-     "kind": "field",
-     "name": "MiscFeeDesc",
-     "required": false,
-     "tag": 2713
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MiscFeeAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "137"
+       }
+      },
+      {
+       "name": "MiscFeeCurr",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "138"
+       }
+      },
+      {
+       "name": "MiscFeeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "139"
+       }
+      },
+      {
+       "name": "MiscFeeQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2712"
+       }
+      },
+      {
+       "name": "MiscFeesSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MiscFeesSubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "MiscFeeBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "891"
+       }
+      },
+      {
+       "name": "MiscFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2216"
+       }
+      },
+      {
+       "name": "MiscFeeAmountDue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2217"
+       }
+      },
+      {
+       "name": "MiscFeeDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2713"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

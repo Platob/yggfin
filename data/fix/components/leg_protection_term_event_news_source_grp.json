@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegProtectionTermEventNewsSources",
-   "required": false,
-   "tag": 41614,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProtectionTermEventNewsSource",
-     "required": false,
-     "tag": 41615
+ "declaration": {
+  "name": "LegProtectionTermEventNewsSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProtectionTermEventNewsSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegProtectionTermEventNewsSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41614"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProtectionTermEventNewsSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41615"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

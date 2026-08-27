@@ -3,74 +3,107 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMatchExceptions",
-   "required": false,
-   "tag": 2772,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MatchExceptionType",
-     "required": false,
-     "tag": 2773
+ "declaration": {
+  "name": "MatchExceptionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MatchExceptionGrp"
+  },
+  "fields": [
+   {
+    "name": "NoMatchExceptions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2772"
     },
-    {
-     "kind": "field",
-     "name": "MatchExceptionElementType",
-     "required": false,
-     "tag": 2774
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionElementName",
-     "required": false,
-     "tag": 2775
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionAllocValue",
-     "required": false,
-     "tag": 2776
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionConfirmValue",
-     "required": false,
-     "tag": 2777
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionToleranceValue",
-     "required": false,
-     "tag": 2778
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionToleranceValueType",
-     "required": false,
-     "tag": 2779
-    },
-    {
-     "kind": "field",
-     "name": "MatchExceptionText",
-     "required": false,
-     "tag": 2780
-    },
-    {
-     "kind": "field",
-     "name": "EncodedMatchExceptionTextLen",
-     "required": false,
-     "tag": 2797
-    },
-    {
-     "kind": "field",
-     "name": "EncodedMatchExceptionText",
-     "required": false,
-     "tag": 2798
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchExceptionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2773"
+       }
+      },
+      {
+       "name": "MatchExceptionElementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2774"
+       }
+      },
+      {
+       "name": "MatchExceptionElementName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2775"
+       }
+      },
+      {
+       "name": "MatchExceptionAllocValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2776"
+       }
+      },
+      {
+       "name": "MatchExceptionConfirmValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2777"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2778"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2779"
+       }
+      },
+      {
+       "name": "MatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2780"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2797"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2798"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

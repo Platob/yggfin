@@ -3,185 +3,276 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegStreams",
-   "required": false,
-   "tag": 40241,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStreamType",
-     "required": false,
-     "tag": 40242
+ "declaration": {
+  "name": "LegStreamGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStreamGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegStreams",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40241"
     },
-    {
-     "kind": "field",
-     "name": "LegStreamXID",
-     "required": false,
-     "tag": 41700
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamDesc",
-     "required": false,
-     "tag": 40243
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamVersion",
-     "required": false,
-     "tag": 42583
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamVersionEffectiveDate",
-     "required": false,
-     "tag": 42584
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamPaySide",
-     "required": false,
-     "tag": 40244
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamReceiveSide",
-     "required": false,
-     "tag": 40245
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalXIDRef",
-     "required": false,
-     "tag": 41702
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotional",
-     "required": false,
-     "tag": 40246
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCurrency",
-     "required": false,
-     "tag": 40247
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalDeterminationMethod",
-     "required": false,
-     "tag": 42585
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalAdjustments",
-     "required": false,
-     "tag": 42586
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalFrequencyPeriod",
-     "required": false,
-     "tag": 41703
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalFrequencyUnit",
-     "required": false,
-     "tag": 41704
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalCommodityFrequency",
-     "required": false,
-     "tag": 41705
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamNotionalUnitOfMeasure",
-     "required": false,
-     "tag": 41706
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamTotalNotional",
-     "required": false,
-     "tag": 41707
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamTotalNotionalUnitOfMeasure",
-     "required": false,
-     "tag": 41708
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommodity",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamEffectiveDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamTerminationDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCalculationPeriodDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStream",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentScheduleGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStubGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegDeliveryStream",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegDeliveryScheduleGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamText",
-     "required": false,
-     "tag": 40248
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegStreamTextLen",
-     "required": false,
-     "tag": 40978
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegStreamText",
-     "required": false,
-     "tag": 40979
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40242"
+       }
+      },
+      {
+       "name": "LegStreamXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41700"
+       }
+      },
+      {
+       "name": "LegStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40243"
+       }
+      },
+      {
+       "name": "LegStreamVersion",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42583"
+       }
+      },
+      {
+       "name": "LegStreamVersionEffectiveDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42584"
+       }
+      },
+      {
+       "name": "LegStreamPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40244"
+       }
+      },
+      {
+       "name": "LegStreamReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40245"
+       }
+      },
+      {
+       "name": "LegStreamNotionalXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41702"
+       }
+      },
+      {
+       "name": "LegStreamNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40246"
+       }
+      },
+      {
+       "name": "LegStreamCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40247"
+       }
+      },
+      {
+       "name": "LegStreamNotionalDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42585"
+       }
+      },
+      {
+       "name": "LegStreamNotionalAdjustments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42586"
+       }
+      },
+      {
+       "name": "LegStreamNotionalFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41703"
+       }
+      },
+      {
+       "name": "LegStreamNotionalFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41704"
+       }
+      },
+      {
+       "name": "LegStreamNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41705"
+       }
+      },
+      {
+       "name": "LegStreamNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41706"
+       }
+      },
+      {
+       "name": "LegStreamTotalNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41707"
+       }
+      },
+      {
+       "name": "LegStreamTotalNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41708"
+       }
+      },
+      {
+       "name": "LegStreamCommodity",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamCommodity"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegStreamEffectiveDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamEffectiveDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegStreamTerminationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamTerminationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegStreamCalculationPeriodDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamCalculationPeriodDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPaymentStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPaymentStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPaymentScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPaymentScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPaymentStubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPaymentStubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegDeliveryStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegDeliveryStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegDeliveryScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegDeliveryScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40248"
+       }
+      },
+      {
+       "name": "EncodedLegStreamTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40978"
+       }
+      },
+      {
+       "name": "EncodedLegStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40979"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

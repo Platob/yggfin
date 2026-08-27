@@ -4,26 +4,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingLegSecurityAltID",
-   "required": false,
-   "tag": 1334,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityAltID",
-     "required": false,
-     "tag": 1335
+ "declaration": {
+  "name": "UnderlyingLegSecurityAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingLegSecurityAltIDGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingLegSecurityAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1334"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityAltIDSource",
-     "required": false,
-     "tag": 1336
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingLegSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1335"
+       }
+      },
+      {
+       "name": "UnderlyingLegSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1336"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

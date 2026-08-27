@@ -19,6 +19,7 @@ import os
 import re
 import socket
 import time
+import typing
 import urllib.request
 import zipfile
 from collections.abc import Mapping
@@ -41,7 +42,7 @@ from rekep.fix.entries import (
     values_of,
 )
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member, members_of
 from rekep.fix.registry import FixRegistry, _problems
 from rekep.fix.store import (
     NAMED_FILE,
@@ -131,13 +132,13 @@ def store(tmp_path: Path) -> Offline:
         [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
         session=(("FakeRole", True),),
         components=[
-            SpecComponent(
+            block(
                 "FakeParties",
-                (
-                    SpecGroup(
-                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
-                    ),
-                ),
+                [
+                    group_member(
+                        "NoFakeParties", 90003, [field_member("FakeRole", 90001, required=True)]
+                    )
+                ],
             )
         ],
     )
@@ -552,19 +553,19 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
     entry = ComponentEntry.from_components(
-        [SpecComponent("FakeInstrument", (SpecFieldRef("FakeCode", False, 90002),))], ["9.1"]
+        [block("FakeInstrument", [field_member("FakeCode", 90002)])], ["9.1"]
     )
     store.add_component(entry)
-    assert store.component("FakeInstrument", "9.1").members[0].tag == 90002
+    assert members_of(store.component("FakeInstrument", "9.1"))[0].fix.tag == 90002
     with pytest.raises(KeyError, match="already stored"):
         store.add_component(entry)
 
     store.update_component(
         ComponentEntry.from_components(
-            [SpecComponent("FakeInstrument", (SpecFieldRef("FakeRole", False, 90001),))], ["9.1"]
+            [block("FakeInstrument", [field_member("FakeRole", 90001)])], ["9.1"]
         )
     )
-    assert store.component("FakeInstrument", "9.1").members[0].tag == 90001
+    assert members_of(store.component("FakeInstrument", "9.1"))[0].fix.tag == 90001
 
     assert store.remove_component("FakeInstrument")
     assert not store.remove_component("FakeInstrument")
@@ -972,7 +973,7 @@ def test_malformed_registry_documents_never_leave_the_staging_directory(
     elif malformed == "field":
         documents[shard_name(90001)]["90001"]["versions"] = "9.1"
     else:
-        documents["components/fake_parties.json"]["members"] = "not-a-list"
+        documents["components/fake_parties.json"]["declaration"] = "not-a-document"
     target = tmp_path / malformed
     registry = FixRegistry(cache_dir=target, offline=True)
 
@@ -1161,7 +1162,7 @@ def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> 
     ], "every version the store holds, so none of it goes stale behind the others"
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
     assert reopened.field(90001, "9.1").fix.value_of("1").aliases == ("FAKE_ONE",)
-    assert reopened.component("FakeParties", "9.1").members[0].name == "NoFakeParties"
+    assert members_of(reopened.component("FakeParties", "9.1"))[0].name == "NoFakeParties"
 
 
 def test_a_refetch_that_fails_serves_the_local_copy_and_says_so(store: Offline) -> None:
@@ -1340,3 +1341,18 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
 
 def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:
     assert store.component_field("FakeParties", "9.0") is None
+    assert store.component_dataclass("FakeParties", "9.0") is None
+
+
+def test_a_component_materialises_as_a_class_the_declaration_wrote(store: Offline) -> None:
+    """No hand-written row class: the declaration already says every member."""
+    built = store.component_dataclass("FakeParties", "9.1")
+    optional, _ = typing.get_args(built.__annotations__["no_fake_parties"])
+    entry = typing.get_args(typing.get_args(optional)[0])[0]
+
+    assert built.__name__ == "FakeParties"
+    assert entry.__name__ == "NoFakeParties", "the entry is named after the group, not `Item`"
+    assert built(no_fake_parties=[entry(fake_role=7)]).into_dict() == {
+        "no_fake_parties": [{"fake_role": 7}]
+    }
+    assert built.into_field().dtype == store.component_field("FakeParties", "9.1").dtype

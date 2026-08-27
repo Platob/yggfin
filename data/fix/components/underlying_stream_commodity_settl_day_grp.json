@@ -3,31 +3,52 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingStreamCommoditySettlDays",
-   "required": false,
-   "tag": 41996,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCommoditySettlDay",
-     "required": false,
-     "tag": 41997
+ "declaration": {
+  "name": "UnderlyingStreamCommoditySettlDayGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStreamCommoditySettlDayGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingStreamCommoditySettlDays",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41996"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCommoditySettlTotalHours",
-     "required": false,
-     "tag": 41998
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingStreamCommoditySettlTimeGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCommoditySettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41997"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41998"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCommoditySettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

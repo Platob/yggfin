@@ -4,115 +4,171 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "component",
-   "name": "TickRules",
-   "required": false
+ "declaration": {
+  "name": "BaseTradingRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BaseTradingRules"
   },
-  {
-   "kind": "component",
-   "name": "LotTypeRules",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PriceLimits",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PriceRangeRuleGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "QuoteSizeRuleGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "ExpirationCycle",
-   "required": false,
-   "tag": 827
-  },
-  {
-   "kind": "field",
-   "name": "TradeVolType",
-   "required": false,
-   "tag": 1786
-  },
-  {
-   "kind": "field",
-   "name": "MinTradeVol",
-   "required": false,
-   "tag": 562
-  },
-  {
-   "kind": "field",
-   "name": "MaxTradeVol",
-   "required": false,
-   "tag": 1140
-  },
-  {
-   "kind": "field",
-   "name": "MaxPriceVariation",
-   "required": false,
-   "tag": 1143
-  },
-  {
-   "kind": "field",
-   "name": "ImpliedMarketIndicator",
-   "required": false,
-   "tag": 1144
-  },
-  {
-   "kind": "field",
-   "name": "TradingCurrency",
-   "required": false,
-   "tag": 1245
-  },
-  {
-   "kind": "field",
-   "name": "TradingCurrencyCodeSource",
-   "required": false,
-   "tag": 2934
-  },
-  {
-   "kind": "field",
-   "name": "RoundLot",
-   "required": false,
-   "tag": 561
-  },
-  {
-   "kind": "field",
-   "name": "MultilegModel",
-   "required": false,
-   "tag": 1377
-  },
-  {
-   "kind": "field",
-   "name": "MultilegPriceMethod",
-   "required": false,
-   "tag": 1378
-  },
-  {
-   "kind": "field",
-   "name": "PriceType",
-   "required": false,
-   "tag": 423
-  },
-  {
-   "kind": "field",
-   "name": "FastMarketPercentage",
-   "required": false,
-   "tag": 2557
-  },
-  {
-   "kind": "field",
-   "name": "QuoteSideIndicator",
-   "required": false,
-   "tag": 2559
-  }
- ]
+  "fields": [
+   {
+    "name": "TickRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TickRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "LotTypeRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LotTypeRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "PriceLimits",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PriceLimits"
+    },
+    "fields": []
+   },
+   {
+    "name": "PriceRangeRuleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PriceRangeRuleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "QuoteSizeRuleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuoteSizeRuleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExpirationCycle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "827"
+    }
+   },
+   {
+    "name": "TradeVolType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1786"
+    }
+   },
+   {
+    "name": "MinTradeVol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "562"
+    }
+   },
+   {
+    "name": "MaxTradeVol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1140"
+    }
+   },
+   {
+    "name": "MaxPriceVariation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1143"
+    }
+   },
+   {
+    "name": "ImpliedMarketIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1144"
+    }
+   },
+   {
+    "name": "TradingCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1245"
+    }
+   },
+   {
+    "name": "TradingCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2934"
+    }
+   },
+   {
+    "name": "RoundLot",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "561"
+    }
+   },
+   {
+    "name": "MultilegModel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1377"
+    }
+   },
+   {
+    "name": "MultilegPriceMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1378"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "FastMarketPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2557"
+    }
+   },
+   {
+    "name": "QuoteSideIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2559"
+    }
+   }
+  ]
+ }
 }

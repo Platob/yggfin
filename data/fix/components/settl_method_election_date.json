@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateUnadjusted",
-   "required": false,
-   "tag": 42777
+ "declaration": {
+  "name": "SettlMethodElectionDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlMethodElectionDate"
   },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateBusinessDayConvention",
-   "required": false,
-   "tag": 42778
-  },
-  {
-   "kind": "component",
-   "name": "SettlMethodElectionDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateRelativeTo",
-   "required": false,
-   "tag": 42779
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateOffsetPeriod",
-   "required": false,
-   "tag": 42780
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateOffsetUnit",
-   "required": false,
-   "tag": 42781
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateOffsetDayType",
-   "required": false,
-   "tag": 42782
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethodElectionDateAdjusted",
-   "required": false,
-   "tag": 42783
-  }
- ]
+  "fields": [
+   {
+    "name": "SettlMethodElectionDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42777"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42778"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlMethodElectionDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlMethodElectionDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42779"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42780"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42781"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42782"
+    }
+   },
+   {
+    "name": "SettlMethodElectionDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42783"
+    }
+   }
+  ]
+ }
 }

@@ -4,36 +4,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "component",
-   "name": "OrdTypeRules",
-   "required": false
+ "declaration": {
+  "name": "TradingSessionRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradingSessionRules"
   },
-  {
-   "kind": "component",
-   "name": "TimeInForceRules",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "ExecInstRules",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "AuctionTypeRuleGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "MatchRules",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "MarketDataFeedTypes",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "OrdTypeRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrdTypeRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "TimeInForceRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TimeInForceRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExecInstRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ExecInstRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "AuctionTypeRuleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AuctionTypeRuleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MatchRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MatchRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketDataFeedTypes",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketDataFeedTypes"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

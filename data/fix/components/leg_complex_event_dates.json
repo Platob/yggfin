@@ -3,31 +3,52 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegComplexEventDates",
-   "required": false,
-   "tag": 2250,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegComplexEventStartDate",
-     "required": false,
-     "tag": 2251
+ "declaration": {
+  "name": "LegComplexEventDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegComplexEventDates"
+  },
+  "fields": [
+   {
+    "name": "NoLegComplexEventDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2250"
     },
-    {
-     "kind": "field",
-     "name": "LegComplexEventEndDate",
-     "required": false,
-     "tag": 2252
-    },
-    {
-     "kind": "component",
-     "name": "LegComplexEventTimes",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2251"
+       }
+      },
+      {
+       "name": "LegComplexEventEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2252"
+       }
+      },
+      {
+       "name": "LegComplexEventTimes",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegComplexEventTimes"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentStreamFormulas",
-   "required": false,
-   "tag": 42485,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFormulaLength",
-     "required": false,
-     "tag": 43110
+ "declaration": {
+  "name": "LegPaymentStreamFormulaMathGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamFormulaMathGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentStreamFormulas",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42485"
     },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFormula",
-     "required": false,
-     "tag": 42486
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFormulaDesc",
-     "required": false,
-     "tag": 42487
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamFormulaLength",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43110"
+       }
+      },
+      {
+       "name": "LegPaymentStreamFormula",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42486"
+       }
+      },
+      {
+       "name": "LegPaymentStreamFormulaDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42487"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,97 +3,140 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegStreamCommoditySettlPeriods",
-   "required": false,
-   "tag": 41686,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlCountry",
-     "required": false,
-     "tag": 41687
+ "declaration": {
+  "name": "LegStreamCommoditySettlPeriodGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStreamCommoditySettlPeriodGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegStreamCommoditySettlPeriods",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41686"
     },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlTimeZone",
-     "required": false,
-     "tag": 41688
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlFlowType",
-     "required": false,
-     "tag": 41689
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodNotional",
-     "required": false,
-     "tag": 41690
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodNotionalUnitOfMeasure",
-     "required": false,
-     "tag": 41691
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
-     "required": false,
-     "tag": 41692
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
-     "required": false,
-     "tag": 41693
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodPrice",
-     "required": false,
-     "tag": 41694
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodPriceUnitOfMeasure",
-     "required": false,
-     "tag": 41695
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodPriceCurrency",
-     "required": false,
-     "tag": 41696
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlHolidaysProcessingInstruction",
-     "required": false,
-     "tag": 41697
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommoditySettlDayGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodXID",
-     "required": false,
-     "tag": 41698
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlPeriodXIDRef",
-     "required": false,
-     "tag": 41699
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCommoditySettlCountry",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41687"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlTimeZone",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41688"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41689"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41690"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41691"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41692"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41693"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41694"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodPriceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41695"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodPriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41696"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlHolidaysProcessingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41697"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamCommoditySettlDayGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41698"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41699"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

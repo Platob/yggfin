@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRatePrices",
-   "required": false,
-   "tag": 42765,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRatePriceBasis",
-     "required": false,
-     "tag": 42766
+ "declaration": {
+  "name": "ReturnRatePriceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRatePriceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRatePrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42765"
     },
-    {
-     "kind": "field",
-     "name": "ReturnRatePrice",
-     "required": false,
-     "tag": 42767
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRatePriceCurrency",
-     "required": false,
-     "tag": 42768
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRatePriceType",
-     "required": false,
-     "tag": 42769
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRatePriceBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42766"
+       }
+      },
+      {
+       "name": "ReturnRatePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42767"
+       }
+      },
+      {
+       "name": "ReturnRatePriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42768"
+       }
+      },
+      {
+       "name": "ReturnRatePriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42769"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

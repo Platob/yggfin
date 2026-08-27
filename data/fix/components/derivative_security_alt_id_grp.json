@@ -4,26 +4,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDerivativeSecurityAltID",
-   "required": false,
-   "tag": 1218,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityAltID",
-     "required": false,
-     "tag": 1219
+ "declaration": {
+  "name": "DerivativeSecurityAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeSecurityAltIDGrp"
+  },
+  "fields": [
+   {
+    "name": "NoDerivativeSecurityAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1218"
     },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityAltIDSource",
-     "required": false,
-     "tag": 1220
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1219"
+       }
+      },
+      {
+       "name": "DerivativeSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1220"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

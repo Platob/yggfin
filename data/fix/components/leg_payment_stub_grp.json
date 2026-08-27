@@ -3,198 +3,277 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentStubs",
-   "required": false,
-   "tag": 40418,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStubType",
-     "required": false,
-     "tag": 40419
+ "declaration": {
+  "name": "LegPaymentStubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStubGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentStubs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40418"
     },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubLength",
-     "required": false,
-     "tag": 40420
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStubStartDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStubEndDate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubRate",
-     "required": false,
-     "tag": 40421
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubFixedAmount",
-     "required": false,
-     "tag": 40422
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubFixedCurrency",
-     "required": false,
-     "tag": 40423
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex",
-     "required": false,
-     "tag": 40424
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexSource",
-     "required": false,
-     "tag": 40425
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexCurvePeriod",
-     "required": false,
-     "tag": 40426
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexCurveUnit",
-     "required": false,
-     "tag": 40427
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexRateMultiplier",
-     "required": false,
-     "tag": 40428
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexRateSpread",
-     "required": false,
-     "tag": 40429
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexRateSpreadPositionType",
-     "required": false,
-     "tag": 40430
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexRateTreatment",
-     "required": false,
-     "tag": 40431
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexCapRate",
-     "required": false,
-     "tag": 40432
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexCapRateBuySide",
-     "required": false,
-     "tag": 40433
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexCapRateSellSide",
-     "required": false,
-     "tag": 40434
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexFloorRate",
-     "required": false,
-     "tag": 40435
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexFloorRateBuySide",
-     "required": false,
-     "tag": 40436
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndexFloorRateSellSide",
-     "required": false,
-     "tag": 40437
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2",
-     "required": false,
-     "tag": 40438
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2Source",
-     "required": false,
-     "tag": 40439
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2CurvePeriod",
-     "required": false,
-     "tag": 40440
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2CurveUnit",
-     "required": false,
-     "tag": 40441
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2RateMultiplier",
-     "required": false,
-     "tag": 40442
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2RateSpread",
-     "required": false,
-     "tag": 40443
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2RateSpreadPositionType",
-     "required": false,
-     "tag": 40444
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2RateTreatment",
-     "required": false,
-     "tag": 40445
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2CapRate",
-     "required": false,
-     "tag": 40446
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubIndex2FloorRate",
-     "required": false,
-     "tag": 40447
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40419"
+       }
+      },
+      {
+       "name": "LegPaymentStubLength",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40420"
+       }
+      },
+      {
+       "name": "LegPaymentStubStartDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPaymentStubStartDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPaymentStubEndDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPaymentStubEndDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPaymentStubRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40421"
+       }
+      },
+      {
+       "name": "LegPaymentStubFixedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40422"
+       }
+      },
+      {
+       "name": "LegPaymentStubFixedCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40423"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40424"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40425"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexCurvePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40426"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexCurveUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40427"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexRateMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40428"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexRateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40429"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexRateSpreadPositionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40430"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexRateTreatment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40431"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexCapRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40432"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexCapRateBuySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40433"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexCapRateSellSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40434"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexFloorRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40435"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexFloorRateBuySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40436"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndexFloorRateSellSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40437"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40438"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2Source",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40439"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2CurvePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40440"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2CurveUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40441"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2RateMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40442"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2RateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40443"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2RateSpreadPositionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40444"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2RateTreatment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40445"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2CapRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40446"
+       }
+      },
+      {
+       "name": "LegPaymentStubIndex2FloorRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40447"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

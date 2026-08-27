@@ -3,24 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPriceMovements",
-   "required": false,
-   "tag": 1919,
-   "members": [
-    {
-     "kind": "component",
-     "name": "PriceMovementValueGrp",
-     "required": false
+ "declaration": {
+  "name": "PriceMovementGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PriceMovementGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPriceMovements",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1919"
     },
-    {
-     "kind": "component",
-     "name": "ClearingAccountTypeGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceMovementValueGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PriceMovementValueGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ClearingAccountTypeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ClearingAccountTypeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

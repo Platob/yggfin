@@ -31,6 +31,7 @@ from rekep.fix.publish import (
     missing_from,
     publish_builtin,
 )
+from rekep.fix.quickfix import members_of
 from rekep.fix.store import NAMED_FILE, SHARD_SPAN, ConflictReport, shard_name
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
@@ -198,14 +199,20 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
 
 
-def test_a_component_record_is_one_member_tree_and_its_versions() -> None:
-    """The same for a component: the newest tree, and who declares it."""
+def test_a_component_record_is_one_declaration_and_its_versions() -> None:
+    """The same for a component, and its declaration is a Field document: a
+    struct of members, a list where one of them repeats, and `fix` at every
+    level -- the shape every other declaration in this package is stored as."""
     parties = members("components")["parties"]
     assert parties["name"] == "Parties"
     assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
-    assert parties["members"][0]["name"] == "NoPartyIDs"
-    assert parties["members"][0]["tag"] == 453
-    assert "msg_type" not in parties, "a reusable block is not a message definition"
+    declared = parties["declaration"]
+    assert declared["type"] == "struct" and declared["fix"] == {"component": "Parties"}
+    assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
+    group = declared["fields"][0]
+    assert group["name"] == "NoPartyIDs"
+    assert group["type"] == "list" and group["fix"]["tag"] == "453"
+    assert group["item"]["fields"][0]["name"] == "PartyID"
 
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
@@ -330,7 +337,7 @@ def test_a_projection_is_a_small_exact_offline_registry(
     # of the remainder is component declarations: those travel whole rather than being
     # selected with the fields, because a component says where a repeating
     # group starts and ends and a tree missing members would end it elsewhere.
-    assert target.stat().st_size < DATA.stat().st_size * 56 // 100
+    assert target.stat().st_size < DATA.stat().st_size * 60 // 100
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
     assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"
@@ -436,8 +443,8 @@ def test_the_builtin_projection_carries_the_component_declarations(
     builtin = FixRegistry.from_builtin()
     parties = builtin.component("Parties", "4.4")
     assert parties.name == "Parties"
-    assert [member.name for member in parties.members] == ["NoPartyIDs"]
-    assert parties.members[0].tag == 453
+    assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
+    assert members_of(parties)[0].fix.tag == 453
     for version in registry.versions:
         assert builtin.components_available(version), version
         assert builtin.components(version) == registry.components(version), version

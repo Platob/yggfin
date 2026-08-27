@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPaymentBusinessCenters",
-   "required": false,
-   "tag": 40944,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentBusinessCenter",
-     "required": false,
-     "tag": 40221
+ "declaration": {
+  "name": "PaymentBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPaymentBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40944"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40221"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

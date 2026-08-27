@@ -3,31 +3,52 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyDetailAltID",
-   "required": false,
-   "tag": 1516,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartyDetailAltID",
-     "required": false,
-     "tag": 1517
+ "declaration": {
+  "name": "PartyDetailAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailAltIDGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPartyDetailAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1516"
     },
-    {
-     "kind": "field",
-     "name": "PartyDetailAltIDSource",
-     "required": false,
-     "tag": 1518
-    },
-    {
-     "kind": "component",
-     "name": "PartyDetailAltSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1517"
+       }
+      },
+      {
+       "name": "PartyDetailAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1518"
+       }
+      },
+      {
+       "name": "PartyDetailAltSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailAltSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

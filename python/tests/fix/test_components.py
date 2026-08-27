@@ -22,7 +22,7 @@ from rekep.fix.components import (
     TrdRegTimestamp,
     TrdRegTimestamps,
 )
-from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member, reference_member
 
 
 def _tags(*rows: object) -> pyarrow.Array:
@@ -56,29 +56,27 @@ def _pairs(cell: object) -> list[tuple[object, object]] | None:
 #: the `PtysSubGrp` component the newest versions reference inlined where the
 #: extractor would resolve it. Every test below is handed this, because the
 #: extraction is declaration-driven and there is no other source for one.
-PARTIES_SPEC = SpecComponent(
+PARTIES_SPEC = block(
     "Parties",
-    (
-        SpecGroup(
+    [
+        group_member(
             "NoPartyIDs",
-            False,
             453,
-            (
-                SpecFieldRef("PartyID", False, 448),
-                SpecFieldRef("PartyIDSource", False, 447),
-                SpecFieldRef("PartyRole", False, 452),
-                SpecGroup(
+            [
+                field_member("PartyID", 448),
+                field_member("PartyIDSource", 447),
+                field_member("PartyRole", 452),
+                group_member(
                     "NoPartySubIDs",
-                    False,
                     802,
-                    (
-                        SpecFieldRef("PartySubID", False, 523),
-                        SpecFieldRef("PartySubIDType", False, 803),
-                    ),
+                    [
+                        field_member("PartySubID", 523),
+                        field_member("PartySubIDType", 803),
+                    ],
                 ),
-            ),
+            ],
         ),
-    ),
+    ],
 )
 
 
@@ -265,21 +263,20 @@ def test_nested_members_before_their_delimiter_stay_residual() -> None:
 
 
 def test_declarations_and_registry_names_extend_party_members() -> None:
-    component = SpecComponent(
+    component = block(
         "Parties",
-        (
-            SpecGroup(
+        [
+            group_member(
                 "NoPartyIDs",
-                False,
                 453,
-                (
-                    SpecFieldRef("PartyID", False, 448),
-                    SpecFieldRef("PartyIDSource", False, 447),
-                    SpecFieldRef("PartyRole", False, 452),
-                    SpecFieldRef("DeskCode", False, 9001),
-                ),
+                [
+                    field_member("PartyID", 448),
+                    field_member("PartyIDSource", 447),
+                    field_member("PartyRole", 452),
+                    field_member("DeskCode", 9001),
+                ],
             ),
-        ),
+        ],
     )
     source = _tags([(453, "1"), (448, "BUYSIDE"), (9002, "LDN"), (55, "TTF")])
 
@@ -356,21 +353,20 @@ def test_a_leading_plus_in_party_role_is_read_as_an_integer() -> None:
 
 
 def test_an_explicit_43_declaration_keeps_partysubid_flat() -> None:
-    component = SpecComponent(
+    component = block(
         "Parties",
-        (
-            SpecGroup(
+        [
+            group_member(
                 "NoPartyIDs",
-                False,
                 453,
-                (
-                    SpecFieldRef("PartyID", False, 448),
-                    SpecFieldRef("PartyIDSource", False, 447),
-                    SpecFieldRef("PartyRole", False, 452),
-                    SpecFieldRef("PartySubID", False, 523),
-                ),
+                [
+                    field_member("PartyID", 448),
+                    field_member("PartyIDSource", 447),
+                    field_member("PartyRole", 452),
+                    field_member("PartySubID", 523),
+                ],
             ),
-        ),
+        ],
     )
     source = _tags([(453, "1"), (448, "BUYSIDE"), (523, "SUB"), (802, "1"), (803, "2")])
 
@@ -381,7 +377,7 @@ def test_an_explicit_43_declaration_keeps_partysubid_flat() -> None:
 
 
 def test_unrelated_transport_components_do_not_disable_parties() -> None:
-    unrelated = SpecComponent("StandardHeader", (SpecFieldRef("BeginString", True, 8),))
+    unrelated = block("StandardHeader", [field_member("BeginString", 8, required=True)])
     parties, residual = Parties(components=[unrelated, PARTIES_SPEC]).into_arrow_arrays(
         _tags([(453, "1"), (448, "BUYSIDE"), (452, "1")])
     )
@@ -428,20 +424,19 @@ def test_a_slice_keeps_group_state_inside_each_message() -> None:
 # All four come out of the tree, so naming the component, its group and the
 # members that earn a column is the whole of what a second extractor is.
 
-TRD_REG_SPEC = SpecComponent(
+TRD_REG_SPEC = block(
     "TrdRegTimestamps",
-    (
-        SpecGroup(
+    [
+        group_member(
             "NoTrdRegTimestamps",
-            False,
             768,
-            (
-                SpecFieldRef("TrdRegTimestamp", False, 769),
-                SpecFieldRef("TrdRegTimestampType", False, 770),
-                SpecFieldRef("TrdRegTimestampOrigin", False, 771),
-            ),
+            [
+                field_member("TrdRegTimestamp", 769),
+                field_member("TrdRegTimestampType", 770),
+                field_member("TrdRegTimestampOrigin", 771),
+            ],
         ),
-    ),
+    ],
 )
 
 
@@ -494,19 +489,18 @@ def test_another_group_splits_exactly_as_parties_does() -> None:
 
 def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
     """The delimiter is read off the declaration, not named `PartyID` in code."""
-    reordered = SpecComponent(
+    reordered = block(
         "TrdRegTimestamps",
-        (
-            SpecGroup(
+        [
+            group_member(
                 "NoTrdRegTimestamps",
-                False,
                 768,
-                (
-                    SpecFieldRef("TrdRegTimestampType", False, 770),
-                    SpecFieldRef("TrdRegTimestamp", False, 769),
-                ),
+                [
+                    field_member("TrdRegTimestampType", 770),
+                    field_member("TrdRegTimestamp", 769),
+                ],
             ),
-        ),
+        ],
     )
     extractor = TrdRegTimestamps(components=[reordered])
     assert extractor._declaration[3] == {(): {770}}
@@ -615,54 +609,52 @@ def test_a_group_that_is_not_there_is_null_rather_than_empty() -> None:
 # members of their own, which must stay known members rather than break an
 # entry.
 
-SEC_ALT_SPEC = SpecComponent(
+SEC_ALT_SPEC = block(
     "SecAltIDGrp",
-    (
-        SpecGroup(
+    [
+        group_member(
             "NoSecurityAltID",
-            False,
             454,
-            (
-                SpecFieldRef("SecurityAltID", False, 455),
-                SpecFieldRef("SecurityAltIDSource", False, 456),
-            ),
+            [
+                field_member("SecurityAltID", 455),
+                field_member("SecurityAltIDSource", 456),
+            ],
         ),
-    ),
+    ],
 )
 
-INSTRUMENT_LEG_SPEC = SpecComponent(
+INSTRUMENT_LEG_SPEC = block(
     "InstrumentLeg",
-    (
-        SpecFieldRef("LegSymbol", False, 600),
-        SpecFieldRef("LegSecurityID", False, 602),
-        SpecFieldRef("LegSecurityIDSource", False, 603),
-        SpecFieldRef("LegCFICode", False, 608),
-        SpecFieldRef("LegMaturityDate", False, 611),
-        SpecFieldRef("LegStrikePrice", False, 612),
-        SpecFieldRef("LegCurrency", False, 556),
-        SpecFieldRef("LegSide", False, 624),
-        SpecFieldRef("LegRatioQty", False, 623),
-    ),
+    [
+        field_member("LegSymbol", 600),
+        field_member("LegSecurityID", 602),
+        field_member("LegSecurityIDSource", 603),
+        field_member("LegCFICode", 608),
+        field_member("LegMaturityDate", 611),
+        field_member("LegStrikePrice", 612),
+        field_member("LegCurrency", 556),
+        field_member("LegSide", 624),
+        field_member("LegRatioQty", 623),
+    ],
 )
 
-LEGS_SPEC = SpecComponent(
+LEGS_SPEC = block(
     "InstrmtLegGrp",
-    (SpecGroup("NoLegs", False, 555, (SpecComponentRef("InstrumentLeg", False),)),),
+    [group_member("NoLegs", 555, [reference_member("InstrumentLeg")])],
 )
 
-TRD_LEGS_SPEC = SpecComponent(
+TRD_LEGS_SPEC = block(
     "TrdInstrmtLegGrp",
-    (
-        SpecGroup(
+    [
+        group_member(
             "NoLegs",
-            False,
             555,
-            (
-                SpecComponentRef("InstrumentLeg", False),
-                SpecFieldRef("LegQty", False, 687),
-            ),
+            [
+                reference_member("InstrumentLeg"),
+                field_member("LegQty", 687),
+            ],
         ),
-    ),
+    ],
 )
 
 
@@ -818,27 +810,26 @@ def test_alt_ids_and_legs_run_in_sequence_over_one_message() -> None:
 # -- and the scoped extractors leave it residual for the per-entry readers,
 # where the regulatory components keep hoisting deliberately.
 
-MD_ENTRIES_SPEC = SpecComponent(
+MD_ENTRIES_SPEC = block(
     "MDIncGrp",
-    (
-        SpecGroup(
+    [
+        group_member(
             "NoMDEntries",
-            False,
             268,
-            (
-                SpecFieldRef("MDUpdateAction", False, 279),
-                SpecFieldRef("MDEntryType", False, 269),
-                SpecComponentRef("SecAltIDGrp", False),
-                SpecComponentRef("InstrmtLegGrp", False),
-                SpecFieldRef("MDEntryPx", False, 270),
-            ),
+            [
+                field_member("MDUpdateAction", 279),
+                field_member("MDEntryType", 269),
+                reference_member("SecAltIDGrp"),
+                reference_member("InstrmtLegGrp"),
+                field_member("MDEntryPx", 270),
+            ],
         ),
-    ),
+    ],
 )
 
-UNDERLYINGS_SPEC = SpecComponent(
+UNDERLYINGS_SPEC = block(
     "UndInstrmtGrp",
-    (SpecGroup("NoUnderlyings", False, 711, (SpecFieldRef("UnderlyingSymbol", False, 311),)),),
+    [group_member("NoUnderlyings", 711, [field_member("UnderlyingSymbol", 311)])],
 )
 
 

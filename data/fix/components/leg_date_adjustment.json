@@ -3,23 +3,39 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegBusinessDayConvention",
-   "required": false,
-   "tag": 40925
+ "declaration": {
+  "name": "LegDateAdjustment",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDateAdjustment"
   },
-  {
-   "kind": "component",
-   "name": "LegBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDateRollConvention",
-   "required": false,
-   "tag": 40926
-  }
- ]
+  "fields": [
+   {
+    "name": "LegBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40925"
+    }
+   },
+   {
+    "name": "LegBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDateRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40926"
+    }
+   }
+  ]
+ }
 }

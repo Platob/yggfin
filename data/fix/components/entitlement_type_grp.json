@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoEntitlementTypes",
-   "required": false,
-   "tag": 2345,
-   "members": [
-    {
-     "kind": "field",
-     "name": "EntitlementType",
-     "required": false,
-     "tag": 1775
+ "declaration": {
+  "name": "EntitlementTypeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "EntitlementTypeGrp"
+  },
+  "fields": [
+   {
+    "name": "NoEntitlementTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2345"
     },
-    {
-     "kind": "field",
-     "name": "EntitlementSubType",
-     "required": false,
-     "tag": 2402
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "EntitlementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1775"
+       }
+      },
+      {
+       "name": "EntitlementSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2402"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProvisionCashSettlPaymentDates",
-   "required": false,
-   "tag": 42099,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlPaymentDate",
-     "required": false,
-     "tag": 42100
+ "declaration": {
+  "name": "UnderlyingProvisionCashSettlPaymentFixedDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionCashSettlPaymentFixedDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProvisionCashSettlPaymentDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42099"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlPaymentDateType",
-     "required": false,
-     "tag": 42101
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42100"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42101"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

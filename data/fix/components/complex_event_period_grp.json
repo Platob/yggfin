@@ -3,41 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoComplexEventPeriods",
-   "required": false,
-   "tag": 41010,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ComplexEventPeriodType",
-     "required": false,
-     "tag": 41011
+ "declaration": {
+  "name": "ComplexEventPeriodGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ComplexEventPeriodGrp"
+  },
+  "fields": [
+   {
+    "name": "NoComplexEventPeriods",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41010"
     },
-    {
-     "kind": "field",
-     "name": "ComplexEventBusinessCenter",
-     "required": false,
-     "tag": 41012
-    },
-    {
-     "kind": "component",
-     "name": "ComplexEventScheduleGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ComplexEventPeriodDateGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ComplexEventAveragingObservationGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventPeriodType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41011"
+       }
+      },
+      {
+       "name": "ComplexEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41012"
+       }
+      },
+      {
+       "name": "ComplexEventScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ComplexEventScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ComplexEventPeriodDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ComplexEventPeriodDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ComplexEventAveragingObservationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ComplexEventAveragingObservationGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

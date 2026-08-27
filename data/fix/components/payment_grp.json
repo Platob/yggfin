@@ -3,252 +3,349 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPayments",
-   "required": false,
-   "tag": 40212,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentType",
-     "required": false,
-     "tag": 40213
+ "declaration": {
+  "name": "PaymentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPayments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40212"
     },
-    {
-     "kind": "field",
-     "name": "PaymentSubType",
-     "required": false,
-     "tag": 40993
-    },
-    {
-     "kind": "field",
-     "name": "PaymentPaySide",
-     "required": false,
-     "tag": 40214
-    },
-    {
-     "kind": "field",
-     "name": "PaymentReceiveSide",
-     "required": false,
-     "tag": 40215
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDesc",
-     "required": false,
-     "tag": 43087
-    },
-    {
-     "kind": "field",
-     "name": "PaymentCurrency",
-     "required": false,
-     "tag": 40216
-    },
-    {
-     "kind": "field",
-     "name": "PaymentAmount",
-     "required": false,
-     "tag": 40217
-    },
-    {
-     "kind": "field",
-     "name": "PaymentAmountRelativeTo",
-     "required": false,
-     "tag": 42598
-    },
-    {
-     "kind": "field",
-     "name": "PaymentAmountDeterminationMethod",
-     "required": false,
-     "tag": 42599
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFixedRate",
-     "required": false,
-     "tag": 43097
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFloatingRateIndex",
-     "required": false,
-     "tag": 43098
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFloatingRateIndexCurveUnit",
-     "required": false,
-     "tag": 43100
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFloatingRateIndexCurvePeriod",
-     "required": false,
-     "tag": 43099
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFloatingRateSpread",
-     "required": false,
-     "tag": 43101
-    },
-    {
-     "kind": "field",
-     "name": "PaymentRateResetFrequencyUnit",
-     "required": false,
-     "tag": 43105
-    },
-    {
-     "kind": "field",
-     "name": "PaymentRateResetFrequencyPeriod",
-     "required": false,
-     "tag": 43104
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFrequencyUnit",
-     "required": false,
-     "tag": 43103
-    },
-    {
-     "kind": "field",
-     "name": "PaymentFrequencyPeriod",
-     "required": false,
-     "tag": 43102
-    },
-    {
-     "kind": "field",
-     "name": "PaymentPrice",
-     "required": false,
-     "tag": 40218
-    },
-    {
-     "kind": "field",
-     "name": "PaymentPriceType",
-     "required": false,
-     "tag": 40919
-    },
-    {
-     "kind": "field",
-     "name": "PaymentUnitOfMeasure",
-     "required": false,
-     "tag": 41155
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateUnadjusted",
-     "required": false,
-     "tag": 40219
-    },
-    {
-     "kind": "field",
-     "name": "PaymentBusinessDayConvention",
-     "required": false,
-     "tag": 40220
-    },
-    {
-     "kind": "component",
-     "name": "PaymentBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateRelativeTo",
-     "required": false,
-     "tag": 41156
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateOffsetPeriod",
-     "required": false,
-     "tag": 41157
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateOffsetUnit",
-     "required": false,
-     "tag": 41158
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateOffsetDayType",
-     "required": false,
-     "tag": 41159
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDateAdjusted",
-     "required": false,
-     "tag": 40222
-    },
-    {
-     "kind": "field",
-     "name": "PaymentForwardStartType",
-     "required": false,
-     "tag": 41160
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDiscountFactor",
-     "required": false,
-     "tag": 40224
-    },
-    {
-     "kind": "field",
-     "name": "PaymentPresentValueAmount",
-     "required": false,
-     "tag": 40225
-    },
-    {
-     "kind": "field",
-     "name": "PaymentPresentValueCurrency",
-     "required": false,
-     "tag": 40226
-    },
-    {
-     "kind": "field",
-     "name": "PaymentSettlStyle",
-     "required": false,
-     "tag": 40227
-    },
-    {
-     "kind": "field",
-     "name": "PaymentMethod",
-     "required": false,
-     "tag": 492
-    },
-    {
-     "kind": "component",
-     "name": "PaymentSettlGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentLegRefID",
-     "required": false,
-     "tag": 41304
-    },
-    {
-     "kind": "field",
-     "name": "PaymentText",
-     "required": false,
-     "tag": 40229
-    },
-    {
-     "kind": "field",
-     "name": "EncodedPaymentTextLen",
-     "required": false,
-     "tag": 40984
-    },
-    {
-     "kind": "field",
-     "name": "EncodedPaymentText",
-     "required": false,
-     "tag": 40985
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40213"
+       }
+      },
+      {
+       "name": "PaymentSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40993"
+       }
+      },
+      {
+       "name": "PaymentPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40214"
+       }
+      },
+      {
+       "name": "PaymentReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40215"
+       }
+      },
+      {
+       "name": "PaymentDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43087"
+       }
+      },
+      {
+       "name": "PaymentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40216"
+       }
+      },
+      {
+       "name": "PaymentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40217"
+       }
+      },
+      {
+       "name": "PaymentAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42598"
+       }
+      },
+      {
+       "name": "PaymentAmountDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42599"
+       }
+      },
+      {
+       "name": "PaymentFixedRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43097"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43098"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndexCurveUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43100"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndexCurvePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43099"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43101"
+       }
+      },
+      {
+       "name": "PaymentRateResetFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43105"
+       }
+      },
+      {
+       "name": "PaymentRateResetFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43104"
+       }
+      },
+      {
+       "name": "PaymentFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43103"
+       }
+      },
+      {
+       "name": "PaymentFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43102"
+       }
+      },
+      {
+       "name": "PaymentPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40218"
+       }
+      },
+      {
+       "name": "PaymentPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40919"
+       }
+      },
+      {
+       "name": "PaymentUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41155"
+       }
+      },
+      {
+       "name": "PaymentDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40219"
+       }
+      },
+      {
+       "name": "PaymentBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40220"
+       }
+      },
+      {
+       "name": "PaymentBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41156"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41157"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41158"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41159"
+       }
+      },
+      {
+       "name": "PaymentDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40222"
+       }
+      },
+      {
+       "name": "PaymentForwardStartType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41160"
+       }
+      },
+      {
+       "name": "PaymentDiscountFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40224"
+       }
+      },
+      {
+       "name": "PaymentPresentValueAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40225"
+       }
+      },
+      {
+       "name": "PaymentPresentValueCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40226"
+       }
+      },
+      {
+       "name": "PaymentSettlStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40227"
+       }
+      },
+      {
+       "name": "PaymentMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "492"
+       }
+      },
+      {
+       "name": "PaymentSettlGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentSettlGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41304"
+       }
+      },
+      {
+       "name": "PaymentText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40229"
+       }
+      },
+      {
+       "name": "EncodedPaymentTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40984"
+       }
+      },
+      {
+       "name": "EncodedPaymentText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40985"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

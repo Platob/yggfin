@@ -4,26 +4,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTrdRepIndicators",
-   "required": false,
-   "tag": 1387,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TrdRepPartyRole",
-     "required": false,
-     "tag": 1388
+ "declaration": {
+  "name": "TrdRepIndicatorsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdRepIndicatorsGrp"
+  },
+  "fields": [
+   {
+    "name": "NoTrdRepIndicators",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1387"
     },
-    {
-     "kind": "field",
-     "name": "TrdRepIndicator",
-     "required": false,
-     "tag": 1389
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRepPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1388"
+       }
+      },
+      {
+       "name": "TrdRepIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1389"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

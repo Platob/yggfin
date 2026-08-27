@@ -6,35 +6,55 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "SettlDeliveryType",
-   "required": false,
-   "tag": 172
+ "declaration": {
+  "name": "SettlInstructionsData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlInstructionsData"
   },
-  {
-   "kind": "field",
-   "name": "StandInstDbType",
-   "required": false,
-   "tag": 169
-  },
-  {
-   "kind": "field",
-   "name": "StandInstDbName",
-   "required": false,
-   "tag": 170
-  },
-  {
-   "kind": "field",
-   "name": "StandInstDbID",
-   "required": false,
-   "tag": 171
-  },
-  {
-   "kind": "component",
-   "name": "DlvyInstGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "SettlDeliveryType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "172"
+    }
+   },
+   {
+    "name": "StandInstDbType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "169"
+    }
+   },
+   {
+    "name": "StandInstDbName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "170"
+    }
+   },
+   {
+    "name": "StandInstDbID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "171"
+    }
+   },
+   {
+    "name": "DlvyInstGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DlvyInstGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

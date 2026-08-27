@@ -36,7 +36,7 @@ from rekep.fix.entries import (
     values_of,
 )
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member, members_of
 
 
 def _entry(**changed: object) -> FieldEntry:
@@ -405,27 +405,28 @@ def test_a_merged_declaration_falls_back_to_the_records_own_order() -> None:
 # -- components --------------------------------------------------------------
 
 
-def _group() -> SpecComponent:
-    return SpecComponent(
+def _group() -> Field:
+    """A component holding one repeating group of two fields, as 4.4 declares it."""
+    return block(
         "FakeParties",
-        (
-            SpecGroup(
+        [
+            group_member(
                 "NoFakeParties",
-                False,
                 90010,
-                (
-                    SpecFieldRef("FakePartyID", False, 90011),
-                    SpecFieldRef("FakePartyRole", False, 90012),
-                ),
-            ),
-        ),
+                [
+                    field_member("FakePartyID", 90011),
+                    field_member("FakePartyRole", 90012),
+                ],
+            )
+        ],
     )
 
 
-def _narrower() -> SpecComponent:
-    return SpecComponent(
+def _narrower() -> Field:
+    """The same component one member short, as an older version declared it."""
+    return block(
         "FakeParties",
-        (SpecGroup("NoFakeParties", False, 90010, (SpecFieldRef("FakePartyID", False, 90011),)),),
+        [group_member("NoFakeParties", 90010, [field_member("FakePartyID", 90011)])],
     )
 
 
@@ -449,12 +450,14 @@ def test_a_component_record_round_trips_through_its_document() -> None:
 
 
 def test_a_message_definition_carries_its_msg_type_and_nothing_else_does() -> None:
-    """`msg_type` is absent from a reusable block rather than written as null."""
-    declared = SpecComponent("FakeOrder", _group().members, "D")
+    """The type rides the declaration's own metadata, absent rather than null."""
+    declared = block("FakeOrder", members_of(_group()), "D")
     entry = ComponentEntry.from_components([declared], ["4.4"])
     assert entry.msg_type == "D"
-    assert entry.into_dict()["msg_type"] == "D"
-    assert "msg_type" not in ComponentEntry.from_components([_group()], ["4.4"]).into_dict()
+    assert entry.into_dict()["declaration"]["fix"]["msgtype"] == "D"
+    reusable = ComponentEntry.from_components([_group()], ["4.4"])
+    assert reusable.msg_type == ""
+    assert "msgtype" not in reusable.into_dict()["declaration"]["fix"]
 
 
 def test_a_component_declared_for_no_version_is_refused() -> None:

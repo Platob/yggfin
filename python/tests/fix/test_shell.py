@@ -15,9 +15,9 @@ import pytest
 
 from rekep.console import Console
 from rekep.fields import Field
-from rekep.fix.entries import FieldEntry, values_of
+from rekep.fix.entries import ComponentEntry, FieldEntry, values_of
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import Shell, terminal_reader
 
@@ -42,13 +42,13 @@ def store(tmp_path: Path) -> Offline:
         "9.1",
         [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
         components=[
-            SpecComponent(
+            block(
                 "FakeParties",
-                (
-                    SpecGroup(
-                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
-                    ),
-                ),
+                [
+                    group_member(
+                        "NoFakeParties", 90003, [field_member("FakeRole", 90001, required=True)]
+                    )
+                ],
             )
         ],
     )
@@ -172,14 +172,11 @@ def test_component_declarations_are_added_updated_and_removed(
     store: Offline, tmp_path: Path
 ) -> None:
     declaration = tmp_path / "legs.json"
-    declaration.write_text(
-        """{
-  "name": "FakeLegs",
-  "versions": ["9.1"],
-  "members": [{"kind": "field", "name": "FakeCode", "tag": 90002}]
-}
-"""
-    )
+    ComponentEntry(
+        name="FakeLegs",
+        versions=("9.1",),
+        declaration=block("FakeLegs", [field_member("FakeCode", 90002)]),
+    ).into_json(str(declaration))
     assert "added FakeLegs" in _run(store, f"add-component {declaration}", "y", "quit")
     assert store.merged_component("FakeLegs").members[0].name == "FakeCode"
 

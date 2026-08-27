@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoQuoteAttributes",
-   "required": false,
-   "tag": 2706,
-   "members": [
-    {
-     "kind": "field",
-     "name": "QuoteAttributeType",
-     "required": false,
-     "tag": 2707
+ "declaration": {
+  "name": "QuoteAttributeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuoteAttributeGrp"
+  },
+  "fields": [
+   {
+    "name": "NoQuoteAttributes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2706"
     },
-    {
-     "kind": "field",
-     "name": "QuoteAttributeValue",
-     "required": false,
-     "tag": 2708
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2707"
+       }
+      },
+      {
+       "name": "QuoteAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2708"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

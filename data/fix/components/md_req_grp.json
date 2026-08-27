@@ -6,20 +6,34 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMDEntryTypes",
-   "required": false,
-   "tag": 267,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MDEntryType",
-     "required": true,
-     "tag": 269
+ "declaration": {
+  "name": "MDReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MDReqGrp"
+  },
+  "fields": [
+   {
+    "name": "NoMDEntryTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "267"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDEntryType",
+       "type": "string",
+       "fix": {
+        "tag": "269"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

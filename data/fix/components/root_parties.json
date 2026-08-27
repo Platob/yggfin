@@ -5,43 +5,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRootPartyIDs",
-   "required": false,
-   "tag": 1116,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RootPartyID",
-     "required": false,
-     "tag": 1117
+ "declaration": {
+  "name": "RootParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RootParties"
+  },
+  "fields": [
+   {
+    "name": "NoRootPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1116"
     },
-    {
-     "kind": "field",
-     "name": "RootPartyIDSource",
-     "required": false,
-     "tag": 1118
-    },
-    {
-     "kind": "field",
-     "name": "RootPartyRole",
-     "required": false,
-     "tag": 1119
-    },
-    {
-     "kind": "field",
-     "name": "RootPartyRoleQualifier",
-     "required": false,
-     "tag": 2388
-    },
-    {
-     "kind": "component",
-     "name": "RootSubParties",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RootPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1117"
+       }
+      },
+      {
+       "name": "RootPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1118"
+       }
+      },
+      {
+       "name": "RootPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1119"
+       }
+      },
+      {
+       "name": "RootPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2388"
+       }
+      },
+      {
+       "name": "RootSubParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RootSubParties"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

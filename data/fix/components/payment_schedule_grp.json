@@ -3,352 +3,487 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPaymentSchedules",
-   "required": false,
-   "tag": 40828,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentScheduleType",
-     "required": false,
-     "tag": 40829
+ "declaration": {
+  "name": "PaymentScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentScheduleGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPaymentSchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40828"
     },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleXID",
-     "required": false,
-     "tag": 41164
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleXIDRef",
-     "required": false,
-     "tag": 41165
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStubType",
-     "required": false,
-     "tag": 40830
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStartDateUnadjusted",
-     "required": false,
-     "tag": 40831
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleEndDateUnadjusted",
-     "required": false,
-     "tag": 40832
-    },
-    {
-     "kind": "field",
-     "name": "PaymentSchedulePaySide",
-     "required": false,
-     "tag": 40833
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleReceiveSide",
-     "required": false,
-     "tag": 40834
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleNotional",
-     "required": false,
-     "tag": 40835
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleCurrency",
-     "required": false,
-     "tag": 40836
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRate",
-     "required": false,
-     "tag": 40837
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateMultiplier",
-     "required": false,
-     "tag": 40838
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateSpread",
-     "required": false,
-     "tag": 40839
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateCurrency",
-     "required": false,
-     "tag": 41166
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateUnitOfMeasure",
-     "required": false,
-     "tag": 41167
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateConversionFactor",
-     "required": false,
-     "tag": 41168
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateSpreadType",
-     "required": false,
-     "tag": 41169
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateSpreadPositionType",
-     "required": false,
-     "tag": 40840
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleRateTreatment",
-     "required": false,
-     "tag": 40841
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixedAmount",
-     "required": false,
-     "tag": 40842
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixedCurrency",
-     "required": false,
-     "tag": 40843
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleSettlPeriodPrice",
-     "required": false,
-     "tag": 41170
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleSettlPeriodPriceCurrency",
-     "required": false,
-     "tag": 41171
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleSettlPeriodPriceUnitOfMeasure",
-     "required": false,
-     "tag": 41172
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepUnitOfMeasure",
-     "required": false,
-     "tag": 41173
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepFrequencyPeriod",
-     "required": false,
-     "tag": 40844
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepFrequencyUnit",
-     "required": false,
-     "tag": 40845
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepOffsetValue",
-     "required": false,
-     "tag": 40846
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepRate",
-     "required": false,
-     "tag": 40847
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepOffsetRate",
-     "required": false,
-     "tag": 40848
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleStepRelativeTo",
-     "required": false,
-     "tag": 40849
-    },
-    {
-     "kind": "component",
-     "name": "PaymentScheduleRateSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateUnadjusted",
-     "required": false,
-     "tag": 40850
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleWeight",
-     "required": false,
-     "tag": 40851
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateRelativeTo",
-     "required": false,
-     "tag": 40852
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateBusinessDayConvention",
-     "required": false,
-     "tag": 40853
-    },
-    {
-     "kind": "component",
-     "name": "PaymentScheduleFixingDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateOffsetPeriod",
-     "required": false,
-     "tag": 40855
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateOffsetUnit",
-     "required": false,
-     "tag": 40856
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateOffsetDayType",
-     "required": false,
-     "tag": 40857
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDayDistribution",
-     "required": false,
-     "tag": 41174
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDayCount",
-     "required": false,
-     "tag": 41175
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingDateAdjusted",
-     "required": false,
-     "tag": 40858
-    },
-    {
-     "kind": "component",
-     "name": "PaymentScheduleFixingDayGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingLagPeriod",
-     "required": false,
-     "tag": 41176
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingLagUnit",
-     "required": false,
-     "tag": 41177
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingFirstObservationDateOffsetPeriod",
-     "required": false,
-     "tag": 41178
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingFirstObservationDateOffsetUnit",
-     "required": false,
-     "tag": 41179
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingTime",
-     "required": false,
-     "tag": 40859
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleFixingTimeBusinessCenter",
-     "required": false,
-     "tag": 40860
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangePaymentDateRelativeTo",
-     "required": false,
-     "tag": 40861
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangeDatesBusinessDayConvention",
-     "required": false,
-     "tag": 40862
-    },
-    {
-     "kind": "component",
-     "name": "PaymentScheduleInterimExchangeDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangeDatesOffsetPeriod",
-     "required": false,
-     "tag": 40864
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangeDatesOffsetUnit",
-     "required": false,
-     "tag": 40865
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangeDatesOffsetDayType",
-     "required": false,
-     "tag": 40866
-    },
-    {
-     "kind": "field",
-     "name": "PaymentScheduleInterimExchangeDateAdjusted",
-     "required": false,
-     "tag": 40867
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentScheduleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40829"
+       }
+      },
+      {
+       "name": "PaymentScheduleXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41164"
+       }
+      },
+      {
+       "name": "PaymentScheduleXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41165"
+       }
+      },
+      {
+       "name": "PaymentScheduleStubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40830"
+       }
+      },
+      {
+       "name": "PaymentScheduleStartDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40831"
+       }
+      },
+      {
+       "name": "PaymentScheduleEndDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40832"
+       }
+      },
+      {
+       "name": "PaymentSchedulePaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40833"
+       }
+      },
+      {
+       "name": "PaymentScheduleReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40834"
+       }
+      },
+      {
+       "name": "PaymentScheduleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40835"
+       }
+      },
+      {
+       "name": "PaymentScheduleCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40836"
+       }
+      },
+      {
+       "name": "PaymentScheduleRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40837"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40838"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40839"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41166"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41167"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateConversionFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41168"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateSpreadType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41169"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateSpreadPositionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40840"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateTreatment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40841"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40842"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixedCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40843"
+       }
+      },
+      {
+       "name": "PaymentScheduleSettlPeriodPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41170"
+       }
+      },
+      {
+       "name": "PaymentScheduleSettlPeriodPriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41171"
+       }
+      },
+      {
+       "name": "PaymentScheduleSettlPeriodPriceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41172"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41173"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40844"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40845"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepOffsetValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40846"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40847"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepOffsetRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40848"
+       }
+      },
+      {
+       "name": "PaymentScheduleStepRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40849"
+       }
+      },
+      {
+       "name": "PaymentScheduleRateSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentScheduleRateSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentScheduleFixingDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40850"
+       }
+      },
+      {
+       "name": "PaymentScheduleWeight",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40851"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40852"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40853"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentScheduleFixingDateBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentScheduleFixingDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40855"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40856"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40857"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDayDistribution",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41174"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDayCount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41175"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40858"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentScheduleFixingDayGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentScheduleFixingLagPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41176"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingLagUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41177"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingFirstObservationDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41178"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingFirstObservationDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41179"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40859"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40860"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangePaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40861"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDatesBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40862"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentScheduleInterimExchangeDateBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDatesOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40864"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDatesOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40865"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDatesOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40866"
+       }
+      },
+      {
+       "name": "PaymentScheduleInterimExchangeDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40867"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

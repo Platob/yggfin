@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateUnadjusted",
-   "required": false,
-   "tag": 40907
+ "declaration": {
+  "name": "StreamEffectiveDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamEffectiveDate"
   },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateBusinessDayConvention",
-   "required": false,
-   "tag": 40908
-  },
-  {
-   "kind": "component",
-   "name": "StreamEffectiveDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateRelativeTo",
-   "required": false,
-   "tag": 40910
-  },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateOffsetPeriod",
-   "required": false,
-   "tag": 40911
-  },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateOffsetUnit",
-   "required": false,
-   "tag": 40912
-  },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateOffsetDayType",
-   "required": false,
-   "tag": 40913
-  },
-  {
-   "kind": "field",
-   "name": "StreamEffectiveDateAdjusted",
-   "required": false,
-   "tag": 40914
-  }
- ]
+  "fields": [
+   {
+    "name": "StreamEffectiveDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40907"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40908"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "StreamEffectiveDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "StreamEffectiveDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40910"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40911"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40912"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40913"
+    }
+   },
+   {
+    "name": "StreamEffectiveDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40914"
+    }
+   }
+  ]
+ }
 }

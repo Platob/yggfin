@@ -6,26 +6,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSettlPartySubIDs",
-   "required": false,
-   "tag": 801,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SettlPartySubID",
-     "required": false,
-     "tag": 785
+ "declaration": {
+  "name": "SettlPtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlPtysSubGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSettlPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "801"
     },
-    {
-     "kind": "field",
-     "name": "SettlPartySubIDType",
-     "required": false,
-     "tag": 786
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "785"
+       }
+      },
+      {
+       "name": "SettlPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "786"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

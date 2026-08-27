@@ -6,26 +6,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNested2PartySubIDs",
-   "required": false,
-   "tag": 806,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Nested2PartySubID",
-     "required": false,
-     "tag": 760
+ "declaration": {
+  "name": "NstdPtys2SubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NstdPtys2SubGrp"
+  },
+  "fields": [
+   {
+    "name": "NoNested2PartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "806"
     },
-    {
-     "kind": "field",
-     "name": "Nested2PartySubIDType",
-     "required": false,
-     "tag": 807
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Nested2PartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "760"
+       }
+      },
+      {
+       "name": "Nested2PartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "807"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

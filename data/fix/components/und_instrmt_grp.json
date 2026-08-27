@@ -6,19 +6,36 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyings",
-   "required": false,
-   "tag": 711,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingInstrument",
-     "required": false
+ "declaration": {
+  "name": "UndInstrmtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UndInstrmtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyings",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "711"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

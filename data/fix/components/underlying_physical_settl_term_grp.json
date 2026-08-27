@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPhysicalSettlTerms",
-   "required": false,
-   "tag": 42060,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
-     "required": false
+ "declaration": {
+  "name": "UnderlyingPhysicalSettlTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPhysicalSettlTermGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPhysicalSettlTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42060"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlCurrency",
-     "required": false,
-     "tag": 42061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlBusinessDays",
-     "required": false,
-     "tag": 42062
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
-     "required": false,
-     "tag": 42063
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlTermXID",
-     "required": false,
-     "tag": 42064
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42061"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42062"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42063"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42064"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoCollateralReinvestments",
-   "required": false,
-   "tag": 2845,
-   "members": [
-    {
-     "kind": "field",
-     "name": "CollateralReinvestmentType",
-     "required": false,
-     "tag": 2844
+ "declaration": {
+  "name": "CollateralReinvestmentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CollateralReinvestmentGrp"
+  },
+  "fields": [
+   {
+    "name": "NoCollateralReinvestments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2845"
     },
-    {
-     "kind": "field",
-     "name": "CollateralReinvestmentAmount",
-     "required": false,
-     "tag": 2842
-    },
-    {
-     "kind": "field",
-     "name": "CollateralReinvestmentCurrency",
-     "required": false,
-     "tag": 2843
-    },
-    {
-     "kind": "field",
-     "name": "CollateralReinvestmentCurrencyCodeSource",
-     "required": false,
-     "tag": 2931
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CollateralReinvestmentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2844"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2842"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2843"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2931"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

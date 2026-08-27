@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoComplexEventDateBusinessCenters",
-   "required": false,
-   "tag": 41018,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ComplexEventDateBusinessCenter",
-     "required": false,
-     "tag": 41019
+ "declaration": {
+  "name": "ComplexEventDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ComplexEventDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoComplexEventDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41018"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41019"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

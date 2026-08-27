@@ -3,42 +3,62 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateUnadjusted",
-   "required": false,
-   "tag": 42646
+ "declaration": {
+  "name": "PaymentStreamCompoundingStartDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamCompoundingStartDate"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateRelativeTo",
-   "required": false,
-   "tag": 42647
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateOffsetPeriod",
-   "required": false,
-   "tag": 42648
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateOffsetUnit",
-   "required": false,
-   "tag": 42649
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateOffsetDayType",
-   "required": false,
-   "tag": 42650
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingStartDateAdjusted",
-   "required": false,
-   "tag": 42651
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamCompoundingStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42646"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42647"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42648"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42649"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42650"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42651"
+    }
+   }
+  ]
+ }
 }

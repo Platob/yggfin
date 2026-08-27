@@ -517,14 +517,30 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
             {
                 "name": "FakeParties",
                 "versions": ["9.1"],
-                "members": [
-                    {
-                        "kind": "group",
-                        "name": "NoFakeParties",
-                        "tag": 90004,
-                        "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
-                    }
-                ],
+                "declaration": {
+                    "name": "FakeParties",
+                    "type": "struct",
+                    "fix": {"component": "FakeParties"},
+                    "fields": [
+                        {
+                            "name": "NoFakeParties",
+                            "type": "list",
+                            "nullable": True,
+                            "fix": {"tag": "90004"},
+                            "item": {
+                                "type": "struct",
+                                "fields": [
+                                    {
+                                        "name": "FakeRole",
+                                        "type": "string",
+                                        "nullable": True,
+                                        "fix": {"tag": "90001"},
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
             }
         )
     )
@@ -540,7 +556,7 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
         )
         == 0
     )
-    assert reopened(store).component("FakeParties", "9.1").members[0].tag == 90004
+    assert reopened(store).component("FakeParties", "9.1").fields[0].fix.tag == 90004
 
     assert (
         run(
@@ -637,7 +653,19 @@ def test_registry_components_and_dump_are_scriptable(
             {
                 "name": "FakeParties",
                 "versions": ["9.1"],
-                "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
+                "declaration": {
+                    "name": "FakeParties",
+                    "type": "struct",
+                    "fix": {"component": "FakeParties"},
+                    "fields": [
+                        {
+                            "name": "FakeRole",
+                            "type": "string",
+                            "nullable": True,
+                            "fix": {"tag": "90001"},
+                        }
+                    ],
+                },
             }
         )
     )
@@ -658,7 +686,7 @@ def test_registry_components_and_dump_are_scriptable(
     assert run("fix", "registry", "components", "--store", str(store), "part") == 0
     assert json.loads(capsys.readouterr().out) == [{"name": "FakeParties", "versions": ["9.1"]}]
     assert run("fix", "registry", "component", "--store", str(store), "FakeParties") == 0
-    assert json.loads(capsys.readouterr().out)["members"][0]["name"] == "FakeRole"
+    assert json.loads(capsys.readouterr().out)["declaration"]["fields"][0]["name"] == "FakeRole"
 
     archive = tmp_path / "fix.zip"
     assert run("fix", "registry", "dump", "--store", str(store), "--output", str(archive)) == 0

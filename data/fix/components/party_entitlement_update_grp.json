@@ -3,42 +3,69 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyEntitlements",
-   "required": false,
-   "tag": 1772,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ListUpdateAction",
-     "required": false,
-     "tag": 1324
+ "declaration": {
+  "name": "PartyEntitlementUpdateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyEntitlementUpdateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPartyEntitlements",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1772"
     },
-    {
-     "kind": "component",
-     "name": "PartyDetailGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "EntitlementStatus",
-     "required": false,
-     "tag": 1883
-    },
-    {
-     "kind": "component",
-     "name": "EntitlementGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "EntitlementRefID",
-     "required": false,
-     "tag": 1885
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
+      },
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "EntitlementStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1883"
+       }
+      },
+      {
+       "name": "EntitlementGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "EntitlementGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "EntitlementRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1885"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

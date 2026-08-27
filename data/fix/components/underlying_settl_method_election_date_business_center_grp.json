@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
-   "required": false,
-   "tag": 43074,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
-     "required": false,
-     "tag": 43075
+ "declaration": {
+  "name": "UnderlyingSettlMethodElectionDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingSettlMethodElectionDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43074"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43075"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -6,82 +6,127 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+ "declaration": {
+  "name": "RelSymDerivSecGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelSymDerivSecGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "SecondaryPriceLimits",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "field",
-     "name": "CorporateAction",
-     "required": false,
-     "tag": 292
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentExtension",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "InstrmtLegGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "RelSymTransactTime",
-     "required": false,
-     "tag": 1504
-    },
-    {
-     "kind": "field",
-     "name": "NumOfSimpleInstruments",
-     "required": false,
-     "tag": 1606
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecondaryPriceLimits",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecondaryPriceLimits"
+       },
+       "fields": []
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "CorporateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "292"
+       }
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelSymTransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1504"
+       }
+      },
+      {
+       "name": "NumOfSimpleInstruments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1606"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingComplexEventCreditEventSources",
-   "required": false,
-   "tag": 41748,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventCreditEventSource",
-     "required": false,
-     "tag": 41749
+ "declaration": {
+  "name": "UnderlyingComplexEventCreditEventSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEventCreditEventSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingComplexEventCreditEventSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41748"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventCreditEventSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41749"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

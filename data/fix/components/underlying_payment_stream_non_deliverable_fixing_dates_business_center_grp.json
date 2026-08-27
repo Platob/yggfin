@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentStreamNonDeliverableFixingDatesBizCenters",
-   "required": false,
-   "tag": 40968,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenter",
-     "required": false,
-     "tag": 40650
+ "declaration": {
+  "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentStreamNonDeliverableFixingDatesBizCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40968"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40650"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

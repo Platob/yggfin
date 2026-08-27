@@ -4,49 +4,76 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoStrikeRules",
-   "required": false,
-   "tag": 1201,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StrikeRuleID",
-     "required": false,
-     "tag": 1223
+ "declaration": {
+  "name": "StrikeRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StrikeRules"
+  },
+  "fields": [
+   {
+    "name": "NoStrikeRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1201"
     },
-    {
-     "kind": "field",
-     "name": "StartStrikePxRange",
-     "required": false,
-     "tag": 1202
-    },
-    {
-     "kind": "field",
-     "name": "EndStrikePxRange",
-     "required": false,
-     "tag": 1203
-    },
-    {
-     "kind": "field",
-     "name": "StrikeIncrement",
-     "required": false,
-     "tag": 1204
-    },
-    {
-     "kind": "field",
-     "name": "StrikeExerciseStyle",
-     "required": false,
-     "tag": 1304
-    },
-    {
-     "kind": "component",
-     "name": "MaturityRules",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StrikeRuleID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1223"
+       }
+      },
+      {
+       "name": "StartStrikePxRange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1202"
+       }
+      },
+      {
+       "name": "EndStrikePxRange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1203"
+       }
+      },
+      {
+       "name": "StrikeIncrement",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1204"
+       }
+      },
+      {
+       "name": "StrikeExerciseStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1304"
+       }
+      },
+      {
+       "name": "MaturityRules",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MaturityRules"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

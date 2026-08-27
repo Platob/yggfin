@@ -3,114 +3,158 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateIndex",
-   "required": false,
-   "tag": 42427
+ "declaration": {
+  "name": "LegPaymentStreamCompoundingFloatingRate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamCompoundingFloatingRate"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateIndexCurvePeriod",
-   "required": false,
-   "tag": 42428
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateIndexCurveUnit",
-   "required": false,
-   "tag": 42429
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateMultiplier",
-   "required": false,
-   "tag": 42430
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateSpread",
-   "required": false,
-   "tag": 42431
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateSpreadPositionType",
-   "required": false,
-   "tag": 42432
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingRateTreatment",
-   "required": false,
-   "tag": 42433
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingCapRate",
-   "required": false,
-   "tag": 42434
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingCapRateBuySide",
-   "required": false,
-   "tag": 42435
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingCapRateSellSide",
-   "required": false,
-   "tag": 42436
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingFloorRate",
-   "required": false,
-   "tag": 42437
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingFloorRateBuySide",
-   "required": false,
-   "tag": 42438
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingFloorRateSellSide",
-   "required": false,
-   "tag": 42439
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingInitialRate",
-   "required": false,
-   "tag": 42440
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingFinalRateRoundingDirection",
-   "required": false,
-   "tag": 42441
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingFinalRatePrecision",
-   "required": false,
-   "tag": 42442
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingAveragingMethod",
-   "required": false,
-   "tag": 42443
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamCompoundingNegativeRateTreatment",
-   "required": false,
-   "tag": 42444
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStreamCompoundingRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42427"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42428"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42429"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42430"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42431"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateSpreadPositionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42432"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42433"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingCapRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42434"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingCapRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42435"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingCapRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42436"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingFloorRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42437"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingFloorRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42438"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingFloorRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42439"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingInitialRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42440"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingFinalRateRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42441"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingFinalRatePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42442"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingAveragingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42443"
+    }
+   },
+   {
+    "name": "LegPaymentStreamCompoundingNegativeRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42444"
+    }
+   }
+  ]
+ }
 }

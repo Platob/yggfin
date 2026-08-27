@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProvisionOptionExpirationDateBusinessCenters",
-   "required": false,
-   "tag": 40955,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateBusinessCenter",
-     "required": false,
-     "tag": 40147
+ "declaration": {
+  "name": "ProvisionOptionExpirationDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProvisionOptionExpirationDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoProvisionOptionExpirationDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40955"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionOptionExpirationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40147"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

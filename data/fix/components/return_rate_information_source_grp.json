@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRateInformationSources",
-   "required": false,
-   "tag": 42761,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRateInformationSource",
-     "required": false,
-     "tag": 42762
+ "declaration": {
+  "name": "ReturnRateInformationSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRateInformationSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRateInformationSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42761"
     },
-    {
-     "kind": "field",
-     "name": "ReturnRateReferencePage",
-     "required": false,
-     "tag": 42763
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateReferencePageHeading",
-     "required": false,
-     "tag": 42764
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateInformationSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42762"
+       }
+      },
+      {
+       "name": "ReturnRateReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42763"
+       }
+      },
+      {
+       "name": "ReturnRateReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42764"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

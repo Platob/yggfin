@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegInstrumentParties",
-   "required": false,
-   "tag": 2254,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartyID",
-     "required": false,
-     "tag": 2255
+ "declaration": {
+  "name": "LegInstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegInstrumentParties"
+  },
+  "fields": [
+   {
+    "name": "NoLegInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2254"
     },
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartyIDSource",
-     "required": false,
-     "tag": 2256
-    },
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartyRole",
-     "required": false,
-     "tag": 2257
-    },
-    {
-     "kind": "field",
-     "name": "LegInstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2379
-    },
-    {
-     "kind": "component",
-     "name": "LegInstrumentPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2255"
+       }
+      },
+      {
+       "name": "LegInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2256"
+       }
+      },
+      {
+       "name": "LegInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2257"
+       }
+      },
+      {
+       "name": "LegInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2379"
+       }
+      },
+      {
+       "name": "LegInstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegInstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

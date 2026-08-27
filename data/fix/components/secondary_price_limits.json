@@ -4,30 +4,46 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "SecondaryPriceLimitType",
-   "required": false,
-   "tag": 1305
+ "declaration": {
+  "name": "SecondaryPriceLimits",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecondaryPriceLimits"
   },
-  {
-   "kind": "field",
-   "name": "SecondaryLowLimitPrice",
-   "required": false,
-   "tag": 1221
-  },
-  {
-   "kind": "field",
-   "name": "SecondaryHighLimitPrice",
-   "required": false,
-   "tag": 1230
-  },
-  {
-   "kind": "field",
-   "name": "SecondaryTradingReferencePrice",
-   "required": false,
-   "tag": 1240
-  }
- ]
+  "fields": [
+   {
+    "name": "SecondaryPriceLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1305"
+    }
+   },
+   {
+    "name": "SecondaryLowLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1221"
+    }
+   },
+   {
+    "name": "SecondaryHighLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1230"
+    }
+   },
+   {
+    "name": "SecondaryTradingReferencePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1240"
+    }
+   }
+  ]
+ }
 }

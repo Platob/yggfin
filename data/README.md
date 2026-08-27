@@ -9,7 +9,7 @@ data/fix/versions.json          the version list, session layers, and which
 data/fix/fields/000000.json     tags 0-499, one cross-version record each
 data/fix/fields/000080.json     tags 40000-40499, the 5.0.SP2 extension pack
 data/fix/fields/named.json      the fields FIX never numbered
-data/fix/components/parties.json  one component's member tree
+data/fix/components/parties.json  one component, declared as a Field
 data/fix-conflicts.json         every reading the collapse dropped
 ```
 

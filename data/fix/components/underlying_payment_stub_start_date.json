@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateUnadjusted",
-   "required": false,
-   "tag": 42993
+ "declaration": {
+  "name": "UnderlyingPaymentStubStartDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStubStartDate"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateBusinessDayConvention",
-   "required": false,
-   "tag": 42994
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStubStartDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateRelativeTo",
-   "required": false,
-   "tag": 42995
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateOffsetPeriod",
-   "required": false,
-   "tag": 42996
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateOffsetUnit",
-   "required": false,
-   "tag": 42997
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateOffsetDayType",
-   "required": false,
-   "tag": 42998
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStubStartDateAdjusted",
-   "required": false,
-   "tag": 42999
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStubStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42993"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42994"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStubStartDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42995"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42996"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42997"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42998"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStubStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42999"
+    }
+   }
+  ]
+ }
 }

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProvisionCashSettlPaymentDateBusinessCenters",
-   "required": false,
-   "tag": 42180,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
-     "required": false,
-     "tag": 42181
+ "declaration": {
+  "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionCashSettlPaymentDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProvisionCashSettlPaymentDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42180"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42181"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

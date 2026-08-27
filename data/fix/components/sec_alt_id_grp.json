@@ -6,32 +6,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSecurityAltID",
-   "required": false,
-   "tag": 454,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SecurityAltID",
-     "required": false,
-     "tag": 455
+ "declaration": {
+  "name": "SecAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecAltIDGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSecurityAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "454"
     },
-    {
-     "kind": "field",
-     "name": "SecurityAltIDSource",
-     "required": false,
-     "tag": 456
-    },
-    {
-     "kind": "field",
-     "name": "SymbolPositionNumber",
-     "required": false,
-     "tag": 2957
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "455"
+       }
+      },
+      {
+       "name": "SecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "456"
+       }
+      },
+      {
+       "name": "SymbolPositionNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2957"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

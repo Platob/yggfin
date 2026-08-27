@@ -7,48 +7,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "Commission",
-   "required": false,
-   "tag": 12
+ "declaration": {
+  "name": "CommissionData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CommissionData"
   },
-  {
-   "kind": "field",
-   "name": "CommType",
-   "required": false,
-   "tag": 13
-  },
-  {
-   "kind": "field",
-   "name": "CommCurrency",
-   "required": false,
-   "tag": 479
-  },
-  {
-   "kind": "field",
-   "name": "CommCurrencyCodeSource",
-   "required": false,
-   "tag": 2922
-  },
-  {
-   "kind": "field",
-   "name": "CommRate",
-   "required": false,
-   "tag": 1233
-  },
-  {
-   "kind": "field",
-   "name": "CommUnitOfMeasure",
-   "required": false,
-   "tag": 1238
-  },
-  {
-   "kind": "field",
-   "name": "FundRenewWaiv",
-   "required": false,
-   "tag": 497
-  }
- ]
+  "fields": [
+   {
+    "name": "Commission",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "12"
+    }
+   },
+   {
+    "name": "CommType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "13"
+    }
+   },
+   {
+    "name": "CommCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "479"
+    }
+   },
+   {
+    "name": "CommCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2922"
+    }
+   },
+   {
+    "name": "CommRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1233"
+    }
+   },
+   {
+    "name": "CommUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1238"
+    }
+   },
+   {
+    "name": "FundRenewWaiv",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "497"
+    }
+   }
+  ]
+ }
 }

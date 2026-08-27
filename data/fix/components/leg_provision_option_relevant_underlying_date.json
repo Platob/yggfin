@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateUnadjusted",
-   "required": false,
-   "tag": 40508
+ "declaration": {
+  "name": "LegProvisionOptionRelevantUnderlyingDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionOptionRelevantUnderlyingDate"
   },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateBusinessDayConvention",
-   "required": false,
-   "tag": 40509
-  },
-  {
-   "kind": "component",
-   "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateRelativeTo",
-   "required": false,
-   "tag": 40511
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateOffsetPeriod",
-   "required": false,
-   "tag": 40512
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateOffsetUnit",
-   "required": false,
-   "tag": 40513
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateOffsetDayType",
-   "required": false,
-   "tag": 40514
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionRelevantUnderlyingDateAdjusted",
-   "required": false,
-   "tag": 40515
-  }
- ]
+  "fields": [
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40508"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40509"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40511"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40512"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40513"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40514"
+    }
+   },
+   {
+    "name": "LegProvisionOptionRelevantUnderlyingDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40515"
+    }
+   }
+  ]
+ }
 }

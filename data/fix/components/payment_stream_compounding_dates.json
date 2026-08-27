@@ -3,92 +3,138 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingDatesBusinessDayConvention",
-   "required": false,
-   "tag": 42609
+ "declaration": {
+  "name": "PaymentStreamCompoundingDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamCompoundingDates"
   },
-  {
-   "kind": "component",
-   "name": "PaymentStreamCompoundingDatesBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamCompoundingDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingDatesRelativeTo",
-   "required": false,
-   "tag": 42610
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingDatesOffsetPeriod",
-   "required": false,
-   "tag": 42611
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingDatesOffsetUnit",
-   "required": false,
-   "tag": 42612
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingDatesOffsetDayType",
-   "required": false,
-   "tag": 42613
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingPeriodSkip",
-   "required": false,
-   "tag": 42614
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamCompoundingStartDate",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamCompoundingEndDate",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingFrequencyPeriod",
-   "required": false,
-   "tag": 42615
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingFrequencyUnit",
-   "required": false,
-   "tag": 42616
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingRollConvention",
-   "required": false,
-   "tag": 42617
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamBoundsFirstDateUnadjusted",
-   "required": false,
-   "tag": 42618
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamBoundsLastDateUnadjusted",
-   "required": false,
-   "tag": 42619
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamCompoundingDatesBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42609"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingDatesBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamCompoundingDatesBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamCompoundingDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamCompoundingDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamCompoundingDatesRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42610"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingDatesOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42611"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingDatesOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42612"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingDatesOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42613"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingPeriodSkip",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42614"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingStartDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamCompoundingStartDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamCompoundingEndDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamCompoundingFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42615"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42616"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42617"
+    }
+   },
+   {
+    "name": "PaymentStreamBoundsFirstDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42618"
+    }
+   },
+   {
+    "name": "PaymentStreamBoundsLastDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42619"
+    }
+   }
+  ]
+ }
 }

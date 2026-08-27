@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentStreamCompoundingDatesBusinessCenters",
-   "required": false,
-   "tag": 42419,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
-     "required": false,
-     "tag": 42420
+ "declaration": {
+  "name": "LegPaymentStreamCompoundingDatesBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamCompoundingDatesBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentStreamCompoundingDatesBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42419"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42420"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

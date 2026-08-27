@@ -4,101 +4,143 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSymbol",
-   "required": false,
-   "tag": 1330
+ "declaration": {
+  "name": "UnderlyingLegInstrument",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingLegInstrument"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSymbolSfx",
-   "required": false,
-   "tag": 1331
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecurityID",
-   "required": false,
-   "tag": 1332
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecurityIDSource",
-   "required": false,
-   "tag": 1333
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingLegSecurityAltIDGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegCFICode",
-   "required": false,
-   "tag": 1344
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecurityType",
-   "required": false,
-   "tag": 1337
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecuritySubType",
-   "required": false,
-   "tag": 1338
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegMaturityMonthYear",
-   "required": false,
-   "tag": 1339
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegMaturityDate",
-   "required": false,
-   "tag": 1345
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegMaturityTime",
-   "required": false,
-   "tag": 1405
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegStrikePrice",
-   "required": false,
-   "tag": 1340
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegOptAttribute",
-   "required": false,
-   "tag": 1391
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegPutOrCall",
-   "required": false,
-   "tag": 1343
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecurityExchange",
-   "required": false,
-   "tag": 1341
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLegSecurityDesc",
-   "required": false,
-   "tag": 1392
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingLegSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1330"
+    }
+   },
+   {
+    "name": "UnderlyingLegSymbolSfx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1331"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1332"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1333"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityAltIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingLegSecurityAltIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingLegCFICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1344"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1337"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecuritySubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1338"
+    }
+   },
+   {
+    "name": "UnderlyingLegMaturityMonthYear",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1339"
+    }
+   },
+   {
+    "name": "UnderlyingLegMaturityDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1345"
+    }
+   },
+   {
+    "name": "UnderlyingLegMaturityTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1405"
+    }
+   },
+   {
+    "name": "UnderlyingLegStrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1340"
+    }
+   },
+   {
+    "name": "UnderlyingLegOptAttribute",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1391"
+    }
+   },
+   {
+    "name": "UnderlyingLegPutOrCall",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1343"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1341"
+    }
+   },
+   {
+    "name": "UnderlyingLegSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1392"
+    }
+   }
+  ]
+ }
 }

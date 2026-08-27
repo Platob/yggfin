@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPriceMovementValues",
-   "required": false,
-   "tag": 1920,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PriceMovementValue",
-     "required": false,
-     "tag": 1921
+ "declaration": {
+  "name": "PriceMovementValueGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PriceMovementValueGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPriceMovementValues",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1920"
     },
-    {
-     "kind": "field",
-     "name": "PriceMovementPoint",
-     "required": false,
-     "tag": 1922
-    },
-    {
-     "kind": "field",
-     "name": "PriceMovementType",
-     "required": false,
-     "tag": 1923
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceMovementValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1921"
+       }
+      },
+      {
+       "name": "PriceMovementPoint",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1922"
+       }
+      },
+      {
+       "name": "PriceMovementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1923"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

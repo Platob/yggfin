@@ -4,43 +4,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDerivativeInstrumentParties",
-   "required": false,
-   "tag": 1292,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartyID",
-     "required": false,
-     "tag": 1293
+ "declaration": {
+  "name": "DerivativeInstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeInstrumentParties"
+  },
+  "fields": [
+   {
+    "name": "NoDerivativeInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1292"
     },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartyIDSource",
-     "required": false,
-     "tag": 1294
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartyRole",
-     "required": false,
-     "tag": 1295
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2377
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeInstrumentPartySubIDsGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1293"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1294"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1295"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2377"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartySubIDsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DerivativeInstrumentPartySubIDsGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

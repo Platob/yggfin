@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateRelativeTo",
-   "required": false,
-   "tag": 42265
+ "declaration": {
+  "name": "DividendFXTriggerDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DividendFXTriggerDate"
   },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateOffsetPeriod",
-   "required": false,
-   "tag": 42266
-  },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateOffsetUnit",
-   "required": false,
-   "tag": 42267
-  },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateOffsetDayType",
-   "required": false,
-   "tag": 42268
-  },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateUnadjusted",
-   "required": false,
-   "tag": 42269
-  },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateBusinessDayConvention",
-   "required": false,
-   "tag": 42270
-  },
-  {
-   "kind": "component",
-   "name": "DividendFXTriggerDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "DividendFXTriggerDateAdjusted",
-   "required": false,
-   "tag": 42271
-  }
- ]
+  "fields": [
+   {
+    "name": "DividendFXTriggerDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42265"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42266"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42267"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42268"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42269"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42270"
+    }
+   },
+   {
+    "name": "DividendFXTriggerDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DividendFXTriggerDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "DividendFXTriggerDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42271"
+    }
+   }
+  ]
+ }
 }

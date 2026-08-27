@@ -5,11 +5,12 @@ from __future__ import annotations
 import dataclasses
 import difflib
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from functools import cache
 from typing import Any
 
 from rekep.console import Console
+from rekep.fix import quickfix
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.fields import FIX_SCALARS
 from rekep.fix.registry import FixRegistry
@@ -284,12 +285,13 @@ class Shell:
         version = entry.newest
         declared = entry.into_component(version)
         self.console.panel(
-            f"{entry.name} @ {version}", [f"{len(declared.members)} top-level members"]
+            f"{entry.name} @ {version}",
+            [f"{len(quickfix.members_of(declared))} top-level members"],
         )
-        members = _members(declared.members)
+        members = list(quickfix.walk(declared))
         for member, path in members[:PAGE]:
-            required = "required" if member.required else "optional"
-            tag = getattr(member, "tag", 0)
+            required = "optional" if member.nullable is not False else "required"
+            tag = member.fix.tag or 0
             self.console.line(
                 "  "
                 + "  " * len(path)
@@ -629,17 +631,6 @@ class Shell:
         if near:
             self.console.note(f"did you mean {', '.join(member.name for member in near)}?")
         return None
-
-
-def _members(
-    members: Sequence[Any], path: tuple[str, ...] = ()
-) -> list[tuple[Any, tuple[str, ...]]]:
-    """Every member under `members`, with the groups it sits inside."""
-    found: list[tuple[Any, tuple[str, ...]]] = []
-    for member in members:
-        found.append((member, path))
-        found.extend(_members(getattr(member, "members", ()), (*path, member.name)))
-    return found
 
 
 def _clipped(text: str, width: int) -> str:

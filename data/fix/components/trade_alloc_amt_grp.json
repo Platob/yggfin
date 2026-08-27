@@ -3,44 +3,67 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradeAllocAmts",
-   "required": false,
-   "tag": 1844,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradeAllocAmtType",
-     "required": false,
-     "tag": 1845
+ "declaration": {
+  "name": "TradeAllocAmtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeAllocAmtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoTradeAllocAmts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1844"
     },
-    {
-     "kind": "field",
-     "name": "TradeAllocAmt",
-     "required": false,
-     "tag": 1846
-    },
-    {
-     "kind": "field",
-     "name": "TradeAllocCurrency",
-     "required": false,
-     "tag": 1847
-    },
-    {
-     "kind": "field",
-     "name": "TradeAllocCurrencyCodeSource",
-     "required": false,
-     "tag": 2933
-    },
-    {
-     "kind": "field",
-     "name": "TradeAllocAmtReason",
-     "required": false,
-     "tag": 1850
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradeAllocAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1845"
+       }
+      },
+      {
+       "name": "TradeAllocAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1846"
+       }
+      },
+      {
+       "name": "TradeAllocCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1847"
+       }
+      },
+      {
+       "name": "TradeAllocCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2933"
+       }
+      },
+      {
+       "name": "TradeAllocAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1850"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

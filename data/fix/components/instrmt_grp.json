@@ -6,34 +6,63 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+ "declaration": {
+  "name": "InstrmtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrmtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "InstrumentExtension",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedInstrumentGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedInstrumentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedInstrumentGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

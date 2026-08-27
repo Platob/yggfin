@@ -6,90 +6,133 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoExecs",
-   "required": false,
-   "tag": 124,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LastQty",
-     "required": false,
-     "tag": 32
+ "declaration": {
+  "name": "ExecAllocGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ExecAllocGrp"
+  },
+  "fields": [
+   {
+    "name": "NoExecs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "124"
     },
-    {
-     "kind": "field",
-     "name": "ExecID",
-     "required": false,
-     "tag": 17
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryExecID",
-     "required": false,
-     "tag": 527
-    },
-    {
-     "kind": "field",
-     "name": "LastPx",
-     "required": false,
-     "tag": 31
-    },
-    {
-     "kind": "field",
-     "name": "LastParPx",
-     "required": false,
-     "tag": 669
-    },
-    {
-     "kind": "field",
-     "name": "LastCapacity",
-     "required": false,
-     "tag": 29
-    },
-    {
-     "kind": "field",
-     "name": "TradeID",
-     "required": false,
-     "tag": 1003
-    },
-    {
-     "kind": "field",
-     "name": "FirmTradeID",
-     "required": false,
-     "tag": 1041
-    },
-    {
-     "kind": "field",
-     "name": "TrdMatchID",
-     "required": false,
-     "tag": 880
-    },
-    {
-     "kind": "field",
-     "name": "ExecutionTimestamp",
-     "required": false,
-     "tag": 2749
-    },
-    {
-     "kind": "field",
-     "name": "TradeReportingIndicator",
-     "required": false,
-     "tag": 2524
-    },
-    {
-     "kind": "component",
-     "name": "TrdRegPublicationGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "TradePriceConditionGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "SecondaryExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "527"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      },
+      {
+       "name": "LastParPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "669"
+       }
+      },
+      {
+       "name": "LastCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "29"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "FirmTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1041"
+       }
+      },
+      {
+       "name": "TrdMatchID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "880"
+       }
+      },
+      {
+       "name": "ExecutionTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2749"
+       }
+      },
+      {
+       "name": "TradeReportingIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2524"
+       }
+      },
+      {
+       "name": "TrdRegPublicationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TrdRegPublicationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradePriceConditionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TradePriceConditionGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

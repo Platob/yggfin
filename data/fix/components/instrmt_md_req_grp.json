@@ -6,91 +6,145 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": true
+ "declaration": {
+  "name": "InstrmtMDReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrmtMDReqGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "InstrumentExtension",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "InstrmtLegGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedInstrumentGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SpreadOrBenchmarkCurveData",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "field",
-     "name": "QuoteType",
-     "required": false,
-     "tag": 537
-    },
-    {
-     "kind": "field",
-     "name": "SettlType",
-     "required": false,
-     "tag": 63
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate",
-     "required": false,
-     "tag": 64
-    },
-    {
-     "kind": "field",
-     "name": "MDEntrySize",
-     "required": false,
-     "tag": 271
-    },
-    {
-     "kind": "field",
-     "name": "MDStreamID",
-     "required": false,
-     "tag": 1500
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedInstrumentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedInstrumentGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "QuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "537"
+       }
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "MDEntrySize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "271"
+       }
+      },
+      {
+       "name": "MDStreamID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1500"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

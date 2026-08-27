@@ -5,26 +5,43 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRootPartySubIDs",
-   "required": false,
-   "tag": 1120,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RootPartySubID",
-     "required": false,
-     "tag": 1121
+ "declaration": {
+  "name": "RootSubParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RootSubParties"
+  },
+  "fields": [
+   {
+    "name": "NoRootPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1120"
     },
-    {
-     "kind": "field",
-     "name": "RootPartySubIDType",
-     "required": false,
-     "tag": 1122
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RootPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1121"
+       }
+      },
+      {
+       "name": "RootPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1122"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

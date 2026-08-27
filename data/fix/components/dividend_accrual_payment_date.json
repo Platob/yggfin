@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateRelativeTo",
-   "required": false,
-   "tag": 42238
+ "declaration": {
+  "name": "DividendAccrualPaymentDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DividendAccrualPaymentDate"
   },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 42239
-  },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 42240
-  },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 42241
-  },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateUnadjusted",
-   "required": false,
-   "tag": 42242
-  },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymeentDateBusinessDayConvention",
-   "required": false,
-   "tag": 42243
-  },
-  {
-   "kind": "component",
-   "name": "DividendAccrualPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "DividendAccrualPaymentDateAdjusted",
-   "required": false,
-   "tag": 42244
-  }
- ]
+  "fields": [
+   {
+    "name": "DividendAccrualPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42238"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42239"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42240"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42241"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42242"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymeentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42243"
+    }
+   },
+   {
+    "name": "DividendAccrualPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DividendAccrualPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "DividendAccrualPaymentDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42244"
+    }
+   }
+  ]
+ }
 }

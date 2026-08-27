@@ -4,50 +4,75 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMaturityRules",
-   "required": false,
-   "tag": 1236,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MaturityRuleID",
-     "required": false,
-     "tag": 1222
+ "declaration": {
+  "name": "MaturityRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MaturityRules"
+  },
+  "fields": [
+   {
+    "name": "NoMaturityRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1236"
     },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYearFormat",
-     "required": false,
-     "tag": 1303
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYearIncrementUnits",
-     "required": false,
-     "tag": 1302
-    },
-    {
-     "kind": "field",
-     "name": "StartMaturityMonthYear",
-     "required": false,
-     "tag": 1241
-    },
-    {
-     "kind": "field",
-     "name": "EndMaturityMonthYear",
-     "required": false,
-     "tag": 1226
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYearIncrement",
-     "required": false,
-     "tag": 1229
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MaturityRuleID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1222"
+       }
+      },
+      {
+       "name": "MaturityMonthYearFormat",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1303"
+       }
+      },
+      {
+       "name": "MaturityMonthYearIncrementUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1302"
+       }
+      },
+      {
+       "name": "StartMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1241"
+       }
+      },
+      {
+       "name": "EndMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1226"
+       }
+      },
+      {
+       "name": "MaturityMonthYearIncrement",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1229"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

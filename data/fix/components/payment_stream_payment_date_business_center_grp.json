@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPaymentStreamPaymentDateBusinessCenters",
-   "required": false,
-   "tag": 40947,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentStreamPaymentDateBusinessCenter",
-     "required": false,
-     "tag": 40752
+ "declaration": {
+  "name": "PaymentStreamPaymentDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamPaymentDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoPaymentStreamPaymentDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40947"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40752"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

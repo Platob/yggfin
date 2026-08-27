@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingAssetAttributes",
-   "required": false,
-   "tag": 2312,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingAssetAttributeType",
-     "required": false,
-     "tag": 2313
+ "declaration": {
+  "name": "UnderlyingAssetAttributeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingAssetAttributeGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingAssetAttributes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2312"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingAssetAttributeValue",
-     "required": false,
-     "tag": 2314
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAssetAttributeLimit",
-     "required": false,
-     "tag": 2315
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingAssetAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2313"
+       }
+      },
+      {
+       "name": "UnderlyingAssetAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2314"
+       }
+      },
+      {
+       "name": "UnderlyingAssetAttributeLimit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2315"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

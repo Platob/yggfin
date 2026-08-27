@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoComplexEventTimes",
-   "required": false,
-   "tag": 1494,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ComplexEventStartTime",
-     "required": false,
-     "tag": 1495
+ "declaration": {
+  "name": "ComplexEventTimes",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ComplexEventTimes"
+  },
+  "fields": [
+   {
+    "name": "NoComplexEventTimes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1494"
     },
-    {
-     "kind": "field",
-     "name": "ComplexEventEndTime",
-     "required": false,
-     "tag": 1496
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventStartTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1495"
+       }
+      },
+      {
+       "name": "ComplexEventEndTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1496"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

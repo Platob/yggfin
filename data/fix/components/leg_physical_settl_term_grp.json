@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPhysicalSettlTerms",
-   "required": false,
-   "tag": 41599,
-   "members": [
-    {
-     "kind": "component",
-     "name": "LegPhysicalSettlDeliverableObligationGrp",
-     "required": false
+ "declaration": {
+  "name": "LegPhysicalSettlTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPhysicalSettlTermGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegPhysicalSettlTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41599"
     },
-    {
-     "kind": "field",
-     "name": "LegPhysicalSettlCurency",
-     "required": false,
-     "tag": 41601
-    },
-    {
-     "kind": "field",
-     "name": "LegPhysicalSettlBusinessDays",
-     "required": false,
-     "tag": 41602
-    },
-    {
-     "kind": "field",
-     "name": "LegPhysicalSettlMaximumBusinessDays",
-     "required": false,
-     "tag": 41603
-    },
-    {
-     "kind": "field",
-     "name": "LegPhysicalSettlTermXID",
-     "required": false,
-     "tag": 41600
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegPhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegPhysicalSettlCurency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41601"
+       }
+      },
+      {
+       "name": "LegPhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41602"
+       }
+      },
+      {
+       "name": "LegPhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41603"
+       }
+      },
+      {
+       "name": "LegPhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41600"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

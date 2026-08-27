@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateUnadjusted",
-   "required": false,
-   "tag": 42689
+ "declaration": {
+  "name": "PaymentStubEndDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStubEndDate"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateBusinessDayConvention",
-   "required": false,
-   "tag": 42690
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStubEndDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateRelativeTo",
-   "required": false,
-   "tag": 42691
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateOffsetPeriod",
-   "required": false,
-   "tag": 42692
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateOffsetUnit",
-   "required": false,
-   "tag": 42693
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateOffsetDayType",
-   "required": false,
-   "tag": 42694
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStubEndDateAdjusted",
-   "required": false,
-   "tag": 42695
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStubEndDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42689"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42690"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStubEndDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStubEndDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42691"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42692"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42693"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42694"
+    }
+   },
+   {
+    "name": "PaymentStubEndDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42695"
+    }
+   }
+  ]
+ }
 }

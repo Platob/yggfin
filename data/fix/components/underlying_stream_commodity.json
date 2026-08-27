@@ -3,193 +3,275 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityBase",
-   "required": false,
-   "tag": 41964
+ "declaration": {
+  "name": "UnderlyingStreamCommodity",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStreamCommodity"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityType",
-   "required": false,
-   "tag": 41965
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySecurityID",
-   "required": false,
-   "tag": 41966
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySecurityIDSource",
-   "required": false,
-   "tag": 41967
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCommodityAltIDGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityDesc",
-   "required": false,
-   "tag": 41968
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingStreamCommodityDescLen",
-   "required": false,
-   "tag": 41969
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingStreamCommodityDesc",
-   "required": false,
-   "tag": 41970
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityDeliveryPricingRegion",
-   "required": false,
-   "tag": 42589
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamAssetAttributeGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityUnitOfMeasure",
-   "required": false,
-   "tag": 41971
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityCurrency",
-   "required": false,
-   "tag": 41972
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityExchange",
-   "required": false,
-   "tag": 41973
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityRateSource",
-   "required": false,
-   "tag": 41974
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityRateReferencePage",
-   "required": false,
-   "tag": 41975
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityRateReferencePageHeading",
-   "required": false,
-   "tag": 41976
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamDataProvider",
-   "required": false,
-   "tag": 41977
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCommodityDataSourceGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityPricingType",
-   "required": false,
-   "tag": 41978
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityNearbySettlDayPeriod",
-   "required": false,
-   "tag": 41979
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityNearbySettlDayUnit",
-   "required": false,
-   "tag": 41980
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDateUnadjusted",
-   "required": false,
-   "tag": 41981
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDateBusinessDayConvention",
-   "required": false,
-   "tag": 41982
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCommoditySettlBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDateAdjusted",
-   "required": false,
-   "tag": 41983
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlMonth",
-   "required": false,
-   "tag": 41984
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDateRollPeriod",
-   "required": false,
-   "tag": 41985
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDateRollUnit",
-   "required": false,
-   "tag": 41986
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommoditySettlDayType",
-   "required": false,
-   "tag": 41987
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCommoditySettlPeriodGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityXID",
-   "required": false,
-   "tag": 41988
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCommodityXIDRef",
-   "required": false,
-   "tag": 41989
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingStreamCommodityBase",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41964"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41965"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41966"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41967"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityAltIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCommodityAltIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCommodityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41968"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingStreamCommodityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41969"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingStreamCommodityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41970"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityDeliveryPricingRegion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42589"
+    }
+   },
+   {
+    "name": "UnderlyingStreamAssetAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamAssetAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCommodityUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41971"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41972"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41973"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityRateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41974"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityRateReferencePage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41975"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityRateReferencePageHeading",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41976"
+    }
+   },
+   {
+    "name": "UnderlyingStreamDataProvider",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41977"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityDataSourceGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCommodityDataSourceGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCommodityPricingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41978"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityNearbySettlDayPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41979"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityNearbySettlDayUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41980"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41981"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41982"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCommoditySettlBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41983"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41984"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDateRollPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41985"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDateRollUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41986"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41987"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommoditySettlPeriodGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCommoditySettlPeriodGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCommodityXID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41988"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCommodityXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41989"
+    }
+   }
+  ]
+ }
 }

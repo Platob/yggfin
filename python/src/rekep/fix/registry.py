@@ -43,15 +43,18 @@ from rekep.fix.entries import (
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
-    SpecComponent,
     SpecField,
-    SpecGroup,
     declared_group,
+    entry_of,
     first_declared_name,
+    is_group,
+    is_reference,
+    members_of,
     parse_components,
     parse_session,
     parse_spec,
     spec_name,
+    walk,
 )
 from rekep.fix.store import (
     COMPONENTS,
@@ -607,53 +610,36 @@ class FixRegistry(Convertible):
                 continue
             if not name.startswith(f"{COMPONENTS}/"):
                 raise ValueError(f"unexpected FIX registry document {name!r}")
-            unknown = sorted(set(document) - {"name", "versions", "members", "msg_type", "aliases"})
+            unknown = sorted(set(document) - {"name", "versions", "declaration", "aliases"})
             component_versions = document.get("versions")
-            members = document.get("members", [])
             if (
                 unknown
                 or type(document.get("name")) is not str
                 or not isinstance(component_versions, list)
                 or any(type(version) is not str for version in component_versions)
                 or not set(component_versions).issubset(known_versions | {ANY_VERSION})
-                or not isinstance(members, list)
+                or not isinstance(document.get("declaration"), Mapping)
                 or not isinstance(document.get("aliases", []), list)
             ):
                 raise ValueError(f"FIX component in {name!r} has invalid metadata")
-            pending = list(members)
-            while pending:
-                member = pending.pop()
-                if not isinstance(member, Mapping):
-                    raise ValueError(f"FIX component in {name!r} has a non-object member")
-                kind = member.get("kind")
-                allowed = {"kind", "name", "required"}
-                if kind in ("field", "group"):
-                    allowed.add("tag")
-                if kind == "group":
-                    allowed.add("members")
-                if (
-                    kind not in ("field", "component", "group")
-                    or set(member) - allowed
-                    or type(member.get("name")) is not str
-                    or not member["name"].strip()
-                    or type(member.get("required")) is not bool
-                    or (
-                        kind in ("field", "group")
-                        and (type(member.get("tag")) is not int or member["tag"] <= 0)
-                    )
-                    or (kind == "group" and not isinstance(member.get("members"), list))
-                ):
-                    raise ValueError(f"FIX component in {name!r} has an invalid member")
-                if kind == "group":
-                    pending.extend(member["members"])
-                if kind in ("field", "group"):
-                    component_tags.add(member["tag"])
-                elif kind == "component":
-                    component_refs.add(fold(member["name"]))
             try:
                 entry = ComponentEntry.from_dict(document)
             except (AttributeError, KeyError, TypeError, ValueError) as error:
                 raise ValueError(f"FIX component in {name!r} is invalid: {error}") from error
+            # The declaration validates by being read: a document Field cannot
+            # parse is not one. What is left is the cross-check the shape alone
+            # cannot make -- that every tag and every reference it names is
+            # something this store actually holds.
+            for member, _ in walk(entry.declaration):
+                if is_reference(member):
+                    component_refs.add(fold(member.name))
+                    continue
+                tag = member.fix.tag
+                if tag is None or tag <= 0:
+                    raise ValueError(
+                        f"FIX component in {name!r} declares {member.name!r} with no tag"
+                    )
+                component_tags.add(tag)
             expected = f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}"
             if name != expected or entry.slug in components:
                 raise ValueError(f"FIX component {entry.name!r} is stored under the wrong name")
@@ -777,7 +763,7 @@ class FixRegistry(Convertible):
         order = tuple(self._spelling(version) for version in versions) or self.versions
         declarations: dict[str, list[Field]] = {}
         sessions: dict[str, Sequence[tuple[str, bool]]] = {}
-        components: dict[str, Sequence[SpecComponent]] = {}
+        components: dict[str, Sequence[Field]] = {}
         for version in order:
             document = self._spec_document(version)
             declarations[version] = self._scrape_version(version, document)
@@ -925,7 +911,7 @@ class FixRegistry(Convertible):
         """
         return self._stored_session(self._spelling(version))
 
-    def components(self, version: str, *, refresh: bool = False) -> list[SpecComponent]:
+    def components(self, version: str, *, refresh: bool = False) -> list[Field]:
         """Every reusable component of one FIX version, in spec order."""
         version = self._spelling(version)
         stored = self._stored_components(version)
@@ -957,15 +943,15 @@ class FixRegistry(Convertible):
 
         counts: set[int] = set()
 
-        def visit(members: Sequence[Any]) -> None:
-            for member in members:
-                if isinstance(member, SpecGroup):
-                    if member.tag:
-                        counts.add(int(member.tag))
-                    visit(member.members)
+        def visit(declared: Any) -> None:
+            for member in members_of(declared):
+                if is_group(member):
+                    if member.fix.tag:
+                        counts.add(int(member.fix.tag))
+                    visit(entry_of(member))
 
         for component in self.components(spelling):
-            visit(component.members)
+            visit(component)
         found = frozenset(counts)
         cache[spelling] = found
         return found
@@ -990,15 +976,17 @@ class FixRegistry(Convertible):
             node = by_name.get(root.lower())
             if node is None:
                 continue
-            members: Sequence[Any] = node.members
+            declared_in: Any = node
             found: list[str] = []
             for group in groups:
-                declared = declared_group(members, group, by_name)
-                named = None if declared is None else first_declared_name(declared.members, by_name)
+                declared = declared_group(declared_in, group, by_name)
+                named = (
+                    None if declared is None else first_declared_name(entry_of(declared), by_name)
+                )
                 if not named:
                     break
                 found.append(named)
-                members = declared.members
+                declared_in = entry_of(declared)
             else:
                 return tuple(found)
         return None
@@ -1016,7 +1004,7 @@ class FixRegistry(Convertible):
         except (KeyError, OSError, ValueError):
             return False
 
-    def component(self, name: str, version: str | None = None) -> SpecComponent:
+    def component(self, name: str, version: str | None = None) -> Field:
         """The newest declaration of one component, matched case-insensitively."""
         wanted = str(name).strip().lower()
         candidates = (self._spelling(version),) if version is not None else self.versions
@@ -1280,6 +1268,22 @@ class FixRegistry(Convertible):
             types=self._component_types(version),
             components={found.folded: found for found in self._entries[1].values()},
         )
+
+    def component_dataclass(self, name: str, version: str) -> type | None:
+        """One component as a class, built from its declaration rather than by hand.
+
+        The declaration already says every member's name, its Arrow type and
+        whether a message must carry it, so the class is `into_dataclass` over
+        the projection -- nested entry classes and all. Nothing is written
+        twice, and a dictionary refresh moves the class with it.
+
+        The handful of components this package projects into *published*
+        columns keep their hand-written declarations: those are a contract,
+        and a contract that changed shape whenever the dictionary was
+        refreshed would not be one.
+        """
+        projected = self.component_field(name, version)
+        return None if projected is None else projected.into_dataclass(projected.fix.component)
 
     def _component_types(self, version: str) -> dict[str, Any]:
         """`{FIX member name: Arrow type}` for one version, for a projection."""
@@ -1847,7 +1851,7 @@ class FixRegistry(Convertible):
         """One version's fields as this store holds them; None when it does not."""
         return self._layout.fields(version)
 
-    def _stored_components(self, version: str) -> list[SpecComponent] | None:
+    def _stored_components(self, version: str) -> list[Field] | None:
         """Stored component declarations; None means this predates them."""
         return self._layout.components(version)
 
@@ -1860,7 +1864,7 @@ class FixRegistry(Convertible):
         version: str,
         fields: list[Field],
         session: Sequence[tuple[str, bool]] = (),
-        components: Sequence[SpecComponent] | None = None,
+        components: Sequence[Field] | None = None,
     ) -> None:
         """Keep one version's fields and optional spec declarations."""
         self._layout.store(version, fields, session, components, url=f"{self.base_url}/{version}/")
@@ -2033,7 +2037,7 @@ class FixRegistry(Convertible):
         selected.update(added)
 
         sessions: dict[str, Sequence[tuple[str, bool]]] = {}
-        declared: dict[str, Sequence[SpecComponent]] = {}
+        declared: dict[str, Sequence[Field]] = {}
         for version in self.versions:
             names = {entry.name for entry in selected.values() if entry.declares(version)}
             sessions[version] = [

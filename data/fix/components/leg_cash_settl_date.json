@@ -3,53 +3,79 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateUnadjusted",
-   "required": false,
-   "tag": 42299
+ "declaration": {
+  "name": "LegCashSettlDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegCashSettlDate"
   },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateBusinessDayConvention",
-   "required": false,
-   "tag": 42300
-  },
-  {
-   "kind": "component",
-   "name": "LegCashSettlDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateRelativeTo",
-   "required": false,
-   "tag": 42301
-  },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateOffsetPeriod",
-   "required": false,
-   "tag": 42302
-  },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateOffsetUnit",
-   "required": false,
-   "tag": 42303
-  },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateOffsetDayType",
-   "required": false,
-   "tag": 42304
-  },
-  {
-   "kind": "field",
-   "name": "LegCashSettlDateAdjusted",
-   "required": false,
-   "tag": 42305
-  }
- ]
+  "fields": [
+   {
+    "name": "LegCashSettlDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42299"
+    }
+   },
+   {
+    "name": "LegCashSettlDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42300"
+    }
+   },
+   {
+    "name": "LegCashSettlDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegCashSettlDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegCashSettlDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42301"
+    }
+   },
+   {
+    "name": "LegCashSettlDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42302"
+    }
+   },
+   {
+    "name": "LegCashSettlDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42303"
+    }
+   },
+   {
+    "name": "LegCashSettlDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42304"
+    }
+   },
+   {
+    "name": "LegCashSettlDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42305"
+    }
+   }
+  ]
+ }
 }

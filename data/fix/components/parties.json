@@ -7,43 +7,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyIDs",
-   "required": false,
-   "tag": 453,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartyID",
-     "required": false,
-     "tag": 448
+ "declaration": {
+  "name": "Parties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Parties"
+  },
+  "fields": [
+   {
+    "name": "NoPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "453"
     },
-    {
-     "kind": "field",
-     "name": "PartyIDSource",
-     "required": false,
-     "tag": 447
-    },
-    {
-     "kind": "field",
-     "name": "PartyRole",
-     "required": false,
-     "tag": 452
-    },
-    {
-     "kind": "field",
-     "name": "PartyRoleQualifier",
-     "required": false,
-     "tag": 2376
-    },
-    {
-     "kind": "component",
-     "name": "PtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "PtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,114 +3,158 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateIndex",
-   "required": false,
-   "tag": 42923
+ "declaration": {
+  "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamCompoundingFloatingRate"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateIndexCurvePeriod",
-   "required": false,
-   "tag": 42924
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateIndexCurveUnit",
-   "required": false,
-   "tag": 42925
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateMultiplier",
-   "required": false,
-   "tag": 42926
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateSpread",
-   "required": false,
-   "tag": 42927
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateSpreadPositionType",
-   "required": false,
-   "tag": 42928
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingRateTreatment",
-   "required": false,
-   "tag": 42929
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingCapRate",
-   "required": false,
-   "tag": 42930
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingCapRateBuySide",
-   "required": false,
-   "tag": 42931
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingCapRateSellSide",
-   "required": false,
-   "tag": 42932
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFloorRate",
-   "required": false,
-   "tag": 42933
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFloorRateBuySide",
-   "required": false,
-   "tag": 42934
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFloorRateSellSide",
-   "required": false,
-   "tag": 42935
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingInitialRate",
-   "required": false,
-   "tag": 42936
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFinalRateRoundingDirection",
-   "required": false,
-   "tag": 42937
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFinalRatePrecision",
-   "required": false,
-   "tag": 42938
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingAveragingMethod",
-   "required": false,
-   "tag": 42939
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingNegativeRateTreatment",
-   "required": false,
-   "tag": 42940
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42923"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42924"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42925"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42926"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42927"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateSpreadPositionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42928"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42929"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingCapRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42930"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingCapRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42931"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingCapRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42932"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFloorRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42933"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFloorRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42934"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFloorRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42935"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingInitialRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42936"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFinalRateRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42937"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFinalRatePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42938"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingAveragingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42939"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingNegativeRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42940"
+    }
+   }
+  ]
+ }
 }

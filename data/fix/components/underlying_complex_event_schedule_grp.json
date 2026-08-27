@@ -3,44 +3,67 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingComplexEventSchedules",
-   "required": false,
-   "tag": 41750,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventScheduleStartDate",
-     "required": false,
-     "tag": 41751
+ "declaration": {
+  "name": "UnderlyingComplexEventScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEventScheduleGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingComplexEventSchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41750"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventScheduleEndDate",
-     "required": false,
-     "tag": 41752
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
-     "required": false,
-     "tag": 41753
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventScheduleFrequencyUnit",
-     "required": false,
-     "tag": 41754
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventScheduleRollConvention",
-     "required": false,
-     "tag": 41755
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventScheduleStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41751"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventScheduleEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41752"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41753"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventScheduleFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41754"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventScheduleRollConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41755"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

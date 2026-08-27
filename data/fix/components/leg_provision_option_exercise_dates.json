@@ -3,124 +3,176 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseBusinessDayConvention",
-   "required": false,
-   "tag": 40476
+ "declaration": {
+  "name": "LegProvisionOptionExerciseDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionOptionExerciseDates"
   },
-  {
-   "kind": "component",
-   "name": "LegProvisionOptionExerciseBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegProvisionOptionExerciseFixedDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseEarliestDateOffsetPeriod",
-   "required": false,
-   "tag": 40478
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseEarliestDateOffsetUnit",
-   "required": false,
-   "tag": 40479
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseFrequencyPeriod",
-   "required": false,
-   "tag": 40480
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseFrequencyUnit",
-   "required": false,
-   "tag": 40481
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateUnadjusted",
-   "required": false,
-   "tag": 40482
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateRelativeTo",
-   "required": false,
-   "tag": 40483
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateOffsetPeriod",
-   "required": false,
-   "tag": 40484
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateOffsetUnit",
-   "required": false,
-   "tag": 40485
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateOffsetDayType",
-   "required": false,
-   "tag": 40486
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseStartDateAdjusted",
-   "required": false,
-   "tag": 40487
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExercisePeriodSkip",
-   "required": false,
-   "tag": 40488
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseBoundsFirstDateUnadjusted",
-   "required": false,
-   "tag": 40489
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseBoundsLastDateUnadjusted",
-   "required": false,
-   "tag": 40490
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseEarliestTime",
-   "required": false,
-   "tag": 40491
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseEarliestTimeBusinessCenter",
-   "required": false,
-   "tag": 40492
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseLatestTime",
-   "required": false,
-   "tag": 40493
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExerciseLatestTimeBusinessCenter",
-   "required": false,
-   "tag": 40494
-  }
- ]
+  "fields": [
+   {
+    "name": "LegProvisionOptionExerciseBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40476"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionOptionExerciseBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionOptionExerciseFixedDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionOptionExerciseFixedDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionOptionExerciseEarliestDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40478"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseEarliestDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40479"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40480"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40481"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40482"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40483"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40484"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40485"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40486"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40487"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExercisePeriodSkip",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40488"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseBoundsFirstDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40489"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseBoundsLastDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40490"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseEarliestTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40491"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseEarliestTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40492"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseLatestTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40493"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExerciseLatestTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40494"
+    }
+   }
+  ]
+ }
 }

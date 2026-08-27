@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import decimal
 import functools
+import typing
 from typing import Annotated
 
 import pyarrow
@@ -190,3 +191,43 @@ def test_a_builder_can_be_pointed_at_another_base() -> None:
         Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())]))
     )
     assert issubclass(built, Base)
+
+
+def test_a_list_entry_class_is_named_after_the_list() -> None:
+    """Two groups in one struct must not both be classes called `Item`."""
+    schema = pyarrow.schema(
+        [
+            pyarrow.field(
+                "no_party_ids", pyarrow.list_(pyarrow.struct([("id", pyarrow.string())]))
+            ),
+            pyarrow.field("no_legs", pyarrow.list_(pyarrow.struct([("symbol", pyarrow.string())]))),
+        ]
+    )
+    built = Field.from_arrow_schema(schema).into_dataclass("Order")
+    entries = [
+        typing.get_args(typing.get_args(typing.get_args(annotation)[0])[0])[0]
+        for annotation in built.__annotations__.values()
+    ]
+
+    assert [entry.__name__ for entry in entries] == ["NoPartyIds", "NoLegs"]
+    assert (
+        built.into_field()
+        .into_arrow_schema()
+        .equals(pyarrow.schema(list(schema), metadata={"name": "Order"}))
+    )
+
+
+def test_a_column_python_cannot_spell_becomes_an_attribute_that_projects_back() -> None:
+    """FIX tag 236 is `Yield`, and `yield` is a statement, not an attribute."""
+    schema = pyarrow.schema([("yield", pyarrow.float64()), ("symbol", pyarrow.string())])
+
+    built = Field.from_arrow_schema(schema).into_dataclass("Bond")
+
+    assert list(built.__annotations__) == ["yield_", "symbol"]
+    assert (
+        built.into_field()
+        .into_arrow_schema()
+        .equals(pyarrow.schema(list(schema), metadata={"name": "Bond"}))
+    )
+    assert built.into_field_columns() == {"yield_": "yield"}, "the class says what it renamed"
+    assert [member.name for member in built.into_field().fields] == ["yield", "symbol"]

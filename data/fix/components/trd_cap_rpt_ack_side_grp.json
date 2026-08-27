@@ -5,492 +5,696 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSides",
-   "required": false,
-   "tag": 552,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": true,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "SideExecID",
-     "required": false,
-     "tag": 1427
-    },
-    {
-     "kind": "field",
-     "name": "SideTradeID",
-     "required": false,
-     "tag": 1506
-    },
-    {
-     "kind": "field",
-     "name": "SideOrigTradeID",
-     "required": false,
-     "tag": 1507
-    },
-    {
-     "kind": "field",
-     "name": "OrderDelay",
-     "required": false,
-     "tag": 1428
-    },
-    {
-     "kind": "field",
-     "name": "OrderDelayUnit",
-     "required": false,
-     "tag": 1429
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Account",
-     "required": false,
-     "tag": 1
-    },
-    {
-     "kind": "field",
-     "name": "AcctIDSource",
-     "required": false,
-     "tag": 660
-    },
-    {
-     "kind": "field",
-     "name": "AccountType",
-     "required": false,
-     "tag": 581
-    },
-    {
-     "kind": "component",
-     "name": "LimitAmts",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProcessCode",
-     "required": false,
-     "tag": 81
-    },
-    {
-     "kind": "field",
-     "name": "OddLot",
-     "required": false,
-     "tag": 575
-    },
-    {
-     "kind": "component",
-     "name": "ClrInstGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SideTradeReportingIndicator",
-     "required": false,
-     "tag": 2671
-    },
-    {
-     "kind": "field",
-     "name": "TradeInputSource",
-     "required": false,
-     "tag": 578
-    },
-    {
-     "kind": "field",
-     "name": "TradeInputDevice",
-     "required": false,
-     "tag": 579
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceID",
-     "required": false,
-     "tag": 376
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceText",
-     "required": false,
-     "tag": 2404
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceTextLen",
-     "required": false,
-     "tag": 2351
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceText",
-     "required": false,
-     "tag": 2352
-    },
-    {
-     "kind": "field",
-     "name": "SolicitedFlag",
-     "required": false,
-     "tag": 377
-    },
-    {
-     "kind": "field",
-     "name": "CustOrderCapacity",
-     "required": false,
-     "tag": 582
-    },
-    {
-     "kind": "field",
-     "name": "TradingSessionID",
-     "required": false,
-     "tag": 336
-    },
-    {
-     "kind": "field",
-     "name": "TradingSessionSubID",
-     "required": false,
-     "tag": 625
-    },
-    {
-     "kind": "field",
-     "name": "TimeBracket",
-     "required": false,
-     "tag": 943
-    },
-    {
-     "kind": "field",
-     "name": "NetGrossInd",
-     "required": false,
-     "tag": 430
-    },
-    {
-     "kind": "field",
-     "name": "SideCurrency",
-     "required": false,
-     "tag": 1154
-    },
-    {
-     "kind": "field",
-     "name": "SideCurrencyCodeSource",
-     "required": false,
-     "tag": 2901
-    },
-    {
-     "kind": "field",
-     "name": "SideSettlCurrency",
-     "required": false,
-     "tag": 1155
-    },
-    {
-     "kind": "field",
-     "name": "SideSettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2902
-    },
-    {
-     "kind": "component",
-     "name": "CommissionData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "CommissionDataGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "NumDaysInterest",
-     "required": false,
-     "tag": 157
-    },
-    {
-     "kind": "field",
-     "name": "ExDate",
-     "required": false,
-     "tag": 230
-    },
-    {
-     "kind": "field",
-     "name": "AccruedInterestRate",
-     "required": false,
-     "tag": 158
-    },
-    {
-     "kind": "field",
-     "name": "AccruedInterestAmt",
-     "required": false,
-     "tag": 159
-    },
-    {
-     "kind": "field",
-     "name": "InterestAtMaturity",
-     "required": false,
-     "tag": 738
-    },
-    {
-     "kind": "field",
-     "name": "EndAccruedInterestAmt",
-     "required": false,
-     "tag": 920
-    },
-    {
-     "kind": "field",
-     "name": "StartCash",
-     "required": false,
-     "tag": 921
-    },
-    {
-     "kind": "field",
-     "name": "EndCash",
-     "required": false,
-     "tag": 922
-    },
-    {
-     "kind": "field",
-     "name": "Concession",
-     "required": false,
-     "tag": 238
-    },
-    {
-     "kind": "field",
-     "name": "TotalTakedown",
-     "required": false,
-     "tag": 237
-    },
-    {
-     "kind": "field",
-     "name": "NetMoney",
-     "required": false,
-     "tag": 118
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrAmt",
-     "required": false,
-     "tag": 119
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrFxRate",
-     "required": false,
-     "tag": 155
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrFxRateCalc",
-     "required": false,
-     "tag": 156
-    },
-    {
-     "kind": "field",
-     "name": "PositionEffect",
-     "required": false,
-     "tag": 77
-    },
-    {
-     "kind": "field",
-     "name": "SideMultiLegReportingType",
-     "required": false,
-     "tag": 752
-    },
-    {
-     "kind": "component",
-     "name": "ContAmtGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "Stipulations",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "MiscFeesGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ExchangeRule",
-     "required": false,
-     "tag": 825
-    },
-    {
-     "kind": "component",
-     "name": "SettlDetails",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TradeAllocIndicator",
-     "required": false,
-     "tag": 826
-    },
-    {
-     "kind": "field",
-     "name": "AllocGroupID",
-     "required": false,
-     "tag": 1730
-    },
-    {
-     "kind": "field",
-     "name": "PreviousAllocGroupID",
-     "required": false,
-     "tag": 2771
-    },
-    {
-     "kind": "field",
-     "name": "GroupAmount",
-     "required": false,
-     "tag": 2759
-    },
-    {
-     "kind": "field",
-     "name": "AllocGroupStatus",
-     "required": false,
-     "tag": 2767
-    },
-    {
-     "kind": "field",
-     "name": "SideAvgPxIndicator",
-     "required": false,
-     "tag": 1853
-    },
-    {
-     "kind": "field",
-     "name": "SideAvgPxGroupID",
-     "required": false,
-     "tag": 1854
-    },
-    {
-     "kind": "field",
-     "name": "SideAvgPx",
-     "required": false,
-     "tag": 1852
-    },
-    {
-     "kind": "field",
-     "name": "PreallocMethod",
-     "required": false,
-     "tag": 591
-    },
-    {
-     "kind": "field",
-     "name": "AllocID",
-     "required": false,
-     "tag": 70
-    },
-    {
-     "kind": "component",
-     "name": "TrdAllocGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SideGrossTradeAmt",
-     "required": false,
-     "tag": 1072
-    },
-    {
-     "kind": "field",
-     "name": "AggressorIndicator",
-     "required": false,
-     "tag": 1057
-    },
-    {
-     "kind": "field",
-     "name": "SideLastQty",
-     "required": false,
-     "tag": 1009
-    },
-    {
-     "kind": "field",
-     "name": "SideTradeReportID",
-     "required": false,
-     "tag": 1005
-    },
-    {
-     "kind": "field",
-     "name": "SideFillStationCd",
-     "required": false,
-     "tag": 1006
-    },
-    {
-     "kind": "field",
-     "name": "SideReasonCd",
-     "required": false,
-     "tag": 1007
-    },
-    {
-     "kind": "field",
-     "name": "RptSeq",
-     "required": false,
-     "tag": 83
-    },
-    {
-     "kind": "field",
-     "name": "SideTrdSubType",
-     "required": false,
-     "tag": 1008
-    },
-    {
-     "kind": "field",
-     "name": "OrderCategory",
-     "required": false,
-     "tag": 1115
-    },
-    {
-     "kind": "field",
-     "name": "StrategyLinkID",
-     "required": false,
-     "tag": 1851
-    },
-    {
-     "kind": "component",
-     "name": "TradeReportOrderDetail",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SideTrdRegTS",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "CustOrderHandlingInst",
-     "required": false,
-     "tag": 1031
-    },
-    {
-     "kind": "field",
-     "name": "OrderHandlingInstSource",
-     "required": false,
-     "tag": 1032
-    },
-    {
-     "kind": "component",
-     "name": "RelatedTradeGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedPositionGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SideRiskLimitCheckStatus",
-     "required": false,
-     "tag": 2344
+ "declaration": {
+  "name": "TrdCapRptAckSideGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdCapRptAckSideGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSides",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "552"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Side",
+       "type": "string",
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "SideExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1427"
+       }
+      },
+      {
+       "name": "SideTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1506"
+       }
+      },
+      {
+       "name": "SideOrigTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1507"
+       }
+      },
+      {
+       "name": "OrderDelay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1428"
+       }
+      },
+      {
+       "name": "OrderDelayUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1429"
+       }
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "Account",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1"
+       }
+      },
+      {
+       "name": "AcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "660"
+       }
+      },
+      {
+       "name": "AccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "581"
+       }
+      },
+      {
+       "name": "LimitAmts",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LimitAmts"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProcessCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "81"
+       }
+      },
+      {
+       "name": "OddLot",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "575"
+       }
+      },
+      {
+       "name": "ClrInstGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ClrInstGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SideTradeReportingIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2671"
+       }
+      },
+      {
+       "name": "TradeInputSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "578"
+       }
+      },
+      {
+       "name": "TradeInputDevice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "579"
+       }
+      },
+      {
+       "name": "ComplianceID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "376"
+       }
+      },
+      {
+       "name": "ComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2404"
+       }
+      },
+      {
+       "name": "EncodedComplianceTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2351"
+       }
+      },
+      {
+       "name": "EncodedComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2352"
+       }
+      },
+      {
+       "name": "SolicitedFlag",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "377"
+       }
+      },
+      {
+       "name": "CustOrderCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "582"
+       }
+      },
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      },
+      {
+       "name": "TimeBracket",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "943"
+       }
+      },
+      {
+       "name": "NetGrossInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "430"
+       }
+      },
+      {
+       "name": "SideCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1154"
+       }
+      },
+      {
+       "name": "SideCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2901"
+       }
+      },
+      {
+       "name": "SideSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1155"
+       }
+      },
+      {
+       "name": "SideSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2902"
+       }
+      },
+      {
+       "name": "CommissionData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionData"
+       },
+       "fields": []
+      },
+      {
+       "name": "CommissionDataGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionDataGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "NumDaysInterest",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "157"
+       }
+      },
+      {
+       "name": "ExDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "230"
+       }
+      },
+      {
+       "name": "AccruedInterestRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "158"
+       }
+      },
+      {
+       "name": "AccruedInterestAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "159"
+       }
+      },
+      {
+       "name": "InterestAtMaturity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "738"
+       }
+      },
+      {
+       "name": "EndAccruedInterestAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "920"
+       }
+      },
+      {
+       "name": "StartCash",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "921"
+       }
+      },
+      {
+       "name": "EndCash",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "922"
+       }
+      },
+      {
+       "name": "Concession",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "238"
+       }
+      },
+      {
+       "name": "TotalTakedown",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "237"
+       }
+      },
+      {
+       "name": "NetMoney",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "118"
+       }
+      },
+      {
+       "name": "SettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "119"
+       }
+      },
+      {
+       "name": "SettlCurrFxRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "155"
+       }
+      },
+      {
+       "name": "SettlCurrFxRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "156"
+       }
+      },
+      {
+       "name": "PositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "77"
+       }
+      },
+      {
+       "name": "SideMultiLegReportingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "752"
+       }
+      },
+      {
+       "name": "ContAmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ContAmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "Stipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Stipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "MiscFeesGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MiscFeesGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ExchangeRule",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "825"
+       }
+      },
+      {
+       "name": "SettlDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradeAllocIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "826"
+       }
+      },
+      {
+       "name": "AllocGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1730"
+       }
+      },
+      {
+       "name": "PreviousAllocGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2771"
+       }
+      },
+      {
+       "name": "GroupAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2759"
+       }
+      },
+      {
+       "name": "AllocGroupStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2767"
+       }
+      },
+      {
+       "name": "SideAvgPxIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1853"
+       }
+      },
+      {
+       "name": "SideAvgPxGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1854"
+       }
+      },
+      {
+       "name": "SideAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1852"
+       }
+      },
+      {
+       "name": "PreallocMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "591"
+       }
+      },
+      {
+       "name": "AllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "70"
+       }
+      },
+      {
+       "name": "TrdAllocGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TrdAllocGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SideGrossTradeAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1072"
+       }
+      },
+      {
+       "name": "AggressorIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1057"
+       }
+      },
+      {
+       "name": "SideLastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1009"
+       }
+      },
+      {
+       "name": "SideTradeReportID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1005"
+       }
+      },
+      {
+       "name": "SideFillStationCd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1006"
+       }
+      },
+      {
+       "name": "SideReasonCd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1007"
+       }
+      },
+      {
+       "name": "RptSeq",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "83"
+       }
+      },
+      {
+       "name": "SideTrdSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1008"
+       }
+      },
+      {
+       "name": "OrderCategory",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1115"
+       }
+      },
+      {
+       "name": "StrategyLinkID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1851"
+       }
+      },
+      {
+       "name": "TradeReportOrderDetail",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TradeReportOrderDetail"
+       },
+       "fields": []
+      },
+      {
+       "name": "SideTrdRegTS",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SideTrdRegTS"
+       },
+       "fields": []
+      },
+      {
+       "name": "CustOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1031"
+       }
+      },
+      {
+       "name": "OrderHandlingInstSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1032"
+       }
+      },
+      {
+       "name": "RelatedTradeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedTradeGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedPositionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedPositionGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SideRiskLimitCheckStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2344"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

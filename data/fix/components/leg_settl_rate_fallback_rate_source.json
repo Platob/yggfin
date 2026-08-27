@@ -3,18 +3,30 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegSettlRateFallbackRateSource",
-   "required": false,
-   "tag": 40366
+ "declaration": {
+  "name": "LegSettlRateFallbackRateSource",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSettlRateFallbackRateSource"
   },
-  {
-   "kind": "field",
-   "name": "LegSettlRateFallbackReferencePage",
-   "required": false,
-   "tag": 40370
-  }
- ]
+  "fields": [
+   {
+    "name": "LegSettlRateFallbackRateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40366"
+    }
+   },
+   {
+    "name": "LegSettlRateFallbackReferencePage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40370"
+    }
+   }
+  ]
+ }
 }

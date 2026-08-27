@@ -3,203 +3,293 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamType",
-   "required": false,
-   "tag": 40568
+ "declaration": {
+  "name": "UnderlyingPaymentStream",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStream"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamMarketRate",
-   "required": false,
-   "tag": 40569
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamDelayIndicator",
-   "required": false,
-   "tag": 40570
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCashSettlIndicator",
-   "required": false,
-   "tag": 42895
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamSettlCurrency",
-   "required": false,
-   "tag": 40571
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamDayCount",
-   "required": false,
-   "tag": 40572
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamOtherDayCount",
-   "required": false,
-   "tag": 43107
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamAccrualDays",
-   "required": false,
-   "tag": 40573
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamDiscountType",
-   "required": false,
-   "tag": 40574
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamDiscountRate",
-   "required": false,
-   "tag": 40575
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamDiscountRateDayCount",
-   "required": false,
-   "tag": 40576
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingMethod",
-   "required": false,
-   "tag": 40577
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingXIDRef",
-   "required": false,
-   "tag": 42896
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingSpread",
-   "required": false,
-   "tag": 42897
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamInterpolationMethod",
-   "required": false,
-   "tag": 42898
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamInterpolationPeriod",
-   "required": false,
-   "tag": 42899
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamInitialPrincipalExchangeIndicator",
-   "required": false,
-   "tag": 40578
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamInterimPrincipalExchangeIndicator",
-   "required": false,
-   "tag": 40579
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFinalPrincipalExchangeIndicator",
-   "required": false,
-   "tag": 40580
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFlatRateIndicator",
-   "required": false,
-   "tag": 41897
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFlatRateAmount",
-   "required": false,
-   "tag": 41898
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFlatRateCurrency",
-   "required": false,
-   "tag": 41899
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamMaximumPaymentAmount",
-   "required": false,
-   "tag": 41900
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamMaximumPaymentCurrency",
-   "required": false,
-   "tag": 41901
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamMaximumTransactionAmount",
-   "required": false,
-   "tag": 41902
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamMaximumTransactionCurrency",
-   "required": false,
-   "tag": 41903
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamPaymentDates",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamResetDates",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFixedRate",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFloatingRate",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamCompoundingFixedRate",
-   "required": false,
-   "tag": 42900
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamCompoundingDates",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamNonDeliverableSettlTerms",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40568"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamMarketRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40569"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamDelayIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40570"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCashSettlIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42895"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamSettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40571"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40572"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamOtherDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43107"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamAccrualDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40573"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamDiscountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40574"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamDiscountRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40575"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamDiscountRateDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40576"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40577"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42896"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42897"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamInterpolationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42898"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamInterpolationPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42899"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamInitialPrincipalExchangeIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40578"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamInterimPrincipalExchangeIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40579"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFinalPrincipalExchangeIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40580"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFlatRateIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41897"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFlatRateAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41898"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFlatRateCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41899"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamMaximumPaymentAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41900"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamMaximumPaymentCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41901"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamMaximumTransactionAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41902"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamMaximumTransactionCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41903"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamPaymentDates",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamPaymentDates"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamResetDates",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamResetDates"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamFixedRate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFixedRate"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamFloatingRate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFloatingRate"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFixedRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42900"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamCompoundingFloatingRate"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamCompoundingDates",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamCompoundingDates"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableSettlTerms",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamNonDeliverableSettlTerms"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

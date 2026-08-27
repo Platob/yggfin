@@ -3,24 +3,38 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegSecurityXMLLen",
-   "required": false,
-   "tag": 1871
+ "declaration": {
+  "name": "LegSecurityXML",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSecurityXML"
   },
-  {
-   "kind": "field",
-   "name": "LegSecurityXML",
-   "required": false,
-   "tag": 1872
-  },
-  {
-   "kind": "field",
-   "name": "LegSecurityXMLSchema",
-   "required": false,
-   "tag": 1873
-  }
- ]
+  "fields": [
+   {
+    "name": "LegSecurityXMLLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1871"
+    }
+   },
+   {
+    "name": "LegSecurityXML",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1872"
+    }
+   },
+   {
+    "name": "LegSecurityXMLSchema",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1873"
+    }
+   }
+  ]
+ }
 }

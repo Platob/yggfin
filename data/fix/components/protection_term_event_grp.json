@@ -3,61 +3,92 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProtectionTermEvents",
-   "required": false,
-   "tag": 40191,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventType",
-     "required": false,
-     "tag": 40192
+ "declaration": {
+  "name": "ProtectionTermEventGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProtectionTermEventGrp"
+  },
+  "fields": [
+   {
+    "name": "NoProtectionTermEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40191"
     },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventValue",
-     "required": false,
-     "tag": 40193
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventCurrency",
-     "required": false,
-     "tag": 40194
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventPeriod",
-     "required": false,
-     "tag": 40195
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventUnit",
-     "required": false,
-     "tag": 40196
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventDayType",
-     "required": false,
-     "tag": 40197
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventRateSource",
-     "required": false,
-     "tag": 40198
-    },
-    {
-     "kind": "component",
-     "name": "ProtectionTermEventQualifierGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40192"
+       }
+      },
+      {
+       "name": "ProtectionTermEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40193"
+       }
+      },
+      {
+       "name": "ProtectionTermEventCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40194"
+       }
+      },
+      {
+       "name": "ProtectionTermEventPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40195"
+       }
+      },
+      {
+       "name": "ProtectionTermEventUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40196"
+       }
+      },
+      {
+       "name": "ProtectionTermEventDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40197"
+       }
+      },
+      {
+       "name": "ProtectionTermEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40198"
+       }
+      },
+      {
+       "name": "ProtectionTermEventQualifierGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermEventQualifierGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

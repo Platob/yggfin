@@ -3,23 +3,39 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendPayoutRatio",
-   "required": false,
-   "tag": 42860
+ "declaration": {
+  "name": "UnderlyingDividendPayout",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendPayout"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendPayoutConditions",
-   "required": false,
-   "tag": 42861
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingDividendPaymentGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingDividendPayoutRatio",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42860"
+    }
+   },
+   {
+    "name": "UnderlyingDividendPayoutConditions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42861"
+    }
+   },
+   {
+    "name": "UnderlyingDividendPaymentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingDividendPaymentGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

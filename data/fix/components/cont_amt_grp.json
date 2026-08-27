@@ -6,32 +6,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoContAmts",
-   "required": false,
-   "tag": 518,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ContAmtType",
-     "required": false,
-     "tag": 519
+ "declaration": {
+  "name": "ContAmtGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ContAmtGrp"
+  },
+  "fields": [
+   {
+    "name": "NoContAmts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "518"
     },
-    {
-     "kind": "field",
-     "name": "ContAmtValue",
-     "required": false,
-     "tag": 520
-    },
-    {
-     "kind": "field",
-     "name": "ContAmtCurr",
-     "required": false,
-     "tag": 521
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "519"
+       }
+      },
+      {
+       "name": "ContAmtValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "520"
+       }
+      },
+      {
+       "name": "ContAmtCurr",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "521"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

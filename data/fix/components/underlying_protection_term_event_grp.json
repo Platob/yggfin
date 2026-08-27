@@ -3,61 +3,92 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProtectionTermEvents",
-   "required": false,
-   "tag": 42077,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventType",
-     "required": false,
-     "tag": 42078
+ "declaration": {
+  "name": "UnderlyingProtectionTermEventGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProtectionTermEventGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProtectionTermEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42077"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventValue",
-     "required": false,
-     "tag": 42079
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventCurrency",
-     "required": false,
-     "tag": 42080
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventPeriod",
-     "required": false,
-     "tag": 42081
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventUnit",
-     "required": false,
-     "tag": 42082
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventDayType",
-     "required": false,
-     "tag": 42083
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventRateSource",
-     "required": false,
-     "tag": 42084
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProtectionTermEventQualifierGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42078"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42079"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42080"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42081"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42082"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42083"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42084"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventQualifierGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermEventQualifierGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,44 +3,67 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegComplexEventSchedules",
-   "required": false,
-   "tag": 41400,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegComplexEventScheduleStartDate",
-     "required": false,
-     "tag": 41401
+ "declaration": {
+  "name": "LegComplexEventScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegComplexEventScheduleGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegComplexEventSchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41400"
     },
-    {
-     "kind": "field",
-     "name": "LegComplexEventScheduleEndDate",
-     "required": false,
-     "tag": 41402
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventScheduleFrequencyPeriod",
-     "required": false,
-     "tag": 41403
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventScheduleFrequencyUnit",
-     "required": false,
-     "tag": 41404
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventScheduleRollConvention",
-     "required": false,
-     "tag": 41405
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventScheduleStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41401"
+       }
+      },
+      {
+       "name": "LegComplexEventScheduleEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41402"
+       }
+      },
+      {
+       "name": "LegComplexEventScheduleFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41403"
+       }
+      },
+      {
+       "name": "LegComplexEventScheduleFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41404"
+       }
+      },
+      {
+       "name": "LegComplexEventScheduleRollConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41405"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

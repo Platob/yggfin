@@ -13,15 +13,20 @@ from pathlib import Path
 
 import pytest
 
+from rekep.fields import Field
 from rekep.fix.quickfix import (
     SPEC_VERSIONS,
-    SpecComponent,
-    SpecComponentRef,
-    SpecFieldRef,
-    SpecGroup,
+    block,
+    entry_of,
+    field_member,
+    group_member,
+    is_group,
+    is_reference,
+    members_of,
     parse_components,
     parse_session,
     parse_spec,
+    reference_member,
     spec_name,
 )
 
@@ -116,48 +121,76 @@ def test_a_field_missing_its_number_or_name_is_skipped_rather_than_guessed() -> 
 
 def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
     parties = parse_components(SPEC)["Parties"]
-    assert isinstance(parties, SpecComponent)
-    assert [member.name for member in parties.members] == ["NoPartyIDs"]
-    group = parties.members[0]
-    assert isinstance(group, SpecGroup)
-    assert group.tag == 453
-    assert [member.name for member in group.members] == [
+    assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
+    group = members_of(parties)[0]
+    assert is_group(group)
+    assert group.fix.tag == 453
+    rows = members_of(entry_of(group))
+    assert [member.name for member in rows] == [
         "PartyID",
         "PartyIDSource",
         "PartyRole",
         "PtysSubGrp",
     ]
-    assert [member.tag for member in group.members[:3] if isinstance(member, SpecFieldRef)] == [
-        448,
-        447,
-        452,
-    ]
-    assert isinstance(group.members[-1], SpecComponentRef)
+    assert [member.fix.tag for member in rows[:3]] == [448, 447, 452]
+    assert is_reference(rows[-1])
 
 
 def test_a_nested_group_is_its_own_component_declaration() -> None:
     subgroup = parse_components(SPEC)["PtysSubGrp"]
-    group = subgroup.members[0]
-    assert isinstance(group, SpecGroup)
-    assert (group.name, group.tag) == ("NoPartySubIDs", 802)
-    assert [(member.name, member.tag) for member in group.members] == [
+    group = members_of(subgroup)[0]
+    assert is_group(group)
+    assert (group.name, group.fix.tag) == ("NoPartySubIDs", 802)
+    assert [(member.name, member.fix.tag) for member in members_of(entry_of(group))] == [
         ("PartySubID", 523),
         ("PartySubIDType", 803),
     ]
 
 
 def test_a_component_declaration_round_trips_as_a_typed_document() -> None:
+    """The document is the declaration's own: a struct of structs and lists,
+    so what comes back is the same tree and not a resemblance of it."""
     parties = parse_components(SPEC)["Parties"]
-    rebuilt = SpecComponent.from_dict(parties.into_dict())
+    rebuilt = Field.from_dict(parties.into_dict())
     assert rebuilt == parties
-    assert isinstance(rebuilt.members[0], SpecGroup)
-    assert isinstance(rebuilt.members[0].members[-1], SpecComponentRef)
+    group = members_of(rebuilt)[0]
+    assert is_group(group)
+    assert is_reference(members_of(entry_of(group))[-1])
 
 
-def test_each_member_class_owns_its_stored_kind() -> None:
-    assert SpecFieldRef.into_kind() == "field"
-    assert SpecComponentRef.into_kind() == "component"
-    assert SpecGroup.into_kind() == "group"
+def test_a_round_trip_keeps_which_members_the_standard_requires() -> None:
+    """Requiredness is nullability now, and a dumped declaration that lost it
+    would read as a standard where nothing is mandatory."""
+    declared = block(
+        "Parties",
+        [
+            group_member(
+                "NoPartyIDs",
+                453,
+                [
+                    field_member("PartyID", 448),
+                    field_member("PartyIDSource", 447, required=True),
+                ],
+                required=True,
+            )
+        ],
+    )
+    rebuilt = Field.from_dict(declared.into_dict())
+    assert rebuilt == declared
+    group = members_of(rebuilt)[0]
+    assert group.nullable is False
+    assert [member.nullable for member in members_of(entry_of(group))] == [True, False]
+
+
+def test_each_member_kind_is_told_apart_by_its_shape() -> None:
+    """No member stores its kind any more: a group is a list, a reference is a
+    struct with no members yet, and a plain field is neither."""
+    plain = field_member("PartyID", 448)
+    group = group_member("NoPartyIDs", 453, [plain])
+    reference = reference_member("PtysSubGrp")
+    assert (is_group(plain), is_reference(plain)) == (False, False)
+    assert (is_group(group), is_reference(group)) == (True, False)
+    assert (is_group(reference), is_reference(reference)) == (False, True)
 
 
 def test_a_component_refusing_an_unknown_field_names_the_path() -> None:

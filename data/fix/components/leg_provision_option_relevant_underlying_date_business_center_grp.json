@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegProvisionOptionRelevantUnderlyingDateBusinessCenters",
-   "required": false,
-   "tag": 40938,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenter",
-     "required": false,
-     "tag": 40510
+ "declaration": {
+  "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegProvisionOptionRelevantUnderlyingDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40938"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40510"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

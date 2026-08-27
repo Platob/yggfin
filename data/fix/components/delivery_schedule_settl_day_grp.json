@@ -3,31 +3,52 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDeliveryScheduleSettlDays",
-   "required": false,
-   "tag": 41051,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlDay",
-     "required": false,
-     "tag": 41052
+ "declaration": {
+  "name": "DeliveryScheduleSettlDayGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DeliveryScheduleSettlDayGrp"
+  },
+  "fields": [
+   {
+    "name": "NoDeliveryScheduleSettlDays",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41051"
     },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlTotalHours",
-     "required": false,
-     "tag": 41053
-    },
-    {
-     "kind": "component",
-     "name": "DeliveryScheduleSettlTimeGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryScheduleSettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41052"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41053"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DeliveryScheduleSettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

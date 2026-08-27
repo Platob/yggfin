@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSecondaryAssetClasses",
-   "required": false,
-   "tag": 1976,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SecondaryAssetClass",
-     "required": false,
-     "tag": 1977
+ "declaration": {
+  "name": "SecondaryAssetGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecondaryAssetGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSecondaryAssetClasses",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1976"
     },
-    {
-     "kind": "field",
-     "name": "SecondaryAssetSubClass",
-     "required": false,
-     "tag": 1978
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryAssetType",
-     "required": false,
-     "tag": 1979
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryAssetSubType",
-     "required": false,
-     "tag": 2741
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SecondaryAssetClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1977"
+       }
+      },
+      {
+       "name": "SecondaryAssetSubClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1978"
+       }
+      },
+      {
+       "name": "SecondaryAssetType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1979"
+       }
+      },
+      {
+       "name": "SecondaryAssetSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2741"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

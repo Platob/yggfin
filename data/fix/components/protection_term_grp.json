@@ -3,77 +3,118 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProtectionTerms",
-   "required": false,
-   "tag": 40181,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProtectionTermNotional",
-     "required": false,
-     "tag": 40182
+ "declaration": {
+  "name": "ProtectionTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProtectionTermGrp"
+  },
+  "fields": [
+   {
+    "name": "NoProtectionTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40181"
     },
-    {
-     "kind": "field",
-     "name": "ProtectionTermCurrency",
-     "required": false,
-     "tag": 40183
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermSellerNotifies",
-     "required": false,
-     "tag": 40184
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermBuyerNotifies",
-     "required": false,
-     "tag": 40185
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventBusinessCenter",
-     "required": false,
-     "tag": 40186
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermStandardSources",
-     "required": false,
-     "tag": 40187
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermEventMinimumSources",
-     "required": false,
-     "tag": 40188
-    },
-    {
-     "kind": "component",
-     "name": "ProtectionTermEventNewsSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ProtectionTermEventGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ProtectionTermObligationGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProtectionTermXID",
-     "required": false,
-     "tag": 40190
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40182"
+       }
+      },
+      {
+       "name": "ProtectionTermCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40183"
+       }
+      },
+      {
+       "name": "ProtectionTermSellerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40184"
+       }
+      },
+      {
+       "name": "ProtectionTermBuyerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40185"
+       }
+      },
+      {
+       "name": "ProtectionTermEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40186"
+       }
+      },
+      {
+       "name": "ProtectionTermStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40187"
+       }
+      },
+      {
+       "name": "ProtectionTermEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40188"
+       }
+      },
+      {
+       "name": "ProtectionTermEventNewsSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermEventNewsSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermEventGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermEventGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40190"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

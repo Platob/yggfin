@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoQuoteSizeRules",
-   "required": false,
-   "tag": 2558,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MinBidSize",
-     "required": false,
-     "tag": 647
+ "declaration": {
+  "name": "QuoteSizeRuleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuoteSizeRuleGrp"
+  },
+  "fields": [
+   {
+    "name": "NoQuoteSizeRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2558"
     },
-    {
-     "kind": "field",
-     "name": "MinOfferSize",
-     "required": false,
-     "tag": 648
-    },
-    {
-     "kind": "field",
-     "name": "FastMarketIndicator",
-     "required": false,
-     "tag": 2447
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MinBidSize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "647"
+       }
+      },
+      {
+       "name": "MinOfferSize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "648"
+       }
+      },
+      {
+       "name": "FastMarketIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2447"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

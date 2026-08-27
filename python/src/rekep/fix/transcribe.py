@@ -48,7 +48,6 @@ from rekep.fix.message import (
     parse_entries_array,
     stored_entry_separators,
 )
-from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
 
@@ -1085,7 +1084,7 @@ class FixCodec(Convertible):
             )
         return self._components[key]
 
-    def _component_declarations(self, version: str | None) -> list[SpecComponent]:
+    def _component_declarations(self, version: str | None) -> list[Field]:
         """One version's component declarations, or none for a version with none.
 
         None is an answer and not a gap: 4.0 through 4.2 declare no component

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
-   "required": false,
-   "tag": 42853,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
-     "required": false,
-     "tag": 42854
+ "declaration": {
+  "name": "UnderlyingDividendFXTriggerDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendFXTriggerDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42853"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42854"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

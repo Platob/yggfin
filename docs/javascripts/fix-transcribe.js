@@ -252,9 +252,10 @@
       list(field.aliases).forEach((alias) => claim(byAlias, folded(alias.name), field));
     });
     components.forEach((component) => {
+      component._tree = fixDeclaration.members(component.declaration);
       byComponent.set(folded(component.name), component);
       containers.add(folded(component.name));
-      collectContainers(component.members, containers);
+      collectContainers(component._tree, containers);
     });
     const registry = {
       fields,
@@ -268,7 +269,7 @@
       groupsByTag,
     };
     components.forEach((component) => {
-      collectGroups(component.members, component, registry);
+      collectGroups(component._tree, component, registry);
     });
     return registry;
   }
@@ -322,7 +323,7 @@
       if (seen.has(key)) return [];
       const component = registry.byComponent.get(key);
       return component
-        ? expandedMembers(component.members, registry, new Set([...seen, key]))
+        ? expandedMembers(component._tree, registry, new Set([...seen, key]))
         : [];
     });
   }

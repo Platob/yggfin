@@ -74,7 +74,7 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
 fields/named.json     the fields FIX never numbered
-components/parties.json  one component's member tree
+components/parties.json  one component, declared as a Field
 ```
 
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
@@ -303,10 +303,59 @@ reference: a record keeps the newest member tree, so 4.3's `Parties` is now
 the tree that reaches `PartySubID` through `PtysSubGrp` rather than naming it
 directly, and a reader without `PtysSubGrp` would split the group elsewhere.
 
-A component record that defines a message carries its `msg_type` (`"D"`,
+A component record that defines a message carries its `fix:msgtype` (`"D"`,
 `"8"`); a reusable block omits the key rather than writing it null. The
 published dictionary's components come from the spec's `<components>`, so
 none of them carries one today.
+
+### One shape for a field, a group and a message
+
+A component, a message type and a repeating group are the same thing here: a
+`Field`. A block is a **struct** of its members, a repeating group is a
+**list** of the entry it repeats, and a member that defers to another block is
+a struct with no members yet and that block's name in `fix:component`.
+
+```json
+{"name": "Parties", "type": "struct", "fix": {"component": "Parties"},
+ "fields": [{"name": "NoPartyIDs", "type": "list", "fix": {"tag": "453"},
+             "item": {"type": "struct", "fields": [
+               {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}]}}]}
+```
+
+So a component file reads like a contract file, because it is one -- the same
+document `Field.into_dict()` writes for `schemas/rekep/*.yaml` -- and there is
+no second tree to keep in step with the first. FIX's own names are what the
+declaration says; the Arrow projection snakes them when it builds columns.
+Whether a member is required is its nullability, which is the same fact under
+the name the rest of the package already uses for it.
+
+A reference is **not** expanded where it is stored. Expanding the published
+dictionary in place turns 3,229 members into 120,241 -- `Instrument` alone is
+referenced twenty-two times -- so the reference stays, and whoever reads it
+expands it. `into_field` does exactly that when it projects to Arrow, because
+that is where a referenced component's fields arrive on the wire.
+
+### A component, materialised
+
+Because the declaration already says every member's name, its Arrow type and
+whether a message must carry it, there is nothing left to write by hand:
+`component_dataclass()` is `into_dataclass()` over the projection.
+
+```python
+Parties = registry.component_dataclass("Parties", "4.4")
+Parties(no_party_ids=[Parties.NoPartyIds(party_id="BUY-A", party_role=3)])
+```
+
+Group entries are classes named after the group they repeat, they hang off the
+class that declares them so a caller can build one, and a dictionary refresh
+moves all of it. A column Python cannot spell keeps its own name: FIX tag 236
+is `Yield`, and `yield` is a statement, so the attribute is `yield_` while the
+column stays `yield` -- `into_field_columns()` is where the class says so, and
+any hand-written `@scalar` class can declare it the same way.
+
+The handful of components this package projects into **published** columns
+keep their hand-written declarations. Those are a contract, and a contract
+that changed shape whenever the dictionary was refreshed would not be one.
 
 Rebuild the projection after refreshing the dictionary:
 

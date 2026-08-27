@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentStreamPricingDates",
-   "required": false,
-   "tag": 41941,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamPricingDate",
-     "required": false,
-     "tag": 41942
+ "declaration": {
+  "name": "UnderlyingPaymentStreamPricingDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamPricingDateGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentStreamPricingDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41941"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamPricingDateType",
-     "required": false,
-     "tag": 41943
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPricingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41942"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamPricingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41943"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,62 +3,98 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableRefCurrency",
-   "required": false,
-   "tag": 40817
+ "declaration": {
+  "name": "PaymentStreamNonDeliverableSettlTerms",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamNonDeliverableSettlTerms"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
-   "required": false,
-   "tag": 40818
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableFixingDatesRelativeTo",
-   "required": false,
-   "tag": 40820
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableFixingDatesOffsetPeriod",
-   "required": false,
-   "tag": 40821
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableFixingDatesOffsetUnit",
-   "required": false,
-   "tag": 40822
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableFixingDatesOffsetDayType",
-   "required": false,
-   "tag": 40823
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamNonDeliverableSettlRateSource",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamNonDeliverableFixingDateGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "SettlRateDisruptionFallbackGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamNonDeliverableRefCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40817"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40818"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40820"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40821"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40822"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDatesOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40823"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableSettlRateSource",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamNonDeliverableSettlRateSource"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamNonDeliverableFixingDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamNonDeliverableFixingDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlRateDisruptionFallbackGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlRateDisruptionFallbackGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

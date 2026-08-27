@@ -29,6 +29,7 @@ from rekep.fields import Field
 from rekep.fix import FixRegistry
 from rekep.fix.entries import newest_rank, values_of
 from rekep.fix.fields import fix_field
+from rekep.fix.quickfix import is_group, members_of
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
 
 from .conftest import FIXTURES, fixture_page
@@ -478,7 +479,7 @@ def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -
     prefixed = OfflineRegistry(cache_dir=rooted)
     assert prefixed.versions == OfflineRegistry(cache_dir=dumped).versions
     assert prefixed.field("Side").fix["tag"] == "54"
-    assert prefixed.component("Parties", "4.4").members[0].tag == 453
+    assert members_of(prefixed.component("Parties", "4.4"))[0].fix.tag == 453
 
 
 def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
@@ -896,8 +897,10 @@ def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> No
     components = registry.components("4.4")
     assert [component.name for component in components] == ["Parties", "PtysSubGrp"]
     assert registry.component("PARTIES", "4.4") == components[0]
-    assert components[0].members[0].name == "NoPartyIDs"
-    assert components[0].members[0].tag == 453
+    opener = members_of(components[0])[0]
+    assert opener.name == "NoPartyIDs"
+    assert opener.fix.tag == 453
+    assert is_group(opener), "a count tag opens the group it counts"
 
 
 def test_group_delimiters_come_off_the_declared_components() -> None:
@@ -922,7 +925,7 @@ def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path)
     plain._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     assert registry._stored_components("4.4") is None, "the old document has no key"
-    assert registry.component("Parties", "4.4").members[0].tag == 453
+    assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
     assert registry.fetched == [f"{registry.spec_url}/FIX44.xml"]
 
 
@@ -987,7 +990,7 @@ def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Pat
     assert stored.aliases == ("BUY",)
     assert stored.meaning == "Buy", "prose untouched"
     assert after.session("4.4"), "and the session layer lands with it"
-    assert after.component("Parties", "4.4").members[0].name == "NoPartyIDs"
+    assert members_of(after.component("Parties", "4.4"))[0].name == "NoPartyIDs"
 
 
 def test_enriching_a_version_nothing_stored_does_nothing(tmp_path: Path) -> None:

@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoProvisionPartyIDs",
-   "required": false,
-   "tag": 40174,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionPartyID",
-     "required": false,
-     "tag": 40175
+ "declaration": {
+  "name": "ProvisionParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ProvisionParties"
+  },
+  "fields": [
+   {
+    "name": "NoProvisionPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40174"
     },
-    {
-     "kind": "field",
-     "name": "ProvisionPartyIDSource",
-     "required": false,
-     "tag": 40176
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionPartyRole",
-     "required": false,
-     "tag": 40177
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionPartyRoleQualifier",
-     "required": false,
-     "tag": 2385
-    },
-    {
-     "kind": "component",
-     "name": "ProvisionPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40175"
+       }
+      },
+      {
+       "name": "ProvisionPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40176"
+       }
+      },
+      {
+       "name": "ProvisionPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40177"
+       }
+      },
+      {
+       "name": "ProvisionPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2385"
+       }
+      },
+      {
+       "name": "ProvisionPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProvisionPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

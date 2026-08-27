@@ -4,32 +4,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoApplIDs",
-   "required": false,
-   "tag": 1351,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RefApplID",
-     "required": false,
-     "tag": 1355
+ "declaration": {
+  "name": "ApplIDReportGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplIDReportGrp"
+  },
+  "fields": [
+   {
+    "name": "NoApplIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1351"
     },
-    {
-     "kind": "field",
-     "name": "ApplNewSeqNum",
-     "required": false,
-     "tag": 1399
-    },
-    {
-     "kind": "field",
-     "name": "RefApplLastSeqNum",
-     "required": false,
-     "tag": 1357
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefApplID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1355"
+       }
+      },
+      {
+       "name": "ApplNewSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1399"
+       }
+      },
+      {
+       "name": "RefApplLastSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1357"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoStreamCalculationPeriodBusinessCenters",
-   "required": false,
-   "tag": 40958,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StreamCalculationPeriodBusinessCenter",
-     "required": false,
-     "tag": 40074
+ "declaration": {
+  "name": "StreamCalculationPeriodBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamCalculationPeriodBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoStreamCalculationPeriodBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40958"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamCalculationPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40074"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

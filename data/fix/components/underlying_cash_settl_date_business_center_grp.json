@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingCashSettlDateBusinessCenters",
-   "required": false,
-   "tag": 42788,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingCashSettlDateBusinessCenter",
-     "required": false,
-     "tag": 42789
+ "declaration": {
+  "name": "UnderlyingCashSettlDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingCashSettlDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingCashSettlDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42788"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingCashSettlDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42789"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

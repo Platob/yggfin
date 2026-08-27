@@ -3,48 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "MakeWholeDate",
-   "required": false,
-   "tag": 42591
+ "declaration": {
+  "name": "OptionExerciseMakeWholeProvision",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OptionExerciseMakeWholeProvision"
   },
-  {
-   "kind": "field",
-   "name": "MakeWholeAmount",
-   "required": false,
-   "tag": 42592
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkCurveName",
-   "required": false,
-   "tag": 42593
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkCurvePoint",
-   "required": false,
-   "tag": 42594
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeRecallSpread",
-   "required": false,
-   "tag": 42595
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkQuote",
-   "required": false,
-   "tag": 42596
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeInterpolationMethod",
-   "required": false,
-   "tag": 42597
-  }
- ]
+  "fields": [
+   {
+    "name": "MakeWholeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42591"
+    }
+   },
+   {
+    "name": "MakeWholeAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42592"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkCurveName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42593"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42594"
+    }
+   },
+   {
+    "name": "MakeWholeRecallSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42595"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42596"
+    }
+   },
+   {
+    "name": "MakeWholeInterpolationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42597"
+    }
+   }
+  ]
+ }
 }

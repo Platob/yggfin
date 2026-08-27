@@ -4,80 +4,115 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMDFeedTypes",
-   "required": false,
-   "tag": 1141,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MDFeedType",
-     "required": false,
-     "tag": 1022
+ "declaration": {
+  "name": "MarketDataFeedTypes",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataFeedTypes"
+  },
+  "fields": [
+   {
+    "name": "NoMDFeedTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1141"
     },
-    {
-     "kind": "field",
-     "name": "MDSubFeedType",
-     "required": false,
-     "tag": 1683
-    },
-    {
-     "kind": "field",
-     "name": "MarketDepth",
-     "required": false,
-     "tag": 264
-    },
-    {
-     "kind": "field",
-     "name": "MarketDepthTimeInterval",
-     "required": false,
-     "tag": 2563
-    },
-    {
-     "kind": "field",
-     "name": "MarketDepthTimeIntervalUnit",
-     "required": false,
-     "tag": 2564
-    },
-    {
-     "kind": "field",
-     "name": "MDRecoveryTimeInterval",
-     "required": false,
-     "tag": 2565
-    },
-    {
-     "kind": "field",
-     "name": "MDRecoveryTimeIntervalUnit",
-     "required": false,
-     "tag": 2566
-    },
-    {
-     "kind": "field",
-     "name": "MDBookType",
-     "required": false,
-     "tag": 1021
-    },
-    {
-     "kind": "field",
-     "name": "MDSubBookType",
-     "required": false,
-     "tag": 1173
-    },
-    {
-     "kind": "field",
-     "name": "PrimaryServiceLocationID",
-     "required": false,
-     "tag": 2567
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryServiceLocationID",
-     "required": false,
-     "tag": 2568
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDFeedType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1022"
+       }
+      },
+      {
+       "name": "MDSubFeedType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1683"
+       }
+      },
+      {
+       "name": "MarketDepth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "264"
+       }
+      },
+      {
+       "name": "MarketDepthTimeInterval",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2563"
+       }
+      },
+      {
+       "name": "MarketDepthTimeIntervalUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2564"
+       }
+      },
+      {
+       "name": "MDRecoveryTimeInterval",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2565"
+       }
+      },
+      {
+       "name": "MDRecoveryTimeIntervalUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2566"
+       }
+      },
+      {
+       "name": "MDBookType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1021"
+       }
+      },
+      {
+       "name": "MDSubBookType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1173"
+       }
+      },
+      {
+       "name": "PrimaryServiceLocationID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2567"
+       }
+      },
+      {
+       "name": "SecondaryServiceLocationID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2568"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

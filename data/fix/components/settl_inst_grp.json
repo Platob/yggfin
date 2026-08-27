@@ -6,156 +6,221 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSettlInst",
-   "required": false,
-   "tag": 778,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SettlInstID",
-     "required": false,
-     "tag": 162
+ "declaration": {
+  "name": "SettlInstGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlInstGrp"
+  },
+  "fields": [
+   {
+    "name": "NoSettlInst",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "778"
     },
-    {
-     "kind": "field",
-     "name": "SettlInstTransType",
-     "required": false,
-     "tag": 163
-    },
-    {
-     "kind": "field",
-     "name": "SettlInstRefID",
-     "required": false,
-     "tag": 214
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": false,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "UPICode",
-     "required": false,
-     "tag": 2891
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrency",
-     "required": false,
-     "tag": 120
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2899
-    },
-    {
-     "kind": "field",
-     "name": "EffectiveTime",
-     "required": false,
-     "tag": 168
-    },
-    {
-     "kind": "field",
-     "name": "ExpireTime",
-     "required": false,
-     "tag": 126
-    },
-    {
-     "kind": "field",
-     "name": "LastUpdateTime",
-     "required": false,
-     "tag": 779
-    },
-    {
-     "kind": "component",
-     "name": "SettlInstructionsData",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentMethod",
-     "required": false,
-     "tag": 492
-    },
-    {
-     "kind": "field",
-     "name": "PaymentRef",
-     "required": false,
-     "tag": 476
-    },
-    {
-     "kind": "field",
-     "name": "CardHolderName",
-     "required": false,
-     "tag": 488
-    },
-    {
-     "kind": "field",
-     "name": "CardNumber",
-     "required": false,
-     "tag": 489
-    },
-    {
-     "kind": "field",
-     "name": "CardStartDate",
-     "required": false,
-     "tag": 503
-    },
-    {
-     "kind": "field",
-     "name": "CardExpDate",
-     "required": false,
-     "tag": 490
-    },
-    {
-     "kind": "field",
-     "name": "CardIssNum",
-     "required": false,
-     "tag": 491
-    },
-    {
-     "kind": "field",
-     "name": "PaymentDate",
-     "required": false,
-     "tag": 504
-    },
-    {
-     "kind": "field",
-     "name": "PaymentRemitterID",
-     "required": false,
-     "tag": 505
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlInstID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "162"
+       }
+      },
+      {
+       "name": "SettlInstTransType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "163"
+       }
+      },
+      {
+       "name": "SettlInstRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "214"
+       }
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "Product",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "460"
+       }
+      },
+      {
+       "name": "SecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "167"
+       }
+      },
+      {
+       "name": "CFICode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "461"
+       }
+      },
+      {
+       "name": "UPICode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2891"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "EffectiveTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "168"
+       }
+      },
+      {
+       "name": "ExpireTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "126"
+       }
+      },
+      {
+       "name": "LastUpdateTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "779"
+       }
+      },
+      {
+       "name": "SettlInstructionsData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlInstructionsData"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "492"
+       }
+      },
+      {
+       "name": "PaymentRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "476"
+       }
+      },
+      {
+       "name": "CardHolderName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "488"
+       }
+      },
+      {
+       "name": "CardNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "489"
+       }
+      },
+      {
+       "name": "CardStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "503"
+       }
+      },
+      {
+       "name": "CardExpDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "490"
+       }
+      },
+      {
+       "name": "CardIssNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "491"
+       }
+      },
+      {
+       "name": "PaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "504"
+       }
+      },
+      {
+       "name": "PaymentRemitterID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "505"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

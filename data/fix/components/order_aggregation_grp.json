@@ -3,38 +3,59 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrders",
-   "required": false,
-   "tag": 73,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": false,
-     "tag": 11
+ "declaration": {
+  "name": "OrderAggregationGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderAggregationGrp"
+  },
+  "fields": [
+   {
+    "name": "NoOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "73"
     },
-    {
-     "kind": "field",
-     "name": "OrderID",
-     "required": false,
-     "tag": 37
-    },
-    {
-     "kind": "field",
-     "name": "OrderQty",
-     "required": false,
-     "tag": 38
-    },
-    {
-     "kind": "field",
-     "name": "OrderAvgPx",
-     "required": false,
-     "tag": 799
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "38"
+       }
+      },
+      {
+       "name": "OrderAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "799"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

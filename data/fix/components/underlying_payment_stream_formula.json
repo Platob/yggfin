@@ -3,34 +3,56 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaCurrency",
-   "required": false,
-   "tag": 42978
+ "declaration": {
+  "name": "UnderlyingPaymentStreamFormula",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamFormula"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaCurrencyDeterminationMethod",
-   "required": false,
-   "tag": 42979
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaReferenceAmount",
-   "required": false,
-   "tag": 42980
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFormulaMathGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFormulaImage",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamFormulaCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42978"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaCurrencyDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42979"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaReferenceAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42980"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaMathGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFormulaMathGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaImage",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFormulaImage"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

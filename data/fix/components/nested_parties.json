@@ -7,43 +7,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNestedPartyIDs",
-   "required": false,
-   "tag": 539,
-   "members": [
-    {
-     "kind": "field",
-     "name": "NestedPartyID",
-     "required": false,
-     "tag": 524
+ "declaration": {
+  "name": "NestedParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NestedParties"
+  },
+  "fields": [
+   {
+    "name": "NoNestedPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "539"
     },
-    {
-     "kind": "field",
-     "name": "NestedPartyIDSource",
-     "required": false,
-     "tag": 525
-    },
-    {
-     "kind": "field",
-     "name": "NestedPartyRole",
-     "required": false,
-     "tag": 538
-    },
-    {
-     "kind": "field",
-     "name": "NestedPartyRoleQualifier",
-     "required": false,
-     "tag": 2384
-    },
-    {
-     "kind": "component",
-     "name": "NstdPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NestedPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "524"
+       }
+      },
+      {
+       "name": "NestedPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "525"
+       }
+      },
+      {
+       "name": "NestedPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "538"
+       }
+      },
+      {
+       "name": "NestedPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2384"
+       }
+      },
+      {
+       "name": "NstdPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NstdPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

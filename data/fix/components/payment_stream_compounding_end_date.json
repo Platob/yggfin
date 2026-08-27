@@ -3,42 +3,62 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateUnadjusted",
-   "required": false,
-   "tag": 42622
+ "declaration": {
+  "name": "PaymentStreamCompoundingEndDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamCompoundingEndDate"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateRelativeTo",
-   "required": false,
-   "tag": 42623
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateOffsetPeriod",
-   "required": false,
-   "tag": 42624
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateOffsetUnit",
-   "required": false,
-   "tag": 42625
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateOffsetDayType",
-   "required": false,
-   "tag": 42626
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamCompoundingEndDateAdjusted",
-   "required": false,
-   "tag": 42627
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamCompoundingEndDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42622"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42623"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42624"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42625"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42626"
+    }
+   },
+   {
+    "name": "PaymentStreamCompoundingEndDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42627"
+    }
+   }
+  ]
+ }
 }

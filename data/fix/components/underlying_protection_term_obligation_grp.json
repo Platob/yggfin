@@ -3,26 +3,43 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProtectionTermObligations",
-   "required": false,
-   "tag": 42087,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermObligationType",
-     "required": false,
-     "tag": 42088
+ "declaration": {
+  "name": "UnderlyingProtectionTermObligationGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProtectionTermObligationGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProtectionTermObligations",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42087"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermObligationValue",
-     "required": false,
-     "tag": 42089
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermObligationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42088"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermObligationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42089"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,31 +3,52 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingDeliveryScheduleSettlDays",
-   "required": false,
-   "tag": 41770,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingDeliveryScheduleSettlDay",
-     "required": false,
-     "tag": 41771
+ "declaration": {
+  "name": "UnderlyingDeliveryScheduleSettlDayGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDeliveryScheduleSettlDayGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingDeliveryScheduleSettlDays",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41770"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingDeliveryScheduleSettlTotalHours",
-     "required": false,
-     "tag": 41772
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDeliveryScheduleSettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41771"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41772"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingDeliveryScheduleSettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

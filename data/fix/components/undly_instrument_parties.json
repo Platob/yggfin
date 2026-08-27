@@ -5,43 +5,68 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUndlyInstrumentParties",
-   "required": false,
-   "tag": 1058,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyID",
-     "required": false,
-     "tag": 1059
+ "declaration": {
+  "name": "UndlyInstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UndlyInstrumentParties"
+  },
+  "fields": [
+   {
+    "name": "NoUndlyInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1058"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyIDSource",
-     "required": false,
-     "tag": 1060
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyRole",
-     "required": false,
-     "tag": 1061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2391
-    },
-    {
-     "kind": "component",
-     "name": "UndlyInstrumentPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1059"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1060"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1061"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2391"
+       }
+      },
+      {
+       "name": "UndlyInstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndlyInstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

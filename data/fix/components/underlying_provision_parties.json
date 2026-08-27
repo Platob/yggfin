@@ -3,43 +3,68 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProvisionPartyIDs",
-   "required": false,
-   "tag": 42173,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionPartyID",
-     "required": false,
-     "tag": 42174
+ "declaration": {
+  "name": "UnderlyingProvisionParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionParties"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProvisionPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42173"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionPartyIDSource",
-     "required": false,
-     "tag": 42175
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionPartyRole",
-     "required": false,
-     "tag": 42176
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionPartyRoleQualifier",
-     "required": false,
-     "tag": 40918
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionPtysSubGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42174"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42175"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42176"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40918"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

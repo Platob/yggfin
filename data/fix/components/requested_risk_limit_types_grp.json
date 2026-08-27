@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRequestedRiskLimitType",
-   "required": false,
-   "tag": 1668,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RiskLimitType",
-     "required": false,
-     "tag": 1530
+ "declaration": {
+  "name": "RequestedRiskLimitTypesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RequestedRiskLimitTypesGrp"
+  },
+  "fields": [
+   {
+    "name": "NoRequestedRiskLimitType",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1668"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RiskLimitType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1530"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -6,32 +6,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegSecurityAltID",
-   "required": false,
-   "tag": 604,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegSecurityAltID",
-     "required": false,
-     "tag": 605
+ "declaration": {
+  "name": "LegSecAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSecAltIDGrp"
+  },
+  "fields": [
+   {
+    "name": "NoLegSecurityAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "604"
     },
-    {
-     "kind": "field",
-     "name": "LegSecurityAltIDSource",
-     "required": false,
-     "tag": 606
-    },
-    {
-     "kind": "field",
-     "name": "LegSymbolPositionNumber",
-     "required": false,
-     "tag": 2958
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "605"
+       }
+      },
+      {
+       "name": "LegSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "606"
+       }
+      },
+      {
+       "name": "LegSymbolPositionNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2958"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

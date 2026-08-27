@@ -3,49 +3,76 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoThrottles",
-   "required": false,
-   "tag": 1610,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ThrottleAction",
-     "required": false,
-     "tag": 1611
+ "declaration": {
+  "name": "ThrottleParamsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ThrottleParamsGrp"
+  },
+  "fields": [
+   {
+    "name": "NoThrottles",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1610"
     },
-    {
-     "kind": "field",
-     "name": "ThrottleType",
-     "required": false,
-     "tag": 1612
-    },
-    {
-     "kind": "field",
-     "name": "ThrottleNoMsgs",
-     "required": false,
-     "tag": 1613
-    },
-    {
-     "kind": "field",
-     "name": "ThrottleTimeInterval",
-     "required": false,
-     "tag": 1614
-    },
-    {
-     "kind": "field",
-     "name": "ThrottleTimeUnit",
-     "required": false,
-     "tag": 1615
-    },
-    {
-     "kind": "component",
-     "name": "ThrottleMsgTypeGrp",
-     "required": false
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ThrottleAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1611"
+       }
+      },
+      {
+       "name": "ThrottleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1612"
+       }
+      },
+      {
+       "name": "ThrottleNoMsgs",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1613"
+       }
+      },
+      {
+       "name": "ThrottleTimeInterval",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1614"
+       }
+      },
+      {
+       "name": "ThrottleTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1615"
+       }
+      },
+      {
+       "name": "ThrottleMsgTypeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ThrottleMsgTypeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

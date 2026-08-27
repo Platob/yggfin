@@ -3,18 +3,30 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableSettlRateSource",
-   "required": false,
-   "tag": 40371
+ "declaration": {
+  "name": "PaymentStreamNonDeliverableSettlRateSource",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamNonDeliverableSettlRateSource"
   },
-  {
-   "kind": "field",
-   "name": "PaymentStreamNonDeliverableSettlReferencePage",
-   "required": false,
-   "tag": 40372
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamNonDeliverableSettlRateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40371"
+    }
+   },
+   {
+    "name": "PaymentStreamNonDeliverableSettlReferencePage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40372"
+    }
+   }
+  ]
+ }
 }

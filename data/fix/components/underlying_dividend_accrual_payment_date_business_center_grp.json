@@ -3,20 +3,35 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingDividendAccrualPaymentDateBusinessCenters",
-   "required": false,
-   "tag": 42799,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
-     "required": false,
-     "tag": 42800
+ "declaration": {
+  "name": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingDividendAccrualPaymentDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42799"
+    },
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42800"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

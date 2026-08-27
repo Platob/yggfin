@@ -3,32 +3,51 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentScheduleRateSources",
-   "required": false,
-   "tag": 40704,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSource",
-     "required": false,
-     "tag": 40705
+ "declaration": {
+  "name": "UnderlyingPaymentScheduleRateSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentScheduleRateSourceGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentScheduleRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40704"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSourceType",
-     "required": false,
-     "tag": 40706
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleReferencePage",
-     "required": false,
-     "tag": 40707
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentScheduleRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40705"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40706"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40707"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

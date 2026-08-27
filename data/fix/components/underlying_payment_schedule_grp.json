@@ -3,352 +3,487 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentSchedules",
-   "required": false,
-   "tag": 40664,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleType",
-     "required": false,
-     "tag": 40665
+ "declaration": {
+  "name": "UnderlyingPaymentScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentScheduleGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentSchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40664"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleXID",
-     "required": false,
-     "tag": 41881
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleXIDRef",
-     "required": false,
-     "tag": 41882
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStubType",
-     "required": false,
-     "tag": 40666
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
-     "required": false,
-     "tag": 40667
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
-     "required": false,
-     "tag": 40668
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentSchedulePaySide",
-     "required": false,
-     "tag": 40669
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleReceiveSide",
-     "required": false,
-     "tag": 40670
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleNotional",
-     "required": false,
-     "tag": 40671
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleCurrency",
-     "required": false,
-     "tag": 40672
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRate",
-     "required": false,
-     "tag": 40673
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateMultiplier",
-     "required": false,
-     "tag": 40674
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSpread",
-     "required": false,
-     "tag": 40675
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateCurrency",
-     "required": false,
-     "tag": 41883
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
-     "required": false,
-     "tag": 41884
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateConversionFactor",
-     "required": false,
-     "tag": 41885
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSpreadType",
-     "required": false,
-     "tag": 41886
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSpreadPositionType",
-     "required": false,
-     "tag": 40676
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateTreatment",
-     "required": false,
-     "tag": 40677
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixedAmount",
-     "required": false,
-     "tag": 40678
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixedCurrency",
-     "required": false,
-     "tag": 40679
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
-     "required": false,
-     "tag": 41887
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
-     "required": false,
-     "tag": 41888
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
-     "required": false,
-     "tag": 41889
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
-     "required": false,
-     "tag": 41890
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepFrequencyPeriod",
-     "required": false,
-     "tag": 40680
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepFrequencyUnit",
-     "required": false,
-     "tag": 40681
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepOffsetValue",
-     "required": false,
-     "tag": 40682
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepRate",
-     "required": false,
-     "tag": 40683
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepOffsetRate",
-     "required": false,
-     "tag": 40684
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleStepRelativeTo",
-     "required": false,
-     "tag": 40685
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingPaymentScheduleRateSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
-     "required": false,
-     "tag": 40686
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleWeight",
-     "required": false,
-     "tag": 40687
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateRelativeTo",
-     "required": false,
-     "tag": 40688
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateBusinessDayCnvtn",
-     "required": false,
-     "tag": 40689
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingPaymentScheduleFixingDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateOffsetPeriod",
-     "required": false,
-     "tag": 40691
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
-     "required": false,
-     "tag": 40692
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateOffsetDayType",
-     "required": false,
-     "tag": 40693
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDayDistribution",
-     "required": false,
-     "tag": 41891
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDayCount",
-     "required": false,
-     "tag": 41892
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
-     "required": false,
-     "tag": 40694
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingPaymentScheduleFixingDayGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingLagPeriod",
-     "required": false,
-     "tag": 41893
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingLagUnit",
-     "required": false,
-     "tag": 41894
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
-     "required": false,
-     "tag": 41895
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
-     "required": false,
-     "tag": 41896
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingTime",
-     "required": false,
-     "tag": 40695
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
-     "required": false,
-     "tag": 40696
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangePaymentDateRelativeTo",
-     "required": false,
-     "tag": 40697
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
-     "required": false,
-     "tag": 40698
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
-     "required": false,
-     "tag": 40700
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
-     "required": false,
-     "tag": 40701
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetDayType",
-     "required": false,
-     "tag": 40702
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
-     "required": false,
-     "tag": 40703
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentScheduleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40665"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41881"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41882"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40666"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40667"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40668"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentSchedulePaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40669"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40670"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40671"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40672"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40673"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40674"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40675"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41883"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41884"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateConversionFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41885"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSpreadType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41886"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSpreadPositionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40676"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateTreatment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40677"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40678"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixedCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40679"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41887"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41888"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41889"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41890"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40680"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40681"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepOffsetValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40682"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40683"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepOffsetRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40684"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleStepRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40685"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentScheduleRateSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40686"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleWeight",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40687"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40688"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateBusinessDayCnvtn",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40689"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentScheduleFixingDateBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40691"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40692"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40693"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDayDistribution",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41891"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDayCount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41892"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40694"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentScheduleFixingDayGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingLagPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41893"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingLagUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41894"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41895"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41896"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40695"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40696"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangePaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40697"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40698"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40700"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40701"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40702"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40703"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

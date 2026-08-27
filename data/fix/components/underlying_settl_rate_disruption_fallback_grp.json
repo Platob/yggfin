@@ -3,37 +3,60 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingSettlRateFallbacks",
-   "required": false,
-   "tag": 40659,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlRatePostponementMaximumDays",
-     "required": false,
-     "tag": 40660
+ "declaration": {
+  "name": "UnderlyingSettlRateDisruptionFallbackGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingSettlRateDisruptionFallbackGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingSettlRateFallbacks",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40659"
     },
-    {
-     "kind": "component",
-     "name": "UnderlyingSettlRateFallbackRateSource",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlRatePostponementSurvey",
-     "required": false,
-     "tag": 40662
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlRatePostponementCalculationAgent",
-     "required": false,
-     "tag": 40663
+    "item": {
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40660"
+       }
+      },
+      {
+       "name": "UnderlyingSettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingSettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingSettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40662"
+       }
+      },
+      {
+       "name": "UnderlyingSettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40663"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }
