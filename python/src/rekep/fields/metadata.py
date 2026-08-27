@@ -310,6 +310,16 @@ class FixMetadata(ProtocolMetadata):
             return EventType.MISC
         return EventType.UNKNOWN
 
+    @property
+    def encoded(self) -> Mapping[str, str]:
+        """`{normalized spelling: wire value}`, derived from what is stored."""
+        return self._codecs()[0]
+
+    @property
+    def decoded(self) -> Mapping[str, str]:
+        """`{wire value: normalized name}`, derived from what is stored."""
+        return self._codecs()[1]
+
     def _codecs(self) -> tuple[Mapping[str, str], Mapping[str, str]]:
         """`(spelling -> value, value -> name)`, derived from what is stored."""
         return encodings_of(self.meanings, self.value_names)
