@@ -56,6 +56,8 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
     assert Ranged.__module__ == "rekep.enums.ranged"
     assert {name for name in dir(rekep.enums) if not name.startswith("_")} == {
         *(kind.__name__ for kind in codes),
+        "AsciiInt32",
+        "AsciiInt64",
         "Ranged",
         "codes",
         "ranged",
@@ -71,7 +73,7 @@ def test_a_mic_is_exactly_its_four_ascii_bytes_in_int32() -> None:
 def test_a_valid_unlisted_mic_registers_once_and_round_trips_from_storage() -> None:
     first = MIC.from_str(" 21xx ")
     assert first is MIC.from_str("21XX")
-    assert MIC.from_code(int(first)) is first
+    assert MIC.from_int(int(first)) is first
     assert first.code == "21XX", "digits are valid ISO 10383 code characters"
 
 
@@ -79,29 +81,57 @@ def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
     assert MIC.from_str(None) is MIC.UNKNOWN
     assert MIC.from_str("XPA") is MIC.UNKNOWN
     assert MIC.from_str("ABCDE") is MIC.UNKNOWN
-    assert MIC.from_code(-1) is MIC.UNKNOWN
+    assert MIC.from_int(-1) is MIC.UNKNOWN
 
 
-def test_currency_is_three_letters_plus_an_ascii_decimal_digit() -> None:
-    assert int(Currency.EUR) == int.from_bytes(b"EUR0", "big")
+def test_currency_is_three_letters_padded_like_every_other_ascii_code() -> None:
+    assert int(Currency.EUR) == int.from_bytes(b"EUR\0", "big")
     assert Currency.EUR.code == Currency.EUR.into_fix() == "EUR"
-    assert Currency.EUR.packed_code == "EUR0" and Currency.EUR.decimals == 0
-    cents = Currency.from_str("EUR2")
-    assert cents.packed_code == "EUR2" and cents.decimals == 2
-    assert Currency.from_code(int(cents)) is cents
+    assert Currency.from_int(int(Currency.EUR)) is Currency.EUR
+    assert Currency.from_str("EUR2") is Currency.UNKNOWN, "no decimal digit rides in the code"
     assert Currency.from_str("\U0001f4b6") is Currency.UNKNOWN
-    assert Currency.from_code(-1, Currency.EUR) is Currency.EUR
+    assert Currency.from_int(-1, Currency.EUR) is Currency.EUR
 
 
 def test_currency_registration_is_normalised_and_bounded() -> None:
     assert Currency.from_str(" usd ") is Currency.USD
     assert Currency.from_str("TOO-LONG") is Currency.UNKNOWN
-    registered = Currency.register("EUR", decimals=3, aliases=("EURO-3",))
-    assert Currency.from_str("euro-3") is registered
+    registered = Currency.register("SLE", aliases=("LEONE",))
+    assert Currency.from_str("leone") is registered
     for value in range(enum_module._ASCII_REGISTERED_LIMIT + len(Currency) + 1):
         code = "".join(chr(65 + digit) for digit in (value // 676, value // 26 % 26, value % 26))
         Currency.from_str(code)
     assert len(enum_module._ASCII_REGISTERED[Currency]) == enum_module._ASCII_REGISTERED_LIMIT
+
+
+def test_a_closed_set_refuses_registration_and_an_open_one_reads_exact_bytes() -> None:
+    """One base for every ASCII code: openness is the only knob."""
+    with pytest.raises(TypeError, match="closed set"):
+        Side.register("MID")
+    respelled = int.from_bytes(b"usd\0", "big")
+    assert Currency.from_int(respelled) is Currency.UNKNOWN, "stored bytes are never respelled"
+
+
+def test_an_ascii_enum_declares_one_arrow_extension_singleton() -> None:
+    declared = Currency.into_arrow_type()
+    assert declared is Currency.into_arrow_type()
+    assert declared.storage_type == pyarrow.int32()
+    assert declared.extension_name == "rekep.ascii.Currency"
+    assert EventType.into_arrow_type() is not declared
+
+
+def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
+    class Route(enum_module.AsciiInt64):
+        UNKNOWN = 0
+        SMART = "SMART"
+        DARKPOOL = "DARKPOOL"
+
+    assert int(Route.DARKPOOL) == int.from_bytes(b"DARKPOOL", "big", signed=True)
+    assert int(Route.SMART) == int.from_bytes(b"SMART\0\0\0", "big", signed=True)
+    assert Route.from_str(" smart ") is Route.SMART
+    assert Route.from_int(int(Route.DARKPOOL)) is Route.DARKPOOL
+    assert Route.from_str("TOOLONGCODE") is Route.UNKNOWN
+    assert Route.into_arrow_type().storage_type == pyarrow.int64()
 
 
 def test_generic_packed_codes_are_strict_ascii() -> None:
@@ -188,7 +218,7 @@ def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
     assert Side.from_str("bid") is Side.BUY
     assert Side.from_str("long") is Side.BUY
     assert Side.from_str("offer") is Side.SELL
-    assert Side.from_code(int.from_bytes(b"NOPE", "big")) is Side.UNKNOWN
+    assert Side.from_int(int.from_bytes(b"NOPE", "big")) is Side.UNKNOWN
     assert Side.from_fix("?", Side.SELL) is Side.SELL
 
 
@@ -197,7 +227,7 @@ def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
     assert int(TimeInForce.GTC).to_bytes(4, "big") == b"GTC\0"
     assert TimeInForce.from_str("immediate_or_cancel") is TimeInForce.IOC
     assert TimeInForce.from_str("good_till_cancelled") is TimeInForce.GTC
-    assert TimeInForce.from_code(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
+    assert TimeInForce.from_int(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
     assert TimeInForce.IOC < TimeInForce.SESSION <= TimeInForce.DAY < TimeInForce.RESTING
 
 
@@ -403,9 +433,9 @@ def test_a_stored_event_code_decodes_exactly_or_not_at_all() -> None:
     member, so a Python answer and a pushed code-set filter keep the same
     rows."""
     respelled = int.from_bytes(b"ordr", "big", signed=True)
-    assert EventType.from_code(respelled) is EventType.UNKNOWN
+    assert EventType.from_int(respelled) is EventType.UNKNOWN
     assert EventType(respelled) is EventType.UNKNOWN
-    assert EventType.from_code(int(EventType.ORDER)) is EventType.ORDER
+    assert EventType.from_int(int(EventType.ORDER)) is EventType.ORDER
     assert respelled not in EventType.ranked_at_least(EventType.INTENT)
     assert respelled not in EventType.ranked_below(EventType.INTENT)
 

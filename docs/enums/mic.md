@@ -5,7 +5,7 @@ from rekep.enums import MIC
 
 venue = MIC.from_str("XPAR")
 assert venue.code == "XPAR"
-assert MIC.from_code(int(venue)) is venue
+assert MIC.from_int(int(venue)) is venue
 ```
 
 MIC accepts any four-character uppercase ISO 10383 spelling matching

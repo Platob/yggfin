@@ -278,7 +278,7 @@ def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
 def test_categories_agree_on_codes_no_member_spells() -> None:
     """Case-variant packed bytes, a previous release's ordinal ids, junk:
     the scalar rule and the kernel answer identically on every one, because
-    `from_code` answers only on the compiled codes the kernel's sets hold."""
+    `from_int` answers only on the compiled codes the kernel's sets hold."""
     respelled = int.from_bytes(b"ordr", "big", signed=True)
     etypes = [respelled, 110, 210, 410, 999, -1, 0]
     for protocol in (None, "FIX"):

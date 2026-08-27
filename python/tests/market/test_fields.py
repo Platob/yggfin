@@ -217,9 +217,10 @@ def test_enum_key_and_value_types_are_explicit() -> None:
     currency = Instrument.into_field().field("currency").protocol("enum")
     assert currency["key_type"] == "int32"
     assert currency["value_type"] == "utf8"
-    assert currency["encoding"] == "ascii-currency-decimals"
-    assert currency["layout"] == "CCCn"
-    assert currency["decimal_byte"] == "ascii-digit"
+    assert currency["encoding"] == "ascii-big-endian"
+    assert currency["byte_width"] == "4"
+    assert currency["padding"] == "nul-right"
+    assert currency["pattern"] == "[A-Z]{3}"
     assert "dynamic" not in currency
 
     for declared in (Side, TimeInForce):

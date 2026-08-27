@@ -12,10 +12,12 @@ from rekep.enums.codes import (
     State,
     TimeInForce,
 )
-from rekep.enums.ranged import Ranged
+from rekep.enums.ranged import AsciiInt32, AsciiInt64, Ranged
 
 __all__ = [
     "MIC",
+    "AsciiInt32",
+    "AsciiInt64",
     "AssetKind",
     "Currency",
     "EventType",

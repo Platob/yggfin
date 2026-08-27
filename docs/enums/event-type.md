@@ -3,7 +3,7 @@
 ```python
 from rekep.enums import EventType
 
-kind = EventType.from_code(1178682196)
+kind = EventType.from_int(1178682196)
 assert kind is EventType.FACT
 assert str(kind) == "FACT"
 assert EventType.BOOK.is_snapshot
@@ -11,7 +11,7 @@ assert EventType.BOOK.is_snapshot
 
 The stored `int32` is the event kind's four-byte ASCII mnemonic, packed
 big-endian and NUL-padded -- readable in raw column dumps, exact in scans.
-`from_code` answers only on the compiled codes: any other integer is
+`from_int` answers only on the compiled codes: any other integer is
 `UNKNOWN`, never a near-miss respelling. The band order predicates reason
 over rides in each member's *rank*; a kind question compares ranks
 (`kind.rank >= EventType.INTENT.rank`), and a storage scan filters on the

@@ -77,7 +77,7 @@ nav:
           - Side: enums/side.md
           - Market kind: enums/market-kind.md
           - Time in force: enums/time-in-force.md
-  - FIX and market:
+  - FIX:
       - Messages:
           - FixMsg: fix/fixmsg.md
           - Transcribe: fix/transcribe.md
@@ -86,8 +86,8 @@ nav:
           - Registry CLI: fix/shell.md
           - Registry internals: fix/index.md
           - Parse configuration: fix/configuring.md
-      - Market:
-          - Lifecycle: market/index.md
+  - Market:
+      - Lifecycle: market/index.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md

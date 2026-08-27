@@ -11,8 +11,7 @@ from typing import Any
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.enums import Ranged
-from rekep.enums.ranged import _AsciiInt32
+from rekep.enums import AsciiInt32, Ranged
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
 
@@ -24,11 +23,15 @@ class MarketFieldBuilder(FieldBuilder):
     """`FieldBuilder` with the four rules market declarations add."""
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
-        """Market integer codes are `int32`; other scalars use the base answer.
+        """Market codes store their declared width; other scalars use the base.
 
-        Checked first because the base sees an `IntEnum` as Python `int64`.
+        An ASCII code's storage is its extension singleton's, so the width
+        one declaration states is the width every column carries. Checked
+        first because the base sees an `IntEnum` as Python `int64`.
         """
-        if isinstance(annotation, type) and issubclass(annotation, (Ranged, _AsciiInt32)):
+        if isinstance(annotation, type) and issubclass(annotation, AsciiInt32):
+            return annotation.into_arrow_type().storage_type
+        if isinstance(annotation, type) and issubclass(annotation, Ranged):
             return pyarrow.int32()
         return super().scalar(annotation)
 
@@ -50,7 +53,7 @@ class MarketFieldBuilder(FieldBuilder):
         declared = enum_of(annotation)
         if declared is not None:
             describe_enum(built, declared)
-        if isinstance(declared, type) and issubclass(declared, _AsciiInt32):
+        if isinstance(declared, type) and issubclass(declared, AsciiInt32):
             built.protocol(ENUM).update(declared.schema_metadata())
         return built
 

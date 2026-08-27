@@ -16,7 +16,7 @@ fields:
 - name: etype
   type: int32
   description: Which kind of event this is -- the one column a union of the tables needs.
-  enum: {name: EventType, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1296651075":"MISC","1229870149":"INTENT","1330791506":"ORDER","1364545364":"QUOTE","1178682196":"FACT","1163412803":"EXECUTION","1398030676":"STATE","1112493899":"BOOK","1230197825":"INSTRUMENT_STATE","1229869908":"INSTRUMENT"}', encoding: ascii-big-endian, aliases: '{"EXECUTION":"EXEC","INSTRUMENT":"INST","INSTRUMENT_STATE":"ISTA","INTENT":"INTE","ORDER":"ORDR","QUOTE":"QUOT","STATE":"STAT"}', byte_width: '4', padding: nul-right}
+  enum: {name: EventType, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1296651075":"MISC","1229870149":"INTENT","1330791506":"ORDER","1364545364":"QUOTE","1178682196":"FACT","1163412803":"EXECUTION","1398030676":"STATE","1112493899":"BOOK","1230197825":"INSTRUMENT_STATE","1229869908":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"EXECUTION":"EXEC","INSTRUMENT":"INST","INSTRUMENT_STATE":"ISTA","INTENT":"INTE","ORDER":"ORDR","QUOTE":"QUOT","STATE":"STAT"}'}
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -84,7 +84,7 @@ fields:
   type: int32
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
-  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, max_bytes: '4', pattern: '[A-Z0-9]{4}'}
+  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true

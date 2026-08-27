@@ -363,7 +363,7 @@ def preferred_types(etype: EventType | int | None) -> tuple[int, ...]:
     """Which regulatory stamp types `etype` prefers, best first."""
     if etype is None:
         return _ANY
-    kind = etype if isinstance(etype, EventType) else EventType.from_code(etype)
+    kind = etype if isinstance(etype, EventType) else EventType.from_int(etype)
     found = PREFERRED.get(kind)
     if found is not None:
         return found

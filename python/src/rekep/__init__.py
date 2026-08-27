@@ -2,7 +2,7 @@
 
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
-from rekep.enums import Currency, MarketKind, Ranged
+from rekep.enums import AsciiInt32, AsciiInt64, Currency, MarketKind, Ranged
 from rekep.fields import (
     Field,
     FieldBuilder,
@@ -36,6 +36,8 @@ __version__ = "0.1.0"
 __all__ = [
     "Book",
     "Convertible",
+    "AsciiInt32",
+    "AsciiInt64",
     "Currency",
     "Dataset",
     "Event",

@@ -29,7 +29,7 @@ the complete stored-value lookup under `enum:*` metadata.
 | [AssetKind](asset-kind.md) | Tradable asset class. |
 | [IdSource](id-source.md) | Instrument identifier scheme. |
 | [MIC](mic.md) | ISO 10383 market identifier. |
-| [Currency](currency.md) | Currency and decimal count packed into four bytes. |
+| [Currency](currency.md) | ISO 4217 code packed into four bytes. |
 | [OptionKind](option-kind.md) | Put or call direction. |
 
 ## Order codes
@@ -41,5 +41,9 @@ the complete stored-value lookup under `enum:*` metadata.
 | [TimeInForce](time-in-force.md) | Order lifetime. |
 
 `Ranged` enums use hundred-wide bands. An unknown stored value resolves to its
-band floor, so new detailed codes retain their broad meaning. ASCII enums pack
-their readable code into the stored integer; their pages show both forms.
+band floor, so new detailed codes retain their broad meaning. ASCII enums --
+built on the public `AsciiInt32` and `AsciiInt64` bases -- pack their readable
+code into the stored integer, NUL-padded to the storage width; their pages
+show both forms. An ASCII enum's Arrow shape is one extension singleton,
+`EnumName.into_arrow_type()`, whose storage stays the plain integer column
+every engine reads.

@@ -242,7 +242,7 @@ class Rules(Convertible):
 
     def category_of(self, protocol: str | None, etype: int | EventType | None) -> str:
         """Target category for one parsed row."""
-        kind = EventType.from_code(etype) if etype is not None else None
+        kind = EventType.from_int(etype) if etype is not None else None
         if kind is not None and kind.rank >= EventType.INTENT.rank:
             return MARKET_CATEGORY
         if kind is EventType.MISC:

@@ -9,21 +9,12 @@ from __future__ import annotations
 
 import enum
 import functools
-import json
 import re
-from collections import OrderedDict
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from rekep.enums.ranged import (
-    _ASCII_ALIASES,
-    _ASCII_REGISTERED,
-    _ASCII_REGISTERED_LIMIT,
-    Ranged,
-    _AsciiInt32,
-    _FixedAsciiInt32,
-)
+from rekep.enums.ranged import AsciiInt32, Ranged
 
 
 class AssetKind(Ranged):
@@ -57,7 +48,7 @@ class AssetKind(Ranged):
         return self >= AssetKind.DERIVATIVE
 
 
-class EventType(_FixedAsciiInt32):
+class EventType(AsciiInt32):
     """Event kind stored as a four-byte ASCII mnemonic, banded by rank.
 
     The stored value is the readable mnemonic; the band order the row
@@ -455,7 +446,7 @@ class State(Ranged):
         return self >= State.TERMINAL
 
 
-class MIC(_AsciiInt32):
+class MIC(AsciiInt32):
     """ISO 10383 code stored as four ASCII bytes in one `int32`."""
 
     _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9]{4}$"))
@@ -472,6 +463,10 @@ class MIC(_AsciiInt32):
     @classmethod
     def _valid(cls, text: str) -> bool:
         return bool(cls._PATTERN.fullmatch(text))
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
@@ -508,142 +503,37 @@ class MIC(_AsciiInt32):
         return compute.coalesce(*encoded)
 
 
-class Currency(_AsciiInt32):
-    """Three uppercase letters plus one ASCII decimal-count digit."""
+class Currency(AsciiInt32):
+    """ISO 4217 alphabetic code stored as three ASCII letters.
 
-    _PATTERN = enum.nonmember(re.compile(r"^[A-Z]{3}[0-9]$"))
+    Packed like every other ASCII code -- NUL-padded to the storage width --
+    so the fourth byte is simply zero. No decimal count rides in the value:
+    a minor-unit convention is venue data, not part of the code.
+    """
 
-    def __new__(cls, value: int | str, decimals: int = 0) -> Self:
-        if not isinstance(value, str):
-            member = int.__new__(cls, int(value))
-            member._value_ = int(value)
-            member._code = ""
-            member._packed_code = ""
-            member._decimals = 0
-            member._fix_code = ""
-            member._rank = int(value)
-            return member
-        raw = value.strip().upper()
-        code = raw[:3]
-        count = int(raw[3]) if len(raw) == 4 and raw[3].isdigit() else int(decimals)
-        text = f"{code}{count}"
-        packed = cls._pack(text)
-        member = int.__new__(cls, packed)
-        member._value_ = packed
-        member._code = code
-        member._packed_code = text
-        member._decimals = count
-        member._fix_code = code
-        member._rank = packed
-        return member
-
-    @property
-    def decimals(self) -> int:
-        """Decimal count encoded by the fourth ASCII digit."""
-        return self._decimals
-
-    @property
-    def packed_code(self) -> str:
-        """Four ASCII characters written into the `int32`."""
-        return self._packed_code
+    _PATTERN = enum.nonmember(re.compile(r"^[A-Z]{3}$"))
 
     @classmethod
-    def from_str(cls, value: Any, decimals: int | None = None) -> Self:
-        """Parse `CCC`/`CCCn`; an omitted decimal count is zero."""
-        if isinstance(value, cls):
-            return value
-        if isinstance(value, int):
-            return cls.from_code(value)
-        raw = str(value) if value is not None else ""
-        return cls._from_text(raw) if decimals is None else cls.register(raw, decimals=decimals)
+    def _valid(cls, text: str) -> bool:
+        return bool(cls._PATTERN.fullmatch(text))
 
     @classmethod
-    @functools.lru_cache(maxsize=4_096)
-    def _from_text(cls, raw: str) -> Self:
-        return cls.register(raw)
-
-    @classmethod
-    def register(
-        cls, value: str, *, decimals: int | None = None, aliases: Iterable[str] = ()
-    ) -> Self:
-        """Register one `CCCn` value and optional source aliases."""
-        raw = cls._normalise(value)
-        alias_map = {**cls._built_in_aliases(), **_ASCII_ALIASES.get(cls, {})}
-        raw = alias_map.get(raw, raw)
-        named = cls.__members__.get(raw)
-        if named is not None:
-            raw = named.packed_code
-        if len(raw) == 3:
-            count = 0 if decimals is None else decimals
-            text = f"{raw}{count}"
-        elif len(raw) == 4 and raw[3].isdigit():
-            count = int(raw[3]) if decimals is None else decimals
-            text = f"{raw[:3]}{count}"
-        else:
-            return cls.UNKNOWN
-        if not isinstance(count, int) or not 0 <= count <= 9 or not cls._PATTERN.fullmatch(text):
-            return cls.UNKNOWN
-        packed = cls._pack(text)
-        registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
-        known = cls._value2member_map_.get(packed) or registered.get(packed)
-        if known is None:
-            known = int.__new__(cls, packed)
-            known._name_ = text
-            known._value_ = packed
-            known._code = text[:3]
-            known._packed_code = text
-            known._decimals = count
-            known._fix_code = text[:3]
-            known._rank = packed
-            registered[packed] = known
-            registered.move_to_end(packed)
-            if len(registered) > _ASCII_REGISTERED_LIMIT:
-                registered.popitem(last=False)
-        if aliases:
-            configured = _ASCII_ALIASES.setdefault(cls, {})
-            configured.update({cls._normalise(alias): text for alias in aliases})
-            cls._from_text.cache_clear()
-        return known
-
-    @classmethod
-    def from_code(cls, value: Any, default: Self | None = None) -> Self:
-        """Decode `CCCn`, returning `UNKNOWN` for malformed values."""
-        try:
-            packed = int(value)
-        except (TypeError, ValueError):
-            return default if default is not None else cls.UNKNOWN
-        registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
-        known = cls._value2member_map_.get(packed) or registered.get(packed)
-        if known is not None:
-            return known
-        if packed < 0 or packed >= 1 << 31:
-            return default if default is not None else cls.UNKNOWN
-        try:
-            text = packed.to_bytes(4, "big").decode("ascii")
-        except (OverflowError, UnicodeDecodeError):
-            return default if default is not None else cls.UNKNOWN
-        parsed = cls.register(text)
-        return default if parsed is cls.UNKNOWN and default is not None else parsed
+    def _registers_unknown(cls) -> bool:
+        return True
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:
         return {
-            "$": "USD0",
-            "US$": "USD0",
-            "\u20ac": "EUR0",
-            "\u00a3": "GBP0",
-            "\u00a5": "JPY0",
+            "$": "USD",
+            "US$": "USD",
+            "\u20ac": "EUR",
+            "\u00a3": "GBP",
+            "\u00a5": "JPY",
         }
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
-        return {
-            "encoding": "ascii-currency-decimals",
-            "byte_width": "4",
-            "layout": "CCCn",
-            "decimal_byte": "ascii-digit",
-            "aliases": json.dumps(cls._built_in_aliases(), separators=(",", ":"), sort_keys=True),
-        }
+        return {**super().schema_metadata(), "pattern": "[A-Z]{3}"}
 
     UNKNOWN = 0, ""
     """No currency was present."""
@@ -679,7 +569,7 @@ class Currency(_AsciiInt32):
     XXX = "XXX"
 
 
-class Side(_FixedAsciiInt32):
+class Side(AsciiInt32):
     """Direction stored as a four-byte ASCII mnemonic."""
 
     UNKNOWN = 0
@@ -751,7 +641,7 @@ class Side(_FixedAsciiInt32):
         return self
 
 
-class TimeInForce(_FixedAsciiInt32):
+class TimeInForce(AsciiInt32):
     """Order lifetime stored as a ranked four-byte ASCII mnemonic."""
 
     UNKNOWN = 0, "", 0
