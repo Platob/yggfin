@@ -397,24 +397,19 @@ class FieldEntry(Convertible):
             version=version,
             values=self.values,
         )
+        fix = built.fix
         if self.tag is None:
             # A namespaced field has no tag, and a `0` where one goes would
             # collide with every other one of them in a tag index.
-            del built.fix["tag"]
-            built.fix["kind"] = NAMESPACE
-        if self.column:
-            built.fix["column"] = self.column
-        if self.note:
-            built.fix["note"] = self.note
-        for key, value in (
-            ("value_names", dict(self.value_names)),
-            ("event_types", {key: int(value) for key, value in self.event_types.items()}),
-            ("states", {key: int(value) for key, value in self.states.items()}),
-            ("msgtypes", list(self.used_in)),
-            ("components", list(self.components)),
-        ):
-            if value:
-                built.fix[key] = _json(value)
+            fix.tag = None
+            fix.kind = NAMESPACE
+        fix.column = self.column
+        fix.note = self.note
+        fix.value_names = self.value_names
+        fix.event_types = self.event_types
+        fix.states = self.states
+        fix.msgtypes = self.used_in
+        fix.components = self.components
         return built
 
     def into_fields(self, order: Sequence[str]) -> list[Field]:
@@ -435,10 +430,9 @@ class FieldEntry(Convertible):
         built = self.into_field(listed[0])
         if built is None:  # pragma: no cover - `declares` selected these versions
             raise KeyError(f"FIX field {self.name!r} declares none of {list(order)}")
-        built.fix["name"] = self.name
-        built.fix["versions"] = _json(listed)
-        if self.aliases:
-            built.fix["aliases"] = _json([alias.into_dict() for alias in self.aliases])
+        built.fix.name = self.name
+        built.fix.versions = listed
+        built.fix.aliases = [alias.into_dict() for alias in self.aliases]
         return built
 
     def into_dict(self) -> dict[str, Any]:

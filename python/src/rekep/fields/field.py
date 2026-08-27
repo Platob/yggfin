@@ -6,7 +6,7 @@ import dataclasses
 import functools
 import json
 import re
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -17,6 +17,18 @@ from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.convert import Convertible
 from rekep.fields import arrays
 from rekep.fields.arrow import merge_fields
+from rekep.fields.metadata import (
+    ASCENDING as ASCENDING,
+)
+from rekep.fields.metadata import (
+    IDENTITY as IDENTITY,
+)
+from rekep.fields.metadata import (
+    EnumMetadata,
+    FixMetadata,
+    IcebergMetadata,
+    ProtocolMetadata,
+)
 
 #: Metadata key a documentation line lands under -- the one Arrow, parquet and
 #: every viewer downstream read as the column comment.
@@ -35,6 +47,7 @@ NAME = "name"
 #: protocol already claims.
 ICEBERG = "iceberg"
 FIX = "fix"
+ENUM = "enum"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
@@ -45,18 +58,12 @@ PARTITION_KEY = "iceberg:partition_key"
 #: boundary rather than mixed here.
 FIELD_ID = "iceberg:field_id"
 
-#: The partition transform that means "the value itself".
-IDENTITY = "identity"
-
 #: Which columns a table is kept sorted by, and which way.
 SORT_KEY = "iceberg:sort_key"
 
 #: Exact ordered sort fields read from an Iceberg table. A root declaration is
 #: needed because an external table's priority need not follow schema order.
 SORT_ORDER = "iceberg:sort_order"
-
-#: What a sort key means when a declaration only says there is one.
-ASCENDING = "asc"
 
 #: Keys owned by the field document rather than by a protocol map.
 _DOCUMENT_KEYS = frozenset(
@@ -88,51 +95,17 @@ _DERIVED = (
     "arrow_fields",
     "arrow_schema",
 )
+#: The typed view each known protocol answers with; anything else is generic.
+_PROTOCOLS: Mapping[str, type[ProtocolMetadata]] = MappingProxyType(
+    {ICEBERG: IcebergMetadata, FIX: FixMetadata, ENUM: EnumMetadata}
+)
+
 _FIELD_CASTS = MappingProxyType(
     {
         pyarrow.Array: "arrow_array",
         pyarrow.ChunkedArray: "arrow_array",
     }
 )
-
-
-class ProtocolMetadata(MutableMapping):
-    """One protocol's keys in a field's metadata: `prefix:key = value`."""
-
-    __slots__ = ("field", "prefix")
-
-    def __init__(self, field: Field, prefix: str) -> None:
-        self.field = field
-        self.prefix = prefix
-
-    def key_of(self, key: str) -> str:
-        """The metadata key one of this protocol's keys lands under."""
-        return f"{self.prefix}:{key}"
-
-    def __getitem__(self, key: str) -> str:
-        try:
-            return self.field.metadata[self.key_of(key)]
-        except KeyError:
-            raise KeyError(f"{self.field.name or 'field'} has no {self.key_of(key)!r}") from None
-
-    def __setitem__(self, key: str, value: Any) -> None:
-        self.field.metadata = {**self.field.metadata, self.key_of(key): str(value)}
-
-    def __delitem__(self, key: str) -> None:
-        full = self.key_of(key)
-        if full not in self.field.metadata:
-            raise KeyError(f"{self.field.name or 'field'} has no {full!r}")
-        self.field.metadata = _without(self.field.metadata, full)
-
-    def __iter__(self) -> Iterator[str]:
-        marker = f"{self.prefix}:"
-        return (key[len(marker) :] for key in self.field.metadata if key.startswith(marker))
-
-    def __len__(self) -> int:
-        return sum(1 for _ in self)
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.prefix!r}, {dict(self)!r})"
 
 
 @dataclasses.dataclass(eq=True)
@@ -243,20 +216,35 @@ class Field(Convertible):
         The one reader and writer of `prefix:key` keys: a protocol never
         spells its prefix at a call site, so two spellings of one key cannot
         drift apart. The proxy is a view -- `field.protocol("iceberg")["x"]`
-        reads the metadata in place, and setting through it rebuilds the
-        containers above exactly as assigning `metadata` would.
+        reads the metadata in place, and a write through it mutates the
+        original mapping and rebuilds the containers above exactly as
+        assigning `metadata` would. A protocol this package knows answers
+        with its typed view.
         """
-        return ProtocolMetadata(self, prefix)
+        return _PROTOCOLS.get(prefix, ProtocolMetadata)(self, prefix)
+
+    def _metadata_changed(self) -> None:
+        """Metadata mutated under this field in place: drop what was derived
+        from it and tell the container, without copying the mapping."""
+        for derived in _DERIVED:
+            self.__dict__.pop(derived, None)
+        if self._parent is not None:
+            self._parent._member_changed(self)
 
     @property
-    def iceberg(self) -> ProtocolMetadata:
-        """The keys the Iceberg protocol owns: `iceberg:primary_key`, ..."""
-        return self.protocol(ICEBERG)
+    def iceberg(self) -> IcebergMetadata:
+        """The keys the Iceberg protocol owns, typed: `iceberg:primary_key`, ..."""
+        return IcebergMetadata(self, ICEBERG)
 
     @property
-    def fix(self) -> ProtocolMetadata:
-        """The keys the FIX protocol owns: `fix:tag`, `fix:type`, ..."""
-        return self.protocol(FIX)
+    def fix(self) -> FixMetadata:
+        """The keys the FIX protocol owns, typed: `fix:tag`, `fix:type`, ..."""
+        return FixMetadata(self, FIX)
+
+    @property
+    def enum(self) -> EnumMetadata:
+        """The keys the enum protocol owns, typed: `enum:name`, `enum:values`, ..."""
+        return EnumMetadata(self, ENUM)
 
     @property
     def is_primary_key(self) -> bool:
@@ -265,75 +253,44 @@ class Field(Convertible):
         The one list Iceberg calls identifier fields and an upsert joins on --
         declared once, read from metadata like every other protocol property.
         """
-        return bool(self.iceberg.get("primary_key"))
+        return self.iceberg.primary_key
 
     @is_primary_key.setter
     def is_primary_key(self, value: bool) -> None:
-        if value and self.nullable:
-            raise TypeError(
-                f"field {self.name!r} is a primary key and cannot be nullable; "
-                "drop the `| None` or the key"
-            )
-        if not value:
-            self.iceberg.pop("primary_key", None)
-        else:
-            self.iceberg["primary_key"] = "true"
+        self.iceberg.primary_key = value
 
     @property
     def is_partition_key(self) -> bool:
         """Whether the data is partitioned on this field."""
-        return bool(self.iceberg.get("partition_key"))
+        return bool(self.iceberg.partition_key)
 
     @is_partition_key.setter
     def is_partition_key(self, value: bool | str) -> None:
-        """Set the partition transform: True is `identity`, a string is itself.
-
-        The transform is spelled as it was declared -- `identity`, `day`,
-        `bucket[16]` -- and stays a string here: what it means is the reading
-        protocol's business.
-        """
-        if not value:
-            self.iceberg.pop("partition_key", None)
-            return
-        self.iceberg["partition_key"] = IDENTITY if value is True else str(value)
+        """Set the partition transform: True is `identity`, a string is itself."""
+        self.iceberg.partition_key = value
 
     @property
     def field_id(self) -> int | None:
         """The Iceberg column id this field carries, or None when it has none."""
-        declared = self.iceberg.get("field_id")
-        return int(declared) if declared else None
+        return self.iceberg.field_id
 
     @field_id.setter
     def field_id(self, value: int | None) -> None:
-        if value is None:
-            self.iceberg.pop("field_id", None)
-            return
-        if int(value) < 1:
-            raise ValueError(
-                f"{self.name!r} cannot have field_id {value}: Iceberg numbers columns from 1"
-            )
-        self.iceberg["field_id"] = int(value)
+        self.iceberg.field_id = value
 
     @property
     def partition_transform(self) -> str:
         """How the data is partitioned on this field, or an empty string."""
-        return self.iceberg.get("partition_key", "")
+        return self.iceberg.partition_key
 
     @property
     def derived_from(self) -> tuple[str, ...]:
         """Columns this field is a function of, or nothing when it stands alone."""
-        declared = self.iceberg.get("derived_from", "")
-        return tuple(name for name in declared.split(",") if name)
+        return self.iceberg.derived_from
 
     @derived_from.setter
     def derived_from(self, value: str | Sequence[str] | None) -> None:
-        names = [value] if isinstance(value, str) else list(value or ())
-        if not names:
-            self.iceberg.pop("derived_from", None)
-            return
-        if self.name and self.name in names:
-            raise ValueError(f"field {self.name!r} cannot be derived from itself")
-        self.iceberg["derived_from"] = ",".join(names)
+        self.iceberg.derived_from = value
 
     @property
     def is_sort_key(self) -> bool:
@@ -345,20 +302,17 @@ class Field(Convertible):
         what makes the column's own min/max in a manifest narrow instead of
         spanning everything the file holds.
         """
-        return bool(self.iceberg.get("sort_key"))
+        return bool(self.iceberg.sort_key)
 
     @is_sort_key.setter
     def is_sort_key(self, value: bool | str) -> None:
         """Set the direction: True is ascending, a string is itself."""
-        if not value:
-            self.iceberg.pop("sort_key", None)
-            return
-        self.iceberg["sort_key"] = ASCENDING if value is True else str(value)
+        self.iceberg.sort_key = value
 
     @property
     def sort_direction(self) -> str:
         """Which way the data is sorted on this field, or an empty string."""
-        return self.iceberg.get("sort_key", "")
+        return self.iceberg.sort_key
 
     def merge(self, other: Field) -> Field:
         """Combine two declarations, letting `other` win where it says anything."""

@@ -5,6 +5,7 @@ from rekep.fields.builder import FieldBuilder
 from rekep.fields.classes import ClassBuilder
 from rekep.fields.field import (
     DESCRIPTION,
+    ENUM,
     FIELD_ID,
     FIX,
     ICEBERG,
@@ -21,16 +22,22 @@ from rekep.fields.field import (
     ListField,
     ListViewField,
     MapField,
-    ProtocolMetadata,
     StructField,
     cast_batch,
     cast_reader,
     cast_table,
     scalar,
 )
+from rekep.fields.metadata import (
+    EnumMetadata,
+    FixMetadata,
+    IcebergMetadata,
+    ProtocolMetadata,
+)
 
 __all__ = [
     "DESCRIPTION",
+    "ENUM",
     "FIELD_ID",
     "FIX",
     "ICEBERG",
@@ -41,15 +48,18 @@ __all__ = [
     "SORT_KEY",
     "SORT_ORDER",
     "ClassBuilder",
+    "EnumMetadata",
     "Field",
     "FieldBuilder",
-    "ProtocolMetadata",
+    "FixMetadata",
     "FixedSizeListField",
+    "IcebergMetadata",
     "LargeListField",
     "LargeListViewField",
     "ListField",
     "ListViewField",
     "MapField",
+    "ProtocolMetadata",
     "StructField",
     "cast_batch",
     "cast_reader",

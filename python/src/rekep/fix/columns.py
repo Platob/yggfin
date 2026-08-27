@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from types import MappingProxyType
 
@@ -228,8 +227,8 @@ _IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
 def _identifier_tag(name: str) -> int:
     """Registry tag, plus FIX's omitted `MDEntryRefID <280>` declaration."""
     member = _MERGED_FIELDS.get(name)
-    if member is not None and (tag := member.fix.get("tag")):
-        return int(tag)
+    if member is not None and (tag := member.fix.tag) is not None:
+        return tag
     if name == "MDEntryRefID":
         return 280
     raise ValueError(f"FIX identifier {name!r} has no tag")
@@ -249,7 +248,7 @@ _ORDER = (
 )
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
 FIXMSG_FIELDS: Mapping[int, Field] = MappingProxyType(
-    {int(member.fix["tag"]): member for member in _FIELDS}
+    {member.fix.tag: member for member in _FIELDS}
 )
 if len(FIXMSG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
     raise ValueError("the bundled FIX fields do not have unique tags")
@@ -257,7 +256,7 @@ DECLARATIONS: Mapping[int, Field] = MappingProxyType(
     {tag: _declaration(member) for tag, member in FIXMSG_FIELDS.items()}
 )
 
-_TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
+_TAGS_BY_NAME = {member.name: member.fix.tag for member in _FIELDS}
 STAMPS: frozenset[int] = frozenset(_TAGS_BY_NAME[name] for name in _STAMP_FIELDS)
 SESSION: tuple[tuple[int, str], ...] = tuple(
     (tag, DECLARATIONS[tag].name) for name in _SESSION_FIELDS if (tag := _TAGS_BY_NAME[name])
@@ -296,17 +295,9 @@ QUOTE_GROUP_STRUCTURE: pyarrow.Array = pyarrow.array(
 
 def _named(entry: Field) -> tuple[str, ...]:
     """Every spelling a rendered key may carry for one namespaced field, whole."""
-    spellings = [entry.fix["name"], *_json_list(entry.fix.get("aliases"))]
+    aliased = [str(alias.get("name", "")) for alias in entry.fix.aliases if alias.get("name")]
+    spellings = [entry.fix.name, *aliased]
     return tuple(dict.fromkeys(name.strip().lower() for name in spellings if name.strip()))
-
-
-def _json_list(value: str | None) -> list[str]:
-    """The alias names a merged declaration carries, provenance dropped."""
-    try:
-        decoded = json.loads(value or "[]")
-    except ValueError:  # pragma: no cover - the registry writes these itself
-        return []
-    return [str(alias.get("name", "")) for alias in decoded if alias.get("name")]
 
 
 #: What a lifted namespaced field carries into the log contract. Deliberately not
@@ -320,7 +311,7 @@ _NAMESPACE_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
 def _namespace_column(entry: Field) -> Field:
     """One namespaced field as the log column it is lifted into."""
     return Field(
-        name=entry.fix["column"],
+        name=entry.fix.column,
         dtype=entry.dtype,
         nullable=True,
         metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
@@ -331,9 +322,9 @@ def namespace_columns(registry: FixRegistry) -> Mapping[str, Field]:
     """`{canonical name: the log column it is lifted into}` for one dictionary."""
     return MappingProxyType(
         {
-            entry.fix["name"]: _namespace_column(entry)
+            entry.fix.name: _namespace_column(entry)
             for entry in registry.merged_fields().values()
-            if entry.fix.get("column")
+            if entry.fix.column
         }
     )
 

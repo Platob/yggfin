@@ -5,18 +5,14 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
-import json
 from typing import Any
 
 import pyarrow
 
 from rekep.convert import Convertible
 from rekep.enums import AsciiInt32, Ranged
-from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
+from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
-
-#: The prefix the enum keys ride under, like `fix:` and `iceberg:`.
-ENUM = "enum"
 
 
 class MarketFieldBuilder(FieldBuilder):
@@ -188,22 +184,17 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     """Write what `declared`'s codes mean into `built`'s metadata."""
     values = {member.name: member.value for member in declared}
     kinds = {type(value) for value in values.values()}
-    keys = built.protocol(ENUM)
-    keys["name"] = declared.__name__
-    keys["key_type"] = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
-    keys["value_type"] = "utf8"
-    keys["values"] = json.dumps(
-        {str(value): name for name, value in values.items()}, separators=(",", ":")
-    )
+    keys = built.enum
+    keys.name = declared.__name__
+    keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
+    keys.value_type = "utf8"
+    keys.values = {str(value): name for name, value in values.items()}
     mapping = getattr(declared, "fix_mapping", None)
     if mapping is not None:
-        keys["fix_values"] = json.dumps(
-            {
-                str(tag): {wire: int(member) for wire, member in values.items()}
-                for tag, values in mapping().items()
-            },
-            separators=(",", ":"),
-        )
+        keys.fix_values = {
+            str(tag): {wire: int(member) for wire, member in values.items()}
+            for tag, values in mapping().items()
+        }
 
 
 def dictionary_arrow(array: Any, target: pyarrow.DataType) -> Any:

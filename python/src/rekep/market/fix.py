@@ -279,7 +279,7 @@ class MarketTags:
     def standard(cls) -> Mapping[str, int]:
         """Tags selected by canonical name from the packaged registry."""
         registry = FixRegistry.from_builtin()
-        found = {name: int(registry.scalar(name).fix["tag"]) for name in CARRIED_FIELDS}
+        found = {name: registry.scalar(name).fix.tag for name in CARRIED_FIELDS}
         for shape in (MarketEvent, Order, Execution, Instrument):
             cls._declared(shape.into_field(), found)
         return types.MappingProxyType(found)
@@ -288,10 +288,10 @@ class MarketTags:
     def _declared(cls, struct: StructField, into: dict[str, int]) -> None:
         """Every `fix:` tag under `struct`, nested members included."""
         for member in struct.fields:
-            tag = member.fix.get("tag")
-            name = member.fix.get("name")
+            tag = member.fix.tag
+            name = member.fix.name
             if tag and name:
-                into.setdefault(str(name), int(tag))
+                into.setdefault(name, tag)
             if member.fields:
                 cls._declared(member, into)
 
@@ -436,8 +436,8 @@ class MarketTags:
 
         def visit(struct: StructField) -> None:
             for member in struct.fields:
-                if member.fix.get("name") and not member.fix.get("tag"):
-                    found.add(str(member.fix["name"]))
+                if member.fix.name and not member.fix.tag:
+                    found.add(member.fix.name)
                 if member.fields:
                     visit(member)
 

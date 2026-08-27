@@ -92,3 +92,97 @@ def test_the_key_properties_read_through_the_iceberg_protocol() -> None:
 def test_the_proxy_repr_names_the_prefix() -> None:
     assert "fix" in repr(make_field().fix)
     assert isinstance(make_field().fix, ProtocolMetadata)
+
+
+# -- the typed views ---------------------------------------------------------
+
+
+def test_each_known_protocol_answers_with_its_typed_view() -> None:
+    from rekep.fields import EnumMetadata, FixMetadata, IcebergMetadata
+
+    built = make_field()
+    assert isinstance(built.fix, FixMetadata)
+    assert isinstance(built.iceberg, IcebergMetadata)
+    assert isinstance(built.enum, EnumMetadata)
+    assert isinstance(built.protocol("fix"), FixMetadata)
+    assert type(built.protocol("own")) is ProtocolMetadata
+
+
+def test_fix_metadata_reads_and_writes_typed_values() -> None:
+    built = make_field()
+    assert built.fix.tag == 54
+    assert built.fix.type == "char"
+    assert built.fix.version == ""
+    built.fix.tag = 55
+    assert built.metadata["fix:tag"] == "55"
+    built.fix.tag = None
+    assert "fix:tag" not in built.metadata
+    built.fix.values = {"1": "Buy"}
+    assert built.metadata["fix:values"] == '{"1":"Buy"}'
+    assert built.fix.values == {"1": "Buy"}
+    built.fix.versions = ["4.4", "4.2"]
+    assert built.fix.versions == ("4.4", "4.2")
+    built.fix.versions = ()
+    assert "fix:versions" not in built.metadata
+
+
+def test_fix_metadata_round_trips_the_market_enums() -> None:
+    from rekep.enums import EventType, State
+
+    built = make_field()
+    built.fix.event_types = {"D": EventType.ORDER}
+    assert built.metadata["fix:event_types"] == f'{{"D":{int(EventType.ORDER)}}}'
+    assert built.fix.event_types == {"D": EventType.ORDER}
+    built.fix.states = {"D": State.PENDING_NEW}
+    assert built.fix.states == {"D": State.PENDING_NEW}
+
+
+def test_iceberg_metadata_carries_the_key_declarations() -> None:
+    built = Field(name="k", dtype=pyarrow.int64(), nullable=False)
+    built.iceberg.primary_key = True
+    assert built.is_primary_key and built.metadata["iceberg:primary_key"] == "true"
+    built.iceberg.partition_key = "day"
+    assert built.partition_transform == "day"
+    built.iceberg.field_id = 7
+    assert built.field_id == 7
+    with pytest.raises(ValueError, match="from 1"):
+        built.iceberg.field_id = 0
+    built.iceberg.derived_from = ("unix",)
+    assert built.derived_from == ("unix",)
+    with pytest.raises(ValueError, match="derived from itself"):
+        built.iceberg.derived_from = ("k",)
+    nullable = Field(name="n", dtype=pyarrow.int64(), nullable=True)
+    with pytest.raises(TypeError, match="cannot be nullable"):
+        nullable.iceberg.primary_key = True
+
+
+def test_a_view_write_mutates_the_original_mapping_in_place() -> None:
+    """Zero copies: the dict the field was built over is the dict that grows."""
+    built = make_field()
+    stored = built.metadata
+    built.fix.tag = 55
+    built.fix["name"] = "Side"
+    del built.fix["type"]
+    assert built.metadata is stored
+    assert stored == {"fix:tag": "55", "fix:name": "Side", "description": "Side of order."}
+
+
+def test_an_in_place_write_still_rebuilds_the_container() -> None:
+    schema = pyarrow.schema([("side", pyarrow.string())])
+    struct = Field.from_arrow_schema(schema, "Row")
+    member = struct.field("side")
+    member.fix.tag = 54
+    member.fix.tag = 55
+    rebuilt = struct.into_arrow_schema().field("side").metadata
+    assert rebuilt[b"fix:tag"] == b"55"
+
+
+def test_the_enum_view_reads_a_market_declaration() -> None:
+    from rekep.market import Instrument
+
+    currency = Instrument.into_field().field("currency").enum
+    assert currency.name == "Currency"
+    assert currency.byte_width == 4
+    assert currency.encoding == "ascii-big-endian"
+    assert currency.values["0"] == "UNKNOWN"
+    assert currency.aliases["$"] == "USD"
