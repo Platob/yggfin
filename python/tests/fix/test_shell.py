@@ -17,7 +17,7 @@ import pytest
 from rekep.console import Console
 from rekep.fields import Field
 from rekep.fix.entries import (
-    ComponentEntry,
+    ComponentRecord,
     record_document,
     record_kind,
     record_of,
@@ -179,7 +179,7 @@ def test_component_declarations_are_added_updated_and_removed(
     store: Offline, tmp_path: Path
 ) -> None:
     declaration = tmp_path / "legs.json"
-    ComponentEntry(
+    ComponentRecord(
         name="FakeLegs",
         versions=("9.1",),
         declaration=block("FakeLegs", [field_member("FakeCode", 90002)]),

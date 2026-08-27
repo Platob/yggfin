@@ -678,10 +678,12 @@ def test_lookup_without_a_version_walks_them_newest_first(registry: FixtureRegis
     assert [member.fix["version"] for member in found] == ["4.4"]
 
 
-def test_an_unknown_field_raises_key_error(registry: FixtureRegistry) -> None:
+def test_an_unknown_field_is_answered_with_none(registry: FixtureRegistry) -> None:
+    """`field()` answers what it holds; `scalar()` is the one that insists."""
     registry.fields("4.4")
+    assert registry.field("NoSuchField") is None
     with pytest.raises(KeyError, match="NoSuchField"):
-        registry.field("NoSuchField")
+        registry.scalar("NoSuchField")
 
 
 def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:

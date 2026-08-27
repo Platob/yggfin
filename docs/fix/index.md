@@ -293,9 +293,9 @@ a day stale parses every message, and one that raises parses none.
 
 ### Merged views
 
-`merged_fields()` and `merged_components()` hand over the whole unified table
-in one call, where `scalar()` answers one key at a time. A merged component is
-an entry rather than one tree: `paths(version)`, `delimiters(version)` and
+`merged_fields()` and `component_records()` hand over the whole unified table
+in one call, where `scalar()` answers one key at a time. A component record is
+one record rather than one tree: `paths(version)`, `delimiters(version)` and
 `diff()` are the questions worth asking of it.
 
 Protocol-specific code should normalize values, not duplicate registry tables.

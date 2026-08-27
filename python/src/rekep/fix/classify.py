@@ -365,8 +365,8 @@ def _known_containers(registry: FixRegistry) -> frozenset[str]:
     A field as well as a component, because a group is named by its count
     field -- `NoPartyIDs` -- and that is what a rendered path writes.
     """
-    found = {fold(name) for name in registry.component_entries()}
-    for record in registry.field_entries().values():
+    found = {fold(name) for name in registry.component_records()}
+    for record in registry.field_records().values():
         found.update(fold(spelling) for spelling in record.fix.spellings())
     return frozenset(found)
 
@@ -374,7 +374,7 @@ def _known_containers(registry: FixRegistry) -> frozenset[str]:
 def _known_names(registry: FixRegistry) -> Mapping[str, str]:
     """`{folded spelling: canonical name}` for every name the dictionary has."""
     found: dict[str, str] = {}
-    for record in registry.field_entries().values():
+    for record in registry.field_records().values():
         for spelling in record.fix.spellings():
             found.setdefault(fold(spelling), record.fix.canonical)
     return found

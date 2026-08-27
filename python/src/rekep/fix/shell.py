@@ -18,7 +18,7 @@ from rekep.fix.entries import (
     NAMESPACE,
     STANDARD,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     record_copy,
     record_kind,
     record_of,
@@ -259,7 +259,7 @@ class Shell:
         entries = sorted(
             (
                 entry
-                for entry in self.registry.component_entries().values()
+                for entry in self.registry.component_records().values()
                 if not wanted or wanted in entry.name.lower()
             ),
             key=lambda entry: entry.name,
@@ -287,7 +287,7 @@ class Shell:
             self.console.fail(f"no component {rest!r} in this store")
             near = difflib.get_close_matches(
                 rest,
-                self.registry.component_entries(),
+                self.registry.component_records(),
                 n=3,
                 cutoff=0.5,
             )
@@ -366,13 +366,13 @@ class Shell:
         else:  # pragma: no cover - resolved immediately above
             self.console.fail(f"{entry.name} was not in this store")
 
-    def _component_declaration(self, path: str) -> ComponentEntry | None:
+    def _component_declaration(self, path: str) -> ComponentRecord | None:
         """Read and preview one component document."""
         if not path:
             self.console.warn("say which: `add-component parties.json`")
             return None
         path = _unquoted(path)
-        entry = ComponentEntry.from_file(path)
+        entry = ComponentRecord.from_file(path)
         self.console.panel(
             entry.name,
             [
@@ -611,8 +611,8 @@ class Shell:
                     _clipped(str(self.registry.cache_dir), max(20, console.width - 22)),
                 ),
                 _detail(console, "versions", len(self.registry.versions)),
-                _detail(console, "fields", len(self.registry.field_entries())),
-                _detail(console, "components", len(self.registry.component_entries())),
+                _detail(console, "fields", len(self.registry.field_records())),
+                _detail(console, "components", len(self.registry.component_records())),
                 _detail(console, "command", f"type {console.style('help', 'yellow')}"),
             ],
         )
@@ -643,7 +643,7 @@ class Shell:
         if not name:
             self.console.warn("name a field: `show PartyRole`")
             return None
-        record = self.registry.entry(name)
+        record = self.registry.field(name)
         if record is not None:
             return record
         self.console.fail(f"no field {name!r} in this store")
@@ -703,4 +703,4 @@ def shell(
 
 #: Re-exported so a caller building a stored document has the same names the
 #: prompt uses, without importing two modules to do it.
-__all__ = ["ComponentEntry", "Shell", "record_of", "shell"]
+__all__ = ["ComponentRecord", "Shell", "record_of", "shell"]

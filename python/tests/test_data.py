@@ -367,7 +367,7 @@ def test_the_builtin_projection_matches_the_published_versions(
     # spellings and the collapse keeps the older one as an alias. One of the
     # 170 is the vendor field, which `tags()` cannot map because it has no tag.
     assert len(builtin.tags()) == 177
-    assert len(builtin.field_entries()) == 180
+    assert len(builtin.field_records()) == 180
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     selected = {
         int(tag)

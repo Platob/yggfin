@@ -317,7 +317,7 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
 
 
 @dataclasses.dataclass(frozen=True)
-class ComponentEntry(Convertible):
+class ComponentRecord(Convertible):
     """One component identity: one declaration, and the versions declaring it.
 
     The declaration is a `Field`, which is what a component *is*: a struct of
@@ -390,7 +390,7 @@ class ComponentEntry(Convertible):
         self,
         version: str,
         types: Mapping[str, Any] | None = None,
-        components: Mapping[str, ComponentEntry] | None = None,
+        components: Mapping[str, ComponentRecord] | None = None,
     ) -> Field | None:
         """This component's declaration as one Arrow field, or None for a version
         it has none for.
@@ -489,7 +489,7 @@ class ComponentEntry(Convertible):
 def _component_fields(
     declared: Field,
     types: Mapping[str, Any],
-    components: Mapping[str, ComponentEntry],
+    components: Mapping[str, ComponentRecord],
     seen: frozenset[str],
 ) -> list[Field]:
     """One level of a declaration as Arrow fields, `required` and all.

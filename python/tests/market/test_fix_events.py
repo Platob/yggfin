@@ -950,7 +950,7 @@ def _restated(record, states):
 
 def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
-    entry = FixRegistry.from_builtin().entry("OrdStatus")
+    entry = FixRegistry.from_builtin().field("OrdStatus")
     registry.add_field(_restated(entry, {"0": State.NEW}))
     first = MarketTags.of(registry)
     first_state = first.states["OrdStatus"]["0"]
@@ -974,7 +974,7 @@ def test_a_sparse_registry_keeps_builtin_trade_exectypes(tmp_path) -> None:
 
 def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
-    entry = FixRegistry.from_builtin().entry("ExecType")
+    entry = FixRegistry.from_builtin().field("ExecType")
     assert entry is not None
     configured = record_copy(entry)
     configured.fix.enumerated = [

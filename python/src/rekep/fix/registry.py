@@ -32,7 +32,7 @@ from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     FixFieldValue,
     fold,
     merged_record,
@@ -405,10 +405,10 @@ class FixRegistry(Convertible):
         except (OSError, ValueError) as error:
             self._reduced(f"{self.base_url} could not be read ({error})")
             return False
-        counted = len(self._layout.field_entries)
+        counted = len(self._layout.field_records)
         self._say(
             f"the FIX registry is installed at {self.cache_dir}: {counted} fields, "
-            f"{len(self._layout.component_entries)} components, "
+            f"{len(self._layout.component_records)} components, "
             f"{sum(report.counts().values())} collapses, in {time.monotonic() - started:.0f}s"
         )
         return True
@@ -567,7 +567,7 @@ class FixRegistry(Convertible):
                 seen.add(member[0])
 
         fields: dict[int | str, Field] = {}
-        components: dict[str, ComponentEntry] = {}
+        components: dict[str, ComponentRecord] = {}
         component_tags: set[int] = set()
         component_refs: set[str] = set()
         for name in names:
@@ -628,7 +628,7 @@ class FixRegistry(Convertible):
             ):
                 raise ValueError(f"FIX component in {name!r} has invalid metadata")
             try:
-                entry = ComponentEntry.from_dict(document)
+                entry = ComponentRecord.from_dict(document)
             except (AttributeError, KeyError, TypeError, ValueError) as error:
                 raise ValueError(f"FIX component in {name!r} is invalid: {error}") from error
             # The declaration validates by being read: a document Field cannot
@@ -774,8 +774,8 @@ class FixRegistry(Convertible):
             declarations[version] = self._scrape_version(version, document)
             sessions[version] = parse_session(document)
             components[version] = tuple(parse_components(document).values())
-        entries, component_entries, report = collapse(order, declarations, components)
-        self._write(documents_of(order, entries, component_entries, sessions, components))
+        entries, component_records, report = collapse(order, declarations, components)
+        self._write(documents_of(order, entries, component_records, sessions, components))
         self.__dict__["_conflicts"] = report
         return report
 
@@ -1082,21 +1082,22 @@ class FixRegistry(Convertible):
             return self._layout.record(int(key))
         return self.resolve(str(key))
 
-    def entry(self, key: int | str) -> Field | None:
-        """The stored record one tag or name resolves to, or None.
+    def field(self, key: int | str, version: str | None = None) -> Field | None:
+        """One field by tag or by any name it answers to; None when nothing is.
 
-        The record, not one version's projection of it: `record.fix.encode`
-        and the alias spellings live on it, and `FieldAccess` reads both.
+        The whole **record** when no version is named: the newest reading, the
+        versions that declare it, its aliases and the values it enumerates --
+        which is what `record.fix.encode` and `FieldAccess` read. One version's
+        reading of it when a version is named, which is the same declaration
+        under that version alone.
         """
-        return self._record(key)
-
-    def field(self, key: int | str, version: str | None = None) -> Field:
-        """The newest definition of one field; `KeyError` when no version has it."""
-        found = self.lookup(key, version)
-        if not found:
-            where = version or "any version"
-            raise KeyError(f"no FIX field {key!r} in {where}")
-        return found[0]
+        record = self._record(key)
+        if record is None:
+            return None
+        if version is None:
+            return merged_record(record, self.versions)
+        found = records_for(record, self._versions(version))
+        return found[0] if found else None
 
     def msg_type_event_types(self) -> Mapping[str, EventType]:
         """Known MsgTypes to their configured market kind or MISC."""
@@ -1105,30 +1106,16 @@ class FixRegistry(Convertible):
     @cached_property
     def _msg_type_event_types(self) -> Mapping[str, EventType]:
         """Registry-owned classification index, built once per store revision."""
-        entry = self.entry(35)
+        entry = self.field(35)
         if entry is None:
             return MappingProxyType({})
         fix = entry.fix
         msg_types = dict.fromkeys((*(one.value for one in fix.enumerated), *fix.event_types))
         return MappingProxyType({value: fix.event_type(value) for value in msg_types})
 
-    def msg_types(self, event_type: EventType | int) -> frozenset[str]:
-        """Configured MsgTypes belonging to one stored event kind."""
-        return self._msg_types.get(EventType(event_type), frozenset())
-
-    @cached_property
-    def _msg_types(self) -> Mapping[EventType, frozenset[str]]:
-        """Event-kind groups built once per store revision."""
-        grouped: dict[EventType, set[str]] = {}
-        for msg_type, event_type in self.msg_type_event_types().items():
-            grouped.setdefault(event_type, set()).add(msg_type)
-        return MappingProxyType(
-            {event_type: frozenset(values) for event_type, values in grouped.items()}
-        )
-
     def state_values(self, field: int | str) -> Mapping[str, State]:
         """Configured market states for one FIX field's wire values."""
-        entry = self.entry(field)
+        entry = self.field(field)
         return MappingProxyType({}) if entry is None else self._state_values.get(entry.fix.key, {})
 
     @cached_property
@@ -1152,8 +1139,15 @@ class FixRegistry(Convertible):
         nullable: bool | None = None,
         metadata: dict[str, str] | None = None,
     ) -> Field:
-        """A fresh scalar declaration, exact by version or merged across versions."""
+        """A fresh scalar declaration, exact by version or merged across versions.
+
+        Unlike `field`, which answers None for a key the registry does not
+        have, this is a *declaration* a caller is about to build a column from:
+        there is nothing to hand back, so it raises.
+        """
         source = self.field(key, version) if version is not None else self._scalar_of(key)
+        if source is None:
+            raise KeyError(f"no FIX field {key!r} in {version}")
         # Protocol identity is the registry's. Other declarations can add
         # metadata, but cannot silently retag or retype a standard field.
         declared = {**(metadata or {}), **source.metadata, "fix:name": source.name}
@@ -1207,7 +1201,7 @@ class FixRegistry(Convertible):
         found: list[Field] = []
         seen: set[int | str] = set()
         for *_, member in ranked:
-            entry = self.entry(member.fix.get("tag") or member.name)
+            entry = self.field(member.fix.get("tag") or member.name)
             identity = entry.fix.key if entry is not None else member.name
             if identity in seen:
                 continue
@@ -1225,11 +1219,11 @@ class FixRegistry(Convertible):
     # comparing a capture's key names against the standard needs, and what
     # nine per-version documents could not be asked.
 
-    def field_entries(self) -> Mapping[str, Field]:
+    def field_records(self) -> Mapping[str, Field]:
         """Every field identity this registry holds, keyed by canonical name."""
         return MappingProxyType({entry.fix.canonical: entry for entry in self._entries[0].values()})
 
-    def component_entries(self) -> Mapping[str, ComponentEntry]:
+    def component_records(self) -> Mapping[str, ComponentRecord]:
         """Every component identity this registry holds, keyed by canonical name."""
         return MappingProxyType({entry.name: entry for entry in self._entries[1].values()})
 
@@ -1248,15 +1242,7 @@ class FixRegistry(Convertible):
             }
         )
 
-    def merged_components(self) -> Mapping[str, ComponentEntry]:
-        """The whole unified component table: `{canonical name: record}`.
-
-        A record, not a declaration, because `paths()` and `delimiters()` are
-        the questions worth asking of one and neither is on a member tree.
-        """
-        return self.component_entries()
-
-    def merged_component(self, name: str) -> ComponentEntry:
+    def merged_component(self, name: str) -> ComponentRecord:
         """One component across every version it is declared for."""
         wanted = fold(name)
         for entry in self._entries[1].values():
@@ -1353,9 +1339,9 @@ class FixRegistry(Convertible):
         return _problems(self._entries)
 
     @cached_property
-    def _entries(self) -> tuple[dict[int | str, Field], dict[str, ComponentEntry]]:
+    def _entries(self) -> tuple[dict[int | str, Field], dict[str, ComponentRecord]]:
         """Every record this store holds, keyed as the store keys them."""
-        return self._layout.field_entries, self._layout.component_entries
+        return self._layout.field_records, self._layout.component_records
 
     @cached_property
     def _resolutions(self) -> dict[str, Field]:
@@ -1414,13 +1400,13 @@ class FixRegistry(Convertible):
         self._forget()
         return removed
 
-    def add_component(self, entry: ComponentEntry) -> ComponentEntry:
+    def add_component(self, entry: ComponentRecord) -> ComponentRecord:
         """Store one new component identity; `KeyError` when it is already here."""
         if entry.slug in self._entries[1]:
             raise KeyError(f"FIX component {entry.name!r} is already stored")
         return self._write_component(entry)
 
-    def update_component(self, entry: ComponentEntry) -> ComponentEntry:
+    def update_component(self, entry: ComponentRecord) -> ComponentRecord:
         """Replace one stored component identity; `KeyError` when there is none."""
         if entry.slug not in self._entries[1]:
             raise KeyError(f"no FIX component stored as {entry.slug}{DOCUMENT_SUFFIX}")
@@ -1545,7 +1531,7 @@ class FixRegistry(Convertible):
         self._forget()
         return entry
 
-    def _write_component(self, entry: ComponentEntry) -> ComponentEntry:
+    def _write_component(self, entry: ComponentRecord) -> ComponentRecord:
         """Validate one component record against the whole store, then write it."""
         self._validated(components={**self._entries[1], entry.slug: entry})
         self._layout.store_component(entry)
@@ -1555,7 +1541,7 @@ class FixRegistry(Convertible):
     def _validated(
         self,
         fields: Mapping[int | str, Field] | None = None,
-        components: Mapping[str, ComponentEntry] | None = None,
+        components: Mapping[str, ComponentRecord] | None = None,
     ) -> None:
         """Refuse a change that would make the store inconsistent, before writing.
 
@@ -2255,7 +2241,7 @@ def _tier(entry: Field, tier: str) -> tuple[str, ...]:
 
 
 def _problems(
-    held: tuple[Mapping[int | str, Field], Mapping[str, ComponentEntry]],
+    held: tuple[Mapping[int | str, Field], Mapping[str, ComponentRecord]],
 ) -> list[str]:
     """Everything inconsistent about a set of records, as lines.
 

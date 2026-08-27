@@ -1034,7 +1034,7 @@ class FixCodec(Convertible):
         if version is not None:
             try:
                 declared = self.registry.field(tag, version)
-            except (KeyError, OSError, ValueError):
+            except (OSError, ValueError):
                 declared = None
         rule = self.field_rules(version).get(tag)
         if rule is None:
@@ -1660,7 +1660,7 @@ def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
     resolved: list[str] = []
     if version is not None:
         try:
-            entries = registry.field_entries()
+            entries = registry.field_records()
         except (KeyError, OSError, ValueError):
             entries = {}
         for entry in entries.values():

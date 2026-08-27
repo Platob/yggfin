@@ -828,7 +828,7 @@ class FixMsg(Message):
             count = _tag_of(count_name)
             if _pair_identity(str(count)) not in stored_identities:
                 component_fields.extend(_component_fields(count, entries, row_type))
-        component_entries = [entry for _, entry in component_fields]
+        component_records = [entry for _, entry in component_fields]
         components = [(key, entry.value) for key, entry in component_fields]
 
         # The promoted discriminator re-enters at its wire-legal position:
@@ -852,7 +852,7 @@ class FixMsg(Message):
                 promoted_entries = [*promoted_entries[:at], *promoted_entries[at + 1 :]]
                 stored_resolved = access.tagged_pairs(stored)
 
-        fields = [*promoted_entries, *component_entries, *stored_entries]
+        fields = [*promoted_entries, *component_records, *stored_entries]
         pairs = [*promoted, *components, *stored]
         resolved = access.tagged_pairs(pairs)
         named = {
@@ -926,7 +926,7 @@ class FixMsg(Message):
         """Whether a rendered group path survives only in source spelling."""
         return any(entry.comp or "[" in entry.key for entry in self.entries or ())
 
-    def component_entries(self, column: str) -> list[dict[str, str]] | None:
+    def component_records(self, column: str) -> list[dict[str, str]] | None:
         """One resolved component column, each entry first-value-by-name.
 
         None when the parse stage did not resolve the column, which is what

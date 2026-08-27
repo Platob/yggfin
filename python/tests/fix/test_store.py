@@ -35,7 +35,7 @@ from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     record_copy,
     record_document,
     record_kind,
@@ -60,7 +60,7 @@ PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 def _registry_documents() -> dict[str, dict[str, Any]]:
     field = record_of({"name": "FakeRole", "tag": 90001, "versions": ["9.1"], "type": "int"})
-    component = ComponentEntry(name="FakeParties", versions=("9.1",))
+    component = ComponentRecord(name="FakeParties", versions=("9.1",))
     return {
         "versions.json": {
             "versions": ["9.1"],
@@ -534,7 +534,7 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     assert cached == {"0": State.NEW, "1": State.PARTIALLY_FILLED}
     assert store.state_values("OrdStatus") is cached
     assert store.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert store.entry(35).fix.encode("NewOrderSingle") == "D"
+    assert store.field(35).fix.encode("NewOrderSingle") == "D"
 
     restated = record_copy(status)
     restated.fix.states = {"0": State.ACCEPTED}
@@ -545,7 +545,7 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
     assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert reopened.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert reopened.entry(35).fix.encode("NewOrderSingle") == "D"
+    assert reopened.field(35).fix.encode("NewOrderSingle") == "D"
 
 
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(
@@ -582,7 +582,7 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
 
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
-    entry = ComponentEntry.from_components(
+    entry = ComponentRecord.from_components(
         [block("FakeInstrument", [field_member("FakeCode", 90002)])], ["9.1"]
     )
     store.add_component(entry)
@@ -591,7 +591,7 @@ def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> 
         store.add_component(entry)
 
     store.update_component(
-        ComponentEntry.from_components(
+        ComponentRecord.from_components(
             [block("FakeInstrument", [field_member("FakeRole", 90001)])], ["9.1"]
         )
     )
@@ -631,7 +631,7 @@ def test_a_component_is_one_queryable_object_across_every_version(store: Offline
     entry = store.merged_component("fakeparties")
     assert entry.name == "FakeParties" and entry.versions == ("9.1",)
     assert entry.delimiters() == {("NoFakeParties",): "FakeRole"}
-    assert store.merged_components()["FakeParties"] is entry
+    assert store.component_records()["FakeParties"] is entry
     with pytest.raises(KeyError, match="FakeAbsent"):
         store.merged_component("FakeAbsent")
 

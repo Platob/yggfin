@@ -711,10 +711,10 @@ def test_scrape_forwards_source_configuration(
     class Scraped:
         cache_dir = target
 
-        def field_entries(self) -> dict[str, object]:
+        def field_records(self) -> dict[str, object]:
             return {"FakeRole": object()}
 
-        def component_entries(self) -> dict[str, object]:
+        def component_records(self) -> dict[str, object]:
             return {"FakeParties": object()}
 
     def scrape(output, **configuration):

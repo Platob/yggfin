@@ -358,8 +358,8 @@ class MarketTags:
     def execution_states(self) -> Mapping[str, State]:
         """Trade-bearing ExecTypes as completed execution occurrences."""
         states = self._coded_states["ExecType"]
-        builtin = FixRegistry.from_builtin().entry("ExecType")
-        configured = self.registry.entry("ExecType")
+        builtin = FixRegistry.from_builtin().field("ExecType")
+        configured = self.registry.field("ExecType")
         trade_codes = frozenset(
             code
             for entry in (builtin, configured)
@@ -415,7 +415,7 @@ class MarketTags:
         """
         found: dict[str, str] = {}
         for source in dict.fromkeys((FixRegistry.from_builtin(), self.registry)):
-            entry = source.entry(35)
+            entry = source.field(35)
             if entry is None:
                 continue
             for handler in sorted(HANDLERS):
@@ -529,7 +529,7 @@ def _worded_values(registry: FixRegistry, field: str, coded: Mapping[str, Any]) 
     builtin = FixRegistry.from_builtin()
     spelled: dict[str, Any] = {}
     for source in dict.fromkeys((builtin, registry)):
-        entry = source.entry(field)
+        entry = source.field(field)
         if entry is None:
             continue
         for spelling, code in entry.fix.encoded.items():
@@ -1228,7 +1228,7 @@ class FixEvents(Convertible):
 
     def into_alt_ids(self) -> dict[str, str]:
         """Every alternative identifier the message carried, by the scheme's name."""
-        entries = self.message.component_entries("SecurityAltID")
+        entries = self.message.component_records("SecurityAltID")
         if entries is None:
             entries = self._group("NoSecurityAltID")
         found: dict[str, str] = {}
@@ -1249,7 +1249,7 @@ class FixEvents(Convertible):
         `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
         same one, against a different set of tags.
         """
-        entries = self.message.component_entries("Legs")
+        entries = self.message.component_records("Legs")
         if entries is None:
             entries = self._group("NoLegs")
         built = []

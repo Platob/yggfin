@@ -174,7 +174,7 @@ class FieldAccess:
         try:
             if self.version is not None:
                 return tuple(component.name for component in self.registry.components(self.version))
-            return tuple(self.registry.component_entries())
+            return tuple(self.registry.component_records())
         except (KeyError, OSError, ValueError):
             return ()
 
@@ -232,7 +232,7 @@ class FieldAccess:
         if self.registry is None:
             return None
         try:
-            return self.registry.entry(key)
+            return self.registry.field(key)
         except (OSError, ValueError):
             return None
 
@@ -374,9 +374,10 @@ class FieldAccess:
         key = record.fix.key
         if key not in self._arrow_types:
             try:
-                found = self.registry.field(key, self.version).dtype
-            except (KeyError, OSError, ValueError):
-                found = None
+                declared = self.registry.field(key, self.version)
+            except (OSError, ValueError):
+                declared = None
+            found = None if declared is None else declared.dtype
             self._arrow_types[key] = found
         return self._arrow_types[key]
 

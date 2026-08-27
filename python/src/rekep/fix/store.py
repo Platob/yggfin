@@ -35,7 +35,7 @@ from rekep.filesystems import write_bytes
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     FixFieldValue,
     canonical_versions,
     collapsed_record,
@@ -523,9 +523,9 @@ class ShardedLayout:
         appears here: it means "whichever version this store already has".
         """
         found = {
-            version for record in self.field_entries.values() for version in record.fix.versions
+            version for record in self.field_records.values() for version in record.fix.versions
         }
-        for entry in self.component_entries.values():
+        for entry in self.component_records.values():
             found.update(entry.versions)
         index = self._index()
         found.update(index.get(SESSIONS, {}))
@@ -568,7 +568,7 @@ class ShardedLayout:
         return {_record_key(key): record_of(record) for key, record in document.items()}
 
     @property
-    def field_entries(self) -> dict[int | str, Field]:
+    def field_records(self) -> dict[int | str, Field]:
         """`{tag or folded name: record}` for every field, every shard read once."""
         held = self.__dict__.get("_fields")
         if held is None:
@@ -585,7 +585,7 @@ class ShardedLayout:
         return held
 
     @property
-    def component_entries(self) -> dict[str, ComponentEntry]:
+    def component_records(self) -> dict[str, ComponentRecord]:
         """`{slug: record}` for every component identity, read once and held."""
         held = self.__dict__.get("_components")
         if held is None:
@@ -595,7 +595,7 @@ class ShardedLayout:
             torn.update(name for name in self.documents.names() if name.startswith(prefix))
             torn.difference_update(readable)
             held = self.__dict__["_components"] = {
-                document_stem(name[len(prefix) :]): ComponentEntry.from_dict(document)
+                document_stem(name[len(prefix) :]): ComponentRecord.from_dict(document)
                 for name, document in sorted(readable.items())
             }
         return held
@@ -615,14 +615,14 @@ class ShardedLayout:
         far better than a whole version answering short in silence. The
         registry treats a torn store as one to write again.
         """
-        self.field_entries, self.component_entries  # noqa: B018 - both are read once
+        self.field_records, self.component_records  # noqa: B018 - both are read once
         return tuple(sorted(self.__dict__.get("_torn", ())))
 
     # -- what a version declares ---------------------------------------------
 
     def fields(self, version: str) -> list[Field] | None:
         """One version's fields in tag order; None when it declares none."""
-        records = self.field_entries
+        records = self.field_records
         if not records:
             return None
         found = [
@@ -653,7 +653,7 @@ class ShardedLayout:
         what makes a stale artifact detectable instead of silently extracting
         nothing. The version list is what remembers which.
         """
-        held = self.component_entries
+        held = self.component_records
         wanted = {entry.folded for entry in held.values() if entry.declares(version)}
         if not wanted:
             return [] if self.declared(version) else None
@@ -687,14 +687,14 @@ class ShardedLayout:
             return True
         return self.documents.remove(name)
 
-    def store_component(self, entry: ComponentEntry) -> None:
+    def store_component(self, entry: ComponentRecord) -> None:
         """Write one component record, replacing what was under its slug."""
         self.documents.write(f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", entry.into_dict())
-        self.component_entries[entry.slug] = entry
+        self.component_records[entry.slug] = entry
 
     def remove_component(self, slug: str) -> bool:
         """Delete one component identity; False when the store did not hold it."""
-        self.component_entries.pop(slug, None)
+        self.component_records.pop(slug, None)
         return self.documents.remove(f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}")
 
     def store(
@@ -714,7 +714,7 @@ class ShardedLayout:
         wins, and everything older only adds enumerated values.
         """
         del url  # A record is not stored per version, so it carries no URL.
-        held = dict(self.field_entries)
+        held = dict(self.field_records)
         written: set[int | str] = set()
         for member in fields:
             key = _field_key(member)
@@ -745,8 +745,8 @@ class ShardedLayout:
         declared = {found.name for found in components}
         for found in components:
             slug = slug_of(found.name)
-            self.store_component(fold_component(self.component_entries.get(slug), found, version))
-        for slug, entry in list(self.component_entries.items()):
+            self.store_component(fold_component(self.component_records.get(slug), found, version))
+        for slug, entry in list(self.component_records.items()):
             if entry.name in declared or version not in entry.versions:
                 continue
             # The version declares components and not this one, so this
@@ -835,9 +835,9 @@ def fold_field(held: Field | None, member: Field, version: str) -> Field:
     return built
 
 
-def fold_component(held: ComponentEntry | None, declared: Field, version: str) -> ComponentEntry:
+def fold_component(held: ComponentRecord | None, declared: Field, version: str) -> ComponentRecord:
     """One version's component folded into the record that owns it."""
-    fresh = ComponentEntry.from_components([declared], [version])
+    fresh = ComponentRecord.from_components([declared], [version])
     if held is None:
         return fresh
     versions = (*held.versions, version)
@@ -1017,7 +1017,7 @@ def collapse(
     order: Sequence[str],
     fields: Mapping[str, Sequence[Field]],
     components: Mapping[str, Sequence[Field]],
-) -> tuple[dict[int | str, Field], dict[str, ComponentEntry], ConflictReport]:
+) -> tuple[dict[int | str, Field], dict[str, ComponentRecord], ConflictReport]:
     """Per-version declarations as cross-version records, and what that cost.
 
     The newest *application* version owns each reading -- name, datatype,
@@ -1072,18 +1072,18 @@ def collapse(
     for version in order:
         for declared in components.get(version, ()):
             component_readings.setdefault(slug_of(declared.name), []).append((version, declared))
-    component_entries: dict[str, ComponentEntry] = {}
+    component_records: dict[str, ComponentRecord] = {}
     for slug, found in sorted(component_readings.items()):
         found.sort(key=lambda pair: newest_rank(pair[0]))
-        component_entries[slug] = ComponentEntry.from_components(
+        component_records[slug] = ComponentRecord.from_components(
             [declared for _, declared in found], [version for version, _ in found]
         )
     # After every record exists, because what a tree still reaches runs through
     # the components it references.
-    by_component = {entry.folded: entry for entry in component_entries.values()}
-    for slug, entry in component_entries.items():
+    by_component = {entry.folded: entry for entry in component_records.values()}
+    for slug, entry in component_records.items():
         collapses.extend(_component_collapses(entry, component_readings[slug], by_component))
-    return entries, component_entries, ConflictReport(tuple(collapses), tuple(collisions))
+    return entries, component_records, ConflictReport(tuple(collapses), tuple(collisions))
 
 
 def _field_collapses(record: Field, found: Sequence[tuple[str, Field]]) -> list[Collapse]:
@@ -1137,7 +1137,7 @@ def _collapsed(record: Field, part: str, readings: Sequence[tuple[str, str]]) ->
     return Collapse(fix.canonical, part, fix.newest, dropped, fix.tag) if dropped else None
 
 
-def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentEntry]) -> set[str]:
+def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentRecord]) -> set[str]:
     """`wanted`, plus every component their trees reference, however deeply."""
     found: set[str] = set()
     pending = list(wanted)
@@ -1156,9 +1156,9 @@ def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentEntr
 
 
 def _component_collapses(
-    entry: ComponentEntry,
+    entry: ComponentRecord,
     found: Sequence[tuple[str, Field]],
-    by_name: Mapping[str, ComponentEntry],
+    by_name: Mapping[str, ComponentRecord],
 ) -> list[Collapse]:
     """Members an older version declared that the newest tree no longer reaches.
 
@@ -1175,7 +1175,7 @@ def _component_collapses(
     return [Collapse(entry.name, MEMBERS, entry.newest, dropped)] if dropped else []
 
 
-def _reachable(declared: Field, by_name: Mapping[str, ComponentEntry]) -> set[str]:
+def _reachable(declared: Field, by_name: Mapping[str, ComponentRecord]) -> set[str]:
     """Every member name one tree reads, following the components it references."""
     found = {member.name for member, _ in walk(declared)}
     for key in component_closure(
@@ -1233,8 +1233,8 @@ def _aliased(
 
 def documents_of(
     versions: Sequence[str],
-    field_entries: Mapping[int | str, Field],
-    component_entries: Mapping[str, ComponentEntry],
+    field_records: Mapping[int | str, Field],
+    component_records: Mapping[str, ComponentRecord],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
     suffix: str = DOCUMENT_SUFFIX,
@@ -1268,12 +1268,12 @@ def documents_of(
             key: index[key] for key in sorted(index)
         }
     shards: dict[str, dict[int | str, Field]] = {}
-    for record in field_entries.values():
+    for record in field_records.values():
         name = document_stem(field_document(record)) + suffix
         shards.setdefault(name, {})[record.fix.key] = record
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
-    for slug, entry in component_entries.items():
+    for slug, entry in component_records.items():
         documents[f"{COMPONENTS}/{slug}{suffix}"] = entry.into_dict()
     return documents
 

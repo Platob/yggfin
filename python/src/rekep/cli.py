@@ -19,7 +19,7 @@ from rekep.fix.entries import (
     NAMESPACE,
     STANDARD,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     record_copy,
     record_document,
     record_of,
@@ -209,7 +209,7 @@ def find_fields(arguments: argparse.Namespace) -> int:
         version=arguments.version,
         limit=arguments.limit,
     ):
-        entry = registry.entry(member.fix.get("tag") or member.name)
+        entry = registry.field(member.fix.get("tag") or member.name)
         if entry is not None:
             entries.append(entry)
     _write_json([record_document(entry) for entry in entries])
@@ -218,7 +218,7 @@ def find_fields(arguments: argparse.Namespace) -> int:
 
 def show_field(arguments: argparse.Namespace) -> int:
     """Write one complete field record."""
-    entry = _registry(arguments).entry(arguments.field)
+    entry = _registry(arguments).field(arguments.field)
     if entry is None:
         CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
         return 1
@@ -229,7 +229,7 @@ def show_field(arguments: argparse.Namespace) -> int:
 def list_components(arguments: argparse.Namespace) -> int:
     """Write component identities, optionally filtered by name."""
     wanted = arguments.query.casefold()
-    entries = sorted(_registry(arguments).component_entries().values(), key=lambda item: item.name)
+    entries = sorted(_registry(arguments).component_records().values(), key=lambda item: item.name)
     _write_json(
         [
             {"name": entry.name, "versions": list(entry.versions)}
@@ -342,13 +342,13 @@ def update_component(arguments: argparse.Namespace) -> int:
     return 0
 
 
-def _component_entry(arguments: argparse.Namespace) -> ComponentEntry:
+def _component_entry(arguments: argparse.Namespace) -> ComponentRecord:
     """One component identity out of the document `--declaration` names.
 
     Whichever format it is written in: `Convertible` reads the extension, so a
     declaration travels as JSON, YAML or TOML without a flag saying which.
     """
-    return ComponentEntry.from_file(arguments.declaration)
+    return ComponentRecord.from_file(arguments.declaration)
 
 
 def check_registry(arguments: argparse.Namespace) -> int:
@@ -381,8 +381,8 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
     with CONSOLE.spinner(f"scraping into {target}"):
         registry = FixRegistry.scrape(arguments.output, **configuration)
     CONSOLE.ok(
-        f"{registry.cache_dir} holds {len(registry.field_entries())} fields and "
-        f"{len(registry.component_entries())} components"
+        f"{registry.cache_dir} holds {len(registry.field_records())} fields and "
+        f"{len(registry.component_records())} components"
     )
     return 0
 

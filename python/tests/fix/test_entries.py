@@ -23,7 +23,7 @@ from rekep.fix.entries import (
     NAMESPACE,
     STANDARD,
     Alias,
-    ComponentEntry,
+    ComponentRecord,
     FixFieldValue,
     canonical_versions,
     collapsed_record,
@@ -439,7 +439,7 @@ def _narrower() -> Field:
 
 def test_a_component_record_keeps_the_newest_tree_and_reports_its_paths() -> None:
     """The derived half of a tree, so two readers cannot derive it differently."""
-    entry = ComponentEntry.from_components([_narrower(), _group()], ["4.2", "4.4"])
+    entry = ComponentRecord.from_components([_narrower(), _group()], ["4.2", "4.4"])
     assert entry.versions == ("4.2", "4.4") and entry.newest == "4.4"
     assert entry.paths() == {
         "NoFakeParties": (),
@@ -450,8 +450,8 @@ def test_a_component_record_keeps_the_newest_tree_and_reports_its_paths() -> Non
 
 
 def test_a_component_record_round_trips_through_its_document() -> None:
-    entry = ComponentEntry.from_components([_narrower(), _group()], ["4.2", "4.4"])
-    assert ComponentEntry.from_dict(entry.into_dict()) == entry
+    entry = ComponentRecord.from_components([_narrower(), _group()], ["4.2", "4.4"])
+    assert ComponentRecord.from_dict(entry.into_dict()) == entry
     assert entry.into_component("4.4") == _group()
     assert entry.into_component("4.0") is None
 
@@ -459,19 +459,19 @@ def test_a_component_record_round_trips_through_its_document() -> None:
 def test_a_message_definition_carries_its_msg_type_and_nothing_else_does() -> None:
     """The type rides the declaration's own metadata, absent rather than null."""
     declared = block("FakeOrder", members_of(_group()), "D")
-    entry = ComponentEntry.from_components([declared], ["4.4"])
+    entry = ComponentRecord.from_components([declared], ["4.4"])
     assert entry.msg_type == "D"
     assert entry.into_dict()["declaration"]["fix"]["msgtype"] == "D"
-    reusable = ComponentEntry.from_components([_group()], ["4.4"])
+    reusable = ComponentRecord.from_components([_group()], ["4.4"])
     assert reusable.msg_type == ""
     assert "msgtype" not in reusable.into_dict()["declaration"]["fix"]
 
 
 def test_a_component_declared_for_no_version_is_refused() -> None:
     with pytest.raises(ValueError, match="declared for no version"):
-        ComponentEntry(name="FakeParties")
+        ComponentRecord(name="FakeParties")
     with pytest.raises(ValueError, match="has no name"):
-        ComponentEntry(name="", versions=("4.4",))
+        ComponentRecord(name="", versions=("4.4",))
 
 
 # -- building a record out of per-version readings ---------------------------
@@ -501,7 +501,7 @@ def test_a_record_needs_at_least_one_reading() -> None:
     with pytest.raises(ValueError, match="at least one declaration"):
         collapsed_record([], [])
     with pytest.raises(ValueError, match="at least one declaration"):
-        ComponentEntry.from_components([], [])
+        ComponentRecord.from_components([], [])
 
 
 def test_a_field_with_no_tag_becomes_a_vendor_record() -> None:

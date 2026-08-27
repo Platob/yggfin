@@ -597,9 +597,9 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     builtin = FixRegistry.from_builtin()
-    msg_type = builtin.entry("MsgType")
-    ord_status = builtin.entry("OrdStatus")
-    exec_type = builtin.entry("ExecType")
+    msg_type = builtin.field("MsgType")
+    ord_status = builtin.field("OrdStatus")
+    exec_type = builtin.field("ExecType")
     assert msg_type is not None and ord_status is not None and exec_type is not None
     configured = {
         "MsgType": record_copy(msg_type),
@@ -634,7 +634,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     )
     wire_tags: dict[str, int] = {}
     for index, name in enumerate(fields):
-        entry = configured.get(name) or builtin.entry(name)
+        entry = configured.get(name) or builtin.field(name)
         assert entry is not None
         if name != "MsgType":
             entry = record_copy(entry)
