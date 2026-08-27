@@ -19,6 +19,7 @@
      "tag": "42310"
     },
     "item": {
+     "name": "LegDividendAccrualPaymentDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

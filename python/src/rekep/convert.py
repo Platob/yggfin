@@ -12,7 +12,6 @@ import json
 import os
 import pathlib
 import re
-import tomllib
 import types
 import typing
 import uuid
@@ -44,7 +43,6 @@ _REDIRECTS = MappingProxyType(
     {
         ".yaml": "yaml",
         ".yml": "yaml",
-        ".toml": "toml",
         ".json": "json",
         dict: "dict",
         Mapping: "dict",
@@ -149,13 +147,6 @@ class Convertible:
         """Encode this document with its YAML layout."""
         return yaml.safe_dump(self.into_dict(), sort_keys=False, allow_unicode=True)
 
-    def into_toml(
-        self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None
-    ) -> bytes | None:
-        """Write this instance to `target` as TOML, or return the bytes."""
-        tomli_w = require("tomli_w", "toml")
-        return _write(tomli_w.dumps(_toml_ordered(self.into_dict())).encode(), target, filesystem)
-
     def into_json(
         self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None
     ) -> bytes | None:
@@ -175,11 +166,6 @@ class Convertible:
         """Read an instance from `source` as YAML."""
         yaml = require("yaml", "yaml")
         return cls.from_dict(yaml.safe_load(_read(source, filesystem)) or {})
-
-    @classmethod
-    def from_toml(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
-        """Read an instance from `source` as TOML."""
-        return cls.from_dict(tomllib.loads(_read(source, filesystem).decode()))
 
     @classmethod
     def from_json(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
@@ -292,31 +278,6 @@ def _owns(cls: Any, method: str) -> bool:
     mine = getattr(getattr(cls, method), "__func__", getattr(cls, method))
     ours = getattr(getattr(Convertible, method), "__func__", getattr(Convertible, method))
     return mine is not ours
-
-
-def _toml_ordered(value: Any) -> Any:
-    """Reorder mappings so every scalar precedes every table.
-
-    TOML binds a bare key to whichever table header last opened, so a scalar
-    written after a nested table would silently land inside it. Field order is
-    the author's, not TOML's, so it is fixed up here rather than in `_encode`.
-    """
-    if isinstance(value, dict):
-        items = [(k, _toml_ordered(v)) for k, v in value.items()]
-        return dict(
-            [(k, v) for k, v in items if not _is_table(v)]
-            + [(k, v) for k, v in items if _is_table(v)]
-        )
-    if isinstance(value, list):
-        return [_toml_ordered(v) for v in value]
-    return value
-
-
-def _is_table(value: Any) -> bool:
-    """Whether TOML would render `value` as a table or an array of tables."""
-    if isinstance(value, dict):
-        return True
-    return isinstance(value, list) and bool(value) and all(isinstance(v, dict) for v in value)
 
 
 # -- decoding ---------------------------------------------------------------

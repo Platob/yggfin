@@ -19,6 +19,7 @@
      "tag": "1795"
     },
     "item": {
+     "name": "OrderEvent",
      "type": "struct",
      "fields": [
       {

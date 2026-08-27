@@ -22,6 +22,7 @@
      "tag": "802"
     },
     "item": {
+     "name": "PartySubID",
      "type": "struct",
      "fields": [
       {

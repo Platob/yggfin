@@ -22,6 +22,7 @@
      "tag": "801"
     },
     "item": {
+     "name": "SettlPartySubID",
      "type": "struct",
      "fields": [
       {

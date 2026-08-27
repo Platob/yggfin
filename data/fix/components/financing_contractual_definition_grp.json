@@ -19,6 +19,7 @@
      "tag": "40040"
     },
     "item": {
+     "name": "ContractualDefinition",
      "type": "struct",
      "fields": [
       {

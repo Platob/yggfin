@@ -19,6 +19,7 @@
      "tag": "40828"
     },
     "item": {
+     "name": "PaymentSchedule",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41589"
     },
     "item": {
+     "name": "LegPaymentStreamPaymentDate",
      "type": "struct",
      "fields": [
       {

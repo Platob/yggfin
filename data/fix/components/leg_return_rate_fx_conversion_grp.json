@@ -19,6 +19,7 @@
      "tag": "42530"
     },
     "item": {
+     "name": "LegReturnRateFXConversion",
      "type": "struct",
      "fields": [
       {

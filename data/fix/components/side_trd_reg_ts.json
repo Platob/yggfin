@@ -21,6 +21,7 @@
      "tag": "1016"
     },
     "item": {
+     "name": "SideTrdRegTS",
      "type": "struct",
      "fields": [
       {

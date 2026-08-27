@@ -19,6 +19,7 @@
      "tag": "42770"
     },
     "item": {
+     "name": "ReturnRateValuationDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

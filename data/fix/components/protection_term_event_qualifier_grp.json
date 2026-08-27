@@ -19,6 +19,7 @@
      "tag": "40199"
     },
     "item": {
+     "name": "ProtectionTermEventQualifier",
      "type": "struct",
      "fields": [
       {

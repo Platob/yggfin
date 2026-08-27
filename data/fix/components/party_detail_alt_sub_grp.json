@@ -19,6 +19,7 @@
      "tag": "1519"
     },
     "item": {
+     "name": "PartyDetailAltSubID",
      "type": "struct",
      "fields": [
       {

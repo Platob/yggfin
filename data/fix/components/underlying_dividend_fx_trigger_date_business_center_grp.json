@@ -19,6 +19,7 @@
      "tag": "42853"
     },
     "item": {
+     "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

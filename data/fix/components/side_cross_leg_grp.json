@@ -19,6 +19,7 @@
      "tag": "1829"
     },
     "item": {
+     "name": "CrossLeg",
      "type": "struct",
      "fields": [
       {

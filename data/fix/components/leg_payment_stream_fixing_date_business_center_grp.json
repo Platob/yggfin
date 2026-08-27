@@ -19,6 +19,7 @@
      "tag": "40933"
     },
     "item": {
+     "name": "LegPaymentStreamFixingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

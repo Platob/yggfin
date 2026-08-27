@@ -19,6 +19,7 @@
      "tag": "42085"
     },
     "item": {
+     "name": "UnderlyingProtectionTermEventQualifier",
      "type": "struct",
      "fields": [
       {

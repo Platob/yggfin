@@ -19,6 +19,7 @@
      "tag": "1559"
     },
     "item": {
+     "name": "RiskWarningLevel",
      "type": "struct",
      "fields": [
       {

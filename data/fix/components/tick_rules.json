@@ -20,6 +20,7 @@
      "tag": "1205"
     },
     "item": {
+     "name": "TickRule",
      "type": "struct",
      "fields": [
       {

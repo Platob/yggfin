@@ -19,6 +19,7 @@
      "tag": "1700"
     },
     "item": {
+     "name": "SettlementAmount",
      "type": "struct",
      "fields": [
       {

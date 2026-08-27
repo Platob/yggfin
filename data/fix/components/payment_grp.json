@@ -19,6 +19,7 @@
      "tag": "40212"
     },
     "item": {
+     "name": "Payment",
      "type": "struct",
      "fields": [
       {

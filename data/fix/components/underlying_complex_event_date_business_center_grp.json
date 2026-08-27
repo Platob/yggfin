@@ -19,6 +19,7 @@
      "tag": "41737"
     },
     "item": {
+     "name": "UnderlyingComplexEventDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

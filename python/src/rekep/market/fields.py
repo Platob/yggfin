@@ -83,6 +83,12 @@ class MarketConvertible(Convertible):
             cls, {name: read_member(name, value) for name, value in mapping.items()}
         )
 
+    #: One member as its column holds it, for the builder that assembles a
+    #: batch member by member. Only the spelling is asked here: `stored_member`
+    #: answers for the identity members wherever they appear, and the builder
+    #: walks a nested shape itself rather than being handed a document of it.
+    into_column_value = staticmethod(stored_member)
+
     def into_row(self) -> dict[str, Any]:
         """This value as a stored row: every member as the column holds it.
 

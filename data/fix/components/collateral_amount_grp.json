@@ -19,6 +19,7 @@
      "tag": "1703"
     },
     "item": {
+     "name": "CollateralAmount",
      "type": "struct",
      "fields": [
       {

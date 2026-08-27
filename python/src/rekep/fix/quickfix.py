@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import dataclasses
 import re
+import types
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 from xml.etree import ElementTree
@@ -61,6 +62,40 @@ class SpecField:
 #: this says nothing about the members, which is exactly the state it is in.
 REFERENCE: pyarrow.DataType = pyarrow.struct([])
 
+#: Plurals no rule below reaches. Measured rather than imagined: over the 507
+#: repeating groups the published dictionary declares, this is the only one.
+IRREGULAR_PLURALS: Mapping[str, str] = types.MappingProxyType({"Matrices": "Matrix"})
+
+#: Endings that take `es` because the stem hisses. `zes` is deliberately absent:
+#: `Sizes` is `Size` plus an `s`, not `Siz` plus an `es`.
+_SIBILANT_PLURALS: tuple[str, ...] = ("sses", "xes", "ches", "shes")
+
+
+def entry_name(group: str) -> str:
+    """`NoPartyIDs` -> `PartyID`: what one row of a repeating group is.
+
+    A FIX group is named for the field that counts it, and a count is plural:
+    every one of the 507 the dictionary declares is `No` and a plural stem.
+    Dropping the count and singularizing the stem is therefore the group's own
+    answer to what it repeats -- and it lands on a real dictionary name for
+    269 of them (`PartyID`, `MDEntry`, `Leg`), on a component for four more,
+    and on the plain singular for the rest.
+
+    The alternative -- naming the entry after the tag that opens it -- was
+    measured and rejected: it makes `NoOrders` an entry called `ClOrdID`.
+    """
+    stem = group[2:] if group.startswith("No") and len(group) > 2 else group
+    for plural, singular in IRREGULAR_PLURALS.items():
+        if stem.endswith(plural):
+            return f"{stem[: -len(plural)]}{singular}"
+    if stem.endswith("ies") and len(stem) > 4:
+        return f"{stem[:-3]}y"
+    if stem.endswith(_SIBILANT_PLURALS):
+        return stem[:-2]
+    if stem.endswith("s") and not stem.endswith("ss"):
+        return stem[:-1]
+    return stem
+
 
 def field_member(name: str, tag: int, *, required: bool = False) -> Field:
     """One plain field of a declaration, at the tag the spec gives it."""
@@ -70,10 +105,15 @@ def field_member(name: str, tag: int, *, required: bool = False) -> Field:
 
 
 def group_member(name: str, tag: int, members: Sequence[Field], *, required: bool = False) -> Field:
-    """One repeating group: a list of the entry its members describe."""
+    """One repeating group: a list of the entry its members describe.
+
+    The entry is named, because it is a thing: `NoPartyIDs` repeats a
+    `PartyID`. Arrow would call it `item` and every group would repeat the
+    same anonymous shape.
+    """
     return Field(
         name=name,
-        dtype=pyarrow.list_(pyarrow.field("item", _struct(members), nullable=False)),
+        dtype=pyarrow.list_(pyarrow.field(entry_name(name), _struct(members), nullable=False)),
         nullable=not required,
         metadata={"fix:tag": str(tag)},
     )
@@ -112,7 +152,7 @@ def is_reference(member: Field) -> bool:
 
 def entry_of(member: Field) -> Field:
     """The entry a repeating group repeats, as a block of its own."""
-    return Field(name=member.name, dtype=member.dtype.value_type, nullable=False)
+    return Field.from_arrow_field(member.dtype.field(0))
 
 
 def members_of(declared: Field) -> tuple[Field, ...]:

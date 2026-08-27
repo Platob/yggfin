@@ -19,6 +19,7 @@
      "tag": "41283"
     },
     "item": {
+     "name": "StreamCommoditySettlDay",
      "type": "struct",
      "fields": [
       {

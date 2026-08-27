@@ -19,6 +19,7 @@
      "tag": "41422"
     },
     "item": {
+     "name": "LegDeliveryScheduleSettlDay",
      "type": "struct",
      "fields": [
       {

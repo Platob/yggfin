@@ -19,6 +19,7 @@
      "tag": "41192"
     },
     "item": {
+     "name": "PaymentStreamPricingBusinessCenter",
      "type": "struct",
      "fields": [
       {

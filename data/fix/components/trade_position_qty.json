@@ -19,6 +19,7 @@
      "tag": "702"
     },
     "item": {
+     "name": "Position",
      "type": "struct",
      "fields": [
       {

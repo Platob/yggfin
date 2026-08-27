@@ -19,6 +19,7 @@
      "tag": "1919"
     },
     "item": {
+     "name": "PriceMovement",
      "type": "struct",
      "fields": [
       {

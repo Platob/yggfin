@@ -22,6 +22,7 @@
      "tag": "268"
     },
     "item": {
+     "name": "MDEntry",
      "type": "struct",
      "fields": [
       {

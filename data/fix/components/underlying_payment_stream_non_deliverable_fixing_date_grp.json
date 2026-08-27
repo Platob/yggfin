@@ -19,6 +19,7 @@
      "tag": "40656"
     },
     "item": {
+     "name": "UnderlyingNonDeliverableFixingDate",
      "type": "struct",
      "fields": [
       {

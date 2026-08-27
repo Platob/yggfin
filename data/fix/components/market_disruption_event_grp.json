@@ -19,6 +19,7 @@
      "tag": "41092"
     },
     "item": {
+     "name": "MarketDisruptionEvent",
      "type": "struct",
      "fields": [
       {

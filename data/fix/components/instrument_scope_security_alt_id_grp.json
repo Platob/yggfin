@@ -19,6 +19,7 @@
      "tag": "1540"
     },
     "item": {
+     "name": "InstrumentScopeSecurityAltID",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40997"
     },
     "item": {
+     "name": "ComplexEventCreditEvent",
      "type": "struct",
      "fields": [
       {

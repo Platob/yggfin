@@ -22,6 +22,7 @@
      "tag": "768"
     },
     "item": {
+     "name": "TrdRegTimestamp",
      "type": "struct",
      "fields": [
       {

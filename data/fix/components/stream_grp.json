@@ -19,6 +19,7 @@
      "tag": "40049"
     },
     "item": {
+     "name": "Stream",
      "type": "struct",
      "fields": [
       {

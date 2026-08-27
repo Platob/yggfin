@@ -662,16 +662,18 @@ def _component_fields(
     built: list[Field] = []
     for member in quickfix.members_of(declared):
         if quickfix.is_group(member):
-            item = _component_fields(quickfix.entry_of(member), types, components, seen)
+            entry = quickfix.entry_of(member)
+            item = _component_fields(entry, types, components, seen)
             built.append(
                 Field(
                     name=snake_of(member.name),
                     dtype=pyarrow.list_(
-                        pyarrow.field(
-                            "item",
-                            pyarrow.struct([one.into_arrow_field() for one in item]),
+                        Field(
+                            name=snake_of(entry.name),
+                            dtype=pyarrow.struct([one.into_arrow_field() for one in item]),
                             nullable=False,
-                        )
+                            metadata={"fix:name": entry.name},
+                        ).into_arrow_field()
                     ),
                     nullable=member.nullable is not False,
                     metadata={"fix:name": member.name},

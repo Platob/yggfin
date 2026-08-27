@@ -19,6 +19,7 @@
      "tag": "41340"
     },
     "item": {
+     "name": "UnderlyingAdditionalTermBondRef",
      "type": "struct",
      "fields": [
       {

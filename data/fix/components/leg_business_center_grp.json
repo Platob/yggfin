@@ -19,6 +19,7 @@
      "tag": "40923"
     },
     "item": {
+     "name": "LegBusinessCenter",
      "type": "struct",
      "fields": [
       {

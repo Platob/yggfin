@@ -19,6 +19,7 @@
      "tag": "40278"
     },
     "item": {
+     "name": "BusinessCenter",
      "type": "struct",
      "fields": [
       {

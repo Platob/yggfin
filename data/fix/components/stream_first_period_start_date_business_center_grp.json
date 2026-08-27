@@ -19,6 +19,7 @@
      "tag": "40959"
     },
     "item": {
+     "name": "StreamFirstPeriodStartDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

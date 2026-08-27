@@ -22,6 +22,7 @@
      "tag": "952"
     },
     "item": {
+     "name": "Nested3PartySubID",
      "type": "struct",
      "fields": [
       {

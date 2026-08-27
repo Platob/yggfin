@@ -19,6 +19,7 @@
      "tag": "41729"
     },
     "item": {
+     "name": "UnderlyingComplexEventPeriod",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41376"
     },
     "item": {
+     "name": "LegComplexEventPeriodDateTime",
      "type": "struct",
      "fields": [
       {

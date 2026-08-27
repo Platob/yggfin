@@ -19,6 +19,7 @@
      "tag": "1812"
     },
     "item": {
+     "name": "DisclosureInstruction",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1630"
     },
     "item": {
+     "name": "LimitAmt",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "42696"
     },
     "item": {
+     "name": "PaymentStubEndDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

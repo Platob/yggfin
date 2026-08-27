@@ -19,6 +19,7 @@
      "tag": "41732"
     },
     "item": {
+     "name": "UnderlyingComplexEventRateSource",
      "type": "struct",
      "fields": [
       {

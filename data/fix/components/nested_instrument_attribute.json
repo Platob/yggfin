@@ -20,6 +20,7 @@
      "tag": "1312"
     },
     "item": {
+     "name": "NestedInstrAttrib",
      "type": "struct",
      "fields": [
       {

@@ -22,6 +22,7 @@
      "tag": "781"
     },
     "item": {
+     "name": "SettlPartyID",
      "type": "struct",
      "fields": [
       {

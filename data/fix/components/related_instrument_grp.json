@@ -19,6 +19,7 @@
      "tag": "1647"
     },
     "item": {
+     "name": "RelatedInstrument",
      "type": "struct",
      "fields": [
       {

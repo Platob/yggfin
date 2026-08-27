@@ -19,6 +19,7 @@
      "tag": "1707"
     },
     "item": {
+     "name": "PayCollect",
      "type": "struct",
      "fields": [
       {

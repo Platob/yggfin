@@ -19,6 +19,7 @@
      "tag": "42564"
     },
     "item": {
+     "name": "LegReturnRatePrice",
      "type": "struct",
      "fields": [
       {

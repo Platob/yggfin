@@ -19,6 +19,7 @@
      "tag": "1370"
     },
     "item": {
+     "name": "NotAffectedOrder",
      "type": "struct",
      "fields": [
       {

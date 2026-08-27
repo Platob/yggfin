@@ -21,6 +21,7 @@
      "tag": "1058"
     },
     "item": {
+     "name": "UndlyInstrumentParty",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41808"
     },
     "item": {
+     "name": "UnderlyingDeliveryStreamCommoditySource",
      "type": "struct",
      "fields": [
       {

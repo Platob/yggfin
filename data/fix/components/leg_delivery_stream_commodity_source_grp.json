@@ -19,6 +19,7 @@
      "tag": "41460"
     },
     "item": {
+     "name": "LegDeliveryStreamCommoditySource",
      "type": "struct",
      "fields": [
       {

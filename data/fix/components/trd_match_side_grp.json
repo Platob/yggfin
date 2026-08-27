@@ -19,6 +19,7 @@
      "tag": "1890"
     },
     "item": {
+     "name": "TrdMatchSide",
      "type": "struct",
      "fields": [
       {

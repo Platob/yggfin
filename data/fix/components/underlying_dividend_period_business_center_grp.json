@@ -19,6 +19,7 @@
      "tag": "42882"
     },
     "item": {
+     "name": "UnderlyingDividendPeriodBusinessCenter",
      "type": "struct",
      "fields": [
       {

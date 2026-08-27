@@ -19,6 +19,7 @@
      "tag": "40872"
     },
     "item": {
+     "name": "PaymentStub",
      "type": "struct",
      "fields": [
       {

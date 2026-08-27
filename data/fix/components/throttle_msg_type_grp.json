@@ -19,6 +19,7 @@
      "tag": "1618"
     },
     "item": {
+     "name": "ThrottleMsgType",
      "type": "struct",
      "fields": [
       {

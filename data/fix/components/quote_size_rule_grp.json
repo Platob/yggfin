@@ -19,6 +19,7 @@
      "tag": "2558"
     },
     "item": {
+     "name": "QuoteSizeRule",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41342"
     },
     "item": {
+     "name": "LegCashSettlDealer",
      "type": "struct",
      "fields": [
       {

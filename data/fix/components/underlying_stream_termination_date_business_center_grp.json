@@ -19,6 +19,7 @@
      "tag": "40976"
     },
     "item": {
+     "name": "UnderlyingStreamTerminationDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

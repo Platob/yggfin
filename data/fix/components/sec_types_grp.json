@@ -22,6 +22,7 @@
      "tag": "558"
     },
     "item": {
+     "name": "SecurityType",
      "type": "struct",
      "fields": [
       {

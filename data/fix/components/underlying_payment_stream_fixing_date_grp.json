@@ -19,6 +19,7 @@
      "tag": "42955"
     },
     "item": {
+     "name": "UnderlyingPaymentStreamFixingDate",
      "type": "struct",
      "fields": [
       {

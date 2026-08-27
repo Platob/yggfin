@@ -19,6 +19,7 @@
      "tag": "43005"
     },
     "item": {
+     "name": "UnderlyingRateSpreadStep",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40971"
     },
     "item": {
+     "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

@@ -20,6 +20,7 @@
      "tag": "1239"
     },
     "item": {
+     "name": "TimeInForceRule",
      "type": "struct",
      "fields": [
       {

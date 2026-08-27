@@ -19,6 +19,7 @@
      "tag": "2849"
     },
     "item": {
+     "name": "FundingSource",
      "type": "struct",
      "fields": [
       {

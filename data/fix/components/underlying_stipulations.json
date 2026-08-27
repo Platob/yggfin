@@ -22,6 +22,7 @@
      "tag": "887"
     },
     "item": {
+     "name": "UnderlyingStip",
      "type": "struct",
      "fields": [
       {

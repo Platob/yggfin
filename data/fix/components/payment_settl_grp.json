@@ -19,6 +19,7 @@
      "tag": "40230"
     },
     "item": {
+     "name": "PaymentSettl",
      "type": "struct",
      "fields": [
       {

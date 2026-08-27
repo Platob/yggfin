@@ -23,6 +23,7 @@
      "tag": "539"
     },
     "item": {
+     "name": "NestedPartyID",
      "type": "struct",
      "fields": [
       {

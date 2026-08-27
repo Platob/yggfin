@@ -19,6 +19,7 @@
      "tag": "40958"
     },
     "item": {
+     "name": "StreamCalculationPeriodBusinessCenter",
      "type": "struct",
      "fields": [
       {

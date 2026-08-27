@@ -19,6 +19,7 @@
      "tag": "41770"
     },
     "item": {
+     "name": "UnderlyingDeliveryScheduleSettlDay",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "2059"
     },
     "item": {
+     "name": "LegEvent",
      "type": "struct",
      "fields": [
       {

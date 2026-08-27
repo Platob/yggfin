@@ -19,6 +19,7 @@
      "tag": "1677"
     },
     "item": {
+     "name": "PartyRiskLimit",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41593"
     },
     "item": {
+     "name": "LegPaymentStreamPricingDate",
      "type": "struct",
      "fields": [
       {

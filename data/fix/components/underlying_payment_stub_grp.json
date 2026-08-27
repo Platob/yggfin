@@ -19,6 +19,7 @@
      "tag": "40708"
     },
     "item": {
+     "name": "UnderlyingPaymentStub",
      "type": "struct",
      "fields": [
       {

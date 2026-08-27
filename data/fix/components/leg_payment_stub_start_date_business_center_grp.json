@@ -19,6 +19,7 @@
      "tag": "42504"
     },
     "item": {
+     "name": "LegPaymentStubStartDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

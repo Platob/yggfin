@@ -19,6 +19,7 @@
      "tag": "1661"
     },
     "item": {
+     "name": "RequestingPartySubID",
      "type": "struct",
      "fields": [
       {

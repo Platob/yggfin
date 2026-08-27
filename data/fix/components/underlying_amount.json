@@ -21,6 +21,7 @@
      "tag": "984"
     },
     "item": {
+     "name": "UnderlyingAmount",
      "type": "struct",
      "fields": [
       {

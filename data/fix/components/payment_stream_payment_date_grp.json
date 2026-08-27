@@ -19,6 +19,7 @@
      "tag": "41220"
     },
     "item": {
+     "name": "PaymentStreamPaymentDate",
      "type": "struct",
      "fields": [
       {

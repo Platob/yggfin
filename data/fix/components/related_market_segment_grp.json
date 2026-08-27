@@ -19,6 +19,7 @@
      "tag": "2545"
     },
     "item": {
+     "name": "RelatedMarketSegment",
      "type": "struct",
      "fields": [
       {

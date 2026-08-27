@@ -22,6 +22,7 @@
      "tag": "473"
     },
     "item": {
+     "name": "RegistDtl",
      "type": "struct",
      "fields": [
       {

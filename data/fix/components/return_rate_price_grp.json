@@ -19,6 +19,7 @@
      "tag": "42765"
     },
     "item": {
+     "name": "ReturnRatePrice",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1582"
     },
     "item": {
+     "name": "SecurityClassification",
      "type": "struct",
      "fields": [
       {

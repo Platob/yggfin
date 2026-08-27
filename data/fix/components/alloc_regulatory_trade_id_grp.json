@@ -19,6 +19,7 @@
      "tag": "1908"
     },
     "item": {
+     "name": "AllocRegulatoryTradeID",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41312"
     },
     "item": {
+     "name": "MandatoryClearingJurisdiction",
      "type": "struct",
      "fields": [
       {

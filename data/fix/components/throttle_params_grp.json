@@ -19,6 +19,7 @@
      "tag": "1610"
     },
     "item": {
+     "name": "Throttle",
      "type": "struct",
      "fields": [
       {

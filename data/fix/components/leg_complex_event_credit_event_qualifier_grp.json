@@ -19,6 +19,7 @@
      "tag": "41374"
     },
     "item": {
+     "name": "LegComplexEventCreditEventQualifier",
      "type": "struct",
      "fields": [
       {

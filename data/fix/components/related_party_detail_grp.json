@@ -19,6 +19,7 @@
      "tag": "1562"
     },
     "item": {
+     "name": "RelatedPartyDetailID",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "2864"
     },
     "item": {
+     "name": "SideCollateralReinvestment",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1868"
     },
     "item": {
+     "name": "ValueCheck",
      "type": "struct",
      "fields": [
       {

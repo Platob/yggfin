@@ -19,6 +19,7 @@
      "tag": "41094"
     },
     "item": {
+     "name": "MarketDisruptionFallback",
      "type": "struct",
      "fields": [
       {

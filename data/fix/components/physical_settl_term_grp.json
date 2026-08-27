@@ -19,6 +19,7 @@
      "tag": "40204"
     },
     "item": {
+     "name": "PhysicalSettlTerm",
      "type": "struct",
      "fields": [
       {

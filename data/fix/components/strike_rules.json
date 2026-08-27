@@ -20,6 +20,7 @@
      "tag": "1201"
     },
     "item": {
+     "name": "StrikeRule",
      "type": "struct",
      "fields": [
       {

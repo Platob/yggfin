@@ -88,8 +88,8 @@ def test_dump_format_wins_over_the_extension(tmp_path: Path) -> None:
     assert json.loads(target.read_text())["name"] == "FixMsg"
 
 
-def test_dump_writes_toml_when_asked(tmp_path: Path) -> None:
-    target = tmp_path / "log.toml"
+def test_dump_infers_the_format_from_the_extension(tmp_path: Path) -> None:
+    target = tmp_path / "log.json"
     assert (
         run(
             "fields",
@@ -101,7 +101,7 @@ def test_dump_writes_toml_when_asked(tmp_path: Path) -> None:
         )
         == 0
     )
-    assert Field.from_toml(str(target)) == FixMsg.into_field()
+    assert Field.from_json(str(target)) == FixMsg.into_field()
 
 
 def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -221,7 +221,7 @@ def test_an_extension_nobody_reads_names_the_ones_that_are(
     unknown.write_text("name: FixMsg\n")
     assert run("fields", "load", "--target", str(unknown)) == 1
     message = capsys.readouterr().err
-    assert ".json" in message and ".yaml" in message and ".toml" in message
+    assert ".json" in message and ".yaml" in message
 
 
 def test_a_missing_document_is_reported(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:

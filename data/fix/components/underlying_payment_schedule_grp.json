@@ -19,6 +19,7 @@
      "tag": "40664"
     },
     "item": {
+     "name": "UnderlyingPaymentSchedule",
      "type": "struct",
      "fields": [
       {

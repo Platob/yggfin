@@ -19,6 +19,7 @@
      "tag": "42485"
     },
     "item": {
+     "name": "LegPaymentStreamFormula",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1461"
     },
     "item": {
+     "name": "TargetPartyID",
      "type": "struct",
      "fields": [
       {

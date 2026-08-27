@@ -19,6 +19,7 @@
      "tag": "41820"
     },
     "item": {
+     "name": "UnderlyingOptionExerciseBusinessCenter",
      "type": "struct",
      "fields": [
       {

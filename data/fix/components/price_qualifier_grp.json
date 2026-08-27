@@ -19,6 +19,7 @@
      "tag": "2709"
     },
     "item": {
+     "name": "PriceQualifier",
      "type": "struct",
      "fields": [
       {

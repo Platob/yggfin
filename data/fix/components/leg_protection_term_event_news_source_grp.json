@@ -19,6 +19,7 @@
      "tag": "41614"
     },
     "item": {
+     "name": "LegProtectionTermEventNewsSource",
      "type": "struct",
      "fields": [
       {

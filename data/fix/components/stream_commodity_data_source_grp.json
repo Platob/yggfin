@@ -19,6 +19,7 @@
      "tag": "41280"
     },
     "item": {
+     "name": "StreamCommodityDataSource",
      "type": "struct",
      "fields": [
       {

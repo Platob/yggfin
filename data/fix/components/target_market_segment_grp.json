@@ -19,6 +19,7 @@
      "tag": "1789"
     },
     "item": {
+     "name": "TargetMarketSegment",
      "type": "struct",
      "fields": [
       {

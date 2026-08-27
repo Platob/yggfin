@@ -19,6 +19,7 @@
      "tag": "40000"
     },
     "item": {
+     "name": "AdditionalTermBondRef",
      "type": "struct",
      "fields": [
       {

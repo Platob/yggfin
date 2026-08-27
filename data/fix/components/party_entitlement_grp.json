@@ -19,6 +19,7 @@
      "tag": "1772"
     },
     "item": {
+     "name": "PartyEntitlement",
      "type": "struct",
      "fields": [
       {

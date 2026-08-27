@@ -20,6 +20,7 @@
      "tag": "1342"
     },
     "item": {
+     "name": "OfLegUnderlying",
      "type": "struct",
      "fields": [
       {

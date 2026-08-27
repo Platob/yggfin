@@ -19,6 +19,7 @@
      "tag": "2304"
     },
     "item": {
+     "name": "AssetAttribute",
      "type": "struct",
      "fields": [
       {

@@ -22,6 +22,7 @@
      "tag": "199"
     },
     "item": {
+     "name": "IOIQualifier",
      "type": "struct",
      "fields": [
       {

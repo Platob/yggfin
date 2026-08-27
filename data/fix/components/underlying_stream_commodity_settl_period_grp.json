@@ -19,6 +19,7 @@
      "tag": "42002"
     },
     "item": {
+     "name": "UnderlyingStreamCommoditySettlPeriod",
      "type": "struct",
      "fields": [
       {

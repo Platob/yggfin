@@ -19,6 +19,7 @@
      "tag": "40951"
     },
     "item": {
+     "name": "ProtectionTermEventNewsSource",
      "type": "struct",
      "fields": [
       {

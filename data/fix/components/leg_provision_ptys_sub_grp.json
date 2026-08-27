@@ -19,6 +19,7 @@
      "tag": "40537"
     },
     "item": {
+     "name": "LegProvisionPartySubID",
      "type": "struct",
      "fields": [
       {

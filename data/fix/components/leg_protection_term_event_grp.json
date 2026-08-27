@@ -19,6 +19,7 @@
      "tag": "41625"
     },
     "item": {
+     "name": "LegProtectionTermEvent",
      "type": "struct",
      "fields": [
       {

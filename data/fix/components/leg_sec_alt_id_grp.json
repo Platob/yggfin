@@ -22,6 +22,7 @@
      "tag": "604"
     },
     "item": {
+     "name": "LegSecurityAltID",
      "type": "struct",
      "fields": [
       {

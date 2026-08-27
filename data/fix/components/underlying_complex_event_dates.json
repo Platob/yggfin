@@ -19,6 +19,7 @@
      "tag": "2053"
     },
     "item": {
+     "name": "UnderlyingComplexEventDate",
      "type": "struct",
      "fields": [
       {

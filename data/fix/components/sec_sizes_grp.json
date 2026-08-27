@@ -20,6 +20,7 @@
      "tag": "1177"
     },
     "item": {
+     "name": "OfSecSize",
      "type": "struct",
      "fields": [
       {

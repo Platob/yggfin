@@ -19,6 +19,7 @@
      "tag": "43034"
     },
     "item": {
+     "name": "UnderlyingReturnRate",
      "type": "struct",
      "fields": [
       {

@@ -26,7 +26,6 @@ from rekep.fix.classify import (
     classify,
     count_files,
     count_reader,
-    report_document,
 )
 from rekep.fix.entries import ANY_VERSION, Alias, FieldEntry
 from rekep.fix.registry import FixRegistry
@@ -257,15 +256,16 @@ def test_the_report_is_ordered_by_how_much_traffic_each_name_is(report: KeyRepor
 def test_the_report_round_trips_through_the_document_a_review_reads(
     report: KeyReport,
 ) -> None:
-    read = KeyReport.from_dict(json.loads(report_document(report)))
+    read = KeyReport.from_json(report.into_json())
     assert read.rows == report.rows
     assert (read.lines, read.messages) == (report.lines, report.messages)
 
 
-def test_the_report_reads_as_lines_before_it_reads_as_json(report: KeyReport) -> None:
-    written = report.into_text()
-    assert f"{EXPECTED_LINES} lines" in written
-    assert "PARTYROLLE ~ PartyRole" in written
+def test_the_report_is_json_and_carries_names_and_counts_only(report: KeyReport) -> None:
+    """One serialization, and never a value out of a capture."""
+    written = report.into_json().decode()
+    assert json.loads(written)["lines"] == EXPECTED_LINES
+    assert "PARTYROLLE" in written
     assert "ORD-TEST-01" not in written, "names and counts, never a value"
 
 
@@ -347,8 +347,8 @@ def test_a_report_read_back_from_disk_applies_the_same(
 ) -> None:
     """Counting and deciding are separable: a run produces a file a person reviews."""
     written = tmp_path / "report.json"
-    written.write_text(report_document(report))
-    read = KeyReport.from_dict(json.loads(written.read_text()))
+    report.into_json(written)
+    read = KeyReport.from_json(written)
     assert apply_report(editable, read, aliases=True) == apply_report(
         FixRegistry(cache_dir=editable.into_zip(tmp_path / "again.zip"), offline=True),
         report,

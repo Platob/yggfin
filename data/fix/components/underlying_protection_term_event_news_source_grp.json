@@ -19,6 +19,7 @@
      "tag": "42090"
     },
     "item": {
+     "name": "UnderlyingProtectionTermEventNewsSource",
      "type": "struct",
      "fields": [
       {

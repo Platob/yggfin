@@ -19,6 +19,7 @@
      "tag": "40042"
     },
     "item": {
+     "name": "ContractualMatrix",
      "type": "struct",
      "fields": [
       {

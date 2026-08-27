@@ -19,6 +19,7 @@
      "tag": "2345"
     },
     "item": {
+     "name": "EntitlementType",
      "type": "struct",
      "fields": [
       {

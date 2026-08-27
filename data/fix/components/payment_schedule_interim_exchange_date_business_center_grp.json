@@ -19,6 +19,7 @@
      "tag": "40945"
     },
     "item": {
+     "name": "PaymentScheduleInterimExchangeDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

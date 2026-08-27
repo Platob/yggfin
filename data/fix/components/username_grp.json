@@ -20,6 +20,7 @@
      "tag": "809"
     },
     "item": {
+     "name": "Username",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "2871"
     },
     "item": {
+     "name": "TransactionAttribute",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40019"
     },
     "item": {
+     "name": "AdditionalTerm",
      "type": "struct",
      "fields": [
       {

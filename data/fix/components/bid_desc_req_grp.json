@@ -22,6 +22,7 @@
      "tag": "398"
     },
     "item": {
+     "name": "BidDescriptor",
      "type": "struct",
      "fields": [
       {

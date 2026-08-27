@@ -19,6 +19,7 @@
      "tag": "40495"
     },
     "item": {
+     "name": "LegProvisionOptionExerciseFixedDate",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41638"
     },
     "item": {
+     "name": "LegStreamCalculationPeriodDate",
      "type": "struct",
      "fields": [
       {

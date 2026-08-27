@@ -19,6 +19,7 @@
      "tag": "40367"
     },
     "item": {
+     "name": "LegNonDeliverableFixingDate",
      "type": "struct",
      "fields": [
       {

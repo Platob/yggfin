@@ -19,6 +19,7 @@
      "tag": "42569"
     },
     "item": {
+     "name": "LegReturnRateValuationDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

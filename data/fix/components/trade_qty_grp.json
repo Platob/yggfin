@@ -19,6 +19,7 @@
      "tag": "1841"
     },
     "item": {
+     "name": "TradeQty",
      "type": "struct",
      "fields": [
       {

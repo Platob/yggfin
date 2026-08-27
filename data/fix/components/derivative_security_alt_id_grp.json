@@ -20,6 +20,7 @@
      "tag": "1218"
     },
     "item": {
+     "name": "DerivativeSecurityAltID",
      "type": "struct",
      "fields": [
       {

@@ -22,6 +22,7 @@
      "tag": "670"
     },
     "item": {
+     "name": "LegAlloc",
      "type": "struct",
      "fields": [
       {

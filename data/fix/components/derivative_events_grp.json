@@ -20,6 +20,7 @@
      "tag": "1286"
     },
     "item": {
+     "name": "DerivativeEvent",
      "type": "struct",
      "fields": [
       {

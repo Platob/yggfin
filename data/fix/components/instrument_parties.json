@@ -21,6 +21,7 @@
      "tag": "1018"
     },
     "item": {
+     "name": "InstrumentParty",
      "type": "struct",
      "fields": [
       {

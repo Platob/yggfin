@@ -19,6 +19,7 @@
      "tag": "2772"
     },
     "item": {
+     "name": "MatchException",
      "type": "struct",
      "fields": [
       {

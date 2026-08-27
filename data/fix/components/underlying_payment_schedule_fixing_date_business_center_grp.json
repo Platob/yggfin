@@ -19,6 +19,7 @@
      "tag": "40966"
     },
     "item": {
+     "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

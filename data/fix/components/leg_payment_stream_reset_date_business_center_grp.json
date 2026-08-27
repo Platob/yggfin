@@ -19,6 +19,7 @@
      "tag": "40931"
     },
     "item": {
+     "name": "LegPaymentStreamResetDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

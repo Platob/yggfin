@@ -19,6 +19,7 @@
      "tag": "41683"
     },
     "item": {
+     "name": "LegStreamCommoditySettlTime",
      "type": "struct",
      "fields": [
       {

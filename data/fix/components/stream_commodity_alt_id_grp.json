@@ -19,6 +19,7 @@
      "tag": "41277"
     },
     "item": {
+     "name": "StreamCommodityAltID",
      "type": "struct",
      "fields": [
       {

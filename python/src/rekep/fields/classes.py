@@ -16,7 +16,7 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.fields.builder import FieldBuilder
-from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField, scalar
+from rekep.fields.field import DESCRIPTION, ITEM, NAMESPACE, Field, StructField, scalar
 
 
 class ClassBuilder:
@@ -123,14 +123,16 @@ class ClassBuilder:
         return str
 
     def _entry(self, entry: Any, name: str) -> Field:
-        """One list's entry, named after the list rather than after `item`.
+        """One list's entry, under a name that says which entry it is.
 
         Arrow calls every list value `item`, so a struct entry would build a
         class called `Item` -- one per list, all of them, and two groups in
         one FIX component would be two different classes wearing the same
-        name. The list already has a name that says which entry this is.
+        name. An entry that was named on purpose keeps its name; one still
+        wearing Arrow's takes the list's.
         """
-        return dataclasses.replace(Field.from_arrow_field(entry), name=name or entry.name)
+        built = Field.from_arrow_field(entry)
+        return built if built.name != ITEM else dataclasses.replace(built, name=name or ITEM)
 
 
 def _nested_classes(annotation: Any) -> dict[str, type]:

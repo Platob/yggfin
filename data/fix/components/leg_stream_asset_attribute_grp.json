@@ -19,6 +19,7 @@
      "tag": "41452"
     },
     "item": {
+     "name": "LegStreamAssetAttribute",
      "type": "struct",
      "fields": [
       {

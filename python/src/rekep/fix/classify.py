@@ -19,7 +19,6 @@ or reports one.
 from __future__ import annotations
 
 import dataclasses
-import json
 import re
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
@@ -299,27 +298,6 @@ class KeyReport(Convertible):
             messages=int(mapping.get("messages", 0)),
         )
 
-    def into_text(self) -> str:
-        """The report as the lines a person reads first."""
-        totals, names = self.totals(), self.names()
-        written = [
-            f"{self.lines} lines, {self.messages} carrying a message, "
-            f"{len(self.rows)} distinct key names"
-        ]
-        for kind in KINDS:
-            written.append(f"  {kind:8} {names[kind]:6} names {totals[kind]:12} occurrences")
-        for kind in (NAMESPACE, NEAR):
-            rows = self.of(kind)
-            if not rows:
-                continue
-            written.append(f"\n{kind} ({len(rows)}), most counted first:")
-            for row in rows[:20]:
-                nearest = f" ~ {row.resolved} (distance {row.distance})" if row.resolved else ""
-                written.append(f"  {row.count.total:10}  {row.name}{nearest}")
-            if len(rows) > 20:
-                written.append(f"  ... and {len(rows) - 20} more")
-        return "\n".join(written)
-
 
 def classify(counts: KeyCounts, registry: FixRegistry, ceiling: int = NEAR_CEILING) -> KeyReport:
     """Every counted name against the dictionary, most counted first.
@@ -537,8 +515,3 @@ def count_files(
 def _source_of(url: str) -> str:
     """A capture's own name, which is what a backlog says a count came from."""
     return url.rstrip("/").rsplit("/", 1)[-1]
-
-
-def report_document(report: KeyReport) -> str:
-    """The report as the JSON a review reads and `apply_report` reads back."""
-    return json.dumps(report.into_dict(), indent=1)

@@ -19,6 +19,7 @@
      "tag": "1491"
     },
     "item": {
+     "name": "ComplexEventDate",
      "type": "struct",
      "fields": [
       {

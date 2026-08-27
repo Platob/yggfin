@@ -53,7 +53,7 @@ if os.name == "nt":
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from _bench import best_of, parser, report  # noqa: E402
+from _bench import best_of, identical, parser, report  # noqa: E402
 
 from rekep import FixMsg  # noqa: E402
 from rekep.enums import State  # noqa: E402
@@ -73,6 +73,7 @@ from rekep.market.identity import (  # noqa: E402
     _binary,
     _length,
     hash_arrow,
+    hash_bytes_of,
     hash_of,
 )
 
@@ -287,8 +288,12 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     scalar, one_at_a_time = timed(
         lambda: [hash_of("Order", *values) for values in zip(*parts, strict=True)], repeat
     )
-    # Verified before it is timed: the two must be the same identifiers.
-    assert built.to_pylist()[:scalar_rows] == one_at_a_time, "the two builders disagree"
+    # Verified before it is timed: the two must be the same identifiers. One
+    # builds a column and answers in the sixteen bytes a column stores; the
+    # other builds one identity and answers in the integer a reader works in.
+    assert built.to_pylist()[:scalar_rows] == [hash_bytes_of(one) for one in one_at_a_time], (
+        "the two builders disagree"
+    )
 
     joined, _ = timed(lambda: plain_join(*columns), repeat)
     framed, _ = timed(lambda: framed_join(*columns), repeat)
@@ -1130,6 +1135,13 @@ def _pipeline_message_batches(
                     column = pyarrow.repeat(pyarrow.scalar(""), count)
                 elif pyarrow.types.is_boolean(field.type):
                     column = pyarrow.repeat(pyarrow.scalar(False), count)
+                elif pyarrow.types.is_fixed_size_binary(field.type):
+                    # An identity column is its width in bytes, and zero is
+                    # that many of them -- `scalar(0, ...)` is not a number
+                    # here, it is a buffer Arrow refuses to guess the size of.
+                    column = pyarrow.repeat(
+                        pyarrow.scalar(b"\x00" * field.type.byte_width, field.type), count
+                    )
                 else:
                     column = pyarrow.repeat(pyarrow.scalar(0, field.type), count)
             arrays.append(column)
@@ -1278,10 +1290,17 @@ def bench_fold(events: int, repeat: int) -> None:
         batch = pyarrow.RecordBatch.from_pylist([book.into_row() for book in sample], schema=schema)
         return pyarrow.Table.from_batches([batch], schema=schema)
 
+    def column_projection() -> pyarrow.Table:
+        batch = Book.into_arrow_batch(sample)
+        return pyarrow.Table.from_batches([batch], schema=schema)
+
     generic, expected = timed(document_projection, repeat)
+    columnar, built = timed(column_projection, repeat)
     assert expected.num_rows == len(sample)
+    assert identical(built, expected), "the two projections must be the same table"
     print(f"\nBook to Arrow -- {len(sample):,} rows")
-    report("generic document projection", generic, len(sample))
+    report("row by row, through a document", generic, len(sample))
+    report("member by member, off the objects", columnar, len(sample), against=generic)
 
 
 def main() -> None:

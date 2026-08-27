@@ -20,6 +20,7 @@
      "tag": "1296"
     },
     "item": {
+     "name": "DerivativeInstrumentPartySubID",
      "type": "struct",
      "fields": [
       {

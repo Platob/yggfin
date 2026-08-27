@@ -19,6 +19,7 @@
      "tag": "42306"
     },
     "item": {
+     "name": "LegCashSettlDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

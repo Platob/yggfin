@@ -19,6 +19,7 @@
      "tag": "41804"
     },
     "item": {
+     "name": "UnderlyingDeliveryStreamCycle",
      "type": "struct",
      "fields": [
       {

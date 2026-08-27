@@ -19,6 +19,7 @@
      "tag": "2113"
     },
     "item": {
+     "name": "AttachmentKeyword",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "2550"
     },
     "item": {
+     "name": "PriceRangeRule",
      "type": "struct",
      "fields": [
       {

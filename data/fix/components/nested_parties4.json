@@ -20,6 +20,7 @@
      "tag": "1414"
     },
     "item": {
+     "name": "Nested4PartyID",
      "type": "struct",
      "fields": [
       {

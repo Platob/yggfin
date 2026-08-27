@@ -19,6 +19,7 @@
      "tag": "40448"
     },
     "item": {
+     "name": "LegProvision",
      "type": "struct",
      "fields": [
       {

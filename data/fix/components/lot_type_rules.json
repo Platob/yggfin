@@ -20,6 +20,7 @@
      "tag": "1234"
     },
     "item": {
+     "name": "LotTypeRule",
      "type": "struct",
      "fields": [
       {

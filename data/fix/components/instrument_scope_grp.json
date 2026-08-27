@@ -19,6 +19,7 @@
      "tag": "1656"
     },
     "item": {
+     "name": "InstrumentScope",
      "type": "struct",
      "fields": [
       {

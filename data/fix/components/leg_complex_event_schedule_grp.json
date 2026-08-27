@@ -19,6 +19,7 @@
      "tag": "41400"
     },
     "item": {
+     "name": "LegComplexEventSchedule",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1838"
     },
     "item": {
+     "name": "TradePriceCondition",
      "type": "struct",
      "fields": [
       {

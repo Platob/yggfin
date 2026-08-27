@@ -19,6 +19,7 @@
      "tag": "2548"
     },
     "item": {
+     "name": "AuctionTypeRule",
      "type": "struct",
      "fields": [
       {

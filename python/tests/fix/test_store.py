@@ -19,7 +19,6 @@ import os
 import re
 import socket
 import time
-import typing
 import urllib.request
 import zipfile
 from collections.abc import Mapping
@@ -1341,17 +1340,16 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
 
 def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:
     assert store.component_field("FakeParties", "9.0") is None
-    assert store.component_dataclass("FakeParties", "9.0") is None
+    assert store.component_scalar("FakeParties", "9.0") is None
 
 
 def test_a_component_materialises_as_a_class_the_declaration_wrote(store: Offline) -> None:
     """No hand-written row class: the declaration already says every member."""
-    built = store.component_dataclass("FakeParties", "9.1")
-    optional, _ = typing.get_args(built.__annotations__["no_fake_parties"])
-    entry = typing.get_args(typing.get_args(optional)[0])[0]
+    built = store.component_scalar("FakeParties", "9.1")
+    entry = built.FakeParty
 
     assert built.__name__ == "FakeParties"
-    assert entry.__name__ == "NoFakeParties", "the entry is named after the group, not `Item`"
+    assert entry.__name__ == "FakeParty", "`NoFakeParties` repeats one `FakeParty`"
     assert built(no_fake_parties=[entry(fake_role=7)]).into_dict() == {
         "no_fake_parties": [{"fake_role": 7}]
     }

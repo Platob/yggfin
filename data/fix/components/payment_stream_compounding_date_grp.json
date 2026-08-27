@@ -19,6 +19,7 @@
      "tag": "42606"
     },
     "item": {
+     "name": "PaymentStreamCompoundingDate",
      "type": "struct",
      "fields": [
       {

@@ -21,6 +21,7 @@
      "tag": "1052"
     },
     "item": {
+     "name": "InstrumentPartySubID",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40950"
     },
     "item": {
+     "name": "PaymentStreamFixingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

@@ -22,6 +22,7 @@
      "tag": "454"
     },
     "item": {
+     "name": "SecurityAltID",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "2529"
     },
     "item": {
+     "name": "RelativeValue",
      "type": "struct",
      "fields": [
       {

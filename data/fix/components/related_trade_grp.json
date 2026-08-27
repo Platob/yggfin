@@ -19,6 +19,7 @@
      "tag": "1855"
     },
     "item": {
+     "name": "RelatedTrade",
      "type": "struct",
      "fields": [
       {

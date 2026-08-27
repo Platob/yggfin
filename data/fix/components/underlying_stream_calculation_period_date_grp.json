@@ -19,6 +19,7 @@
      "tag": "41954"
     },
     "item": {
+     "name": "UnderlyingStreamCalculationPeriodDate",
      "type": "struct",
      "fields": [
       {

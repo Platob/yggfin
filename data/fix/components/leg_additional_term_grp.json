@@ -19,6 +19,7 @@
      "tag": "41335"
     },
     "item": {
+     "name": "LegAdditionalTerm",
      "type": "struct",
      "fields": [
       {

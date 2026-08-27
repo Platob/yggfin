@@ -19,6 +19,7 @@
      "tag": "73"
     },
     "item": {
+     "name": "Order",
      "type": "struct",
      "fields": [
       {

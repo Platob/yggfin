@@ -19,6 +19,7 @@
      "tag": "2080"
     },
     "item": {
+     "name": "UnderlyingSecondaryAssetClass",
      "type": "struct",
      "fields": [
       {

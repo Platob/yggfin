@@ -20,6 +20,7 @@
      "tag": "1158"
     },
     "item": {
+     "name": "SettlDetail",
      "type": "struct",
      "fields": [
       {

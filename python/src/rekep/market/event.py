@@ -221,14 +221,14 @@ class Event(MarketConvertible):
         schema = cls.into_field().into_arrow_schema()
 
         def batches() -> Iterator[pyarrow.RecordBatch]:
-            held: list[dict[str, Any]] = []
+            held: list[Self] = []
             for event in events:
-                held.append(event.into_row())
+                held.append(event)
                 if len(held) >= batch_row_size:
-                    yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                    yield cls.into_arrow_batch(held)
                     held.clear()
             if held:
-                yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                yield cls.into_arrow_batch(held)
 
         return pyarrow.RecordBatchReader.from_batches(schema, batches())
 

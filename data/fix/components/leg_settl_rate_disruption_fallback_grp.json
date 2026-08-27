@@ -19,6 +19,7 @@
      "tag": "40902"
     },
     "item": {
+     "name": "LegSettlRateFallback",
      "type": "struct",
      "fields": [
       {

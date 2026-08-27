@@ -19,6 +19,7 @@
      "tag": "42068"
     },
     "item": {
+     "name": "UnderlyingProtectionTerm",
      "type": "struct",
      "fields": [
       {

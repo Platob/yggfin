@@ -19,6 +19,7 @@
      "tag": "41944"
     },
     "item": {
+     "name": "UnderlyingPaymentStreamPricingDay",
      "type": "struct",
      "fields": [
       {

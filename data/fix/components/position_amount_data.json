@@ -22,6 +22,7 @@
      "tag": "753"
     },
     "item": {
+     "name": "PosAmt",
      "type": "struct",
      "fields": [
       {

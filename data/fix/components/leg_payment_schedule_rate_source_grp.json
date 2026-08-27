@@ -19,6 +19,7 @@
      "tag": "40414"
     },
     "item": {
+     "name": "LegPaymentScheduleRateSource",
      "type": "struct",
      "fields": [
       {

@@ -22,6 +22,7 @@
      "tag": "136"
     },
     "item": {
+     "name": "MiscFee",
      "type": "struct",
      "fields": [
       {

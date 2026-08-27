@@ -19,6 +19,7 @@
      "tag": "41750"
     },
     "item": {
+     "name": "UnderlyingComplexEventSchedule",
      "type": "struct",
      "fields": [
       {

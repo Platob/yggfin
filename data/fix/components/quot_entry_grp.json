@@ -22,6 +22,7 @@
      "tag": "295"
     },
     "item": {
+     "name": "QuoteEntry",
      "type": "struct",
      "fields": [
       {

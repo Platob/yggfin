@@ -22,6 +22,7 @@
      "tag": "897"
     },
     "item": {
+     "name": "Trade",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41599"
     },
     "item": {
+     "name": "LegPhysicalSettlTerm",
      "type": "struct",
      "fields": [
       {

@@ -21,6 +21,7 @@
      "tag": "1120"
     },
     "item": {
+     "name": "RootPartySubID",
      "type": "struct",
      "fields": [
       {

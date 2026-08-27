@@ -19,6 +19,7 @@
      "tag": "1657"
     },
     "item": {
+     "name": "RequestingPartyID",
      "type": "struct",
      "fields": [
       {

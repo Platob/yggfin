@@ -19,6 +19,7 @@
      "tag": "1976"
     },
     "item": {
+     "name": "SecondaryAssetClass",
      "type": "struct",
      "fields": [
       {

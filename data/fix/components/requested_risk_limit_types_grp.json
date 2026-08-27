@@ -19,6 +19,7 @@
      "tag": "1668"
     },
     "item": {
+     "name": "RequestedRiskLimitType",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41607"
     },
     "item": {
+     "name": "LegPricingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

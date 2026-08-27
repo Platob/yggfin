@@ -19,6 +19,7 @@
      "tag": "1971"
     },
     "item": {
+     "name": "SideRegulatoryTradeID",
      "type": "struct",
      "fields": [
       {

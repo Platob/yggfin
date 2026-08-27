@@ -22,6 +22,7 @@
      "tag": "778"
     },
     "item": {
+     "name": "SettlInst",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "42855"
     },
     "item": {
+     "name": "UnderlyingDividendPayment",
      "type": "struct",
      "fields": [
       {

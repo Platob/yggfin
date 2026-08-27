@@ -22,6 +22,7 @@
      "tag": "576"
     },
     "item": {
+     "name": "ClearingInstruction",
      "type": "struct",
      "fields": [
       {

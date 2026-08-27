@@ -19,6 +19,7 @@
      "tag": "2428"
     },
     "item": {
+     "name": "OrderEntry",
      "type": "struct",
      "fields": [
       {

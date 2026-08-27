@@ -19,6 +19,7 @@
      "tag": "43030"
     },
     "item": {
+     "name": "UnderlyingReturnRateFXConversion",
      "type": "struct",
      "fields": [
       {

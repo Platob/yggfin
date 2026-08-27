@@ -19,6 +19,7 @@
      "tag": "40937"
     },
     "item": {
+     "name": "LegProvisionOptionExpirationDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

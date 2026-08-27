@@ -22,6 +22,7 @@
      "tag": "428"
     },
     "item": {
+     "name": "Strike",
      "type": "struct",
      "fields": [
       {

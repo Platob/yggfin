@@ -20,6 +20,7 @@
      "tag": "1237"
     },
     "item": {
+     "name": "OrdTypeRule",
      "type": "struct",
      "fields": [
       {

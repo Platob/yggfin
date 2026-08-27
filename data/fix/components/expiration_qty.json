@@ -21,6 +21,7 @@
      "tag": "981"
     },
     "item": {
+     "name": "Expiration",
      "type": "struct",
      "fields": [
       {

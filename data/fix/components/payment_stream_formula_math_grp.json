@@ -19,6 +19,7 @@
      "tag": "42683"
     },
     "item": {
+     "name": "PaymentStreamFormula",
      "type": "struct",
      "fields": [
       {

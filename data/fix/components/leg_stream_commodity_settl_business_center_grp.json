@@ -19,6 +19,7 @@
      "tag": "41646"
     },
     "item": {
+     "name": "LegStreamCommoditySettlBusinessCenter",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "627"
     },
     "item": {
+     "name": "Hop",
      "type": "struct",
      "fields": [
       {

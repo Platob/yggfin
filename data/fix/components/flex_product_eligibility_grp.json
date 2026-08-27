@@ -19,6 +19,7 @@
      "tag": "2560"
     },
     "item": {
+     "name": "FlexProductEligibility",
      "type": "struct",
      "fields": [
       {

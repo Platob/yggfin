@@ -19,6 +19,7 @@
      "tag": "2639"
     },
     "item": {
+     "name": "Commission",
      "type": "struct",
      "fields": [
       {

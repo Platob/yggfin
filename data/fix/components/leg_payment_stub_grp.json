@@ -19,6 +19,7 @@
      "tag": "40418"
     },
     "item": {
+     "name": "LegPaymentStub",
      "type": "struct",
      "fields": [
       {

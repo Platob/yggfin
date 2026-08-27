@@ -19,6 +19,7 @@
      "tag": "42775"
     },
     "item": {
+     "name": "SettlMethodElectionDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

@@ -13,7 +13,7 @@ from typing import Any
 from rekep import __version__
 from rekep.console import Console
 from rekep.fields import Field, StructField
-from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
+from rekep.fix.classify import KeyReport, apply_report, classify, count_files
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
@@ -32,7 +32,6 @@ CONSOLE = Console(stream="stderr")
 FORMATS: dict[str, tuple[str, ...]] = {
     "json": (".json",),
     "yaml": (".yaml", ".yml"),
-    "toml": (".toml",),
 }
 
 
@@ -409,16 +408,16 @@ def classify_keys(arguments: argparse.Namespace) -> int:
     )
     report = classify(counts, registry)
     if arguments.report:
-        pathlib.Path(arguments.report).write_text(report_document(report))
+        report.into_json(arguments.report)
         CONSOLE.ok(f"{arguments.source} {CONSOLE.glyph('arrow')} {arguments.report}")
-    print(report.into_text())
+    _write_json(report.into_dict())
     return 0
 
 
 def apply_keys(arguments: argparse.Namespace) -> int:
     """Register what a report found, through the registry's own verbs."""
     registry = FixRegistry(cache_dir=arguments.store, offline=True)
-    report = KeyReport.from_dict(json.loads(pathlib.Path(arguments.report).read_text()))
+    report = KeyReport.from_json(arguments.report)
     applied = apply_report(
         registry,
         report,

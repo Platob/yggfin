@@ -19,6 +19,7 @@
      "tag": "41116"
     },
     "item": {
+     "name": "OptionExerciseBusinessCenter",
      "type": "struct",
      "fields": [
       {

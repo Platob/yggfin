@@ -22,6 +22,7 @@
      "tag": "518"
     },
     "item": {
+     "name": "ContAmt",
      "type": "struct",
      "fields": [
       {

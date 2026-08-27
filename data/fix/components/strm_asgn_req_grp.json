@@ -19,6 +19,7 @@
      "tag": "1499"
     },
     "item": {
+     "name": "AsgnReq",
      "type": "struct",
      "fields": [
       {

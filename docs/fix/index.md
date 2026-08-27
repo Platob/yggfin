@@ -339,10 +339,10 @@ that is where a referenced component's fields arrive on the wire.
 
 Because the declaration already says every member's name, its Arrow type and
 whether a message must carry it, there is nothing left to write by hand:
-`component_dataclass()` is `into_dataclass()` over the projection.
+`component_scalar()` is `into_dataclass()` over the projection.
 
 ```python
-Parties = registry.component_dataclass("Parties", "4.4")
+Parties = registry.component_scalar("Parties", "4.4")
 Parties(no_party_ids=[Parties.NoPartyIds(party_id="BUY-A", party_role=3)])
 ```
 
@@ -384,6 +384,10 @@ rekep fix classify --source /captures/brk --store data/fix \
     --plugins '^UL' --report brk.json
 rekep fix apply --store data/fix --report brk.json --aliases --minimum 50
 ```
+
+The report is JSON on stdout and JSON in the file, which is the one text form
+anything here serialises to -- `jq` reads it, and `apply` reads the same
+document back.
 
 Nothing is applied unless asked for, and a near miss never silently: a case or
 spelling variant is *evidence* that two names are one field, and the point of

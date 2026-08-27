@@ -19,6 +19,7 @@
      "tag": "42386"
     },
     "item": {
+     "name": "LegDividendPeriodBusinessCenter",
      "type": "struct",
      "fields": [
       {

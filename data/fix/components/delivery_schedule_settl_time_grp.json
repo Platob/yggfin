@@ -19,6 +19,7 @@
      "tag": "41054"
     },
     "item": {
+     "name": "DeliveryScheduleSettlTime",
      "type": "struct",
      "fields": [
       {

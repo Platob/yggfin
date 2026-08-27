@@ -19,6 +19,7 @@
      "tag": "40927"
     },
     "item": {
+     "name": "LegPaymentScheduleFixingDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

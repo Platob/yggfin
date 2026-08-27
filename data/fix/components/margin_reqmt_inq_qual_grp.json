@@ -19,6 +19,7 @@
      "tag": "1636"
     },
     "item": {
+     "name": "MarginReqmtInqQualifier",
      "type": "struct",
      "fields": [
       {

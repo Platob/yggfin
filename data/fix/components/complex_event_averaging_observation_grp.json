@@ -19,6 +19,7 @@
      "tag": "40994"
     },
     "item": {
+     "name": "ComplexEventAveragingObservation",
      "type": "struct",
      "fields": [
       {

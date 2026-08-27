@@ -19,6 +19,7 @@
      "tag": "42200"
     },
     "item": {
+     "name": "LegFinancingTermSupplement",
      "type": "struct",
      "fields": [
       {

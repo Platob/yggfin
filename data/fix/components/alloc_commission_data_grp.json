@@ -19,6 +19,7 @@
      "tag": "2653"
     },
     "item": {
+     "name": "AllocCommission",
      "type": "struct",
      "fields": [
       {

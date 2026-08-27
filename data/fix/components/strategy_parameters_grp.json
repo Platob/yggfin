@@ -21,6 +21,7 @@
      "tag": "957"
     },
     "item": {
+     "name": "StrategyParameter",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40209"
     },
     "item": {
+     "name": "PhysicalSettlDeliverableObligation",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41031"
     },
     "item": {
+     "name": "ComplexEventSchedule",
      "type": "struct",
      "fields": [
       {

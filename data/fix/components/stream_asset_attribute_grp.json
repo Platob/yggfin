@@ -19,6 +19,7 @@
      "tag": "41237"
     },
     "item": {
+     "name": "StreamAssetAttribute",
      "type": "struct",
      "fields": [
       {

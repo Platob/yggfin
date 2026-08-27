@@ -19,6 +19,7 @@
      "tag": "1445"
     },
     "item": {
+     "name": "RateSource",
      "type": "struct",
      "fields": [
       {

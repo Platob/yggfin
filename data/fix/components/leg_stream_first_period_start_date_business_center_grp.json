@@ -19,6 +19,7 @@
      "tag": "40941"
     },
     "item": {
+     "name": "LegStreamFirstPeriodStartDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

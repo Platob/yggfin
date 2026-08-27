@@ -19,6 +19,7 @@
      "tag": "42198"
     },
     "item": {
+     "name": "LegContractualDefinition",
      "type": "struct",
      "fields": [
       {

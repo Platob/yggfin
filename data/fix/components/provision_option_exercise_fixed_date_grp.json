@@ -19,6 +19,7 @@
      "tag": "40142"
     },
     "item": {
+     "name": "ProvisionOptionExerciseFixedDate",
      "type": "struct",
      "fields": [
       {

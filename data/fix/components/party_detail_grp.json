@@ -19,6 +19,7 @@
      "tag": "1671"
     },
     "item": {
+     "name": "PartyDetail",
      "type": "struct",
      "fields": [
       {

@@ -9,7 +9,7 @@ import functools
 import json
 import re
 import struct
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -43,6 +43,11 @@ NAMESPACE = "namespace"
 
 #: Metadata key carrying the name of a struct field flattened into a schema.
 NAME = "name"
+
+#: What Arrow calls a list's element when nobody named it. A document writes
+#: the block under this key either way; the name is only written back out when
+#: the author chose a different one.
+ITEM = "item"
 
 #: Keys a downstream protocol owns are prefixed with its name, so one
 #: namespace's keys can never collide with another's. `Field.protocol` is the
@@ -822,6 +827,20 @@ class BinaryField(Field):
             value = value.as_py()
         return value if isinstance(value, bytes) else _bytes_of(self, value)
 
+    def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
+        """A column of anything as a column of the bytes this field stores.
+
+        Arrow has no cast from a number to binary -- a width is a decision,
+        not a conversion -- so where it refuses, the rendering `cast_py`
+        already states is applied value by value. A column Arrow *can* cast
+        (text, other binary) still goes through the kernel.
+        """
+        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.dtype:
+            return super().cast_arrow_array(array, safe=safe)
+        if not _needs_rendering(array.type, self.dtype):
+            return super().cast_arrow_array(array, safe=safe)
+        return pyarrow.array([self.cast_py(one) for one in array.to_pylist()], type=self.dtype)
+
 
 class DictionaryField(Field):
     """A dictionary column: positions into a values array, and the values.
@@ -899,10 +918,10 @@ class ListField(Field):
         return "list"
 
     def nested(self) -> dict[str, Any]:
-        return {"item": _anonymous(self.item)}
+        return {ITEM: _anonymous(self.item, ITEM)}
 
     def leaf_names(self) -> list[str]:
-        return self._extend({"item": self.item})
+        return self._extend({ITEM: self.item})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """Cast the values, then cut them back into rows of this flavour."""
@@ -1057,8 +1076,8 @@ class MapField(Field):
         described: dict[str, Any] = {}
         if self.dtype.keys_sorted:
             described["keys_sorted"] = True
-        described["key"] = _anonymous(self.key)
-        described["value"] = _anonymous(self.value)
+        described["key"] = _anonymous(self.key, "key")
+        described["value"] = _anonymous(self.value, "value")
         return described
 
     def leaf_names(self) -> list[str]:
@@ -1264,6 +1283,39 @@ class StructField(Field):
         reads back.
         """
         return self.arrow_schema
+
+    def into_arrow_array(
+        self,
+        rows: Iterable[Any],
+        spell: Any = None,
+        owner: type | None = None,
+    ) -> pyarrow.StructArray:
+        """Instances of the class this struct declares, as one struct column.
+
+        Member by member off the objects, never through a dictionary: the
+        declaration already says every member's Arrow type, so nothing is
+        inferred per row. `spell` is how a class writes a member its column
+        holds differently from the attribute.
+        """
+        from rekep.fields.rows import struct_array
+
+        return struct_array(self, list(rows), spell, owner)
+
+    def into_arrow_batch(
+        self,
+        rows: Iterable[Any],
+        spell: Any = None,
+        owner: type | None = None,
+    ) -> pyarrow.RecordBatch:
+        """The same instances as a batch of this struct's own schema.
+
+        A struct array and a record batch are the same buffers with a
+        different name on them, so Arrow's own conversion does it and the
+        schema this field declares is put back on the result -- a batch that
+        lost its metadata would no longer say which class it came from.
+        """
+        built = pyarrow.RecordBatch.from_struct_array(self.into_arrow_array(rows, spell, owner))
+        return pyarrow.RecordBatch.from_arrays(built.columns, schema=self.into_arrow_schema())
 
     def into_iceberg_schema(self) -> Any:
         """This struct as a `pyiceberg.schema.Schema`, ids numbered from one."""
@@ -1502,6 +1554,8 @@ def scalar(cls: type | None = None, /, **kwargs: Any) -> Any:
             for name in private:
                 built.__dataclass_fields__.pop(name, None)
         built.into_field = classmethod(_into_class_field)
+        built.into_arrow_array = classmethod(_into_arrow_array)
+        built.into_arrow_batch = classmethod(_into_arrow_batch)
         if not callable(getattr(built, "into_field_builder", None)):
             built.into_field_builder = classmethod(_into_field_builder)
         if not callable(getattr(built, "into_field_metadata", None)):
@@ -1517,6 +1571,27 @@ def _into_class_field(owner: type, name: str | None = None) -> StructField:
     if name is not None:
         return _into_class_field(owner).with_name(name)
     return Field.from_dataclass(owner)
+
+
+def _into_arrow_array(owner: type, rows: Iterable[Any]) -> pyarrow.StructArray:
+    """Instances of this class as one struct column of its own type."""
+    return owner.into_field().into_arrow_array(rows, _spelling_of(owner), owner)
+
+
+def _into_arrow_batch(owner: type, rows: Iterable[Any]) -> pyarrow.RecordBatch:
+    """The same instances as a batch of this class's own schema."""
+    return owner.into_field().into_arrow_batch(rows, _spelling_of(owner), owner)
+
+
+@functools.cache
+def _spelling_of(owner: type) -> Any:
+    """How this class spells a member its column holds differently, or nothing.
+
+    Read once per class: the check is a `getattr`, and paying it per member
+    per row is the whole cost this builder exists to avoid.
+    """
+    spell = getattr(owner, "into_column_value", None)
+    return spell if callable(spell) else None
 
 
 @functools.cache
@@ -1775,7 +1850,7 @@ def _py_of(dtype: pyarrow.DataType, value: Any) -> Any:
     if kinds.is_string(dtype) or kinds.is_large_string(dtype):
         return value if isinstance(value, str) else str(value)
     if kinds.is_binary(dtype) or kinds.is_large_binary(dtype) or kinds.is_fixed_size_binary(dtype):
-        return value if isinstance(value, bytes) else bytes(value)
+        return _binary_bytes(dtype, value)
     if kinds.is_timestamp(dtype):
         return _instant_of(dtype, value)
     if kinds.is_date(dtype):
@@ -1852,7 +1927,7 @@ def _bytes_of(field: Field, value: Any) -> bytes:
     if kinds.is_string(dtype) or kinds.is_large_string(dtype):
         return str(value).encode("utf-8")
     if kinds.is_binary(dtype) or kinds.is_large_binary(dtype) or kinds.is_fixed_size_binary(dtype):
-        return value if isinstance(value, bytes) else bytes(value)
+        return _binary_bytes(dtype, value)
     if kinds.is_timestamp(dtype) or kinds.is_date(dtype) or kinds.is_time(dtype):
         return _stamp_bytes(field, value)
     if kinds.is_duration(dtype):
@@ -1890,6 +1965,45 @@ def _member_values(field: Field, value: Any) -> Mapping[str, Any]:
     return dict(zip((member.name for member in field.fields), value or (), strict=False))
 
 
+def _binary_bytes(dtype: pyarrow.DataType, value: Any) -> bytes:
+    """A binary column's own value, with a number written to its width.
+
+    `bytes(7)` is seven zero bytes in Python and not the number seven, so an
+    integer is written big-endian two's complement at the width the column
+    declares -- the same bytes a wide identifier is already stored as, and the
+    only rendering that makes the stored column sort as the values do.
+    """
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, (bytearray, memoryview)):
+        return bytes(value)
+    if isinstance(value, int) and not isinstance(value, bool):
+        width = dtype.byte_width if pyarrow.types.is_fixed_size_binary(dtype) else 8
+        return (int(value) & ((1 << (width * 8)) - 1)).to_bytes(width, "big")
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    return bytes(value)
+
+
+def _needs_rendering(source: pyarrow.DataType, target: pyarrow.DataType) -> bool:
+    """Whether a column has to be rendered rather than cast into `target`.
+
+    A number or an instant has no Arrow cast to binary: how wide it is and
+    which end the bytes start at are the declaration's decisions, which is
+    exactly what `BinaryField` states.
+    """
+    kinds = pyarrow.types
+    if not (kinds.is_fixed_size_binary(target) or kinds.is_binary(target)):
+        return False
+    return (
+        kinds.is_integer(source)
+        or kinds.is_floating(source)
+        or kinds.is_decimal(source)
+        or kinds.is_temporal(source)
+        or kinds.is_boolean(source)
+    )
+
+
 def _number_bytes(dtype: pyarrow.DataType, value: Any) -> bytes:
     """A fixed-width number as exactly its width, big-endian."""
     named = str(dtype)
@@ -1917,10 +2031,18 @@ def _stamp_bytes(field: Field, value: Any) -> bytes:
     return int(ticks).to_bytes(8, "big", signed=True)
 
 
-def _anonymous(member: Field) -> dict[str, Any]:
-    """A list item or map half: a field whose name Arrow owns, not the author."""
+def _anonymous(member: Field, owned: str) -> dict[str, Any]:
+    """A list item or map half, keeping a name only when the author chose it.
+
+    Arrow names a list's element `item` and a map's halves `key` and `value`;
+    those are the container's spelling and the document says them as the block
+    it writes. Anything else was named on purpose -- a FIX group repeats a
+    `PartyID`, not an `item` -- and a document that dropped it would read back
+    as a different type.
+    """
     described = member.into_dict()
-    described.pop(NAME, None)
+    if described.get(NAME) == owned:
+        described.pop(NAME, None)
     return described
 
 

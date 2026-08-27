@@ -19,6 +19,7 @@
      "tag": "41993"
     },
     "item": {
+     "name": "UnderlyingStreamCommodityDataSource",
      "type": "struct",
      "fields": [
       {

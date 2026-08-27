@@ -19,6 +19,7 @@
      "tag": "40233"
     },
     "item": {
+     "name": "PaymentSettlPartyID",
      "type": "struct",
      "fields": [
       {

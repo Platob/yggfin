@@ -19,6 +19,7 @@
      "tag": "41635"
     },
     "item": {
+     "name": "LegProtectionTermObligation",
      "type": "struct",
      "fields": [
       {

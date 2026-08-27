@@ -117,7 +117,7 @@ microsecond column stores.
 
 ## Optional dependencies
 
-YAML, TOML, Iceberg, and Polars are imported only when used. Install the
+YAML, Iceberg, and Polars are imported only when used. Install the
 matching extra rather than making every Arrow-only consumer carry them.
 
 ## Benchmark

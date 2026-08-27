@@ -19,6 +19,7 @@
      "tag": "2746"
     },
     "item": {
+     "name": "ReferenceDataDate",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40046"
     },
     "item": {
+     "name": "FinancingTermSupplement",
      "type": "struct",
      "fields": [
       {

@@ -21,6 +21,7 @@
      "tag": "386"
     },
     "item": {
+     "name": "TradingSession",
      "type": "struct",
      "fields": [
       {

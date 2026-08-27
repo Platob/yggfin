@@ -19,6 +19,7 @@
      "tag": "42112"
     },
     "item": {
+     "name": "UnderlyingProvisionOptionExerciseFixedDate",
      "type": "struct",
      "fields": [
       {

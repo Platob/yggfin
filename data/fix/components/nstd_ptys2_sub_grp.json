@@ -22,6 +22,7 @@
      "tag": "806"
     },
     "item": {
+     "name": "Nested2PartySubID",
      "type": "struct",
      "fields": [
       {

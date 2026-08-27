@@ -11,7 +11,6 @@ import io
 import json
 import pathlib
 import sys
-import tomllib
 from typing import Any
 
 import pyarrow.fs
@@ -20,7 +19,7 @@ import yaml
 
 from rekep import Convertible
 
-FORMATS = ["yaml", "toml", "json"]
+FORMATS = ["yaml", "json"]
 
 
 class Side(enum.StrEnum):
@@ -133,10 +132,10 @@ def test_returned_bytes_match_what_is_written(book: Book, tmp_path: pathlib.Path
 
 
 def test_none_is_omitted_not_written_as_null(book: Book) -> None:
-    """TOML has no null; a missing key is what lets the default apply on load."""
+    """A missing key is what lets the default apply on load."""
     assert "timeout" not in book.into_dict()["venues"][1]
-    assert tomllib.loads(Venue(mic="XETR").into_toml().decode()) == {"mic": "XETR"}
-    assert Venue.from_toml(Venue(mic="XETR").into_toml()).timeout is None
+    assert json.loads(Venue(mic="XETR").into_json()) == {"mic": "XETR"}
+    assert Venue.from_json(Venue(mic="XETR").into_json()).timeout is None
 
 
 def test_none_inside_a_container_is_kept(tmp_path: pathlib.Path) -> None:
@@ -168,10 +167,6 @@ def test_none_inside_a_container_is_kept(tmp_path: pathlib.Path) -> None:
     assert Book.from_dict(book.into_dict()) == book
     assert Book.from_json(book.into_json()) == book
     assert Book.from_yaml(book.into_yaml()) == book
-    with pytest.raises(TypeError, match="TOML"):
-        # The one format that cannot hold it says so, rather than the encoder
-        # dropping the element to make it fit.
-        book.into_toml()
 
 
 def test_arrow_struct_spellings_decode_to_declared_tuples() -> None:
@@ -186,18 +181,6 @@ def test_arrow_struct_spellings_decode_to_declared_tuples() -> None:
             "entries": [{"key": 1, "value": "one"}, {"key": 2, "value": "two"}],
         }
     ) == Pairs(position=(7, "seven"), entries=[(1, "one"), (2, "two")])
-
-
-def test_scalars_precede_tables_in_toml() -> None:
-    """A bare key after a table header would silently land inside that table."""
-
-    @dataclasses.dataclass
-    class TableFirst(Convertible):
-        venues: list[Venue]
-        name: str
-
-    payload = TableFirst(venues=[Venue(mic="XPAR")], name="after-the-table").into_toml()
-    assert tomllib.loads(payload.decode())["name"] == "after-the-table"
 
 
 def test_unknown_keys_are_ignored() -> None:
@@ -285,7 +268,6 @@ def test_accepts_an_explicit_filesystem(book: Book, tmp_path: pathlib.Path) -> N
     [
         ("book.yaml", "yaml"),
         ("book.yml", "yaml"),
-        ("book.toml", "toml"),
         ("book.json", "json"),
         ("s3://bucket/book.json", "json"),
     ],
@@ -299,7 +281,7 @@ def test_a_requested_type_picks_the_converter() -> None:
 
 
 def test_dispatch_uses_a_file_objects_name(book: Book, tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "book.toml"
+    path = tmp_path / "book.yaml"
     with path.open("wb") as handle:
         book.into_(handle)
     assert Book.from_(path) == book
@@ -314,19 +296,10 @@ def test_dispatch_refuses_an_unknown_extension(book: Book, tmp_path: pathlib.Pat
 
 
 def test_json_needs_no_optional_dependency(book: Book) -> None:
-    """Blocking both extras must not stop JSON, which is stdlib all the way."""
+    """Blocking the one extra must not stop JSON, which is stdlib all the way."""
     with pytest.MonkeyPatch.context() as patch:
         patch.setitem(sys.modules, "yaml", None)
-        patch.setitem(sys.modules, "tomli_w", None)
         assert Book.from_json(book.into_json()) == book
-
-
-def test_reading_toml_needs_no_optional_dependency(book: Book) -> None:
-    """`tomllib` is stdlib; only writing TOML pulls a package."""
-    payload = book.into_toml()
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setitem(sys.modules, "tomli_w", None)
-        assert Book.from_toml(payload) == book
 
 
 @pytest.mark.parametrize(
@@ -334,7 +307,6 @@ def test_reading_toml_needs_no_optional_dependency(book: Book) -> None:
     [
         ("yaml", "yaml", lambda b: b.into_yaml()),
         ("yaml", "yaml", lambda b: Book.from_yaml(b"name: x")),
-        ("tomli_w", "toml", lambda b: b.into_toml()),
     ],
 )
 def test_a_missing_extra_is_named_in_the_error(book: Book, module: str, extra: str, call) -> None:

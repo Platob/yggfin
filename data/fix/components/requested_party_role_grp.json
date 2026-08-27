@@ -19,6 +19,7 @@
      "tag": "1508"
     },
     "item": {
+     "name": "RequestedPartyRole",
      "type": "struct",
      "fields": [
       {

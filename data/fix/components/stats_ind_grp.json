@@ -20,6 +20,7 @@
      "tag": "1175"
     },
     "item": {
+     "name": "StatsIndicator",
      "type": "struct",
      "fields": [
       {

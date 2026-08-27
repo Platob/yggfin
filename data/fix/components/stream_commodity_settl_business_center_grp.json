@@ -19,6 +19,7 @@
      "tag": "41249"
     },
     "item": {
+     "name": "StreamCommoditySettlBusinessCenter",
      "type": "struct",
      "fields": [
       {

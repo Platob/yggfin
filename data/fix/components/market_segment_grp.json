@@ -20,6 +20,7 @@
      "tag": "1310"
     },
     "item": {
+     "name": "MarketSegment",
      "type": "struct",
      "fields": [
       {

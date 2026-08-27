@@ -19,6 +19,7 @@
      "tag": "42274"
     },
     "item": {
+     "name": "DividendPeriod",
      "type": "struct",
      "fields": [
       {

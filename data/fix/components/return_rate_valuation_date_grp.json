@@ -19,6 +19,7 @@
      "tag": "42772"
     },
     "item": {
+     "name": "ReturnRateValuationDate",
      "type": "struct",
      "fields": [
       {

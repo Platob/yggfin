@@ -1269,7 +1269,7 @@ class FixRegistry(Convertible):
             components={found.folded: found for found in self._entries[1].values()},
         )
 
-    def component_dataclass(self, name: str, version: str) -> type | None:
+    def component_scalar(self, name: str, version: str) -> type | None:
         """One component as a class, built from its declaration rather than by hand.
 
         The declaration already says every member's name, its Arrow type and

@@ -19,6 +19,7 @@
      "tag": "2076"
     },
     "item": {
+     "name": "LegSecondaryAssetClass",
      "type": "struct",
      "fields": [
       {

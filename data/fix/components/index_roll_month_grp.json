@@ -19,6 +19,7 @@
      "tag": "2734"
     },
     "item": {
+     "name": "IndexRollMonth",
      "type": "struct",
      "fields": [
       {

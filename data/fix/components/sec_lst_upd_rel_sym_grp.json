@@ -21,6 +21,7 @@
      "tag": "146"
     },
     "item": {
+     "name": "RelatedSym",
      "type": "struct",
      "fields": [
       {

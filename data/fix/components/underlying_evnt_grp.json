@@ -19,6 +19,7 @@
      "tag": "1981"
     },
     "item": {
+     "name": "UnderlyingEvent",
      "type": "struct",
      "fields": [
       {

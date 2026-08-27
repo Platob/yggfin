@@ -20,6 +20,7 @@
      "tag": "1232"
     },
     "item": {
+     "name": "ExecInstRule",
      "type": "struct",
      "fields": [
       {

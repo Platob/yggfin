@@ -19,6 +19,7 @@
      "tag": "41856"
     },
     "item": {
+     "name": "UnderlyingOptionExerciseExpirationDate",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1676"
     },
     "item": {
+     "name": "PartyUpdate",
      "type": "struct",
      "fields": [
       {

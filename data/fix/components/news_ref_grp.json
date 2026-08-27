@@ -19,6 +19,7 @@
      "tag": "1475"
     },
     "item": {
+     "name": "NewsRefID",
      "type": "struct",
      "fields": [
       {

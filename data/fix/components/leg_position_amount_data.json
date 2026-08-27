@@ -19,6 +19,7 @@
      "tag": "1586"
     },
     "item": {
+     "name": "LegPosAmt",
      "type": "struct",
      "fields": [
       {

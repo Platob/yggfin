@@ -19,6 +19,7 @@
      "tag": "2633"
     },
     "item": {
+     "name": "MiscFeeSubType",
      "type": "struct",
      "fields": [
       {

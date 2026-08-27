@@ -19,6 +19,7 @@
      "tag": "41674"
     },
     "item": {
+     "name": "LegStreamCommodityAltID",
      "type": "struct",
      "fields": [
       {

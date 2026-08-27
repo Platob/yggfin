@@ -19,6 +19,7 @@
      "tag": "2254"
     },
     "item": {
+     "name": "LegInstrumentParty",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "40948"
     },
     "item": {
+     "name": "PaymentStreamResetDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

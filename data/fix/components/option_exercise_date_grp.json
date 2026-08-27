@@ -19,6 +19,7 @@
      "tag": "41137"
     },
     "item": {
+     "name": "OptionExerciseDate",
      "type": "struct",
      "fields": [
       {

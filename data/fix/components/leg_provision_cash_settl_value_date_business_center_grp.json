@@ -19,6 +19,7 @@
      "tag": "40935"
     },
     "item": {
+     "name": "LegProvisionCashSettlValueDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

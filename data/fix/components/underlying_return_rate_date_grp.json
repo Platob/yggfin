@@ -19,6 +19,7 @@
      "tag": "43008"
     },
     "item": {
+     "name": "UnderlyingReturnRateDate",
      "type": "struct",
      "fields": [
       {

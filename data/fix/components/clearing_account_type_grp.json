@@ -19,6 +19,7 @@
      "tag": "1918"
     },
     "item": {
+     "name": "ClearingAccountType",
      "type": "struct",
      "fields": [
       {

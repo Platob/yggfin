@@ -19,6 +19,7 @@
      "tag": "41467"
     },
     "item": {
+     "name": "LegMarketDisruptionEvent",
      "type": "struct",
      "fields": [
       {

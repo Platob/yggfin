@@ -19,6 +19,7 @@
      "tag": "42203"
     },
     "item": {
+     "name": "LegContractualMatrix",
      "type": "struct",
      "fields": [
       {

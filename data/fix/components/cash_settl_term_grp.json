@@ -19,6 +19,7 @@
      "tag": "40022"
     },
     "item": {
+     "name": "CashSettlTerm",
      "type": "struct",
      "fields": [
       {

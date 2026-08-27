@@ -19,6 +19,7 @@
      "tag": "1844"
     },
     "item": {
+     "name": "TradeAllocAmt",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "41344"
     },
     "item": {
+     "name": "LegCashSettlTerm",
      "type": "struct",
      "fields": [
       {

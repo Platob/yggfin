@@ -19,6 +19,7 @@
      "tag": "40191"
     },
     "item": {
+     "name": "ProtectionTermEvent",
      "type": "struct",
      "fields": [
       {

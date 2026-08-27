@@ -19,6 +19,7 @@
      "tag": "1889"
     },
     "item": {
+     "name": "InstrmtMatchSide",
      "type": "struct",
      "fields": [
       {

@@ -19,6 +19,7 @@
      "tag": "1892"
     },
     "item": {
+     "name": "LegExec",
      "type": "struct",
      "fields": [
       {

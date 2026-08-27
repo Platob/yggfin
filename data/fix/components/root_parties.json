@@ -21,6 +21,7 @@
      "tag": "1116"
     },
     "item": {
+     "name": "RootPartyID",
      "type": "struct",
      "fields": [
       {

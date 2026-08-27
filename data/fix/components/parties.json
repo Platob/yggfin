@@ -23,6 +23,7 @@
      "tag": "453"
     },
     "item": {
+     "name": "PartyID",
      "type": "struct",
      "fields": [
       {

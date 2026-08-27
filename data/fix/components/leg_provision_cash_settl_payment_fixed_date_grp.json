@@ -19,6 +19,7 @@
      "tag": "40473"
     },
     "item": {
+     "name": "LegProvisionCashSettlPaymentDate",
      "type": "struct",
      "fields": [
       {

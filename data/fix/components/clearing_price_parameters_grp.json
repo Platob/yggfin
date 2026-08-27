@@ -19,6 +19,7 @@
      "tag": "2580"
     },
     "item": {
+     "name": "ClearingPriceParameter",
      "type": "struct",
      "fields": [
       {

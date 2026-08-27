@@ -19,6 +19,7 @@
      "tag": "2474"
     },
     "item": {
+     "name": "MDStatistic",
      "type": "struct",
      "fields": [
       {

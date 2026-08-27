@@ -19,6 +19,7 @@
      "tag": "41382"
     },
     "item": {
+     "name": "LegComplexEventRateSource",
      "type": "struct",
      "fields": [
       {

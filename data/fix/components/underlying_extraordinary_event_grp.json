@@ -19,6 +19,7 @@
      "tag": "42884"
     },
     "item": {
+     "name": "UnderlyingExtraordinaryEvent",
      "type": "struct",
      "fields": [
       {

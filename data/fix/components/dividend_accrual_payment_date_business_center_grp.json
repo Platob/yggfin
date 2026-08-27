@@ -19,6 +19,7 @@
      "tag": "42236"
     },
     "item": {
+     "name": "DividendAccrualPaymentDateBusinessCenter",
      "type": "struct",
      "fields": [
       {

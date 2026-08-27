@@ -17,6 +17,7 @@ from rekep.fields import Field
 from rekep.fix.quickfix import (
     SPEC_VERSIONS,
     block,
+    entry_name,
     entry_of,
     field_member,
     group_member,
@@ -191,6 +192,41 @@ def test_each_member_kind_is_told_apart_by_its_shape() -> None:
     assert (is_group(plain), is_reference(plain)) == (False, False)
     assert (is_group(group), is_reference(group)) == (True, False)
     assert (is_group(reference), is_reference(reference)) == (False, True)
+
+
+@pytest.mark.parametrize(
+    ("group", "entry"),
+    [
+        # The count is dropped and the stem singularized -- 269 of the 507
+        # groups the dictionary declares land on a real field name this way.
+        ("NoPartyIDs", "PartyID"),
+        ("NoLegs", "Leg"),
+        ("NoMDEntries", "MDEntry"),
+        ("NoCapacities", "Capacity"),
+        # A stem that hisses takes `es`, one that does not takes `s`.
+        ("NoSecondaryAssetClasses", "SecondaryAssetClass"),
+        ("NoOfSecSizes", "OfSecSize"),
+        # The one plural in the whole dictionary no rule reaches...
+        ("NoContractualMatrices", "ContractualMatrix"),
+        # ...and the ones that were never plural to begin with.
+        ("NoRelatedSym", "RelatedSym"),
+        ("NoSecurityAltID", "SecurityAltID"),
+        ("NoPosAmt", "PosAmt"),
+        # A regular plural that merely looks Latin.
+        ("NoReturnRatePrices", "ReturnRatePrice"),
+    ],
+)
+def test_a_group_says_what_one_row_of_it_is(group: str, entry: str) -> None:
+    assert entry_name(group) == entry
+
+
+def test_the_entry_a_group_repeats_is_the_declaration_it_carries() -> None:
+    """Arrow would call it `item`; a FIX group repeats something named."""
+    group = group_member("NoPartyIDs", 453, [field_member("PartyID", 448)])
+
+    assert group.dtype.field(0).name == "PartyID"
+    assert entry_of(group).name == "PartyID"
+    assert [member.name for member in members_of(entry_of(group))] == ["PartyID"]
 
 
 def test_a_component_refusing_an_unknown_field_names_the_path() -> None:

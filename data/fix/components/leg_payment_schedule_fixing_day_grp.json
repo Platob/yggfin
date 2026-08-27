@@ -19,6 +19,7 @@
      "tag": "41530"
     },
     "item": {
+     "name": "LegPaymentScheduleFixingDay",
      "type": "struct",
      "fields": [
       {
