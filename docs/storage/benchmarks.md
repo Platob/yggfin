@@ -57,8 +57,46 @@ across machines; the scripts assert their outputs before timing them.
 | Iceberg merge, half stored | 5,000 rows | 984–992 rows/s |
 
 Exact half-stored Iceberg upserts remain the clearest scale-up target; append
-and monotonic insert should be preferred when their semantics fit. Message and
-FIX stage rates are omitted until the protocol-neutral boundary is remeasured.
+and monotonic insert should be preferred when their semantics fit.
+
+## The parse stages, remeasured
+
+Measured 2026-08-27 on the same machine and versions as above, over
+`bench_text_file.py`'s mixed capture -- 100,000 rows at 60% OTHER, 25% FIX,
+15% UL, in batches of 65,536 -- with everything warm: the text stage reads
+about 68,000 rows/s, the FIX stage about 50,000 rows/s, and the two together
+about 29,000 rows/s. Directional figures, like everything on this page, and
+recorded with their profiles because three optimization proposals were parked
+pending exactly this measurement:
+
+- **The text stage is its tokenizer.** `Kwarg.parse_arrow` is roughly three
+  quarters of `Message.parse_arrow`; the classification probes
+  (`_msg_type_probe`, `looks_structured_arrow`) are about a seventh.
+  Collapsing the probe scans into one combined extraction -- proposed as a
+  speed and coherence fix both -- would buy about a tenth here, in the
+  hottest correctness-critical code, and RE2 cannot express the
+  before-checksum guard in a single pass anyway: no lookahead, no per-row
+  slice, so the discriminator's value and its position stay two scans.
+  Parked until a real-capture profile shows the probes dominating somewhere.
+- **The FIX stage is kernel-bound, not dispatch-bound.** About 85% of a warm
+  batch runs inside Arrow kernels, averaging over a millisecond per call
+  across roughly two thousand calls, which puts the fixed per-call wrapper
+  overhead under a tenth. Group-by fragmentation grows with the number of
+  distinct protocol and version groups, which this fixture keeps small;
+  remeasure on a capture that carries more before acting on it.
+- **What looked like the win was one-time.** The first batch through a fresh
+  codec pays about two seconds of registry materialization -- the merged
+  field table, the per-version declarations -- cached on the codec
+  thereafter. It dominates any short profile and vanishes over a long run.
+- **A bridge fast path is bounded by its own share.** The reference path
+  costs this fixture about 0.5s per batch against the flat FIX path's 0.2s,
+  and per field the named read is already on par with the wire one -- the
+  row-rate gap between the protocols is message size. A vectorized named
+  fast path is real work worth doing against a real UL-heavy capture, and
+  not against this fixture.
+
+Reproduce with `bench_text_file.capture` and `cProfile` over
+`Message.parse_arrow` and `FixMsg.from_message_arrow_batch` separately, warm.
 
 A key column is read through its **distinct** spellings, not its rows. A
 message keys its fields out of a bounded vocabulary, so a batch of a hundred
