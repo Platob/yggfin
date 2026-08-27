@@ -16,7 +16,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, scalar
+from rekep.fields import Field, TimestampField, scalar
 from rekep.fields.field import arrow_type_for
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
@@ -392,7 +392,7 @@ def scalar_fix_temporal(
         except ValueError:
             return None
 
-    divisor = {"s": NANOS, "ms": 1_000_000, "us": 1_000, "ns": 1}[dtype.unit]
+    divisor = TimestampField.factor_of(dtype.unit)
     if kinds.is_time(dtype):
         canonical = (nanos % _A_DAY) // divisor * divisor
         _, within_day = divmod(canonical, _A_DAY)
@@ -744,8 +744,8 @@ def _temporal(seconds: Any, fraction: Any, valid: Any, dtype: pyarrow.DataType) 
         stamps = compute.if_else(valid, safe_seconds, pyarrow.scalar(None, pyarrow.int64()))
         return stamps.cast(pyarrow.timestamp("s")).cast(dtype, safe=False)
 
-    factor = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": NANOS}[dtype.unit]
-    divisor = NANOS // factor
+    divisor = TimestampField.factor_of(dtype.unit)
+    factor = NANOS // divisor
     subunits = compute.divide(fraction, pyarrow.scalar(divisor, pyarrow.int64()))
     if kinds.is_time(dtype):
         storage = pyarrow.int32() if dtype.bit_width == 32 else pyarrow.int64()

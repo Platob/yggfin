@@ -655,6 +655,94 @@ class Field(Convertible):
         return array.cast(self.dtype, safe=safe)
 
 
+# -- clocks -----------------------------------------------------------------
+
+
+class TimestampField(Field):
+    """A timestamp column, and the clock castings every site shares.
+
+    The pipeline's clocks are epoch integers (`unix`, nanoseconds) as often
+    as Arrow timestamps, so the conversions between the two spellings live
+    here, parametrized by unit -- one factor table, one widening rule --
+    instead of a divisor literal per call site.
+    """
+
+    #: Nanoseconds in one tick of each Arrow timestamp unit.
+    FACTORS: Mapping[str, int] = MappingProxyType(
+        {"s": 1_000_000_000, "ms": 1_000_000, "us": 1_000, "ns": 1}
+    )
+
+    @property
+    def unit(self) -> str:
+        """The Arrow unit this field stores: `s`, `ms`, `us` or `ns`."""
+        return self.dtype.unit
+
+    @property
+    def timezone(self) -> str | None:
+        """The zone the stored instants are read in, or None when naive."""
+        return self.dtype.tz
+
+    @classmethod
+    def of(
+        cls,
+        unit: str = "us",
+        timezone: str | None = None,
+        *,
+        name: str = "",
+        nullable: bool | None = None,
+        metadata: Mapping[str, str] | None = None,
+    ) -> TimestampField:
+        """One parametrized declaration: `TimestampField.of("us", "UTC")`."""
+        return cls(
+            name=name,
+            dtype=pyarrow.timestamp(unit, tz=timezone),
+            nullable=nullable,
+            metadata=metadata,
+        )
+
+    @classmethod
+    def factor_of(cls, unit: Any) -> int:
+        """Nanoseconds in one tick of `unit` -- the one table every cast shares."""
+        try:
+            return cls.FACTORS[str(unit)]
+        except KeyError:
+            raise ValueError(f"unknown timestamp unit {unit!r}") from None
+
+    @classmethod
+    def into_unix_arrow(cls, column: Any, unit: str = "ns") -> Any:
+        """A timestamp column as epoch integers of `unit`, `int64`.
+
+        The stored ticks are reinterpreted, then rescaled by the two units'
+        factors; a zoned column's ticks are already epoch-anchored, so the
+        zone drops without a shift.
+        """
+        compute = pyarrow.compute
+        source = cls.factor_of(column.type.unit)
+        target = cls.factor_of(unit)
+        ticks = column.cast(pyarrow.int64(), safe=False)
+        if source == target:
+            return ticks
+        if source > target:
+            return compute.multiply(ticks, pyarrow.scalar(source // target, pyarrow.int64()))
+        return compute.divide(ticks, pyarrow.scalar(target // source, pyarrow.int64()))
+
+    def from_unix_arrow(self, column: Any, unit: str = "ns") -> Any:
+        """Epoch integers of `unit` as this field's own timestamp type.
+
+        A zoned declaration reads them as UTC epoch ticks, which is what an
+        epoch integer is; rendering in another zone is a plain cast after.
+        """
+        compute = pyarrow.compute
+        source = self.factor_of(unit)
+        target = self.factor_of(self.unit)
+        ticks = column.cast(pyarrow.int64(), safe=False)
+        if source > target:
+            ticks = compute.multiply(ticks, pyarrow.scalar(source // target, pyarrow.int64()))
+        elif target > source:
+            ticks = compute.divide(ticks, pyarrow.scalar(target // source, pyarrow.int64()))
+        return ticks.cast(self.dtype, safe=False)
+
+
 # -- containers -------------------------------------------------------------
 
 
@@ -1459,6 +1547,7 @@ _KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
     (pyarrow.types.is_list_view, "ListViewField"),
     (pyarrow.types.is_fixed_size_list, "FixedSizeListField"),
     (pyarrow.types.is_list, "ListField"),
+    (pyarrow.types.is_timestamp, "TimestampField"),
 )
 
 

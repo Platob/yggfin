@@ -19,6 +19,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.enums import EventType
+from rekep.fields import TimestampField
 from rekep.fields.arrays import sequence
 from rekep.fix.fields import cast_arrow_fix
 
@@ -254,8 +255,8 @@ class Stamped:
             column = column.combine_chunks()
         if not pyarrow.types.is_timestamp(column.type):
             column = cast_arrow_fix(column, pyarrow.timestamp("us", tz="UTC"))
-        micros = column.cast(pyarrow.timestamp("us"), safe=False).cast(pyarrow.int64())
-        return pyarrow.compute.multiply(micros, pyarrow.scalar(1000, pyarrow.int64()))
+        micros = TimestampField.of("us").cast_arrow_array(column)
+        return TimestampField.into_unix_arrow(micros)
 
 
 #: Where `unix` comes from, **best first**, and why each is where it is.

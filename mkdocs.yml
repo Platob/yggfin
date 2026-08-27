@@ -62,6 +62,7 @@ nav:
           - Schema contracts: contracts/index.md
       - Identity:
           - Binary identities: contracts/identity.md
+          - Time-anchored hashes: contracts/txhash.md
   - Enums:
       - Overview: enums/index.md
       - Events:
