@@ -309,11 +309,14 @@ def test_get_returns_the_default_when_nothing_matches() -> None:
 
 
 def test_a_user_defined_wire_wrapper_prefers_its_named_payload() -> None:
+    """The raw stage owns the discriminator: the named payload's `MSGTYPE=D`
+    wins the `U1` wrapper and re-emits canonically, at the wire's position."""
     parsed = FixMsg.from_text("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|10=000|")
 
+    assert parsed.MsgType == "D"
     assert parsed.pairs == [
         ("8", "FIX.4.4"),
-        ("MSGTYPE", "D"),
+        ("35", "D"),
         ("SYMBOL", "named"),
         ("10", "000"),
     ]

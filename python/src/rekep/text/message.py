@@ -14,6 +14,7 @@ import pyarrow.compute
 from rekep.enums import EventType
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
+from rekep.fix.message import parse_pairs
 from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.kwargs import KWARGS, Kwarg
@@ -118,6 +119,26 @@ class Message(Event):
             self.MsgType = named if hybrid else wire or named
         if self.MsgType is None and self.etype == EventType.UNKNOWN:
             self.etype = EventType.MISC
+
+    @classmethod
+    def from_text(
+        cls,
+        text: str | bytes,
+        separator: str | None = None,
+        *,
+        named: bool | None = None,
+        entry_separator: str | None = None,
+        **declared: Any,
+    ) -> Self:
+        """One payload's ordered fields as a raw row, discriminator promoted.
+
+        The scalar spelling of what `parse_arrow` does to a column: the
+        payload is tokenized once and `__post_init__` promotes `MsgType`
+        out of the arguments. The raw text itself is retained only where a
+        caller declares `message=` -- the pairs carry every field.
+        """
+        pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
+        return cls(kwargs=list(pairs), **declared)
 
     @classmethod
     def parse_arrow(

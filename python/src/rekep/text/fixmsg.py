@@ -57,12 +57,11 @@ from rekep.fix.message import (
     group_pairs,
     indexed_group_pairs,
     normalized_pairs,
-    parse_pairs,
     render_fix_value,
 )
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
-from rekep.fix.transcribe import NO_SOURCE, infer_version_from_pairs
+from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
 from rekep.market.identity import NIL
 from rekep.text.message import Message
@@ -112,6 +111,12 @@ class FixMsg(Message):
         """The dictionary an unlinked row resolves through: the packaged one."""
         return FixRegistry.from_builtin()
 
+    @classmethod
+    @functools.cache
+    def into_codec(cls) -> FixCodec:
+        """The codec an unconfigured batch transcription reads through."""
+        return FixCodec(registry=cls.into_registry())
+
     @property
     def registry(self) -> FixRegistry:
         """The privately linked dictionary, or the packaged default."""
@@ -128,16 +133,24 @@ class FixMsg(Message):
 
     @classmethod
     def from_(cls, source: Any, *args: Any, **kwargs: Any) -> FixMsg:
-        """Build text and bytes as FIX payloads; document readers stay explicit."""
+        """Build text and bytes as FIX payloads; document readers stay explicit.
+
+        The text check leads so a payload spelled like a document name still
+        parses as a payload; everything else dispatches through the redirect
+        table -- spelled without `super()`, whose `__class__` cell predates
+        the class `slots=True` rebuilt.
+        """
         if isinstance(source, str | bytes):
             return cls.from_text(source, *args, **kwargs)
-        return super().from_(source, *args, **kwargs)
+        return getattr(cls, f"from_{cls.redirect_of(source)}")(source, *args, **kwargs)
 
     @classmethod
     @functools.cache
     def into_redirects(cls) -> Mapping[Any, str]:
-        """Generic conversions plus direct text parsing."""
-        return MappingProxyType({**Message.into_redirects(), str: "text", bytes: "text"})
+        """Generic conversions plus direct text parsing and raw-row transcription."""
+        return MappingProxyType(
+            {**Message.into_redirects(), str: "text", bytes: "text", Message: "message"}
+        )
 
     @classmethod
     @functools.cache
@@ -605,14 +618,13 @@ class FixMsg(Message):
         registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
-        """Build a scalar parsed row from one ordered FIX payload."""
-        pairs = parse_pairs(
-            text,
-            separator,
-            named=named,
-            entry_separator=entry_separator,
-        )
-        return cls._from_fix_pairs(pairs, registry=registry, **declared)
+        """Build a scalar parsed row from one ordered FIX payload.
+
+        `Message.from_text` owns the tokenization and the discriminator; this
+        is `from_message` over that staged raw row.
+        """
+        staged = Message.from_text(text, separator, named=named, entry_separator=entry_separator)
+        return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
     def from_pairs(
@@ -624,28 +636,50 @@ class FixMsg(Message):
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        return cls._from_fix_pairs(normalized_pairs(pairs, names), registry=registry, **declared)
+        staged = Message(kwargs=normalized_pairs(pairs, names))
+        return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
-    def _from_fix_pairs(
+    def from_message(
         cls,
-        pairs: Sequence[tuple[str, str]],
+        message: Message,
+        *,
         registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
-        """Promote the discriminator while retaining every ordered field."""
-        msg_type = declared.pop("MsgType", None)
-        staged = Message(MsgType=msg_type, kwargs=list(pairs))
-        if "etype" not in declared:
-            if staged.MsgType is None:
-                declared["etype"] = EventType.MISC
-            else:
-                declared["etype"] = (
-                    (registry or cls.into_registry())
-                    .msg_type_event_types()
-                    .get(staged.MsgType, EventType.UNKNOWN)
-                )
-        return cls(MsgType=staged.MsgType, kwargs=list(pairs), **declared).link_registry(registry)
+        """Transcribe one raw row: the scalar half of `from_message_batch`.
+
+        The raw stage already tokenized the payload and promoted the
+        discriminator, so the row carries over whole -- envelope, provenance
+        and residual arguments. `etype` classifies under the registry only
+        where the raw stage left it unknown, and identity resets: a parsed
+        row hashes over its parsed values, not the raw line's digest.
+        """
+        if not isinstance(message, Message):
+            raise TypeError(f"message must be Message, got {type(message).__name__}")
+        values = {
+            member.name: getattr(message, member.name) for member in dataclasses.fields(Message)
+        }
+        values.update(
+            {
+                "message": message.message or None,
+                "kwargs": list(message.kwargs or ()),
+                "linked_events": list(message.linked_events),
+                "codes": dict(message.codes),
+                "parent_hash": None if message.parent_hash is None else list(message.parent_hash),
+                "hash": NIL,
+                "xhash": NIL,
+            }
+        )
+        values.update(declared)
+        msg_type = values.get("MsgType")
+        if "etype" not in declared and msg_type is not None and message.etype == EventType.UNKNOWN:
+            values["etype"] = (
+                (registry or cls.into_registry())
+                .msg_type_event_types()
+                .get(msg_type, EventType.UNKNOWN)
+            )
+        return cls(**values).link_registry(registry)
 
     @classmethod
     def from_instrument(cls, instrument: Any, **declared: Any) -> FixMsg:
@@ -757,6 +791,21 @@ class FixMsg(Message):
             count = _tag_of(count_name)
             if _pair_identity(str(count)) not in stored_identities:
                 components.extend(_component_pairs(count, entries, row_type))
+
+        # The promoted discriminator re-enters at its wire-legal position:
+        # after the leading BeginString/BodyLength run the raw stage left in
+        # `kwargs`. The projection then keeps the wire's own order, and a
+        # rendered row re-parses whole -- a `35=` in front of the `8=` anchor
+        # would be shed as log noise.
+        head = 0
+        while head < len(stored) and stored[head][0] in ("8", "9"):
+            head += 1
+        if head:
+            at = next((index for index, pair in enumerate(promoted) if pair[0] == "35"), None)
+            if at is not None:
+                stored = [*stored[:head], promoted[at], *stored[head:]]
+                promoted = [*promoted[:at], *promoted[at + 1 :]]
+                stored_resolved = access.tagged_pairs(stored)
 
         pairs = [*promoted, *components, *stored]
         resolved = access.tagged_pairs(pairs)
@@ -939,6 +988,37 @@ class FixMsg(Message):
         return self.MsgType == type(self).into_instrument_msg_type()
 
     # -- the FIX stage --------------------------------------------------------
+
+    @classmethod
+    def from_message_batch(
+        cls,
+        source: pyarrow.RecordBatch | Iterable[Message],
+        codec: FixCodec | None = None,
+    ) -> pyarrow.RecordBatch:
+        """Transcribe raw messages as one parsed Arrow batch.
+
+        The vectorized half of the one conversion path -- raw `Message` to
+        `FixMsg` to typed market events; `from_message` is the row-by-row
+        half. `source` is one raw-contract RecordBatch or an iterable of
+        scalar `Message` rows, and the default codec reads the packaged
+        registry.
+        """
+        selected = codec if codec is not None else cls.into_codec()
+        if isinstance(source, pyarrow.RecordBatch):
+            return cls.from_message_arrow_batch(source, selected)
+        rows = list(source)
+        for row in rows:
+            if not isinstance(row, Message):
+                raise TypeError(f"from_message_batch takes Message rows, got {type(row).__name__}")
+        schema = Message.into_field().into_arrow_schema()
+        if not rows:
+            staged = pyarrow.RecordBatch.from_pylist([], schema=schema)
+        else:
+            table = pyarrow.Table.from_batches(
+                Message.into_arrow_reader(rows, batch_row_size=len(rows)), schema=schema
+            ).combine_chunks()
+            staged = table.to_batches(max_chunksize=table.num_rows)[0]
+        return cls.from_message_arrow_batch(staged, selected)
 
     @classmethod
     def from_message_arrow_batch(

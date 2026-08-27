@@ -207,6 +207,56 @@ def test_market_translation_uses_the_parsed_row_it_was_given() -> None:
     assert row.into_fix_events().message is row
 
 
+def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
+    """`from_text` is `from_message` over `Message.from_text`: one seam, and
+    the raw row's provenance and envelope carry over whole."""
+    line = "8=FIX.4.4|35=D|11=C1|54=1|10=000"
+    staged = Message.from_text(line, source_url="s3://x/y.log", source_rownum=4, runix=9)
+    row = FixMsg.from_message(staged)
+
+    assert row == FixMsg.from_text(line, source_url="s3://x/y.log", source_rownum=4, runix=9)
+    assert (row.source_url, row.source_rownum, row.runix) == ("s3://x/y.log", 4, 9)
+    assert row.etype == FixRegistry.from_builtin().msg_type_event_types()["D"]
+    assert row.protocol_version == "4.4"
+    assert FixMsg.from_(staged) == row, "the generic builder reaches the same seam"
+
+
+def test_transcribing_keeps_a_stored_classification_and_resets_identity() -> None:
+    """A raw stage that already classified the row is kept; identity is not --
+    a parsed row hashes over its parsed values, never the raw line's digest."""
+    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", etype=EventType.MISC)
+    staged.hash = staged.xhash = 12345
+
+    row = FixMsg.from_message(staged)
+    assert row.etype == EventType.MISC
+    assert row.hash == 0 and row.xhash == 0
+
+    with pytest.raises(TypeError, match="Message"):
+        FixMsg.from_message("8=FIX.4.4|35=D|10=000")
+
+
+def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
+    """`from_message_batch` is one boundary: scalar rows and a raw RecordBatch
+    land as the same parsed batch, under the packaged default codec."""
+    rows = [
+        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", runix=1),
+        Message(message="plain prose", runix=2),
+    ]
+    from_rows = FixMsg.from_message_batch(rows)
+    raw = Message.into_arrow_reader(rows).read_all().to_batches()[0]
+
+    assert from_rows.equals(FixMsg.from_message_batch(raw))
+    assert from_rows.column("ClOrdID").to_pylist() == ["C1", None]
+    assert from_rows.column("protocol_version").to_pylist() == ["4.4", None]
+
+    empty = FixMsg.from_message_batch([])
+    assert empty.num_rows == 0
+    assert empty.schema.names == FixMsg.into_field().into_arrow_schema().names
+
+    with pytest.raises(TypeError, match="Message rows"):
+        FixMsg.from_message_batch(["8=FIX.4.4|35=D|10=000"])
+
+
 def test_an_unlinked_row_reads_through_the_packaged_dictionary() -> None:
     assert FixMsg().registry is FixRegistry.from_builtin()
     assert FixMsg.from_text("8=FIX.4.4|35=D|10=000").registry is FixRegistry.from_builtin()

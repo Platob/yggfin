@@ -88,6 +88,22 @@ def test_a_message_always_has_a_non_null_argument_list() -> None:
     assert Message(kwargs=None).kwargs == []  # type: ignore[arg-type]
 
 
+def test_a_payload_parses_scalar_like_the_column_path() -> None:
+    """`from_text` is the scalar spelling of `parse_arrow`: same promotion,
+    same residual arguments -- the raw text kept only when declared."""
+    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", runix=7)
+    column = Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01")
+
+    assert staged.MsgType == column.MsgType == "D"
+    assert staged.runix == 7
+    assert staged.message == ""
+    assert (
+        [(entry.tag, entry.value) for entry in staged.kwargs]
+        == [(entry.tag, entry.value) for entry in column.kwargs]
+        == [(8, "FIX.4.4"), (11, "C1"), (10, "000")]
+    )
+
+
 def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> None:
     message = Message(
         kwargs=[
