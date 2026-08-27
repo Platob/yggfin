@@ -107,11 +107,15 @@ registry promotion, not a replacement: a field worth a real typed column
 gets one through `rekep fix registry promote`.
 
 `direction` says which way a line moved where its header verb says so --
-`Receiving : 8=FIX...` reads False, `Sending : ...` True -- resolved at the
-FIX stage against `rekep.fix.rules.DIRECTION_PATTERNS`, and only where the
-verb opens the line before the payload's first token, so the same words
-inside a payload never answer. Null is most rows: bridge re-log lines repeat
-a payload without repeating the verb, and no answer beats a guessed one.
+`Receiving : 8=FIX...` reads False, `Sending : ...` True -- read against
+`rekep.fix.rules.DIRECTION_PATTERNS`, and only where the verb opens the line
+before the payload's first token, so the same words inside a payload never
+answer. It is resolved at the message stage, where the raw line and its
+protocol reading last coexist, and stored on `Message`; the FIX stage
+re-resolves any row still carrying its text and keeps the stored answer
+where `parse_fix` projected the text away. Null is most rows: bridge re-log
+lines repeat a payload without repeating the verb, and no answer beats a
+guessed one.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. In that form the named discriminator and named flat fields are

@@ -725,6 +725,11 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
     assert projected.column("kwargs").equals(whole.column("kwargs"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert projected.column("message").null_count == projected.num_rows
+    # The production shape: `parse_fix` reads with `message` projected out,
+    # so the direction the message stage stored is the one the parsed row
+    # carries -- identical to what the text would have answered.
+    assert whole.column("direction").to_pylist() == [True, None]
+    assert projected.column("direction").equals(whole.column("direction"))
 
 
 def test_staged_protocol_matching_the_codec_survives_projection(

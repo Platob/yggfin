@@ -82,11 +82,14 @@ class Message(Event):
     kwargs: list[Kwarg] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""
 
-    # Resolved at the protocol stage, where classification already knows which
-    # rule's token opens the payload -- the verb before it is the direction,
-    # and prose inside the payload never answers. Null before that stage, for
-    # every row no directed protocol claims, and for the many bridge re-log
-    # lines that repeat a payload without repeating `Receiving`/`Sending`.
+    # Resolved by `parse_arrow`, where the raw line and its protocol reading
+    # coexist -- the verb before the payload's own first token is the
+    # direction, and prose inside the payload never answers. Resolved *here*
+    # because `parse_fix` reads these rows back with `message` projected out:
+    # the FIX stage re-answers any row still carrying its text and preserves
+    # this answer where the text is gone. Null for every row no directed
+    # protocol claims, and for the many bridge re-log lines that repeat a
+    # payload without repeating `Receiving`/`Sending`.
     direction: bool | None = None
     """True where the line says it was sent, False received; null undirected."""
 
@@ -105,6 +108,8 @@ class Message(Event):
                 self.MsgType = parsed["MsgType"][0].as_py()
             if self.etype == EventType.UNKNOWN:
                 self.etype = EventType(parsed["etype"][0].as_py())
+            if self.direction is None:
+                self.direction = parsed["direction"][0].as_py()
 
         self.kwargs = [Kwarg.from_stored(entry) for entry in self.kwargs]
         wire, named, self.kwargs = _scalar_message_types(self.kwargs)
@@ -145,6 +150,9 @@ class Message(Event):
                     [part["MsgType"] for part in parts], pyarrow.string()
                 ),
                 "kwargs": pyarrow.chunked_array([part["kwargs"] for part in parts], KWARGS),
+                "direction": pyarrow.chunked_array(
+                    [part["direction"] for part in parts], pyarrow.bool_()
+                ),
             }
 
         rows = len(messages)
@@ -154,6 +162,7 @@ class Message(Event):
                 "protocol_code": pyarrow.array([], pyarrow.string()),
                 "MsgType": pyarrow.nulls(0, pyarrow.string()),
                 "kwargs": pyarrow.array([], type=KWARGS),
+                "direction": pyarrow.array([], pyarrow.bool_()),
             }
 
         compute = pyarrow.compute
@@ -172,11 +181,26 @@ class Message(Event):
             if protocol_rules is not None
             else _protocol_codes(wire_values, wire_probe, named_probe, begins_fix)
         )
+        # Direction is resolved here, where the raw line and its protocol
+        # last coexist: `parse_fix` reads the stored rows with `message`
+        # projected out, so an answer not stored now is an answer lost. The
+        # FIX stage re-resolves any row still carrying its text -- the same
+        # computation -- and preserves this one where the text is gone.
+        from rekep.fix.rules import Rules
+
+        resolver = protocol_rules if protocol_rules is not None else Rules.into_default()
+        if hasattr(resolver, "into_arrow_direction_array"):
+            direction = resolver.into_arrow_direction_array(text, protocols)
+        else:
+            # A duck-typed classifier that only knows protocols leaves the
+            # verbs to the default vocabulary.
+            direction = Rules.into_default().into_arrow_direction_array(text, protocols)
         return {
             "etype": event_types,
             "protocol_code": protocols,
             "MsgType": msg_types,
             "kwargs": kwargs,
+            "direction": direction,
         }
 
     @classmethod
