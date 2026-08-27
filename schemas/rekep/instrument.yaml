@@ -1,7 +1,7 @@
 name: Instrument
 type: struct
 description: One version of the facts known about a tradable instrument.
-metadata: {namespace: rekep.market.instrument, version: '1'}
+metadata: {namespace: rekep.market.instrument, version: '2'}
 fields:
 - name: unix
   type: int64
@@ -16,7 +16,7 @@ fields:
 - name: etype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","1296651075":"MISC","80600770104916":"INTENT","340682622290":"ORDER","349323613253":"QUOTE","1178682196":"FACT","4996819942064276804":"EXECUTION","357895853125":"STATE","1112493899":"BOOK","80622244680773":"INSTRUMENT_STATE","20633793103809876":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT","INSTRUMENT_STATE":"ISTATE"}'}
+  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","1296651075":"MISC","80600770104916":"INTENT","340682622290":"ORDER","349323613253":"QUOTE","1178682196":"FACT","4996819942064276804":"EXECUTION","357895853125":"STATE","1112493899":"BOOK","80622244680773":"INSTRUMENT_STATE","20633793103809876":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, aliases: '{"EXEC":"EXECUTION","EXECUTION":"EXECUTED","INST":"INSTRUMENT","INSTRUMENT":"INSTRMT","INSTRUMENT_STATE":"ISTATE","INTE":"INTENT","ISTA":"INSTRUMENT_STATE","ORDR":"ORDER","QUOT":"QUOTE","STAT":"STATE"}'}
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.

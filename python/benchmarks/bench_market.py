@@ -56,6 +56,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, parser, report  # noqa: E402
 
 from rekep import FixMsg  # noqa: E402
+from rekep.enums import State  # noqa: E402
 from rekep.fix import parse_arrow_array  # noqa: E402
 from rekep.fix.message import parse_pairs  # noqa: E402
 from rekep.market import (  # noqa: E402
@@ -81,7 +82,18 @@ UNIX_PARTITION = UNIX // SECOND
 
 #: The states a day of orders actually visits, which is what makes the column
 #: worth encoding: a handful of distinct values repeated through a feed.
-STATES = [210, 310, 410, 510, 610, 240]
+STATES = [
+    int(State.NEW),
+    int(State.PARTIALLY_FILLED),
+    int(State.FILLED),
+    int(State.CANCELLED),
+    int(State.REJECTED),
+    int(State.PENDING_CANCEL),
+]
+
+#: The width `State` declares for its own column, which is what a stored
+#: lifecycle column is: a packed ASCII mnemonic, not a small ordinal.
+STATE_WIDTH = State.into_arrow_type().index_type
 FIX_DICTIONARY = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix"
 
 
@@ -464,12 +476,12 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
 
 def bench_codes(rows: int, repeat: int) -> None:
     """What dictionary encoding buys a column whose whole point is that it repeats."""
-    print(f"\nRanged codes -- {rows:,} rows, {len(STATES)} distinct")
-    plain = pyarrow.array([STATES[index % len(STATES)] for index in range(rows)], pyarrow.int32())
-    target = pyarrow.dictionary(pyarrow.int8(), pyarrow.int32())
+    print(f"\nASCII codes -- {rows:,} rows, {len(STATES)} distinct")
+    plain = pyarrow.array([STATES[index % len(STATES)] for index in range(rows)], STATE_WIDTH)
+    target = pyarrow.dictionary(pyarrow.int8(), STATE_WIDTH)
 
     encode, encoded = timed(lambda: dictionary_arrow(plain, target), repeat)
-    decode, decoded = timed(lambda: dictionary_arrow(encoded, pyarrow.int32()), repeat)
+    decode, decoded = timed(lambda: dictionary_arrow(encoded, STATE_WIDTH), repeat)
     indices = encoded.indices
     reindex, _ = timed(lambda: dictionary_arrow(indices, target), repeat)
     assert decoded.equals(plain), "the round trip lost values"
@@ -1096,7 +1108,7 @@ def _pipeline_message_batches(
         columns: dict[str, pyarrow.Array] = {
             "unix": unix,
             "unix_partition": unix_partition_arrow(unix),
-            "etype": pyarrow.array(kinds, pyarrow.int32()),
+            "etype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
             "cunix": unix,
             "runix": unix,
             "source_url": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),

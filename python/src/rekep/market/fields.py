@@ -21,9 +21,10 @@ class MarketFieldBuilder(FieldBuilder):
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
         """Market codes store their declared width; other scalars use the base.
 
-        An ASCII code's storage is its extension singleton's, so the width
-        one declaration states is the width every column carries. Checked
-        first because the base sees an `IntEnum` as Python `int64`.
+        An ASCII code's storage is the index type of its cached dictionary
+        type, so the width one declaration states is the width every column
+        carries. Checked first because the base sees an `IntEnum` as Python
+        `int64`.
         """
         if isinstance(annotation, type) and issubclass(annotation, AsciiInt32):
             return annotation.into_arrow_type().index_type
@@ -221,16 +222,30 @@ def dictionary_arrow(array: Any, target: pyarrow.DataType) -> Any:
     return array.cast(target.value_type, safe=False).dictionary_encode().cast(target, safe=False)
 
 
+#: How far the identity fallback will go before it is certain the indices are
+#: not positions. A dictionary of more entries than this is never what a
+#: caller meant -- a packed ASCII code would ask for millions.
+_IDENTITY_LIMIT = 1 << 16
+
+
 def _values_of(indices: Any, target: pyarrow.DataType) -> Any:
     """The dictionary an array of bare indices points into.
 
-    There is nothing to look them up in, so the dictionary is the indices'
-    own range: index `i` means value `i`, which is the only reading of bare
-    indices that loses nothing. Built
-    with `cumulative_sum` over `repeat`, never a Python `range`.
+    A fallback for the one case with nothing better: the array arrived as
+    indices alone, with no dictionary to look them up in, so all that is left
+    is the identity mapping -- index `i` means value `i`. It asserts nothing
+    about what those codes mean; a caller that holds the real dictionary
+    should encode against that instead. Built with `cumulative_sum` over
+    `repeat`, never a Python `range`.
     """
     compute = pyarrow.compute
     highest = compute.max(indices).as_py()
     size = 0 if highest is None else int(highest) + 1
+    if size > _IDENTITY_LIMIT:
+        raise ValueError(
+            f"cannot encode {size:,} identity dictionary entries: these indices are "
+            "values in their own right, not positions. Encode against the dictionary "
+            "that spells them -- a stable code's is `EnumName.into_arrow_array`."
+        )
     counted = compute.cumulative_sum(pyarrow.repeat(pyarrow.scalar(1, pyarrow.int64()), size))
     return compute.subtract(counted, 1).cast(target.value_type, safe=False)

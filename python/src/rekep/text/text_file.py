@@ -671,7 +671,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
             "sunix": pyarrow.nulls(count, pyarrow.int64()),
             "version": _zeros(count, pyarrow.int64()),
-            "state": _zeros(count, pyarrow.int32()),
+            "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
             "codes": pyarrow.repeat(pyarrow.scalar({}, CODES_TYPE), count),
             "prev_unix": pyarrow.nulls(count, pyarrow.int64()),

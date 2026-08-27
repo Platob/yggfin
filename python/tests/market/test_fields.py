@@ -194,8 +194,11 @@ def test_contract_metadata_cannot_be_changed_through_the_hook() -> None:
 # -- what an enum means, in the schema ---------------------------------------
 
 
-def test_every_ranged_column_says_what_its_codes_mean() -> None:
-    """A consumer that never imports this package has to be able to read `410`."""
+def test_every_enum_column_says_what_its_codes_mean() -> None:
+    """A consumer that never imports this package has to read a bare stored code.
+
+    The metadata is what turns a raw `77280626623812` back into `FILLED`.
+    """
     for shape in SHAPES:
         for member in shape.into_field().fields:
             declared = enum_of(get_type_hints(shape, include_extras=True).get(member.name))

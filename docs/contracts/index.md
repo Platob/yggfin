@@ -7,12 +7,12 @@ table](../assets/compatibility-tree.svg)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 1 | Source records with a promoted message discriminator and residual arguments. |
-| `fixmsg.yaml` | 1 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
-| `instrument.yaml` | 1 | Versioned and hourly instrument state. |
-| `book.yaml` | 1 | Book deltas, executions, and recovery state. |
-| `order.yaml` | 1 | Flattened auditable order events. |
-| `execution.yaml` | 1 | Flattened auditable executions. |
+| `message.yaml` | 2 | Source records with a promoted message discriminator and residual arguments. |
+| `fixmsg.yaml` | 2 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
+| `instrument.yaml` | 2 | Versioned and hourly instrument state. |
+| `book.yaml` | 2 | Book deltas, executions, and recovery state. |
+| `order.yaml` | 2 | Flattened auditable order events. |
+| `execution.yaml` | 2 | Flattened auditable executions. |
 
 ```python
 from rekep import Field
@@ -48,6 +48,25 @@ After compatibility is established, ordinary evolution is additive and
 nullable. Dropping or retyping a field requires a new contract version.
 Producers cast before writing; consumers load the same contract and may use
 `merge_schema=True` to retain additive fields from a newer producer.
+
+### Version 2: codes are mnemonics
+
+Version 2 recodes every stable code. A code is now the ASCII mnemonic it
+reads as, packed right-justified into its column, so `state` holds `FILLED`
+rather than `410`; the columns whose codes outgrew four bytes -- `etype`,
+`state` and both `kind` flavours -- widened from `int` to `long`.
+
+Reading is covered: `from_stored` resolves an id from any generation this
+package has written, so a warm registry cache, a stored `Field`'s metadata
+and a row decoded through a declaration all keep naming the same members.
+
+Writing into a version 1 table is not, and cannot be: Iceberg will not
+promote a `long` into an `int` column. A table written before version 2
+needs its `etype`, `state` and `kind` columns widened -- an
+`ALTER TABLE ... ALTER COLUMN ... TYPE bigint` through an engine that
+speaks Iceberg schema evolution -- before a version 2 producer can append
+to it. Existing rows keep their old ids and read back correctly once the
+column is wide enough to hold them.
 
 ## Publishing
 

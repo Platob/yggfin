@@ -41,7 +41,7 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, used to locate `unix`'s partition boundary.
 HOUR = 3_600_000_000_000
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 
 #: What `codes` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
 #: and `exec_id`. Instrument identity has `instrument_xhash` and
@@ -788,8 +788,8 @@ class MarketEvent(Event):
         if multiplier is None:
             # A cash instrument really does trade one for one, and it is the
             # only class where the multiplier can be assumed rather than read.
-            # `band` is the floor as an `int`, which is what a range predicate
-            # compares against -- so this is `==` and never `is`.
+            # `band` answers with the band-floor member itself, not a number,
+            # so this is `is` and never `==`.
             if instrument.kind.band is not AssetKind.CASH:
                 return None
             multiplier = 1.0

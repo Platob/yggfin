@@ -102,9 +102,9 @@ def test_a_log_line_is_an_event() -> None:
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
-    assert FixMsg.into_field_metadata() == {"version": "1"}
+    assert FixMsg.into_field_metadata() == {"version": "2"}
     with pytest.raises(TypeError):
-        FixMsg.into_field_metadata()["version"] = "2"
+        FixMsg.into_field_metadata()["version"] = "3"
 
 
 def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:

@@ -19,7 +19,7 @@ from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
 _DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
@@ -440,11 +440,10 @@ def _msg_type_probe(
 def _event_code(value: EventType | int | str) -> int:
     """One configurable event spelling as its stable stored integer.
 
-    A member, its name (`ORDER`) or mnemonic (`ORDR`), or a stored id --
-    today's packed code, or the ordinal a previous release wrote, converted
-    to the current code. A spelling no member answers to is refused rather
-    than written into the column as a dead code every reader maps to
-    `UNKNOWN`.
+    A member, its name (`ORDER`), any mnemonic it has answered to (`ORDR`),
+    or an id any generation stored -- all converted to today's code. A
+    spelling no member answers to is refused rather than written into the
+    column as a dead code every reader maps to `UNKNOWN`.
     """
     if isinstance(value, EventType):
         return int(value)

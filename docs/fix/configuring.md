@@ -88,7 +88,7 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
     "D": {"name": "ORDER", "id": 340682622290},
     "W": {"name": "BOOK", "id": 1112493899}
   },
-  "states": {"D": {"name": "PENDING_NEW", "id": 110}},
+  "states": {"D": {"name": "PENDING_NEW", "id": 22594200592598359}},
   "encoded": {"newordersingle": "D"},
   "decoded": {"D": "newordersingle"}
 }
@@ -119,11 +119,11 @@ use `State` members; registry documents store both their names and integer ids.
   "name": "ExecType",
   "tag": 150,
   "states": {
-    "0": {"name": "NEW", "id": 210},
-    "1": {"name": "PARTIALLY_FILLED", "id": 310},
-    "2": {"name": "FILLED", "id": 410},
-    "G": {"name": "REPLACED", "id": 520},
-    "H": {"name": "CANCELLED", "id": 510}
+    "0": {"name": "NEW", "id": 5129559},
+    "1": {"name": "PARTIALLY_FILLED", "id": 5782993918430366796},
+    "2": {"name": "FILLED", "id": 77280626623812},
+    "G": {"name": "REPLACED", "id": 5928232772945790276},
+    "H": {"name": "CANCELLED", "id": 4846240724859766084}
   }
 }
 ```

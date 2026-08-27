@@ -784,10 +784,9 @@ def _enum_value(enum_type: Any, value: Any) -> Any:
 
     The name is authoritative in the explicit pair: a store written before a
     member's stored id changed still names the same meaning, so the id only
-    has to be one this member has ever stored -- today's value, or the rank
-    an ordinal release wrote. A bare id follows the same rule through
-    `from_stored` where the enum keeps one; an id no member has ever stored
-    is refused rather than read as a degraded member.
+    has to be one that member has ever stored. A bare id follows the same
+    rule through `from_stored`; an id no member has ever stored is refused
+    rather than read as a degraded member.
     """
     if isinstance(value, Mapping):
         if set(value) != {"name", "id"}:
@@ -799,18 +798,28 @@ def _enum_value(enum_type: Any, value: Any) -> Any:
         if type(identifier) is not int:
             raise ValueError("an enum object needs an integer id")
         named = enum_type[name.upper()]
-        if identifier not in (int(named), getattr(named, "rank", int(named))):
+        if _stored_member(enum_type, identifier) is not named:
             raise ValueError("an enum name and id disagree")
         return named
     parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
     if isinstance(parsed, str):
         return enum_type[parsed.upper()]
-    member = enum_type(parsed)
-    if int(member) != int(parsed):
-        stored = getattr(enum_type, "from_stored", None)
-        member = stored(parsed) if stored is not None else member
-        if getattr(member, "rank", int(member)) != int(parsed):
-            raise ValueError("no member has ever stored this id")
+    member = _stored_member(enum_type, parsed)
+    if member is None:
+        raise ValueError("no member has ever stored this id")
+    return member
+
+
+def _stored_member(enum_type: Any, identifier: Any) -> Any:
+    """The member `identifier` names in any generation, or None for none.
+
+    Zero is the one id every vocabulary shares: it is `UNKNOWN`, and it
+    always was.
+    """
+    stored = getattr(enum_type, "from_stored", None)
+    member = enum_type(identifier) if stored is None else stored(identifier)
+    if int(member) == 0 and int(identifier) != 0:
+        return None
     return member
 
 

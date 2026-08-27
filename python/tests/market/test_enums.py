@@ -139,6 +139,66 @@ def test_currency_reads_the_previous_generations_stored_ids() -> None:
     assert Currency.from_stored(999) is Currency.UNKNOWN
 
 
+def test_every_generation_of_a_stored_code_reads_back() -> None:
+    """A column outlives the release that filled it. Whatever padding, width
+    or spelling a generation used, the id still names its member -- while
+    `from_int` stays exact on today's codes, which is what keeps a Python
+    answer and a pushed code-set filter on the same rows."""
+    generations = {
+        Currency: (int.from_bytes(b"EUR\0", "big"), int.from_bytes(b"EUR2", "big")),
+        Side: (int.from_bytes(b"BUY\0", "big"),),
+        TimeInForce: (int.from_bytes(b"IOC\0", "big"),),
+        EventType: (int.from_bytes(b"ORDR", "big"), 110),
+        State: (410,),
+    }
+    wanted = {
+        Currency: Currency.EUR,
+        Side: Side.BUY,
+        TimeInForce: TimeInForce.IOC,
+        EventType: EventType.ORDER,
+        State: State.FILLED,
+    }
+    for declared, stored in generations.items():
+        for identifier in stored:
+            assert declared.from_stored(identifier) is wanted[declared], (declared, identifier)
+            assert declared(identifier) is wanted[declared], "and through the constructor"
+            if identifier != int(wanted[declared]):
+                assert declared.from_int(identifier) is declared.UNKNOWN, "the strict reader"
+    assert Currency.from_stored(-12345) is Currency.UNKNOWN
+    assert State.from_stored(999) is State.UNKNOWN
+
+
+def test_an_event_kind_answers_to_the_mnemonic_it_used_to_store() -> None:
+    """Eight bytes bought the explicit spellings; the abbreviations still name
+    the same kinds, so a config or a store written in them keeps working."""
+    assert EventType.from_str("ORDR") is EventType.ORDER
+    assert EventType.from_str("exec") is EventType.EXECUTION
+    assert EventType.from_str("ISTA") is EventType.INSTRUMENT_STATE
+    assert EventType.ORDER.code == "ORDER", "and today's code is the explicit one"
+
+
+def test_a_vocabulary_that_does_not_band_is_its_own_band() -> None:
+    """`band` is on every code now, and a code ranked by its own packed value
+    declares no floors -- so it answers with itself rather than raising."""
+    assert Side.BUY.band is Side.BUY
+    assert Currency.USD.band is Currency.USD
+    assert MIC.XOFF.band is MIC.XOFF
+    assert State.FILLED.band is State.DONE, "while a ranked one still bands"
+    assert TimeInForce.IOC.band is TimeInForce.IMMEDIATE, "ranks are what band, not width"
+
+
+def test_a_code_column_renders_as_the_enum_spelled_out() -> None:
+    """The dictionary type an enum declares is one an array can actually be:
+    Arrow indexes by position, so the codes resolve to their spellings."""
+    stored = pyarrow.array([int(State.FILLED), int(State.NEW), 999], pyarrow.int64())
+    rendered = State.into_arrow_array(stored)
+    assert rendered.type == State.into_arrow_type()
+    assert rendered.to_pylist() == ["FILLED", "NEW", None]
+    narrow = Currency.into_arrow_array(pyarrow.array([int(Currency.USD)], pyarrow.int32()))
+    assert narrow.type == Currency.into_arrow_type()
+    assert narrow.to_pylist() == ["USD"]
+
+
 def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
     """`$` lands as USD whichever path parsed the message."""
     from rekep.text.fixmsg import _currency_arrow

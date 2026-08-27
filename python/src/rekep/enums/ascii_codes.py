@@ -169,11 +169,20 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def from_stored(cls, value: Any, default: Self | None = None) -> Self:
-        """Read a stored id: today's packed code, or a previous release's ordinal.
+        """Read a stored id from any generation this vocabulary has written.
 
-        Ranks predate the mnemonic encoding as the stored values themselves,
-        so a store written before a recode still resolves to the member its
-        rank names. Anything else is `UNKNOWN` (or `default`).
+        A column outlives the release that filled it, so reading one means
+        reading every id it may hold: today's packed code first, then the
+        rank -- which is what an ordinal release stored -- and finally the
+        bytes themselves, read as a code under any padding or width this
+        family has used. A spelling a member has since been renamed away
+        from resolves through its aliases, so `ORDR` still names the kind
+        now spelled `ORDER`. Anything no generation ever wrote is `UNKNOWN`
+        (or `default`).
+
+        `from_int` stays the strict reader: it answers only on today's codes,
+        which is what keeps a Python answer and a pushed code-set filter on
+        the same rows.
         """
         member = cls.from_int(value, default=None)
         if member is not cls.UNKNOWN:
@@ -185,7 +194,48 @@ class AsciiInt32(enum.IntEnum):
         ranked = cls.ranked().get(packed)
         if ranked is not None:
             return ranked
+        superseded = cls._from_superseded(packed)
+        if superseded is not None:
+            return superseded
         return default if default is not None else cls.UNKNOWN
+
+    @classmethod
+    def _from_superseded(cls, packed: int) -> Self | None:
+        """The member an earlier packing of this code stored, if any.
+
+        Every generation stored the same thing -- printable ASCII bytes of a
+        code, padded with NULs -- and differed only in which side the
+        padding sat on and how wide the integer was. So the bytes are read
+        back at each width this family has used, from either end, and the
+        text is resolved through the ordinary spelling path.
+
+        Only bytes a generation would actually have written answer: packing
+        canonicalizes a spelling before storing it, so anything that is not
+        already canonical was never a stored id and is left unknown rather
+        than respelled into a member.
+        """
+        for width in cls._stored_widths():
+            if packed < -(1 << (8 * width - 1)) or packed >= 1 << (8 * width):
+                continue
+            raw = (packed & ((1 << (8 * width)) - 1)).to_bytes(width, "big")
+            for text in (raw.lstrip(b"\0"), raw.rstrip(b"\0")):
+                if not text or b"\0" in text:
+                    continue
+                try:
+                    spelled = text.decode("ascii")
+                except UnicodeDecodeError:
+                    continue
+                if spelled != cls._normalise(spelled):
+                    continue
+                found = cls._from_text(spelled)
+                if found is not cls.UNKNOWN:
+                    return found
+        return None
+
+    @classmethod
+    def _stored_widths(cls) -> tuple[int, ...]:
+        """Byte widths this vocabulary's stored ids have ever used, widest first."""
+        return tuple(width for width in (8, 4) if width <= cls.BYTE_WIDTH)
 
     @classmethod
     def register(cls, value: str, *, aliases: Any = ()) -> Self:
@@ -222,13 +272,14 @@ class AsciiInt32(enum.IntEnum):
 
     @property
     def band(self) -> Self:
-        """The band-floor member this code's rank sits in.
+        """The band-floor member this code's rank sits in, or the code itself.
 
         A vocabulary that declares ranks in hundred-wide bands says what a
         detailed code broadly means -- `FILLED` is a `DONE` -- without the
-        stored value having to be an ordinal.
+        stored value having to be an ordinal. One that ranks each member by
+        its own packed code declares no bands, so every code is its own.
         """
-        return type(self)._bands()[self._rank // self.WIDTH * self.WIDTH]
+        return type(self)._bands().get(self._rank // self.WIDTH * self.WIDTH, self)
 
     @classmethod
     @functools.cache
@@ -283,14 +334,35 @@ class AsciiInt32(enum.IntEnum):
     def into_arrow_type(cls) -> pyarrow.DictionaryType:
         """This enum's Arrow dictionary type, one instance per enum.
 
-        The index type is the packed integer the column stores -- `int32` or
-        `int64` by declared width -- and the values are the readable codes,
-        so a dictionary-encoded rendering of the column is the enum spelled
-        out. Nothing registers with Arrow: a dictionary type is a plain
-        value type every engine already speaks.
+        A dictionary of the readable codes, indexed as wide as the packed
+        value a column stores -- `int32` or `int64` by declared width -- so
+        the index type is also the storage a builder declares for the column
+        and `into_arrow_array` renders a stored column into this type.
+        Nothing registers with Arrow: a dictionary type is a plain value
+        type every engine already speaks.
         """
         index = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
         return pyarrow.dictionary(index, pyarrow.utf8())
+
+    @classmethod
+    def into_arrow_array(cls, values: Any) -> pyarrow.DictionaryArray:
+        """A stored code column rendered as this enum spelled out.
+
+        Arrow indexes a dictionary by position, not by the value stored, so
+        the packed codes are resolved to members and the members to their
+        spellings; a code no generation of this vocabulary wrote renders as
+        null rather than as a number nobody can read.
+        """
+        compute = pyarrow.compute
+        column = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
+        index = cls.into_arrow_type().index_type
+        stored = column.cast(index, safe=False)
+        spellings = [member.code for member in cls]
+        codes = pyarrow.array([int(member) for member in cls], index)
+        positions = compute.index_in(stored, value_set=codes).cast(index, safe=False)
+        return pyarrow.DictionaryArray.from_arrays(
+            positions, pyarrow.array(spellings, pyarrow.utf8())
+        )
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
@@ -350,7 +422,8 @@ class AsciiInt32(enum.IntEnum):
 
     @classmethod
     def _missing_(cls, value: Any) -> Self:
-        return cls.from_str(value) if isinstance(value, str) else cls.from_int(value)
+        """`Code(value)` reads a value, so it reads every generation of one."""
+        return cls.from_str(value) if isinstance(value, str) else cls.from_stored(value)
 
     @classmethod
     def _normalise(cls, raw: str) -> str:

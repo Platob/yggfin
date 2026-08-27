@@ -32,7 +32,7 @@ def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
     assert path.read_bytes() == contract.into_yaml()
     assert Field.from_dict(contract.into_dict()) == contract
     assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == "1"
+    assert contract.metadata["version"] == "2", "the codes and their widths changed"
 
 
 @pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))
