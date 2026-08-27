@@ -22,28 +22,34 @@ for batch in source.read_arrow_reader(batch_row_size=65_536):
 
 One conversion path, in two spellings: raw `Message` to `FixMsg` to typed
 market events -- a `FixMsg` is built from a `Message` and nothing else.
+
 `FixMsg.from_message_batch` is the vectorized builder: one raw-contract
 RecordBatch or an iterable of scalar `Message` rows, and a feed's
 `FixRegistry` is all it needs -- the codec derives from the registry, the
 packaged one by default, and a full `FixCodec` serves only the feeds whose
-rules or field declarations differ. Row by row, `Message.from_text` tokenizes
-one payload and promotes its discriminator, and `FixMsg.from_message`
-transcribes that staged row -- `FixMsg.from_text` is exactly that pair, and
-`from_instrument` stages a synthesized `Message` through the same seam.
-Market events then come from `into_market_events` (scalar) or
-`into_market_arrow_batches` (vectorized).
+rules or field declarations differ.
+
+Row by row, `Message.from_text` tokenizes one payload and promotes its
+discriminator, and `FixMsg.from_message` transcribes that staged row;
+`FixMsg.from_text` is exactly that pair, and `from_instrument` stages a
+synthesized `Message` through the same seam. Market events then come from
+`into_market_events` (scalar) or `into_market_arrow_batches` (vectorized).
 
 `TextFile` and `TextFiles` extract the log header, retain the raw payload, and
 split structured key/value syntax once into ordered `Entry` values. They assign
 `etype` through the registry's MsgType metadata and retain the unambiguous
-`MsgType` plus a syntax-only `protocol_code`. The `FixMsg` conversion owns
-dictionary resolution, structured components, event time and market identities;
-it consumes those stored arguments instead of tokenizing the payload again.
-The conversion classifies each line with the codec's own rules, and the stored
+`MsgType` plus a syntax-only `protocol_code`.
+
+The `FixMsg` conversion owns dictionary resolution, structured components,
+event time and market identities; it consumes those stored arguments instead
+of tokenizing the payload again.
+
+It classifies each line with the codec's own rules, and the stored
 `protocol_code` fills only the rows those rules call `OTHER`: an enrichment
 echo whose `MSGTYPE=` is real but whose `#` markers are absent parses as the
 bridge message the syntax probe already saw, while every line the rules do
 name keeps their reading.
+
 Long prose and diagnostics that contain neither a discriminator nor two
 delimiter-separated assignments skip tokenization entirely. Use
 `exclude_msgtypes=("0", "1")` on the text reader to discard operational
@@ -96,9 +102,11 @@ The outer value is a list, not a map, because repeated fields and wire order
 are data. `value` is always present; an explicitly empty value is `""`. Raw
 `Message.entries` is always a list. A `FixMsg` carrying no recognized message
 has null `entries`; a parsed message with no residual or audit fields has an
-empty list. After resolution, `entries` retains every field that no promoted
-column or structured component took. It also retains a promoted field's raw
-text when its typed value cannot reproduce the exact wire spelling.
+empty list.
+
+After resolution, `entries` retains every field that no promoted column or
+structured component took, and a promoted field's raw text when its typed
+value cannot reproduce the exact wire spelling.
 
 Structured FIX components also use their FIX spellings:
 
@@ -114,30 +122,33 @@ Structured FIX components also use their FIX spellings:
 dictionary privately onto the row: `get`, `pairs`, the repeating-group readers
 and market translation all resolve through the one linked registry, and an
 unlinked row reads through the packaged one. The link is reader state, never a
-stored column, so the published contract is unchanged. `into_fix_events`
-carries the link into the market translator, and a translator built with its
-own `registry` links it back onto the message -- one translation resolves
-under exactly one dictionary.
+stored column, so the published contract is unchanged.
+
+`into_fix_events` carries the link into the market translator, and a
+translator built with its own `registry` links it back onto the message: one
+translation resolves under exactly one dictionary.
 
 `FixMsg.get` reads promoted columns and `entries` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,
-component path or namespace-qualified key. A key no registry record explains
-still answers typed where its value spells one of five unambiguous shapes --
-integer, float, dashed date, clock time, boolean word -- and stays text
-otherwise; the raw spelling is kept either way. That is a floor under
-registry promotion, not a replacement: a field worth a real typed column
-gets one through `rekep fix registry promote`.
+component path or namespace-qualified key.
+
+A key no registry record explains still answers typed where its value spells
+one of five unambiguous shapes -- integer, float, dashed date, clock time,
+boolean word -- and stays text otherwise; the raw spelling is kept either way.
+That is a floor under registry promotion, not a replacement: a field worth a
+real typed column gets one through `rekep fix registry promote`.
 
 `direction` says which way a line moved where its header verb says so --
 `Receiving : 8=FIX...` reads False, `Sending : ...` True -- read against
 `rekep.fix.rules.DIRECTION_PATTERNS`, and only where the verb opens the line
 before the payload's first token, so the same words inside a payload never
-answer. It is resolved at the message stage, where the raw line and its
-protocol reading last coexist, and stored on `Message`; the FIX stage
-re-resolves any row still carrying its text and keeps the stored answer
-where `parse_fix` projected the text away. Null is most rows: bridge re-log
-lines repeat a payload without repeating the verb, and no answer beats a
-guessed one.
+answer.
+
+It is resolved at the message stage, where the raw line and its protocol
+reading last coexist, and stored on `Message`; the FIX stage re-resolves any
+row still carrying its text and keeps the stored answer where `parse_fix`
+projected the text away. Null is most rows: bridge re-log lines repeat a
+payload without repeating the verb, and no answer beats a guessed one.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. In that form the named discriminator and named flat fields are
@@ -147,14 +158,14 @@ indexed group members are never treated as duplicates.
 ## Stored categories
 
 `parse_fix` uses two pushed scans that partition the table: the market code
-set -- kinds ranked at least `INTENT` -- and its complement. Rows in the
-market set go to `fix.market`; non-technical `MISC` rows go to `fix.misc`.
-An unknown discriminator also goes to `fix.misc` when the transport is
-recognized; only an unknown event on an unrecognized transport goes to
-`fix.unknown`. Registry-declared technical MsgTypes and plugins do not enter a
-FIX table. Both scans project the raw `message` column out: the already parsed
-arguments carry the transcription input, so every resulting `FixMsg.message`
-is null.
+set -- kinds ranked at least `INTENT` -- and its complement. Market-set rows
+go to `fix.market`, non-technical `MISC` rows to `fix.misc`. An unknown
+discriminator also goes to `fix.misc` when the transport is recognized; only
+an unknown event on an unrecognized transport goes to `fix.unknown`.
+
+Registry-declared technical MsgTypes and plugins do not enter a FIX table.
+Both scans project the raw `message` column out: the already parsed arguments
+carry the transcription input, so every resulting `FixMsg.message` is null.
 
 The market readers consume only `fix.market`, ordered by
 `(unix, MsgSeqNum, hash)`. Normalized Instrument rows use the package-owned

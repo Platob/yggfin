@@ -1400,14 +1400,16 @@ class FixMsg(Message):
         """
         compute = pyarrow.compute
         parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
-        digests = cls.hash_arrow(*parsed)
+        clock = columns["unix"]
+        digests = cls.txhash_arrow(clock, *parsed)
         stored = columns.get("entries")
         if stored is None:
             return digests
         unread = compute.is_null(stored)
         if not compute.any(unread, min_count=0).as_py():
             return digests
-        recomputed = cls.hash_arrow(
+        recomputed = cls.txhash_arrow(
+            clock,
             _digest_text(columns.get("message"), rows),
             _digest_text(columns.get("source_url"), rows),
             _digest_text(columns.get("source_rownum"), rows),

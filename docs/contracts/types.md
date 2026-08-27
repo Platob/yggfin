@@ -56,10 +56,12 @@ name and type.
 
 Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `FixMsg`,
 `Instrument`, `Leg`, `Order`, `Execution`, `Book`, and `Level` therefore have
-no per-instance `__dict__`; transient private slots remain excluded from Arrow
-and document conversion. Shallow instance storage fell from 3,376 to 904 bytes
-for `FixMsg`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
-for `Order` and `Execution` on the measured Python 3.12 runtime.
+no per-instance `__dict__`; transient private slots stay out of Arrow and
+document conversion.
+
+On the measured Python 3.12 runtime, shallow instance storage fell from 3,376
+to 904 bytes for `FixMsg`, from 1,632 to 360 bytes for `Instrument`, and from
+1,632 to 424 bytes for `Order` and `Execution`.
 
 ## Reading an instant
 
@@ -77,10 +79,9 @@ lower, upper = unix_of(start), unix_of(end, upper=True)
 
 A naive instant is read as UTC. `upper=True` treats a value naming a whole
 day as the exclusive end of it, so `end: 2026-08-14` means all of the 14th.
-Anything that names no instant is `None` and never a guess -- a day-first
-date like `03/04/2026` is refused rather than silently moved a month. Every
-task notebook takes its window through this, so a window written one way in
-one job means the same instant in the next.
+What names no instant is `None`, never a guess -- a day-first `03/04/2026` is
+refused rather than silently moved a month. Every task notebook takes its
+window through this, so one spelling means one instant in every job.
 
 ### The shapes a stamp is written in
 
@@ -94,22 +95,25 @@ or none at all:
 | `FIX` | `20260824-10:00:01.123` | 17, 21, 24, 27 |
 | `COMPACT` | `20260824100001123` | 14, 17, 20, 23 |
 
-One declaration, because the set of accepted spellings is one behavior even
-where the execution is two: this module reads a configuration value with
-`Stamp.read`, once per job, and `rekep.text.text_file` reads a column of
-log-line stamps in Arrow kernels, once per line. The fast path cannot use
-`strptime` -- and `strptime` cannot read a compact stamp's fraction at all,
-having no separator to anchor `%f` to -- so both read the components off the
-same declared offsets instead. `HEADER_PATTERN` is built from the same
-shapes, so a stamp a window can name is a stamp a header may open with.
+One declaration, because the accepted spellings are one behavior even where
+the execution is two: this module reads a configuration value with
+`Stamp.read`, once per job, while `rekep.text.text_file` reads a column of
+log-line stamps in Arrow kernels, once per line.
+
+The fast path cannot use `strptime`, which cannot read a compact stamp's
+fraction at all, having no separator to anchor `%f` to, so both read the
+components off the same declared offsets. `HEADER_PATTERN` is built from the
+same shapes, so a stamp a window can name is a stamp a header may open with.
 
 Three widths are shared by two shapes: 17 is a FIX stamp and a compact one
 with milliseconds, 23 an ISO stamp with milliseconds and a compact one with
 nanoseconds, 27 an ISO stamp with a split fraction and a FIX one with
-nanoseconds. A width therefore never decides which shape a stamp is; the
-separators do, and a batch mixing two shapes of one width is grouped rather
-than sliced as either. A fraction finer than a microsecond is truncated,
-which is what the microsecond column stores.
+nanoseconds.
+
+A width therefore never decides which shape a stamp is; the separators do,
+and a batch mixing two shapes of one width is grouped rather than sliced as
+either. A fraction finer than a microsecond is truncated, which is what the
+microsecond column stores.
 
 ## Optional dependencies
 

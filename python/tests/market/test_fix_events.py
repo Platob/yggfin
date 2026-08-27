@@ -246,15 +246,15 @@ def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
 def test_a_report_hashes_only_the_completed_fill_version(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    original = Execution.hash_of.__func__
+    original = Execution.txhash_of
     calls = 0
 
-    def counted(cls: type[Execution], *parts: object) -> int:
+    def counted(self: Execution, *parts: object) -> int:
         nonlocal calls
         calls += 1
-        return original(cls, *parts)
+        return original(self, *parts)
 
-    monkeypatch.setattr(Execution, "hash_of", classmethod(counted))
+    monkeypatch.setattr(Execution, "txhash_of", counted)
 
     _, fill = events(FILLED)
 

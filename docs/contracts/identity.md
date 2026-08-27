@@ -55,11 +55,10 @@ and positive floating zero. A part's position must therefore keep one semantic
 type. Length prefixes still distinguish `("AB", "C")` from `("A", "BC")`.
 
 Dates, decimals, objects, maps, lists, and integers wider than `i64` are
-refused instead of being stringified. A domain shape must project them into an
-ordered sequence of the supported scalars. That projection belongs to the
-shape's contract: for example, reference data sorts map keys, records
-null-versus-empty container state, and renders dates as ISO 8601 before
-framing.
+refused instead of being stringified. A domain shape must project them into
+an ordered sequence of the supported scalars, and that projection belongs to
+its contract: reference data sorts map keys, records null-versus-empty
+container state, and renders dates as ISO 8601 before framing.
 
 ## Arrow and Python
 

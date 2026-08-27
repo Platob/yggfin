@@ -3,10 +3,12 @@
 `tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
 `FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
 `etype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary work
-begins. The complementary scan -- `Not` of the market code set -- retains
-everything else: terminal operational rows, unrecognized rows, and any stored
-code no compiled member spells. Together the two scans partition the table, so
-no row silently matches neither.
+begins.
+
+The complementary scan -- `Not` of the market code set -- retains everything
+else: terminal operational rows, unrecognized rows, and any stored code no
+compiled member spells. Together the two scans partition the table, so no row
+silently matches neither.
 
 ## Run this step
 
@@ -47,12 +49,13 @@ their physical column name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`,
 The task writes orders, quotes, executions, books and instruments to
 `fix.market`. Recognized operational traffic, rows without MsgType, and unknown
 events on a recognized transport go to `fix.misc`; an unknown event on an
-unrecognized transport goes to `fix.unknown`. Market and terminal predicates
-are pushed independently, so neither stream sees the other's rows.
-Registry-declared technical MsgTypes are excluded by the scan. Plugin filtering
-already happened in `parse_messages`, so those rows never enter this source
-table. The raw `message` column is projected out for both streams: stored
-`entries` already carry the parsed content needed for transcription.
+unrecognized transport goes to `fix.unknown`.
+
+Market and terminal predicates are pushed independently, so neither stream
+sees the other's rows. Registry-declared technical MsgTypes are excluded by the
+scan, and plugin filtering already happened in `parse_messages`, so those rows
+never enter this source table. The raw `message` column is projected out for
+both streams: stored `entries` already carry what transcription needs.
 
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,
@@ -68,14 +71,17 @@ then `flatten_instruments` writes the Instrument table.
 
 ## Configuration
 
-The adjacent `parse_fix.yml` owns full-transcription settings: `fix_dictionary`,
-`null_values`, protocol rules, and declared `fields`. It also selects the
-catalog, branch, source interval and batch sizes. A dictionary, field, or
-protocol-rule change reruns this stage against retained `Message` rows; the
-stored arguments are resolved again without tokenizing the raw payload.
+The adjacent `parse_fix.yml` owns full-transcription settings:
+`fix_dictionary`, `null_values`, protocol rules, and declared `fields`. It
+also selects the catalog, branch, source interval and batch sizes. A
+dictionary, field, or protocol-rule change reruns this stage against retained
+`Message` rows, resolving the stored arguments without tokenizing the payload.
+
 Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
-metadata is read by `parse_messages` because `etype` is part of `Message`;
+metadata is read by `parse_messages` because `etype` is part of `Message`, so
 changing that metadata requires rebuilding `logs.messages`, while other
-dictionary changes can rerun only this stage. The projected conversion requires
-the version 1 `MsgType`, `entries`, and `protocol_code` columns and refuses an
-older source table with a rebuild instruction.
+dictionary changes can rerun only this stage.
+
+The projected conversion requires the version 1 `MsgType`, `entries`, and
+`protocol_code` columns, and refuses an older source table with a rebuild
+instruction.

@@ -33,21 +33,24 @@ Each `Message` row contains:
 
 Registry names, protocol versions, components and typed values do not belong
 to this stage. A leading `#` is removed from each key; values remain text.
-MsgType metadata decides the event kind. Exact `include_msgtypes` and
-`exclude_msgtypes` filters run before argument splitting. Both default to
-empty, so heartbeats (`0`), test requests (`1`) and other administrative
-messages are retained unless the caller excludes them. `technical_plugins`
-drops named operational sources such as Jolokia before persistence. `parse_fix`
-owns dictionary interpretation.
+MsgType metadata decides the event kind, and `parse_fix` owns dictionary
+interpretation.
+
+Exact `include_msgtypes` and `exclude_msgtypes` filters run before argument
+splitting. Both default to empty, so heartbeats (`0`), test requests (`1`) and
+other administrative messages are retained unless the caller excludes them.
+`technical_plugins` drops named operational sources such as Jolokia before
+persistence.
 
 ## Why the table is retained
 
 `logs.messages` is the protocol-neutral source for later parsers. A field or
 protocol rule can change without reopening compressed logs or listing the
-source object-store prefix again. Re-running a protocol parser uses the
-retained `entries`; it does not split `message` again. A change to MsgType
-`event_types` is different because it changes stored `Message.etype`, so it
-requires rebuilding this table.
+source object-store prefix again, and re-running a protocol parser uses the
+retained `entries` rather than splitting `message` again.
+
+A change to MsgType `event_types` is different because it changes stored
+`Message.etype`, so it requires rebuilding this table.
 
 The row identity hashes only `message`, without a composite frame, source path,
 or row number. Identical payloads therefore share an identity across captures.
@@ -57,10 +60,12 @@ interval owns the row.
 
 Remote compressed captures stream directly through Arrow by default. Set
 `spill: true` to copy their raw compressed bytes to a uniquely owned temporary
-local file before decoding; it is deleted when that stream finishes. The
-expanded capture is never written or collected in memory. Plain remote and
-local captures are never copied. Callers that explicitly request a persistent
-`ArrowFileIO` spill get its deterministic, remote-size-validated cache behavior.
+local file before decoding; it is deleted when that stream finishes.
+
+The expanded capture is never written or collected in memory, and plain remote
+and local captures are never copied. Callers that explicitly request a
+persistent `ArrowFileIO` spill get its deterministic, remote-size-validated
+cache behavior.
 
 Keep a directly opened `TextFile` in a `with` block. Exhausting its Arrow
 reader releases the temporary spill; when a caller stops early, closing the
@@ -76,8 +81,9 @@ records held beside it.
 The adjacent `parse_messages.yml` selects the source, FIX dictionary, filename
 pattern, header regex, timezone, protocol rules, spill policy, catalog, branch
 and batch sizes. Keep custom `protocols` aligned with `parse_fix.yml`; this
-stage stores the classification that projected FIX conversion consumes.
-Null uses the shipped default rules in both stages.
+stage stores the classification that projected FIX conversion consumes. Null
+uses the shipped default rules in both stages.
+
 `include_regexes` admits a payload when any Arrow RE2 pattern matches;
 `exclude_regexes` then removes a payload when any pattern matches. Empty lists
 keep every payload. Matching sees the complete folded message and happens
@@ -97,10 +103,12 @@ not to the FIX dictionary; null or an empty list retains every plugin. Rebuild
 `duration_ns` closes a non-empty batch when its recording-time window changes.
 With `start`, windows begin exactly there; otherwise the first retained `unix`
 is truncated to the duration. A busy window can still produce multiple
-`batch_row_size` batches, and `batch_byte_size` closes a batch around unusually
-large diagnostics. One logical record is never split, so that record and its
-parsed arguments may exceed the byte target. Gaps do not produce empty batches.
-Input must be ordered by these windows.
+`batch_row_size` batches, and `batch_byte_size` closes a batch around
+unusually large diagnostics.
+
+One logical record is never split, so that record and its parsed arguments may
+exceed the byte target. Gaps do not produce empty batches, and input must be
+ordered by these windows.
 
 Only payloads with a discriminator, a FIX BeginString, or at least two
 pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic key/value
@@ -111,6 +119,7 @@ Message contract version 1 includes `protocol_code`, `MsgType`, and the early
 `etype`. Rebuild an existing `logs.messages` table when any is absent;
 `parse_fix` refuses that older physical schema rather than reporting an empty
 successful run.
+
 Tables created from the former task-level `static_values` declaration also
 need those required columns removed or a fresh table before the narrower task
 contract can write them.

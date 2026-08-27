@@ -550,7 +550,8 @@ def _orders(
     reason = shared.take(shared.reason, where)
     vwap = pyarrow.nulls(len(where), pyarrow.float64())
     null_float = pyarrow.nulls(len(where), pyarrow.float64())
-    event_hash = Order.hash_arrow(
+    event_hash = Order.txhash_arrow(
+        unix,
         xhash,
         0,
         unix,
@@ -710,7 +711,8 @@ def _executions(
     ccy = shared.take(shared.ccy, where)
     reason = shared.take(shared.reason, where)
     null_float = pyarrow.nulls(rows, pyarrow.float64())
-    no_link_hash = Execution.hash_arrow(
+    no_link_hash = Execution.txhash_arrow(
+        unix,
         xhash,
         0,
         unix,
@@ -731,7 +733,8 @@ def _executions(
         filled,
         vwap,
     )
-    linked_hash = Execution.hash_arrow(
+    linked_hash = Execution.txhash_arrow(
+        unix,
         xhash,
         0,
         unix,

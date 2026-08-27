@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING, Annotated, Any, Self
 import pyarrow
 import pyarrow.compute
 
+from rekep import txhash
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL, hash_arrow, hash_of
+from rekep.market.identity import NIL, frame, framed_arrow, hash_arrow, hash_of
 
 if TYPE_CHECKING:
     from rekep.market.instrument import Instrument
@@ -296,13 +297,45 @@ class Event(MarketConvertible):
         """`hash_of` over whole columns: one identifier per row, in kernels."""
         return hash_arrow(cls.__name__, *columns)
 
+    def txhash_of(self, *parts: Any) -> int:
+        """This version's identity: its instant over the digest of `parts`.
+
+        A version is a thing that happened at a time, so the identifier says
+        when: the epoch seconds ride above an XXH32 of the same framed bytes
+        `hash_of` digests. A column of them sorts by time and still spreads
+        rows inside one second.
+        """
+        return txhash.h64(self.unix // SECOND, frame((type(self).__name__, *parts)))
+
+    @classmethod
+    def txhash_arrow(cls, clock: Any, *columns: Any) -> pyarrow.Array:
+        """`txhash_of` over whole columns, anchored to the `clock` column.
+
+        An event's clock is epoch nanoseconds, so an integer column is read
+        as those and floored to whole seconds exactly as the scalar does.
+        """
+        payload = framed_arrow(cls.__name__, *columns)
+        return txhash.h64_arrow(cls._clock_seconds(clock), payload)
+
+    @staticmethod
+    def _clock_seconds(clock: Any) -> pyarrow.Array:
+        """One clock column as whole epoch seconds, flooring like `//` does."""
+        if not pyarrow.types.is_integer(getattr(clock, "type", None)):
+            return txhash.epoch_seconds_arrow(clock)
+        compute = pyarrow.compute
+        nanos = clock.cast(pyarrow.int64(), safe=False)
+        carry = compute.if_else(
+            compute.less(nanos, 0), pyarrow.scalar(SECOND - 1, pyarrow.int64()), 0
+        )
+        return compute.divide(compute.subtract(nanos, carry), SECOND).cast(pyarrow.int32())
+
     def identify(self) -> Self:
         """Give the event the identity its own content earns, where it has none."""
         self._materialize_life_code()
         self.xhash = self.xhash or self.life_hash()
         self._drop_self_link()
         if not self.hash:
-            self.hash = self.hash_of(*self.version_parts())
+            self.hash = self.txhash_of(*self.version_parts())
         return self
 
     def with_previous(self, previous: Event | None) -> Self | None:

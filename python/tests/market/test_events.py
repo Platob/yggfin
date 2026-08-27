@@ -208,8 +208,9 @@ def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
     built = Book(unix=unix, instrument_xhash=instrument_xhash).identify()
 
     assert built.version_parts() == (unix, instrument_xhash, 0, 0)
-    assert built.hash == Book.hash_of(unix, instrument_xhash, 0, 0)
-    assert Book.hash_arrow(
+    assert built.hash == built.txhash_of(unix, instrument_xhash, 0, 0)
+    assert Book.txhash_arrow(
+        pyarrow.array([unix], pyarrow.int64()),
         pyarrow.array([unix], pyarrow.int64()),
         pyarrow.array([instrument_xhash], pyarrow.int64()),
         pyarrow.array([0], pyarrow.int64()),

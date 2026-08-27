@@ -36,13 +36,15 @@ Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` writes `Message` rows, tokenizes generic key/value syntax once,
-and assigns `MsgType` and `etype`. `parse_fix` pushes the market-event selection
-to Iceberg, then owns protocol and dictionary resolution from those ordered
-arguments. The retained message table lets field and protocol changes rerun
-FIX resolution without reopening source logs or splitting payloads again;
-MsgType event-metadata changes rebuild `logs.messages` because they change its
-stored `etype`.
+`parse_messages` writes `Message` rows, tokenizes generic key/value syntax
+once, and assigns `MsgType` and `etype`. `parse_fix` pushes the market-event
+selection to Iceberg, then owns protocol and dictionary resolution from those
+ordered arguments.
+
+The retained message table lets field and protocol changes rerun FIX
+resolution without reopening source logs or splitting payloads again; MsgType
+event-metadata changes rebuild `logs.messages` because they change its stored
+`etype`.
 
 `parse_fix` resumes Instrument lifecycles from the prior completed Instrument
 table. The current run has no dependency cycle: both downstream notebooks read
@@ -78,11 +80,12 @@ interval and one `branch` DAG parameter into each notebook. `root`, `main`, and
 Each notebook publishes its result through Scrapbook. Branch tasks inspect
 attempted/read counts from that result: an empty capture skips `parse_fix`, a
 FIX interval without market rows skips both market consumers, and direct
-market mode skips the two book flatteners through zero `flatten` counts. In
-book mode Order and Execution flatteners route independently from the number
-of nested rows the selected Books carry. The routes deliberately do not use
-`written`; a replay can write zero while still needing downstream work after
-parsing or schema logic changes.
+market mode skips the two book flatteners through zero `flatten` counts.
+
+In book mode Order and Execution flatteners route independently from the
+number of nested rows the selected Books carry. The routes deliberately do not
+use `written`; a replay can write zero while still needing downstream work
+after parsing or schema logic changes.
 
 Install the provider in the scheduler environment, not as a `rekep` runtime
 dependency. Set `REKEP_ROOT` to the checkout and `REKEP_NOTEBOOK_OUTPUT` to an

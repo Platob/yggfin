@@ -16,9 +16,10 @@ uv run --project python --with papermill rekep task run \
   --output flatten_executions.executed.ipynb
 ```
 
-The adjacent `flatten_executions.yml`
-sets the `[start, end)` interval, source, target, catalog, and commit size.
-Replay skips existing event keys when `merge_by` is enabled.
+The adjacent `flatten_executions.yml` sets the `[start, end)` interval,
+source, target, catalog, and commit size. Replay skips existing event keys
+when `merge_by` is enabled.
+
 Airflow runs this task only when `parse_market` reports nested Execution rows
 in `flatten.executions`. Direct mode leaves that count zero because it writes
 its configured execution target itself.

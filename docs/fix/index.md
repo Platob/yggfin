@@ -24,20 +24,21 @@ Arrow helpers split whole columns and resolve distinct rendered names once.
 
 Normal parsing has no default FIX version. Each message first inspects
 `BeginString <8>` and, for FIXT, `ApplVerID <1128>` then
-`DefaultApplVerID <1137>`. A known application version selects its prepared
-registry index. If the evidence is absent, inconsistent, or unavailable, the
-message remains valid raw FIX with ordered numeric tags; parsing never silently
-chooses 4.2, 4.4, or the newest registry. Direct registry and codec callers may
-still supply an explicit version.
+`DefaultApplVerID <1137>`; a known application version selects its prepared
+registry index.
+
+If the evidence is absent, inconsistent, or unavailable, the message remains
+valid raw FIX with ordered numeric tags: parsing never silently chooses 4.2,
+4.4, or the newest registry. Direct registry and codec callers may still
+supply an explicit version.
 
 ## Registry
 
-The reviewable `data/fix/` directory and `data/fix.zip` archive contain the
-same registry. It combines OnixS field definitions with QuickFIX symbols,
-components and headers. Resource locations use the project's URL resolver and
+The reviewable `data/fix/` directory and `data/fix.zip` archive hold the same
+registry, combining OnixS field definitions with QuickFIX symbols, components
+and headers. Resource locations use the project's URL resolver and
 `pyarrow.fs`; a remote resource is materialized only when a downstream parser
-requires an OS-local path, then reused from the local cache. Resolution and
-network work happen before the message loop.
+requires an OS-local path, then reused from cache -- all before the loop.
 
 The registry supplies:
 
@@ -99,28 +100,31 @@ log.
 
 Where two versions disagree, the newest one wins. `FIXT1.1` is excluded from
 that walk for an application field: it is the session transport, and letting it
-win would give a session-layer reading to fields it merely carries. Enumerated
-values are the *union* across versions with the newest winning per key, so a
-value that only ever existed in 4.2 still parses -- and `values` and
+win would give a session-layer reading to fields it merely carries.
+
+Enumerated values are the *union* across versions with the newest winning per
+key, so a value that only ever existed in 4.2 still parses -- and `values` and
 `value_names` do not always agree on which keys they list, which the union
 handles without inventing an entry in the other map.
 
 Every reading a collapse drops is written to `data/fix-conflicts.json`: the
 field, its tag, the part, the readings it saw with their versions and which one
 it kept. 152 fields where two versions give one enumerated value different
-meanings is a list somebody can read; a silent drop is not. The counts are
-pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild that grows past
-them fails.
+meanings is a list somebody can read; a silent drop is not.
+
+The counts are pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild
+that grows past them fails.
 
 ### String codecs
 
 `encoded` maps a value spelled as text to the wire value it names, so
-`TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. It is built from
-both `values` and `value_names`, normalized by casefold and then by dropping
-every character outside `[a-z0-9]` -- which is what makes
+`TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. Each raw value
+maps to itself, so a caller has one lookup path and not two.
+
+It is built from both `values` and `value_names`, normalized by casefold and
+then by dropping every character outside `[a-z0-9]` -- which is what makes
 `ORDER_SUBMISSION_TIME` and `Order Submission Time` one key, where plain
-lowercasing leaves two. Each raw value maps to itself, so a caller has one
-lookup path and not two.
+lowercasing leaves two.
 
 `decoded` provides the deterministic inverse, preferring the QuickFIX symbol,
 then the dictionary value, then the wire value. Every result uses the same
@@ -151,16 +155,20 @@ Matching folds **case and nothing else**. A separator is part of a name, so
 `party_role` is a spelling of its own rather than a second way of writing
 `PartyRole` -- dropping separators merged identities a store deliberately
 holds apart, and a match a registry cannot tell from a real collision is worse
-than a miss. A real renderer spelling is recorded as an alias, which is what
+than a miss.
+
+A real renderer spelling is recorded as an alias, which is what
 `rekep fix classify --report` finds and `rekep fix apply --aliases` writes.
 
 A later tier never takes a name from an earlier one. Two identities claiming
 one name inside a tier, an alias an earlier tier already answers for, two
 identities claiming one **tag**, and two claiming one canonical name are all
 defects `registry.check()` reports and every write refuses -- with the
-conflicting names in the message. An older version's spelling that another
-identity already claims as its canonical name cannot become an alias, and stays
-in the conflict report as the dropped reading it is.
+conflicting names in the message.
+
+An older version's spelling that another identity already claims as its
+canonical name cannot become an alias, and stays in the conflict report as the
+dropped reading it is.
 
 ### Editing and refreshing
 
@@ -199,10 +207,12 @@ a projection that is complete for what it projects.
 Both channels carry the lines. `warnings.warn` is the record -- filterable, and
 shown once, which is why it is not the only one -- and `announce` is the
 foreground writer a person waiting on a multi-minute fetch reads; it defaults to
-`stderr`, and the CLI and the notebooks pass their own. The start line says
-what was not found and where it looked, what is being fetched from `BASE_URL`
-and `QUICKFIX_URL`, roughly how many pages and how long, where it installs, and
-how to skip it. The finish line says what was written and how long it took.
+`stderr`, and the CLI and the notebooks pass their own.
+
+The start line says what was not found and where it looked, what is being
+fetched from `BASE_URL` and `QUICKFIX_URL`, roughly how many pages and how
+long, where it installs, and how to skip it. The finish line says what was
+written and how long it took.
 
 ```bash
 export REKEP_FIX_REGISTRY_URL="https://artifactory.example/artifactory/rekep/fix-registry.zip"
@@ -271,17 +281,20 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 wheel ships `rekep/fix/registry.zip`, a projection of it holding the keys
 `rekep.fix.publish.PROJECTED` names -- numbered tags, the fields FIX never
 numbered that the log gives a column, and every version's component
-declarations, whole. A component says where a repeating group starts and ends,
-so a projection that selected its members alongside the fields would end the
-group somewhere else, and one that dropped them extracts no group at all.
+declarations, whole.
+
+A component says where a repeating group starts and ends, so a projection that
+selected its members alongside the fields would end the group somewhere else,
+and one that dropped them extracts no group at all.
 
 `components()` answers `[]` for a version whose spec declares none -- nothing
 before 4.3 has a component -- and `None` for a store that was never asked;
-`components_available()` is what tells them apart. It hands back the components
-a version declares **and** the ones their trees reference: a record keeps the
-newest member tree, so 4.3's `Parties` is now the tree that reaches
-`PartySubID` through `PtysSubGrp` rather than naming it directly, and a reader
-without `PtysSubGrp` would split the group somewhere else.
+`components_available()` is what tells them apart.
+
+It hands back the components a version declares **and** the ones their trees
+reference: a record keeps the newest member tree, so 4.3's `Parties` is now
+the tree that reaches `PartySubID` through `PtysSubGrp` rather than naming it
+directly, and a reader without `PtysSubGrp` would split the group elsewhere.
 
 A component record that defines a message carries its `msg_type` (`"D"`,
 `"8"`); a reusable block omits the key rather than writing it null. The
@@ -367,17 +380,20 @@ class TrdRegTimestamps(ComponentGroup):
 ```
 
 The parsed message carries `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`,
-`SecurityAltID`, and `Legs`. The two instrument groups are *scoped*: the
-dictionary nests the instrument inside market-data and quote entries, so an
-occurrence opening after such a group's count belongs to that entry and stays
-in `entries` for the per-entry readers, where the regulatory components hoist
-to the message deliberately.
-`FixCodec.into_components()` maps each column to its extractor and applies them
-in order against what the last one left, so a member lifted into one
-component's entries cannot also be lifted into another's. There are no fallback
-tags: a regenerated dictionary always carries the declarations of the versions
-that have them, so a version without one extracts nothing rather than a group
-the standard never gave it.
+`SecurityAltID`, and `Legs`.
+
+The two instrument groups are *scoped*: the dictionary nests the instrument
+inside market-data and quote entries, so an occurrence opening after such a
+group's count belongs to that entry and stays in `entries` for the per-entry
+readers, where the regulatory components hoist to the message deliberately.
+
+`FixCodec.into_components()` maps each column to its extractor and applies
+them in order against what the last one left, so a member lifted into one
+component's entries cannot also be lifted into another's.
+
+There are no fallback tags: a regenerated dictionary always carries the
+declarations of the versions that have them, so a version without one extracts
+nothing rather than a group the standard never gave it.
 
 The delimiter leads the projection because it is what opens an entry. Every
 member is lifted only where its value is one the column's type can hold, and
@@ -402,8 +418,10 @@ where it sits. That is the declaration a projected shape is checked against.
 message in real bridge traffic. A payload that reads as pairs becomes pairs,
 under `XmlData.<key>`, in the place the tag sat -- so `XmlData.ClOrdID`
 resolves like the rendered `NoPartyIDs.PartyID` already does, and lands in the
-column its name earns. A payload that opens an XML tag, or that carries only
-one pair, stays exactly as it was.
+column its name earns.
+
+A payload that opens an XML tag, or that carries only one pair, stays exactly
+as it was.
 
 The payload is read under its own separator, detected per row: it sits inside
 a token of the message around it and so cannot be written with that message's
@@ -413,11 +431,12 @@ separator.
 
 A rendered line carries two namespaces -- `#Side` as a field arrived and
 `Side` after enrichment -- and on a third to a half of a real capture's lines
-some fields appear in both. A field is lifted into its column when every
-reading of it in that row agrees, and every copy leaves the residual pairs
-with it. Readings that *disagree* are left where they were: two values under
-one key is a repeating group, or an enrichment that rewrote something, and
-picking between them would be a guess.
+some fields appear in both.
+
+A field is lifted into its column when every reading of it in that row agrees,
+and every copy leaves the residual pairs with it. Readings that *disagree* are
+left where they were: two values under one key is a repeating group, or an
+enrichment that rewrote something, and picking between them would be a guess.
 
 One explicit hybrid is different: a user-defined wire wrapper (`35=U...`)
 with a named `MSGTYPE` declares its rendered payload authoritative. Named flat
@@ -463,6 +482,7 @@ The rules are declared once and executed twice. `TagIndex` resolves whole
 columns in Arrow kernels and `TagIndex.resolve_key` reads the same index one
 key at a time, off the same value sets and the same pattern sources, so the
 scalar and the vectorized paths cannot answer differently for one input.
+
 `FixMsg.get` uses the same accessor for directly parsed wire text and for a
 persisted parsed row. Direct text starts as ordered spellings; registry-backed
 transcription then resolves those same entries without another parser model.
@@ -471,10 +491,11 @@ transcription then resolves those same entries without another parser model.
 
 Common fields are promoted once into `FixMsg`. Ordered `entries` keeps every
 unpromoted field plus a raw audit sidecar when a typed column cannot reproduce
-the wire spelling, such as `0010.5000`. Typed components are restored as
-count-led groups and promoted copies represented by an audit sidecar are
-suppressed, so scalar and persisted rows have the same reading; the raw
-message is never tokenized again.
+the wire spelling, such as `0010.5000`.
+
+Typed components are restored as count-led groups and promoted copies
+represented by an audit sidecar are suppressed, so scalar and persisted rows
+have the same reading; the raw message is never tokenized again.
 
 ## Benchmark
 

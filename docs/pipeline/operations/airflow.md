@@ -54,10 +54,11 @@ still reaches consumers even when the producer inserts no new rows.
 The default input directory, `data/capture`, is not included in the
 repository. Before the first run, edit
 `tasks/parse_messages/parse_messages.yml` so `source` points to an existing
-worker-visible directory or object-store prefix. Adjust `pattern`, `timezone`,
-header rules, payload filters, and `fix_dictionary` for that capture. Set the
-same `fix_dictionary` in `tasks/parse_fix/parse_fix.yml`; the first stage reads
-MsgType metadata and the second performs full transcription.
+worker-visible directory or object-store prefix, and adjust `pattern`,
+`timezone`, header rules, payload filters, and `fix_dictionary` for it.
+
+Set the same `fix_dictionary` in `tasks/parse_fix/parse_fix.yml`; the first
+stage reads MsgType metadata and the second performs full transcription.
 
 The active catalog configuration in every task YAML is deliberately local:
 
@@ -296,9 +297,11 @@ does not need a source interval and has catch-up disabled.
 The checked-in policy in `tasks/optimize_iceberg/optimize_iceberg.yml` retains
 at least 24 snapshots and every snapshot from the last seven days. Files are
 deleted only when no retained snapshot or ref reaches them and they have been
-orphaned for at least three days. Current table rows remain; time travel to an
-expired snapshot does not. Manifest and manifest-list Avro files are shared, so
-the sweep keeps one whenever any retained snapshot still references it.
+orphaned for at least three days.
+
+Current table rows remain; time travel to an expired snapshot does not.
+Manifest and manifest-list Avro files are shared, so the sweep keeps one
+whenever any retained snapshot still references it.
 
 Inspect and adjust that retention before unpausing the DAG. Schedule it for a
 quiet warehouse period; the shipped 02:30 UTC time avoids the top-of-hour start

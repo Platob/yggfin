@@ -157,12 +157,17 @@ def part_bytes(part: Any) -> bytes | None:
     )
 
 
-def hash_arrow(*columns: Any) -> pyarrow.Array:
-    """Return one v1 identity per row from scalar or Arrow parts."""
+def framed_arrow(*columns: Any) -> pyarrow.Array:
+    """The v1 frame of `columns`, one payload per row.
+
+    What `hash_arrow` digests, exposed because a time-anchored identity
+    digests the same bytes -- the framing is the contract, the digest is
+    not.
+    """
     if not columns:
         raise TypeError("an identifier needs at least one part to hash")
     if sys.byteorder != "little":
-        raise RuntimeError("hash_arrow requires a little-endian Arrow host; use hash_of")
+        raise RuntimeError("framing requires a little-endian Arrow host; use frame")
     framed: list[Any] = []
     rows = 1
     for column in columns:
@@ -178,7 +183,12 @@ def hash_arrow(*columns: Any) -> pyarrow.Array:
     )
     if isinstance(joined, pyarrow.Scalar):
         joined = pyarrow.array([joined.as_py()] * rows, type=pyarrow.binary())
-    return _digested(joined)
+    return joined
+
+
+def hash_arrow(*columns: Any) -> pyarrow.Array:
+    """Return one v1 identity per row from scalar or Arrow parts."""
+    return _digested(framed_arrow(*columns))
 
 
 def arrow_of(values: Any) -> pyarrow.Array:
