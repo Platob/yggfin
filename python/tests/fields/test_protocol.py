@@ -194,3 +194,21 @@ def test_the_typed_views_stay_the_mapping_they_advertise() -> None:
     assert sorted(built.fix.values()) == ["54", "char"]
     assert sorted(built.enum.values()) == []
     assert built.fix.meanings == {}, "the decoded map answers under its own name"
+
+
+def test_the_fix_view_answers_what_a_registry_record_does() -> None:
+    """A Field carrying FIX metadata is the record: the spellings it answers
+    to, what a value encodes to, what it means, and which kind it names."""
+    from rekep.fix import FixRegistry
+
+    registry = FixRegistry.from_builtin()
+    side, msg_type = registry.scalar("Side"), registry.scalar("MsgType")
+    record = registry.entry("Side")
+
+    assert side.fix.spellings()[0] == "Side"
+    assert side.fix.meaning("1") == record.meaning("1")
+    assert side.fix.encode("Buy") == record.encode("Buy") == "1"
+    assert side.fix.decode("1") == record.decode("1")
+    assert side.fix.declares("4.4") and not side.fix.declares("9.9")
+    assert msg_type.fix.event_type("D") is registry.entry("MsgType").event_type("D")
+    assert msg_type.fix.event_type("nothing-declares-this").name == "UNKNOWN"

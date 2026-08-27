@@ -16,8 +16,11 @@ view stays the `MutableMapping` it advertises.
 
 from __future__ import annotations
 
+import functools
 import json
+import re
 from collections.abc import Iterator, Mapping, MutableMapping
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from rekep.enums import EventType, State
@@ -30,6 +33,54 @@ IDENTITY = "identity"
 
 #: What a sort key means when a declaration only says there is one.
 ASCENDING = "asc"
+
+
+#: A version list that holds for every version, which is what a field outside
+#: the standard has.
+ANY_VERSION = "*"
+
+#: What an encoded key keeps: nothing that is not a letter or a digit, so
+#: `ORDER_SUBMISSION_TIME`, `Order Submission Time` and `ordersubmissiontime`
+#: are one key where plain lowercasing leaves three.
+_ENCODED_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
+
+
+def fold(name: Any) -> str:
+    """One spelling as it is matched: case-folded, separators kept."""
+    return str(name).strip().casefold()
+
+
+@functools.lru_cache(maxsize=4096)
+def encoded_key(text: Any) -> str:
+    """A value or its name as `encoded` keys it: casefolded letters and digits.
+
+    Memoized because a feed asks the same few hundred spellings on every
+    message.
+    """
+    return _ENCODED_DROP.sub("", str(text).casefold())
+
+
+@functools.lru_cache(maxsize=1024)
+def _encodings(values: tuple[tuple[str, str], ...], names: tuple[tuple[str, str], ...]) -> Any:
+    """`(spelling -> value, value -> name)` for one field's declared values.
+
+    A spelling two values both normalize to is emitted for neither: an
+    ambiguous translation that silently picks one is worse than none.
+    """
+    claimed: dict[str, list[str]] = {}
+    for source in (values, names):
+        for value, spelled in source:
+            claimed.setdefault(encoded_key(spelled), []).append(str(value))
+    for value, _ in values:
+        claimed.setdefault(encoded_key(value), []).append(str(value))
+    encoded = {key: found[0] for key, found in claimed.items() if key and len(set(found)) == 1}
+    decoded = {str(value): encoded_key(spelled) for value, spelled in (*values, *names) if spelled}
+    return MappingProxyType(encoded), MappingProxyType(decoded)
+
+
+def encodings_of(values: Mapping[str, str], names: Mapping[str, str]) -> Any:
+    """`_encodings` over two plain mappings."""
+    return _encodings(tuple(sorted(values.items())), tuple(sorted(names.items())))
 
 
 class ProtocolMetadata(MutableMapping):
@@ -215,6 +266,53 @@ class FixMetadata(ProtocolMetadata):
             return
         rendered = {str(key): int(state) for key, state in dict(value).items()}
         self["states"] = json.dumps(rendered, separators=(",", ":"))
+
+    # -- what the record answers --------------------------------------------
+
+    def declares(self, version: str) -> bool:
+        """Whether this field holds for `version`, wildcard included."""
+        declared = self.versions
+        return version in declared or ANY_VERSION in declared
+
+    def spellings(self) -> tuple[str, ...]:
+        """Every name this field answers to: canonical first, then its aliases,
+        deduplicated by fold and in the order a lookup applies them."""
+        found: dict[str, str] = {}
+        for name in (self.name, *(str(alias.get("name", "")) for alias in self.aliases)):
+            if name.strip():
+                found.setdefault(fold(name), name)
+        return tuple(found.values())
+
+    def encode(self, value: Any) -> str:
+        """The FIX value a spelling names, or the spelling itself when none does."""
+        return self._codecs()[0].get(encoded_key(value), str(value))
+
+    def decode(self, value: Any) -> str:
+        """The normalized name of a FIX value, or the value when none is known."""
+        return self._codecs()[1].get(str(value), str(value))
+
+    def meaning(self, value: Any) -> str | None:
+        """What one value means where this field enumerates its values.
+
+        The prose before the symbol -- `Side <54>` value `1` is "Buy" for a
+        person -- and None where nothing defines it.
+        """
+        spelled = str(value)
+        return self.meanings.get(spelled) or self.value_names.get(spelled)
+
+    def event_type(self, value: Any) -> EventType:
+        """The configured kind of one MsgType, MISC when known, else UNKNOWN."""
+        spelled = str(value) if value is not None else ""
+        configured = self.event_types.get(spelled)
+        if configured is not None:
+            return configured
+        if spelled in self.meanings or spelled in self.value_names:
+            return EventType.MISC
+        return EventType.UNKNOWN
+
+    def _codecs(self) -> tuple[Mapping[str, str], Mapping[str, str]]:
+        """`(spelling -> value, value -> name)`, derived from what is stored."""
+        return encodings_of(self.meanings, self.value_names)
 
 
 class IcebergMetadata(ProtocolMetadata):
