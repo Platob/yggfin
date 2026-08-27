@@ -59,6 +59,8 @@ MESSAGE = [
     "TrdRegTimestamps",
     "SideTrdRegTS",
     "ISINCODE",
+    "ParentClOrdID",
+    "ParentOrderID",
 ]
 #: Structured components declared after every flat column: Iceberg collects
 #: bounds for leaf columns in declaration order, and this contract crosses
@@ -81,7 +83,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 112
+EXPECTED_LOG_COLUMNS = 114
 
 
 @pytest.fixture(scope="module")
@@ -710,7 +712,7 @@ def test_fixmsg_preserves_the_message_stage_type_and_event_code(
 
 def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) -> None:
     raw = _raw_batch(
-        Message(message="8=FIX.4.4|35=D|11=A|VendorField=x|10=000|"),
+        Message(message="Sending : 8=FIX.4.4|35=D|11=A|VendorField=x|10=000|"),
         Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#CLORDID=B|10=000|"),
     )
     codec = FixCodec(registry=registry)

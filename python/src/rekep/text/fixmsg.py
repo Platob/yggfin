@@ -31,6 +31,8 @@ from rekep.fix.columns import (
     IDENTIFIER_FIELDS,
     ISIN_CODE,
     KWARGS,
+    PARENT_CL_ORD_ID,
+    PARENT_ORDER_ID,
     Kwarg,
 )
 from rekep.fix.components import (
@@ -277,6 +279,12 @@ class FixMsg(Message):
 
     ISINCODE: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
+
+    ParentClOrdID: Annotated[str | None, PARENT_CL_ORD_ID] = None
+    """Client order identity of the parent in a replace chain, bridge-rendered."""
+
+    ParentOrderID: Annotated[str | None, PARENT_ORDER_ID] = None
+    """Venue order identity of the parent in a replace chain, bridge-rendered."""
 
     # -- what a message says, flattened ---------------------------------------
     #

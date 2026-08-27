@@ -254,6 +254,16 @@ fields:
   nullable: true
   description: ISIN carried by the rendered ISINCODE field.
   fix: {name: ISINCODE, type: String}
+- name: ParentClOrdID
+  type: string
+  nullable: true
+  description: Client order identity of the parent in a replace chain, as the bridge renders it.
+  fix: {name: ParentClOrdID, type: String}
+- name: ParentOrderID
+  type: string
+  nullable: true
+  description: Venue order identity of the parent in a replace chain, as the bridge renders it.
+  fix: {name: ParentOrderID, type: String}
 - name: BeginString
   type: string
   nullable: true

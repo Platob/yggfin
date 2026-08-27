@@ -423,12 +423,51 @@ class MarketTags:
         """Every tag a shape already stores, plus the two framing fields.
 
         What `FixEvents.extras` drops: a field with a column of its own is not
-        metadata, and a length or a checksum is not data at all.
+        metadata, and a length or a checksum is not data at all. The rendered
+        identities FIX never numbered are claimed through
+        `rendered_spellings`, because their pairs keep the source spelling.
         """
         tag_text = self.access.tag_text
         return frozenset(tag_text(name) for name in self.standard()) | frozenset(
             tag_text(name) for name in FRAMING_FIELDS
         )
+
+    @classmethod
+    @functools.cache
+    def rendered(cls) -> frozenset[str]:
+        """Stored fields FIX never numbered, spelled as the registry does.
+
+        The tagless half of `standard()`: a shape member annotated with a
+        namespace record carries the record's name and no tag.
+        """
+        found: set[str] = set()
+
+        def visit(struct: StructField) -> None:
+            for member in struct.fields:
+                if member.fix.get("name") and not member.fix.get("tag"):
+                    found.add(str(member.fix["name"]))
+                if member.fields:
+                    visit(member)
+
+        for shape in (MarketEvent, Order, Execution, Instrument):
+            visit(shape.into_field())
+        return frozenset(found)
+
+    @functools.cached_property
+    def rendered_spellings(self) -> frozenset[str]:
+        """Every spelling a stored rendered field answers to, case-folded.
+
+        A tagged pair canonicalizes to its wire tag, so `claimed` matches it
+        exactly; a namespace pair keeps the spelling the bridge wrote --
+        `PARENTCLORDID` stays `PARENTCLORDID` -- so its claim has to cover
+        the record's canonical name, its aliases, and any casing of either.
+        """
+        found: set[str] = set()
+        for name in self.rendered():
+            entry = None if self.access.registry is None else self.access.registry.resolve(name)
+            spellings = entry.spellings() if entry is not None else (name,)
+            found.update(spelled.casefold() for spelled in spellings)
+        return frozenset(found)
 
     @functools.cached_property
     def audited(self) -> frozenset[str]:
@@ -1051,6 +1090,8 @@ class FixEvents(Convertible):
                 client_order_id=get("ClOrdID"),
                 prev_client_order_id=get("OrigClOrdID"),
                 clord_link_id=get("ClOrdLinkID"),
+                parent_client_order_id=get("ParentClOrdID"),
+                parent_order_id=get("ParentOrderID"),
                 cxl_rej_reason=_integer(get("CxlRejReason")),
                 cxl_rej_response_to=get("CxlRejResponseTo"),
                 **self._shared(),
@@ -1481,10 +1522,11 @@ class FixEvents(Convertible):
     def extras(self) -> dict[str, str]:
         """Every field the shapes have no column for, under the key it arrived as."""
         claimed, audited = self.dictionary.claimed, self.dictionary.audited
+        rendered = self.dictionary.rendered_spellings
         return {
             key: str(value)
             for key, value in self.by_tag.items()
-            if key not in claimed or key in audited
+            if (key not in claimed and key.casefold() not in rendered) or key in audited
         }
 
 

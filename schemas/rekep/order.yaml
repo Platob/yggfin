@@ -190,6 +190,16 @@ fields:
   nullable: true
   description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
   fix: {tag: '583', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
+- name: parent_client_order_id
+  type: string
+  nullable: true
+  description: Client order identity of the parent in a replace chain, as the bridge renders it.
+  fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentClOrdID, name: ParentClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+- name: parent_order_id
+  type: string
+  nullable: true
+  description: Venue order identity of the parent in a replace chain, as the bridge renders it.
+  fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentOrderID, name: ParentOrderID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
 - name: cxl_rej_reason
   type: int32
   nullable: true

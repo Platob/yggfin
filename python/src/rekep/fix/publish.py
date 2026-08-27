@@ -235,7 +235,7 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 
 #: Fields FIX never numbered that the parsed log gives a column of its own.
 #: Selected by name, because a name is all such a field has.
-NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE",)
+NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
 #: Every key the packaged projection selects, in declaration order.
 PROJECTED: tuple[str, ...] = tuple(

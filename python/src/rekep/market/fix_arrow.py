@@ -612,6 +612,9 @@ def _orders(
         # The reject-only columns stay null here: a row carrying either is
         # `_REASON_FIELDS`-complex and translates through the scalar path.
         "clord_link_id": shared.take(values.text("ClOrdLinkID"), where),
+        # Namespace identities live in their resolved columns, never as tags.
+        "parent_client_order_id": shared.take(values.text("ParentClOrdID"), where),
+        "parent_order_id": shared.take(values.text("ParentOrderID"), where),
     }
     return _batch(Order, columns, len(where))
 

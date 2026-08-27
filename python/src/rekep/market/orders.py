@@ -174,6 +174,14 @@ class Order(MarketEvent):
     clord_link_id: Annotated[str | None, fix_tag("ClOrdLinkID")] = None
     """Identifier linking the order versions of one intent across replace chains."""
 
+    # Bridge-rendered identities FIX never numbered: the same registry
+    # annotation, resolved through a namespace record rather than a tag.
+    parent_client_order_id: Annotated[str | None, fix_tag("ParentClOrdID")] = None
+    """Client order identity of the parent in a replace chain, where a bridge says it."""
+
+    parent_order_id: Annotated[str | None, fix_tag("ParentOrderID")] = None
+    """Venue order identity of the parent in a replace chain, where a bridge says it."""
+
     cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", arrow_type=pyarrow.int32())] = (
         None
     )

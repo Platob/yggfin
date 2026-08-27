@@ -18,6 +18,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import Field
+from rekep.fix.columns import NAMESPACE_FIELDS
 from rekep.fix.fields import arrow_type_of
 from rekep.market import Book, Execution, Instrument, Level, MarketEvent, Order
 
@@ -134,6 +135,12 @@ def test_every_declared_tag_is_the_one_the_dictionary_gives_that_name(
     path: str, member: Field
 ) -> None:
     name = member.fix["name"]
+    if member.fix.get("kind") == "namespace":
+        # A rendered identity FIX never numbered: the registry's namespace
+        # record is its declaration, and claiming a tag would be the mislabel.
+        assert name in NAMESPACE_FIELDS, f"{path} names {name!r}, which no record declares"
+        assert "tag" not in member.fix, path
+        return
     assert name in FIELDS, f"{path} names {name!r}, which is in no FIX version"
     assert member.fix["tag"] == FIELDS[name]["metadata"]["fix:tag"], path
 
@@ -143,6 +150,10 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     path: str, member: Field
 ) -> None:
     """The other half of a mislabel: the right tag on a column of the wrong type."""
+    if member.fix.get("kind") == "namespace":
+        declared = NAMESPACE_FIELDS[member.fix["name"]]
+        assert member.arrow_type == declared.arrow_type, path
+        return
     datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "")
     expected = arrow_type_of(datatype)
     if member.arrow_type == expected:

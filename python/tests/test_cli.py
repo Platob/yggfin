@@ -171,8 +171,8 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(FixMsg.into_field().names) == 112
-    assert "FixMsg: 112 columns, builds" in printed
+    assert len(FixMsg.into_field().names) == 114
+    assert "FixMsg: 114 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_partition: int32  [partition identity]" in printed
     assert (

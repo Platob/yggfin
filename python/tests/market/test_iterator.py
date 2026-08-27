@@ -2204,6 +2204,8 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         OrdType="2",
         OrderQty=10.0,
         Price=100.0,
+        ParentClOrdID="P-1",
+        ParentOrderID="V-9",
         kwargs=[(583, "LINK-1")],
     )
     rejected = dataclasses.replace(
@@ -2212,6 +2214,8 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         ClOrdID="C-2",
         OrigClOrdID="C-1",
         OrdStatus="2",
+        ParentClOrdID=None,
+        ParentOrderID=None,
         kwargs=None,
     )
     settled = FixMsg(
@@ -2237,6 +2241,8 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     orders, executions = translated
 
     assert orders.column("clord_link_id").to_pylist() == ["LINK-1", None]
+    assert orders.column("parent_client_order_id").to_pylist() == ["P-1", None]
+    assert orders.column("parent_order_id").to_pylist() == ["V-9", None]
     assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
         "the reject reads where the order stands from OrdStatus"
     )

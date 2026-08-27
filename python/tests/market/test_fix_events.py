@@ -1302,6 +1302,23 @@ def test_the_order_intent_link_identifier_is_typed_and_coded() -> None:
     assert order.codes["cl_ord_link_id"] == "LINK-9"
 
 
+def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
+    """`ParentClOrdID`/`ParentOrderID` are registry namespace fields -- FIX
+    never numbered them -- and a rendered line's spellings resolve through
+    the same records the parsed column is lifted with."""
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=C-2|#PARENTCLORDID=P-1|"
+        "#PARENTORDERID=V-9|#SYMBOL=AAPL|#SIDE=1|#ORDERQTY=5|#PRICE=10|"
+        "#TRANSACTTIME=20260814-10:00:00"
+    )
+    (order,) = list(FixEvents.from_text(line))
+    assert order.parent_client_order_id == "P-1"
+    assert order.parent_order_id == "V-9"
+    assert order.client_order_id == "C-2"
+    assert "PARENTCLORDID" not in order.metadata, "a field with a column is not metadata"
+    assert "PARENTORDERID" not in order.metadata, "under the bridge's spelling either"
+
+
 def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
     """`SIDE=buy`, `ORDSTATUS=canceled`, `EXECTYPE=cancel`, `ORDTYPE=limit`
     and `TIMEINFORCE=gtd` are how real bridges render the codes; a scalar
