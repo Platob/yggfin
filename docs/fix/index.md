@@ -118,24 +118,26 @@ meanings is a list somebody can read; a silent drop is not.
 The counts are pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild
 that grows past them fails.
 
-### String codecs
+### The one conversion
 
-`encoded` maps a value spelled as text to the wire value it names, so
+`encode` maps a value spelled as text to the wire value it names, so
 `TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. Each raw value
 maps to itself, so a caller has one lookup path and not two.
 
 It is derived from every spelling a value carries -- the prose, the aliases
 and the value itself -- normalized by casefold and then by dropping every
 character outside `[a-z0-9]`, which is what makes `ORDER_SUBMISSION_TIME` and
-`Order Submission Time` one key where plain lowercasing leaves two.
+`Order Submission Time` one key where plain lowercasing leaves two. Cached and
+never stored: it was three hundred kilobytes of the published dictionary
+saying nothing the values did not already say. Recording an estate's own
+spelling is one more alias on the value it names.
 
-`decoded` is the deterministic inverse, preferring the leading alias (the
-QuickFIX symbol), then the prose, then the wire value, under the same
-normalization.
-
-Both are cached and never stored: they were three hundred kilobytes of the
-published dictionary saying nothing the values did not already say. Recording
-an estate's own spelling is one more alias on the value it names.
+There is **no conversion the other way**. A wire value is the fact, and
+`meaning` says what it officially means; a name derived back out of the value
+was a second vocabulary nobody declared, and two readers of it came to
+disagree. Market dispatch asks the dictionary to spell the sixteen message
+shapes this package implements and matches the answers, which is the same
+question a venue's own MsgTypes answer too.
 
 Two values that normalize alike emit neither key: an ambiguous encoding that
 silently picks one is worse than none, and the lookup falls through to the raw
@@ -144,7 +146,7 @@ value. The dropped keys are counted with the conflict report.
 ```python
 field = registry.resolve("TrdRegTimestampType")
 field.encode("Order Submission Time")  # '10'
-field.decode("10")                      # 'ordersubmissiontime'
+field.meaning("10")                     # 'Order Submission Time'
 ```
 
 ### Resolving a name

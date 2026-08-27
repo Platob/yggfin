@@ -30,7 +30,6 @@ from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fields.metadata import (
     FixFieldValue,
-    decodings_of,
     encoded_key,
     encodings_of,
     values_of,
@@ -286,15 +285,10 @@ class FieldEntry(Convertible):
     @property
     def encoded(self) -> Mapping[str, str]:
         """`{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both
-        reach `1`. Derived from the values and cached, never stored beside
-        them: it is three hundred kilobytes of dictionary that says nothing
-        the values do not already say."""
+        reach `1`. The one conversion the dictionary performs, derived from
+        the values and cached, never stored beside them: it was three hundred
+        kilobytes saying nothing the values do not already say."""
         return encodings_of(self.values)[0]
-
-    @property
-    def decoded(self) -> Mapping[str, str]:
-        """`{value: normalized spelling}` for simple string decoding."""
-        return decodings_of(self.values)
 
     def value_of(self, value: str) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""
@@ -307,10 +301,6 @@ class FieldEntry(Convertible):
     def encode(self, value: str) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
-
-    def decode(self, value: str) -> str:
-        """The normalized name of a FIX value, or the value when none is known."""
-        return self.decoded.get(str(value), str(value))
 
     def meaning(self, value: str) -> str | None:
         """What one value means, where this field enumerates its values.

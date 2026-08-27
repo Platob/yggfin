@@ -107,10 +107,11 @@ registry but without a market mapping is also `MISC`; a private value absent
 from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
 these terminal values cannot enter `fix.market` accidentally.
 
-A value's normalized name is also its market dispatch name:
-`D` is `newordersingle` and `W` is `marketdatasnapshotfullrefresh`. The market
-layer owns which of those standard names it implements; the registry carries
-no second handler vocabulary. Operational MsgTypes are source policy configured
+The market layer owns which message shapes it implements, under the standard's
+own name for each, and asks the dictionary what this feed spells them as:
+`newordersingle` encodes to `D` here and to whatever a venue writes instead.
+The registry carries no second handler vocabulary and nothing converts a
+MsgType back into a name. Operational MsgTypes are source policy configured
 through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.

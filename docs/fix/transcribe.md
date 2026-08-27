@@ -107,7 +107,7 @@ repeating groups, and unknown values are preserved.
            role="region" aria-label="Decoded ordered fields">
         <table class="fix-registry__table">
           <thead>
-            <tr><th>#</th><th>Input</th><th>Registry field</th><th>Raw</th><th>Parsed</th><th>Decoded</th><th>Meaning</th><th>Status</th></tr>
+            <tr><th>#</th><th>Input</th><th>Registry field</th><th>Raw</th><th>Parsed</th><th>Value</th><th>Meaning</th><th>Status</th></tr>
           </thead>
           <tbody data-decode-rows></tbody>
         </table>

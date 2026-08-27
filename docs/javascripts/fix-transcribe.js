@@ -643,9 +643,10 @@
     )?.input_value;
   }
 
-  // One field's lookups, derived from its values exactly as the package
-  // derives them: a spelling two values share is emitted for neither, and a
-  // value decodes to its leading alias before its prose.
+  // One field's spelling lookup, derived from its values exactly as the
+  // package derives it: a spelling two values share is emitted for neither.
+  // One direction only -- a written spelling reaches the FIX value it names,
+  // and the value is the fact, so nothing converts back out of it.
   const codecCache = new WeakMap();
 
   function codecs(field) {
@@ -653,14 +654,12 @@
     if (held) return held;
     const values = list(field.values);
     const claimed = new Map();
-    const decoded = {};
     const meanings = {};
     for (const one of values) {
       const value = String(one.value);
       const aliases = list(one.aliases).map(String);
       const meaning = one.meaning ? String(one.meaning) : "";
       if (meaning) meanings[value] = meaning;
-      decoded[value] = encodedKey(aliases[0] || meaning) || value;
       for (const spelled of [meaning, ...aliases, value]) {
         const key = encodedKey(spelled);
         if (!key) continue;
@@ -673,7 +672,6 @@
     for (const [key, owners] of claimed) if (owners.length === 1) encoded[key] = owners[0];
     const found = {
       encoded,
-      decoded,
       meanings,
       values,
       known: new Set(values.map((one) => String(one.value))),
@@ -696,7 +694,6 @@
     const encodings = reading.encoded;
     const encoded = pair.input_form === "named" && own(encodings, encodedKey(raw));
     const wireValue = encoded ? encodings[encodedKey(raw)] : raw;
-    const decoded = own(reading.decoded, wireValue) ? reading.decoded[wireValue] : raw;
     const meaning = reading.meanings[wireValue] ?? null;
     const typed = parseValue(wireValue, field.type);
     const versionStatus = declaration(field, version);
@@ -720,11 +717,10 @@
       datatype: field.type || null,
       typed_value: typed.valid ? typed.value : null,
       wire_value: wireValue,
-      decoded,
       meaning,
       version_status: versionStatus,
       output_key: namedOutputKey(pair.input_key, field.name),
-      output_value: decoded,
+      output_value: wireValue,
       state,
       reason:
         typed.reason ||
@@ -768,7 +764,6 @@
       datatype: field.type || null,
       typed_value: typed.valid ? typed.value : null,
       wire_value: outputValue,
-      decoded: own(reading.decoded, outputValue) ? reading.decoded[outputValue] : outputValue,
       meaning: reading.meanings[outputValue] ?? null,
       version_status: versionStatus,
       output_key: outputKey,
@@ -791,7 +786,6 @@
       name: null,
       datatype: null,
       typed_value: null,
-      decoded: pair.input_value,
       meaning: null,
       version_status: "unknown-field",
       output_key: pair.input_key,
@@ -1382,7 +1376,7 @@
       <td>${registryField(record)}</td>
       <td><code>${escape(record.input_value)}</code></td>
       <td><code>${escape(displayValue(record.typed_value))}</code></td>
-      <td><code>${escape(record.decoded)}</code></td>
+      <td><code>${escape(record.wire_value ?? record.input_value)}</code></td>
       <td>${record.meaning ? escape(record.meaning) : '<span class="fix-registry__muted">—</span>'}</td>
       <td>${stateBadge(record.state, record.reason)}</td>
     </tr>`;
@@ -1541,7 +1535,7 @@
 
   function structureMemberHtml(record) {
     const name = record.name || record.input_key;
-    const value = record.decoded ?? record.output_value ?? record.input_value;
+    const value = record.output_value ?? record.input_value;
     const tag = record.tag === null || record.tag === undefined ? "namespace" : `<${record.tag}>`;
     return `<div class="fix-transcribe__member">
       <span><strong>${escape(name)}</strong><small>${escape(tag)}</small></span>

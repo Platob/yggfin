@@ -23,6 +23,8 @@
 
   // One field's spelling lookup, derived from its values exactly as the
   // package derives it: a spelling two values share is emitted for neither.
+  // One direction only -- every spelling a value carries reaches the value,
+  // and nothing converts back out of it.
   function encodings(field) {
     const claimed = new Map();
     for (const one of list(field.values)) {
@@ -39,10 +41,6 @@
     for (const [key, owners] of claimed) if (owners.length === 1) found[key] = owners[0];
     return found;
   }
-
-  // What one value decodes to: its leading alias, then its prose, then itself.
-  const decodedValue = (one) =>
-    encodedKey(list(one.aliases)[0] || one.meaning || "") || String(one.value);
 
   const list = (value) => (Array.isArray(value) ? value : []);
   const object = (value) => (value && typeof value === "object" ? value : {});
@@ -466,7 +464,7 @@
 
     function valueTable(field, values) {
       return `<h4>Values</h4><div class="fix-registry__table-wrap fix-registry__detail-table"><table class="fix-registry__table">
-        <thead><tr><th>Wire</th><th>Meaning</th><th>Symbol</th><th>Decoded</th><th>State / event</th></tr></thead>
+        <thead><tr><th>Wire</th><th>Meaning</th><th>State / event</th></tr></thead>
         <tbody>${values
           .map((one) => {
             const code = String(one.value);
@@ -476,7 +474,7 @@
                 ? `${configured.name} (${configured.id})`
                 : configured
               : "";
-            return `<tr><td><code>${escape(code)}</code></td><td>${escape(one.meaning || "")}</td><td><code>${escape(list(one.aliases)[0] || "")}</code></td><td><code>${escape(decodedValue(one))}</code></td><td>${escape(enumText)}</td></tr>`;
+            return `<tr><td><code>${escape(code)}</code></td><td>${escape(one.meaning || "")}</td><td>${escape(enumText)}</td></tr>`;
           })
           .join("")}</tbody></table></div>`;
     }

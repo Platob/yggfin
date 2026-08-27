@@ -509,11 +509,7 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     assert cached == {"0": State.NEW, "1": State.PARTIALLY_FILLED}
     assert store.state_values("OrdStatus") is cached
     assert store.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert store.msg_type_handlers() == {
-        "0": "heartbeat",
-        "1": "testrequest",
-        "D": "newordersingle",
-    }
+    assert store.entry(35).encode("NewOrderSingle") == "D"
 
     store.update_field(dataclasses.replace(status, states={"0": State.ACCEPTED}))
     assert store.state_values("OrdStatus") == {"0": State.ACCEPTED}
@@ -522,11 +518,7 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
     assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert reopened.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert reopened.msg_type_handlers() == {
-        "0": "heartbeat",
-        "1": "testrequest",
-        "D": "newordersingle",
-    }
+    assert reopened.entry(35).encode("NewOrderSingle") == "D"
 
 
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(

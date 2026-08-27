@@ -1132,18 +1132,6 @@ class FixRegistry(Convertible):
             {event_type: frozenset(values) for event_type, values in grouped.items()}
         )
 
-    def msg_type_handlers(self) -> Mapping[str, str]:
-        """Known MsgTypes to their canonical normalized decoded name."""
-        return self._msg_type_handlers
-
-    @cached_property
-    def _msg_type_handlers(self) -> Mapping[str, str]:
-        """MsgType codes to their canonical decoded spelling."""
-        entry = self.entry(35)
-        if entry is None:
-            return MappingProxyType({})
-        return MappingProxyType(dict(entry.decoded))
-
     def state_values(self, field: int | str) -> Mapping[str, State]:
         """Configured market states for one FIX field's wire values."""
         entry = self.entry(field)
@@ -1909,7 +1897,6 @@ class FixRegistry(Convertible):
         self.__dict__.pop("_resolutions", None)
         self.__dict__.pop("_msg_type_event_types", None)
         self.__dict__.pop("_msg_types", None)
-        self.__dict__.pop("_msg_type_handlers", None)
         self.__dict__.pop("_state_values", None)
         self.__dict__.pop("_group_count_tags", None)
         self.__dict__["_revision"] = self.revision + 1

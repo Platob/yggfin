@@ -15,9 +15,10 @@ view stays the `MutableMapping` it advertises.
 
 A FIX field's enumerated values are `FixFieldValue` records rather than
 several parallel maps: one value knows what it means and every spelling
-that names it, and the lookups a parse needs -- spelling to value, value to
-normalized name -- are derived from that one list and cached, never stored
-beside it.
+that names it, and the one lookup a parse needs -- a written spelling to
+the FIX value it names -- is derived from that list and cached, never
+stored beside it. There is no lookup the other way: the wire value is the
+fact, and the meaning is what it means.
 """
 
 from __future__ import annotations
@@ -73,11 +74,14 @@ class FixFieldValue(Convertible):
     """One enumerated value of one FIX field, and everything that names it.
 
     The wire value, the prose a person reads, and every other spelling the
-    dictionary or a feed writes for it. One record instead of the four
-    parallel maps this replaces: the value's meaning, its spec symbol, the
-    spelling-to-value lookup and the value-to-name one were all the same
-    fact stored four times, and only the first two are facts at all --
-    `encodings_of` and `decodings_of` derive the rest.
+    dictionary or a feed writes for it. One record instead of the parallel
+    maps this replaces: the value's meaning, its spec symbol and the
+    spelling-to-value lookup were the same fact stored three times, and only
+    the first two are facts at all -- `encodings_of` derives the lookup.
+
+    A value is what the wire carries and what it officially means. There is
+    no reverse: a reader that has the value already has the fact, and a name
+    derived back out of it was a second vocabulary nobody declared.
     """
 
     value: str = ""
@@ -97,21 +101,6 @@ class FixFieldValue(Convertible):
         object.__setattr__(self, "value", value)
         object.__setattr__(self, "meaning", str(self.meaning or ""))
         object.__setattr__(self, "aliases", _aliases(self.aliases))
-
-    @property
-    def name(self) -> str:
-        """The normalized name this value decodes to.
-
-        The spec symbol before the prose, because a symbol is written to be
-        one token where prose is written to be read: `Immediate or Cancel
-        (IOC)` and `IMMEDIATE_OR_CANCEL` do not normalize alike, and the
-        symbol is the one a program means.
-        """
-        for spelled in (*self.aliases, self.meaning):
-            found = encoded_key(spelled)
-            if found:
-                return found
-        return self.value
 
     def spellings(self) -> tuple[str, ...]:
         """Every spelling that names this value, the raw value included."""
@@ -185,12 +174,6 @@ def encodings_of(values: tuple[FixFieldValue, ...]) -> Any:
     found = {key: owners[0] for key, owners in claimed.items() if key and len(owners) == 1}
     dropped = {key: tuple(owners) for key, owners in claimed.items() if key and len(owners) > 1}
     return MappingProxyType(found), MappingProxyType(dropped)
-
-
-@functools.lru_cache(maxsize=8192)
-def decodings_of(values: tuple[FixFieldValue, ...]) -> Mapping[str, str]:
-    """`{wire value: normalized name}`, one deterministic string each."""
-    return MappingProxyType({one.value: one.name for one in values})
 
 
 class ProtocolMetadata(MutableMapping):
@@ -420,10 +403,6 @@ class FixMetadata(ProtocolMetadata):
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
 
-    def decode(self, value: Any) -> str:
-        """The normalized name of a FIX value, or the value when none is known."""
-        return self.decoded.get(str(value), str(value))
-
     def value_of(self, value: Any) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""
         spelled = str(value)
@@ -455,11 +434,6 @@ class FixMetadata(ProtocolMetadata):
     def encoded(self) -> Mapping[str, str]:
         """`{normalized spelling: wire value}`, derived from what is stored."""
         return encodings_of(self.enumerated)[0]
-
-    @property
-    def decoded(self) -> Mapping[str, str]:
-        """`{wire value: normalized name}`, derived from what is stored."""
-        return decodings_of(self.enumerated)
 
 
 class IcebergMetadata(ProtocolMetadata):

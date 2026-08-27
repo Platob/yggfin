@@ -215,7 +215,6 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegis
     assert stamps.encode("ORDER_SUBMISSION_TIME") == "10"
     assert stamps.encode("ordersubmissiontime") == "10"
     assert stamps.encode("10") == "10"
-    assert stamps.decode("10") == "ordersubmissiontime"
     assert stored_value(records()["770"], "10")["aliases"] == ["ORDER_SUBMISSION_TIME"]
 
 

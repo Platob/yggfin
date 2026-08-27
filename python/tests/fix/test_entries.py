@@ -237,9 +237,9 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
     assert entry.encode("sell short") == "2", "the symbol, spaced as a person would write it"
     assert entry.encode("1") == "1", "and a raw value maps to itself"
     assert entry.encode("nothing here") == "nothing here", "or falls through untouched"
-    assert entry.decode("1") == "buy", "the symbolic value is the canonical decoding"
-    assert entry.decode("2") == "sellshort"
-    assert entry.decode("3") == "3", "an unknown wire value stays intact"
+    assert entry.meaning("1") == "Buy", "and the value itself carries what it means"
+    assert entry.meaning("3") is None, "an unknown wire value means nothing here"
+    assert not hasattr(entry, "decode"), "there is no reverse: the wire value is the fact"
 
 
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
@@ -270,7 +270,7 @@ def test_a_recorded_spelling_reaches_its_value_and_survives_a_rebuild() -> None:
     assert entry.encode("Buy") == "1", "and the dictionary's own are still there"
     restored = FieldEntry.from_dict(entry.into_dict())
     assert restored.encode("achat") == "1"
-    assert restored.decode("1") == "achat", "the leading alias is the canonical decoding"
+    assert restored.value_of("1").aliases == ("achat",), "the spelling survives on the value"
 
 
 def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
@@ -304,7 +304,7 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
     assert restored.event_types == {"D": EventType.ORDER}
     assert restored.states == {"D": State.PENDING_NEW}
     assert restored.encode("new_order_single") == "D"
-    assert restored.decode("D") == "newordersingle"
+    assert restored.encode("NewOrderSingle") == "D", "however the caller spells it"
     assert "handlers" not in restored.into_dict()
     assert restored.into_dict()["event_types"] == {
         "D": {"name": "ORDER", "id": int(EventType.ORDER)}

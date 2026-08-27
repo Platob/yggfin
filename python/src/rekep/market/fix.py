@@ -138,8 +138,9 @@ _REGULATORY_MEMBERS: tuple[str, ...] = (
 #: and is not a market event this package stores.
 ENTRY_SIDES: dict[str, Side] = {"0": Side.BID, "1": Side.ASK}
 
-# The registry supplies normalized FIX names. These sets say which market
-# shape the package implements; the protocol dictionary does not duplicate it.
+# These sets say which market shape the package implements, under the
+# standard's own name for each message; the protocol dictionary does not
+# duplicate them, it only says what a feed spells them as.
 ENTRY_HANDLERS = frozenset({"marketdatasnapshotfullrefresh", "marketdataincrementalrefresh"})
 ORDER_HANDLERS = frozenset(
     {"newordersingle", "ordercancelrequest", "ordercancelreplacerequest", "ordercancelreject"}
@@ -157,6 +158,19 @@ EXECUTION_REPORT_HANDLER = "executionreport"
 #: a trade: a plain query fabricates nothing.
 EXECUTION_REQUEST_HANDLER = "tradecapturereportrequest"
 EXECUTION_HANDLERS = frozenset({"tradecapturereport", EXECUTION_REQUEST_HANDLER})
+
+#: Every message shape this package implements. The dispatch vocabulary,
+#: which is what `MarketTags.handlers` asks the dictionary to spell.
+HANDLERS: frozenset[str] = frozenset(
+    {
+        *ENTRY_HANDLERS,
+        *ORDER_HANDLERS,
+        *QUOTE_HANDLERS,
+        *MASS_QUOTE_HANDLERS,
+        *EXECUTION_HANDLERS,
+        EXECUTION_REPORT_HANDLER,
+    }
+)
 
 #: What says a report request actually carries a trade rather than criteria.
 #: Fields both translation paths read, so the gate answers the same flat.
@@ -389,12 +403,27 @@ class MarketTags:
 
     @functools.cached_property
     def handlers(self) -> Mapping[str, str]:
-        """Known MsgTypes to their canonical decoded dispatch name."""
-        builtin = FixRegistry.from_builtin().msg_type_handlers()
-        configured = self.registry.msg_type_handlers()
-        if self.registry is FixRegistry.from_builtin() or not configured:
-            return builtin
-        return types.MappingProxyType({**builtin, **configured})
+        """The MsgTypes this package implements, to the shape each dispatches as.
+
+        Built by *encoding* each implemented name -- the one direction the
+        registry keeps -- rather than by decoding every value it knows: the
+        vocabulary below is sixteen names, and asking the dictionary what it
+        spells them as answers for a venue's own MsgTypes too, which is the
+        whole reason the dispatch is not a table of wire values.
+
+        Walked in sorted order so a configured dictionary that spells two
+        names alike resolves the same way on every run.
+        """
+        found: dict[str, str] = {}
+        for source in dict.fromkeys((FixRegistry.from_builtin(), self.registry)):
+            entry = source.entry(35)
+            if entry is None:
+                continue
+            for handler in sorted(HANDLERS):
+                value = entry.encode(handler)
+                if value != handler:
+                    found[value] = handler
+        return types.MappingProxyType(found)
 
     @functools.cached_property
     def names_by_tag(self) -> Mapping[str, str]:

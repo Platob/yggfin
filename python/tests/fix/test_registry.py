@@ -718,18 +718,23 @@ def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
     assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
 
 
-def test_msg_type_handlers_are_the_canonical_decodings() -> None:
-    registry = FixRegistry.from_builtin()
-    msg_type = registry.resolve("MsgType")
-    handlers = registry.msg_type_handlers()
+def test_a_standard_message_name_encodes_to_the_msgtype_that_spells_it() -> None:
+    """The one direction the dictionary keeps, and the one market dispatch uses.
 
-    assert all(msg_type.encode(handler) == value for value, handler in handlers.items())
-    assert {value: handlers[value] for value in ("8", "D", "W", "AE")} == {
-        "8": "executionreport",
-        "D": "newordersingle",
-        "W": "marketdatasnapshotfullrefresh",
-        "AE": "tradecapturereport",
+    There is no reverse: nothing asks the registry what `8` is called, because
+    the caller that has `8` already has the fact it needed."""
+    msg_type = FixRegistry.from_builtin().resolve("MsgType")
+
+    assert {
+        name: msg_type.encode(name)
+        for name in ("executionreport", "newordersingle", "marketdatasnapshotfullrefresh")
+    } == {
+        "executionreport": "8",
+        "newordersingle": "D",
+        "marketdatasnapshotfullrefresh": "W",
     }
+    assert msg_type.encode("TradeCaptureReport") == "AE", "however the caller spells it"
+    assert not hasattr(FixRegistry, "msg_type_handlers")
 
 
 def test_the_builtin_registry_classifies_msg_types_before_transcription() -> None:
