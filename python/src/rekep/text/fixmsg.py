@@ -840,6 +840,25 @@ class FixMsg(Message):
         messages = columns.get("message")
         if messages is not None:
             protocols = codec.categorise(messages, columns.get("plugin_code"))
+            stored_protocols = columns.get("protocol_code")
+            if stored_protocols is not None:
+                # The message stage classified these same rows once, from
+                # syntax the rules cannot always see: a rendered payload whose
+                # `MSGTYPE=` discriminator is real but whose `#` markers are
+                # not there carries genuine bridge data the `BRIDGE` pattern
+                # alone would drop into OTHER unread. The stored reading fills
+                # only what the recompute could not name -- never the other
+                # way around, because the rules also see what the syntax probe
+                # cannot: a `35=UL` wrapper without `MSGTYPE=` is stored FIX
+                # but must parse under the bridge's named codec, and known
+                # operational vocabulary is MISC only here.
+                protocols = pyarrow.compute.if_else(
+                    pyarrow.compute.equal(protocols, NO_PROTOCOL),
+                    pyarrow.compute.fill_null(
+                        stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
+                    ),
+                    protocols,
+                )
             # Direction reads the verb before the payload, so it is resolved
             # here, where the classification saying which token opens the
             # payload was just computed -- and written back onto the batch,

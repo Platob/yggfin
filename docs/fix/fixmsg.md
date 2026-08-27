@@ -26,6 +26,11 @@ split structured key/value syntax once into ordered `Kwarg` values. They assign
 `MsgType` plus a syntax-only `protocol_code`. The `FixMsg` conversion owns
 dictionary resolution, structured components, event time and market identities;
 it consumes those stored arguments instead of tokenizing the payload again.
+The conversion classifies each line with the codec's own rules, and the stored
+`protocol_code` fills only the rows those rules call `OTHER`: an enrichment
+echo whose `MSGTYPE=` is real but whose `#` markers are absent parses as the
+bridge message the syntax probe already saw, while every line the rules do
+name keeps their reading.
 Long prose and diagnostics that contain neither a discriminator nor two
 delimiter-separated assignments skip tokenization entirely. Use
 `exclude_msgtypes=("0", "1")` on the text reader to discard operational

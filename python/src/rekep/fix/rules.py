@@ -351,13 +351,19 @@ class Rules(Convertible):
 
 
 def _opens(verb_at: Any, payload_at: Any) -> Any:
-    """Whether a found verb starts before the row's first payload token."""
+    """Whether a found verb starts before the row's first payload token.
+
+    No payload token is no anchor, not an open door: a row can carry a
+    protocol whose patterns never matched its text -- the message stage's
+    stored reading rescued it -- and without an anchor a verb could sit
+    anywhere in the payload. No answer beats a guessed one.
+    """
     compute = pyarrow.compute
     return compute.and_(
         compute.fill_null(compute.greater_equal(verb_at, 0), False),
         compute.fill_null(
-            compute.or_(compute.less(payload_at, 0), compute.less(verb_at, payload_at)),
-            True,
+            compute.and_(compute.greater_equal(payload_at, 0), compute.less(verb_at, payload_at)),
+            False,
         ),
     )
 

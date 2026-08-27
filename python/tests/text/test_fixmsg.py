@@ -1186,6 +1186,48 @@ def test_rendered_isincode_keeps_its_source_identity() -> None:
     assert field.fix == {"name": "ISINCODE", "type": "String"}
 
 
+def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegistry) -> None:
+    """An enrichment echo writes real bridge fields with a `MSGTYPE=` and no
+    `#` markers: the rules alone say OTHER and drop that payload unread, but
+    the message stage's syntax reading said UL, and that answer is data. The
+    fill is one-directional -- a recompute that named a protocol keeps it --
+    so operational vocabulary stays MISC and a `35=UL` wrapper the probe
+    stored as FIX still parses as the bridge message it is."""
+    echo = Message(
+        message="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
+        "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
+    )
+    assert echo.protocol_code == "UL", "the syntax probe already said so"
+    heartbeat = Message(message="heartbeat emitted seq=7")
+    assert heartbeat.protocol_code == "OTHER", "the probe has no MISC vocabulary"
+    wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
+    assert wrapped.protocol_code == "FIX", "the probe reads only the envelope"
+
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(echo, heartbeat, wrapped), FixCodec(registry=registry)
+    )
+    assert batch.column("protocol_code").to_pylist() == ["UL", "MISC", "UL"]
+    assert batch.column("ClOrdID").to_pylist()[0] == "PL024819", "promoted, not dropped"
+    assert batch.column("Account").to_pylist()[0] == "807768.001"
+    assert batch.column("MsgType").to_pylist()[0] == "D"
+    assert batch.column("protocol_version").to_pylist()[0] == "4.4"
+    assert batch.column("kwargs").to_pylist()[1] is None, "operational rows stay unread"
+
+    # Without a version the registry cannot resolve the spellings, but the
+    # rescued row still keeps its arguments and its identities -- both were
+    # simply null while the row read as OTHER.
+    bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
+    assert bare.protocol_code == "UL"
+    lone = FixMsg.from_message_arrow_batch(_raw_batch(bare), FixCodec(registry=registry))
+    assert lone.column("protocol_code").to_pylist() == ["UL"]
+    assert [(entry["key"], entry["value"]) for entry in lone.column("kwargs").to_pylist()[0]] == [
+        ("ACCOUNT", "59.1"),
+        ("CLORDID", "PL9"),
+        ("SIDE", "2"),
+    ]
+    assert ("cl_ord_id", "PL9") in lone.column("codes").to_pylist()[0]
+
+
 def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:
     """`Receiving`/`Sending` before the payload's first token is the direction;
     the same words inside the payload -- a reject's prose, a bridge value --
@@ -1224,6 +1266,15 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     legacy = raw.remove_column(raw.schema.get_field_index("direction"))
     relived = FixMsg.from_message_arrow_batch(legacy, FixCodec(registry=registry))
     assert relived.column("direction").to_pylist() == [False, True, True]
+
+    # A rescued row -- stored UL, no rule pattern in its text -- has no
+    # payload anchor, and an unanchored verb answers nothing rather than
+    # answering from anywhere.
+    rescued = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
+    assert rescued.protocol_code == "UL"
+    anchorless = FixMsg.from_message_arrow_batch(_raw_batch(rescued), FixCodec(registry=registry))
+    assert anchorless.column("protocol_code").to_pylist() == ["UL"]
+    assert anchorless.column("direction").to_pylist() == [None]
 
     # A projected row reparsed without its raw message keeps the resolved
     # answer: direction is the message stage's fact, and nothing recomputes
