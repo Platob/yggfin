@@ -98,6 +98,21 @@ pending exactly this measurement:
 Reproduce with `bench_text_file.capture` and `cProfile` over
 `Message.parse_arrow` and `FixMsg.from_message_arrow_batch` separately, warm.
 
+Collapsing each rule's pattern list into one alternation nearly doubled
+classification on its own: 1.9x on `Rules.into_arrow_protocol_array` over the
+same 65,536-row mixed batch (571,000 to 1,076,000 rows/s), measured
+interleaved against the pre-change module on one machine in one process, with
+the protocol answers asserted identical first. Direction resolution was
+unchanged. That is more than the 1.53x a position-based combined pass
+measured on real captures, and it kept first-configured-rule-wins.
+
+A same-day rerun of every parsing benchmark's quick mode read 10-30% below
+the table above across the board -- including paths no change has touched
+since, such as the per-line header loop and `_tag_numbers` -- which is what
+host variance looks like against what a regression looks like: a controlled
+interleaved A/B on the changed path, in one process, moved the other way.
+Every benchmark's own vector-against-scalar assertion held.
+
 A key column is read through its **distinct** spellings, not its rows. A
 message keys its fields out of a bounded vocabulary, so a batch of a hundred
 thousand entries carries a few dozen spellings, and every scan of them --
