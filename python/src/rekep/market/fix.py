@@ -23,25 +23,17 @@ from rekep.enums import (
     TimeInForce,
 )
 from rekep.fields import StructField
-from rekep.fix import infer_version_from_pairs
 from rekep.fix.access import FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS
 from rekep.fix.entries import encoded_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
-from rekep.fix.message import group_pairs, indexed_group_pairs, render_fix_value
-from rekep.fix.quickfix import (
-    SpecComponent,
-    SpecComponentRef,
-    SpecFieldRef,
-    SpecGroup,
-    SpecMember,
-)
+from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
-from rekep.text.fixmsg import COMPONENT_COLUMNS, FixMsg
+from rekep.text.fixmsg import FixMsg
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -579,6 +571,11 @@ class FixEvents(Convertible):
         """Require the parsed message that owns FIX-to-market conversion."""
         if not isinstance(self.message, FixMsg):
             raise TypeError(f"message must be FixMsg, got {type(self.message).__name__}")
+        # The message owns FIX parsing, so the translator's dictionary is
+        # linked onto it privately: every message-level read resolves under
+        # the one dictionary this translation selects.
+        if self.registry is not None:
+            self.message.link_registry(self.registry)
 
     # -- building -----------------------------------------------------------
 
@@ -607,12 +604,7 @@ class FixEvents(Convertible):
         """Configured version, or the application version inferred from the message."""
         if self.fix_version is not None:
             return self.fix_version
-        if self.message.protocol_version is not None:
-            return self.message.protocol_version
-        try:
-            return infer_version_from_pairs(self.source_pairs, self.registry)[0]
-        except (OSError, ValueError):
-            return None
+        return self.message.resolved_version(self.registry)
 
     @functools.cached_property
     def dictionary(self) -> MarketTags:
@@ -644,7 +636,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _has_indexed_pairs(self) -> bool:
         """Whether a rendered group path survives only in source spelling."""
-        return any(entry.comp or "[" in entry.key for entry in self.message.kwargs or ())
+        return self.message.has_indexed_entries
 
     @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
@@ -664,29 +656,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _flat_by_tag(self) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip."""
-        message = self.message
-        if any(getattr(message, name, None) is not None for name in COMPONENT_COLUMNS):
-            return None
-        entries = message.kwargs or ()
-        if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
-            return None
-
-        access = self.access
-        stored = [(str(entry.tag), entry.value) for entry in entries]
-        stored_tags = {tag for tag, _ in stored}
-        found: dict[str, Any] = {}
-        for name, tag in type(message).into_tagged_columns():
-            value = getattr(message, name, None)
-            if value is None or tag in stored_tags:
-                continue
-            found[tag] = render_fix_value(access.canonical_value(tag, value))
-        for name, spelling in type(message).into_named_columns():
-            value = getattr(message, name, None)
-            if value is not None:
-                found[spelling] = render_fix_value(access.canonical_value(spelling, value))
-        for tag, value in stored:
-            found.setdefault(tag, render_fix_value(access.canonical_value(tag, value)))
-        return found
+        return self.message.into_first_values(self.access)
 
     @functools.cached_property
     def by_folded_tag(self) -> dict[str, Any]:
@@ -874,7 +844,7 @@ class FixEvents(Convertible):
         count_tag = self.access.tag_text("NoSides")
         if self._flat_by_tag is not None and count_tag not in self.by_tag:
             return [], []
-        prefix, entries = _group_segments(
+        prefix, entries = group_segment_pairs(
             self.pairs, count_tag, self._side_delimiter, with_prefix=True
         )
         if entries or not self._has_indexed_pairs:
@@ -886,25 +856,13 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _side_delimiter(self) -> str:
         """The tag that opens one side entry, off the selected declaration."""
-        fallback = self.access.tag_text("Side")
         registry = self.registry
-        if registry is None:
-            return fallback
-        versions = (self.version,) if self.version else registry.versions
-        for version in versions:
-            try:
-                components = registry.components(version)
-            except (KeyError, OSError, ValueError):
-                continue
-            by_name = {component.name.lower(): component for component in components}
-            root = by_name.get("trdcaprptsidegrp")
-            if root is None:
-                continue
-            sides = _declared_group(root.members, "NoSides", by_name)
-            named = _first_declared_name(sides.members, by_name) if sides else None
-            if named:
-                return self.access.tag_text(named)
-        return fallback
+        found = (
+            None
+            if registry is None
+            else registry.group_delimiters("TrdCapRptSideGrp", ("NoSides",), self.version)
+        )
+        return self.access.tag_text(found[0] if found else "Side")
 
     @functools.cached_property
     def _clock_keys(self) -> frozenset[str]:
@@ -952,14 +910,14 @@ class FixEvents(Convertible):
 
     def _quote_readers(self) -> Iterator[FixEvents]:
         """MassQuote entries flattened through their enclosing quote set."""
-        sets = _group_segments(
+        sets = group_segment_pairs(
             self.pairs,
             self.access.tag_text("NoQuoteSets"),
             self._quote_group_delimiters[0],
         )
         if sets:
             for quote_set in sets:
-                prefix, entries = _group_segments(
+                prefix, entries = group_segment_pairs(
                     quote_set,
                     self.access.tag_text("NoQuoteEntries"),
                     self._quote_group_delimiters[1],
@@ -978,31 +936,16 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _quote_group_delimiters(self) -> tuple[str, str]:
         """Outer and inner delimiters from the selected FIX declaration."""
-        fallback = (self.access.tag_text("QuoteSetID"), self.access.tag_text("QuoteEntryID"))
         registry = self.registry
-        if registry is None:
-            return fallback
-        versions = (self.version,) if self.version else registry.versions
-        for version in versions:
-            try:
-                components = registry.components(version)
-            except (KeyError, OSError, ValueError):
-                continue
-            by_name = {component.name.lower(): component for component in components}
-            root = by_name.get("quotsetgrp")
-            if root is None:
-                continue
-            outer = _declared_group(root.members, "NoQuoteSets", by_name)
-            inner = (
-                _declared_group(outer.members, "NoQuoteEntries", by_name)
-                if outer is not None
-                else None
+        found = (
+            None
+            if registry is None
+            else registry.group_delimiters(
+                "QuotSetGrp", ("NoQuoteSets", "NoQuoteEntries"), self.version
             )
-            outer_name = _first_declared_name(outer.members, by_name) if outer else None
-            inner_name = _first_declared_name(inner.members, by_name) if inner else None
-            if outer_name and inner_name:
-                return self.access.tag_text(outer_name), self.access.tag_text(inner_name)
-        return fallback
+        )
+        outer, inner = found if found else ("QuoteSetID", "QuoteEntryID")
+        return self.access.tag_text(outer), self.access.tag_text(inner)
 
     def _quotes(self, kind: str) -> Iterator[Order]:
         """One FIX quote as an indicative order for each represented side."""
@@ -1255,41 +1198,9 @@ class FixEvents(Convertible):
             legs=self.into_legs() or None,
         )
 
-    def _component_entries(self, column: str) -> list[dict[str, str]] | None:
-        """One resolved component column in `_group`'s first-value-by-name shape.
-
-        None when the parse stage did not resolve the column, which is what
-        sends a scalar-built message down the pair-walking fallback. A stored
-        row hands entries back as mappings and a constructed one as `@scalar`
-        rows; both answer here, typed members rendered back to the wire's
-        spelling so the same readers serve both paths, and `buffer` merged
-        after them because a member kept as text was one a column could not
-        hold.
-        """
-        entries = getattr(self.message, column, None)
-        if entries is None:
-            return None
-        found: list[dict[str, str]] = []
-        for entry in entries:
-            if isinstance(entry, Mapping):
-                values = dict(entry)
-            else:
-                values = {
-                    member.name: getattr(entry, member.name, None)
-                    for member in dataclasses.fields(entry)
-                }
-            resolved: dict[str, str] = {}
-            for name, value in values.items():
-                if name != "buffer" and value is not None:
-                    resolved.setdefault(name, render_fix_value(value))
-            for name, value in dict(values.get("buffer") or {}).items():
-                resolved.setdefault(name, value)
-            found.append(resolved)
-        return found
-
     def into_alt_ids(self) -> dict[str, str]:
         """Every alternative identifier the message carried, by the scheme's name."""
-        entries = self._component_entries("SecurityAltID")
+        entries = self.message.component_entries("SecurityAltID")
         if entries is None:
             entries = self._group("NoSecurityAltID")
         found: dict[str, str] = {}
@@ -1310,7 +1221,7 @@ class FixEvents(Convertible):
         `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
         same one, against a different set of tags.
         """
-        entries = self._component_entries("Legs")
+        entries = self.message.component_entries("Legs")
         if entries is None:
             entries = self._group("NoLegs")
         built = []
@@ -1528,73 +1439,6 @@ class FixEvents(Convertible):
             for key, value in self.by_tag.items()
             if (key not in claimed and key.casefold() not in rendered) or key in audited
         }
-
-
-def _group_segments(
-    pairs: Sequence[tuple[str, str]],
-    count_tag: str,
-    delimiter: str,
-    *,
-    with_prefix: bool = False,
-) -> Any:
-    """Split one declared group without collapsing repeated ordered fields."""
-    count_at = next((index for index, pair in enumerate(pairs) if pair[0] == count_tag), None)
-    if count_at is None:
-        return ([], []) if with_prefix else []
-    try:
-        count = int(pairs[count_at][1])
-    except (TypeError, ValueError):
-        count = 0
-    starts = [index for index in range(count_at + 1, len(pairs)) if pairs[index][0] == delimiter]
-    selected = starts[: max(count, 0)]
-    entries = [
-        list(pairs[start : starts[index + 1] if index + 1 < len(starts) else len(pairs)])
-        for index, start in enumerate(selected)
-    ]
-    if not with_prefix:
-        return entries
-    prefix_end = selected[0] if selected else len(pairs)
-    return list(pairs[:prefix_end]), entries
-
-
-def _declared_group(
-    members: Sequence[SpecMember],
-    wanted: str,
-    components: Mapping[str, SpecComponent],
-    seen: frozenset[str] = frozenset(),
-) -> SpecGroup | None:
-    """Find a nested group through component references without cycles."""
-    for member in members:
-        if isinstance(member, SpecGroup):
-            if member.name.lower() == wanted.lower():
-                return member
-            if found := _declared_group(member.members, wanted, components, seen):
-                return found
-        elif isinstance(member, SpecComponentRef):
-            key = member.name.lower()
-            component = components.get(key)
-            if component is not None and key not in seen:
-                if found := _declared_group(component.members, wanted, components, seen | {key}):
-                    return found
-    return None
-
-
-def _first_declared_name(
-    members: Sequence[SpecMember],
-    components: Mapping[str, SpecComponent],
-    seen: frozenset[str] = frozenset(),
-) -> str | None:
-    """The first physical field after recursive component expansion."""
-    for member in members:
-        if isinstance(member, SpecFieldRef | SpecGroup):
-            return member.name
-        if isinstance(member, SpecComponentRef):
-            key = member.name.lower()
-            component = components.get(key)
-            if component is not None and key not in seen:
-                if found := _first_declared_name(component.members, components, seen | {key}):
-                    return found
-    return None
 
 
 #: `SecurityType <167>` to what an instrument settles as, for the venues that

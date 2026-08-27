@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 from xml.etree import ElementTree
 
@@ -182,6 +182,46 @@ class SpecComponent(Convertible):
             members=tuple(SpecMember.from_dict(member) for member in members),
             msg_type=str(mapping.get("msg_type") or ""),
         )
+
+
+def declared_group(
+    members: Sequence[SpecMember],
+    wanted: str,
+    components: Mapping[str, SpecComponent],
+    seen: frozenset[str] = frozenset(),
+) -> SpecGroup | None:
+    """Find a nested group through component references without cycles."""
+    for member in members:
+        if isinstance(member, SpecGroup):
+            if member.name.lower() == wanted.lower():
+                return member
+            if found := declared_group(member.members, wanted, components, seen):
+                return found
+        elif isinstance(member, SpecComponentRef):
+            key = member.name.lower()
+            component = components.get(key)
+            if component is not None and key not in seen:
+                if found := declared_group(component.members, wanted, components, seen | {key}):
+                    return found
+    return None
+
+
+def first_declared_name(
+    members: Sequence[SpecMember],
+    components: Mapping[str, SpecComponent],
+    seen: frozenset[str] = frozenset(),
+) -> str | None:
+    """The first physical field after recursive component expansion."""
+    for member in members:
+        if isinstance(member, SpecFieldRef | SpecGroup):
+            return member.name
+        if isinstance(member, SpecComponentRef):
+            key = member.name.lower()
+            component = components.get(key)
+            if component is not None and key not in seen:
+                if found := first_declared_name(component.members, components, seen | {key}):
+                    return found
+    return None
 
 
 def spec_name(version: str) -> str:

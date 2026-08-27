@@ -97,6 +97,15 @@ Structured FIX components also use their FIX spellings:
 - `Legs`, with the `InstrumentLeg` members `rekep.market.instrument.Leg`
   reads, and `buffer` for the rest.
 
+`FixMsg.from_text` and `FixMsg.from_pairs` accept `registry=` and link that
+dictionary privately onto the row: `get`, `pairs`, the repeating-group readers
+and market translation all resolve through the one linked registry, and an
+unlinked row reads through the packaged one. The link is reader state, never a
+stored column, so the published contract is unchanged. `into_fix_events`
+carries the link into the market translator, and a translator built with its
+own `registry` links it back onto the message -- one translation resolves
+under exactly one dictionary.
+
 `FixMsg.get` reads promoted columns and `kwargs` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,
 component path or namespace-qualified key. A key no registry record explains

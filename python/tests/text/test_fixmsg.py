@@ -207,6 +207,33 @@ def test_market_translation_uses_the_parsed_row_it_was_given() -> None:
     assert row.into_fix_events().message is row
 
 
+def test_an_unlinked_row_reads_through_the_packaged_dictionary() -> None:
+    assert FixMsg().registry is FixRegistry.from_builtin()
+    assert FixMsg.from_text("8=FIX.4.4|35=D|10=000").registry is FixRegistry.from_builtin()
+
+
+def test_a_row_privately_links_the_dictionary_it_was_parsed_under(
+    registry: FixRegistry,
+) -> None:
+    """The link steers every read on the row and travels into translation --
+    but it is reader state, never a column: the stored contract is unchanged."""
+    row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000", registry=registry)
+
+    assert row.registry is registry
+    assert row.into_fix_events().registry is registry
+    assert "_FixMsg__registry" not in FixMsg.into_field().names
+    assert "_FixMsg__registry" not in row.into_dict()
+
+
+def test_the_translator_links_its_dictionary_onto_its_message(registry: FixRegistry) -> None:
+    """One dictionary per translation: a message handed to `FixEvents` under a
+    registry answers its own `get` under that same registry afterwards."""
+    row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000")
+    row.into_fix_events(registry=registry)
+
+    assert row.registry is registry
+
+
 def test_scalar_parsing_resolves_the_fix_version_once_on_the_message() -> None:
     row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000")
 

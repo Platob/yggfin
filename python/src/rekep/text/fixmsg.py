@@ -90,21 +90,41 @@ _COMPONENT_GROUPS: tuple[tuple[str, str, type[Any]], ...] = (
     ("Legs", "NoLegs", Leg),
 )
 
-#: The parsed columns that hold one structured component each. What the
-#: market translator checks before taking its flat shortcut, published here so
-#: a component added above is one edit and not a hunt for hardcoded tuples.
+#: The parsed columns that hold one structured component each. What
+#: `FixMsg.into_first_values` checks before taking its flat shortcut, kept
+#: beside the groups so a component added above is one edit and not a hunt
+#: for hardcoded tuples.
 COMPONENT_COLUMNS: tuple[str, ...] = tuple(column for column, _, _ in _COMPONENT_GROUPS)
-
-
-@functools.cache
-def _row_access() -> FieldAccess:
-    """The accessor a stored row reads through: the cross-version dictionary."""
-    return FieldAccess.of(FixRegistry.from_builtin(), None)
 
 
 @scalar(slots=True)
 class FixMsg(Message):
     """One raw message transcribed under the FIX registry."""
+
+    # The dictionary this row resolves through is reader state, not row
+    # content -- the same stored row reads under another feed's dictionary
+    # without changing -- so the link is private and never a column.
+    __registry: FixRegistry | None = None
+
+    @classmethod
+    @functools.cache
+    def into_registry(cls) -> FixRegistry:
+        """The dictionary an unlinked row resolves through: the packaged one."""
+        return FixRegistry.from_builtin()
+
+    @property
+    def registry(self) -> FixRegistry:
+        """The privately linked dictionary, or the packaged default."""
+        return getattr(self, "_FixMsg__registry", None) or type(self).into_registry()
+
+    def link_registry(self, registry: FixRegistry | None) -> FixMsg:
+        """Privately link the dictionary every read on this row resolves through."""
+        self.__registry = registry
+        return self
+
+    def _row_access(self) -> FieldAccess:
+        """The accessor this row reads through: its dictionary, cross-version."""
+        return FieldAccess.of(self.registry, None)
 
     @classmethod
     def from_(cls, source: Any, *args: Any, **kwargs: Any) -> FixMsg:
@@ -582,6 +602,7 @@ class FixMsg(Message):
         *,
         named: bool | None = None,
         entry_separator: str | None = None,
+        registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from one ordered FIX payload."""
@@ -591,20 +612,27 @@ class FixMsg(Message):
             named=named,
             entry_separator=entry_separator,
         )
-        return cls._from_fix_pairs(pairs, **declared)
+        return cls._from_fix_pairs(pairs, registry=registry, **declared)
 
     @classmethod
     def from_pairs(
         cls,
         pairs: Iterable[tuple[Any, Any]],
         names: Mapping[str, int | str] | None = None,
+        *,
+        registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        return cls._from_fix_pairs(normalized_pairs(pairs, names), **declared)
+        return cls._from_fix_pairs(normalized_pairs(pairs, names), registry=registry, **declared)
 
     @classmethod
-    def _from_fix_pairs(cls, pairs: Sequence[tuple[str, str]], **declared: Any) -> FixMsg:
+    def _from_fix_pairs(
+        cls,
+        pairs: Sequence[tuple[str, str]],
+        registry: FixRegistry | None = None,
+        **declared: Any,
+    ) -> FixMsg:
         """Promote the discriminator while retaining every ordered field."""
         msg_type = declared.pop("MsgType", None)
         staged = Message(MsgType=msg_type, kwargs=list(pairs))
@@ -613,11 +641,11 @@ class FixMsg(Message):
                 declared["etype"] = EventType.MISC
             else:
                 declared["etype"] = (
-                    FixRegistry.from_builtin()
+                    (registry or cls.into_registry())
                     .msg_type_event_types()
                     .get(staged.MsgType, EventType.UNKNOWN)
                 )
-        return cls(MsgType=staged.MsgType, kwargs=list(pairs), **declared)
+        return cls(MsgType=staged.MsgType, kwargs=list(pairs), **declared).link_registry(registry)
 
     @classmethod
     def from_instrument(cls, instrument: Any, **declared: Any) -> FixMsg:
@@ -669,11 +697,11 @@ class FixMsg(Message):
         answer through one call. The `Reading` carries the stored value and
         the typed reading together.
         """
-        return _row_access().reading(self._field_entries(), field)
+        return self._row_access().reading(self._field_entries(), field)
 
     def readings(self, field: int | str) -> list[Reading]:
         """Every value of `field` on this row, in stored order."""
-        return _row_access().readings(self._field_entries(), field)
+        return self._row_access().readings(self._field_entries(), field)
 
     def into_fix_pairs(self, access: FieldAccess | None = None) -> list[tuple[str, str]]:
         """Ordered FIX fields projected once from columns, components, and `kwargs`.
@@ -682,7 +710,7 @@ class FixMsg(Message):
         one registry identity, the rendered occurrence is authoritative. Its
         position relative to other rendered fields is unchanged.
         """
-        resolver = access or _row_access()
+        resolver = access or self._row_access()
         pairs, resolved = self._canonical_pairs(resolver)
         return [
             (
@@ -788,6 +816,82 @@ class FixMsg(Message):
         """Rendered indexed group entries in index order."""
         return indexed_group_pairs(self.pairs, name)
 
+    def resolved_version(self, registry: FixRegistry | None = None) -> str | None:
+        """Which protocol version this row reads under, inferred when unresolved."""
+        if self.protocol_version is not None:
+            return self.protocol_version
+        try:
+            return infer_version_from_pairs(self.pairs, registry or self.registry)[0]
+        except (OSError, ValueError):
+            return None
+
+    @property
+    def has_indexed_entries(self) -> bool:
+        """Whether a rendered group path survives only in source spelling."""
+        return any(entry.comp or "[" in entry.key for entry in self.kwargs or ())
+
+    def component_entries(self, column: str) -> list[dict[str, str]] | None:
+        """One resolved component column, each entry first-value-by-name.
+
+        None when the parse stage did not resolve the column, which is what
+        sends a scalar-built message down the pair-walking fallback. A stored
+        row hands entries back as mappings and a constructed one as `@scalar`
+        rows; both answer here, typed members rendered back to the wire's
+        spelling so the same readers serve both paths, and `buffer` merged
+        after them because a member kept as text was one a column could not
+        hold.
+        """
+        entries = getattr(self, column, None)
+        if entries is None:
+            return None
+        found: list[dict[str, str]] = []
+        for entry in entries:
+            if isinstance(entry, Mapping):
+                values = dict(entry)
+            else:
+                values = {
+                    member.name: getattr(entry, member.name, None)
+                    for member in dataclasses.fields(entry)
+                }
+            resolved: dict[str, str] = {}
+            for name, value in values.items():
+                if name != "buffer" and value is not None:
+                    resolved.setdefault(name, render_fix_value(value))
+            for name, value in dict(values.get("buffer") or {}).items():
+                resolved.setdefault(name, value)
+            found.append(resolved)
+        return found
+
+    def into_first_values(self, access: FieldAccess | None = None) -> dict[str, Any] | None:
+        """Promoted columns and simple numeric residuals without a FIX round trip.
+
+        The first occurrence of each wire key wins, as a flat message read
+        does. None when a component column or a rendered entry survives on
+        this row, which is what sends a reader down the canonical projection.
+        """
+        if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
+            return None
+        entries = self.kwargs or ()
+        if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
+            return None
+
+        resolver = access or self._row_access()
+        stored = [(str(entry.tag), entry.value) for entry in entries]
+        stored_tags = {tag for tag, _ in stored}
+        found: dict[str, Any] = {}
+        for name, tag in type(self).into_tagged_columns():
+            value = getattr(self, name, None)
+            if value is None or tag in stored_tags:
+                continue
+            found[tag] = render_fix_value(resolver.canonical_value(tag, value))
+        for name, spelling in type(self).into_named_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                found[spelling] = render_fix_value(resolver.canonical_value(spelling, value))
+        for tag, value in stored:
+            found.setdefault(tag, render_fix_value(resolver.canonical_value(tag, value)))
+        return found
+
     @property
     def pairs(self) -> list[tuple[str, str]]:
         """Canonical ordered text fields used by scalar and stored rows."""
@@ -811,7 +915,7 @@ class FixMsg(Message):
         straight through, and rebuilding the row per ask was the whole cost of
         decoding a normalized instrument (benchmarks/bench_market.py).
         """
-        pairs, _ = self._canonical_pairs(_row_access())
+        pairs, _ = self._canonical_pairs(self._row_access())
         return [Entry.from_pair(key, value) for key, value in pairs]
 
     @classmethod
@@ -1299,7 +1403,12 @@ class FixMsg(Message):
         """Expose this parsed row through the FIX market translator."""
         from rekep.market.fix import FixEvents
 
-        carried = {"runix": self.runix or self.unix, "mic": self.mic, **declared}
+        carried = {
+            "runix": self.runix or self.unix,
+            "mic": self.mic,
+            "registry": getattr(self, "_FixMsg__registry", None),
+            **declared,
+        }
         return self._transacted(FixEvents(message=self, **carried))
 
     def _transacted(self, built: Any) -> Any:

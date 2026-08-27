@@ -893,6 +893,23 @@ def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> No
     assert components[0].members[0].tag == 453
 
 
+def test_group_delimiters_come_off_the_declared_components() -> None:
+    """What the market translator segments side and quote-set entries by."""
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    assert registry.group_delimiters("TrdCapRptSideGrp", ("NoSides",), "4.4") == ("Side",)
+    assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoQuoteEntries")) == (
+        "QuoteSetID",
+        "QuoteEntryID",
+    )
+
+
+def test_an_undeclared_group_chain_has_no_delimiters() -> None:
+    """None and not a partial answer: the caller falls back whole."""
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    assert registry.group_delimiters("NoSuchGrp", ("NoQuoteSets",), "4.4") is None
+    assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoSuchGrp"), "4.4") is None
+
+
 def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path) -> None:
     plain = FixRegistry(cache_dir=tmp_path / "fix")
     plain._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])

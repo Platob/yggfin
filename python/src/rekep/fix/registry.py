@@ -45,6 +45,8 @@ from rekep.fix.quickfix import (
     SpecComponent,
     SpecField,
     SpecGroup,
+    declared_group,
+    first_declared_name,
     parse_components,
     parse_session,
     parse_spec,
@@ -973,6 +975,39 @@ class FixRegistry(Convertible):
         found = frozenset(counts)
         cache[spelling] = found
         return found
+
+    def group_delimiters(
+        self, root: str, groups: Sequence[str], version: str | None = None
+    ) -> tuple[str, ...] | None:
+        """First declared field of each group in `groups`, nested under `root`.
+
+        Each group is looked for inside the previous one's declaration, so
+        `("NoQuoteSets", "NoQuoteEntries")` answers the outer and inner
+        delimiter together. Resolved against `version` when given, else every
+        stored version newest first; None when no version declares the chain.
+        """
+        candidates = (version,) if version else self.versions
+        for candidate in candidates:
+            try:
+                components = self.components(candidate)
+            except (KeyError, OSError, ValueError):
+                continue
+            by_name = {component.name.lower(): component for component in components}
+            node = by_name.get(root.lower())
+            if node is None:
+                continue
+            members: Sequence[Any] = node.members
+            found: list[str] = []
+            for group in groups:
+                declared = declared_group(members, group, by_name)
+                named = None if declared is None else first_declared_name(declared.members, by_name)
+                if not named:
+                    break
+                found.append(named)
+                members = declared.members
+            else:
+                return tuple(found)
+        return None
 
     def components_available(self, version: str) -> bool:
         """Whether this store holds component declarations for `version` at all.

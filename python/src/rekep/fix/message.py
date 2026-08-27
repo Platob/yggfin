@@ -404,6 +404,40 @@ def group_pairs(
     return entries
 
 
+def group_segment_pairs(
+    pairs: Sequence[tuple[str, str]],
+    count_tag: str,
+    delimiter: str,
+    *,
+    with_prefix: bool = False,
+) -> Any:
+    """Split one declared group without collapsing repeated ordered fields.
+
+    Segments and not `group_pairs`: an entry may nest a multi-entry group of
+    its own, whose repeated tags would end a first-repeat scan in the middle
+    of entry one and silently drop every entry after it. A segment runs from
+    one `delimiter` to the next, whatever repeats inside. `with_prefix` also
+    returns the pairs before the first entry.
+    """
+    count_at = next((index for index, pair in enumerate(pairs) if pair[0] == count_tag), None)
+    if count_at is None:
+        return ([], []) if with_prefix else []
+    try:
+        count = int(pairs[count_at][1])
+    except (TypeError, ValueError):
+        count = 0
+    starts = [index for index in range(count_at + 1, len(pairs)) if pairs[index][0] == delimiter]
+    selected = starts[: max(count, 0)]
+    entries = [
+        list(pairs[start : starts[index + 1] if index + 1 < len(starts) else len(pairs)])
+        for index, start in enumerate(selected)
+    ]
+    if not with_prefix:
+        return entries
+    prefix_end = selected[0] if selected else len(pairs)
+    return list(pairs[:prefix_end]), entries
+
+
 def indexed_group_pairs(
     pairs: Iterable[tuple[str, str]], name: int | str
 ) -> list[list[tuple[str, str]]]:
