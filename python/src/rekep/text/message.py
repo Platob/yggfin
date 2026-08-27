@@ -438,10 +438,24 @@ def _msg_type_probe(
 
 
 def _event_code(value: EventType | int | str) -> int:
-    """One configurable event spelling as its stable stored integer."""
-    if isinstance(value, str):
-        try:
-            return int(EventType[value.upper()])
-        except KeyError:
-            return int(value)
-    return int(value)
+    """One configurable event spelling as its stable stored integer.
+
+    A member, its name (`ORDER`) or mnemonic (`ORDR`), or a stored id --
+    today's packed code, or the ordinal a previous release wrote, converted
+    to the current code. A spelling no member answers to is refused rather
+    than written into the column as a dead code every reader maps to
+    `UNKNOWN`.
+    """
+    if isinstance(value, EventType):
+        return int(value)
+    try:
+        code = int(value)
+    except (TypeError, ValueError):
+        member = EventType(str(value))
+        if member is EventType.UNKNOWN and str(value).strip().upper() != "UNKNOWN":
+            raise ValueError(f"unknown EventType spelling {value!r}") from None
+        return int(member)
+    member = EventType.from_stored(code)
+    if member is EventType.UNKNOWN and code != 0:
+        raise ValueError(f"no EventType has ever stored id {code}")
+    return int(member)

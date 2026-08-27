@@ -3,8 +3,10 @@
 `tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
 `FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
 `etype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary work
-begins. A disjoint scan over `EventType.ranked_below(INTENT)` retains terminal
-operational and unrecognized rows.
+begins. The complementary scan -- `Not` of the market code set -- retains
+everything else: terminal operational rows, unrecognized rows, and any stored
+code no compiled member spells. Together the two scans partition the table, so
+no row silently matches neither.
 
 ## Run this step
 

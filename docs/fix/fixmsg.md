@@ -146,8 +146,9 @@ indexed group members are never treated as duplicates.
 
 ## Stored categories
 
-`parse_fix` uses disjoint pushed scans. Rows whose stored `Message.etype` is at
-least `INTENT` go to `fix.market`; non-technical `MISC` rows go to `fix.misc`.
+`parse_fix` uses two pushed scans that partition the table: the market code
+set -- kinds ranked at least `INTENT` -- and its complement. Rows in the
+market set go to `fix.market`; non-technical `MISC` rows go to `fix.misc`.
 An unknown discriminator also goes to `fix.misc` when the transport is
 recognized; only an unknown event on an unrecognized transport goes to
 `fix.unknown`. Registry-declared technical MsgTypes and plugins do not enter a

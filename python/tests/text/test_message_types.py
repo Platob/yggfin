@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pyarrow
+import pytest
 
 from rekep.enums import EventType
 from rekep.text import Entry, Message
@@ -24,6 +25,26 @@ def test_a_mapped_message_type_assigns_its_registry_event_type() -> None:
 
     assert found["MsgType"].to_pylist() == ["D"]
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+
+
+def test_the_configured_spelling_may_be_a_name_a_mnemonic_or_a_stored_id() -> None:
+    """A config written as the member's name, its mnemonic, or an id it has
+    stored -- today's packed code, or the ordinal a previous release wrote --
+    all land in the column as today's code."""
+    for spelled in ("ORDER", "ORDR", "ordr", 110, "110", int(EventType.ORDER)):
+        found = Message.parse_arrow(
+            pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string()), {"D": spelled}
+        )
+        assert found["etype"].to_pylist() == [int(EventType.ORDER)], spelled
+
+
+def test_a_spelling_no_event_kind_answers_to_is_refused() -> None:
+    """Better a loud refusal than a dead code every reader maps to UNKNOWN."""
+    column = pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string())
+    with pytest.raises(ValueError, match="EventType"):
+        Message.parse_arrow(column, {"D": "XYZW"})
+    with pytest.raises(ValueError, match="EventType"):
+        Message.parse_arrow(column, {"D": 999})
 
 
 def test_a_wire_discriminator_without_begin_string_is_fix() -> None:

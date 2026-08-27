@@ -275,6 +275,23 @@ def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
     assert vector.to_pylist() == scalar
 
 
+def test_categories_agree_on_codes_no_member_spells() -> None:
+    """Case-variant packed bytes, a previous release's ordinal ids, junk:
+    the scalar rule and the kernel answer identically on every one, because
+    `from_code` answers only on the compiled codes the kernel's sets hold."""
+    respelled = int.from_bytes(b"ordr", "big", signed=True)
+    etypes = [respelled, 110, 210, 410, 999, -1, 0]
+    for protocol in (None, "FIX"):
+        scalar = [DEFAULT.category_of(protocol, etype) for etype in etypes]
+        vector = DEFAULT.into_arrow_category_array(
+            pyarrow.array([protocol] * len(etypes), pyarrow.string()),
+            pyarrow.array(etypes, pyarrow.int32()),
+        )
+        assert vector.to_pylist() == scalar
+    assert DEFAULT.category_of("FIX", respelled) == MISC_CATEGORY
+    assert DEFAULT.category_of(None, respelled) == UNKNOWN_CATEGORY
+
+
 def test_the_first_rule_that_matches_wins() -> None:
     """Which is what lets a specific rule sit in front of a general one."""
     rules = Rules(rules=[Rule(protocol="SESSION", pattern=r"35=0", codec="fix"), *DEFAULT_RULES])

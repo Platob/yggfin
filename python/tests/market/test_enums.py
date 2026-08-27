@@ -398,6 +398,28 @@ def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
     }
 
 
+def test_a_stored_event_code_decodes_exactly_or_not_at_all() -> None:
+    """The mnemonic set is closed: near-miss bytes are not respelled into a
+    member, so a Python answer and a pushed code-set filter keep the same
+    rows."""
+    respelled = int.from_bytes(b"ordr", "big", signed=True)
+    assert EventType.from_code(respelled) is EventType.UNKNOWN
+    assert EventType(respelled) is EventType.UNKNOWN
+    assert EventType.from_code(int(EventType.ORDER)) is EventType.ORDER
+    assert respelled not in EventType.ranked_at_least(EventType.INTENT)
+    assert respelled not in EventType.ranked_below(EventType.INTENT)
+
+
+def test_from_stored_reads_either_generation_of_id() -> None:
+    """Ranks are the ids an ordinal release stored, so an old store's id
+    still names its member; an id no member has ever stored stays unknown."""
+    assert EventType.from_stored(110) is EventType.ORDER
+    assert EventType.from_stored(210) is EventType.EXECUTION
+    assert EventType.from_stored(int(EventType.EXECUTION)) is EventType.EXECUTION
+    assert EventType.from_stored(0) is EventType.UNKNOWN
+    assert EventType.from_stored(999) is EventType.UNKNOWN
+
+
 def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:
     """An intent may never happen, a fact cannot be undone, a state is a picture."""
     assert EventType.ORDER.band == EventType.INTENT

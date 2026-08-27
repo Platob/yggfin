@@ -15,6 +15,7 @@ site carries neither. So the parsing is pinned a second time, by
 import email.message
 import json
 import re
+import shutil
 import urllib.error
 import urllib.request
 import zipfile
@@ -386,6 +387,30 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
     assert unpacked.versions == zipped.versions
     assert unpacked.field("Side", "4.4") == zipped.field("Side", "4.4")
     assert unpacked.component("Parties", "4.4") == zipped.component("Parties", "4.4")
+
+
+def test_a_cache_written_before_the_event_recode_still_loads(tmp_path: Path) -> None:
+    """A warm on-disk cache from the ordinal release stores each event kind
+    as `{"name", "id"}` with the member's rank for the id. The name is
+    authoritative, so the store loads instead of raising at startup."""
+    folder = tmp_path / "fix"
+    shutil.copytree(PUBLISHED / "fix", folder)
+    rewritten = 0
+    for path in (folder / "fields").glob("*.json"):
+        records = json.loads(path.read_text())
+        for record in records.values():
+            for pair in (record.get("event_types") or {}).values():
+                pair["id"] = EventType[pair["name"]].rank
+                rewritten += 1
+        path.write_text(json.dumps(records, indent=1))
+    assert rewritten, "the published store must carry event kinds to rewrite"
+
+    registry = FixRegistry(cache_dir=folder, offline=True)
+    classified = registry.msg_type_event_types()
+    assert classified["8"] is EventType.EXECUTION
+    assert classified["D"] is EventType.ORDER
+    assert classified["W"] is EventType.BOOK
+    assert registry.entry(35).name == "MsgType"
 
 
 def test_a_file_url_reads_the_original_archive_without_materializing() -> None:

@@ -303,6 +303,51 @@ class _FixedAsciiInt32(_AsciiInt32):
     def _registers_unknown(cls) -> bool:
         return False
 
+    @classmethod
+    def from_code(cls, value: Any, default: Self | None = None) -> Self:
+        """Decode a stored `int32` exactly: a compiled code, or `UNKNOWN`.
+
+        A fixed mnemonic set is closed, and the pushed scan predicates match
+        the compiled codes verbatim -- so the scalar reader answers only on
+        those same codes, keeping a row classified in Python and a row kept
+        by a storage filter in agreement. Nothing here re-spells near-miss
+        bytes into a member: an int that is not a compiled code is unknown.
+        """
+        try:
+            packed = int(value)
+        except (TypeError, ValueError):
+            return default if default is not None else cls.UNKNOWN
+        known = cls._value2member_map_.get(packed)
+        if isinstance(known, cls):
+            return known
+        return default if default is not None else cls.UNKNOWN
+
+    @classmethod
+    @functools.cache
+    def ranked(cls) -> Mapping[int, Self]:
+        """Compiled members by declared rank -- the ids an ordinal release stored."""
+        return MappingProxyType({member._rank: member for member in cls})
+
+    @classmethod
+    def from_stored(cls, value: Any, default: Self | None = None) -> Self:
+        """Read a stored id: today's packed code, or a previous release's ordinal.
+
+        Ranks predate the mnemonic encoding as the stored values themselves,
+        so a store written before the recode still resolves to the member its
+        rank names. Anything else is `UNKNOWN` (or `default`).
+        """
+        member = cls.from_code(value, default=None)
+        if member is not cls.UNKNOWN:
+            return member
+        try:
+            packed = int(value)
+        except (TypeError, ValueError):
+            return default if default is not None else cls.UNKNOWN
+        ranked = cls.ranked().get(packed)
+        if ranked is not None:
+            return ranked
+        return default if default is not None else cls.UNKNOWN
+
     def into_fix(self) -> str:
         """Return the protocol value, blank for grouping members."""
         return self._fix_code

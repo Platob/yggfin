@@ -84,15 +84,20 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
   "tag": 35,
   "values": {"8": "ExecutionReport", "D": "NewOrderSingle", "W": "MarketDataSnapshotFullRefresh"},
   "event_types": {
-    "8": {"name": "EXECUTION", "id": 210},
-    "D": {"name": "ORDER", "id": 110},
-    "W": {"name": "BOOK", "id": 320}
+    "8": {"name": "EXECUTION", "id": 1163412803},
+    "D": {"name": "ORDER", "id": 1330791506},
+    "W": {"name": "BOOK", "id": 1112493899}
   },
   "states": {"D": {"name": "PENDING_NEW", "id": 110}},
   "encoded": {"newordersingle": "D"},
   "decoded": {"D": "newordersingle"}
 }
 ```
+
+The `id` is the member's stored `int32` -- its four-byte ASCII mnemonic
+packed big-endian (`EXEC`, `ORDR`, `BOOK`). The name is authoritative on
+load: a store written by an earlier release, whose ids were the members'
+ranks (`210`, `110`, `320`), still reads back to the same members.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent

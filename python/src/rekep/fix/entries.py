@@ -786,7 +786,15 @@ def _states(mapping: Any) -> dict[str, State]:
 
 
 def _enum_value(enum_type: Any, value: Any) -> Any:
-    """Read an enum name, id, or the explicit pair stored in registry JSON."""
+    """Read an enum name, id, or the explicit pair stored in registry JSON.
+
+    The name is authoritative in the explicit pair: a store written before a
+    member's stored id changed still names the same meaning, so the id only
+    has to be one this member has ever stored -- today's value, or the rank
+    an ordinal release wrote. A bare id follows the same rule through
+    `from_stored` where the enum keeps one; an id no member has ever stored
+    is refused rather than read as a degraded member.
+    """
     if isinstance(value, Mapping):
         if set(value) != {"name", "id"}:
             raise ValueError("an enum object needs name and id")
@@ -797,12 +805,19 @@ def _enum_value(enum_type: Any, value: Any) -> Any:
         if type(identifier) is not int:
             raise ValueError("an enum object needs an integer id")
         named = enum_type[name.upper()]
-        identified = enum_type(identifier)
-        if named is not identified:
+        if identifier not in (int(named), getattr(named, "rank", int(named))):
             raise ValueError("an enum name and id disagree")
         return named
     parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
-    return enum_type[parsed.upper()] if isinstance(parsed, str) else enum_type(parsed)
+    if isinstance(parsed, str):
+        return enum_type[parsed.upper()]
+    member = enum_type(parsed)
+    if int(member) != int(parsed):
+        stored = getattr(enum_type, "from_stored", None)
+        member = stored(parsed) if stored is not None else member
+        if getattr(member, "rank", int(member)) != int(parsed):
+            raise ValueError("no member has ever stored this id")
+    return member
 
 
 def _enum_document(mapping: Mapping[str, Any]) -> dict[str, dict[str, str | int]]:
