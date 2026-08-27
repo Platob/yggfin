@@ -8,6 +8,7 @@ import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile
 from rekep.enums import EventType
 from rekep.market import Event, hash_bytes
+from rekep.market.identity import hash_int_of
 
 
 def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
@@ -430,4 +431,4 @@ def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Pat
     assert table.column("etype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert table.column("hash")[0].as_py() == hash_bytes(payload.encode("utf-8"))
+    assert hash_int_of(table.column("hash")[0].as_py()) == hash_bytes(payload.encode("utf-8"))

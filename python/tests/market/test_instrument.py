@@ -112,7 +112,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         entries=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
+        [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     )
     log = FixMsg.from_dict(table.to_pylist()[0])
     assert [(entry["tag"], entry["value"]) for entry in log.entries] == [
@@ -176,7 +176,7 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
 
     log = instrument.into_fixmsg()
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
+        [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     )
     stored = FixMsg.from_dict(table.to_pylist()[0])
 
@@ -230,11 +230,11 @@ def test_normalized_instrument_batches_decode_without_python_rows(
     ]
     messages = [FixMsg.from_instrument(one) for one in instruments]
     source = pyarrow.Table.from_pylist(
-        [one.into_dict() for one in messages],
+        [one.into_row() for one in messages],
         schema=FixMsg.into_field().into_arrow_schema(),
     ).to_batches()[0]
     expected = pyarrow.Table.from_pylist(
-        [dataclasses.asdict(one) for one in instruments],
+        [one.into_row() for one in instruments],
         schema=Instrument.into_field().into_arrow_schema(),
     ).to_batches()[0]
 

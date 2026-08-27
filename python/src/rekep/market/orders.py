@@ -15,7 +15,7 @@ from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, hash_bytes_of
 
 # Exact source fields stay on Order/Execution. These two namespaces are only
 # the lookup meaning of those fields: equal text in OrderID and ClOrdID is not
@@ -255,7 +255,7 @@ class Order(MarketEvent):
     def life_parts(self) -> tuple[Any, ...]:
         """An order's lifecycle is the identifier that survives its amendments."""
         code = self.life_code()
-        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
+        return (hash_bytes_of(self.instrument_xhash), self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
         """The order identifier that survives amendments, or nothing."""
@@ -327,7 +327,7 @@ class Order(MarketEvent):
             if (
                 candidate
                 and self.hash_of(
-                    self.instrument_xhash,
+                    hash_bytes_of(self.instrument_xhash),
                     self.mic,
                     candidate,
                     self.side,
@@ -488,7 +488,7 @@ class Execution(MarketEvent):
         `ExecRefID <19>` to stay on the report it amends.
         """
         code = self.life_code()
-        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
+        return (hash_bytes_of(self.instrument_xhash), self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
         """The report identifier that survives corrections, or nothing."""

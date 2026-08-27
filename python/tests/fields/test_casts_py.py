@@ -102,6 +102,16 @@ def test_an_instant_is_its_epoch_integer_in_the_declared_unit() -> None:
     assert int.from_bytes(day, "big", signed=True) == 1
 
 
+def test_a_scaled_decimal_renders_and_an_exact_one_is_its_own_bytes() -> None:
+    """A decimal with a scale has no width an integer would fit, so it renders;
+    one without is an integer, and renders like every other one."""
+    exact = field(pyarrow.decimal128(38, 0)).into_bytes(decimal.Decimal(-2))
+    assert exact == b"\xff" * 15 + b"\xfe"
+    wide = field(pyarrow.decimal256(50, 0)).into_bytes(decimal.Decimal(1))
+    assert wide == b"\x00" * 31 + b"\x01"
+    assert field(pyarrow.decimal128(38, 2)).into_bytes(decimal.Decimal("1.50")) == b"1.50"
+
+
 def test_a_nested_value_is_its_members_concatenated() -> None:
     shape = field(pyarrow.struct([("mic", pyarrow.string()), ("size", pyarrow.int32())]))
     assert shape.into_bytes({"mic": "XPAR", "size": 2}) == b"XPAR" + b"\x00\x00\x00\x02"

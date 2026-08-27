@@ -5,7 +5,8 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, Self
 
 import pyarrow
 
@@ -13,6 +14,7 @@ from rekep.convert import Convertible
 from rekep.enums import Ascii32
 from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
+from rekep.market.identity import ROW_SPELLED, read_member, stored_member
 
 
 class MarketFieldBuilder(FieldBuilder):
@@ -74,12 +76,52 @@ class MarketConvertible(Convertible):
             if pyarrow.types.is_floating(member.dtype)
         )
 
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
+        """Read either spelling: a document's integers or a row's stored bytes."""
+        return Convertible.from_dict.__func__(
+            cls, {name: read_member(name, value) for name, value in mapping.items()}
+        )
+
+    def into_row(self) -> dict[str, Any]:
+        """This value as a stored row: every member as the column holds it.
+
+        Read off the live members rather than off `into_dict`, because the two
+        spellings differ: a document renders a date as text and an identifier
+        as a number, while a column wants the date and the sixteen bytes.
+        Nested values convert through their own `into_row`, so a book's orders
+        and levels follow -- and a plain map of codes does not, however its
+        keys are spelled. `from_dict` reads either spelling back.
+        """
+        return {
+            member.name: _row_value(member.name, getattr(self, member.name))
+            for member in dataclasses.fields(self)
+        }
+
     def normalize_float_members(self) -> None:
         """Canonicalise numeric inputs before identity bytes are derived."""
         for name in type(self).into_float_members():
             value = getattr(self, name)
             if value is not None and not isinstance(value, float):
                 setattr(self, name, float(value))
+
+
+def _row_value(name: str, value: Any) -> Any:
+    """One member as a column holds it, recursing through declared shapes."""
+    if value is None or name in ROW_SPELLED:
+        return stored_member(name, value)
+    if isinstance(value, MarketConvertible):
+        return value.into_row()
+    if isinstance(value, Convertible):
+        return value.into_dict()
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {
+            member.name: _row_value(member.name, getattr(value, member.name))
+            for member in dataclasses.fields(value)
+        }
+    if isinstance(value, list | tuple):
+        return [_row_value(name, one) for one in value]
+    return value
 
 
 def fix_tag(name: str, **declared: Any) -> Field:

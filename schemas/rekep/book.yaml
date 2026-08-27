@@ -36,22 +36,17 @@ fields:
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
 - name: hash
-  type: int64
+  type: fixed_size_binary[16]
   description: Digest of the instant, instrument, and ordered live Order version hashes.
   iceberg: {primary_key: 'true'}
 - name: xhash
-  type: int64
+  type: fixed_size_binary[16]
   description: Identity of the thing across every version of it -- the lifecycle.
 - name: linked_events
   type: list
   description: Related event times and lifecycle identities, primary match first.
   item:
-    type: struct
-    fields:
-    - name: unix
-      type: int64
-    - name: xhash
-      type: int64
+    type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -79,7 +74,7 @@ fields:
   nullable: true
   description: Every event this one was built from, in the order they were combined.
   item:
-    type: int64
+    type: fixed_size_binary[16]
 - name: mic
   type: int32
   nullable: true
@@ -90,7 +85,7 @@ fields:
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
 - name: instrument_xhash
-  type: int64
+  type: fixed_size_binary[16]
   description: Instrument lifecycle identity used to join market rows.
 - name: instrument_code
   type: string
@@ -273,21 +268,16 @@ fields:
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
     - name: hash
-      type: int64
+      type: fixed_size_binary[16]
       description: 'Digest of this version''s content: the same version, twice, is one row.'
     - name: xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Identity of the thing across every version of it -- the lifecycle.
     - name: linked_events
       type: list
       description: Related event times and lifecycle identities, primary match first.
       item:
-        type: struct
-        fields:
-        - name: unix
-          type: int64
-        - name: xhash
-          type: int64
+        type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -315,7 +305,7 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       item:
-        type: int64
+        type: fixed_size_binary[16]
     - name: mic
       type: int32
       nullable: true
@@ -326,7 +316,7 @@ fields:
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Instrument lifecycle identity used to join market rows.
     - name: instrument_code
       type: string
@@ -485,21 +475,16 @@ fields:
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
     - name: hash
-      type: int64
+      type: fixed_size_binary[16]
       description: 'Digest of this version''s content: the same version, twice, is one row.'
     - name: xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Identity of the thing across every version of it -- the lifecycle.
     - name: linked_events
       type: list
       description: Related event times and lifecycle identities, primary match first.
       item:
-        type: struct
-        fields:
-        - name: unix
-          type: int64
-        - name: xhash
-          type: int64
+        type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -527,7 +512,7 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       item:
-        type: int64
+        type: fixed_size_binary[16]
     - name: mic
       type: int32
       nullable: true
@@ -538,7 +523,7 @@ fields:
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Instrument lifecycle identity used to join market rows.
     - name: instrument_code
       type: string
@@ -706,21 +691,16 @@ fields:
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
     - name: hash
-      type: int64
+      type: fixed_size_binary[16]
       description: 'Digest of this version''s content: the same version, twice, is one row.'
     - name: xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Identity of the thing across every version of it -- the lifecycle.
     - name: linked_events
       type: list
       description: Related event times and lifecycle identities, primary match first.
       item:
-        type: struct
-        fields:
-        - name: unix
-          type: int64
-        - name: xhash
-          type: int64
+        type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -748,7 +728,7 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       item:
-        type: int64
+        type: fixed_size_binary[16]
     - name: mic
       type: int32
       nullable: true
@@ -759,7 +739,7 @@ fields:
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Instrument lifecycle identity used to join market rows.
     - name: instrument_code
       type: string
@@ -918,21 +898,16 @@ fields:
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
     - name: hash
-      type: int64
+      type: fixed_size_binary[16]
       description: 'Digest of this version''s content: the same version, twice, is one row.'
     - name: xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Identity of the thing across every version of it -- the lifecycle.
     - name: linked_events
       type: list
       description: Related event times and lifecycle identities, primary match first.
       item:
-        type: struct
-        fields:
-        - name: unix
-          type: int64
-        - name: xhash
-          type: int64
+        type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -960,7 +935,7 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       item:
-        type: int64
+        type: fixed_size_binary[16]
     - name: mic
       type: int32
       nullable: true
@@ -971,7 +946,7 @@ fields:
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
-      type: int64
+      type: fixed_size_binary[16]
       description: Instrument lifecycle identity used to join market rows.
     - name: instrument_code
       type: string

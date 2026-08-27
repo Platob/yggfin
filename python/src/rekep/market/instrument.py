@@ -23,14 +23,14 @@ from rekep.fields import Field, scalar
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import HOUR, Event
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL, hash_of
+from rekep.market.identity import HASH, NIL, hash_bytes_of, hash_of
 
 
 @scalar(slots=True, weakref_slot=True)
 class Leg(MarketConvertible):
     """One leg of a multileg instrument: a spread's near and far, an option's pair."""
 
-    xhash: int = NIL
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """The instrument this leg is of, derived the same way any other one is."""
 
     symbol: Annotated[str, fix_tag("LegSymbol")] = ""
@@ -101,7 +101,7 @@ class Instrument(Event):
 
     # Not a partition: bucketing a hash splits every hour into as many files as
     # buckets, and the hour already prunes the read this would prune.
-    xhash: int = NIL
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Digest of the exact `symbol`; zero when the symbol is empty."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -232,11 +232,11 @@ class Instrument(Event):
 
     def life_parts(self) -> tuple[Any, ...]:
         """An instrument lifecycle exists only when its exact symbol does."""
-        return (self.xhash,) if self.xhash else ()
+        return (hash_bytes_of(self.xhash),) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
         """Hash the complete explicitly framed instrument state."""
-        return (self.xhash, self.version, self.unix, *_instrument_parts(self))
+        return (hash_bytes_of(self.xhash), self.version, self.unix, *_instrument_parts(self))
 
     def into_fixmsg(self, **declared: Any) -> Any:
         """Carry this version as a normalized row in the market FixMsg stream."""

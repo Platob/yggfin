@@ -21,7 +21,7 @@ from rekep.market.fix import (
     ORDER_HANDLERS,
     MarketTags,
 )
-from rekep.market.identity import NIL, hash_arrow
+from rekep.market.identity import HASH, NIL_BYTES, hash_arrow, linked_arrow
 from rekep.market.orders import Execution, Order
 
 _REASON_FIELDS = (
@@ -454,7 +454,7 @@ class _Shared:
         self.symbol = values.text("Symbol", fallback="")
         self.instrument_xhash = compute.if_else(
             compute.equal(self.symbol, ""),
-            pyarrow.scalar(NIL, pyarrow.int64()),
+            pyarrow.scalar(NIL_BYTES, HASH),
             hash_arrow("symbol", "", self.symbol),
         )
         self.codes = FixMsg.codes_arrow(columns, rows, tags.tags)
@@ -543,7 +543,7 @@ def _orders(
     xhash = compute.if_else(
         named_life,
         Order.hash_arrow(instrument_xhash, mic, named, side),
-        pyarrow.scalar(NIL, pyarrow.int64()),
+        pyarrow.scalar(NIL_BYTES, HASH),
     )
     px = shared.take(values.number("Price"), where)
     ccy = shared.take(shared.ccy, where)
@@ -659,7 +659,7 @@ def _executions(
     xhash = compute.if_else(
         named_life,
         Execution.hash_arrow(instrument_xhash, mic, named, side),
-        pyarrow.scalar(NIL, pyarrow.int64()),
+        pyarrow.scalar(NIL_BYTES, HASH),
     )
     order_id = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
@@ -694,9 +694,8 @@ def _executions(
     order_xhash = order_by_source["xhash"]
     order_hash = order_by_source["hash"]
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
-    linked_values = pyarrow.StructArray.from_arrays(
-        [compute.filter(order_unix, reported), compute.filter(order_xhash, reported)],
-        fields=list(Execution.into_field().field("linked_events").dtype.value_type),
+    linked_values = linked_arrow(
+        compute.filter(order_unix, reported), compute.filter(order_xhash, reported)
     )
     linked = build_list(
         Execution.into_field().field("linked_events").dtype,
@@ -807,7 +806,11 @@ def _order_lookup(
 ) -> dict[str, pyarrow.Array]:
     rows = len(execution_at)
     if orders is None:
-        return {name: pyarrow.nulls(rows, pyarrow.int64()) for name in ("unix", "xhash", "hash")}
+        return {
+            "unix": pyarrow.nulls(rows, pyarrow.int64()),
+            "xhash": pyarrow.nulls(rows, HASH),
+            "hash": pyarrow.nulls(rows, HASH),
+        }
     locations = compute.index_in(execution_at, value_set=order_at)
     return {
         name: compute.take(orders.column(name), locations) for name in ("unix", "xhash", "hash")

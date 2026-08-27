@@ -241,13 +241,13 @@ def test_the_wide_kernel_matches_the_scalar_row_for_row() -> None:
         pyarrow.array(micros, pyarrow.int64()), pyarrow.array(payloads, pyarrow.string())
     )
     assert hashed.type == txhash.TXHASH128
-    assert [int(one) for one in hashed.to_pylist()] == [
+    assert [txhash.wide_of(one) for one in hashed.to_pylist()] == [
         txhash.h128(tick, text) for tick, text in zip(micros, payloads, strict=True)
     ]
 
 
 def test_the_wide_halves_come_back_out_of_a_column() -> None:
-    values = pyarrow.array([txhash.h128(100, b"a"), None], txhash.TXHASH128)
+    values = pyarrow.array([txhash.wide_bytes(txhash.h128(100, b"a")), None], txhash.TXHASH128)
     assert txhash.micros_arrow(values).to_pylist() == [100, None]
     assert txhash.digest64_arrow(values).to_pylist() == [txhash.xxh64_of(b"a"), None]
     assert txhash.micros_arrow(values).type == pyarrow.int64()
@@ -258,7 +258,7 @@ def test_a_null_on_either_side_is_a_null_wide_txhash() -> None:
     hashed = txhash.h128_arrow(
         pyarrow.array([1, None, 3], pyarrow.int64()), pyarrow.array(["a", "b", None])
     )
-    assert [None if one is None else int(one) for one in hashed.to_pylist()] == [
+    assert [None if one is None else txhash.wide_of(one) for one in hashed.to_pylist()] == [
         txhash.h128(1, "a"),
         None,
         None,
@@ -289,7 +289,9 @@ def test_the_wide_builders_agree_across_arrays_batch_and_dataclass() -> None:
         batch.column("unix"), batch.column("symbol"), batch.column("qty")
     )
     selected = txhash.h128_arrow_batch(batch, "unix", "symbol", "qty")
-    assert [int(one) for one in columns.to_pylist()] == [int(one) for one in selected.to_pylist()]
+    assert [txhash.wide_of(one) for one in columns.to_pylist()] == [
+        txhash.wide_of(one) for one in selected.to_pylist()
+    ]
     assert (
         txhash.epoch_micros_arrow(batch.column("unix")).to_pylist() == [1_700_000_000_000_000] * 2
     )

@@ -21,7 +21,7 @@ refuses loudly rather than wrapping.
 The Arrow kernels -- `h64_arrow` over a seconds column and a payload column,
 `seconds_arrow` and `digest_arrow` for the halves -- produce bit-identical
 values to the Python builders row for row, walking the payload buffer once
-without framing or copying.
+without framing or copying. The wide kernels below mirror them.
 
 ## One hundred and twenty-eight bits
 
@@ -35,13 +35,18 @@ from rekep.txhash import digest64_of, h128, micros_of
 
 wide = h128(1_700_000_000_000_000, b"payload")
 assert micros_of(wide) == 1_700_000_000_000_000
-assert wide < 10**38
+assert digest64_of(wide) < 1 << 64
 ```
 
-The value fits `decimal128(38, 0)`, which is the Arrow type a wide hash
-column stores -- an exact integer, no scale. `micros_of` and `digest64_of`
-read the halves back, and `micros_arrow` and `digest64_arrow` do the same
-for a column.
+A column stores it as its sixteen big-endian bytes, `fixed_size_binary(16)`,
+which is what every identifier in the package is stored as -- so it still
+sorts by time. `micros_of` and `digest64_of` read the halves back, and
+`micros_arrow` and `digest64_arrow` do the same for a column.
+
+Every event identity is this hash: `Event.txhash_of` frames a version's parts
+and anchors them, and `txhash_framed` anchors a frame a shape already has --
+which is how a book, whose live sides are cached frames, gets the same value
+without rebuilding them.
 
 The wide builders mirror the narrow ones over the same framing:
 `h128_arrow_arrays` over several columns and a clock, `h128_arrow_batch`

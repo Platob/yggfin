@@ -1861,7 +1861,11 @@ def _bytes_of(field: Field, value: Any) -> bytes:
         ticks = int(found.total_seconds() * scale)
         return ticks.to_bytes(8, "big", signed=True)
     if kinds.is_decimal(dtype):
-        return str(field.cast_py(value)).encode("ascii")
+        found = field.cast_py(value)
+        if dtype.scale:
+            return str(found).encode("ascii")
+        width = 16 if pyarrow.types.is_decimal128(dtype) else 32
+        return int(found).to_bytes(width, "big", signed=True)
     if kinds.is_integer(dtype) or kinds.is_floating(dtype):
         return _number_bytes(dtype, field.cast_py(value))
     if kinds.is_struct(dtype):

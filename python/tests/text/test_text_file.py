@@ -15,6 +15,7 @@ from rekep import Dataset, Entry, Field, FixRegistry, Message
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
+from rekep.market.identity import HASH, hash_int_of
 from rekep.text import HEADER_PATTERN, TextFile
 from rekep.text.text_file import _local_micros
 from rekep.times import unix_of
@@ -530,7 +531,7 @@ def test_schema(plain: Path) -> None:
     assert FIX_COLUMNS.isdisjoint(schema.names)
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unix_partition").type == pyarrow.int32()
-    assert schema.field("hash").type == pyarrow.int64()
+    assert schema.field("hash").type == HASH
     assert schema.field("etype").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
@@ -1005,10 +1006,11 @@ def test_a_batch_boundary_keeps_every_rownum_with_its_own_row(tmp_path: Path) ->
 def test_the_digest_is_per_line_and_a_signed_int64(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
-    hashes = table.column("hash").to_pylist()
+    stored = table.column("hash").to_pylist()
+    hashes = [hash_int_of(one) for one in stored]
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= digest < 2**63 for digest in hashes)
-    assert table.column("xhash").to_pylist() == hashes, "a line is its own lifecycle"
+    assert table.column("xhash").to_pylist() == stored, "a line is its own lifecycle"
 
 
 def test_hash64_is_stable_across_reads(plain: Path) -> None:

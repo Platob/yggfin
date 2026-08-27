@@ -26,7 +26,7 @@ from rekep.enums import (
 from rekep.fields import Field, scalar
 from rekep.market.event import DAY, HOUR, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL, frame, hash_bytes
+from rekep.market.identity import HASH, NIL, frame, hash_bytes_of, stored_member
 from rekep.market.instrument import Instrument
 from rekep.market.orders import CLIENT_ORDER_CODE, Execution, Order, _quantity_transition
 
@@ -68,7 +68,7 @@ class Book(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.BOOK
 
-    hash: Annotated[int, Field.primary_key()] = NIL
+    hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
     """Digest of the instant, instrument, and ordered live Order version hashes."""
 
     # Re-declared to carry **no** FIX tag, which is the honest thing to say:
@@ -177,7 +177,14 @@ class Book(MarketEvent):
         """Identify this instant's complete live order state."""
         bid = self.__bid_order_hashes
         ask = self.__ask_order_hashes
-        return self.unix, self.instrument_xhash, len(bid), *bid, len(ask), *ask
+        return (
+            self.unix,
+            hash_bytes_of(self.instrument_xhash),
+            len(bid),
+            *(hash_bytes_of(one) for one in bid),
+            len(ask),
+            *(hash_bytes_of(one) for one in ask),
+        )
 
     def _remember_alive_hashes(
         self,
@@ -199,14 +206,21 @@ class Book(MarketEvent):
         ask = self.__ask_order_hashes
         bid_frame = self.__bid_order_frame
         if bid_frame is None:
-            bid_frame = self.__bid_order_frame = frame(bid) if bid else b""
+            bid_frame = self.__bid_order_frame = hashes_frame(bid)
         ask_frame = self.__ask_order_frame
         if ask_frame is None:
-            ask_frame = self.__ask_order_frame = frame(ask) if ask else b""
-        return hash_bytes(
+            ask_frame = self.__ask_order_frame = hashes_frame(ask)
+        return self.txhash_framed(
             b"".join(
                 (
-                    frame((type(self).__name__, self.unix, self.instrument_xhash, len(bid))),
+                    frame(
+                        (
+                            type(self).__name__,
+                            self.unix,
+                            hash_bytes_of(self.instrument_xhash),
+                            len(bid),
+                        )
+                    ),
                     bid_frame,
                     frame((len(ask),)),
                     ask_frame,
@@ -435,6 +449,11 @@ class Book(MarketEvent):
 # -- helpers ----------------------------------------------------------------
 
 
+def hashes_frame(hashes: tuple[int, ...]) -> bytes:
+    """A run of identifiers as the v1 frame of their stored bytes."""
+    return frame(tuple(hash_bytes_of(one) for one in hashes)) if hashes else b""
+
+
 def _alive_hashes(
     bid: Iterable[Order], ask: Iterable[Order]
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
@@ -501,8 +520,9 @@ def _book_arrow_batch(books: list[Book], schema: pyarrow.Schema) -> pyarrow.Reco
     """Build one Book batch by columns, including its nested struct lists."""
     columns = []
     for declared in schema:
-        values = [getattr(book, declared.name) for book in books]
-        if declared.name in _BOOK_STRUCT_LISTS:
+        name = declared.name
+        values = [stored_member(name, getattr(book, name)) for book in books]
+        if name in _BOOK_STRUCT_LISTS:
             columns.append(_struct_list_arrow(values, declared.type))
         else:
             columns.append(pyarrow.array(values, type=declared.type))
@@ -515,7 +535,10 @@ def _struct_list_arrow(rows: list[list[Any]], declared: pyarrow.DataType) -> pya
     values = list(itertools.chain.from_iterable(rows))
     struct = declared.value_type
     children = [
-        pyarrow.array([getattr(value, member.name) for value in values], type=member.type)
+        pyarrow.array(
+            [stored_member(member.name, getattr(value, member.name)) for value in values],
+            type=member.type,
+        )
         for member in struct
     ]
     flattened = pyarrow.StructArray.from_arrays(children, fields=list(struct))
@@ -749,7 +772,7 @@ class _Side:
                     )
                 level_frame = level.frame
                 if level_frame is None:
-                    level_frame = level.frame = frame(level_hashes) if level_hashes else b""
+                    level_frame = level.frame = hashes_frame(level_hashes)
                 frames.append(level_frame)
             encoded = self._order_frame_cache = b"".join(frames)
         return hashes, encoded

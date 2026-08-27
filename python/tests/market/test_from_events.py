@@ -18,6 +18,7 @@ from rekep.market import (
     TimeInForce,
 )
 from rekep.market.book import _Side
+from rekep.market.identity import hash_bytes_of
 
 BTC = Instrument(symbol="BTC-USD", exchange="XCME", currency="USD")
 ETH = Instrument(symbol="ETH-USD", exchange="XCME", currency="USD")
@@ -114,16 +115,16 @@ def test_a_book_hash_frames_both_ordered_live_sides_explicitly() -> None:
     bid, lower_bid, ask = TWO_SIDED
     expected = (
         only.unix,
-        only.instrument_xhash,
+        hash_bytes_of(only.instrument_xhash),
         2,
-        bid.hash,
-        lower_bid.hash,
+        hash_bytes_of(bid.hash),
+        hash_bytes_of(lower_bid.hash),
         1,
-        ask.hash,
+        hash_bytes_of(ask.hash),
     )
 
     assert only.version_parts() == expected
-    assert only.hash == Book.hash_of(*expected)
+    assert only.hash == only.txhash_of(*expected)
 
 
 def test_book_hash_cache_follows_each_side_change() -> None:
@@ -142,14 +143,14 @@ def test_book_hash_cache_follows_each_side_change() -> None:
     for book, (bids, asks) in zip(found, expected_sides, strict=True):
         expected = (
             book.unix,
-            book.instrument_xhash,
+            hash_bytes_of(book.instrument_xhash),
             len(bids),
-            *bids,
+            *(hash_bytes_of(one) for one in bids),
             len(asks),
-            *asks,
+            *(hash_bytes_of(one) for one in asks),
         )
         assert book.version_parts() == expected
-        assert book.hash == Book.hash_of(*expected)
+        assert book.hash == book.txhash_of(*expected)
 
 
 # -- what it refuses ---------------------------------------------------------
@@ -670,7 +671,7 @@ def test_the_folded_books_are_a_table() -> None:
     events = [one for line in REFRESHES for one in FixEvents.from_text(line, venue="XCME")]
     batch = Book.into_field().cast_arrow_batch(
         pyarrow.RecordBatch.from_pylist(
-            [one.into_dict() for one in books(events)], schema=Book.into_field().into_arrow_schema()
+            [one.into_row() for one in books(events)], schema=Book.into_field().into_arrow_schema()
         )
     )
     assert batch.num_rows == 3

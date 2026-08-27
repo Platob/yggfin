@@ -1,14 +1,16 @@
-"""Time-anchored sortable identities: `int32` epoch seconds over an XXH32 tail.
+"""Time-anchored sortable identities: a clock over a digest of the payload.
 
-A txhash is one signed `int64` whose four high bytes are a row's epoch
-seconds as a signed `int32` and whose four low bytes are the XXH32 digest of
-its payload. Comparing two txhashes compares their times first, so a column
-of them sorts by time while still spreading rows hashed within the same
-second -- one value that is both an identity and a sort key.
+The narrow couple is one signed `int64`: four high bytes of epoch seconds as
+a signed `int32`, four low bytes of XXH32. The wide one is a signed 128-bit
+value -- epoch microseconds over XXH64 -- stored as its sixteen big-endian
+bytes, which is what every identity in the package is stored as. Comparing
+two txhashes compares their times first, so a column sorts by time while
+still spreading rows hashed within one tick: one value that is both an
+identity and a sort key.
 
-The couple is exact and reversible: `seconds_of` and `digest_of` read the
-halves back, and the Arrow kernels produce bit-identical values to the
-Python builders row for row.
+Each couple is exact and reversible -- `seconds_of`/`digest_of` and
+`micros_of`/`digest64_of` read the halves back -- and the Arrow kernels
+produce bit-identical values to the Python builders row for row.
 """
 
 from __future__ import annotations
@@ -34,14 +36,21 @@ DIGEST_MASK = 0xFFFF_FFFF
 _SECONDS_MIN = -(1 << 31)
 _SECONDS_MAX = (1 << 31) - 1
 
-#: The Arrow type every wide txhash is: an exact integer, no scale.
-TXHASH128 = pyarrow.decimal128(38, 0)
+#: How many bytes one wide txhash is.
+WIDE_WIDTH = 16
+
+#: The Arrow type every wide txhash is: its sixteen bytes, big-endian, so a
+#: column compares and sorts exactly as the values do.
+TXHASH128 = pyarrow.binary(WIDE_WIDTH)
 
 #: How far the epoch micros sit above the wide digest.
 MICROS_SHIFT = 64
 
 #: The eight low bytes the wide digest owns.
 DIGEST64_MASK = (1 << 64) - 1
+
+#: What a stored wide couple's bytes hold: the value, two's complement.
+_WIDE_MASK = (1 << 128) - 1
 
 #: What a signed `int64` clock can say.
 _MICROS_MIN = -(1 << 63)
@@ -169,21 +178,40 @@ def h128(micros: Any, payload: bytes | str, seed: int = 0) -> int:
     return couple128(_micros(micros), xxh64_of(payload, seed))
 
 
+def wide_of(value: Any) -> int:
+    """One wide txhash as the integer it is, from bytes or from an integer."""
+    if isinstance(value, int):
+        return value
+    packed = int.from_bytes(bytes(value), "big")
+    return packed - (1 << 128) if packed >= (1 << 127) else packed
+
+
+def wide_bytes(value: Any) -> bytes | None:
+    """One wide txhash as the sixteen bytes a column holds; `None` stays `None`.
+
+    Big-endian two's complement, which is what makes the stored column sort
+    exactly as the values do -- and the one place those bytes are written.
+    """
+    if value is None or isinstance(value, bytes):
+        return value
+    return (int(value) & _WIDE_MASK).to_bytes(WIDE_WIDTH, "big")
+
+
 def micros_of(value: Any) -> int:
     """The epoch microseconds a wide txhash is anchored to."""
-    return int(value) >> MICROS_SHIFT
+    return wide_of(value) >> MICROS_SHIFT
 
 
 def digest64_of(value: Any) -> int:
     """The unsigned XXH64 digest a wide txhash carries."""
-    return int(value) & DIGEST64_MASK
+    return wide_of(value) & DIGEST64_MASK
 
 
 def h128_arrow(micros: Any, payload: Any, seed: int = 0) -> pyarrow.Array:
     """One wide txhash per row: `micros` over the XXH64 of `payload`.
 
-    The values are written straight into the sixteen-byte cells a
-    `decimal128` column stores, so nothing is boxed on the way.
+    The values are written straight into the column's sixteen-byte cells,
+    big-endian as `wide_bytes` writes one, so nothing is boxed on the way.
     """
     clock = _int64_column(micros)
     binary = _binary_column(payload)
@@ -199,9 +227,11 @@ def h128_arrow(micros: Any, payload: Any, seed: int = 0) -> pyarrow.Array:
         for row in range(rows):
             end = offsets[row + 1]
             value = ticks[row] * (1 << MICROS_SHIFT) + digest(data[begin:end], seed)
-            out[row * 16 : row * 16 + 16] = value.to_bytes(16, "little", signed=True)
+            out[row * 16 : row * 16 + 16] = (value & _WIDE_MASK).to_bytes(WIDE_WIDTH, "big")
             begin = end
-    hashed = pyarrow.Decimal128Array.from_buffers(TXHASH128, rows, [None, pyarrow.py_buffer(out)])
+    hashed = pyarrow.FixedSizeBinaryArray.from_buffers(
+        TXHASH128, rows, [None, pyarrow.py_buffer(out)]
+    )
     if not clock.null_count and not binary.null_count:
         return hashed
     compute = pyarrow.compute

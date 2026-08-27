@@ -30,6 +30,8 @@ from rekep.market.identity import (
     hash_arrow,
     hash_bytes,
     hash_bytes_arrow,
+    hash_bytes_of,
+    hash_int_of,
     hash_of,
     part_bytes,
 )
@@ -40,7 +42,7 @@ VECTORS = pathlib.Path(__file__).parents[3] / "docs" / "assets" / "identity-v1.j
 
 
 def built(*columns: object) -> list[int]:
-    return hash_arrow(*columns).to_pylist()
+    return [hash_int_of(one) for one in hash_arrow(*columns).to_pylist()]
 
 
 def vector_part(declared: dict[str, object]) -> object:
@@ -75,12 +77,14 @@ def vector_column(part: object) -> pyarrow.Array:
 # -- what an identifier is ---------------------------------------------------
 
 
-def test_an_identifier_is_a_signed_int64() -> None:
-    """The one column every engine below Arrow reads the same way."""
+def test_an_identifier_is_a_signed_integer_stored_in_sixteen_bytes() -> None:
+    """One stored width for every identity: a content digest is sixty-four bits,
+    a time-anchored version hash is twice that, and both are this column."""
     value = hash_of("Order", "AAPL")
     assert isinstance(value, int)
     assert -(2**63) <= value < 2**63
-    assert hash_arrow("Order", pyarrow.array(["AAPL"])).type == HASH == pyarrow.int64()
+    assert hash_arrow("Order", pyarrow.array(["AAPL"])).type == HASH == pyarrow.binary(16)
+    assert hash_int_of(hash_bytes_of(value)) == value
 
 
 def test_nothing_hashed_yet_is_zero_and_not_null() -> None:
@@ -198,7 +202,7 @@ def test_a_blob_is_hashed_as_it_stands_and_not_framed() -> None:
 
 def test_unframed_arrow_hashes_match_scalar_bytes() -> None:
     values = pyarrow.array(["a line", "", "café"])
-    assert hash_bytes_arrow(values).to_pylist() == [
+    assert [hash_int_of(one) for one in hash_bytes_arrow(values).to_pylist()] == [
         hash_bytes(value.encode("utf-8")) for value in values.to_pylist()
     ]
 
@@ -339,11 +343,36 @@ def test_null_is_absent_whatever_supported_arrow_column_carries_it(
 
 
 def test_an_identifier_column_can_itself_be_a_part() -> None:
-    """A child event hashes its parents, and a parent is an int64 now."""
-    parents = pyarrow.array([hash_of("a"), hash_of("b")], type=HASH)
+    """A child event hashes its parents, and a parent enters as its stored bytes."""
+    parents = arrow_of([hash_of("a"), hash_of("b")])
     made = built("Book", parents)
     assert made[0] != made[1]
-    assert made[0] == hash_of("Book", hash_of("a"))
+    assert made[0] == hash_of("Book", hash_bytes_of(hash_of("a")))
+
+
+# -- a relation --------------------------------------------------------------
+
+
+def test_a_relation_is_one_identifier_and_the_two_builders_agree() -> None:
+    """A related event is a time and a thing, and the pair is stored as one
+    value -- so the column builder has to write what `linked` writes."""
+    pairs = [(1, 11), (1_700_000_000_000_000_000, -5), (0, 1 << 62)]
+    made = identity.linked_arrow(
+        pyarrow.array([unix for unix, _ in pairs], pyarrow.int64()),
+        arrow_of([xhash for _, xhash in pairs]),
+    )
+    assert made.type == HASH
+    assert made.to_pylist() == [identity.hash_bytes_of(identity.linked(*pair)) for pair in pairs]
+    assert [identity.unlink(one) for one in made.to_pylist()] == pairs
+
+
+def test_a_relation_refuses_a_null_on_either_side() -> None:
+    """`(0, 0)` is a relation to nothing, and silently writing one for an
+    absent instant would be a link nobody made."""
+    with pytest.raises(ValueError, match="may be null"):
+        identity.linked_arrow(pyarrow.array([None], pyarrow.int64()), arrow_of([1]))
+    with pytest.raises(ValueError, match="may be null"):
+        identity.linked_arrow(pyarrow.array([1], pyarrow.int64()), arrow_of([None]))
 
 
 def test_no_rows_is_no_rows() -> None:
@@ -445,16 +474,18 @@ def test_bytes_like_values_share_their_declared_raw_payload() -> None:
 # -- a column of identifiers -------------------------------------------------
 
 
-def test_a_column_of_identifiers_is_int64_whatever_it_arrives_as() -> None:
+def test_a_column_of_identifiers_is_the_stored_width_whatever_it_arrives_as() -> None:
     values = [hash_of("a"), None]
     for column in (values, pyarrow.array(values, type=pyarrow.int64())):
         assert arrow_of(column).type == HASH
-        assert arrow_of(column).to_pylist() == values
+        assert [hash_int_of(one) for one in arrow_of(column).to_pylist()] == values
 
 
 def test_a_narrow_identifier_column_widens() -> None:
     narrow = pyarrow.array([1, 2], type=pyarrow.int32())
-    assert arrow_of(narrow).type == HASH and arrow_of(narrow).to_pylist() == [1, 2]
+    widened = arrow_of(narrow)
+    assert widened.type == HASH
+    assert [hash_int_of(one) for one in widened.to_pylist()] == [1, 2]
 
 
 def test_a_chunked_column_converts_chunk_by_chunk() -> None:

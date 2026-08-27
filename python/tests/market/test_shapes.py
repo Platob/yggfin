@@ -10,7 +10,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import Field
-from rekep.market import Book, Event, Execution, Instrument, Level, MarketEvent, Order
+from rekep.market import HASH, Book, Event, Execution, Instrument, Level, MarketEvent, Order
 from rekep.text import FixMsg
 
 EVENTS = (Order, Execution, Book)
@@ -157,7 +157,7 @@ def test_hot_persisted_rows_are_slotted_and_round_trip_through_arrow(shape: type
     assert not hasattr(row, "__dict__")
     assert weakref.ref(row)() is row
     schema = shape.into_field().into_arrow_schema()
-    stored = pyarrow.Table.from_pylist([row.into_dict()], schema=schema).to_pylist()[0]
+    stored = pyarrow.Table.from_pylist([row.into_row()], schema=schema).to_pylist()[0]
     assert shape.from_dict(stored) == row
 
 
@@ -191,27 +191,14 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
 
 def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
     link = Execution.into_field().field("linked_events")
-    assert link.dtype.equals(
-        pyarrow.list_(
-            pyarrow.field(
-                "item",
-                pyarrow.struct(
-                    [
-                        pyarrow.field("unix", pyarrow.int64(), nullable=False),
-                        pyarrow.field("xhash", pyarrow.int64(), nullable=False),
-                    ]
-                ),
-                nullable=False,
-            )
-        )
-    )
+    assert link.dtype.equals(pyarrow.list_(pyarrow.field("item", HASH, nullable=False)))
     assert not link.nullable
     assert "order_xhash" not in Execution.into_field().names
     assert "order_xcode" not in Execution.into_field().names
     assert (
         Execution.into_field()
         .field("parent_hash")
-        .dtype.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
+        .dtype.equals(pyarrow.list_(pyarrow.field("item", HASH, nullable=False)))
     )
 
 

@@ -1275,9 +1275,7 @@ def bench_fold(events: int, repeat: int) -> None:
     schema = Book.into_field().into_arrow_schema()
 
     def document_projection() -> pyarrow.Table:
-        batch = pyarrow.RecordBatch.from_pylist(
-            [book.into_dict() for book in sample], schema=schema
-        )
+        batch = pyarrow.RecordBatch.from_pylist([book.into_row() for book in sample], schema=schema)
         return pyarrow.Table.from_batches([batch], schema=schema)
 
     generic, expected = timed(document_projection, repeat)

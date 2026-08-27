@@ -21,6 +21,7 @@ from rekep.fields import (
     scalar,
 )
 from rekep.market import (
+    HASH,
     Book,
     Event,
     Execution,
@@ -83,13 +84,13 @@ class Keyed(MarketConvertible):
     """Its own partition."""
 
 
-def test_an_identifier_is_a_plain_int64() -> None:
-    """Not `fixed_size_binary[16]`: half the ecosystem below Arrow reads that as
-    something else, and a `long` is the same column in every engine there is."""
+def test_an_identifier_is_sixteen_fixed_bytes() -> None:
+    """One width for every identity, narrow or wide: a version hash carries an
+    instant over a 64-bit digest and no longer fits a `long`."""
     for shape in SHAPES:
         for name in ("hash", "xhash"):
             if name in shape.into_field().names:
-                assert shape.into_field().field(name).dtype == pyarrow.int64(), shape.__name__
+                assert shape.into_field().field(name).dtype == HASH, shape.__name__
 
 
 def test_a_market_code_column_is_as_wide_as_its_code_declares() -> None:

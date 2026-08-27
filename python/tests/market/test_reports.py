@@ -6,6 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.market import Book, Event, Execution, FixEvents, Order, Side, State
+from rekep.market.identity import hash_bytes_of, linked
 
 
 def report(
@@ -323,8 +324,8 @@ def test_linked_events_preserve_order_deduplicate_and_round_trip_through_arrow()
     assert event.linked_events == [(1, 11), (2, 22)]
 
     schema = Event.into_field().into_arrow_schema()
-    stored = pyarrow.Table.from_pylist([event.into_dict()], schema=schema).to_pylist()[0]
-    assert stored["linked_events"] == [{"unix": 1, "xhash": 11}, {"unix": 2, "xhash": 22}]
+    stored = pyarrow.Table.from_pylist([event.into_row()], schema=schema).to_pylist()[0]
+    assert stored["linked_events"] == [hash_bytes_of(linked(1, 11)), hash_bytes_of(linked(2, 22))]
     assert Event.from_dict(stored).linked_events == [(1, 11), (2, 22)]
 
 

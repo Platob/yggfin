@@ -19,7 +19,7 @@ from rekep.market import (
     State,
 )
 from rekep.market.event import CODES_TYPE, DAY, HOUR, SECOND
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, arrow_of, hash_bytes_of, hash_int_of
 
 SHAPES = {
     Order: EventType.ORDER,
@@ -168,7 +168,7 @@ def test_a_shape_hashes_whole_columns_the_way_it_hashes_one_row() -> None:
     """
     symbols = pyarrow.array(["AAPL", "MSFT"])
     ids = pyarrow.array(["cl-1", "cl-2"])
-    assert Order.hash_arrow(symbols, ids).to_pylist() == [
+    assert [hash_int_of(one) for one in Order.hash_arrow(symbols, ids).to_pylist()] == [
         Order.hash_of("AAPL", "cl-1"),
         Order.hash_of("MSFT", "cl-2"),
     ]
@@ -207,15 +207,18 @@ def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
     unix, instrument_xhash = 1_710_374_400_000_000_123, 42
     built = Book(unix=unix, instrument_xhash=instrument_xhash).identify()
 
-    assert built.version_parts() == (unix, instrument_xhash, 0, 0)
-    assert built.hash == built.txhash_of(unix, instrument_xhash, 0, 0)
-    assert Book.txhash_arrow(
-        pyarrow.array([unix], pyarrow.int64()),
-        pyarrow.array([unix], pyarrow.int64()),
-        pyarrow.array([instrument_xhash], pyarrow.int64()),
-        pyarrow.array([0], pyarrow.int64()),
-        pyarrow.array([0], pyarrow.int64()),
-    ).to_pylist() == [built.hash]
+    assert built.version_parts() == (unix, hash_bytes_of(instrument_xhash), 0, 0)
+    assert built.hash == built.txhash_of(*built.version_parts())
+    assert [
+        hash_int_of(one)
+        for one in Book.txhash_arrow(
+            pyarrow.array([unix], pyarrow.int64()),
+            pyarrow.array([unix], pyarrow.int64()),
+            arrow_of([instrument_xhash]),
+            pyarrow.array([0], pyarrow.int64()),
+            pyarrow.array([0], pyarrow.int64()),
+        ).to_pylist()
+    ] == [built.hash]
 
 
 def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> None:
@@ -293,7 +296,7 @@ def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> 
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
     assert built.code == built.code == instrument.symbol
-    assert built.xhash == Book.hash_of(instrument.xhash, built.code, Side.UNKNOWN)
+    assert built.xhash == Book.hash_of(hash_bytes_of(instrument.xhash), built.code, Side.UNKNOWN)
 
 
 def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> None:

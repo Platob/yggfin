@@ -23,7 +23,7 @@ from rekep.market import (
     State,
     TimeInForce,
 )
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, hash_bytes_of
 
 EQUITY = Instrument(symbol="AAPL", exchange="XNAS", kind=AssetKind.EQUITY)
 XNAS = MIC.from_str("XNAS")
@@ -76,7 +76,9 @@ def test_a_first_version_still_gets_its_identity() -> None:
     first = resting()
     assert first.xhash != NIL and first.hash != NIL
     assert first.code == "ORD-1"
-    assert first.xhash == Order.hash_of(EQUITY.xhash, first.mic, first.code, first.side)
+    assert first.xhash == Order.hash_of(
+        hash_bytes_of(EQUITY.xhash), first.mic, first.code, first.side
+    )
     assert first.version == 0 and first.prev_unix is None
 
 
@@ -451,7 +453,9 @@ def test_a_preidentified_execution_is_rehashed_after_completion_supplies_scope()
 
     done.with_previous(order)
 
-    expected = Execution.hash_of(order.instrument_xhash, order.mic, "EX-1", done.side)
+    expected = Execution.hash_of(
+        hash_bytes_of(order.instrument_xhash), order.mic, "EX-1", done.side
+    )
     assert stale != expected and done.xhash == expected
     assert done.version == 0 and done.parent_hash == [order.hash]
 

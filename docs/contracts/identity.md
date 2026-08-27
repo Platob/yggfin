@@ -32,6 +32,20 @@ conversion directly to those exact bytes, without a length prefix. Composite
 identities use `hash_of(*parts)` and the frame above. The two operations are
 deliberately distinct and have pinned tests; an empty composite is refused.
 
+## Stored column
+
+A digest is computed as a signed `i64` and stored as sixteen big-endian
+two's-complement bytes -- `fixed_size_binary(16)` in Arrow, `fixed[16]` in
+Iceberg. One width covers both a content digest and the wider time-anchored
+version hash [`rekep.txhash`](txhash.md) builds, and big-endian keeps the
+column sorting as the values do. `hash_bytes_of` writes those bytes and
+`hash_int_of` reads them back. A relation is one of them too: `linked(unix,
+xhash)` couples an instant over a lifecycle and `unlink` returns the pair.
+
+An identifier that is itself a part of another identity enters the frame as
+those sixteen bytes, never as an integer -- which is why the integer payload
+below still refuses anything outside `i64`.
+
 ## Scalar payloads
 
 | Logical value | Payload |

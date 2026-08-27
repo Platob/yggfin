@@ -9,7 +9,7 @@ import pytest
 from rekep import Field, FixCodec, FixMsg, Message
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
-from rekep.market import MIC, BookIterator, Event, EventType
+from rekep.market import HASH, MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
 
@@ -660,12 +660,11 @@ def test_every_unix_column_declares_its_unit() -> None:
     assert partition_metadata["epoch"] == "1970-01-01"
 
 
-def test_the_line_digest_is_an_int64_like_every_other_identifier() -> None:
-    """The one column every engine below Arrow reads the same way, and the key
-    is `(unix, hash)` -- so two digests only meet if they also share a
-    nanosecond."""
+def test_the_line_digest_is_stored_like_every_other_identifier() -> None:
+    """One stored width for every identity, and the key is `(unix, hash)` -- so
+    two digests only meet if they also share a nanosecond."""
     for name in ("hash", "xhash"):
-        assert FixMsg.into_field().field(name).dtype == pyarrow.int64(), name
+        assert FixMsg.into_field().field(name).dtype == HASH, name
     assert FixMsg.into_field().field("unix").dtype == pyarrow.int64()
 
 
@@ -1413,7 +1412,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     # A projected row reparsed without its raw message keeps the resolved
     # answer: direction is the message stage's fact, and nothing recomputes
     # it where the text that carried the verb is gone.
-    projected = Message(message="", protocol_code="FIX", direction=True).into_dict()
+    projected = Message(message="", protocol_code="FIX", direction=True).into_row()
     projected["message"] = None
     projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
     again = FixMsg.from_message_batch(

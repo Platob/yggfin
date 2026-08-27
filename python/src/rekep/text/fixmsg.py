@@ -13,7 +13,6 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.convert import Convertible
 from rekep.enums import MIC, AssetKind, Currency, EventType, IdSource, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
@@ -62,7 +61,8 @@ from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
-from rekep.market.identity import NIL
+from rekep.market.fields import MarketConvertible
+from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
 from rekep.text.message import Message
 
 _EVENT_CODE = pyarrow.int64()
@@ -196,7 +196,7 @@ class FixMsg(Message):
         """`MsgType <35>` a synthesized instrument row carries."""
         return _INSTRUMENT_MSG_TYPE
 
-    xhash: int = NIL
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Digest of `code`, or the raw-line digest when no correlation code exists."""
 
     code: str = ""
@@ -739,7 +739,13 @@ class FixMsg(Message):
 
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
-        encoded = Convertible.into_dict(self)
+        encoded = Event.into_dict(self)
+        encoded["entries"] = _stored_entries(self.entries)
+        return encoded
+
+    def into_row(self) -> dict[str, Any]:
+        """The stored row, with the same list-struct spelling for `entries`."""
+        encoded = MarketConvertible.into_row(self)
         encoded["entries"] = _stored_entries(self.entries)
         return encoded
 
@@ -1419,7 +1425,10 @@ class FixMsg(Message):
             recomputed
             if incoming is None
             else compute.if_else(
-                compute.and_(compute.is_valid(incoming), compute.not_equal(incoming, NIL)),
+                compute.and_(
+                    compute.is_valid(incoming),
+                    compute.not_equal(incoming, pyarrow.scalar(NIL_BYTES, HASH)),
+                ),
                 incoming,
                 recomputed,
             )
@@ -2043,7 +2052,7 @@ class _NormalizedInstrumentFields:
 
         item = dtype.value_type
         columns = {
-            "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
+            "xhash": arrow_of(pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0)),
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
