@@ -26,6 +26,7 @@ from typing import Any, Self
 import pyarrow
 
 from rekep.convert import Convertible
+from rekep.entries import fold
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix.fields import fix_field
@@ -120,18 +121,6 @@ def snake_of(name: str) -> str:
     and the nested one of the same field are spelled alike.
     """
     return _SNAKE_SPLIT.sub("_", re.sub(r"IDs$", "Ids", name)).lower()
-
-
-def fold(name: str) -> str:
-    """A name as it is matched: case, and nothing else.
-
-    Separators are part of a name here. Dropping them made `PartyID` and
-    `Part_yid` one key and, worse, silently merged two identities a store
-    holds apart -- a match a registry cannot then tell from a real collision.
-    A spelling that differs by more than case is an alias, which is a thing
-    the store records.
-    """
-    return str(name).strip().lower()
 
 
 def version_rank(version: str) -> tuple[int, ...]:

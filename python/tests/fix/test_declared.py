@@ -39,8 +39,8 @@ def lifted(codec: FixCodec, line: str = LINE) -> dict:
 
 def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
     column = pyarrow.array([line])
-    kwargs = codec.into_message_kwargs(codec.into_pairs(column, "FIX"))
-    done = codec.complete_kwargs(kwargs, "4.4")
+    entries = codec.into_message_entries(codec.into_pairs(column, "FIX"))
+    done = codec.complete_entries(entries, "4.4")
     return [(one["tag"], one["value"]) for one in done.to_pylist()[0]]
 
 

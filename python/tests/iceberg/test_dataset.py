@@ -18,7 +18,7 @@ from pyiceberg.conversions import from_bytes
 from pyiceberg.expressions import EqualTo
 from pyiceberg.transforms import BucketTransform, IdentityTransform
 
-from rekep import Convertible, Field, FixMsg, Kwarg, Message, StructField, scalar
+from rekep import Convertible, Entry, Field, FixMsg, Message, StructField, scalar
 from rekep.arrow_file_io import ArrowFileIO
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
@@ -108,7 +108,7 @@ FIX_LINE = FixMsg(
     plugin_code="d",
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
     protocol_code="FIX",
-    kwargs=[],
+    entries=[],
     Parties=[
         Party(PartyID="BUYSIDE", PartyIDSource="D", PartyRole=1),
         Party(PartyID="XPAR", PartyIDSource="G", PartyRole=17),
@@ -2099,7 +2099,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert stored.num_rows == 1, "the same line upserts onto itself"
     row = stored.to_pylist()[0]
     assert row["protocol_code"] == "FIX"
-    assert row["kwargs"] == []
+    assert row["entries"] == []
     assert [party["PartyID"] for party in row["Parties"]] == ["BUYSIDE", "XPAR"]
     assert row["MsgSeqNum"] == 7 and row["SenderCompID"] == "BUYSIDE"
     assert row["Symbol"] == "TTF" and row["ClOrdID"] == "ORD-1"
@@ -2122,9 +2122,9 @@ def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path)
         source_url="capture.log",
         source_rownum=7,
         message="opaque",
-        kwargs=[
-            Kwarg(key="Empty", value=""),
-            Kwarg(key="55", value="TTF"),
+        entries=[
+            Entry(key="Empty", value=""),
+            Entry(key="55", value="TTF"),
         ],
     ).identify()
 
@@ -2133,11 +2133,11 @@ def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path)
     reopened = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
         target.name
     )
-    shape = reopened.into_struct_field().field("kwargs")
-    stored = reopened.read_arrow_table(Message.into_field()).column("kwargs").to_pylist()
+    shape = reopened.into_struct_field().field("entries")
+    stored = reopened.read_arrow_table(Message.into_field()).column("entries").to_pylist()
     assert shape.nullable is False and not shape.item.nullable
     assert shape.item.field("value").nullable is False
-    assert stored == [[dataclasses.asdict(entry) for entry in row.kwargs]]
+    assert stored == [[dataclasses.asdict(entry) for entry in row.entries]]
 
 
 def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
@@ -2145,7 +2145,7 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
 ) -> None:
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
     quiet = FixMsg(unix=1, hash=1, xhash=1, message="heartbeat emitted")
-    bridged = FixMsg(unix=2, hash=2, xhash=2, message="toBridge #", protocol_code="UL", kwargs=[])
+    bridged = FixMsg(unix=2, hash=2, xhash=2, message="toBridge #", protocol_code="UL", entries=[])
     logs.append_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
     stored = logs.read_arrow_table(FixMsg.into_field()).sort_by("unix")
@@ -2153,7 +2153,7 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
     # parser-level contract still pins null versus empty before this boundary.
-    assert stored.column("kwargs").to_pylist() == [[], [], []]
+    assert stored.column("entries").to_pylist() == [[], [], []]
     assert stored.column("Parties").to_pylist()[0:2] == [[], []]
 
 
@@ -2163,7 +2163,7 @@ def test_the_stored_fields_keep_their_required_members(
     """A stored field always says which field it is, through Iceberg too."""
     logs.append_arrow_table(log_table(FIX_LINE))
     found = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(logs.name)
-    shape = found.into_struct_field().field("kwargs")
+    shape = found.into_struct_field().field("entries")
     assert shape.nullable and not shape.item.nullable
     required = {member.name for member in shape.item.fields if not member.nullable}
     assert required == {"tag", "key", "value"}

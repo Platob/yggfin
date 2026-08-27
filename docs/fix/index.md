@@ -331,7 +331,7 @@ Two readings the classification depends on:
   `NoPartyIDs[0].PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
   vendor's own field rather than `ClientID <109>` with a prefix.
 - Classification normalizes `#Foo` to `Foo` but retains separate marked and
-  bare occurrence counters. Parsed kwargs receive the normalized name; the
+  bare occurrence counters. Parsed entries receive the normalized name; the
   counters preserve how each bridge spelling arrived.
 
 ## Groups and components
@@ -370,7 +370,7 @@ The parsed message carries `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`,
 `SecurityAltID`, and `Legs`. The two instrument groups are *scoped*: the
 dictionary nests the instrument inside market-data and quote entries, so an
 occurrence opening after such a group's count belongs to that entry and stays
-in `kwargs` for the per-entry readers, where the regulatory components hoist
+in `entries` for the per-entry readers, where the regulatory components hoist
 to the message deliberately.
 `FixCodec.into_components()` maps each column to its extractor and applies them
 in order against what the last one left, so a member lifted into one
@@ -440,7 +440,7 @@ one of four ways, and every one of them resolves to the same reading:
 from rekep.fix import FieldAccess, FixRegistry
 
 access = FieldAccess.of(FixRegistry.from_builtin())
-found = access.reading(row.kwargs, "OrderQty")
+found = access.reading(row.entries, "OrderQty")
 found.raw  # '125', the text the line carried
 found.value  # 125.0, what the dictionary makes of it
 ```
@@ -469,7 +469,7 @@ transcription then resolves those same entries without another parser model.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `FixMsg`. Ordered `kwargs` keeps every
+Common fields are promoted once into `FixMsg`. Ordered `entries` keeps every
 unpromoted field plus a raw audit sidecar when a typed column cannot reproduce
 the wire spelling, such as `0010.5000`. Typed components are restored as
 count-led groups and promoted copies represented by an audit sidecar are

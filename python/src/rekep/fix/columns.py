@@ -9,11 +9,11 @@ from types import MappingProxyType
 import pyarrow
 import pyarrow.compute
 
+from rekep.entries import ENTRIES as ENTRIES
+from rekep.entries import TAG as TAG
+from rekep.entries import Entry as Entry
 from rekep.fields import Field
 from rekep.fix.registry import FixRegistry
-from rekep.kwargs import KWARGS as KWARGS
-from rekep.kwargs import TAG as TAG
-from rekep.kwargs import Kwarg as Kwarg
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
 # declared a second time in code.
@@ -103,7 +103,7 @@ _QUOTE_FIELDS: tuple[str, ...] = (
     "QuoteEntryID",
 )
 
-# These four delimit quote groups. On grouped rows they remain in `kwargs`
+# These four delimit quote groups. On grouped rows they remain in `entries`
 # even when also lifted, so a later market reader can reconstruct one-entry
 # groups without reparsing the raw message.
 _QUOTE_GROUP_COUNTS: tuple[str, ...] = ("NoQuoteSets", "NoQuoteEntries")

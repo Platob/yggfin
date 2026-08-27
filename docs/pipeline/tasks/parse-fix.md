@@ -24,7 +24,7 @@ To replay only one half-open recording interval, add
 This stage opens the same dictionary for full transcription. For each Arrow
 batch it:
 
-1. reads the stored protocol classification and ordered `kwargs`;
+1. reads the stored protocol classification and ordered `entries`;
 2. infers the FIX application version;
 3. resolves names, tags, types and configured value spellings;
 4. lifts declared fields and structured components;
@@ -33,7 +33,7 @@ batch it:
 `Message.etype`, `Message.MsgType`, and `Message.protocol_code` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
-Repeated tags and wire order remain in `kwargs`. A resolved entry records the
+Repeated tags and wire order remain in `entries`. A resolved entry records the
 canonical FIX key, its numeric tag, its value, and either its component path or
 vendor namespace. Fields promoted for filtering use the registry spelling as
 their physical column name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`,
@@ -49,7 +49,7 @@ are pushed independently, so neither stream sees the other's rows.
 Registry-declared technical MsgTypes are excluded by the scan. Plugin filtering
 already happened in `parse_messages`, so those rows never enter this source
 table. The raw `message` column is projected out for both streams: stored
-`kwargs` already carry the parsed content needed for transcription.
+`entries` already carry the parsed content needed for transcription.
 
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,
@@ -74,5 +74,5 @@ Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
 metadata is read by `parse_messages` because `etype` is part of `Message`;
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage. The projected conversion requires
-the version 1 `MsgType`, `kwargs`, and `protocol_code` columns and refuses an
+the version 1 `MsgType`, `entries`, and `protocol_code` columns and refuses an
 older source table with a rebuild instruction.

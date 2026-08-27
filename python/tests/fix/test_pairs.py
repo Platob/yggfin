@@ -6,7 +6,7 @@ import datetime
 
 import pytest
 
-from rekep import FixMsg, Kwarg
+from rekep import Entry, FixMsg
 from rekep.fix.entries import fold
 
 #: A small dictionary, so the tests say which names they rely on.
@@ -75,8 +75,8 @@ def test_a_group_entry_keeps_both_halves_of_where_it_sits() -> None:
 def test_a_numeric_terminal_component_key_keeps_its_location_and_identity() -> None:
     built = FixMsg.from_pairs([("NoPartyIDs[0].PartyID", "A")], TAGS)
 
-    assert built.kwargs == [
-        Kwarg(
+    assert built.entries == [
+        Entry(
             tag=448,
             key="448",
             value="A",

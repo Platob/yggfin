@@ -11,7 +11,7 @@ import pytest
 from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 
 import rekep.text.text_file as text_file_module
-from rekep import Dataset, Field, FixRegistry, Kwarg, Message
+from rekep import Dataset, Entry, Field, FixRegistry, Message
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFileIO
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
@@ -505,7 +505,7 @@ MESSAGE_COLUMNS = [
     "message",
     "protocol_code",
     "MsgType",
-    "kwargs",
+    "entries",
     "direction",
 ]
 
@@ -553,13 +553,13 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert [entry["value"] for entry in table.column("kwargs")[0].as_py()[:3]] == [
+    assert [entry["value"] for entry in table.column("entries")[0].as_py()[:3]] == [
         "FIX.4.2",
         "176",
         "7",
     ]
-    assert "35" not in [entry["key"] for entry in table.column("kwargs")[0].as_py()]
-    assert table.column("kwargs")[2].as_py() == []
+    assert "35" not in [entry["key"] for entry in table.column("entries")[0].as_py()]
+    assert table.column("entries")[2].as_py() == []
 
 
 def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
@@ -585,7 +585,7 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
         int(EventType.MISC),
         int(EventType.ORDER),
     ]
-    keys = [[entry["key"] for entry in row] for row in table.column("kwargs").to_pylist()]
+    keys = [[entry["key"] for entry in row] for row in table.column("entries").to_pylist()]
     assert keys == [
         ["Text"],
         ["Text"],
@@ -686,7 +686,7 @@ def test_message_regexes_count_unicode_characters_not_utf8_bytes(tmp_path: Path)
     assert table.column("message").to_pylist() == ["é", "😀"]
 
 
-def test_message_and_time_filters_run_before_kwarg_parsing(
+def test_message_and_time_filters_run_before_entry_parsing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     log = _timed_log(
@@ -697,13 +697,13 @@ def test_message_and_time_filters_run_before_kwarg_parsing(
         ("2026-08-14 00:05:04.000", "at-end D=4"),
     )
     parsed: list[int] = []
-    original = Kwarg.parse_arrow.__func__
+    original = Entry.parse_arrow.__func__
 
     def counted(cls, messages):  # noqa: ANN001, ANN202 - wraps the class method
         parsed.append(len(messages))
         return original(cls, messages)
 
-    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(counted))
+    monkeypatch.setattr(Entry, "parse_arrow", classmethod(counted))
     table = log.read_arrow_table(
         exclude_regexes=(r"^hidden",),
         start_unix=unix_of("2026-08-14 00:05:02.000"),
@@ -714,7 +714,7 @@ def test_message_and_time_filters_run_before_kwarg_parsing(
     assert parsed == [], "a single incidental assignment is not a structured message"
 
 
-def test_msgtype_filters_run_before_kwarg_parsing(
+def test_msgtype_filters_run_before_entry_parsing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     log = _timed_log(
@@ -725,13 +725,13 @@ def test_msgtype_filters_run_before_kwarg_parsing(
         ("2026-08-14 00:05:04.000", "plain diagnostic"),
     )
     parsed: list[int] = []
-    original = Kwarg.parse_arrow.__func__
+    original = Entry.parse_arrow.__func__
 
     def counted(cls, messages):  # noqa: ANN001, ANN202 - observes the parser boundary
         parsed.append(len(messages))
         return original(cls, messages)
 
-    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(counted))
+    monkeypatch.setattr(Entry, "parse_arrow", classmethod(counted))
     table = log.read_arrow_table(exclude_msgtypes=("0", "1"))
 
     assert table.column("MsgType").to_pylist() == ["D", None]

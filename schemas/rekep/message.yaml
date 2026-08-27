@@ -111,7 +111,7 @@ fields:
   type: string
   nullable: true
   description: First FIX message discriminator when the payload names one.
-- name: kwargs
+- name: entries
   type: list
   description: Ordered payload arguments other than the promoted message discriminator.
   item:

@@ -7,11 +7,11 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message
-from rekep.fix import KWARGS, NO_PROTOCOL, FixRegistry, Party
+from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.market import MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
-from rekep.text import Kwarg
+from rekep.text import Entry
 
 #: The dictionary this repository publishes, beside `python/`, read offline:
 #: a contract that only holds while the site answers is not a contract.
@@ -47,7 +47,7 @@ LINE = [
     "message",
     "protocol_code",
     "MsgType",
-    "kwargs",
+    "entries",
     "direction",
 ]
 MESSAGE = [
@@ -116,14 +116,14 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     """A line always has a file, a thread and a plugin, even an empty one.
 
     `message` is the exception, and deliberately: on `fix.market`
-    `kwargs` carries every field the line held, so the raw string is dropped
+    `entries` carries every field the line held, so the raw string is dropped
     rather than stored a second time. An all-null column costs nothing on
     disk, which is what makes one stored shape across the three tables
     affordable.
     """
     field = FixMsg.into_field()
     for name in LINE:
-        if name in {"message", "MsgType", "kwargs", "direction"}:
+        if name in {"message", "MsgType", "entries", "direction"}:
             assert field.field(name).nullable, f"a row may leave {name} null"
             continue
         assert not field.field(name).nullable, name
@@ -148,20 +148,20 @@ def test_a_line_always_says_which_protocol_it_carries() -> None:
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
     """Null is not an empty list: a bridge that sent an empty payload and a stack
     trace that never was a message have to stay tellable apart."""
-    assert FixMsg.into_field().field("kwargs").nullable
-    assert FixMsg().kwargs is None
+    assert FixMsg.into_field().field("entries").nullable
+    assert FixMsg().entries is None
 
 
 def test_an_explicit_empty_parsed_argument_list_is_not_reparsed() -> None:
-    parsed = FixMsg(message="8=FIX.4.4|35=D|10=000|", kwargs=[])
+    parsed = FixMsg(message="8=FIX.4.4|35=D|10=000|", entries=[])
 
-    assert parsed.kwargs == []
+    assert parsed.entries == []
 
 
 def test_a_stored_field_always_says_what_it_is() -> None:
     """`tag` and `key` are how a consumer addresses a field, so neither is null:
     a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
-    member = FixMsg.into_field().field("kwargs")
+    member = FixMsg.into_field().field("entries")
     assert pyarrow.types.is_list(member.arrow_type)
     assert member.item.nullable is False
     assert member.item.field("tag").nullable is False
@@ -170,13 +170,13 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     for name in ("namespace", "comp"):
         assert member.item.field(name).nullable is True, name
         assert member.item.field(name).arrow_type == pyarrow.string(), name
-    assert all(isinstance(entry, Kwarg) for entry in FixMsg(kwargs=[(55, "IBM")]).kwargs or ())
+    assert all(isinstance(entry, Entry) for entry in FixMsg(entries=[(55, "IBM")]).entries or ())
 
 
 def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
     reader = FixMsg(
         MsgType="D",
-        kwargs=[
+        entries=[
             (55, "A"),
             [55, "B"],
             {"tag": 55, "key": "Symbol", "value": "C"},
@@ -265,7 +265,7 @@ def test_a_stored_field_reads_through_its_own_structure() -> None:
     no spelling is rendered and re-split on the way to an answer."""
     row = FixMsg(
         MsgType="D",
-        kwargs=[
+        entries=[
             {"tag": 55, "key": "Symbol", "value": "IBM"},
             {"tag": 0, "key": "CLIENTID", "value": "A1", "namespace": "TECH"},
         ],
@@ -282,7 +282,7 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
     exactly as stored -- and still answer the accessor under that spelling."""
     row = FixMsg(
         MsgType="D",
-        kwargs=[
+        entries=[
             {"key": "Side[03]", "value": "1"},
             {"key": "a.b[0]", "namespace": "X", "value": "2"},
             {"key": "PartyID", "namespace": "TECH", "comp": "NoPartyIDs[0]", "value": "P"},
@@ -371,11 +371,11 @@ def test_arrow_named_group_members_remain_repetitions(registry: FixRegistry) -> 
                 },
             ]
         ],
-        type=KWARGS,
+        type=ENTRIES,
     )
-    resolved = FixCodec(registry=registry).complete_kwargs(source, "4.4")
+    resolved = FixCodec(registry=registry).complete_entries(source, "4.4")
 
-    kept = FixMsg._prefer_named_kwargs(source, resolved)
+    kept = FixMsg._prefer_named_entries(source, resolved)
 
     assert [entry["value"] for entry in kept[0].as_py()] == ["wire", "named"]
 
@@ -413,7 +413,7 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
 def test_instrument_groups_resolve_into_their_structured_columns(
     registry: FixRegistry,
 ) -> None:
-    """Alt-ids and legs land typed, leave `kwargs`, and read back identically."""
+    """Alt-ids and legs land typed, leave `entries`, and read back identically."""
     line = (
         "8=FIX.4.4|35=d|55=SPREAD|48=XS123|22=4|"
         "454=2|455=US0378331005|456=4|455=037833100|456=1|"
@@ -436,7 +436,7 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     ]
     assert legs[0]["LegMaturityDate"] == datetime.date(2027, 1, 15)
     assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
-    assert batch.column("kwargs")[0].as_py() == [], "nothing of either group is stored twice"
+    assert batch.column("entries")[0].as_py() == [], "nothing of either group is stored twice"
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     assert stored.group(454, (455, 456)) == [
@@ -496,7 +496,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
 def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry) -> None:
     """A group inside one market-data entry is that entry's, not the message's.
 
-    The scoped extractors leave it in `kwargs`, so the per-entry instrument
+    The scoped extractors leave it in `entries`, so the per-entry instrument
     readers find it exactly where the scalar walk does -- hoisting it into the
     message-level column would have filed the identifier under whichever
     instrument the header names.
@@ -511,7 +511,7 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
     )
 
     assert batch.column("SecurityAltID")[0].as_py() is None
-    assert 454 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+    assert 454 in [entry["tag"] for entry in batch.column("entries")[0].as_py()]
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line, "|")
@@ -546,7 +546,7 @@ def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
     assert found == [("AAA", None), ("BBB", {"CUSIP": "037833100"})]
 
 
-def test_a_4_3_row_answers_from_the_column_and_from_kwargs_at_once(
+def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
     registry: FixRegistry,
 ) -> None:
     """4.3 declares `SecAltIDGrp` and no legs component, so one stored row must
@@ -563,7 +563,7 @@ def test_a_4_3_row_answers_from_the_column_and_from_kwargs_at_once(
         "US0378331005"
     ]
     assert batch.column("Legs")[0].as_py() is None
-    assert 555 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+    assert 555 in [entry["tag"] for entry in batch.column("entries")[0].as_py()]
 
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
@@ -605,9 +605,9 @@ def test_market_projection_keeps_typed_fix_timestamp_spelling() -> None:
 
 def test_malformed_stored_field_entries_are_not_silently_dropped() -> None:
     with pytest.raises(KeyError, match="key"):
-        FixMsg(kwargs=[{"value": "x"}])
+        FixMsg(entries=[{"value": "x"}])
     with pytest.raises(ValueError, match="not enough values"):
-        FixMsg(kwargs=[["OnlyKey"]])
+        FixMsg(entries=[["OnlyKey"]])
 
 
 def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
@@ -702,7 +702,7 @@ def test_a_row_round_trips_as_a_document() -> None:
         plugin_code="d",
         message="m",
         protocol_code="FIX",
-        kwargs=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
+        entries=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
         + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
         MsgSeqNum=7,
@@ -719,7 +719,7 @@ def test_a_row_round_trips_as_a_document() -> None:
 def test_typed_components_share_stored_access_and_group_projection() -> None:
     row = FixMsg(
         Parties=[Party(PartyID="P1", PartyIDSource="D", PartyRole=1)],
-        kwargs=[],
+        entries=[],
     )
     restored = FixMsg.from_json(row.into_json())
 
@@ -850,7 +850,7 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
 
     assert whole.column("protocol_code").to_pylist() == ["FIX", "UL"]
     assert projected.column("protocol_code").equals(whole.column("protocol_code"))
-    assert projected.column("kwargs").equals(whole.column("kwargs"))
+    assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert projected.column("message").null_count == projected.num_rows
     # The production shape: `parse_fix` reads with `message` projected out,
@@ -876,7 +876,7 @@ def test_staged_protocol_matching_the_codec_survives_projection(
     assert whole.column("ClOrdID").to_pylist() == ["A"]
     assert projected.column("protocol_code").equals(whole.column("protocol_code"))
     assert projected.column("ClOrdID").equals(whole.column("ClOrdID"))
-    assert projected.column("kwargs").equals(whole.column("kwargs"))
+    assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
 
 
@@ -890,10 +890,10 @@ def test_wire_discriminator_without_begin_string_survives_projection(
     projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
 
     assert raw.column("protocol_code").to_pylist() == ["FIX"]
-    assert [(entry["key"], entry["value"]) for entry in whole.column("kwargs")[0].as_py()] == [
+    assert [(entry["key"], entry["value"]) for entry in whole.column("entries")[0].as_py()] == [
         ("11", "A")
     ]
-    assert projected.column("kwargs").equals(whole.column("kwargs"))
+    assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
 
 
@@ -909,7 +909,7 @@ def test_unread_message_identity_survives_raw_message_projection(
     whole = FixMsg.from_message_arrow_batch(raw, codec)
     projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
 
-    assert whole.column("kwargs").null_count == 2
+    assert whole.column("entries").null_count == 2
     assert whole.column("hash").equals(projected.column("hash"))
     assert len(set(whole.column("hash").to_pylist())) == 2
 
@@ -982,7 +982,7 @@ def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
     assert fast.column("hash")[0].as_py() != fast.column("hash")[1].as_py()
     assert [
         [(entry["tag"], entry["value"]) for entry in row if entry["tag"] == 6]
-        for row in fast.column("kwargs").to_pylist()
+        for row in fast.column("entries").to_pylist()
     ] == [[(6, "0010.5000")], []]
 
 
@@ -1009,7 +1009,7 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
     assert activated == [False, True]
     assert translated.column("ClOrdID").to_pylist() == ["A", None]
     assert translated.column("Symbol").to_pylist() == ["IBM", None]
-    assert [entry["tag"] for entry in translated.column("kwargs")[1].as_py()] == [11, 55, 10]
+    assert [entry["tag"] for entry in translated.column("entries")[1].as_py()] == [11, 55, 10]
 
 
 def test_mixed_fixmsg_batch_keeps_flat_rows_fast_and_scatters_exactly(
@@ -1090,12 +1090,12 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
     registry: FixRegistry,
 ) -> None:
     raw = _raw_batch(Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"))
-    assert raw.column("kwargs")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
+    assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
 
     parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("Symbol").to_pylist() == [None]
-    assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("kwargs")[0].as_py())
+    assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
 
 
 def test_fixmsg_consumes_a_hash_delimited_wire_message(registry: FixRegistry) -> None:
@@ -1118,7 +1118,7 @@ def test_hybrid_named_fields_shadow_numeric_copies(registry: FixRegistry) -> Non
     )
 
     parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
-    residual = parsed.column("kwargs")[0].as_py()
+    residual = parsed.column("entries")[0].as_py()
 
     assert parsed.column("MsgType").to_pylist() == ["D"]
     assert parsed.column("Symbol").to_pylist() == ["named"]
@@ -1134,7 +1134,7 @@ def test_staged_groups_preserve_malformed_continuations(registry: FixRegistry) -
     raw = _raw_batch(Message(message=line))
     codec = FixCodec(registry=registry)
 
-    staged = codec.into_pairs_from_kwargs(raw.column("kwargs"), "UL")
+    staged = codec.into_pairs_from_entries(raw.column("entries"), "UL")
     direct = codec.into_pairs(pyarrow.array([line]), "UL")
 
     assert (
@@ -1165,13 +1165,13 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
 
     parsed = FixMsg.from_message_arrow_batch(raw, codec)
 
-    assert [entry["key"] for entry in raw.column("kwargs")[0].as_py()] == [
+    assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
         "8",
         "SIDE",
         "55",
         "10",
     ]
-    assert [entry["key"] for entry in raw.column("kwargs")[1].as_py()] == [
+    assert [entry["key"] for entry in raw.column("entries")[1].as_py()] == [
         "8",
         "54",
         "55",
@@ -1180,7 +1180,7 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
     assert expected_columns["Side"].to_pylist() == [None, None]
     assert parsed.column("Side").to_pylist() == [None, "2"]
     assert parsed.column("Symbol").to_pylist() == expected_columns["Symbol"].to_pylist()
-    assert parsed.column("kwargs").to_pylist() == [[], []]
+    assert parsed.column("entries").to_pylist() == [[], []]
 
 
 def test_an_extra_column_cannot_shadow_a_fix_only_field(registry: FixRegistry) -> None:
@@ -1344,7 +1344,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     assert batch.column("Account").to_pylist()[0] == "807768.001"
     assert batch.column("MsgType").to_pylist()[0] == "D"
     assert batch.column("protocol_version").to_pylist()[0] == "4.4"
-    assert batch.column("kwargs").to_pylist()[1] is None, "operational rows stay unread"
+    assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
     # Without a version the registry cannot resolve the spellings, but the
     # rescued row still keeps its arguments and its identities -- both were
@@ -1353,7 +1353,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     assert bare.protocol_code == "UL"
     lone = FixMsg.from_message_arrow_batch(_raw_batch(bare), FixCodec(registry=registry))
     assert lone.column("protocol_code").to_pylist() == ["UL"]
-    assert [(entry["key"], entry["value"]) for entry in lone.column("kwargs").to_pylist()[0]] == [
+    assert [(entry["key"], entry["value"]) for entry in lone.column("entries").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
         ("CLORDID", "PL9"),
         ("SIDE", "2"),
@@ -1414,7 +1414,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     # it where the text that carried the verb is gone.
     projected = Message(message="", protocol_code="FIX", direction=True).into_dict()
     projected["message"] = None
-    projected["kwargs"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
+    projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
     again = FixMsg.from_message_arrow_batch(
         pyarrow.RecordBatch.from_pylist(
             [projected], schema=Message.into_field().into_arrow_schema()

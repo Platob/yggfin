@@ -94,7 +94,7 @@ class Offline(FixRegistry):
 
 
 def _pairs(array: pyarrow.Array, row: int = 0) -> list[tuple[object, str]]:
-    """One `kwargs` or map cell in the pair form the assertions read."""
+    """One `entries` or map cell in the pair form the assertions read."""
     return [
         (entry["key"], entry["value"]) if isinstance(entry, dict) else tuple(entry)
         for entry in array.to_pylist()[row] or ()
@@ -1267,12 +1267,12 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
         ["#FAKEVENDORCODE=FAKE-CODE-0001", "#FAKEROLE=1", "#UNRESOLVED=x"]
     )
     columns, rest = codec.into_lifted_columns(
-        codec.into_kwargs(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
+        codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
     assert columns["fake_vendor_code"].to_pylist() == ["FAKE-CODE-0001"]
     assert [key for key, _ in _pairs(rest)] == ["FAKEROLE", "UNRESOLVED"], "and nothing else moved"
 
-    dotted = codec.into_kwargs(
+    dotted = codec.into_entries(
         codec.into_pairs(pyarrow.array(["toBridge #FAKE.VENDOR.CODE=FAKE-CODE-0002|#X=1"]), "UL"),
         "9.1",
     )
@@ -1285,10 +1285,10 @@ def test_a_codec_over_a_dictionary_that_declares_none_lifts_none(store: Offline)
     """The column exists in the parsed shape either way; only the value is absent."""
     codec = FixCodec(registry=store)
     assert set(codec.named_fields()) == set()
-    kwargs = codec.into_kwargs(
+    entries = codec.into_entries(
         codec.into_pairs(pyarrow.array(["toBridge #FAKEVENDORCODE=x|#Y=1"]), "UL"), "9.1"
     )
-    columns, rest = codec.into_lifted_columns(kwargs, "9.1")
+    columns, rest = codec.into_lifted_columns(entries, "9.1")
     assert not any(column.to_pylist()[0] is not None for column in columns.values())
     assert [key for key, _ in _pairs(rest)] == ["FAKEVENDORCODE", "Y"]
 
@@ -1318,7 +1318,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
         "toBridge #FAKEA.CLIENTID=ACCT-TEST-01|#FAKEB.CLIENTID=ACCT-TEST-02|#CLIENTID=ACCT-TEST-03"
     )
     columns, rest = codec.into_lifted_columns(
-        codec.into_kwargs(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
+        codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
     assert columns["fake_a_client"].to_pylist() == ["ACCT-TEST-01"]
     assert columns["fake_b_client"].to_pylist() == ["ACCT-TEST-02"]

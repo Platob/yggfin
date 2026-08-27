@@ -169,9 +169,9 @@ def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
     ]
 
 
-def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
+def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
     log = FixMsg(
-        kwargs=[
+        entries=[
             (198, "ORD-SECONDARY"),
             (526, "CL-SECONDARY"),
             (527, "EXEC-SECONDARY"),
@@ -186,7 +186,7 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
         [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -204,7 +204,7 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
 
 def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
     log = FixMsg(
-        kwargs=[
+        entries=[
             ("SecondaryExecID", "EXEC-NAMED"),
             ("MDEntryRefID", "MD-NAMED"),
         ]
@@ -213,7 +213,7 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
         [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -225,8 +225,8 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
 
 def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
     logs = [
-        FixMsg(kwargs=[(37, "ORDER-RESIDUAL")]),
-        FixMsg(OrderID="ORDER-PROMOTED", kwargs=[(37, "ORDER-IGNORED")]),
+        FixMsg(entries=[(37, "ORDER-RESIDUAL")]),
+        FixMsg(OrderID="ORDER-PROMOTED", entries=[(37, "ORDER-IGNORED")]),
     ]
     table = pyarrow.Table.from_pylist(
         [log.into_dict() for log in logs],
@@ -263,7 +263,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             OrdType="2",
             OrderQty=5.0,
             Price=100.0,
-            kwargs=[(9999, "order-meta")],
+            entries=[(9999, "order-meta")],
             reason="order reason",
         ),
         message(
@@ -283,7 +283,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             CumQty=2.0,
             LeavesQty=3.0,
             AvgPx=100.5,
-            kwargs=[(1003, "TRADE-1"), (9998, "report-meta")],
+            entries=[(1003, "TRADE-1"), (9998, "report-meta")],
         ),
         message(
             3,
@@ -292,13 +292,13 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             Side="2",
             LastPx=101.0,
             LastQty=1.0,
-            kwargs=[(1003, "TRADE-2")],
+            entries=[(1003, "TRADE-2")],
         ),
         message(4, "0"),
         message(
             5,
             "W",
-            kwargs=[
+            entries=[
                 (268, "4"),
                 (269, "0"),
                 (278, "BID-1"),
@@ -328,7 +328,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             7,
             "i",
-            kwargs=[
+            entries=[
                 (296, "1"),
                 (302, "SET-1"),
                 (295, "2"),
@@ -449,7 +449,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             CumQty=2.0,
             LeavesQty=10.0,
             AvgPx=99.25,
-            kwargs=[(1057, "Y"), (9998, "audit")],
+            entries=[(1057, "Y"), (9998, "audit")],
         ),
         message(
             5,
@@ -459,7 +459,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             Side="2",
             LastPx=99.75,
             LastQty=3.0,
-            kwargs=[(1003, "T-2")],
+            entries=[(1003, "T-2")],
         ),
         message(
             6,
@@ -488,7 +488,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             CumQty=5.0,
             LeavesQty=0.0,
             AvgPx=99.6,
-            kwargs=[(19, "E-2")],
+            entries=[(19, "E-2")],
         ),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
@@ -539,7 +539,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 
     logs = [
         message(1, "D", ClOrdID="C-1", Side="1", OrdType="2", OrderQty=10.0),
-        message(2, "W", kwargs=[(268, "0")]),
+        message(2, "W", entries=[(268, "0")]),
         message(3, "AE", ExecID="E-1", ExecType="F", Side="2", LastPx=99.0, LastQty=1.0),
         message(4, "S", QuoteID="Q-1", BidPx=98.0, OfferPx=100.0),
         message(
@@ -652,7 +652,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
             unix=BASE + 1,
             protocol_version="4.4",
             MsgType="Q",
-            kwargs=[
+            entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["ClOrdID"], "CUSTOM-1"),
                 (wire_tags["Side"], "1"),
@@ -665,7 +665,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
             unix=BASE + 2,
             protocol_version="4.4",
             MsgType="R",
-            kwargs=[
+            entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["OrderID"], "ORDER-1"),
                 (wire_tags["ClOrdID"], "CUSTOM-1"),
@@ -2124,7 +2124,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     """A row whose legs or alt-ids live in resolved columns skips the flat path.
 
     Before componentization these rows carried `NoSecurityAltID <454>` or
-    `NoLegs <555>` in `kwargs`, which is what `_COMPLEX_FIELDS` read to send
+    `NoLegs <555>` in `entries`, which is what `_COMPLEX_FIELDS` read to send
     them to the scalar translator. The groups are lifted with their count tags
     now, so the resolved column is the only remaining evidence -- and the
     routing must not quietly change with the storage. The batch still
@@ -2153,12 +2153,12 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         ClOrdID="C-2",
         SecurityAltID=[SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4")],
     )
-    # A refused extraction -- the count lies -- leaves the group in `kwargs`
-    # and the column null, so this row rides the pre-existing kwargs check.
+    # A refused extraction -- the count lies -- leaves the group in `entries`
+    # and the column null, so this row rides the pre-existing entries check.
     refused = dataclasses.replace(
         plain,
         ClOrdID="C-3",
-        kwargs=[(555, "9"), (600, "AAPL"), (624, "1")],
+        entries=[(555, "9"), (600, "AAPL"), (624, "1")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
@@ -2206,7 +2206,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         Price=100.0,
         ParentClOrdID="P-1",
         ParentOrderID="V-9",
-        kwargs=[(583, "LINK-1")],
+        entries=[(583, "LINK-1")],
     )
     rejected = dataclasses.replace(
         linked,
@@ -2216,7 +2216,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         OrdStatus="2",
         ParentClOrdID=None,
         ParentOrderID=None,
-        kwargs=None,
+        entries=None,
     )
     settled = FixMsg(
         unix=BASE + 3,
@@ -2229,7 +2229,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         Side="2",
         LastPx=99.5,
         LastQty=3.0,
-        kwargs=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
+        entries=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(

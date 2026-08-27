@@ -17,7 +17,7 @@ from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, 
 from rekep.fix.message import parse_pairs
 from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
-from rekep.text.kwargs import KWARGS, Kwarg
+from rekep.text.entries import ENTRIES, Entry
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _EVENT_CODE = pyarrow.int32()
@@ -80,7 +80,7 @@ class Message(Event):
     MsgType: str | None = None
     """First FIX message discriminator when the payload names one."""
 
-    kwargs: list[Kwarg] = None  # type: ignore[assignment]
+    entries: list[Entry] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""
 
     # Resolved by `parse_arrow`, where the raw line and its protocol reading
@@ -97,12 +97,12 @@ class Message(Event):
     def __post_init__(self) -> None:
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)
-        implicit_kwargs = self.kwargs is None
+        implicit_kwargs = self.entries is None
         if implicit_kwargs:
-            self.kwargs = []
+            self.entries = []
         if implicit_kwargs and self.message:
             parsed = self.parse_arrow(pyarrow.array([self.message]))
-            self.kwargs = parsed["kwargs"][0].as_py()
+            self.entries = parsed["entries"][0].as_py()
             if self.protocol_code == _NO_PROTOCOL:
                 self.protocol_code = parsed["protocol_code"][0].as_py()
             if self.MsgType is None:
@@ -112,8 +112,8 @@ class Message(Event):
             if self.direction is None:
                 self.direction = parsed["direction"][0].as_py()
 
-        self.kwargs = [Kwarg.from_stored(entry) for entry in self.kwargs]
-        wire, named, self.kwargs = _scalar_message_types(self.kwargs)
+        self.entries = [Entry.from_stored(entry) for entry in self.entries]
+        wire, named, self.entries = _scalar_message_types(self.entries)
         if self.MsgType is None:
             hybrid = wire and wire.startswith("U") and named
             self.MsgType = named if hybrid else wire or named
@@ -138,7 +138,7 @@ class Message(Event):
         caller declares `message=` -- the pairs carry every field.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
-        return cls(kwargs=list(pairs), **declared)
+        return cls(entries=list(pairs), **declared)
 
     @classmethod
     def parse_arrow(
@@ -170,7 +170,7 @@ class Message(Event):
                 "MsgType": pyarrow.chunked_array(
                     [part["MsgType"] for part in parts], pyarrow.string()
                 ),
-                "kwargs": pyarrow.chunked_array([part["kwargs"] for part in parts], KWARGS),
+                "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
                     [part["direction"] for part in parts], pyarrow.bool_()
                 ),
@@ -182,7 +182,7 @@ class Message(Event):
                 "etype": pyarrow.array([], _EVENT_CODE),
                 "protocol_code": pyarrow.array([], pyarrow.string()),
                 "MsgType": pyarrow.nulls(0, pyarrow.string()),
-                "kwargs": pyarrow.array([], type=KWARGS),
+                "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], pyarrow.bool_()),
             }
 
@@ -191,10 +191,10 @@ class Message(Event):
         wire_values, wire_probe, named_probe, begins_fix, probed_msg_types = _msg_type_probe(text)
         candidates = compute.or_(
             compute.or_(compute.or_(wire_probe, named_probe), begins_fix),
-            Kwarg.looks_structured_arrow(text),
+            Entry.looks_structured_arrow(text),
         )
-        kwargs = _candidate_kwargs(text, candidates)
-        parsed_msg_types, kwargs = _message_types(kwargs)
+        entries = _candidate_entries(text, candidates)
+        parsed_msg_types, entries = _message_types(entries)
         msg_types = compute.coalesce(parsed_msg_types, probed_msg_types)
         event_types = _event_types(msg_types, msg_type_event_types)
         protocols = (
@@ -220,7 +220,7 @@ class Message(Event):
             "etype": event_types,
             "protocol_code": protocols,
             "MsgType": msg_types,
-            "kwargs": kwargs,
+            "entries": entries,
             "direction": direction,
         }
 
@@ -254,13 +254,13 @@ class Message(Event):
 
 
 def _scalar_message_types(
-    kwargs: list[Kwarg],
-) -> tuple[str | None, str | None, list[Kwarg]]:
+    entries: list[Entry],
+) -> tuple[str | None, str | None, list[Entry]]:
     """Valid top-level discriminators before the FIX checksum."""
     wire = named = None
-    residual: list[Kwarg] = []
+    residual: list[Entry] = []
     ended = False
-    for entry in kwargs:
+    for entry in entries:
         folded = entry.key.lower()
         if folded in _CHECKSUM_KEYS:
             ended = True
@@ -313,7 +313,7 @@ def _message_types(stored: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]
     keep = compute.invert(compute.or_(wire_mask, named_mask))
     kept_parents = compute.filter(parents, keep)
     residual = build_list(
-        KWARGS,
+        ENTRIES,
         dense_counts(kept_parents, rows),
         compute.filter(entries, keep),
         null_mask(stored),
@@ -345,20 +345,20 @@ def _first_by_parent(
     )
 
 
-def _candidate_kwargs(text: pyarrow.Array, candidates: pyarrow.Array) -> pyarrow.Array:
+def _candidate_entries(text: pyarrow.Array, candidates: pyarrow.Array) -> pyarrow.Array:
     """Parse candidate rows and scatter empty lists into skipped prose rows."""
     compute = pyarrow.compute
     rows = len(text)
     if not compute.any(candidates, min_count=0).as_py():
-        return pyarrow.repeat(pyarrow.scalar([], KWARGS), rows)
+        return pyarrow.repeat(pyarrow.scalar([], ENTRIES), rows)
     if compute.all(candidates, min_count=0).as_py():
-        return Kwarg.parse_arrow(text)
+        return Entry.parse_arrow(text)
 
     positions = sequence(rows)
     selected_at = compute.filter(positions, candidates)
     skipped_at = compute.filter(positions, compute.invert(candidates))
-    parsed = Kwarg.parse_arrow(compute.filter(text, candidates))
-    skipped = pyarrow.repeat(pyarrow.scalar([], KWARGS), len(skipped_at))
+    parsed = Entry.parse_arrow(compute.filter(text, candidates))
+    skipped = pyarrow.repeat(pyarrow.scalar([], ENTRIES), len(skipped_at))
     return scattered([parsed, skipped], [selected_at, skipped_at])
 
 

@@ -1060,13 +1060,13 @@ def _pipeline_message_batches(
         stop = min(start + batch_row_size, rows)
         indices = range(start, stop)
         unix = pyarrow.array([base + index * 1_000_000 for index in indices], pyarrow.int64())
-        kinds, protocols, msg_types, kwargs = [], [], [], []
+        kinds, protocols, msg_types, entries = [], [], [], []
         for index in indices:
             if alternating_technical and index % 2:
                 kinds.append(int(EventType.MISC))
                 protocols.append("OTHER")
                 msg_types.append(None)
-                kwargs.append(None)
+                entries.append(None)
                 continue
             etype, pairs = shapes[index % len(shapes)]
             stamp = _fix_stamp(base + index * 1_000_000)
@@ -1079,7 +1079,7 @@ def _pipeline_message_batches(
             kinds.append(int(etype))
             protocols.append("FIX")
             msg_types.append(next(value for tag, value in pairs if tag == "35"))
-            kwargs.append(
+            entries.append(
                 [
                     {
                         "tag": int(tag),
@@ -1104,7 +1104,7 @@ def _pipeline_message_batches(
             "message": pyarrow.repeat(pyarrow.scalar(""), count),
             "protocol_code": pyarrow.array(protocols),
             "MsgType": pyarrow.array(msg_types),
-            "kwargs": pyarrow.array(kwargs, schema.field("kwargs").type),
+            "entries": pyarrow.array(entries, schema.field("entries").type),
         }
         arrays = []
         for field in schema:

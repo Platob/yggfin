@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pyarrow
 
-import rekep.text.kwargs as kwargs_module
-from rekep import FixRegistry, Kwarg, Message, TextFile
+import rekep.text.entries as entries_module
+from rekep import Entry, FixRegistry, Message, TextFile
 from rekep.enums import EventType
 from rekep.market import Event, hash_bytes
 
@@ -21,7 +21,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "message",
         "protocol_code",
         "MsgType",
-        "kwargs",
+        "entries",
         "direction",
     ]
     assert all(
@@ -30,24 +30,57 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
     )
 
 
-def test_kwarg_is_the_required_ordered_argument_shape() -> None:
-    field = Kwarg.into_field()
+def test_entry_is_the_required_ordered_argument_shape() -> None:
+    field = Entry.into_field()
     assert field.names == ["tag", "key", "value", "namespace", "comp"]
     assert field.field("key").nullable is False
     assert field.field("value").nullable is False
-    assert Message.into_field().field("kwargs").item.arrow_type == field.arrow_type
+    assert Message.into_field().field("entries").item.arrow_type == field.arrow_type
 
 
-def test_a_direct_kwarg_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
-    plain = Kwarg(key="#SIDE", value=None)  # type: ignore[arg-type]
-    nested = Kwarg(key="#NoPartyIDs[0].PartyID", value="ABC")
+def test_one_entry_shape_serves_storage_and_reading_alike() -> None:
+    """The stored struct and the accessor's view are one class: the read
+    views derive lazily from the stored spelling, so nothing renders a key
+    to text and re-splits it on the way to an answer."""
+    from rekep.fix import Entry as fix_entry
+    from rekep.fix.access import Entry as access_entry
+
+    assert Entry is fix_entry is access_entry
+
+    stored = Entry(tag=448, key="PartyID", comp="NoPartyIDs[0]", value="A")
+    assert (stored.name, stored.index, stored.lead, stored.entry_lead) == (
+        "PartyID",
+        None,
+        "NoPartyIDs[0]",
+        True,
+    )
+    assert stored.spelling == "NoPartyIDs[0].PartyID"
+
+    indexed = Entry(key="Side[0]", value="1")
+    assert (indexed.name, indexed.index, indexed.spelling) == ("Side", 0, "Side[0]")
+
+    namespaced = Entry(key="TECH.CLIENTID", value="x")
+    assert (namespaced.namespace, namespaced.name, namespaced.entry_lead) == (
+        "TECH",
+        "CLIENTID",
+        False,
+    )
+
+    typed = Entry.of(tag=44, key="44", value=9.5)
+    assert typed.value == 9.5, "a ready view keeps its typed value"
+    assert (typed.spelling, typed.folded) == ("44", "44")
+
+
+def test_a_direct_entry_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
+    plain = Entry(key="#SIDE", value=None)  # type: ignore[arg-type]
+    nested = Entry(key="#NoPartyIDs[0].PartyID", value="ABC")
 
     assert (plain.key, plain.value) == ("SIDE", "")
     assert (nested.key, nested.comp) == ("PartyID", "NoPartyIDs[0]")
     message = Message(  # type: ignore[list-item]
-        kwargs=[plain, nested, ("#PAIR", "1"), {"key": "#MAP", "value": "2"}]
+        entries=[plain, nested, ("#PAIR", "1"), {"key": "#MAP", "value": "2"}]
     )
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("SIDE", ""),
         ("PartyID", "ABC"),
         ("PAIR", "1"),
@@ -81,11 +114,11 @@ def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
 
 
 def test_a_message_always_has_a_non_null_argument_list() -> None:
-    field = Message.into_field().field("kwargs")
+    field = Message.into_field().field("entries")
 
     assert field.nullable is False
-    assert Message().kwargs == []
-    assert Message(kwargs=None).kwargs == []  # type: ignore[arg-type]
+    assert Message().entries == []
+    assert Message(entries=None).entries == []  # type: ignore[arg-type]
 
 
 def test_a_payload_parses_scalar_like_the_column_path() -> None:
@@ -98,15 +131,15 @@ def test_a_payload_parses_scalar_like_the_column_path() -> None:
     assert staged.runix == 7
     assert staged.message == ""
     assert (
-        [(entry.tag, entry.value) for entry in staged.kwargs]
-        == [(entry.tag, entry.value) for entry in column.kwargs]
+        [(entry.tag, entry.value) for entry in staged.entries]
+        == [(entry.tag, entry.value) for entry in column.entries]
         == [(8, "FIX.4.4"), (11, "C1"), (10, "000")]
     )
 
 
 def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> None:
     message = Message(
-        kwargs=[
+        entries=[
             ("35", "D"),
             ("Symbol", "IBM"),
             ("#MSGTYPE", "G"),
@@ -115,17 +148,17 @@ def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> N
     )
 
     assert message.MsgType == "D"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("Symbol", "IBM"),
         ("msg_type", "not-the-fix-name"),
     ]
 
 
 def test_an_explicit_message_type_still_strips_it_from_generic_arguments() -> None:
-    message = Message(MsgType="8", kwargs=[("MsgType", "D"), ("Text", "kept")])
+    message = Message(MsgType="8", entries=[("MsgType", "D"), ("Text", "kept")])
 
     assert message.MsgType == "8"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [("Text", "kept")]
+    assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
 
 
 def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_arguments() -> None:
@@ -133,51 +166,51 @@ def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_argument
 
     assert message.etype is EventType.MISC
     assert message.MsgType is None
-    assert message.kwargs == []
+    assert message.entries == []
 
 
 def test_a_piped_message_without_a_discriminator_keeps_generic_arguments() -> None:
     message = Message(message="toBridge #SYMBOL=TTF|#SIDE=1")
 
     assert message.etype is EventType.MISC
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("SYMBOL", "TTF"),
         ("SIDE", "1"),
     ]
 
 
 def test_an_explicit_empty_argument_list_is_authoritative() -> None:
-    message = Message(message="35=D|Text=not-parsed|", kwargs=[])
+    message = Message(message="35=D|Text=not-parsed|", entries=[])
 
     assert message.MsgType is None
-    assert message.kwargs == []
+    assert message.entries == []
 
 
 def test_a_user_wrapper_promotes_its_named_message_kind() -> None:
     message = Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert message.MsgType == "D"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("8", "FIX.4.4"),
         ("SIDE", "1"),
     ]
 
 
 def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> None:
-    lower = Message(kwargs=[("35", "uL"), ("MsgType", "D")])
-    after_checksum = Message(kwargs=[("10", "000"), ("35", "D")])
+    lower = Message(entries=[("35", "uL"), ("MsgType", "D")])
+    after_checksum = Message(entries=[("10", "000"), ("35", "D")])
 
     assert lower.MsgType == "uL"
-    assert lower.kwargs == []
+    assert lower.entries == []
     assert after_checksum.MsgType is None
-    assert [(entry.key, entry.value) for entry in after_checksum.kwargs] == [
+    assert [(entry.key, entry.value) for entry in after_checksum.entries] == [
         ("10", "000"),
         ("35", "D"),
     ]
 
 
 def test_generic_arguments_keep_mixed_separators_repeats_and_spelling() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "8=FIX.4.4|55=A|55=B|10=000|",
@@ -212,10 +245,10 @@ def test_pipe_and_soh_fast_paths_equal_complete_separator_inference() -> None:
         ]
     )
 
-    expected = kwargs_module._parse_generic(messages).to_pylist()
+    expected = entries_module._parse_generic(messages).to_pylist()
 
-    assert Kwarg.parse_arrow(messages).to_pylist() == expected
-    assert kwargs_module._common_separators(messages).to_pylist() == [
+    assert Entry.parse_arrow(messages).to_pylist() == expected
+    assert entries_module._common_separators(messages).to_pylist() == [
         "|",
         "\x01",
         None,
@@ -225,18 +258,18 @@ def test_pipe_and_soh_fast_paths_equal_complete_separator_inference() -> None:
 
 def test_a_long_common_separator_row_bypasses_generic_inference(monkeypatch) -> None:
     messages = pyarrow.array(["A=" + "x" * (1 << 18) + "|B=2"])
-    expected = kwargs_module._parse_generic(messages).to_pylist()
+    expected = entries_module._parse_generic(messages).to_pylist()
 
     def unexpected(_messages):
         raise AssertionError("common separator used generic inference")
 
-    monkeypatch.setattr(kwargs_module, "_parse_generic", unexpected)
+    monkeypatch.setattr(entries_module, "_parse_generic", unexpected)
 
-    assert Kwarg.parse_arrow(messages).to_pylist() == expected
+    assert Entry.parse_arrow(messages).to_pylist() == expected
 
 
 def test_generic_arguments_keep_prefixes_whitespace_and_empty_values() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "prefix ACCOUNT=A CLIENTID=B",
@@ -253,7 +286,7 @@ def test_generic_arguments_keep_prefixes_whitespace_and_empty_values() -> None:
 
 
 def test_an_indexed_group_can_be_the_first_argument() -> None:
-    (parsed,) = Kwarg.parse_arrow(
+    (parsed,) = Entry.parse_arrow(
         pyarrow.array(["#NoPartyIDs[0]=PartyID=A\x01PartyRole=1|#B=2"])
     ).to_pylist()
 
@@ -264,20 +297,20 @@ def test_an_indexed_group_can_be_the_first_argument() -> None:
 
 
 def test_a_single_argument_does_not_keep_its_trailing_delimiter() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["Only=one|"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["Only=one|"])).to_pylist()
 
     assert [(entry["key"], entry["value"]) for entry in parsed] == [("Only", "one")]
 
 
 def test_hash_separators_distinguish_wire_delimiters_from_marked_keys() -> None:
-    parsed = Kwarg.parse_arrow(pyarrow.array(["8=FIX.4.4#35=D#10=000", "#A=1#B=2"])).to_pylist()
+    parsed = Entry.parse_arrow(pyarrow.array(["8=FIX.4.4#35=D#10=000", "#A=1#B=2"])).to_pylist()
 
     assert [entry["key"] for entry in parsed[0]] == ["8", "35", "10"]
     assert [entry["key"] for entry in parsed[1]] == ["A", "B"]
 
 
 def test_a_numeric_key_too_wide_for_a_tag_remains_a_key() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["1234567890=wide|Other=kept|"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["1234567890=wide|Other=kept|"])).to_pylist()
 
     assert [(entry["key"], entry["value"]) for entry in parsed] == [
         ("1234567890", "wide"),
@@ -286,7 +319,7 @@ def test_a_numeric_key_too_wide_for_a_tag_remains_a_key() -> None:
 
 
 def test_generic_arguments_preserve_numeric_dotted_members() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|Side=1"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|Side=1"])).to_pylist()
 
     assert [(entry["namespace"], entry["comp"], entry["key"]) for entry in parsed] == [
         ("54", None, "5"),
@@ -296,7 +329,7 @@ def test_generic_arguments_preserve_numeric_dotted_members() -> None:
 
 
 def test_fix_whitespace_around_equals_is_not_a_field_separator() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(["Side\x0b=1|Price=2", "N[0]=\x0bM=v|Side=1"])
     ).to_pylist()
 
@@ -307,7 +340,7 @@ def test_fix_whitespace_around_equals_is_not_a_field_separator() -> None:
 
 
 def test_separator_padding_is_ascii_and_does_not_strip_unicode_text() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "8=FIX.4.4| 54=1|55=X|10=000|",
@@ -327,7 +360,7 @@ def test_separator_padding_is_ascii_and_does_not_strip_unicode_text() -> None:
 
 
 def test_generic_arguments_do_not_apply_fix_checksum_semantics() -> None:
-    (parsed,) = Kwarg.parse_arrow(
+    (parsed,) = Entry.parse_arrow(
         pyarrow.array(["8=FIX.4.4|10=000|55=AFTER-CHECKSUM|"])
     ).to_pylist()
     assert [(entry["key"], entry["value"]) for entry in parsed] == [
@@ -360,7 +393,7 @@ def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Pat
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == [payload]
     assert table.column("MsgType").to_pylist() == ["D"]
-    assert [(entry["key"], entry["value"]) for entry in table.column("kwargs")[0].as_py()] == [
+    assert [(entry["key"], entry["value"]) for entry in table.column("entries")[0].as_py()] == [
         ("8", "FIX.4.4"),
         ("49", "XPAR"),
         ("56", "BUY"),

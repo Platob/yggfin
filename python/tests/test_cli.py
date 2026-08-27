@@ -166,7 +166,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """The count is taken off the declaration and pinned, so a column that left
     the contract cannot take the printed number quietly with it.
 
-    `kwargs` is the one line the renderer has to spell out of a nested type,
+    `entries` is the one line the renderer has to spell out of a nested type,
     and `CheckSum` pins registry-exact FIX naming, so together they cover the shape.
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
@@ -176,7 +176,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert "unix: int64  [primary key]" in printed
     assert "unix_partition: int32  [partition identity]" in printed
     assert (
-        "kwargs: list<item: struct<tag: int32 not null, key: string not null, "
+        "entries: list<item: struct<tag: int32 not null, key: string not null, "
         "value: string not null, namespace: string, comp: string> not null>"
         "  [nullable]"
     ) in printed

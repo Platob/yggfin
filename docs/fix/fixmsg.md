@@ -33,7 +33,7 @@ exactly that pair. Market events then come from `into_market_events` (scalar)
 or `into_market_arrow_batches` (vectorized).
 
 `TextFile` and `TextFiles` extract the log header, retain the raw payload, and
-split structured key/value syntax once into ordered `Kwarg` values. They assign
+split structured key/value syntax once into ordered `Entry` values. They assign
 `etype` through the registry's MsgType metadata and retain the unambiguous
 `MsgType` plus a syntax-only `protocol_code`. The `FixMsg` conversion owns
 dictionary resolution, structured components, event time and market identities;
@@ -49,7 +49,7 @@ delimiter-separated assignments skip tokenization entirely. Use
 traffic before argument tokenization; the empty default retains it.
 
 The published `Message` and `FixMsg` contracts are version 1.
-`kwargs` keeps a raw audit sidecar only when a typed column cannot reproduce
+`entries` keeps a raw audit sidecar only when a typed column cannot reproduce
 the source spelling, such as `0010.5000` stored as a numeric `10.5`.
 
 ## Parsed record
@@ -76,7 +76,7 @@ timezone is not documented remains naive.
 
 ## Ordered residue
 
-A raw `Message.kwargs` and a resolved `FixMsg.kwargs` use the same `Kwarg`
+A raw `Message.entries` and a resolved `FixMsg.entries` use the same `Entry`
 shape. The generic parser stores `#SIDE` as `SIDE`; the leading marker is
 dropped. The message discriminator is promoted to `Message.MsgType` and is not
 duplicated in the residual list.
@@ -93,9 +93,9 @@ Each list item contains:
 
 The outer value is a list, not a map, because repeated fields and wire order
 are data. `value` is always present; an explicitly empty value is `""`. Raw
-`Message.kwargs` is always a list. A `FixMsg` carrying no recognized message
-has null `kwargs`; a parsed message with no residual or audit fields has an
-empty list. After resolution, `kwargs` retains every field that no promoted
+`Message.entries` is always a list. A `FixMsg` carrying no recognized message
+has null `entries`; a parsed message with no residual or audit fields has an
+empty list. After resolution, `entries` retains every field that no promoted
 column or structured component took. It also retains a promoted field's raw
 text when its typed value cannot reproduce the exact wire spelling.
 
@@ -118,7 +118,7 @@ carries the link into the market translator, and a translator built with its
 own `registry` links it back onto the message -- one translation resolves
 under exactly one dictionary.
 
-`FixMsg.get` reads promoted columns and `kwargs` through the same registry
+`FixMsg.get` reads promoted columns and `entries` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,
 component path or namespace-qualified key. A key no registry record explains
 still answers typed where its value spells one of five unambiguous shapes --

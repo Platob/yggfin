@@ -1102,7 +1102,7 @@ def test_every_tag_the_instrument_reads_is_declared() -> None:
 def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
     """A parsed row's typed `SecurityAltID`/`Legs` answer without a pair walk.
 
-    The parse stage lifts both groups out of `kwargs`, so a stored row has no
+    The parse stage lifts both groups out of `entries`, so a stored row has no
     count tag left to re-parse -- the resolved columns are the only place the
     entries live, and the instrument they build must equal the one the same
     wire line builds through the scalar fallback.

@@ -14,6 +14,8 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
+from rekep.entries import ENTRIES, ENTRY_PARTS, TAG, Entry
+from rekep.entries import IS_TAG as _IS_TAG
 from rekep.fields import Field
 from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
@@ -42,15 +44,13 @@ from rekep.fix.message import (
     SEPARATOR_VECTOR,
     SEPARATORS,
     SOH,
-    kwargs_entry_separators,
     parse_arrow_array,
-    parse_kwargs_array,
+    parse_entries_array,
+    stored_entry_separators,
 )
 from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
-from rekep.kwargs import IS_TAG as _IS_TAG
-from rekep.kwargs import KWARG_PARTS, KWARGS, TAG, Kwarg
 
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
@@ -340,36 +340,36 @@ class FixCodec(Convertible):
             self.into_payload_pairs(self.into_raw_pairs(messages, protocol))
         )
 
-    def into_pairs_from_kwargs(self, kwargs: Any, protocol: str = NO_PROTOCOL) -> Any:
+    def into_pairs_from_entries(self, entries: Any, protocol: str = NO_PROTOCOL) -> Any:
         """Apply one protocol rule to generic arguments without reading text again."""
-        rows = len(kwargs)
+        rows = len(entries)
         rule = self.rules.rule(protocol)
         if rule.named is None:
             return pyarrow.nulls(rows, _RAW_PAIRS)
         if rule.entry_separator is not None:
-            return parse_kwargs_array(
-                kwargs,
+            return parse_entries_array(
+                entries,
                 named=rule.named,
                 entry_separator=rule.entry_separator,
             ).cast(_RAW_PAIRS)
 
         groups = (
-            list(groups_of(kwargs_entry_separators(kwargs, rule.extra_entry_separators)))
+            list(groups_of(stored_entry_separators(entries, rule.extra_entry_separators)))
             if rule.named
             else []
         )
         if len(groups) <= 1:
             entry_separator = groups[0][0].as_py() or None if groups else None
-            return parse_kwargs_array(
-                kwargs,
+            return parse_entries_array(
+                entries,
                 named=rule.named,
                 entry_separator=entry_separator,
             ).cast(_RAW_PAIRS)
         parts, positions = [], []
         for entry_separator, where in groups:
             parts.append(
-                parse_kwargs_array(
-                    pyarrow.compute.take(kwargs, where),
+                parse_entries_array(
+                    pyarrow.compute.take(entries, where),
                     named=rule.named,
                     entry_separator=entry_separator.as_py() or None,
                 ).cast(_RAW_PAIRS)
@@ -528,7 +528,7 @@ class FixCodec(Convertible):
             _RAW_PAIRS,
         )
 
-    def into_kwargs(self, pairs: Any, version: str | None = None) -> Any:
+    def into_entries(self, pairs: Any, version: str | None = None) -> Any:
         """Every field a message carried, as the one entry a parsed log stores.
 
         One column whatever the dictionary made of the field, so a consumer
@@ -538,15 +538,15 @@ class FixCodec(Convertible):
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
-            parts = [self.into_kwargs(chunk, version) for chunk in pairs.chunks]
-            return pyarrow.chunked_array(parts, type=KWARGS)
+            parts = [self.into_entries(chunk, version) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=ENTRIES)
         if not rows or pairs.null_count == rows:
             # Every row of this slice is "not a message", which is most of a
             # capture, and the kernels below would run over an empty child
             # array to establish it.
-            return pyarrow.nulls(rows, KWARGS)
+            return pyarrow.nulls(rows, ENTRIES)
         lengths, keys, values = _entries_of(pairs)
-        return _kwargs(
+        return _entries_column(
             pairs,
             lengths,
             pyarrow.repeat(True, len(keys)),
@@ -582,22 +582,22 @@ class FixCodec(Convertible):
     # same struct the resolved rows use. `parse_fix` completes the same column
     # in place rather than converting a shape.
 
-    def into_message_kwargs(self, pairs: Any) -> Any:
+    def into_message_entries(self, pairs: Any) -> Any:
         """Every field a message carried, structured but not resolved.
 
-        The same `KWARGS` struct at its unresolved fill level: `key`, `value`,
+        The same `ENTRIES` struct at its unresolved fill level: `key`, `value`,
         `namespace` and `comp` are what the line spells, and `tag` is the
         number only where the line spelled one -- `0` otherwise. No name is
         looked up and no value is translated, so this needs no dictionary.
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
-            parts = [self.into_message_kwargs(chunk) for chunk in pairs.chunks]
-            return pyarrow.chunked_array(parts, type=KWARGS)
+            parts = [self.into_message_entries(chunk) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=ENTRIES)
         if not rows or pairs.null_count == rows:
-            return pyarrow.nulls(rows, KWARGS)
+            return pyarrow.nulls(rows, ENTRIES)
         lengths, keys, values = _entries_of(pairs)
-        return _kwargs(
+        return _entries_column(
             pairs,
             lengths,
             pyarrow.repeat(True, len(keys)),
@@ -611,28 +611,28 @@ class FixCodec(Convertible):
         the line wrote in front of a name goes to `comp` when it is a group
         entry and to `namespace` when it is not. Telling those apart needs no
         dictionary either -- an entry of a repeating group is what carries a
-        subscript, which is what `Kwarg.structure_arrow` matches, and everything else in
+        subscript, which is what `Entry.structure_arrow` matches, and everything else in
         front of a name is a vendor's own prefix.
         """
-        return Kwarg.structure_arrow(keys, values)
+        return Entry.structure_arrow(keys, values)
 
-    def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
+    def versions_of_entries(self, entries: Any) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
-        Off `kwargs` rather than off the message, because by this point the
+        Off `entries` rather than off the message, because by this point the
         message has been split once and splitting it again is the work this
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
         """
         from rekep.fix.access import FieldAccess
 
-        rows = len(kwargs)
+        rows = len(entries)
         if not rows:
             empty = pyarrow.array([], pyarrow.string())
             return empty, empty
-        begins = FieldAccess.first_named(kwargs, 8, "BeginString", rows)
-        application = FieldAccess.first_named(kwargs, 1128, "ApplVerID", rows)
-        default = FieldAccess.first_named(kwargs, 1137, "DefaultApplVerID", rows)
+        begins = FieldAccess.first_named(entries, 8, "BeginString", rows)
+        application = FieldAccess.first_named(entries, 1128, "ApplVerID", rows)
+        default = FieldAccess.first_named(entries, 1137, "DefaultApplVerID", rows)
         compute = pyarrow.compute
         version_keys, version_values = self._version_lookup
 
@@ -664,27 +664,27 @@ class FixCodec(Convertible):
         )
         return versions, sources
 
-    def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
-        """A message-stage `kwargs` column, resolved the rest of the way.
+    def complete_entries(self, entries: Any, version: str | None = None) -> Any:
+        """A message-stage `entries` column, resolved the rest of the way.
 
         A fill and not a shape conversion. Three members are filled -- `tag`,
         `key` canonicalized to the registry's spelling, `value` translated
         where its field enumerates its values -- while `namespace` and `comp`
         come through unchanged.
         """
-        rows = len(kwargs)
-        if isinstance(kwargs, pyarrow.ChunkedArray):
-            parts = [self.complete_kwargs(chunk, version) for chunk in kwargs.chunks]
-            return pyarrow.chunked_array(parts, type=KWARGS)
-        if not rows or kwargs.null_count == rows or version is None:
-            return kwargs
+        rows = len(entries)
+        if isinstance(entries, pyarrow.ChunkedArray):
+            parts = [self.complete_entries(chunk, version) for chunk in entries.chunks]
+            return pyarrow.chunked_array(parts, type=ENTRIES)
+        if not rows or entries.null_count == rows or version is None:
+            return entries
         compute = pyarrow.compute
-        lengths, _, entries = _flattened(kwargs)
-        stored = compute.struct_field(entries, "tag")
-        keys = compute.struct_field(entries, "key")
-        values = compute.struct_field(entries, "value")
-        namespace = compute.struct_field(entries, "namespace")
-        comp = compute.struct_field(entries, "comp")
+        lengths, _, items = _flattened(entries)
+        stored = compute.struct_field(items, "tag")
+        keys = compute.struct_field(items, "key")
+        values = compute.struct_field(items, "value")
+        namespace = compute.struct_field(items, "namespace")
+        comp = compute.struct_field(items, "comp")
         # A stored key is the field's own name with its container beside it, so
         # the container goes back in front before it is resolved: that is the
         # spelling `resolve_with_match` reads, and `TECH.CLIENTID` must not
@@ -700,8 +700,8 @@ class FixCodec(Convertible):
         # numbered was numbered off the wire, and the wire is the authority.
         fill = compute.and_(compute.equal(stored, 0), compute.fill_null(matched, False))
         tags = compute.if_else(fill, compute.fill_null(tags, pyarrow.scalar(0, TAG)), stored)
-        return _kwargs(
-            kwargs,
+        return _entries_column(
+            entries,
             lengths,
             pyarrow.repeat(True, len(keys)),
             tags,
@@ -771,22 +771,22 @@ class FixCodec(Convertible):
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """One parsed pair column as the fields a log keeps and the columns it lifts."""
-        kwargs = self.into_kwargs(pairs, version)
-        components, kwargs = self.into_component_columns(kwargs, version)
-        lifted, kwargs = self.into_lifted_columns(kwargs, version)
-        return kwargs, {**components, **lifted}
+        entries = self.into_entries(pairs, version)
+        components, entries = self.into_component_columns(entries, version)
+        lifted, entries = self.into_lifted_columns(entries, version)
+        return entries, {**components, **lifted}
 
     def into_lifted_columns(
-        self, kwargs: Any, version: str | None = None
+        self, entries: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
-        """The fields worth a column of their own, and what is left of `kwargs`.
+        """The fields worth a column of their own, and what is left of `entries`.
 
         Both kinds in one pass, because they are one question asked of one
         column: a numbered tag the log declares a column for, and a rendered
         name it does. A raw value stays beside its typed column only when that
         column cannot reproduce its exact spelling.
         """
-        rows = len(kwargs)
+        rows = len(entries)
         declared = self.named_fields()
         columns: dict[str, Any] = {
             name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()
@@ -794,23 +794,23 @@ class FixCodec(Convertible):
         columns.update(
             (field.name, pyarrow.nulls(rows, field.arrow_type)) for field in declared.values()
         )
-        if isinstance(kwargs, pyarrow.ChunkedArray):
-            kwargs = kwargs.combine_chunks()
-        if not rows or kwargs.null_count == rows or version is None:
-            return columns, kwargs
+        if isinstance(entries, pyarrow.ChunkedArray):
+            entries = entries.combine_chunks()
+        if not rows or entries.null_count == rows or version is None:
+            return columns, entries
         compute = pyarrow.compute
         fields = self.flat_fields(version)
-        lengths, parents, entries = _flattened(kwargs)
-        tags = compute.struct_field(entries, "tag")
-        keys = compute.struct_field(entries, "key")
-        values = compute.struct_field(entries, "value")
+        lengths, parents, items = _flattened(entries)
+        tags = compute.struct_field(items, "tag")
+        keys = compute.struct_field(items, "key")
+        values = compute.struct_field(items, "value")
 
         # One integer per liftable field: its tag, or a negative code for a
         # rendered name. Distinct codes are all `_liftable` needs, and one
         # integer key spares the composite string a mixed column would take.
         numbered = compute.fill_null(compute.is_in(tags, value_set=_tags_of(fields)), False)
         named = pyarrow.array(list(declared), pyarrow.string())
-        matched = _declared_index(keys, _lead_of(entries), named)
+        matched = _declared_index(keys, _lead_of(items), named)
         wanted = numbered
         code = tags
         if len(named):
@@ -822,7 +822,7 @@ class FixCodec(Convertible):
                 tags,
             )
         if not compute.any(wanted, min_count=0).as_py():
-            return columns, kwargs
+            return columns, entries
         agreed, chosen = _liftable(parents, code, values)
         lift = compute.and_(wanted, agreed)
         taken = compute.and_(wanted, chosen)
@@ -881,7 +881,7 @@ class FixCodec(Convertible):
                     value_set=pyarrow.concat_arrays(retained_identities),
                 ),
             )
-        return columns, _kwargs(kwargs, lengths, keep, *_columns_of(entries, keep))
+        return columns, _entries_column(entries, lengths, keep, *_columns_of(items, keep))
 
     @classmethod
     @functools.cache
@@ -902,11 +902,11 @@ class FixCodec(Convertible):
         )
 
     def into_component_columns(
-        self, kwargs: Any, version: str | None = None
+        self, entries: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
-        """Structured FIX components and what is left of `kwargs`."""
+        """Structured FIX components and what is left of `entries`."""
         columns: dict[str, Any] = {}
-        rest = kwargs
+        rest = entries
         for column in self.into_components():
             columns[column], rest = self.component_of(column, version).into_arrow_arrays(rest)
         return columns, rest
@@ -1525,8 +1525,8 @@ def _row_totals(pairs: Any, lengths: Any, counts: Any) -> Any:
     return compute.subtract(ends.slice(1), ends.slice(0, len(ends) - 1)).cast(pyarrow.int32())
 
 
-def _kwargs(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
-    """A `KWARGS` column out of the entries `keep` admits, in the source's rows.
+def _entries_column(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
+    """A `ENTRIES` column out of the entries `keep` admits, in the source's rows.
 
     `keep` is over the source's own flattened entries and `parts` are already
     filtered by it: the offsets come from the mask and the children from the
@@ -1534,20 +1534,20 @@ def _kwargs(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
     """
     entries = pyarrow.StructArray.from_arrays(
         [
-            part.cast(KWARGS.value_type.field(name).type, safe=False)
-            for name, part in zip(KWARG_PARTS, parts, strict=True)
+            part.cast(ENTRIES.value_type.field(name).type, safe=False)
+            for name, part in zip(ENTRY_PARTS, parts, strict=True)
         ],
-        fields=[KWARGS.value_type.field(name) for name in KWARG_PARTS],
+        fields=[ENTRIES.value_type.field(name) for name in ENTRY_PARTS],
     )
     return pyarrow.ListArray.from_arrays(
-        _selected_offsets(source, lengths, keep), entries, type=KWARGS
+        _selected_offsets(source, lengths, keep), entries, type=ENTRIES
     )
 
 
-def _flattened(kwargs: Any) -> tuple[Any, Any, Any]:
-    """`(row lengths, parent row per entry, the entries)` for a `KWARGS` column."""
+def _flattened(entries: Any) -> tuple[Any, Any, Any]:
+    """`(row lengths, parent row per entry, the entries)` for a `ENTRIES` column."""
     compute = pyarrow.compute
-    listed = _listed(kwargs)
+    listed = _listed(entries)
     return (
         compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32()),
         compute.list_parent_indices(listed).cast(pyarrow.int64()),
@@ -1558,7 +1558,7 @@ def _flattened(kwargs: Any) -> tuple[Any, Any, Any]:
 def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
     """The children of the entries a mask keeps, in declaration order."""
     compute = pyarrow.compute
-    return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in KWARG_PARTS)
+    return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in ENTRY_PARTS)
 
 
 def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:

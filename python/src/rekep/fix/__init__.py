@@ -12,13 +12,12 @@ from rekep.fix.classify import (
 )
 from rekep.fix.columns import (
     COMMON,
+    ENTRIES,
     FLAT,
-    KWARGS,
     NAMESPACE_COLUMNS,
     QUOTE,
     SESSION,
     TAG,
-    Kwarg,
     named_columns,
 )
 from rekep.fix.components import (
@@ -127,8 +126,8 @@ __all__ = [
     "FieldRules",
     "FixCodec",
     "FixRegistry",
-    "KWARGS",
-    "Kwarg",
+    "ENTRIES",
+    "Entry",
     "KeyCount",
     "KeyCounts",
     "KeyReport",

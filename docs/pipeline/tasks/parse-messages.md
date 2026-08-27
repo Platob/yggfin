@@ -27,7 +27,7 @@ Each `Message` row contains:
 - `thread_name` and `plugin_code` from the configured header;
 - the unsplit payload in `message`;
 - the protocol syntax in `protocol_code`, without field interpretation;
-- residual ordered `kwargs` parsed from key/value syntax, with repeated keys retained;
+- residual ordered `entries` parsed from key/value syntax, with repeated keys retained;
 - the unambiguous `MsgType` spelling and the registry-mapped `etype`;
 - `hash`, the XXH3-64 identity of the exact UTF-8 `message` payload.
 
@@ -45,7 +45,7 @@ owns dictionary interpretation.
 `logs.messages` is the protocol-neutral source for later parsers. A field or
 protocol rule can change without reopening compressed logs or listing the
 source object-store prefix again. Re-running a protocol parser uses the
-retained `kwargs`; it does not split `message` again. A change to MsgType
+retained `entries`; it does not split `message` again. A change to MsgType
 `event_types` is different because it changes stored `Message.etype`, so it
 requires rebuilding this table.
 
@@ -81,13 +81,13 @@ Null uses the shipped default rules in both stages.
 `include_regexes` admits a payload when any Arrow RE2 pattern matches;
 `exclude_regexes` then removes a payload when any pattern matches. Empty lists
 keep every payload. Matching sees the complete folded message and happens
-together with the `[start, end)` recording-time filter before kwargs and
+together with the `[start, end)` recording-time filter before entries and
 message identities are parsed.
 
 `include_msgtypes` admits only exact discriminator values when non-empty;
 `exclude_msgtypes` removes exact values after that inclusion. Rows without a
 discriminator survive an empty include list. Empty lists retain every MsgType.
-Both filters run before kwargs are split.
+Both filters run before entries are split.
 
 `technical_plugins` names exact plugin codes to omit case-insensitively from
 the parsed stream before it is written. This source policy belongs to the task,

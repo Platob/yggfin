@@ -69,7 +69,7 @@ about 29,000 rows/s. Directional figures, like everything on this page, and
 recorded with their profiles because three optimization proposals were parked
 pending exactly this measurement:
 
-- **The text stage is its tokenizer.** `Kwarg.parse_arrow` is roughly three
+- **The text stage is its tokenizer.** `Entry.parse_arrow` is roughly three
   quarters of `Message.parse_arrow`; the classification probes
   (`_msg_type_probe`, `looks_structured_arrow`) are about a seventh.
   Collapsing the probe scans into one combined extraction -- proposed as a

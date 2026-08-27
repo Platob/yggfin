@@ -46,7 +46,7 @@
 
   <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
   <text class="label" x="223" y="180">Message contract</text>
-  <text class="small" x="223" y="201">logs.messages | raw payload + ordered kwargs</text>
+  <text class="small" x="223" y="201">logs.messages | raw payload + ordered entries</text>
   <text class="tiny" x="223" y="216">syntax only; no FIX registry lookup</text>
 
   <rect class="contract" x="45" y="265" width="355" height="240" rx="15"/>

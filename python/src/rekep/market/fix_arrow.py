@@ -95,7 +95,7 @@ _SIDE_CODES = {**Side.worded_codes(), **Side._fix_codes()}
 _TIF_CODES = {**TimeInForce.worded_codes(), **TimeInForce._fix_codes()}
 #: Resolved component columns whose presence sends a row to the scalar
 #: translator. The regulatory clocks steer transaction time; the instrument
-#: groups feed `alt_ids` and `legs` -- their count tags in `kwargs` used to
+#: groups feed `alt_ids` and `legs` -- their count tags in `entries` used to
 #: mark these rows, and the resolved column is where that presence lives now.
 #: `Parties` is deliberately absent: order and execution rows never read it.
 _COMPONENT_EXCLUSIONS = (
@@ -131,8 +131,8 @@ def flat_market_parts(
     columns = {name: batch.column(name) for name in batch.schema.names}
     msg_type = columns.get("MsgType")
     version = columns.get("protocol_version")
-    kwargs = columns.get("kwargs")
-    if msg_type is None or version is None or kwargs is None:
+    entries = columns.get("entries")
+    if msg_type is None or version is None or entries is None:
         return None
     if version.null_count:
         return None
@@ -165,11 +165,11 @@ def flat_market_parts(
         for name in _COMPONENT_EXCLUSIONS
     ):
         return None
-    entries = compute.list_flatten(kwargs)
-    if len(entries):
-        tag = compute.struct_field(entries, "tag")
-        namespace = compute.struct_field(entries, "namespace")
-        component = compute.struct_field(entries, "comp")
+    items = compute.list_flatten(entries)
+    if len(items):
+        tag = compute.struct_field(items, "tag")
+        namespace = compute.struct_field(items, "namespace")
+        component = compute.struct_field(items, "comp")
         if (
             tag.null_count
             or compute.any(compute.less_equal(tag, 0), min_count=0).as_py()
@@ -177,7 +177,7 @@ def flat_market_parts(
             or component.null_count < len(component)
         ):
             return None
-        parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
+        parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
         identities = compute.add(
             compute.multiply(parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
             tag.cast(pyarrow.int64()),
@@ -185,7 +185,7 @@ def flat_market_parts(
         if len(compute.unique(identities)) != len(identities):
             return None
 
-    values = _Values(columns, kwargs, tags, batch.num_rows)
+    values = _Values(columns, entries, tags, batch.num_rows)
     if any(values.present(name) for name in _COMPLEX_FIELDS):
         return None
     symbol = values.text("Symbol", fallback="")
@@ -246,8 +246,8 @@ def flat_market_positions(
     columns = {name: batch.column(name) for name in batch.schema.names}
     msg_type = columns.get("MsgType")
     versions = columns.get("protocol_version")
-    kwargs = columns.get("kwargs")
-    if msg_type is None or versions is None or kwargs is None:
+    entries = columns.get("entries")
+    if msg_type is None or versions is None or entries is None:
         return
     positions = sequence(batch.num_rows)
     configured = declared.get("fix_version")
@@ -322,18 +322,18 @@ def _eligible_market_rows(
 ) -> pyarrow.Array:
     """Identify rows for which the flat translator mirrors scalar semantics."""
     eligible = pyarrow.repeat(pyarrow.scalar(True), rows)
-    kwargs = columns["kwargs"]
+    entries = columns["entries"]
     for name in _COMPONENT_EXCLUSIONS:
         column = columns.get(name)
         if column is not None:
             eligible = compute.and_(eligible, compute.is_null(column))
 
-    entries = compute.list_flatten(kwargs)
-    if len(entries):
-        tag = compute.struct_field(entries, "tag")
-        namespace = compute.struct_field(entries, "namespace")
-        component = compute.struct_field(entries, "comp")
-        parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
+    items = compute.list_flatten(entries)
+    if len(items):
+        tag = compute.struct_field(items, "tag")
+        namespace = compute.struct_field(items, "namespace")
+        component = compute.struct_field(items, "comp")
+        parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
         valid = compute.and_(compute.is_valid(tag), compute.greater(tag, 0))
         valid = compute.and_(valid, compute.is_null(namespace))
         valid = compute.and_(valid, compute.is_null(component))
@@ -344,7 +344,7 @@ def _eligible_market_rows(
         duplicated = _duplicate_market_rows(parents, tag, rows)
         eligible = compute.and_(eligible, compute.invert(duplicated))
 
-    values = _Values(columns, kwargs, tags, rows)
+    values = _Values(columns, entries, tags, rows)
     for name in _COMPLEX_FIELDS:
         eligible = compute.and_(eligible, compute.is_null(values.raw(name, pyarrow.string())))
     symbol = values.text("Symbol", fallback="")
@@ -399,14 +399,14 @@ class _Values:
     def __init__(
         self,
         columns: Mapping[str, pyarrow.Array],
-        kwargs: pyarrow.Array,
+        entries: pyarrow.Array,
         tags: MarketTags,
         rows: int,
     ):
         self.columns = columns
         self.rows = rows
         requested = tuple((tags.tags[name], name) for name in _READ_FIELDS if name in tags.tags)
-        self.residual = FieldAccess.first_arrow_fields(kwargs, requested, rows)
+        self.residual = FieldAccess.first_arrow_fields(entries, requested, rows)
         self._cache: dict[tuple[str, str], pyarrow.Array] = {}
 
     def raw(self, name: str, arrow_type: pyarrow.DataType) -> pyarrow.Array:
@@ -964,10 +964,10 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
         promoted_items = compute.filter(promoted, promoted_present)
         promoted_ranks = compute.filter(member.cast(pyarrow.int64()), promoted_present)
 
-    stored = values.columns["kwargs"]
-    entries = compute.list_flatten(stored)
+    stored = values.columns["entries"]
+    items = compute.list_flatten(stored)
     residual_parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
-    residual_tags = compute.struct_field(entries, "tag")
+    residual_tags = compute.struct_field(items, "tag")
     residual_keys = residual_tags.cast(pyarrow.string())
     claimed = pyarrow.array(sorted(tags.claimed))
     audited = pyarrow.array(sorted(tags.audited))
@@ -975,8 +975,8 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
         compute.invert(compute.is_in(residual_keys, value_set=claimed)),
         compute.is_in(residual_keys, value_set=audited),
     )
-    residual_values = compute.struct_field(entries, "value")
-    residual_ranks = compute.add(sequence(len(entries)), len(candidates))
+    residual_values = compute.struct_field(items, "value")
+    residual_ranks = compute.add(sequence(len(items)), len(candidates))
 
     kept_residual_parents = compute.filter(residual_parents, residual_keep)
     kept_residual_tags = compute.filter(residual_tags, residual_keep)
@@ -1022,7 +1022,7 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
         ]
     )
     if len(parents):
-        stride = len(entries) + len(candidates) + 1
+        stride = len(items) + len(candidates) + 1
         order = compute.array_sort_indices(compute.add(compute.multiply(parents, stride), ranks))
         parents = compute.take(parents, order)
         keys = compute.take(keys, order)

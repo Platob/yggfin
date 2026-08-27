@@ -109,13 +109,13 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         BeginString="FIX.4.4",
         MsgType="d",
         Symbol="FAKE-SYM",
-        kwargs=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
+        entries=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
         [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
     )
     log = FixMsg.from_dict(table.to_pylist()[0])
-    assert [(entry["tag"], entry["value"]) for entry in log.kwargs] == [
+    assert [(entry["tag"], entry["value"]) for entry in log.entries] == [
         (969, "0.01"),
         (561, "100"),
         (107, "FAKE-DESC"),

@@ -7,7 +7,7 @@ import datetime
 import pyarrow
 import pytest
 
-from rekep.fix.columns import KWARGS
+from rekep.fix.columns import ENTRIES
 from rekep.fix.components import (
     LEGS,
     PARTIES,
@@ -26,7 +26,7 @@ from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecFieldRef, Sp
 
 
 def _tags(*rows: object) -> pyarrow.Array:
-    """Rows of `(tag, value)` as the `kwargs` column an extractor is handed."""
+    """Rows of `(tag, value)` as the `entries` column an extractor is handed."""
     return pyarrow.array(
         [
             None
@@ -42,7 +42,7 @@ def _tags(*rows: object) -> pyarrow.Array:
             ]
             for row in rows
         ],
-        type=KWARGS,
+        type=ENTRIES,
     )
 
 
@@ -394,7 +394,7 @@ def test_chunk_boundaries_do_not_change_the_answer() -> None:
     first = _tags([(453, "1"), (448, "A")])
     second = _tags(None, [(453, "0")])
     whole = pyarrow.concat_arrays([first, second])
-    chunked = pyarrow.chunked_array([first, second], type=KWARGS)
+    chunked = pyarrow.chunked_array([first, second], type=ENTRIES)
 
     expected = _parties().into_arrow_arrays(whole)
     actual = _parties().into_arrow_arrays(chunked)

@@ -640,39 +640,39 @@ def parse_arrow_array(
     return pyarrow.MapArray.from_arrays(offsets, tags, entries)
 
 
-def parse_kwargs_array(
-    kwargs: Any,
+def parse_entries_array(
+    entries: Any,
     *,
     named: bool,
     entry_separator: str | None = None,
 ) -> Any:
     """Apply FIX token rules to generic ordered key/value arguments."""
-    if isinstance(kwargs, pyarrow.ChunkedArray):
+    if isinstance(entries, pyarrow.ChunkedArray):
         return pyarrow.chunked_array(
             [
-                parse_kwargs_array(chunk, named=named, entry_separator=entry_separator)
-                for chunk in kwargs.chunks
+                parse_entries_array(chunk, named=named, entry_separator=entry_separator)
+                for chunk in entries.chunks
             ],
             type=pyarrow.map_(pyarrow.string(), pyarrow.string()),
         )
     compute = pyarrow.compute
-    rows = len(kwargs)
+    rows = len(entries)
     if not rows:
         return pyarrow.array([], type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
 
-    entries = compute.list_flatten(kwargs)
-    raw_keys = compute.struct_field(entries, "key")
-    if entries.type.get_field_index("namespace") >= 0:
+    items = compute.list_flatten(entries)
+    raw_keys = compute.struct_field(items, "key")
+    if items.type.get_field_index("namespace") >= 0:
         lead = compute.coalesce(
-            compute.struct_field(entries, "namespace"),
-            compute.struct_field(entries, "comp"),
+            compute.struct_field(items, "namespace"),
+            compute.struct_field(items, "comp"),
         )
         raw_keys = compute.if_else(
             compute.is_valid(lead),
             compute.binary_join_element_wise(compute.fill_null(lead, ""), raw_keys, "."),
             raw_keys,
         )
-    raw_values = compute.fill_null(compute.struct_field(entries, "value"), "")
+    raw_values = compute.fill_null(compute.struct_field(items, "value"), "")
     if named:
         rendered = compute.binary_join_element_wise(raw_keys, "=", raw_values, "")
         parsed = compute.extract_regex(rendered, _TOKEN_VECTOR)
@@ -687,22 +687,22 @@ def parse_kwargs_array(
         expansion = None
 
     weights = matched.cast(pyarrow.int32())
-    parents = compute.filter(compute.list_parent_indices(kwargs), matched)
+    parents = compute.filter(compute.list_parent_indices(entries), matched)
     if expansion is not None:
         counts, taken = expansion
         weights = compute.replace_with_mask(weights, matched, counts)
         parents = compute.take(parents, taken)
     counted = compute.cumulative_sum(weights)
     bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
-    lengths = compute.fill_null(compute.list_value_length(kwargs), 0).cast(pyarrow.int32())
+    lengths = compute.fill_null(compute.list_value_length(entries), 0).cast(pyarrow.int32())
     source_offsets = pyarrow.concat_arrays(
         [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
     )
     offsets = compute.take(bounds, source_offsets)
     keys, values, offsets = _until_checksum(keys, values, offsets, parents, named)
-    if kwargs.null_count:
+    if entries.null_count:
         head = compute.if_else(
-            compute.is_null(kwargs),
+            compute.is_null(entries),
             pyarrow.scalar(None, pyarrow.int32()),
             offsets.slice(0, rows),
         )
@@ -710,22 +710,22 @@ def parse_kwargs_array(
     return pyarrow.MapArray.from_arrays(offsets, keys, values)
 
 
-def kwargs_entry_separators(
-    kwargs: Any,
+def stored_entry_separators(
+    entries: Any,
     extra_entry_separators: Iterable[str] = (),
 ) -> pyarrow.Array:
     """Detect each row's indexed-entry separator from generic arguments."""
-    if isinstance(kwargs, pyarrow.ChunkedArray):
-        kwargs = kwargs.combine_chunks()
+    if isinstance(entries, pyarrow.ChunkedArray):
+        entries = entries.combine_chunks()
     compute = pyarrow.compute
-    rows = len(kwargs)
+    rows = len(entries)
     if not rows:
         return pyarrow.array([], pyarrow.string())
-    entries = compute.list_flatten(kwargs)
-    if not len(entries):
+    items = compute.list_flatten(entries)
+    if not len(items):
         return pyarrow.repeat("", rows)
-    keys = compute.struct_field(entries, "key")
-    values = compute.struct_field(entries, "value")
+    keys = compute.struct_field(items, "key")
+    values = compute.struct_field(items, "value")
     indexed = compute.fill_null(compute.match_substring_regex(keys, rf"^#?{_NAME}\[\d+\]$"), False)
     nothing = pyarrow.scalar(None, pyarrow.string())
     separators = compute.coalesce(
@@ -744,7 +744,7 @@ def kwargs_entry_separators(
     valid = compute.is_valid(separators)
     if not compute.any(valid, min_count=0).as_py():
         return pyarrow.repeat("", rows)
-    parents = compute.filter(compute.list_parent_indices(kwargs), valid)
+    parents = compute.filter(compute.list_parent_indices(entries), valid)
     candidates = compute.filter(separators, valid)
     positions = compute.index_in(sequence(rows), value_set=parents)
     return compute.fill_null(compute.take(candidates, positions), "")

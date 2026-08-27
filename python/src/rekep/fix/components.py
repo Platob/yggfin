@@ -13,7 +13,7 @@ import pyarrow.compute
 
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
-from rekep.fix.columns import DECLARATIONS, KWARGS
+from rekep.fix.columns import DECLARATIONS, ENTRIES
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.quickfix import (
     SpecComponent,
@@ -244,11 +244,11 @@ class ComponentGroup:
             parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
             return (
                 pyarrow.chunked_array([found for found, _ in parts], type=entries_type),
-                pyarrow.chunked_array([rest for _, rest in parts], type=KWARGS),
+                pyarrow.chunked_array([rest for _, rest in parts], type=ENTRIES),
             )
-        if not isinstance(tags, pyarrow.Array) or tags.type != KWARGS:
+        if not isinstance(tags, pyarrow.Array) or tags.type != ENTRIES:
             actual = getattr(tags, "type", type(tags).__name__)
-            raise TypeError(f"{type(self).__name__} needs {KWARGS}, got {actual}")
+            raise TypeError(f"{type(self).__name__} needs {ENTRIES}, got {actual}")
         return self._extract(tags)
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -423,7 +423,7 @@ class ComponentGroup:
         keep = compute.invert(remove)
         residual_sizes = dense_counts(compute.filter(parents, keep), rows)
         residual = build_list(
-            KWARGS,
+            ENTRIES,
             residual_sizes,
             _kept(entries, keep),
             mask=compute.is_null(tags) if tags.null_count else None,
@@ -893,7 +893,7 @@ class Legs(ComponentGroup):
 def _kept(entries: Any, keep: Any) -> pyarrow.StructArray:
     """The entries a mask keeps, rebuilt with every part they carry."""
     compute = pyarrow.compute
-    fields = [KWARGS.value_type.field(index) for index in range(KWARGS.value_type.num_fields)]
+    fields = [ENTRIES.value_type.field(index) for index in range(ENTRIES.value_type.num_fields)]
     return pyarrow.StructArray.from_arrays(
         [compute.filter(compute.struct_field(entries, field.name), keep) for field in fields],
         fields=fields,

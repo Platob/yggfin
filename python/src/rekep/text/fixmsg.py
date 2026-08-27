@@ -28,12 +28,11 @@ from rekep.fields.arrays import (
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import (
     DECLARATIONS,
+    ENTRIES,
     IDENTIFIER_FIELDS,
     ISIN_CODE,
-    KWARGS,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    Kwarg,
 )
 from rekep.fix.components import (
     LEGS,
@@ -241,19 +240,19 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
-        if self.kwargs is not None:
-            self.kwargs = [Kwarg.from_stored(entry) for entry in self.kwargs]
+        if self.entries is not None:
+            self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if (
             self.protocol_version is None
             and self.protocol_code == NO_PROTOCOL
-            and (self.BeginString or self.kwargs)
+            and (self.BeginString or self.entries)
         ):
             evidence: list[tuple[str, Any]] = []
             if self.BeginString:
                 evidence.append(("8", self.BeginString))
             if self.ApplVerID:
                 evidence.append(("1128", self.ApplVerID))
-            evidence.extend(_stored_pairs(self.kwargs))
+            evidence.extend(_stored_pairs(self.entries))
             version, source = infer_version_from_pairs(evidence)
             if version is not None:
                 self.protocol_version = version
@@ -265,7 +264,7 @@ class FixMsg(Message):
         """Give the parsed event its lifecycle and version identities."""
         return Event.identify(self)
 
-    # Nullable, and null on `fix.market`: typed columns plus `kwargs` carry
+    # Nullable, and null on `fix.market`: typed columns plus `entries` carry
     # every field the line held, so keeping the raw string beside them would
     # store the same content twice. An all-null column run-length and dictionary encodes
     # to nothing on disk, which is what makes one stored shape across the
@@ -301,7 +300,7 @@ class FixMsg(Message):
 
     # A list preserves repeated keys and wire order. Null means no parsed
     # message; an empty list means no residual or raw audit sidecar remains.
-    kwargs: list[Kwarg] | None = None
+    entries: list[Entry] | None = None
     """Unlifted fields and lossless raw audit sidecars for typed columns."""
 
     Parties: Annotated[
@@ -343,7 +342,7 @@ class FixMsg(Message):
     # -- what a message says, flattened ---------------------------------------
     #
     # Flat fields keep the registry's exact name, type, description and
-    # metadata. A lifted fact stays in `kwargs` only where typing loses text.
+    # metadata. A lifted fact stays in `entries` only where typing loses text.
 
     # The envelope itself.
 
@@ -548,7 +547,7 @@ class FixMsg(Message):
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
-    # in `kwargs`; a value is lifted only when it occurs once on the line.
+    # in `entries`; a value is lifted only when it occurs once on the line.
 
     QuoteID: Annotated[str | None, DECLARATIONS[117]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
@@ -657,7 +656,7 @@ class FixMsg(Message):
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        staged = Message(kwargs=normalized_pairs(pairs, names))
+        staged = Message(entries=normalized_pairs(pairs, names))
         return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
@@ -684,7 +683,7 @@ class FixMsg(Message):
         values.update(
             {
                 "message": message.message or None,
-                "kwargs": list(message.kwargs or ()),
+                "entries": list(message.entries or ()),
                 "linked_events": list(message.linked_events),
                 "codes": dict(message.codes),
                 "parent_hash": None if message.parent_hash is None else list(message.parent_hash),
@@ -718,7 +717,7 @@ class FixMsg(Message):
                 "source_rownum": 0,
                 "thread_name": "",
                 "plugin_code": cls.into_instrument_plugin(),
-                # Null for the same reason a market row's is: `kwargs` below
+                # Null for the same reason a market row's is: `entries` below
                 # carries every fact this row states, so a raw line beside it
                 # would be the same content twice -- and there was no line.
                 "message": None,
@@ -732,7 +731,7 @@ class FixMsg(Message):
                 "CFICode": known.cfi,
                 "SecurityExchange": known.exchange,
                 "Currency": None if known.currency is None else known.currency.into_fix(),
-                "kwargs": _stored_entries(_instrument_pairs(known)),
+                "entries": _stored_entries(_instrument_pairs(known)),
             }
         )
         values.update(declared)
@@ -741,14 +740,14 @@ class FixMsg(Message):
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
         encoded = Convertible.into_dict(self)
-        encoded["kwargs"] = _stored_entries(self.kwargs)
+        encoded["entries"] = _stored_entries(self.entries)
         return encoded
 
     def get(self, field: int | str) -> Reading:
         """One field off this row, whichever of the four ways it is named.
 
         The one accessor (fix/access.py) reads the promoted columns first and
-        the stored `kwargs` after them, so a lifted fact and a residual one
+        the stored `entries` after them, so a lifted fact and a residual one
         answer through one call. The `Reading` carries the stored value and
         the typed reading together.
         """
@@ -759,7 +758,7 @@ class FixMsg(Message):
         return self._row_access().readings(self._field_entries(), field)
 
     def into_fix_pairs(self, access: FieldAccess | None = None) -> list[tuple[str, str]]:
-        """Ordered FIX fields projected once from columns, components, and `kwargs`.
+        """Ordered FIX fields projected once from columns, components, and `entries`.
 
         When an accessor resolves both a numeric field and a rendered field to
         one registry identity, the rendered occurrence is authoritative. Its
@@ -785,9 +784,8 @@ class FixMsg(Message):
         `Entry` -- so a field read never re-splits a spelling the stored
         shape already holds apart.
         """
-        stored_fields = [_stored_field(Kwarg.from_stored(entry)) for entry in self.kwargs or ()]
-        stored_entries = [entry for _, entry in stored_fields]
-        stored = [(key, entry.value) for key, entry in stored_fields]
+        stored_entries = [Entry.from_stored(entry) for entry in self.entries or ()]
+        stored = [(entry.spelling, entry.value) for entry in stored_entries]
         stored_resolved = access.tagged_pairs(stored)
         stored_identities = {
             _pair_identity(pair[0])
@@ -796,16 +794,16 @@ class FixMsg(Message):
         }
 
         promoted_entries = [
-            Entry(tag=int(tag), name=str(tag), value=value)
+            Entry.of(tag=int(tag), key=str(tag), value=value)
             for name, tag in type(self).into_tagged_columns()
             if (value := getattr(self, name, None)) is not None
         ]
         promoted_entries.extend(
-            Entry(name=spelled, value=value)
+            Entry.of(key=spelled, value=value)
             for name, spelled in type(self).into_named_columns()
             if (value := getattr(self, name, None)) is not None
         )
-        promoted = [(_entry_key(entry), entry.value) for entry in promoted_entries]
+        promoted = [(entry.spelling, entry.value) for entry in promoted_entries]
         promoted_resolved = access.tagged_pairs(promoted)
         keep_promoted = [
             _pair_identity(pair[0]) not in stored_identities for pair in promoted_resolved
@@ -828,7 +826,7 @@ class FixMsg(Message):
 
         # The promoted discriminator re-enters at its wire-legal position:
         # after the leading BeginString/BodyLength run the raw stage left in
-        # `kwargs`. The projection then keeps the wire's own order, and a
+        # `entries`. The projection then keeps the wire's own order, and a
         # rendered row re-parses whole -- a `35=` in front of the `8=` anchor
         # would be shed as log noise.
         head = 0
@@ -919,7 +917,7 @@ class FixMsg(Message):
     @property
     def has_indexed_entries(self) -> bool:
         """Whether a rendered group path survives only in source spelling."""
-        return any(entry.comp or "[" in entry.key for entry in self.kwargs or ())
+        return any(entry.comp or "[" in entry.key for entry in self.entries or ())
 
     def component_entries(self, column: str) -> list[dict[str, str]] | None:
         """One resolved component column, each entry first-value-by-name.
@@ -962,7 +960,7 @@ class FixMsg(Message):
         """
         if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
             return None
-        entries = self.kwargs or ()
+        entries = self.entries or ()
         if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
             return None
 
@@ -1181,26 +1179,28 @@ class FixMsg(Message):
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
             if rule.named is None:
-                parts.append(pyarrow.nulls(len(where), KWARGS))
+                parts.append(pyarrow.nulls(len(where), ENTRIES))
             else:
-                kwargs = (
-                    columns["kwargs"]
+                entries = (
+                    columns["entries"]
                     if len(where) == rows
-                    else pyarrow.compute.take(columns["kwargs"], where)
+                    else pyarrow.compute.take(columns["entries"], where)
                 )
                 pairs = codec.drop_null_values(
-                    codec.into_payload_pairs(codec.into_pairs_from_kwargs(kwargs, protocol.as_py()))
+                    codec.into_payload_pairs(
+                        codec.into_pairs_from_entries(entries, protocol.as_py())
+                    )
                 )
-                parts.append(codec.into_message_kwargs(pairs))
+                parts.append(codec.into_message_entries(pairs))
             positions.append(where)
-        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
-        protocol_version, protocol_version_source = codec.versions_of_kwargs(kwargs)
+        entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
+        protocol_version, protocol_version_source = codec.versions_of_entries(entries)
         columns.update(
             {
                 "protocol_code": protocols,
                 "protocol_version": protocol_version,
                 "protocol_version_source": protocol_version_source,
-                "kwargs": kwargs,
+                "entries": entries,
             }
         )
         schema = cls._message_schema(batch.schema)
@@ -1248,25 +1248,25 @@ class FixMsg(Message):
     def _resolved_columns(
         cls, columns: Mapping[str, Any], codec: Any, version: str | None, rows: int
     ) -> dict[str, Any]:
-        """One homogeneous slice: `kwargs` completed, and what it gives up to columns."""
-        kwargs = codec.complete_kwargs(columns["kwargs"], version)
-        kwargs = cls._prefer_named_kwargs(
-            columns["kwargs"], kwargs, codec.registry.group_count_tags(version)
+        """One homogeneous slice: `entries` completed, and what it gives up to columns."""
+        entries = codec.complete_entries(columns["entries"], version)
+        entries = cls._prefer_named_entries(
+            columns["entries"], entries, codec.registry.group_count_tags(version)
         )
-        components, kwargs = codec.into_component_columns(kwargs, version)
-        lifted, kwargs = codec.into_lifted_columns(kwargs, version)
-        found: dict[str, Any] = {"kwargs": kwargs, **components, **lifted}
+        components, entries = codec.into_component_columns(entries, version)
+        lifted, entries = codec.into_lifted_columns(entries, version)
+        found: dict[str, Any] = {"entries": entries, **components, **lifted}
         # A lifted value only fills a column already read directly where it is empty:
         # `MsgType` is read off the front of the message before any of this,
         # and the wire is the authority on what it says.
         for name, column in found.items():
             stored = columns.get(name)
-            if name != "kwargs" and stored is not None and stored.null_count < rows:
+            if name != "entries" and stored is not None and stored.null_count < rows:
                 found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
         return found
 
     @staticmethod
-    def _prefer_named_kwargs(
+    def _prefer_named_entries(
         source: Any, resolved: Any, group_count_tags: Collection[int] = ()
     ) -> Any:
         """Drop flat numeric copies shadowed by named fields of one identity.
@@ -1338,7 +1338,7 @@ class FixMsg(Message):
             fields=list(entries.type),
         )
         mask = compute.is_null(resolved) if resolved.null_count else None
-        return build_list(KWARGS, sizes, values, mask)
+        return build_list(ENTRIES, sizes, values, mask)
 
     @classmethod
     def identified(
@@ -1389,7 +1389,7 @@ class FixMsg(Message):
             "protocol_code",
             "protocol_version",
             "MsgType",
-            "kwargs",
+            "entries",
         )
 
     @classmethod
@@ -1403,7 +1403,7 @@ class FixMsg(Message):
         compute = pyarrow.compute
         parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
         digests = cls.hash_arrow(*parsed)
-        stored = columns.get("kwargs")
+        stored = columns.get("entries")
         if stored is None:
             return digests
         unread = compute.is_null(stored)
@@ -1446,11 +1446,11 @@ class FixMsg(Message):
         )
         residual = (
             FieldAccess.first_arrow_fields(
-                columns.get("kwargs"),
+                columns.get("entries"),
                 tuple((tag, field) for _, field, tag in identified if tag > 0),
                 rows,
             )
-            if columns.get("kwargs") is not None
+            if columns.get("entries") is not None
             else {}
         )
         available = []
@@ -1764,7 +1764,7 @@ class FixMsg(Message):
             )
         target = Instrument.into_field()
         columns = {name: batch.column(name) for name in target.names if name in batch.schema.names}
-        normalized = _NormalizedInstrumentFields.from_array(batch.column("kwargs"), batch.num_rows)
+        normalized = _NormalizedInstrumentFields.from_array(batch.column("entries"), batch.num_rows)
         columns.update(
             {
                 "etype": pyarrow.repeat(
@@ -1894,7 +1894,7 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     """ISO exchange fields, the stored venue, then FIX session endpoints."""
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
-    stored = columns.get("kwargs")
+    stored = columns.get("entries")
     tags = (
         FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
         if stored is not None
@@ -1935,7 +1935,7 @@ _GROUP_STRIDE = 1 << 32
 
 @dataclasses.dataclass(frozen=True)
 class _NormalizedInstrumentFields:
-    """Column views over the normalized fields stored in `FixMsg.kwargs`."""
+    """Column views over the normalized fields stored in `FixMsg.entries`."""
 
     rows: int
     parents: pyarrow.Array
@@ -2207,7 +2207,7 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
     """Stored fields in the spelling Arrow accepts without a shape pass."""
-    return None if entries is None else [Kwarg.from_stored(entry).into_dict() for entry in entries]
+    return None if entries is None else [Entry.from_stored(entry).into_dict() for entry in entries]
 
 
 @functools.cache
@@ -2221,44 +2221,6 @@ def _tag_of(name: str) -> int:
     return _tags_by_name()[name.casefold()]
 
 
-def _entry_key(entry: Entry) -> str:
-    """One entry's split re-rendered: what `_stored_field`'s guard compares."""
-    name = entry.name if entry.index is None else f"{entry.name}[{entry.index}]"
-    if entry.lead:
-        return f"{entry.lead}.{name}"
-    if entry.tag and entry.index is None and "[" not in name:
-        return str(entry.tag)
-    return name
-
-
-def _kwarg_key(entry: Kwarg) -> str:
-    """One stored argument's verbatim spelling: the rule `_stored_pairs` renders by."""
-    lead = entry.namespace or entry.comp
-    if lead:
-        return f"{lead}.{entry.key}"
-    if "[" in entry.key:
-        return entry.key
-    if entry.tag:
-        return str(entry.tag)
-    return entry.key
-
-
-def _stored_field(entry: Kwarg) -> tuple[str, Entry]:
-    """One stored argument as its verbatim spelling and its ready entry.
-
-    The spelling is the stored one, byte for byte. The structural split
-    serves only where it re-renders to exactly that spelling -- a zero-padded
-    index, a dotted key under an explicit lead, or a double lead re-parses
-    the spelling instead, which is how the projection read such an entry
-    before ready entries rode along.
-    """
-    key = _kwarg_key(entry)
-    built = Entry.from_stored(entry)
-    if _entry_key(built) != key:
-        built = Entry.from_pair(key, built.value)
-    return key, built
-
-
 def _component_fields(
     count_tag: int, entries: Sequence[Any], row_type: type[Any]
 ) -> list[tuple[str, Entry]]:
@@ -2268,7 +2230,7 @@ def _component_fields(
     and a `buffer` key keeps its stored spelling byte for byte.
     """
     fields: list[tuple[str, Entry]] = [
-        (str(count_tag), Entry(tag=count_tag, name=str(count_tag), value=len(entries)))
+        (str(count_tag), Entry.of(tag=count_tag, key=str(count_tag), value=len(entries)))
     ]
     members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
     for entry in entries:
@@ -2286,7 +2248,7 @@ def _component_fields(
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
                 tag = int(member.fix["tag"])
-                fields.append((str(tag), Entry(tag=tag, name=str(tag), value=value)))
+                fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
         for key, value in buffered.items():
             fields.append((str(key), Entry.from_pair(str(key), value)))
     return fields
@@ -2335,7 +2297,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     """
     for entry in entries or ():
         if not isinstance(entry, Mapping):
-            entry = Kwarg.from_stored(entry)
+            entry = Entry.from_stored(entry)
         lead = entry.get("namespace") or entry.get("comp")
         name = entry["key"]
         if lead:
@@ -2366,7 +2328,7 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
 
 
 def _stored_text(column: Any, rows: int) -> pyarrow.Array:
-    """A `KWARGS` column as one string per row: every field, in wire order."""
+    """A `ENTRIES` column as one string per row: every field, in wire order."""
     compute = pyarrow.compute
     entries = compute.list_flatten(column)
     spelled = compute.binary_join_element_wise(
