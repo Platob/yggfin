@@ -22,9 +22,11 @@ for batch in source.read_arrow_reader(batch_row_size=65_536):
 
 One conversion path, in two spellings: raw `Message` to `FixMsg` to typed
 market events. `FixMsg.from_message_batch` is the vectorized half -- it takes
-one raw-contract RecordBatch or an iterable of scalar `Message` rows, and its
-default codec reads the packaged registry; `from_message_arrow_batch` is the
-same transcription with an explicit codec. Row by row, `Message.from_text`
+one raw-contract RecordBatch or an iterable of scalar `Message` rows, and a
+feed's `FixRegistry` is all it needs: the codec derives from the registry, the
+packaged one by default. A full `FixCodec` is for the feeds whose rules or
+field declarations differ, and `from_message_arrow_batch` is the same
+transcription with such an explicit codec. Row by row, `Message.from_text`
 tokenizes one payload and promotes its discriminator, and
 `FixMsg.from_message` transcribes that staged row -- `FixMsg.from_text` is
 exactly that pair. Market events then come from `into_market_events` (scalar)

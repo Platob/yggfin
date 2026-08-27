@@ -246,6 +246,9 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
     raw = Message.into_arrow_reader(rows).read_all().to_batches()[0]
 
     assert from_rows.equals(FixMsg.from_message_batch(raw))
+    assert from_rows.equals(FixMsg.from_message_batch(rows, FixRegistry.from_builtin())), (
+        "a registry is all the conversion needs; the codec derives from it"
+    )
     assert from_rows.column("ClOrdID").to_pylist() == ["C1", None]
     assert from_rows.column("protocol_version").to_pylist() == ["4.4", None]
 
@@ -255,6 +258,22 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
 
     with pytest.raises(TypeError, match="Message rows"):
         FixMsg.from_message_batch(["8=FIX.4.4|35=D|10=000"])
+
+
+def test_a_stored_field_reads_through_its_own_structure() -> None:
+    """A stored argument's split -- tag, name, namespace -- is the read's:
+    no spelling is rendered and re-split on the way to an answer."""
+    row = FixMsg(
+        MsgType="D",
+        kwargs=[
+            {"tag": 55, "key": "Symbol", "value": "IBM"},
+            {"tag": 0, "key": "CLIENTID", "value": "A1", "namespace": "TECH"},
+        ],
+    )
+
+    assert (row.get(55).raw, row.get(55).key) == ("IBM", "Symbol")
+    assert row.get("TECH.CLIENTID").raw == "A1"
+    assert row.pairs == [("35", "D"), ("55", "IBM"), ("TECH.CLIENTID", "A1")]
 
 
 def test_an_unlinked_row_reads_through_the_packaged_dictionary() -> None:

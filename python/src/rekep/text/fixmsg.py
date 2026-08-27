@@ -81,19 +81,36 @@ _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
-_COMPONENT_GROUPS: tuple[tuple[str, str, type[Any]], ...] = (
-    ("Parties", "NoPartyIDs", Party),
-    ("TrdRegTimestamps", "NoTrdRegTimestamps", TrdRegTimestamp),
-    ("SideTrdRegTS", "NoSideTrdRegTS", SideTrdRegTimestamp),
-    ("SecurityAltID", "NoSecurityAltID", SecurityAltIDEntry),
-    ("Legs", "NoLegs", Leg),
-)
+
+
+@functools.cache
+def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
+    """`(column, count group, entry class)` off the codec's component extractors.
+
+    Derived and not declared twice: `FixCodec.into_components` is the one
+    mapping of structured columns to extractors, and each extractor already
+    names its group and its row shape.
+    """
+    return tuple(
+        (column, extractor.group, extractor.into_row())
+        for column, extractor in FixCodec.into_components().items()
+    )
+
 
 #: The parsed columns that hold one structured component each. What
-#: `FixMsg.into_first_values` checks before taking its flat shortcut, kept
-#: beside the groups so a component added above is one edit and not a hunt
-#: for hardcoded tuples.
-COMPONENT_COLUMNS: tuple[str, ...] = tuple(column for column, _, _ in _COMPONENT_GROUPS)
+#: `FixMsg.into_first_values` checks before taking its flat shortcut.
+COMPONENT_COLUMNS: tuple[str, ...] = tuple(FixCodec.into_components())
+
+
+@functools.lru_cache(maxsize=8)
+def _codec_of(registry: FixRegistry, _revision: int) -> FixCodec:
+    """One shared codec per dictionary generation, so batches share its memos.
+
+    Keyed on the store revision like `MarketTags._of`: a codec snapshots its
+    tag indexes and component declarations, so a mutated registry earns a
+    fresh one rather than serving stale reads.
+    """
+    return FixCodec(registry=registry)
 
 
 @scalar(slots=True)
@@ -112,10 +129,14 @@ class FixMsg(Message):
         return FixRegistry.from_builtin()
 
     @classmethod
-    @functools.cache
-    def into_codec(cls) -> FixCodec:
-        """The codec an unconfigured batch transcription reads through."""
-        return FixCodec(registry=cls.into_registry())
+    def into_codec(cls, registry: FixRegistry | None = None) -> FixCodec:
+        """One conversion needs one dictionary: the codec derives from it.
+
+        The packaged registry when none is given, so an unconfigured
+        transcription still reads offline.
+        """
+        selected = registry if registry is not None else cls.into_registry()
+        return _codec_of(selected, selected.revision)
 
     @property
     def registry(self) -> FixRegistry:
@@ -745,7 +766,7 @@ class FixMsg(Message):
         position relative to other rendered fields is unchanged.
         """
         resolver = access or self._row_access()
-        pairs, resolved = self._canonical_pairs(resolver)
+        _, pairs, resolved = self._canonical_fields(resolver)
         return [
             (
                 (tagged if access is not None else source)[0],
@@ -754,11 +775,20 @@ class FixMsg(Message):
             for source, tagged in zip(pairs, resolved, strict=True)
         ]
 
-    def _canonical_pairs(
+    def _canonical_fields(
         self, access: FieldAccess
-    ) -> tuple[list[tuple[str, Any]], list[tuple[str, Any]]]:
-        """Source-spelled and tag-resolved views, retaining stored value types."""
-        stored = [(str(key), value) for key, value in _stored_pairs(self.kwargs)]
+    ) -> tuple[list[Entry], list[tuple[str, Any]], list[tuple[str, Any]]]:
+        """Structured entries with source-spelled and tag-resolved keys.
+
+        One aligned pass, retaining stored value types: the dedup rules run
+        on the rendered keys, and every surviving position keeps its ready
+        `Entry` -- so a field read never re-splits a spelling the stored
+        shape already holds apart.
+        """
+        stored_entries = [
+            Entry.from_stored(Kwarg.from_stored(entry)) for entry in self.kwargs or ()
+        ]
+        stored = [(_entry_key(entry), entry.value) for entry in stored_entries]
         stored_resolved = access.tagged_pairs(stored)
         stored_identities = {
             _pair_identity(pair[0])
@@ -766,31 +796,35 @@ class FixMsg(Message):
             if not _component_key(source[0])
         }
 
-        promoted = [
-            (str(tag), value)
+        promoted_entries = [
+            Entry(tag=int(tag), name=str(tag), value=value)
             for name, tag in type(self).into_tagged_columns()
             if (value := getattr(self, name, None)) is not None
         ]
-        promoted.extend(
-            (spelled, value)
+        promoted_entries.extend(
+            Entry(name=spelled, value=value)
             for name, spelled in type(self).into_named_columns()
             if (value := getattr(self, name, None)) is not None
         )
+        promoted = [(_entry_key(entry), entry.value) for entry in promoted_entries]
         promoted_resolved = access.tagged_pairs(promoted)
-        promoted = [
-            source
-            for source, pair in zip(promoted, promoted_resolved, strict=True)
-            if _pair_identity(pair[0]) not in stored_identities
+        keep_promoted = [
+            _pair_identity(pair[0]) not in stored_identities for pair in promoted_resolved
         ]
+        promoted_entries = [
+            entry for entry, kept in zip(promoted_entries, keep_promoted, strict=True) if kept
+        ]
+        promoted = [pair for pair, kept in zip(promoted, keep_promoted, strict=True) if kept]
 
-        components: list[tuple[str, Any]] = []
-        for column, count_name, row_type in _COMPONENT_GROUPS:
+        component_entries: list[Entry] = []
+        for column, count_name, row_type in _component_groups():
             entries = getattr(self, column, None)
             if entries is None:
                 continue
             count = _tag_of(count_name)
             if _pair_identity(str(count)) not in stored_identities:
-                components.extend(_component_pairs(count, entries, row_type))
+                component_entries.extend(_component_fields(count, entries, row_type))
+        components = [(_entry_key(entry), entry.value) for entry in component_entries]
 
         # The promoted discriminator re-enters at its wire-legal position:
         # after the leading BeginString/BodyLength run the raw stage left in
@@ -804,9 +838,16 @@ class FixMsg(Message):
             at = next((index for index, pair in enumerate(promoted) if pair[0] == "35"), None)
             if at is not None:
                 stored = [*stored[:head], promoted[at], *stored[head:]]
+                stored_entries = [
+                    *stored_entries[:head],
+                    promoted_entries[at],
+                    *stored_entries[head:],
+                ]
                 promoted = [*promoted[:at], *promoted[at + 1 :]]
+                promoted_entries = [*promoted_entries[:at], *promoted_entries[at + 1 :]]
                 stored_resolved = access.tagged_pairs(stored)
 
+        fields = [*promoted_entries, *component_entries, *stored_entries]
         pairs = [*promoted, *components, *stored]
         resolved = access.tagged_pairs(pairs)
         named = {
@@ -817,7 +858,7 @@ class FixMsg(Message):
             and _numeric_key(pair[0])
         }
         if not named:
-            return pairs, resolved
+            return fields, pairs, resolved
 
         group_version = access.version or self.protocol_version
         if access.registry is not None and group_version is None:
@@ -851,6 +892,7 @@ class FixMsg(Message):
             for source, pair, guarded in zip(pairs, resolved, protected, strict=True)
         ]
         return (
+            [entry for entry, kept in zip(fields, keep, strict=True) if kept],
             [pair for pair, kept in zip(pairs, keep, strict=True) if kept],
             [pair for pair, kept in zip(resolved, keep, strict=True) if kept],
         )
@@ -959,13 +1001,15 @@ class FixMsg(Message):
     def _field_entries(self) -> list[Entry]:
         """The canonical field sequence as accessor-ready entries.
 
-        A list of ready `Entry` views, so a caller reading several dozen
-        fields off one row builds them once: `entries_of` passes a ready entry
-        straight through, and rebuilding the row per ask was the whole cost of
-        decoding a normalized instrument (benchmarks/bench_market.py).
+        A list of ready `Entry` views built beside the canonical dedup, so a
+        caller reading several dozen fields off one row never re-splits a
+        spelling the stored shape already holds apart: `entries_of` passes a
+        ready entry straight through, and rebuilding the row per ask was the
+        whole cost of decoding a normalized instrument
+        (benchmarks/bench_market.py).
         """
-        pairs, _ = self._canonical_pairs(self._row_access())
-        return [Entry.from_pair(key, value) for key, value in pairs]
+        fields, _, _ = self._canonical_fields(self._row_access())
+        return fields
 
     @classmethod
     @functools.cache
@@ -993,17 +1037,19 @@ class FixMsg(Message):
     def from_message_batch(
         cls,
         source: pyarrow.RecordBatch | Iterable[Message],
-        codec: FixCodec | None = None,
+        codec: FixCodec | FixRegistry | None = None,
     ) -> pyarrow.RecordBatch:
         """Transcribe raw messages as one parsed Arrow batch.
 
         The vectorized half of the one conversion path -- raw `Message` to
         `FixMsg` to typed market events; `from_message` is the row-by-row
         half. `source` is one raw-contract RecordBatch or an iterable of
-        scalar `Message` rows, and the default codec reads the packaged
-        registry.
+        scalar `Message` rows. A feed's `FixRegistry` is all the conversion
+        needs -- the codec derives from it -- and a full `FixCodec` is for
+        the feeds whose rules or field declarations differ; the default
+        reads the packaged registry.
         """
-        selected = codec if codec is not None else cls.into_codec()
+        selected = codec if isinstance(codec, FixCodec) else cls.into_codec(codec)
         if isinstance(source, pyarrow.RecordBatch):
             return cls.from_message_arrow_batch(source, selected)
         rows = list(source)
@@ -2175,11 +2221,19 @@ def _tag_of(name: str) -> int:
     return _tags_by_name()[name.casefold()]
 
 
-def _component_pairs(
-    count_tag: int, entries: Sequence[Any], row_type: type[Any]
-) -> list[tuple[str, Any]]:
+def _entry_key(entry: Entry) -> str:
+    """One entry's source spelling: the rule `_stored_pairs` renders by."""
+    name = entry.name if entry.index is None else f"{entry.name}[{entry.index}]"
+    if entry.lead:
+        return f"{entry.lead}.{name}"
+    if entry.tag and entry.index is None and "[" not in name:
+        return str(entry.tag)
+    return name
+
+
+def _component_fields(count_tag: int, entries: Sequence[Any], row_type: type[Any]) -> list[Entry]:
     """One typed component restored as a valid count-led repeating group."""
-    pairs: list[tuple[str, Any]] = [(str(count_tag), len(entries))]
+    fields: list[Entry] = [Entry(tag=count_tag, name=str(count_tag), value=len(entries))]
     members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
@@ -2195,10 +2249,11 @@ def _component_pairs(
             if index == 0 and value is None:
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
-                pairs.append((str(member.fix["tag"]), value))
+                tag = int(member.fix["tag"])
+                fields.append(Entry(tag=tag, name=str(tag), value=value))
         for key, value in buffered.items():
-            pairs.append((str(key), value))
-    return pairs
+            fields.append(Entry.from_pair(key, value))
+    return fields
 
 
 def _fix_text(value: Any) -> str:
