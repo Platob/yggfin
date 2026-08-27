@@ -43,9 +43,15 @@ declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
 
 ## Which lines carry a message
 
-`Rules` is a list of protocol rules, first match wins. A rule's regexes must
-work in Python `re` *and* in Arrow's RE2, because the scalar reading and the
-columnar one are the same rule.
+`Rules` is a list of protocol rules, first match wins -- the first
+*configured* rule, wherever in the line its pattern matches, which is what
+lets a specific rule sit in front of a general one. A rule carries one
+`pattern`; alternatives join with `|`, and
+`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its
+own flags (a document from the retired `patterns` list shape still reads,
+folded into the one alternation). A rule's regex must work in Python `re`
+*and* in Arrow's RE2, because the scalar reading and the columnar one are
+the same rule.
 
 ```yaml
 protocols:
