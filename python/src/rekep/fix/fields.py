@@ -19,6 +19,21 @@ from rekep.fields import Field, TimestampField, scalar
 from rekep.fields.field import arrow_type_for
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
+#: What every FIX temporal projects to, declared once through the field that
+#: owns the clock conversions. Naive on purpose: the reader normalises a zoned
+#: spelling to its UTC instant, and a `LocalMktDate` has no zone in the message
+#: at all -- so the column states the instant and leaves naming the zone to
+#: whoever knows it.
+FIX_INSTANT: pyarrow.DataType = TimestampField.of("ns").dtype
+
+#: The FIX datatypes whose reading is a UTC instant: the standard fixes them in
+#: UTC, or the value carries the offset that puts them there and the reader
+#: applies it. Everything else temporal is a wall clock in a place the message
+#: does not name, and its column stays naive rather than claiming a zone.
+UTC_DATATYPES: frozenset[str] = frozenset(
+    {"utctimestamp", "utcdateonly", "utcdate", "utctimeonly", "tztimestamp", "tztimeonly"}
+)
+
 #: FIX datatype -> Arrow type, keyed lowercase because the spellings drift
 #: across versions (`Boolean`/`boolean`, `MultipleValueString` before FIX 4.4,
 #: `MultipleStringValue` after). Two deliberate widenings:
@@ -31,8 +46,16 @@ from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 #: - An unparameterized `array` stays text: no item type was declared, so a
 #:   list projection would invent structure the wire did not promise.
 #:
-#: The time-zoned types (`TZTimestamp`, `TZTimeOnly`) stay strings: their
-#: offset is part of the value, and a naive Arrow type would drop it.
+#: **Every point in time is a timestamp**, whatever width the standard writes
+#: it at. A date is midnight, a time-of-day is that clock on the epoch's day,
+#: and a zoned spelling is the instant its offset names -- because the reader
+#: below already normalises all three to the same epoch nanoseconds, and only
+#: the projection was throwing the difference away. A timestamp is also the one
+#: temporal type a zone can still be applied to afterwards; a `date32` is not.
+#:
+#: `MonthYear` is the deliberate exception and stays text: `202608` is a month
+#: and `202608w2` a week, neither of which is an instant, and the stamp reader
+#: would take the six digits for the clock `20:26:08`.
 FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "int": pyarrow.int32(),
     "integer": pyarrow.int32(),
@@ -82,18 +105,18 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "data": pyarrow.binary(),
     "binary": pyarrow.binary(),
     "bytes": pyarrow.binary(),
-    "utctimestamp": pyarrow.timestamp("ns"),
-    "datetime": pyarrow.timestamp("ns"),
-    "timestamp": pyarrow.timestamp("ns"),
-    "time": pyarrow.timestamp("ns"),
-    "utcdateonly": pyarrow.date32(),
-    "utcdate": pyarrow.date32(),
-    "date": pyarrow.date32(),
-    "localmktdate": pyarrow.date32(),
-    "utctimeonly": pyarrow.time64("ns"),
-    "localmkttime": pyarrow.time64("ns"),
-    "tztimestamp": pyarrow.string(),
-    "tztimeonly": pyarrow.string(),
+    "utctimestamp": FIX_INSTANT,
+    "datetime": FIX_INSTANT,
+    "timestamp": FIX_INSTANT,
+    "time": FIX_INSTANT,
+    "utcdateonly": FIX_INSTANT,
+    "utcdate": FIX_INSTANT,
+    "date": FIX_INSTANT,
+    "localmktdate": FIX_INSTANT,
+    "utctimeonly": FIX_INSTANT,
+    "localmkttime": FIX_INSTANT,
+    "tztimestamp": FIX_INSTANT,
+    "tztimeonly": FIX_INSTANT,
     # The dictionary's own slips, which a scrape still meets on the older
     # versions' pages even though a record keeps the newest spelling. They are
     # here because the fallback is wrong for them -- a quantity read as text, a
@@ -101,7 +124,7 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     # (`Stirng`, `month`) land on a string either way.
     "quantity": pyarrow.float64(),  # RatioQty, in 4.2 and 4.3
     "day": pyarrow.int64(),  # MaturityDay, in 4.1
-    "localmmktdate": pyarrow.date32(),  # LegFutSettDate, in 4.3
+    "localmmktdate": FIX_INSTANT,  # LegFutSettDate, in 4.3
 }
 
 #: What a FIX Boolean accepts, beyond the `Y`/`N` the standard writes: real
@@ -423,6 +446,38 @@ def scalar_fix_temporal(
         second,
         fraction // 1_000,
     )
+
+
+def scalar_fix_value(text: Any, dtype: pyarrow.DataType) -> Any:
+    """One FIX value as the type a column declares -- `cast_arrow_fix` over one value.
+
+    Nothing is guessed and nothing raises, for the same reason the columnar
+    twin does neither: a value the type cannot hold reads as `None`, because a
+    row that died on one malformed field would take every field beside it.
+    """
+    if text is None or not isinstance(text, str):
+        return text
+    trimmed = text.strip()
+    if not trimmed:
+        return None
+    kinds = pyarrow.types
+    if kinds.is_temporal(dtype):
+        return scalar_fix_temporal(trimmed, dtype)
+    if kinds.is_boolean(dtype):
+        folded = trimmed.casefold()
+        if folded in TRUE_WORDS:
+            return True
+        return False if folded in FALSE_WORDS else None
+    try:
+        if kinds.is_integer(dtype):
+            return int(trimmed)
+        if kinds.is_floating(dtype):
+            return float(trimmed)
+        if kinds.is_decimal(dtype):
+            return decimal.Decimal(trimmed)
+    except (ArithmeticError, ValueError):
+        return None
+    return trimmed
 
 
 def cast_arrow_fix(values: Any, dtype: pyarrow.DataType) -> Any:

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from rekep.fix import FixRegistry
+from rekep.fix import FixRegistry, record_document
 
 
 def on_post_build(config: Any) -> None:
@@ -22,10 +22,10 @@ def on_post_build(config: Any) -> None:
             )
         ],
         "fields": [
-            entry.into_dict()
+            record_document(entry)
             for entry in sorted(
                 registry.field_entries().values(),
-                key=lambda one: (one.tag is None, one.tag or 0, one.name),
+                key=lambda one: (one.fix.tag is None, one.fix.tag or 0, one.fix.canonical),
             )
         ],
     }

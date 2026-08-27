@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, StructField, cli
-from rekep.fix.entries import Alias, FieldEntry, values_of
+from rekep.fix.entries import Alias, record_document, record_kind, record_of, values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.registry import FixRegistry
 
@@ -317,9 +317,9 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
         == 0
     )
     entry = reopened(store).resolve("FAKE.VENDOR.CODE")
-    assert entry.kind == "namespace" and entry.tag is None
-    assert entry.column == "fake_vendor_code"
-    assert reopened(store).resolve("FAKEVENDORCODE").name == "FAKE.VENDOR.CODE"
+    assert record_kind(entry) == "namespace" and entry.fix.tag is None
+    assert entry.fix.column == "fake_vendor_code"
+    assert reopened(store).resolve("FAKEVENDORCODE").fix.canonical == "FAKE.VENDOR.CODE"
 
     assert (
         run(
@@ -338,8 +338,10 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
         == 0
     )
     updated = reopened(store).resolve("FAKE.VENDOR.CODE")
-    assert updated.column == "renamed"
-    assert [alias.name for alias in updated.aliases] == ["FAKEVENDORCODE"], "kept, not dropped"
+    assert updated.fix.column == "renamed"
+    assert [alias.name for alias in updated.fix.named_aliases] == ["FAKEVENDORCODE"], (
+        "kept, not dropped"
+    )
 
     assert (
         run("fix", "registry", "remove-field", "--store", str(store), "--name", "FAKEVENDORCODE")
@@ -371,10 +373,10 @@ def test_a_rendered_field_is_promoted_in_one_call(
         == 0
     )
     entry = reopened(store).resolve("FAKE.VENDOR.CODE")
-    assert entry.kind == "namespace" and entry.tag is None
-    assert entry.column == "fake_vendor_code"
-    assert entry.type == "String", "the datatype String goes without saying"
-    assert reopened(store).resolve("FAKEVENDORCODE").name == "FAKE.VENDOR.CODE"
+    assert record_kind(entry) == "namespace" and entry.fix.tag is None
+    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.type == "String", "the datatype String goes without saying"
+    assert reopened(store).resolve("FAKEVENDORCODE").fix.canonical == "FAKE.VENDOR.CODE"
 
     assert (
         run(
@@ -391,7 +393,7 @@ def test_a_rendered_field_is_promoted_in_one_call(
         == 1
     ), "moving an assigned column is a conflict, not an update"
     assert "already lifted into" in capsys.readouterr().err
-    assert reopened(store).resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
+    assert reopened(store).resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
 
 
 def test_promoting_a_standard_field_is_refused(store: Path, capsys: pytest.CaptureFixture) -> None:
@@ -410,7 +412,7 @@ def test_promoting_a_standard_field_is_refused(store: Path, capsys: pytest.Captu
         == 1
     )
     assert "standard" in capsys.readouterr().err
-    assert reopened(store).resolve("FakeRole").column == ""
+    assert reopened(store).resolve("FakeRole").fix.column == ""
 
 
 def test_a_numbered_field_is_registered_for_the_versions_it_names(store: Path) -> None:
@@ -433,7 +435,7 @@ def test_a_numbered_field_is_registered_for_the_versions_it_names(store: Path) -
         == 0
     )
     entry = reopened(store).resolve("FakeCode")
-    assert entry.tag == 90002 and entry.versions == ("9.1",)
+    assert entry.fix.tag == 90002 and entry.fix.versions == ("9.1",)
     assert reopened(store).field(90002, "9.1").name == "FakeCode"
 
 
@@ -465,9 +467,9 @@ def test_an_alias_is_recorded_with_where_it_was_counted(store: Path) -> None:
         )
         == 0
     )
-    (alias,) = reopened(store).resolve("FakeRole").aliases
+    (alias,) = reopened(store).resolve("FakeRole").fix.named_aliases
     assert (alias.name, alias.source, alias.occurrences) == ("FakeRolle", "brk", 41)
-    assert reopened(store).resolve("FAKEROLLE").tag == 90001, "matching folds case"
+    assert reopened(store).resolve("FAKEROLLE").fix.tag == 90001, "matching folds case"
 
 
 def test_a_change_that_would_break_the_store_is_refused_and_not_written(
@@ -588,12 +590,14 @@ def test_check_reports_an_inconsistent_store_and_says_a_sound_one_is_sound(
     assert printed.out == "", "nothing a pipe would read"
     assert "sound" in printed.err, "and one line saying so, where a person reads"
 
-    clashing = FieldEntry(
-        name="FakeOther",
-        tag=90003,
-        aliases=(Alias(name="FakeRole"),),
-        versions=("9.1",),
-        type="String",
+    clashing = record_of(
+        {
+            "name": "FakeOther",
+            "tag": 90003,
+            "aliases": [Alias(name="FakeRole").into_dict()],
+            "versions": ["9.1"],
+            "type": "String",
+        }
     )
     reopened(store)._layout.store_field(clashing)
     assert run("fix", "registry", "check", "--store", str(store)) == 1
@@ -617,14 +621,18 @@ def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: P
     declaration = tmp_path / "vendor.json"
     declaration.write_text(
         json.dumps(
-            FieldEntry(
-                name="FAKE.VENUE.CODE",
-                kind="namespace",
-                versions=("*",),
-                type="String",
-                values={"A": "Alpha"},
-                column="fake_venue_code",
-            ).into_dict()
+            record_document(
+                record_of(
+                    {
+                        "name": "FAKE.VENUE.CODE",
+                        "kind": "namespace",
+                        "versions": ["*"],
+                        "type": "String",
+                        "values": {"A": "Alpha"},
+                        "column": "fake_venue_code",
+                    }
+                )
+            )
         )
     )
     assert (
@@ -640,8 +648,8 @@ def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: P
         == 0
     )
     stored = reopened(store).resolve("FAKE.VENUE.CODE")
-    assert stored.values == values_of({"A": "Alpha"})
-    assert stored.column == "fake_venue_code"
+    assert stored.fix.enumerated == values_of({"A": "Alpha"})
+    assert stored.fix.column == "fake_venue_code"
 
 
 def test_registry_components_and_dump_are_scriptable(

@@ -30,19 +30,22 @@ import pyarrow.fs
 
 from rekep.convert import Convertible
 from rekep.enums import State
-from rekep.fields import Field
+from rekep.fields import Field, encodings_of, newest_rank
 from rekep.filesystems import write_bytes
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
     ComponentEntry,
-    FieldEntry,
     FixFieldValue,
-    encodings_of,
+    canonical_versions,
+    collapsed_record,
     fold,
     folded_values,
     newest_of,
-    newest_rank,
+    record_copy,
+    record_document,
+    record_for,
+    record_of,
     slug_of,
 )
 from rekep.fix.quickfix import is_reference, walk
@@ -520,10 +523,10 @@ class ShardedLayout:
         appears here: it means "whichever version this store already has".
         """
         found = {
-            version
-            for entry in (*self.field_entries.values(), *self.component_entries.values())
-            for version in entry.versions
+            version for record in self.field_entries.values() for version in record.fix.versions
         }
+        for entry in self.component_entries.values():
+            found.update(entry.versions)
         index = self._index()
         found.update(index.get(SESSIONS, {}))
         found.update(index.get(STORED, ()))
@@ -540,7 +543,7 @@ class ShardedLayout:
 
     # -- one tag, one shard --------------------------------------------------
 
-    def record(self, tag: int) -> FieldEntry | None:
+    def record(self, tag: int) -> Field | None:
         """One field by tag, reading only the shard that can hold it.
 
         The whole point of the arithmetic: asking what tag 54 is opens
@@ -548,7 +551,7 @@ class ShardedLayout:
         """
         return self._shard(shard_name(int(tag))).get(int(tag))
 
-    def _shard(self, name: str) -> dict[int | str, FieldEntry]:
+    def _shard(self, name: str) -> dict[int | str, Field]:
         """One shard's records, read once and held."""
         held = self.__dict__.setdefault("_shards", {})
         found = held.get(name)
@@ -556,16 +559,16 @@ class ShardedLayout:
             found = held[name] = self._read_shard(name)
         return found
 
-    def _read_shard(self, name: str) -> dict[int | str, FieldEntry]:
+    def _read_shard(self, name: str) -> dict[int | str, Field]:
         document = self.documents.read(name)
         if document is None:
             if name in self.documents.names():
                 self.__dict__.setdefault("_torn", set()).add(name)
             return {}
-        return {_record_key(key): FieldEntry.from_dict(record) for key, record in document.items()}
+        return {_record_key(key): record_of(record) for key, record in document.items()}
 
     @property
-    def field_entries(self) -> dict[int | str, FieldEntry]:
+    def field_entries(self) -> dict[int | str, Field]:
         """`{tag or folded name: record}` for every field, every shard read once."""
         held = self.__dict__.get("_fields")
         if held is None:
@@ -574,10 +577,10 @@ class ShardedLayout:
                 if name.startswith(f"{FIELDS}/"):
                     shards.setdefault(name, self._read_shard(name))
             held = self.__dict__["_fields"] = {
-                key: entry
+                key: record
                 for name in sorted(shards)
                 if name.startswith(f"{FIELDS}/")
-                for key, entry in shards[name].items()
+                for key, record in shards[name].items()
             }
         return held
 
@@ -619,13 +622,13 @@ class ShardedLayout:
 
     def fields(self, version: str) -> list[Field] | None:
         """One version's fields in tag order; None when it declares none."""
-        entries = self.field_entries
-        if not entries:
+        records = self.field_entries
+        if not records:
             return None
         found = [
             member
-            for entry in entries.values()
-            if (member := entry.into_field(version)) is not None
+            for record in records.values()
+            if (member := record_for(record, version)) is not None
         ]
         if found:
             return sorted(found, key=_field_order)
@@ -662,11 +665,11 @@ class ShardedLayout:
 
     # -- writing -------------------------------------------------------------
 
-    def store_field(self, entry: FieldEntry) -> str:
+    def store_field(self, record: Field) -> str:
         """Write one field record, and name the document it landed in."""
-        name = field_document(entry)
+        name = field_document(record)
         shard = self._shard(name)
-        shard[entry.key] = entry
+        shard[record.fix.key] = record
         self.documents.write(name, _shard_document(shard))
         self.__dict__.pop("_fields", None)
         return name
@@ -715,18 +718,20 @@ class ShardedLayout:
         written: set[int | str] = set()
         for member in fields:
             key = _field_key(member)
-            entry = fold_field(held.get(key), member, version)
-            self.store_field(entry)
-            held[key] = entry
+            record = fold_field(held.get(key), member, version)
+            self.store_field(record)
+            held[key] = record
             written.add(key)
-        for key, entry in held.items():
-            if key in written or version not in entry.versions:
+        for key, record in held.items():
+            if key in written or version not in record.fix.versions:
                 continue
             # This call is what the version declares, so a field it no longer
             # names has lost that version.
-            remaining = tuple(one for one in entry.versions if one != version)
+            remaining = tuple(one for one in record.fix.versions if one != version)
             if remaining:
-                self.store_field(dataclasses.replace(entry, versions=remaining))
+                shortened = record_copy(record)
+                shortened.fix.versions = remaining
+                self.store_field(shortened)
             else:
                 self.remove_field(key)
         if components is not None:
@@ -753,9 +758,10 @@ class ShardedLayout:
                 self.remove_component(slug)
 
 
-def field_document(entry: FieldEntry) -> str:
+def field_document(record: Field) -> str:
     """The document one field record belongs in: its shard, or `named.json`."""
-    return shard_name(entry.tag) if entry.tag is not None else NAMED_FILE
+    tag = record.fix.tag
+    return shard_name(tag) if tag is not None else NAMED_FILE
 
 
 def _record_key(stored: str) -> int | str:
@@ -774,7 +780,7 @@ def _field_key(member: Field) -> int | str:
     return int(tag) if tag else fold(member.name)
 
 
-def _shard_document(shard: Mapping[int | str, FieldEntry]) -> dict[str, Any]:
+def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
     """One shard as it is written: numeric tag order, then the names.
 
     Keyed by the tag, or by the *canonical* name for a field FIX never
@@ -784,7 +790,9 @@ def _shard_document(shard: Mapping[int | str, FieldEntry]) -> dict[str, Any]:
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))
     return {
-        (str(key) if isinstance(key, int) else shard[key].name): shard[key].into_dict()
+        (str(key) if isinstance(key, int) else shard[key].fix.canonical): record_document(
+            shard[key]
+        )
         for key in (*tags, *names)
     }
 
@@ -795,7 +803,7 @@ def _field_order(member: Field) -> tuple[int, int, str]:
     return (0, int(tag), "") if tag else (1, 0, member.name)
 
 
-def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEntry:
+def fold_field(held: Field | None, member: Field, version: str) -> Field:
     """One version's reading of a field, folded into the record that owns it.
 
     The reading is kept when `version` is the newest application version the
@@ -805,32 +813,26 @@ def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEnt
     `FutSettDate` through 4.3 and `SettlDate` after -- stays one identity that
     still answers to both.
     """
-    fresh = FieldEntry.from_fields([member], [version])
+    fresh = collapsed_record([member], [version])
     if held is None:
         return fresh
-    versions = (*held.versions, version)
+    versions = canonical_versions((*held.fix.versions, version))
+    kept, fetched = held.fix.enumerated, fresh.fix.enumerated
     if newest_of(versions) == version:
-        return dataclasses.replace(
-            fresh,
-            versions=versions,
-            values=folded_values(held.values, fresh.values, newest=fresh.values),
-            event_types={**fresh.event_types, **held.event_types},
-            states={**fresh.states, **held.states},
-            used_in=_union(held.used_in, fresh.used_in),
-            components=_union(held.components, fresh.components),
-            aliases=_displaced(held, fresh.name),
-            column=held.column or fresh.column,
-        )
-    return dataclasses.replace(
-        held,
-        versions=versions,
-        values=folded_values(held.values, fresh.values, newest=held.values),
-        event_types={**fresh.event_types, **held.event_types},
-        states={**fresh.states, **held.states},
-        used_in=_union(held.used_in, fresh.used_in),
-        components=_union(held.components, fresh.components),
-        column=held.column or fresh.column,
-    )
+        # The newer reading owns the record, so it is the one written back to.
+        built = fresh
+        built.fix.enumerated = folded_values(kept, fetched, newest=fetched)
+        built.fix.named_aliases = _displaced(held, fresh.fix.canonical)
+    else:
+        built = record_copy(held)
+        built.fix.enumerated = folded_values(kept, fetched, newest=kept)
+    built.fix.versions = versions
+    built.fix.event_types = {**fresh.fix.event_types, **held.fix.event_types}
+    built.fix.states = {**fresh.fix.states, **held.fix.states}
+    built.fix.msgtypes = _union(held.fix.msgtypes, fresh.fix.msgtypes)
+    built.fix.components = _union(held.fix.components, fresh.fix.components)
+    built.fix.column = held.fix.column or fresh.fix.column
+    return built
 
 
 def fold_component(held: ComponentEntry | None, declared: Field, version: str) -> ComponentEntry:
@@ -844,14 +846,16 @@ def fold_component(held: ComponentEntry | None, declared: Field, version: str) -
     return dataclasses.replace(held, versions=versions)
 
 
-def _displaced(held: FieldEntry, name: str) -> tuple[Alias, ...]:
+def _displaced(held: Field, name: str) -> tuple[Alias, ...]:
     """The record's aliases, plus the spelling a newer reading just displaced."""
-    if fold(held.name) == fold(name):
-        return held.aliases
-    spelled = {alias.folded for alias in held.aliases}
-    if fold(held.name) in spelled:
-        return held.aliases
-    return (*held.aliases, Alias(name=held.name, source=held.newest))
+    canonical = held.fix.canonical
+    aliases = held.fix.named_aliases
+    if fold(canonical) == fold(name):
+        return aliases
+    spelled = {alias.folded for alias in aliases}
+    if fold(canonical) in spelled:
+        return aliases
+    return (*aliases, Alias(name=canonical, source=held.fix.newest))
 
 
 def _union(held: Sequence[str], fresh: Sequence[str]) -> tuple[str, ...]:
@@ -1013,7 +1017,7 @@ def collapse(
     order: Sequence[str],
     fields: Mapping[str, Sequence[Field]],
     components: Mapping[str, Sequence[Field]],
-) -> tuple[dict[int | str, FieldEntry], dict[str, ComponentEntry], ConflictReport]:
+) -> tuple[dict[int | str, Field], dict[str, ComponentEntry], ConflictReport]:
     """Per-version declarations as cross-version records, and what that cost.
 
     The newest *application* version owns each reading -- name, datatype,
@@ -1030,36 +1034,39 @@ def collapse(
 
     collapses: list[Collapse] = []
     collisions: list[Collision] = []
-    entries: dict[int | str, FieldEntry] = {}
+    entries: dict[int | str, Field] = {}
     by_name: dict[str, str] = {}
     for key, found in readings.items():
         found.sort(key=lambda pair: newest_rank(pair[0]))
-        entry = FieldEntry.from_fields(
+        record = collapsed_record(
             [member for _, member in found], [version for version, _ in found]
         )
-        collapses.extend(_field_collapses(entry, found))
-        _, clashing = encodings_of(entry.values)
+        canonical, folded = record.fix.canonical, record.fix.folded
+        collapses.extend(_field_collapses(record, found))
+        _, clashing = encodings_of(record.fix.enumerated)
         collisions.extend(
-            Collision(entry.name, spelling, tuple(owners), entry.tag)
+            Collision(canonical, spelling, tuple(owners), record.fix.tag)
             for spelling, owners in sorted(clashing.items())
         )
-        held = by_name.get(entry.folded)
+        held = by_name.get(folded)
         if held is not None:
             raise ValueError(
-                f"FIX field name {entry.folded!r} is claimed by {held!r} and {entry.name!r}: "
+                f"FIX field name {folded!r} is claimed by {held!r} and {canonical!r}: "
                 "one name is one identity, so rename one or record it as an alias"
             )
-        by_name[entry.folded] = entry.name
-        entries[key] = entry
+        by_name[folded] = canonical
+        entries[key] = record
 
     entries = _aliased(entries, collapses, by_name)
     for tag, mapping in State.fix_mapping().items():
-        entry = entries.get(tag)
-        if entry is None:
+        record = entries.get(tag)
+        if record is None:
             continue
-        declared = {one.value for one in entry.values}
+        declared = {one.value for one in record.fix.enumerated}
         defaults = {code: state for code, state in mapping.items() if code in declared}
-        entries[tag] = dataclasses.replace(entry, states={**defaults, **entry.states})
+        stated = record_copy(record)
+        stated.fix.states = {**defaults, **record.fix.states}
+        entries[tag] = stated
 
     component_readings: dict[str, list[tuple[str, Field]]] = {}
     for version in order:
@@ -1079,7 +1086,7 @@ def collapse(
     return entries, component_entries, ConflictReport(tuple(collapses), tuple(collisions))
 
 
-def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> list[Collapse]:
+def _field_collapses(record: Field, found: Sequence[tuple[str, Field]]) -> list[Collapse]:
     """Every reading of one field the collapse dropped, one entry per part."""
     parts: dict[str, list[tuple[str, str]]] = {
         NAME: [(version, member.name) for version, member in found],
@@ -1089,7 +1096,7 @@ def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> l
     collapses = [
         one
         for part, readings in parts.items()
-        if (one := _collapsed(entry, part, readings)) is not None
+        if (one := _collapsed(record, part, readings)) is not None
     ]
     for part, reading_of in ((VALUES, _meaning_of), (ALIASES, _alias_of)):
         keyed: dict[str, list[tuple[str, str]]] = {}
@@ -1105,7 +1112,8 @@ def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> l
             if reading != readings[-1][1]
         ]
         if dropped:
-            collapses.append(Collapse(entry.name, part, entry.newest, tuple(dropped), entry.tag))
+            fix = record.fix
+            collapses.append(Collapse(fix.canonical, part, fix.newest, tuple(dropped), fix.tag))
     return collapses
 
 
@@ -1119,15 +1127,14 @@ def _alias_of(one: FixFieldValue) -> str:
     return one.aliases[0] if one.aliases else ""
 
 
-def _collapsed(
-    entry: FieldEntry, part: str, readings: Sequence[tuple[str, str]]
-) -> Collapse | None:
+def _collapsed(record: Field, part: str, readings: Sequence[tuple[str, str]]) -> Collapse | None:
     """One part of a reading, as a collapse when the versions did not agree."""
     kept = readings[-1][1]
     dropped = tuple(
         Dropped(version, reading) for version, reading in readings if reading and reading != kept
     )
-    return Collapse(entry.name, part, entry.newest, dropped, entry.tag) if dropped else None
+    fix = record.fix
+    return Collapse(fix.canonical, part, fix.newest, dropped, fix.tag) if dropped else None
 
 
 def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentEntry]) -> set[str]:
@@ -1182,10 +1189,10 @@ def _reachable(declared: Field, by_name: Mapping[str, ComponentEntry]) -> set[st
 
 
 def _aliased(
-    entries: Mapping[int | str, FieldEntry],
+    entries: Mapping[int | str, Field],
     collapses: Sequence[Collapse],
     by_name: Mapping[str, str],
-) -> dict[int | str, FieldEntry]:
+) -> dict[int | str, Field]:
     """Records with every dropped spelling recorded as an alias that can resolve.
 
     A rename is a collapse like any other -- tag 64 is `FutSettDate` through
@@ -1200,10 +1207,11 @@ def _aliased(
             dropped.setdefault(fold(collapse.name), []).extend(collapse.dropped)
     if not dropped:
         return dict(entries)
-    aliased: dict[int | str, FieldEntry] = {}
-    for key, entry in entries.items():
-        spellings = dropped.get(entry.folded, ())
-        held = {alias.folded for alias in entry.aliases}
+    aliased: dict[int | str, Field] = {}
+    for key, record in entries.items():
+        aliases = record.fix.named_aliases
+        spellings = dropped.get(record.fix.folded, ())
+        held = {alias.folded for alias in aliases}
         fresh = []
         for one in spellings:
             folded = fold(one.reading)
@@ -1211,9 +1219,12 @@ def _aliased(
                 continue
             held.add(folded)
             fresh.append(Alias(name=one.reading, source=one.version))
-        aliased[key] = (
-            dataclasses.replace(entry, aliases=(*entry.aliases, *fresh)) if fresh else entry
-        )
+        if not fresh:
+            aliased[key] = record
+            continue
+        built = record_copy(record)
+        built.fix.named_aliases = (*aliases, *fresh)
+        aliased[key] = built
     return aliased
 
 
@@ -1222,7 +1233,7 @@ def _aliased(
 
 def documents_of(
     versions: Sequence[str],
-    field_entries: Mapping[int | str, FieldEntry],
+    field_entries: Mapping[int | str, Field],
     component_entries: Mapping[str, ComponentEntry],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
@@ -1256,10 +1267,10 @@ def documents_of(
         documents[f"{document_stem(VERSIONS_FILE)}{suffix}"] = {
             key: index[key] for key in sorted(index)
         }
-    shards: dict[str, dict[int | str, FieldEntry]] = {}
-    for entry in field_entries.values():
-        name = document_stem(field_document(entry)) + suffix
-        shards.setdefault(name, {})[entry.key] = entry
+    shards: dict[str, dict[int | str, Field]] = {}
+    for record in field_entries.values():
+        name = document_stem(field_document(record)) + suffix
+        shards.setdefault(name, {})[record.fix.key] = record
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
     for slug, entry in component_entries.items():

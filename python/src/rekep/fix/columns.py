@@ -12,6 +12,7 @@ from rekep.entries import ENTRIES as ENTRIES
 from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
 from rekep.fields import Field
+from rekep.fix.fields import UTC_DATATYPES
 from rekep.fix.registry import FixRegistry
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
@@ -182,8 +183,8 @@ def _physical_type(member: Field) -> pyarrow.DataType:
         return dtype
     datatype = member.fix.get("type", "").strip().lower()
     documented = (member.description or "").lower()
-    timezone = "UTC" if datatype.startswith("utc") or "expressed in utc" in documented else None
-    return pyarrow.timestamp("us", tz=timezone)
+    zoned = datatype in UTC_DATATYPES or "expressed in utc" in documented
+    return pyarrow.timestamp("us", tz="UTC" if zoned else None)
 
 
 def _declaration(member: Field) -> Field:

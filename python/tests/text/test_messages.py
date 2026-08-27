@@ -63,6 +63,26 @@ EXPECTED_BRIDGE_PAIRS = 15
 #: take its column's assertions here with it.
 FLAT_NAMES = (*COLUMNS.values(), "ISINCODE")
 
+#: The standard header the *raw* stage lifts out of `entries` into columns of
+#: its own, tag by column name. Spelled out rather than imported from
+#: `SESSION_FIELDS`, so a field quietly leaving that tuple cannot move both
+#: sides of an assertion together. A row answers to either spelling: the tag,
+#: or the rendered name case-insensitively.
+LIFTED_HEADER = {
+    "8": "BeginString",
+    "9": "BodyLength",
+    "34": "MsgSeqNum",
+    "35": "MsgType",
+    "49": "SenderCompID",
+    "52": "SendingTime",
+    "56": "TargetCompID",
+}
+
+#: `CheckSum <10>` is the boundary every lift is measured against -- a field is
+#: eligible only where it stands in front of it -- so it is deliberately not
+#: among them and stays in `entries` for the FIX stage to read.
+UNLIFTED_TRAILER = "10"
+
 #: Row indexes worth naming. `WRAPPED` is a bridge message inside a FIX
 #: envelope -- a wire header and a `#NAME=` body on one line, which answers to
 #: both tells and so is the one the rule order exists for.
@@ -75,6 +95,7 @@ PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED, HASHED = 2, 3, 4, 5, 6, 7, 10
 WIRE = RECORDS[PIPED].decode().split("sending >> ")[1].split(" << ")[0]
 EXPECTED_WIRE_FIELDS = 15
 
+#: Every field the caret-separated line writes, in wire order.
 CARET_RAW_PAIRS = [
     (8, "FIX4"),
     (9, "61"),
@@ -84,6 +105,11 @@ CARET_RAW_PAIRS = [
     (52, "20260814-00:05:01.148"),
     (10, "017"),
 ]
+
+#: What is left of it in `entries`: the checksum alone. Every other field it
+#: writes is standard header, and the raw stage lifts all six into columns
+#: whatever the payload's version turns out to be.
+CARET_RESIDUAL_PAIRS = [(10, "017")]
 
 BRIDGE_RAW_PAIRS = [
     ("ISINCODE", "XX0000084733"),
@@ -121,6 +147,10 @@ def test_the_sample_is_the_shape_the_tests_assume() -> None:
     assert SAMPLE_BYTES.count(b"\x01") > 0, "the SOH lines are bytes, not four characters"
     assert b"^A9=61" in SAMPLE_BYTES, "and the caret-A line is the two characters"
     assert len(WIRE.strip("|").split("|")) == EXPECTED_WIRE_FIELDS
+    assert CARET_RESIDUAL_PAIRS == [
+        pair for pair in CARET_RAW_PAIRS if str(pair[0]) not in LIFTED_HEADER
+    ], "the caret line is standard header and a checksum, and nothing else"
+    assert UNLIFTED_TRAILER not in LIFTED_HEADER
 
 
 @pytest.fixture(scope="module")
@@ -155,12 +185,27 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
         "protocol_version",
         "Parties",
     } & set(raw_table.schema.names)
-    assert {"protocol_code", "MsgType"} <= set(raw_table.schema.names)
+    assert {"protocol_code", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
+    assert "CheckSum" not in raw_table.schema.names, "the boundary is not one of the lifted"
+    # Protocol-neutral: this stage reads no numbers and no clocks, so every
+    # one of the seven is stored as the text the payload spelled.
+    for name in LIFTED_HEADER.values():
+        assert pyarrow.types.is_string(raw_table.schema.field(name).type), name
     assert _keys(raw_table.column("entries")[PIPED]) == [
         token.split("=", 1)[0]
         for token in WIRE.strip("|").split("|")
-        if token.split("=", 1)[0] != "35"
+        if token.split("=", 1)[0] not in LIFTED_HEADER
     ]
+    assert [raw_table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX.4.2",
+        "176",
+        "1092",
+        "D",
+        "BUYSIDE",
+        "20260814-00:05:01.147",
+        "XPAR",
+    ]
+    assert UNLIFTED_TRAILER in _keys(raw_table.column("entries")[PIPED])
 
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
@@ -182,11 +227,11 @@ def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Tab
     assert table.column("Symbol")[PIPED].as_py() == "TTF"
     assert table.column("Side")[PIPED].as_py() == "1"
     assert table.column("Price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
-    assert _tagged(table.column("entries")[PIPED]) == [
-        (52, "20260814-00:05:01.147"),
-        (44, "41.2500"),
-    ]
-    assert _keys(table.column("entries")[PIPED]) == ["SendingTime", "Price"]
+    # `52` used to sit here too, as the sidecar an instant column cannot spell
+    # back. The raw stage lifts it now, so it never reaches the FIX stage to
+    # be audited and the trailing zeros of `44=41.2500` are the only text left.
+    assert _tagged(table.column("entries")[PIPED]) == [(44, "41.2500")]
+    assert _keys(table.column("entries")[PIPED]) == ["Price"]
     assert _named(table.column("entries")[PIPED]) == []
     around = str([table.column(name)[PIPED].as_py() for name in FLAT_NAMES])
     assert "sending" not in around and "queued" not in around
@@ -205,16 +250,31 @@ def test_every_field_of_a_wire_message_lands_in_one_of_the_three_places(
 def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     table: pyarrow.Table,
 ) -> None:
-    """Known `FIX.4.4` decodes; malformed `FIX4` remains lossless raw input."""
+    """Known `FIX.4.4` decodes; malformed `FIX4` still gets only its header read.
+
+    The header lift is the raw stage's and knows no versions, so the caret
+    line's six standard fields land in columns exactly as the SOH line's do.
+    What separates the two is everything past the header: `FIX.4.4` types its
+    body, and `FIX4` names no dictionary, so its body stays raw.
+    """
     assert table.column("BeginString")[SOHED].as_py() == "FIX.4.4"
     assert table.column("MsgSeqNum")[SOHED].as_py() == 1094
     assert table.column("CheckSum")[SOHED].as_py() == "118"
     assert table.column("MsgType")[SOHED].as_py() == "8"
     assert _tagged(table.column("entries")[SOHED]) == [(31, "41.2500"), (6, "41.2500")]
 
-    assert _tagged(table.column("entries")[CARET]) == CARET_RAW_PAIRS
-    assert _keys(table.column("entries")[CARET]) == [str(tag) for tag, _ in CARET_RAW_PAIRS]
+    assert _tagged(table.column("entries")[CARET]) == CARET_RESIDUAL_PAIRS
+    assert _keys(table.column("entries")[CARET]) == [str(tag) for tag, _ in CARET_RESIDUAL_PAIRS]
     assert _named(table.column("entries")[CARET]) == []
+    assert [table.column(name)[CARET].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX4",
+        61,
+        1093,
+        "0",
+        "XPAR",
+        datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+        "BUYSIDE",
+    ], "every header field the line wrote, and the two integers and the instant typed"
     _assert_no_semantic_columns(table, CARET)
 
 
@@ -385,6 +445,60 @@ def test_a_wire_message_lands_its_header_and_trailer_in_columns(table: pyarrow.T
     assert table.column("CheckSum")[PIPED].as_py() == "203"
 
 
+def test_a_header_field_written_twice_two_ways_is_lifted_by_neither(tmp_path: Path) -> None:
+    """Two readings of one fact is not one statement of it.
+
+    A row spelling `MsgSeqNum <34>` twice with two values has not said what its
+    sequence number is, so the column stays null and both readings stay in
+    `entries` where a reader can see them disagree. Spelled twice with one
+    value it *has* said it, and every occurrence leaves the list.
+    """
+    staged = _staged_lines(
+        tmp_path / "torn.txt",
+        "FixSession_XPAR",
+        [
+            "sending >> 8=FIX.4.4|9=99|35=D|34=7|49=BUYSIDE|34=8|55=TTF|10=001|",
+            "sending >> 8=FIX.4.4|9=99|35=D|34=7|49=BUYSIDE|34=7|55=TTF|10=002|",
+        ],
+    )
+    assert staged.column("MsgSeqNum").to_pylist() == [None, "7"]
+    assert _tagged(staged.column("entries")[0]) == [
+        (34, "7"),
+        (34, "8"),
+        (55, "TTF"),
+        (10, "001"),
+    ], "neither reading is lifted, so both are still there to be read"
+    assert _tagged(staged.column("entries")[1]) == [(55, "TTF"), (10, "002")]
+    assert staged.column("SenderCompID").to_pylist() == ["BUYSIDE", "BUYSIDE"], (
+        "and one torn field costs the six beside it nothing"
+    )
+
+
+def test_the_header_lift_stops_at_the_checksum_it_is_measured_against(
+    tmp_path: Path,
+) -> None:
+    """`CheckSum <10>` never lifts itself, and nothing standing behind it lifts either.
+
+    A field is header because of where it is, not only what it is called: the
+    trailer is the boundary, so a `49` written after it is something else the
+    line said and stays in `entries` beside the checksum that ended the message.
+    """
+    staged = _staged_lines(
+        tmp_path / "trailing.txt",
+        "FixSession_XPAR",
+        ["sending >> 8=FIX.4.4|9=99|35=D|34=9|55=TTF|10=003|49=LATE|52=20260814-09:30:00.000"],
+    )
+    assert staged.column("SenderCompID")[0].as_py() is None
+    assert staged.column("SendingTime")[0].as_py() is None
+    assert staged.column("MsgSeqNum")[0].as_py() == "9", "what stood in front of it still lifted"
+    assert _tagged(staged.column("entries")[0]) == [
+        (55, "TTF"),
+        (10, "003"),
+        (49, "LATE"),
+        (52, "20260814-09:30:00.000"),
+    ]
+
+
 def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) -> None:
     """The other half of the flat layer: what a desk queries a fill by."""
     assert table.column("Symbol")[SOHED].as_py() == "TTF"
@@ -531,6 +645,10 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
         "SIDE",
         "SENDERCOMPID",
     ]
+    # `SENDERCOMPID` stays in the list with the rest of them. The header lift
+    # reads FIX's tags, not a bridge's names for them: which name a feed writes
+    # is data, and a rendered spelling is kept exactly as it arrived.
+    assert parsed.column("SenderCompID")[0].as_py() is None
     _assert_no_semantic_columns(parsed, 0)
 
 
@@ -591,11 +709,19 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("entries")[PIPED].as_py() is None
-    assert _lifted(table, PIPED) == 1, "only Message's promoted MsgType survives"
+    assert _lifted(table, PIPED) == len(LIFTED_HEADER), (
+        "only the standard header the raw stage lifted before any rule ran survives"
+    )
+    assert table.column("MsgType")[PIPED].as_py() == "D"
+    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("CheckSum")[PIPED].as_py() is None, "the trailer was never lifted"
+    assert table.column("Symbol")[PIPED].as_py() is None, "and no rule read the body"
 
 
-def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) -> None:
-    """An empty FIX rule set leaves every raw Message uninterpreted."""
+def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
+    codec: FixCodec,
+) -> None:
+    """An empty FIX rule set reads no payload; the raw stage still lifted the header."""
     quiet = FixCodec(registry=codec.registry, rules=Rules(rules=[]))
     with TextFile.from_path(
         SAMPLE,
@@ -610,10 +736,24 @@ def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) 
     assert table.column("ISINCODE").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("code").to_pylist() == [""] * EXPECTED_RECORDS
     assert table.column("MsgType").null_count < EXPECTED_RECORDS
+    # The header is not the rule set's to withhold: it was lifted upstream of
+    # any protocol, so it stands here with no rule in sight.
+    assert [table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX.4.2",
+        176,
+        1092,
+        "D",
+        "BUYSIDE",
+        datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
+        "XPAR",
+    ]
+    assert table.column("CheckSum").null_count == EXPECTED_RECORDS, (
+        "the trailer is nobody's header, so nothing lifted it"
+    )
     assert all(
         table.column(name).null_count == EXPECTED_RECORDS
         for name in FLAT_NAMES
-        if name != "MsgType"
+        if name not in set(LIFTED_HEADER.values())
     )
 
 
@@ -634,9 +774,14 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
     sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
-    assert parsed.column("MsgSeqNum")[0].as_py() is None
+    assert parsed.column("Symbol")[0].as_py() is None
     assert parsed.column("Parties")[0].as_py() is None
-    assert [tag for tag, _ in _tagged(parsed.column("entries")[0])] == [8, 34, 55]
+    # `8` and `34` are gone from the list and `55` is not: a codec that lifts
+    # nothing cannot suppress the header, because the raw stage lifted it
+    # before this codec was asked anything.
+    assert [tag for tag, _ in _tagged(parsed.column("entries")[0])] == [55]
+    assert parsed.column("MsgSeqNum")[0].as_py() == 7
+    assert parsed.column("BeginString")[0].as_py() == "FIX.4.4"
     assert parsed.column("MsgType").to_pylist() == ["D"]
 
 
@@ -699,13 +844,10 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     ) as log:
         table = _parsed(log.read_arrow_table(), cold)
     assert table.num_rows == EXPECTED_RECORDS
+    # A cold dictionary types nothing, so the body is intact -- but the header
+    # never needed one, and its six fields plus the discriminator are already
+    # in columns. The checksum stays, as it does under a warm dictionary too.
     assert _tagged(table.column("entries")[PIPED]) == [
-        (8, "FIX.4.2"),
-        (9, "176"),
-        (34, "1092"),
-        (49, "BUYSIDE"),
-        (56, "XPAR"),
-        (52, "20260814-00:05:01.147"),
         (11, "ORD-0000038106"),
         (55, "TTF"),
         (54, "1"),
@@ -715,7 +857,9 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
         (59, "0"),
         (10, "203"),
     ]
-    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - 1
+    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(LIFTED_HEADER)
+    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("MsgSeqNum")[PIPED].as_py() == 1092
     assert _tagged(table.column("entries")[BRIDGE]) == []
     assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert len(_keys(table.column("entries")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
@@ -805,16 +949,18 @@ def _audit_pairs(
 
 
 def _semantic_floor(table: pyarrow.Table, row: int) -> int:
-    """What a row fills before any dictionary is consulted: `MsgType <35>`, or nothing."""
-    return 1 if table.column("MsgType")[row].as_py() is not None else 0
+    """What a row fills before any dictionary is consulted: the standard header."""
+    return sum(table.column(name)[row].as_py() is not None for name in LIFTED_HEADER.values())
 
 
 def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
     """Unknown-version rows retain pairs without publishing interpreted values.
 
-    `MsgType` is the one column such a row may still fill: it is one tag off
-    the front of a message, found without a dictionary, and a row whose
-    version nothing resolved still knows what kind of message it is.
+    The seven standard header fields are the ones such a row may still fill:
+    they are lifted off the front of the message by the raw stage, before any
+    protocol reads it, and a row whose version nothing resolved still knows
+    who sent what kind of message to whom and when. `CheckSum <10>` is not
+    among them, so it stays with the body a dictionary would have had to type.
     """
     assert _lifted(table, row) == _semantic_floor(table, row)
     assert _component_fields(table, row) == 0
@@ -867,11 +1013,31 @@ def _key(entry: dict[str, object]) -> str:
     return f"{lead}.{entry['key']}" if lead else str(entry["key"])
 
 
-def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pyarrow.Table:
-    """Synthesised log lines converted from Message to FixMsg in one batch."""
+def _write_lines(path: Path, plugin: str, messages: list[str]) -> None:
+    """Synthesised payloads behind the fixed log header this file reads."""
     path.write_text(
         "".join(f"2026-08-14 00:05:01.147 [t] [{plugin}] (INFO) {one}\n" for one in messages)
     )
+
+
+def _staged_lines(path: Path, plugin: str, messages: list[str]) -> pyarrow.Table:
+    """Synthesised log lines as the raw Message rows they stage as.
+
+    Stops one stage short of `_lines`: no codec has read the payload, so what
+    stands in a column here is what the raw stage put there itself.
+    """
+    _write_lines(path, plugin, messages)
+    with TextFile.from_path(
+        path,
+        msg_type_event_types=event_types(),
+        protocol_rules=Rules.into_default(),
+    ) as log:
+        return log.read_arrow_table()
+
+
+def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pyarrow.Table:
+    """Synthesised log lines converted from Message to FixMsg in one batch."""
+    _write_lines(path, plugin, messages)
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(codec.registry),
@@ -1067,11 +1233,28 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert staged.column("MsgType").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
     assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
+    # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
-        "FIX.4.4",
         "C1",
         "1",
+        "IBM",
     ]
+    # The second line spells its header in rendered names, which the lift does
+    # not read: it answers to FIX's tags, and a bridge's own name for a field
+    # stays in `entries` where the FIX stage decides what it is.
+    assert staged.column("BeginString").to_pylist() == ["FIX.4.4", None, None, None]
+    assert _keys(staged.column("entries")[1]) == [
+        "BEGINSTRING",
+        "SIDE",
+        "SYMBOL",
+        "NOPARTYIDS[0].PARTYID",
+        "TECH.CLIENTID",
+    ], "only `#MSGTYPE=` lifted; every other rendered name is untouched"
+    # Protocol-neutral: this stage neither counts nor parses a clock, so the
+    # trailer's `10=000` is text in `entries` and nothing was cast.
+    assert staged.column("MsgSeqNum").to_pylist() == [None] * 4
+    assert staged.column("entries")[0].as_py()[-1]["value"] == "000"
 
 
 def test_fix_conversion_adds_the_canonical_fix_contract(

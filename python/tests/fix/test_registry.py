@@ -25,9 +25,9 @@ import pyarrow.fs
 import pytest
 
 from rekep.enums import EventType
-from rekep.fields import Field
+from rekep.fields import Field, newest_rank
 from rekep.fix import FixRegistry
-from rekep.fix.entries import newest_rank, values_of
+from rekep.fix.entries import values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import is_group, members_of
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
@@ -727,14 +727,14 @@ def test_a_standard_message_name_encodes_to_the_msgtype_that_spells_it() -> None
     msg_type = FixRegistry.from_builtin().resolve("MsgType")
 
     assert {
-        name: msg_type.encode(name)
+        name: msg_type.fix.encode(name)
         for name in ("executionreport", "newordersingle", "marketdatasnapshotfullrefresh")
     } == {
         "executionreport": "8",
         "newordersingle": "D",
         "marketdatasnapshotfullrefresh": "W",
     }
-    assert msg_type.encode("TradeCaptureReport") == "AE", "however the caller spells it"
+    assert msg_type.fix.encode("TradeCaptureReport") == "AE", "however the caller spells it"
     assert not hasattr(FixRegistry, "msg_type_handlers")
 
 

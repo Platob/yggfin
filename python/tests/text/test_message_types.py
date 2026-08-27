@@ -14,6 +14,19 @@ EVENT_TYPES = {
     "W": EventType.BOOK,
 }
 
+#: The standard header this stage lifts out of `entries` into columns of its
+#: own, spelled out rather than imported from `rekep.text.message` so a field
+#: quietly added to or dropped from the lift is a failure here.
+SESSION_COLUMNS = (
+    "BeginString",
+    "BodyLength",
+    "MsgType",
+    "MsgSeqNum",
+    "SenderCompID",
+    "TargetCompID",
+    "SendingTime",
+)
+
 
 def parsed(*messages: str | None) -> dict[str, object]:
     """Parse one test column with its small configurable registry projection."""
@@ -90,8 +103,9 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["MsgType"].to_pylist() == ["D"]
+    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
-    assert [entry["key"] for entry in residual] == ["8", "SIDE"]
+    assert [entry["key"] for entry in residual] == ["SIDE"]
 
 
 def test_a_regular_wire_kind_stays_authoritative_over_named_noise() -> None:
@@ -122,12 +136,16 @@ def test_message_type_is_read_from_tokens_not_prose_values_or_the_trailer() -> N
 
     assert found["MsgType"].to_pylist() == [None] * 5
     assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
+    # Every header field is measured against the same boundary: `8` precedes
+    # the checksum in the last two rows and so is lifted, while the
+    # discriminator written behind it is not.
+    assert found["BeginString"].to_pylist() == [None, None, None, "FIX.4.4", "FIX.4.4"]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         [],
         ["Text", "Other"],
-        ["8", "10", "35"],
-        ["8", "10", "MsgType"],
+        ["10", "35"],
+        ["10", "MsgType"],
     ]
 
 
@@ -154,12 +172,15 @@ def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
     )
 
     assert found["MsgType"].to_pylist() == [None, None, None]
+    # The qualifying rows are the ones that reached the splitter at all, and
+    # the begin string they spelled is now the column rather than an entry.
+    assert found["BeginString"].to_pylist() == [None, "FIX.4.4", "FIXT.1.1"]
     assert [
         [(entry["key"], entry["value"]) for entry in row] for row in found["entries"].to_pylist()
     ] == [
         [],
-        [("8", "FIX.4.4")],
-        [("8", "FIXT.1.1")],
+        [],
+        [],
     ]
 
 
@@ -175,7 +196,7 @@ def test_bare_caret_delimited_fields_are_tokens() -> None:
 def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
     messages = pyarrow.chunked_array(
         [
-            pyarrow.array(["plain", "35=D|A=1"], pyarrow.large_string()),
+            pyarrow.array(["plain", "35=D|49=BUYSIDE|A=1"], pyarrow.large_string()),
             pyarrow.array(["#MSGTYPE=W|#B=2"], pyarrow.large_string()),
         ]
     )
@@ -188,6 +209,7 @@ def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
         int(EventType.BOOK),
     ]
     assert found["MsgType"].to_pylist() == [None, "D", "W"]
+    assert found["SenderCompID"].to_pylist() == [None, "BUYSIDE", None]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         ["A"],
@@ -214,8 +236,8 @@ def test_plugin_codes_do_not_define_message_types() -> None:
     )
 
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
     assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
-        ("8", "FIX.4.4"),
         ("11", "one"),
     ]
 
@@ -260,6 +282,7 @@ def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
     restored = Message.from_dict(stored)
 
     assert restored.MsgType == "0"
+    assert restored.BeginString is None, "a stored row's header is what it stored"
     assert restored.protocol_code == "MISC"
     assert restored.etype == EventType.MISC
     assert restored.entries == []
@@ -269,5 +292,6 @@ def test_empty_input_keeps_the_declared_column_types() -> None:
     found = Message.parse_arrow(pyarrow.array([], pyarrow.string()), EVENT_TYPES)
 
     assert found["etype"].type == pyarrow.int64()
-    assert found["MsgType"].type == pyarrow.string()
+    for name in SESSION_COLUMNS:
+        assert found[name].type == pyarrow.string(), name
     assert found["entries"].type == Message.into_field().field("entries").dtype

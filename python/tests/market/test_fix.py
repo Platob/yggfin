@@ -36,6 +36,11 @@ NARROWED = {
     "char": (pyarrow.int32(), pyarrow.int64()),
     "currency": (pyarrow.int32(),),
     "int": (pyarrow.int32(), pyarrow.int64()),
+    # A maturity and a settlement date are calendar days, and the market
+    # shapes say so. FIX reads every temporal as the instant it spells --
+    # which is what keeps a zone applicable later -- and narrowing one back to
+    # the day it names is this package's own statement about what the value is.
+    "localmktdate": (pyarrow.date32(),),
 }
 
 

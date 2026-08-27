@@ -10,6 +10,26 @@ from rekep.enums import EventType
 from rekep.market import Event, hash_bytes
 from rekep.market.identity import hash_int_of
 
+#: The standard header this stage lifts out of `entries` into columns of its
+#: own, in the order `Message` declares them, with the FIX tag each answers to.
+#: Spelled out rather than imported from `rekep.text.message.SESSION_FIELDS`, so
+#: a field quietly leaving that tuple cannot move both sides of an assertion
+#: together.
+LIFTED_HEADER = {
+    "BeginString": "8",
+    "BodyLength": "9",
+    "MsgType": "35",
+    "MsgSeqNum": "34",
+    "SenderCompID": "49",
+    "TargetCompID": "56",
+    "SendingTime": "52",
+}
+
+#: `CheckSum <10>` is the boundary every lift is measured against -- a field is
+#: eligible only where it stands in front of it -- so it is deliberately not
+#: among the lifted and stays in `entries` for the FIX stage to read.
+UNLIFTED_TRAILER = "10"
+
 
 def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
     assert issubclass(Message, Event)
@@ -21,10 +41,21 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "plugin_code",
         "message",
         "protocol_code",
-        "MsgType",
+        *LIFTED_HEADER,
         "entries",
         "direction",
     ]
+    assert UNLIFTED_TRAILER not in LIFTED_HEADER.values()
+    assert "CheckSum" not in Message.into_field().names, (
+        "the boundary the lift is measured against is not one of the lifted"
+    )
+    # Protocol-neutral columns: this stage reads no numbers and names no zone,
+    # so each of the seven keeps the text the payload spelled, and none of them
+    # carries the `fix:` metadata a dictionary-typed column would.
+    for name in LIFTED_HEADER:
+        field = Message.into_field().field(name)
+        assert field.dtype == pyarrow.string(), name
+        assert field.nullable is True, name
     assert all(
         not any(key.startswith("fix:") for key in field.metadata)
         for field in Message.into_field().fields
@@ -156,12 +187,15 @@ def test_a_payload_parses_scalar_like_the_column_path() -> None:
     column = Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01")
 
     assert staged.MsgType == column.MsgType == "D"
+    assert staged.BeginString == column.BeginString == "FIX.4.4"
     assert staged.runix == 7
     assert staged.message == ""
+    # `8` and `35` are standard header and leave for columns of their own; `11`
+    # is body and `10` is the boundary, so both stay exactly where they were.
     assert (
         [(entry.tag, entry.value) for entry in staged.entries]
         == [(entry.tag, entry.value) for entry in column.entries]
-        == [(8, "FIX.4.4"), (11, "C1"), (10, "000")]
+        == [(11, "C1"), (10, "000")]
     )
 
 
@@ -218,10 +252,11 @@ def test_a_user_wrapper_promotes_its_named_message_kind() -> None:
     message = Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert message.MsgType == "D"
-    assert [(entry.key, entry.value) for entry in message.entries] == [
-        ("8", "FIX.4.4"),
-        ("SIDE", "1"),
-    ]
+    assert message.BeginString == "FIX.4.4"
+    # Both spellings of the discriminator leave together: the wrapper `35=UL`
+    # is what the rendered name was read to correct, so neither is left behind
+    # to be read again.
+    assert [(entry.key, entry.value) for entry in message.entries] == [("SIDE", "1")]
 
 
 def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> None:
@@ -235,6 +270,158 @@ def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> Non
         ("10", "000"),
         ("35", "D"),
     ]
+
+
+def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
+    """Seven columns; `entries` keeps the body and the boundary.
+
+    Every one of them is the text the payload spelled -- `9=176` is the three
+    characters, not a number -- because this stage reads no dictionary.
+    """
+    message = Message(
+        message="8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|"
+        "52=20260814-09:30:00.000|55=IBM|10=000"
+    )
+
+    assert {name: getattr(message, name) for name in LIFTED_HEADER} == {
+        "BeginString": "FIX.4.4",
+        "BodyLength": "176",
+        "MsgType": "D",
+        "MsgSeqNum": "1092",
+        "SenderCompID": "BUYSIDE",
+        "TargetCompID": "XPAR",
+        "SendingTime": "20260814-09:30:00.000",
+    }
+    assert [(entry.key, entry.value) for entry in message.entries] == [
+        ("55", "IBM"),
+        (UNLIFTED_TRAILER, "000"),
+    ]
+    assert Message.into_field_metadata() == {"version": "3"}, (
+        "lifting the header is a new reading of the row, and says so"
+    )
+
+
+def test_a_header_field_stated_twice_two_ways_is_lifted_by_neither() -> None:
+    """Two readings of one fact is not one statement of it.
+
+    A bridge writing one field twice on purpose is telling the reader
+    something a first-wins pop would throw away, so both stay in `entries` and
+    the column says nothing -- while the fields beside it are lifted as usual.
+    """
+    torn = Message(message="8=FIX.4.4|49=A|49=B|55=IBM|10=000")
+
+    assert torn.SenderCompID is None
+    assert [(entry.key, entry.value) for entry in torn.entries] == [
+        ("49", "A"),
+        ("49", "B"),
+        ("55", "IBM"),
+        ("10", "000"),
+    ]
+
+    repeated = Message(message="8=FIX.4.4|49=A|49=A|55=IBM|10=000")
+
+    assert repeated.SenderCompID == "A", "one fact stated twice is still stated once"
+    assert [(entry.key, entry.value) for entry in repeated.entries] == [
+        ("55", "IBM"),
+        ("10", "000"),
+    ], "and every occurrence of it leaves"
+    assert repeated.BeginString == torn.BeginString == "FIX.4.4", (
+        "one torn field is not the six beside it"
+    )
+
+    scalar = Message.from_text("8=FIX.4.4|49=A|49=B|55=IBM|10=000")
+
+    assert scalar.SenderCompID is None
+    assert [(entry.key, entry.value) for entry in scalar.entries] == [
+        (entry.key, entry.value) for entry in torn.entries
+    ], "the rule is the tokenizer's, not the column kernel's"
+
+
+def test_the_header_lift_stops_at_the_checksum() -> None:
+    """`CheckSum` is the boundary, under the tag or under its rendered name."""
+    tagged = Message(entries=[("8", "FIX.4.4"), ("10", "000"), ("49", "AFTER"), ("52", "LATE")])
+    rendered = Message(entries=[("CheckSum", "000"), ("52", "LATE")])
+
+    assert tagged.BeginString == "FIX.4.4"
+    assert (tagged.SenderCompID, tagged.SendingTime) == (None, None)
+    assert [(entry.key, entry.value) for entry in tagged.entries] == [
+        ("10", "000"),
+        ("49", "AFTER"),
+        ("52", "LATE"),
+    ], "the trailer stays, and so does everything the row wrote behind it"
+    assert rendered.SendingTime is None
+    assert [(entry.key, entry.value) for entry in rendered.entries] == [
+        ("CheckSum", "000"),
+        ("52", "LATE"),
+    ]
+
+
+def test_only_the_discriminator_value_is_constrained_to_letters_and_digits() -> None:
+    """The standard constrains `MsgType` alone; the rest carry punctuation."""
+    message = Message(entries=[("8", "FIX.4.4"), ("35", "D-1"), ("52", "20260814-09:30:00.000")])
+
+    assert message.MsgType is None
+    assert (message.BeginString, message.SendingTime) == (
+        "FIX.4.4",
+        "20260814-09:30:00.000",
+    )
+    assert [(entry.key, entry.value) for entry in message.entries] == [("35", "D-1")], (
+        "a value no discriminator can be is left where a reader can see it"
+    )
+
+
+def test_only_the_discriminator_answers_to_a_rendered_name() -> None:
+    """A bridge that renders its header writes its own names, and this stage
+    keeps them: which name a feed uses is data. `MsgType` is the exception it
+    has always been -- a `35=U1` wrapper naming its real type beside it is the
+    whole reason the rendered spelling is read at all."""
+    message = Message(
+        message="#BeginString=FIX.4.4|#SendingTime=20260814-09:30:00.000|#MsgType=D|#Side=1"
+    )
+
+    assert message.MsgType == "D"
+    assert (message.BeginString, message.SendingTime) == (None, None)
+    assert [(entry.key, entry.value) for entry in message.entries] == [
+        ("BeginString", "FIX.4.4"),
+        ("SendingTime", "20260814-09:30:00.000"),
+        ("Side", "1"),
+    ]
+
+
+def test_an_explicit_header_column_still_strips_its_entry() -> None:
+    """What a caller declares stands, and the payload's own copy still leaves --
+    the same rule the discriminator has always followed."""
+    message = Message(BeginString="FIX.4.2", entries=[("8", "FIX.4.4"), ("Text", "kept")])
+
+    assert message.BeginString == "FIX.4.2"
+    assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
+
+
+def test_the_column_path_and_the_scalar_row_lift_the_same_header() -> None:
+    """`parse_arrow` and `__post_init__` are one rule spelled twice: same seven
+    columns, same residual arguments, row for row."""
+    lines = [
+        "8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|52=20260814-09:30:00.000|55=IBM|10=000",
+        "8=FIX.4.4|49=A|49=B|10=000",
+        "8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|",
+        "#BeginString=FIX.4.4|#MsgType=D|#Side=1",
+        "8=FIX.4.4|35=D|10=000|49=AFTER",
+        "just some heartbeat prose",
+    ]
+    parsed = Message.parse_arrow(pyarrow.array(lines))
+
+    assert all(parsed[name].type == pyarrow.string() for name in LIFTED_HEADER)
+    for index, line in enumerate(lines):
+        row = Message(message=line)
+        assert {name: parsed[name][index].as_py() for name in LIFTED_HEADER} == {
+            name: getattr(row, name) for name in LIFTED_HEADER
+        }, line
+        assert [(entry["key"], entry["value"]) for entry in parsed["entries"][index].as_py()] == [
+            (entry.key, entry.value) for entry in row.entries
+        ], line
+    assert {name: parsed[name][-1].as_py() for name in LIFTED_HEADER} == dict.fromkeys(
+        LIFTED_HEADER
+    ), "a prose row states no header, and every column says so"
 
 
 def test_generic_arguments_keep_mixed_separators_repeats_and_spelling() -> None:
@@ -407,7 +594,7 @@ def test_raw_identity_depends_only_on_the_payload() -> None:
     assert changed.hash != first.hash
 
 
-def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Path) -> None:
+def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: Path) -> None:
     path = tmp_path / "capture.log"
     payload = "8=FIX.4.4|35=D|49=XPAR|56=BUY|55=IBM|10=000"
     path.write_text(f"2026-08-14 09:30:00.123 [thread] [bridge] (INFO) {payload}\n")
@@ -420,14 +607,19 @@ def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Pat
 
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == [payload]
-    assert table.column("MsgType").to_pylist() == ["D"]
+    assert [table.column(name).to_pylist() for name in LIFTED_HEADER] == [
+        ["FIX.4.4"],
+        [None],
+        ["D"],
+        [None],
+        ["XPAR"],
+        ["BUY"],
+        [None],
+    ], "the four this payload states, and null for the three it does not"
     assert [(entry["key"], entry["value"]) for entry in table.column("entries")[0].as_py()] == [
-        ("8", "FIX.4.4"),
-        ("49", "XPAR"),
-        ("56", "BUY"),
         ("55", "IBM"),
         ("10", "000"),
-    ]
+    ], "the body and the boundary, and nothing the header already answers"
     assert table.column("etype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()

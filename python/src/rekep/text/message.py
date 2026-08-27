@@ -19,7 +19,10 @@ from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+#: Version 3 lifts the standard header out of `entries` into columns of its
+#: own; a table written under 2 still reads, because every reader here falls
+#: back to the list when the column is not there.
+_CONTRACT_METADATA = MappingProxyType({"version": "3"})
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
 _DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
@@ -27,6 +30,47 @@ _TOKEN_START = r"(?:^|\^A|[\x01|^;#])"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
 _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
+
+#: The standard header fields a raw row lifts out of `entries`, by the FIX tag
+#: each of them is written under. They are lifted here because they are
+#: *parsed* here -- on a
+#: fifteen-field NewOrderSingle they are nearly half of every entry the row
+#: carries, and the FIX stage would otherwise walk the same list again looking
+#: for the same seven facts it already has.
+#:
+#: The trailer is deliberately not among them: `CheckSum` is the boundary this
+#: stage reads everything else against -- an eligible field is one before it --
+#: and a marker that lifted itself out could no longer say it was last.
+#:
+#: In the standard's own order, which is also the order they are re-emitted
+#: in: `BeginString` is always the first field of a message and `MsgType`
+#: always the third.
+SESSION_FIELDS: tuple[tuple[str, str], ...] = (
+    ("BeginString", "8"),
+    ("BodyLength", "9"),
+    ("MsgType", "35"),
+    ("MsgSeqNum", "34"),
+    ("SenderCompID", "49"),
+    ("TargetCompID", "56"),
+    ("SendingTime", "52"),
+)
+
+#: `{folded spelling: column}` for every session field, which is the lookup a
+#: parse actually does -- one probe per entry rather than one pass per field.
+#:
+#: The **tag** only, except for the discriminator. A bridge that renders its
+#: header writes its own names -- `#BeginString=`, `#SendingTime=` -- and this
+#: stage keeps a rendered spelling exactly as it arrived, because which name a
+#: feed uses is data. `MsgType` is the one field that has always answered to
+#: both, and it keeps doing so: a `35=U1` wrapper naming its real type beside
+#: it is the whole reason the rendered spelling is read at all.
+_SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
+    {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": "MsgType"}
+)
+
+#: The one session field whose value the standard constrains, and the one whose
+#: `U`-prefixed wire spelling defers to a rendered name beside it.
+_MSG_TYPE = "MsgType"
 _CHECKSUM_TOKEN = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?"
     rf"(?:10|checksum|trailer\.10|trailer\.checksum)[ \t\r\n\f\x0b]*="
@@ -77,8 +121,30 @@ class Message(Event):
     protocol_code: str = _NO_PROTOCOL
     """Protocol syntax detected without interpreting its fields."""
 
+    # In the standard's order, because that is the order a row re-emits them
+    # in: `BeginString` is always a message's first field and `MsgType` its
+    # third. Every one of them is the text the payload spelled -- this stage
+    # reads no numbers and names no zone.
+    BeginString: str | None = None
+    """Protocol the session negotiated, as the payload spells it."""
+
+    BodyLength: str | None = None
+    """Declared body length, kept as text: this stage reads no numbers."""
+
     MsgType: str | None = None
     """First FIX message discriminator when the payload names one."""
+
+    MsgSeqNum: str | None = None
+    """Sequence number the payload states, as text."""
+
+    SenderCompID: str | None = None
+    """Who the payload says sent it."""
+
+    TargetCompID: str | None = None
+    """Who the payload says it was for."""
+
+    SendingTime: str | None = None
+    """When the payload says it was sent, in the payload's own spelling."""
 
     entries: list[Entry] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""
@@ -105,18 +171,19 @@ class Message(Event):
             self.entries = parsed["entries"][0].as_py()
             if self.protocol_code == _NO_PROTOCOL:
                 self.protocol_code = parsed["protocol_code"][0].as_py()
-            if self.MsgType is None:
-                self.MsgType = parsed["MsgType"][0].as_py()
+            for name, _ in SESSION_FIELDS:
+                if getattr(self, name) is None:
+                    setattr(self, name, parsed[name][0].as_py())
             if self.etype == EventType.UNKNOWN:
                 self.etype = EventType(parsed["etype"][0].as_py())
             if self.direction is None:
                 self.direction = parsed["direction"][0].as_py()
 
         self.entries = [Entry.from_stored(entry) for entry in self.entries]
-        wire, named, self.entries = _scalar_message_types(self.entries)
-        if self.MsgType is None:
-            hybrid = wire and wire.startswith("U") and named
-            self.MsgType = named if hybrid else wire or named
+        session, self.entries = _scalar_session_values(self.entries)
+        for name, _ in SESSION_FIELDS:
+            if getattr(self, name) is None:
+                setattr(self, name, session.get(name))
         if self.MsgType is None and self.etype == EventType.UNKNOWN:
             self.etype = EventType.MISC
 
@@ -163,12 +230,13 @@ class Message(Event):
                 )
                 offsets += len(chunk)
             return {
+                **{
+                    name: pyarrow.chunked_array([part[name] for part in parts], pyarrow.string())
+                    for name, _ in SESSION_FIELDS
+                },
                 "etype": pyarrow.chunked_array([part["etype"] for part in parts], _EVENT_CODE),
                 "protocol_code": pyarrow.chunked_array(
                     [part["protocol_code"] for part in parts], pyarrow.string()
-                ),
-                "MsgType": pyarrow.chunked_array(
-                    [part["MsgType"] for part in parts], pyarrow.string()
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
@@ -179,9 +247,9 @@ class Message(Event):
         rows = len(messages)
         if not rows:
             return {
+                **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
                 "etype": pyarrow.array([], _EVENT_CODE),
                 "protocol_code": pyarrow.array([], pyarrow.string()),
-                "MsgType": pyarrow.nulls(0, pyarrow.string()),
                 "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], pyarrow.bool_()),
             }
@@ -194,8 +262,8 @@ class Message(Event):
             Entry.looks_structured_arrow(text),
         )
         entries = _candidate_entries(text, candidates)
-        parsed_msg_types, entries = _message_types(entries)
-        msg_types = compute.coalesce(parsed_msg_types, probed_msg_types)
+        session, entries = _session_columns(entries)
+        msg_types = compute.coalesce(session[_MSG_TYPE], probed_msg_types)
         event_types = _event_types(msg_types, msg_type_event_types)
         protocols = (
             protocol_rules.into_arrow_protocol_array(text, plugins)
@@ -217,6 +285,7 @@ class Message(Event):
             # verbs to the default vocabulary.
             direction = Rules.into_default().into_arrow_direction_array(text, protocols)
         return {
+            **session,
             "etype": event_types,
             "protocol_code": protocols,
             "MsgType": msg_types,
@@ -253,38 +322,71 @@ class Message(Event):
         )
 
 
-def _scalar_message_types(
-    entries: list[Entry],
-) -> tuple[str | None, str | None, list[Entry]]:
-    """Valid top-level discriminators before the FIX checksum."""
+def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[Entry]]:
+    """Every standard header field before the checksum, and what is left.
+
+    The scalar twin of `_session_columns`, rule for rule: a field spelled
+    twice with two readings is not lifted, and a `U`-prefixed wire
+    discriminator defers to a rendered name beside it.
+    """
+    claimed: dict[str, list[int]] = {}
+    residual: list[int] = []
     wire = named = None
-    residual: list[Entry] = []
     ended = False
-    for entry in entries:
+    for index, entry in enumerate(entries):
         folded = entry.key.lower()
         if folded in _CHECKSUM_KEYS:
             ended = True
-        is_wire = not ended and folded == "35"
-        is_named = not ended and folded == "msgtype"
-        valid = _MSG_TYPE_VALUE_RE.fullmatch(entry.value) is not None
-        if is_wire and valid:
-            wire = entry.value if wire is None else wire
-        elif is_named and valid:
-            named = entry.value if named is None else named
+        column = None if ended else _SESSION_BY_KEY.get(folded)
+        if column == _MSG_TYPE:
+            if _MSG_TYPE_VALUE_RE.fullmatch(entry.value) is None:
+                column = None
+            elif folded == "35":
+                wire = entry.value if wire is None else wire
+            else:
+                named = entry.value if named is None else named
+        if column is None:
+            residual.append(index)
         else:
-            residual.append(entry)
-    return wire, named, residual
+            claimed.setdefault(column, []).append(index)
+
+    found: dict[str, str] = {}
+    for column, where in claimed.items():
+        values = [entries[index].value for index in where]
+        if column == _MSG_TYPE:
+            # The discriminator has a rule of its own for its two spellings, so
+            # they disagreeing is expected rather than torn.
+            hybrid = wire and wire.startswith("U") and named
+            found[column] = named if hybrid else (wire or named)
+            continue
+        if len(set(values)) > 1:
+            # Two readings of one fact is not one statement of it: both stay
+            # where a reader can see them, and the column says nothing.
+            residual.extend(where)
+            continue
+        found[column] = values[0]
+    residual.sort()
+    return found, [entries[index] for index in residual]
 
 
-def _message_types(stored: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Promote parsed top-level discriminators before each row's checksum."""
+def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], pyarrow.Array]:
+    """Lift every standard header field out of `entries`, before each checksum.
+
+    One pass for all of them: the eligible window is computed once and each
+    field is a mask over it. A field a row spells twice with two different
+    values is left where it is and its column stays null -- the same rule the
+    FIX stage applies when it lifts, because a bridge that writes one fact
+    twice on purpose is telling the reader something a first-wins pop would
+    throw away.
+    """
     rows = len(stored)
+    empty = {name: pyarrow.nulls(rows, pyarrow.string()) for name, _ in SESSION_FIELDS}
     if not rows:
-        return pyarrow.nulls(0, pyarrow.string()), stored
+        return {name: pyarrow.nulls(0, pyarrow.string()) for name in empty}, stored
     compute = pyarrow.compute
     entries = compute.list_flatten(stored)
     if not len(entries):
-        return pyarrow.nulls(rows, pyarrow.string()), stored
+        return empty, stored
 
     parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
     positions = sequence(len(entries))
@@ -298,27 +400,86 @@ def _message_types(stored: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]
     before_checksum = compute.fill_null(
         compute.less(positions, compute.take(checksum_at, parents)), True
     )
-    valid_values = compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False)
-    eligible = compute.and_(before_checksum, valid_values)
-    wire_mask = compute.and_(eligible, compute.equal(normalized, "35"))
-    named_mask = compute.and_(eligible, compute.equal(normalized, "msgtype"))
-    wire = _first_by_parent(values, parents, wire_mask, rows)
-    named = _first_by_parent(values, parents, named_mask, rows)
+    named_values = compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False)
+
+    found: dict[str, pyarrow.Array] = {}
+    claimed = pyarrow.array([False] * len(entries), type=pyarrow.bool_())
+    for name, tag in SESSION_FIELDS:
+        spelled = compute.equal(normalized, tag)
+        if name == _MSG_TYPE:
+            spelled = compute.or_(spelled, compute.equal(normalized, "msgtype"))
+        eligible = compute.and_(before_checksum, spelled)
+        if name == _MSG_TYPE:
+            # The discriminator has a rule of its own for its two spellings --
+            # a `U`-prefixed wire type defers to a rendered name beside it --
+            # so disagreement between them is expected rather than torn, and
+            # its value is the one the standard constrains.
+            eligible = compute.and_(eligible, named_values)
+            found[name] = _wire_or_named(values, parents, normalized, eligible, rows)
+            claimed = compute.or_(claimed, eligible)
+            continue
+        first, mask = _agreed_by_parent(values, parents, eligible, rows)
+        found[name] = first
+        claimed = compute.or_(claimed, mask)
+    keep = compute.invert(claimed)
+    residual = build_list(
+        ENTRIES,
+        dense_counts(compute.filter(parents, keep), rows),
+        compute.filter(entries, keep),
+        null_mask(stored),
+    )
+    return found, residual
+
+
+def _wire_or_named(
+    values: pyarrow.Array,
+    parents: pyarrow.Array,
+    normalized: pyarrow.Array,
+    eligible: pyarrow.Array,
+    rows: int,
+) -> pyarrow.Array:
+    """The discriminator, where a `U`-prefixed wire type defers to a rendered one.
+
+    A bridge that wraps its own message in `35=U1` and then names the real
+    type beside it means the name; everything else means the tag.
+    """
+    compute = pyarrow.compute
+    wire = _first_by_parent(
+        values, parents, compute.and_(eligible, compute.equal(normalized, "35")), rows
+    )
+    named = _first_by_parent(
+        values, parents, compute.and_(eligible, compute.equal(normalized, "msgtype")), rows
+    )
     wrapped = compute.and_(
         compute.fill_null(compute.starts_with(wire, "U"), False),
         compute.is_valid(named),
     )
-    msg_types = compute.if_else(wrapped, named, compute.coalesce(wire, named))
+    return compute.if_else(wrapped, named, compute.coalesce(wire, named))
 
-    keep = compute.invert(compute.or_(wire_mask, named_mask))
-    kept_parents = compute.filter(parents, keep)
-    residual = build_list(
-        ENTRIES,
-        dense_counts(kept_parents, rows),
-        compute.filter(entries, keep),
-        null_mask(stored),
+
+def _agreed_by_parent(
+    values: pyarrow.Array,
+    parents: pyarrow.Array,
+    eligible: pyarrow.Array,
+    rows: int,
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """`(first value per row, which entries it claims)` -- nothing when they disagree.
+
+    A row spelling one header field twice with two readings has not stated it
+    once, so neither reading is lifted and both stay where a reader can see
+    them.
+    """
+    compute = pyarrow.compute
+    first = _first_by_parent(values, parents, eligible, rows)
+    disagrees = compute.and_(
+        eligible, compute.fill_null(compute.not_equal(values, compute.take(first, parents)), True)
     )
-    return msg_types, residual
+    torn = compute.greater(dense_counts(compute.filter(parents, disagrees), rows), 0)
+    per_entry = compute.take(torn, parents)
+    return (
+        compute.if_else(torn, pyarrow.nulls(rows, values.type), first),
+        compute.and_(eligible, compute.invert(per_entry)),
+    )
 
 
 def _first_by_parent(

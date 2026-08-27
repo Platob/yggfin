@@ -10,7 +10,7 @@ import pyarrow
 import pytest
 
 from rekep import FixCodec, Message
-from rekep.fix import FixFieldValue, FixRegistry
+from rekep.fix import FixFieldValue, FixRegistry, record_copy
 from rekep.market import (
     MIC,
     AssetKind,
@@ -602,24 +602,18 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     exec_type = builtin.entry("ExecType")
     assert msg_type is not None and ord_status is not None and exec_type is not None
     configured = {
-        "MsgType": dataclasses.replace(
-            msg_type,
-            values=[
-                FixFieldValue(value="Q", meaning="NewOrderSingle", aliases=("NEW_ORDER_SINGLE",)),
-                FixFieldValue(value="R", meaning="ExecutionReport", aliases=("EXECUTION_REPORT",)),
-            ],
-            event_types={"Q": EventType.ORDER, "R": EventType.EXECUTION},
-            states={"Q": State.PENDING_NEW},
-        ),
-        "OrdStatus": dataclasses.replace(
-            ord_status,
-            states={**ord_status.states, "Z": State.PARTIALLY_FILLED},
-        ),
-        "ExecType": dataclasses.replace(
-            exec_type,
-            states={**exec_type.states, "T": State.FILLED},
-        ),
+        "MsgType": record_copy(msg_type),
+        "OrdStatus": record_copy(ord_status),
+        "ExecType": record_copy(exec_type),
     }
+    configured["MsgType"].fix.enumerated = [
+        FixFieldValue(value="Q", meaning="NewOrderSingle", aliases=("NEW_ORDER_SINGLE",)),
+        FixFieldValue(value="R", meaning="ExecutionReport", aliases=("EXECUTION_REPORT",)),
+    ]
+    configured["MsgType"].fix.event_types = {"Q": EventType.ORDER, "R": EventType.EXECUTION}
+    configured["MsgType"].fix.states = {"Q": State.PENDING_NEW}
+    configured["OrdStatus"].fix.states = {**ord_status.fix.states, "Z": State.PARTIALLY_FILLED}
+    configured["ExecType"].fix.states = {**exec_type.fix.states, "T": State.FILLED}
     fields = (
         "MsgType",
         "Symbol",
@@ -643,9 +637,10 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         entry = configured.get(name) or builtin.entry(name)
         assert entry is not None
         if name != "MsgType":
-            entry = dataclasses.replace(entry, tag=9000 + index)
-        assert entry.tag is not None
-        wire_tags[name] = entry.tag
+            entry = record_copy(entry)
+            entry.fix.tag = 9000 + index
+        assert entry.fix.tag is not None
+        wire_tags[name] = entry.fix.tag
         registry.add_field(entry)
     logs = [
         FixMsg(

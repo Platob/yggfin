@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import importlib
 import json
 import pathlib
@@ -13,11 +12,21 @@ from typing import Any
 from rekep import __version__
 from rekep.console import Console
 from rekep.fields import Field, StructField
+from rekep.filesystems import read_bytes
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files
-from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import (
+    ANY_VERSION,
+    NAMESPACE,
+    STANDARD,
+    Alias,
+    ComponentEntry,
+    record_copy,
+    record_document,
+    record_of,
+)
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
-from rekep.fix.store import field_document
+from rekep.fix.store import document_of, field_document
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -194,7 +203,7 @@ def registry_versions(arguments: argparse.Namespace) -> int:
 def find_fields(arguments: argparse.Namespace) -> int:
     """Write distinct field records matching one query."""
     registry = _registry(arguments)
-    entries: list[FieldEntry] = []
+    entries: list[Field] = []
     for member in registry.search(
         arguments.query,
         version=arguments.version,
@@ -203,7 +212,7 @@ def find_fields(arguments: argparse.Namespace) -> int:
         entry = registry.entry(member.fix.get("tag") or member.name)
         if entry is not None:
             entries.append(entry)
-    _write_json([entry.into_dict() for entry in entries])
+    _write_json([record_document(entry) for entry in entries])
     return 0
 
 
@@ -213,7 +222,7 @@ def show_field(arguments: argparse.Namespace) -> int:
     if entry is None:
         CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
         return 1
-    _write_json(entry.into_dict())
+    _write_json(record_document(entry))
     return 0
 
 
@@ -254,7 +263,7 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -264,9 +273,10 @@ def update_field(arguments: argparse.Namespace) -> int:
     held = registry.resolve(arguments.name) if arguments.name else None
     fresh = _field_entry(arguments)
     if held is not None and not arguments.declaration:
-        fresh = dataclasses.replace(fresh, aliases=held.aliases or fresh.aliases)
+        fresh = record_copy(fresh)
+        fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
     entry = registry.update_field(fresh)
-    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -280,7 +290,7 @@ def promote_field(arguments: argparse.Namespace) -> int:
         description=arguments.description,
         aliases=tuple(arguments.alias),
     )
-    CONSOLE.ok(f"promoted {entry.name} {CONSOLE.glyph('arrow')} column {entry.column}")
+    CONSOLE.ok(f"promoted {entry.fix.canonical} {CONSOLE.glyph('arrow')} column {entry.fix.column}")
     return 0
 
 
@@ -303,7 +313,7 @@ def alias_field(arguments: argparse.Namespace) -> int:
             for alias in arguments.alias
         ),
     )
-    CONSOLE.ok(f"{entry.name} answers to {', '.join(entry.spellings())}")
+    CONSOLE.ok(f"{entry.fix.canonical} answers to {', '.join(entry.fix.spellings())}")
     return 0
 
 
@@ -377,19 +387,29 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
     return 0
 
 
-def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
-    """One field identity out of the flags that describe it."""
+def _field_entry(arguments: argparse.Namespace) -> Field:
+    """One field identity out of the flags that describe it.
+
+    A record is a `Field` and no longer reads itself, so `--declaration` is
+    read the way the store reads its own documents: `FORMATS` above says which
+    spelling the name means, `document_of` decodes it, and `record_of` applies
+    every refusal a stored record meets. Its keys are the stored ones, which
+    is what a person writing that document has in front of them.
+    """
     if arguments.declaration:
-        return FieldEntry.from_file(arguments.declaration)
-    return FieldEntry(
-        name=arguments.name,
-        tag=arguments.tag,
-        kind=STANDARD if arguments.tag else NAMESPACE,
-        aliases=tuple(Alias(name=alias) for alias in arguments.alias),
-        versions=tuple(arguments.version or [ANY_VERSION]),
-        type=arguments.type or "",
-        description=arguments.description or "",
-        column=arguments.column or "",
+        payload = read_bytes(arguments.declaration)
+        return record_of(document_of(payload, f".{_format_of(arguments.declaration)}"))
+    return record_of(
+        {
+            "name": arguments.name,
+            "tag": arguments.tag,
+            "kind": STANDARD if arguments.tag else NAMESPACE,
+            "aliases": [{"name": alias} for alias in arguments.alias],
+            "versions": list(arguments.version or [ANY_VERSION]),
+            "type": arguments.type or "",
+            "description": arguments.description or "",
+            "column": arguments.column or "",
+        }
     )
 
 
@@ -584,7 +604,7 @@ def _parser() -> argparse.ArgumentParser:
         source.add_argument("--name", help="the field's canonical name")
         source.add_argument(
             "--declaration",
-            help="complete JSON, YAML, or TOML FieldEntry; other field flags are ignored",
+            help="complete JSON or YAML field record; other field flags are ignored",
         )
         action.add_argument(
             "--tag",

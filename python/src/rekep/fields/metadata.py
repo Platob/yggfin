@@ -27,7 +27,7 @@ import dataclasses
 import functools
 import json
 import re
-from collections.abc import Iterator, Mapping, MutableMapping
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
@@ -67,6 +67,85 @@ def encoded_key(text: Any) -> str:
     message.
     """
     return _ENCODED_DROP.sub("", str(text).casefold())
+
+
+def version_rank(version: str) -> tuple[int, ...]:
+    """A sortable reading of `4.0`, `5.0.SP2`, `FIXT1.1`, newest last.
+
+    The transport (`FIXT1.1`) ranks *above* every application version here, so
+    that sorting a record's versions gives `versions.json`'s declared order.
+    It is deliberately the opposite of what `newest_of` picks: the session
+    layer redefines a handful of application fields, and letting it own their
+    reading would give a session-layer meaning to fields it merely carries.
+    """
+    transport = 1 if version.upper().startswith("FIXT") else 0
+    return (transport, *(int(part) for part in re.findall(r"\d+", version)))
+
+
+def newest_rank(version: str) -> tuple[int, ...]:
+    """`version_rank` with the transport ranked below every application version."""
+    transport, *numbers = version_rank(version)
+    return (1 - transport, *numbers)
+
+
+def newest_of(versions: Iterable[str]) -> str:
+    """Which version owns a record's reading: the newest *application* one.
+
+    `FIXT1.1` only wins where nothing else declares the field, which is what
+    keeps a session-layer reading off the application fields it merely carries.
+    """
+    found = tuple(versions)
+    if not found:
+        raise ValueError("a FIX registry record is declared for no version")
+    return max(found, key=newest_rank)
+
+
+def canonical_versions(versions: Iterable[str]) -> tuple[str, ...]:
+    """A record's version list in canonical order: oldest first, transport last."""
+    return tuple(sorted(dict.fromkeys(versions), key=version_rank))
+
+
+@dataclasses.dataclass(frozen=True)
+class Alias(Convertible):
+    """Another name one identity has been seen under, and where that was seen.
+
+    Provenance rather than a bare string, because an alias earned from a real
+    capture and one typed in by hand are not the same evidence -- and a near
+    miss counted forty times in one bridge is a different proposition from one
+    counted once. A FIX version is a source too: a spelling only 4.2 used is
+    recorded here, because the record itself keeps one name.
+    """
+
+    name: str
+    source: str = ""
+    occurrences: int = 0
+
+    def __post_init__(self) -> None:
+        """Refuse an unnamed alias, which would match the empty key."""
+        if not str(self.name).strip():
+            raise ValueError("a FIX registry alias has no name")
+
+    @property
+    def folded(self) -> str:
+        """How this alias is matched."""
+        return fold(self.name)
+
+    def into_dict(self) -> dict[str, Any]:
+        """The alias as it is stored, carrying provenance only when it has any."""
+        if not self.source and not self.occurrences:
+            return {"name": self.name}
+        return {"name": self.name, "source": self.source, "occurrences": self.occurrences}
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any] | str) -> Alias:
+        """Read either spelling: a plain name, or a name with its provenance."""
+        if isinstance(mapping, str):
+            return cls(name=mapping)
+        return cls(
+            name=str(mapping.get("name") or ""),
+            source=str(mapping.get("source") or ""),
+            occurrences=int(mapping.get("occurrences") or 0),
+        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -303,12 +382,20 @@ class _Document:
         view[self.key] = json.dumps(rendered, separators=(",", ":"))
 
 
+@functools.lru_cache(maxsize=8192)
+def _enumerated(declared: str) -> tuple[FixFieldValue, ...]:
+    """One record's stored values, decoded once for that exact spelling."""
+    return values_of(json.loads(declared))
+
+
 class FixMetadata(ProtocolMetadata):
     """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.enumerated`.
 
-    What a registry record states about a field, read off the field itself
-    -- the step that lets a generic `Field` carry a record whole, without a
-    `FieldEntry` beside it.
+    What a registry record states about a field, read off the field itself.
+    A record *is* a field here -- there is no second object beside it -- so
+    this is the whole of what the dictionary knows about one identity: what it
+    is called, what it is, which versions declare it, what its values mean, and
+    the names it has been seen under.
     """
 
     __slots__ = ()
@@ -337,9 +424,13 @@ class FixMetadata(ProtocolMetadata):
         `values` attribute would shadow the mapping's own `values()` -- the
         same reason `meanings` and `EnumMetadata.members` are spelled as they
         are.
+
+        Decoded once per stored spelling rather than once per read: a parse
+        asks the same few hundred records their values on every message, and
+        the string in the metadata is exactly the cache key for what it says.
         """
         declared = self.get("values")
-        return values_of(json.loads(declared)) if declared else ()
+        return _enumerated(declared) if declared else ()
 
     @enumerated.setter
     def enumerated(self, declared: Any) -> None:
@@ -386,6 +477,51 @@ class FixMetadata(ProtocolMetadata):
         rendered = {str(key): int(state) for key, state in dict(value).items()}
         self["states"] = json.dumps(rendered, separators=(",", ":"))
 
+    # -- what the record is -------------------------------------------------
+
+    @property
+    def canonical(self) -> str:
+        """The FIX name this field carries, or the field's own where they agree.
+
+        `fix:name` is written only where the two can differ -- a lifted column
+        called `sending_time` carrying `SendingTime` -- so a record that is
+        simply itself says its name once.
+        """
+        return self.name or self.field.name
+
+    @property
+    def key(self) -> int | str:
+        """What this identity is stored under: its tag, or its folded name."""
+        tag = self.tag
+        return tag if tag is not None else self.folded
+
+    @property
+    def folded(self) -> str:
+        """The canonical name as it is matched."""
+        return fold(self.canonical)
+
+    @property
+    def newest(self) -> str:
+        """The version this record's reading was taken from."""
+        return newest_of(self.versions)
+
+    @property
+    def named_aliases(self) -> tuple[Alias, ...]:
+        """Every alias as the record it is, rather than as the document it stores.
+
+        The stored form is a list of mappings, because that is what travels in
+        one metadata string; a caller matching spellings wants the provenance
+        and the fold, which is what `Alias` is.
+        """
+        return tuple(Alias.from_dict(one) for one in self.aliases)
+
+    @named_aliases.setter
+    def named_aliases(self, value: Any) -> None:
+        self.aliases = [
+            (one if isinstance(one, Alias) else Alias.from_dict(one)).into_dict()
+            for one in (value or ())
+        ]
+
     # -- what the record answers --------------------------------------------
 
     def declares(self, version: str) -> bool:
@@ -397,7 +533,7 @@ class FixMetadata(ProtocolMetadata):
         """Every name this field answers to: canonical first, then its aliases,
         deduplicated by fold and in the order a lookup applies them."""
         found: dict[str, str] = {}
-        for name in (self.name, *(str(alias.get("name", "")) for alias in self.aliases)):
+        for name in (self.canonical, *(str(alias.get("name", "")) for alias in self.aliases)):
             if name.strip():
                 found.setdefault(fold(name), name)
         return tuple(found.values())

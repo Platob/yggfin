@@ -21,8 +21,8 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.entries import KEY_VIEW, Entry, fold
+from rekep.fields import Field, encoded_key
 from rekep.fields.arrays import sequence
-from rekep.fix.entries import FieldEntry, encoded_key
 from rekep.fix.fields import cast_arrow_fix, coherent_fix_value, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import TagIndex
@@ -204,11 +204,11 @@ class FieldAccess:
         name = name or spelling
         tag, hit, _, _ = self.index.resolve_key(spelling)
         record = self._record(name) if self.registry is not None else None
-        if not hit and record is not None and record.tag is not None:
-            tag = int(record.tag)
+        if not hit and record is not None and record.fix.tag is not None:
+            tag = int(record.fix.tag)
         names = {fold(name)}
         if record is not None:
-            names.update(fold(one) for one in record.spellings())
+            names.update(fold(one) for one in record.fix.spellings())
         if tag is not None:
             names.update(self._spellings_of(tag))
         return Resolved(
@@ -225,9 +225,9 @@ class FieldAccess:
         record = self._record(tag)
         if record is None:
             return frozenset()
-        return frozenset(fold(one) for one in record.spellings())
+        return frozenset(fold(one) for one in record.fix.spellings())
 
-    def _record(self, key: int | str) -> FieldEntry | None:
+    def _record(self, key: int | str) -> Field | None:
         """The dictionary's record for one tag or name, or None."""
         if self.registry is None:
             return None
@@ -300,8 +300,8 @@ class FieldAccess:
             tag, hit, _, _ = self.index.resolve_key(text)
             if not hit and self.registry is not None:
                 record = self._record(_KEY_TAIL(text))
-                if record is not None and record.tag is not None:
-                    tag, hit = int(record.tag), True
+                if record is not None and record.fix.tag is not None:
+                    tag, hit = int(record.fix.tag), True
             built.append((str(tag) if hit and tag is not None else text, value))
         return built
 
@@ -329,7 +329,7 @@ class FieldAccess:
     def typed(self, field: int | str, raw: Any) -> Any:
         """`raw` as the dictionary reads it: encoded, then cast to type.
 
-        The encoding is `FieldEntry.encode` -- the dictionary's own
+        The encoding is the record's own `fix.encode` -- the dictionary's own
         resolver -- and the cast is `cast_arrow_fix`, the same reading the
         columnar path applies, over one value. A field no record explains
         still gets the plainest reading its value spells --
@@ -342,7 +342,7 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return coherent_fix_value(raw)
-        text = record.encode(raw)
+        text = record.fix.encode(raw)
         dtype = self._arrow_type(record)
         if dtype is None or pyarrow.types.is_string(dtype):
             return text
@@ -352,7 +352,7 @@ class FieldAccess:
             return text
 
     def meaning(self, field: int | str, raw: Any) -> str | None:
-        """What one value means, through the record's own `meaning`.
+        """What one value means, through the record's own `fix.meaning`.
 
         Encoded first, so a value spelled by its meaning still finds it:
         `Side=Buy` and `Side=1` both mean "Buy".
@@ -362,22 +362,23 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return None
-        return record.meaning(record.encode(raw))
+        return record.fix.meaning(record.fix.encode(raw))
 
     @cached_property
     def _arrow_types(self) -> dict[int | str, pyarrow.DataType | None]:
         return {}
 
-    def _arrow_type(self, record: FieldEntry) -> pyarrow.DataType | None:
+    def _arrow_type(self, record: Field) -> pyarrow.DataType | None:
         if self.registry is None:
             return None
-        if record.key not in self._arrow_types:
+        key = record.fix.key
+        if key not in self._arrow_types:
             try:
-                found = self.registry.field(record.key, self.version).dtype
+                found = self.registry.field(key, self.version).dtype
             except (KeyError, OSError, ValueError):
                 found = None
-            self._arrow_types[record.key] = found
-        return self._arrow_types[record.key]
+            self._arrow_types[key] = found
+        return self._arrow_types[key]
 
     # -- whole columns --------------------------------------------------------
     #

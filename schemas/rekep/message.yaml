@@ -1,7 +1,7 @@
 name: Message
 type: struct
 description: One log header, its provenance, and its protocol-neutral payload.
-metadata: {namespace: rekep.text.message, version: '2'}
+metadata: {namespace: rekep.text.message, version: '3'}
 fields:
 - name: unix
   type: int64
@@ -102,10 +102,34 @@ fields:
 - name: protocol_code
   type: string
   description: Protocol syntax detected without interpreting its fields.
+- name: BeginString
+  type: string
+  nullable: true
+  description: Protocol the session negotiated, as the payload spells it.
+- name: BodyLength
+  type: string
+  nullable: true
+  description: 'Declared body length, kept as text: this stage reads no numbers.'
 - name: MsgType
   type: string
   nullable: true
   description: First FIX message discriminator when the payload names one.
+- name: MsgSeqNum
+  type: string
+  nullable: true
+  description: Sequence number the payload states, as text.
+- name: SenderCompID
+  type: string
+  nullable: true
+  description: Who the payload says sent it.
+- name: TargetCompID
+  type: string
+  nullable: true
+  description: Who the payload says it was for.
+- name: SendingTime
+  type: string
+  nullable: true
+  description: When the payload says it was sent, in the payload's own spelling.
 - name: entries
   type: list
   description: Ordered payload arguments other than the promoted message discriminator.

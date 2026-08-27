@@ -300,6 +300,15 @@ class TagIndex:
 _NO_RULES: Mapping[int, FieldRule] = MappingProxyType({})
 
 
+def _as_array(column: Any, rows: int) -> Any:
+    """One column as a plain Array, whatever the batch handed over."""
+    if column is None:
+        return pyarrow.nulls(rows, pyarrow.string())
+    if isinstance(column, pyarrow.ChunkedArray):
+        return column.combine_chunks()
+    return column
+
+
 @dataclasses.dataclass(eq=False)
 class FixCodec(Convertible):
     """A log line read as FIX: which protocol it is, its pairs, and its tags."""
@@ -615,13 +624,17 @@ class FixCodec(Convertible):
         """
         return Entry.structure_arrow(keys, values)
 
-    def versions_of_entries(self, entries: Any) -> tuple[Any, Any]:
+    def versions_of_entries(self, entries: Any, begin_strings: Any = None) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
         Off `entries` rather than off the message, because by this point the
         message has been split once and splitting it again is the work this
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
+
+        `begin_strings` is the column the raw stage already lifted `BeginString`
+        into, where a batch carries one; a batch that predates the column
+        still has the tag in `entries` and is read from there.
         """
         from rekep.fix.access import FieldAccess
 
@@ -629,7 +642,14 @@ class FixCodec(Convertible):
         if not rows:
             empty = pyarrow.array([], pyarrow.string())
             return empty, empty
-        begins = FieldAccess.first_named(entries, 8, "BeginString", rows)
+        lifted = FieldAccess.first_named(entries, 8, "BeginString", rows)
+        begins = (
+            lifted
+            if begin_strings is None
+            else pyarrow.compute.coalesce(
+                _as_array(begin_strings, rows).cast(pyarrow.string(), safe=False), lifted
+            )
+        )
         application = FieldAccess.first_named(entries, 1128, "ApplVerID", rows)
         default = FieldAccess.first_named(entries, 1137, "DefaultApplVerID", rows)
         compute = pyarrow.compute
@@ -1644,10 +1664,12 @@ def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
         except (KeyError, OSError, ValueError):
             entries = {}
         for entry in entries.values():
-            if entry.tag is None or not entry.encoded or not entry.declares(version):
+            fix = entry.fix
+            tag, encoded = fix.tag, fix.encoded
+            if tag is None or not encoded or not fix.declares(version):
                 continue
-            for spelling, value in entry.encoded.items():
-                spelled.append(f"{entry.tag}\x00{spelling}")
+            for spelling, value in encoded.items():
+                spelled.append(f"{tag}\x00{spelling}")
                 resolved.append(value)
     return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
 

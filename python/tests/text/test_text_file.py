@@ -498,6 +498,20 @@ def test_a_missing_remote_compressed_log_is_lazy_and_never_materialized(
 # -- schema -----------------------------------------------------------------
 
 
+#: The standard header the raw stage lifts out of `entries` into columns of
+#: its own, in the order a message re-emits them. `CheckSum` is deliberately
+#: not among them: it is the boundary every lift is measured against, so it
+#: stays an entry.
+SESSION_COLUMNS = [
+    "BeginString",
+    "BodyLength",
+    "MsgType",
+    "MsgSeqNum",
+    "SenderCompID",
+    "TargetCompID",
+    "SendingTime",
+]
+
 MESSAGE_COLUMNS = [
     "source_url",
     "source_rownum",
@@ -505,15 +519,17 @@ MESSAGE_COLUMNS = [
     "plugin_code",
     "message",
     "protocol_code",
-    "MsgType",
+    *SESSION_COLUMNS,
     "entries",
     "direction",
 ]
 
+#: Names that would only exist if a protocol had read the payload: a field the
+#: raw stage never lifts, and the snake spellings a FIX schema renders. The
+#: seven the header does lift are absent here because they now *are* raw
+#: columns -- `test_schema` pins instead that they carry no `fix:` reading.
 FIX_COLUMNS = {
-    "BeginString",
-    "SenderCompID",
-    "TargetCompID",
+    "CheckSum",
     "Symbol",
     "begin_string",
     "msg_type",
@@ -529,6 +545,12 @@ def test_schema(plain: Path) -> None:
     assert schema.names[:3] == ["unix", "unix_partition", "etype"], "the envelope leads"
     assert schema.names[-len(MESSAGE_COLUMNS) :] == MESSAGE_COLUMNS
     assert FIX_COLUMNS.isdisjoint(schema.names)
+    for name in SESSION_COLUMNS:
+        field = schema.field(name)
+        assert field.type == pyarrow.string(), f"{name} is the text the payload spelled"
+        assert not any(key.startswith(b"fix:") for key in field.metadata or {}), (
+            f"{name} is lifted by syntax, so it carries no protocol reading"
+        )
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unix_partition").type == pyarrow.int32()
     assert schema.field("hash").type == HASH
@@ -554,12 +576,50 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert [entry["value"] for entry in table.column("entries")[0].as_py()[:3]] == [
-        "FIX.4.2",
-        "176",
-        "7",
+
+    # The header is lifted into columns of its own, still spelled exactly as
+    # the payload spelled it: no number is read and no zone is named here.
+    assert table.column("BeginString").to_pylist() == ["FIX.4.2", "FIX.4.4", None]
+    assert table.column("BodyLength").to_pylist() == ["176", None, None]
+    assert table.column("MsgSeqNum").to_pylist() == ["7", "8", None]
+    assert table.column("SenderCompID").to_pylist() == ["BUY", "BUY", None]
+    assert table.column("TargetCompID").to_pylist() == ["XPAR", "XPAR", None]
+    assert table.column("SendingTime").to_pylist() == [
+        "20260814-09:30:00.123456789",
+        None,
+        None,
     ]
-    assert "35" not in [entry["key"] for entry in table.column("entries")[0].as_py()]
+
+    first = table.column("entries")[0].as_py()
+    assert [entry["key"] for entry in first] == [
+        "50",
+        "115",
+        "43",
+        "11",
+        "55",
+        "54",
+        "38",
+        "44",
+        "60",
+        "58",
+        "10",
+    ], "entries keeps every token but the seven the standard header lifts"
+    assert [entry["value"] for entry in first[:3]] == ["DESK1", "CLIENTA", "Y"]
+    assert first[-1] == {
+        "tag": 10,
+        "key": "10",
+        "value": "203",
+        "namespace": None,
+        "comp": None,
+    }, "CheckSum is the boundary the lift is measured against, so it stays an entry"
+    assert [entry["key"] for entry in table.column("entries")[1].as_py()] == [
+        "555",
+        "600",
+        "55",
+        "555",
+        "55",
+        "10",
+    ], "a repeat the header does not name is nobody's business here"
     assert table.column("entries")[2].as_py() == []
 
 
@@ -594,6 +654,52 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
         ["msg_type", "Text"],
         ["Text"],
     ]
+
+
+def test_the_standard_header_is_lifted_by_tag_before_the_checksum(tmp_path: Path) -> None:
+    """The six fields beside `MsgType`, and the three ways a row keeps them down."""
+    log = _timed_log(
+        tmp_path / "session-header.txt",
+        (
+            "2026-08-14 00:05:01.000",
+            "8=FIX.4.4|9=52|35=D|34=9|49=BUY|56=XPAR|52=20260814-09:30:00.000|11=A|10=001|",
+        ),
+        ("2026-08-14 00:05:02.000", "35=D|49=BUY|49=BUY|11=B|10=002|"),
+        ("2026-08-14 00:05:03.000", "35=D|49=BUY|49=SELL|11=C|10=003|"),
+        ("2026-08-14 00:05:04.000", "35=D|11=D|10=004|49=LATE|"),
+        ("2026-08-14 00:05:05.000", "#MsgType=8|#SendingTime=20260814-09:30:00.000|#Text=x|"),
+    )
+
+    table = log.read_arrow_table()
+
+    assert table.column("BeginString").to_pylist() == ["FIX.4.4", None, None, None, None]
+    assert table.column("BodyLength").to_pylist() == ["52", None, None, None, None]
+    assert table.column("MsgType").to_pylist() == ["D", "D", "D", "D", "8"]
+    assert table.column("MsgSeqNum").to_pylist() == ["9", None, None, None, None]
+    assert table.column("TargetCompID").to_pylist() == ["XPAR", None, None, None, None]
+    assert table.column("SenderCompID").to_pylist() == [
+        "BUY",
+        "BUY",  # spelled twice with one reading: still one statement of the fact
+        None,  # spelled twice with two readings: neither is lifted
+        None,  # spelled after the CheckSum, which is where eligibility ends
+        None,
+    ]
+    assert table.column("SendingTime").to_pylist() == [
+        "20260814-09:30:00.000",
+        None,
+        None,
+        None,
+        None,  # `SendingTime=` is a name, and only the tag `52` is read
+    ]
+
+    keys = [[entry["key"] for entry in row] for row in table.column("entries").to_pylist()]
+    assert keys == [
+        ["11", "10"],
+        ["11", "10"],
+        ["49", "49", "11", "10"],
+        ["11", "10", "49"],
+        ["SendingTime", "Text"],
+    ], "a field that is not lifted stays where a reader can see every occurrence"
 
 
 def test_text_file_has_no_protocol_codec_option(wire: Path) -> None:
@@ -1552,7 +1658,7 @@ def test_a_static_value_of_none_is_refused(plain: Path) -> None:
 
 def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path) -> None:
     """A duplicate raw-message column is refused before Arrow sees it."""
-    for taken in ("unix", "hash", "code", "source_url", "message", "MsgType"):
+    for taken in ("unix", "hash", "code", "source_url", "message", "MsgType", "SendingTime"):
         log = TextFile.from_path(plain, static_values={taken: "x"})
         with pytest.raises(ValueError, match=f"static value '{taken}' is already a column"):
             log.into_struct_field()

@@ -50,6 +50,24 @@ categorical filters, linked references, and repository source records.
 - description, valid values, and component/message usage;
 - explicit-version and inferred-version lookup through cached indexes.
 
+### Every point in time is a timestamp
+
+A FIX temporal projects to `timestamp[ns]`, whatever width the standard writes
+it at: a date is midnight, a time-of-day is that clock on the epoch's day, and
+a zoned spelling is the instant its offset names. The reader already
+normalised all three to the same epoch nanoseconds -- only the projection was
+throwing the difference away, and a `date32` column is the one shape a
+timezone can no longer be applied to.
+
+The parsed-log projection then says which zone it is: a datatype the standard
+fixes in UTC, or one whose value carries the offset that puts it there, lands
+in `timestamp[us, tz=UTC]`; a `LocalMktDate` is a wall clock in a place the
+message never names, so its column stays naive rather than claiming a zone it
+does not have.
+
+`MonthYear` is the deliberate exception and stays text: `202608` is a month
+and `202608w2` a week, and neither is an instant.
+
 ### One record per identity, sharded by tag
 
 A field's reading is cross-version by nature -- one tag, one meaning, and a set

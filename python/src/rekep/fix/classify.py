@@ -27,8 +27,9 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
+from rekep.fields import Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import ANY_VERSION, Alias, FieldEntry, fold
+from rekep.fix.entries import ANY_VERSION, Alias, fold, record_of
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
@@ -236,19 +237,21 @@ class Classified(Convertible):
             occurrences=self.count.total,
         )
 
-    def into_entry(self, column: str = "") -> FieldEntry:
+    def into_entry(self, column: str = "") -> Field:
         """This namespaced name as the record declaring it would be.
 
         `column` names the parsed-log column the field is lifted into, for a
-        caller that already knows it; the empty default leaves the entry in
+        caller that already knows it; the empty default leaves the record in
         the pairs, completable later through `FixRegistry.promote_field`.
         """
-        return FieldEntry(
-            name=self.name,
-            kind="namespace",
-            versions=(ANY_VERSION,),
-            type="String",
-            column=column,
+        return record_of(
+            {
+                "name": self.name,
+                "kind": "namespace",
+                "versions": (ANY_VERSION,),
+                "type": "String",
+                "column": column,
+            }
         )
 
 
@@ -325,15 +328,15 @@ def _classified(
     ceiling: int,
 ) -> Classified:
     """What one counted name is: known, aliased, nearly known, or nobody's."""
-    entry = registry.resolve(count.name)
-    if entry is not None:
-        aliased = fold(count.name) in {alias.folded for alias in entry.aliases}
-        return Classified(count, ALIASED if aliased else EXACT, entry.name)
+    record = registry.resolve(count.name)
+    if record is not None:
+        aliased = fold(count.name) in {alias.folded for alias in record.fix.named_aliases}
+        return Classified(count, ALIASED if aliased else EXACT, record.fix.canonical)
     wanted = _member_name(count.name, containers)
     if wanted != count.name:
-        entry = registry.resolve(wanted)
-        if entry is not None:
-            return Classified(count, EXACT, entry.name)
+        record = registry.resolve(wanted)
+        if record is not None:
+            return Classified(count, EXACT, record.fix.canonical)
     nearest, distance = _nearest(fold(wanted), known, ceiling)
     if nearest:
         return Classified(count, NEAR, nearest, distance)
@@ -363,17 +366,17 @@ def _known_containers(registry: FixRegistry) -> frozenset[str]:
     field -- `NoPartyIDs` -- and that is what a rendered path writes.
     """
     found = {fold(name) for name in registry.component_entries()}
-    for entry in registry.field_entries().values():
-        found.update(fold(spelling) for spelling in entry.spellings())
+    for record in registry.field_entries().values():
+        found.update(fold(spelling) for spelling in record.fix.spellings())
     return frozenset(found)
 
 
 def _known_names(registry: FixRegistry) -> Mapping[str, str]:
     """`{folded spelling: canonical name}` for every name the dictionary has."""
     found: dict[str, str] = {}
-    for entry in registry.field_entries().values():
-        for spelling in entry.spellings():
-            found.setdefault(fold(spelling), entry.name)
+    for record in registry.field_entries().values():
+        for spelling in record.fix.spellings():
+            found.setdefault(fold(spelling), record.fix.canonical)
     return found
 
 

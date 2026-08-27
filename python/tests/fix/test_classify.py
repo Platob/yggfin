@@ -27,7 +27,7 @@ from rekep.fix.classify import (
     count_files,
     count_reader,
 )
-from rekep.fix.entries import ANY_VERSION, Alias, FieldEntry
+from rekep.fix.entries import ANY_VERSION, Alias, record_kind, record_of
 from rekep.fix.registry import FixRegistry
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -292,8 +292,8 @@ def test_a_near_miss_becomes_an_alias_with_the_capture_that_earned_it(
     applied = apply_report(editable, report, aliases=True)
     assert any("PARTYROLLE -> PartyRole" in line for line in applied)
     entry = editable.resolve("PARTYROLLE")
-    assert entry.name == "PartyRole"
-    (alias,) = [found for found in entry.aliases if found.name == "PARTYROLLE"]
+    assert entry.fix.canonical == "PartyRole"
+    (alias,) = [found for found in entry.fix.named_aliases if found.name == "PARTYROLLE"]
     assert alias.source == "bridge_keys.txt" and alias.occurrences == 1
 
 
@@ -301,9 +301,9 @@ def test_a_vendor_name_becomes_a_declared_field(editable: FixRegistry, report: K
     applied = apply_report(editable, report, namespace=True)
     assert any("TECH.CLIENTID" in line for line in applied)
     entry = editable.resolve("TECH.CLIENTID")
-    assert entry.kind == NAMESPACE and entry.tag is None
-    assert entry.versions == (ANY_VERSION,)
-    assert not entry.column, "a column is a change to a published contract, not to a dictionary"
+    assert record_kind(entry) == NAMESPACE and entry.fix.tag is None
+    assert entry.fix.versions == (ANY_VERSION,)
+    assert not entry.fix.column, "a column is a change to a published contract, not to a dictionary"
     assert editable.check() == []
 
 
@@ -360,10 +360,15 @@ def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     """The bridge between a count and a registry verb, on its own."""
     count = KeyCount(name="FAKE.VENDOR.CODE", marked=7, sources=("brk",))
     row = Classified(count, NAMESPACE)
-    assert row.into_entry() == FieldEntry(
-        name="FAKE.VENDOR.CODE", kind=NAMESPACE, versions=(ANY_VERSION,), type="String"
+    assert row.into_entry() == record_of(
+        {
+            "name": "FAKE.VENDOR.CODE",
+            "kind": NAMESPACE,
+            "versions": [ANY_VERSION],
+            "type": "String",
+        }
     )
-    assert row.into_entry(column="fake_vendor_code").column == "fake_vendor_code", (
+    assert row.into_entry(column="fake_vendor_code").fix.column == "fake_vendor_code", (
         "a caller that already knows the column declares it in the same record"
     )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(

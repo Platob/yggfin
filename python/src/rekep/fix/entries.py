@@ -18,7 +18,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -29,18 +29,15 @@ from rekep.entries import fold
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fields.metadata import (
+    ANY_VERSION,
+    Alias,
     FixFieldValue,
-    encoded_key,
-    encodings_of,
+    canonical_versions,
+    newest_of,
     values_of,
 )
 from rekep.fix import quickfix
 from rekep.fix.fields import fix_field
-
-#: The version list of a record that holds for every version, which is what a
-#: field outside the standard has: a bridge renders `TECH.CLIENTID` the same
-#: way whichever FIX version the session negotiated.
-ANY_VERSION = "*"
 
 #: What a field record is: a numbered FIX tag, or a name a renderer prints with
 #: no tag behind it. Stored so a reader never has to infer it from a null tag,
@@ -120,360 +117,203 @@ def snake_of(name: str) -> str:
     return _SNAKE_SPLIT.sub("_", re.sub(r"IDs$", "Ids", name)).lower()
 
 
-def version_rank(version: str) -> tuple[int, ...]:
-    """A sortable reading of `4.0`, `5.0.SP2`, `FIXT1.1`, newest last.
-
-    The transport (`FIXT1.1`) ranks *above* every application version here, so
-    that sorting a record's versions gives `versions.json`'s declared order.
-    It is deliberately the opposite of what `newest_of` picks: the session
-    layer redefines a handful of application fields, and letting it own their
-    reading would give a session-layer meaning to fields it merely carries.
-    """
-    transport = 1 if version.upper().startswith("FIXT") else 0
-    return (transport, *(int(part) for part in re.findall(r"\d+", version)))
-
-
-def canonical_versions(versions: Iterable[str]) -> tuple[str, ...]:
-    """A record's version list in canonical order: oldest first, transport last."""
-    return tuple(sorted(dict.fromkeys(versions), key=version_rank))
-
-
-def newest_of(versions: Iterable[str]) -> str:
-    """Which version owns a record's reading: the newest *application* one.
-
-    `FIXT1.1` only wins where nothing else declares the field, which is what
-    keeps a session-layer reading off the application fields it merely carries.
-    """
-    found = tuple(versions)
-    if not found:
-        raise ValueError("a FIX registry record is declared for no version")
-    return max(found, key=newest_rank)
-
-
-def newest_rank(version: str) -> tuple[int, ...]:
-    """`version_rank` with the transport ranked below every application version."""
-    transport, *numbers = version_rank(version)
-    return (1 - transport, *numbers)
-
-
-@dataclasses.dataclass(frozen=True)
-class Alias(Convertible):
-    """Another name one identity has been seen under, and where that was seen.
-
-    Provenance rather than a bare string, because an alias earned from a real
-    capture and one typed in by hand are not the same evidence -- and a near
-    miss counted forty times in one bridge is a different proposition from one
-    counted once. A FIX version is a source too: a spelling only 4.2 used is
-    recorded here, because the record itself keeps one name.
-    """
-
-    name: str
-    source: str = ""
-    occurrences: int = 0
-
-    def __post_init__(self) -> None:
-        """Refuse an unnamed alias, which would match the empty key."""
-        if not str(self.name).strip():
-            raise ValueError("a FIX registry alias has no name")
-
-    @property
-    def folded(self) -> str:
-        """How this alias is matched."""
-        return fold(self.name)
-
-    def into_dict(self) -> dict[str, Any]:
-        """The alias as it is stored, carrying provenance only when it has any."""
-        if not self.source and not self.occurrences:
-            return {"name": self.name}
-        return {"name": self.name, "source": self.source, "occurrences": self.occurrences}
-
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any] | str) -> Alias:
-        """Read either spelling: a plain name, or a name with its provenance."""
-        if isinstance(mapping, str):
-            return cls(name=mapping)
-        return cls(
-            name=str(mapping.get("name") or ""),
-            source=str(mapping.get("source") or ""),
-            occurrences=int(mapping.get("occurrences") or 0),
-        )
-
-
 def _kind_of(stored: Any) -> str:
     """One stored `kind`, under whatever name the store spelled it."""
     kind = str(stored or STANDARD)
     return _RENAMED_KINDS.get(kind, kind)
 
 
-@dataclasses.dataclass(frozen=True)
-class FieldEntry(Convertible):
-    """One field identity: one tag, one reading, and the versions declaring it."""
+# -- a field record, which is a field ---------------------------------------
+#
+# A record used to be a dataclass beside the `Field` it projected into. It is
+# the field now: everything a shard stores about an identity has a `fix:` key,
+# so the record and the declaration are one object and nothing is written
+# twice. What is left here is the two directions the store needs -- the
+# document it holds on disk, and the version a caller asked about.
 
-    name: str
-    tag: int | None = None
-    kind: str = STANDARD
-    #: Every version that declares this field, in canonical order.
-    versions: tuple[str, ...] = ()
-    type: str = ""
-    description: str = ""
-    #: Every value this field enumerates -- what the wire carries, what it
-    #: means, and the other spellings naming it -- unioned across versions so
-    #: a value only 4.2 ever had still parses. `encode` and `decode` derive
-    #: their lookups from this list rather than storing them beside it.
-    values: tuple[FixFieldValue, ...] = ()
-    #: `{MsgType: EventType}` for classifying a message before transcription.
-    event_types: Mapping[str, EventType] = dataclasses.field(default_factory=dict)
-    #: `{wire value: State}` for this field's market lifecycle meaning.
-    states: Mapping[str, State] = dataclasses.field(default_factory=dict)
-    used_in: tuple[str, ...] = ()
-    components: tuple[str, ...] = ()
-    note: str = ""
-    aliases: tuple[Alias, ...] = ()
-    #: The parsed-log column this field is lifted into. Only a field the log
-    #: declares a column for carries one; everything else stays in the pairs.
-    column: str = ""
 
-    def __post_init__(self) -> None:
-        """Refuse a record no lookup could answer for, and fill its codecs."""
-        if not str(self.name).strip():
-            raise ValueError("a FIX field record has no name")
-        if self.kind not in KINDS:
-            raise ValueError(f"unknown FIX field kind {self.kind!r}; one of {sorted(KINDS)}")
-        if self.kind == STANDARD and not self.tag:
-            raise ValueError(f"standard FIX field {self.name!r} has no tag")
-        if self.kind == NAMESPACE and self.tag:
-            raise ValueError(f"namespaced FIX field {self.name!r} must not claim tag {self.tag}")
-        if not self.versions:
-            raise ValueError(f"FIX field {self.name!r} is declared for no version")
-        if self.event_types and self.tag != 35:
-            raise ValueError("FIX event types belong to MsgType <35>")
-        object.__setattr__(self, "versions", canonical_versions(self.versions))
-        object.__setattr__(self, "event_types", _event_types(self.event_types))
-        object.__setattr__(self, "states", _states(self.states))
-        object.__setattr__(self, "values", values_of(self.values))
+def record_of(mapping: Mapping[str, Any]) -> Field:
+    """One stored field document as the record it is, refusing what cannot resolve.
 
-    @property
-    def key(self) -> int | str:
-        """What this identity is stored under: its tag, or its folded name."""
-        return int(self.tag) if self.tag is not None else self.folded
+    The document's keys are unprefixed because that is what a shard has always
+    held; they land under `fix:` where the rest of the package reads them.
+    """
+    unknown = sorted(set(mapping) - set(RECORD_KEYS))
+    if unknown:
+        raise ValueError(f"a FIX field record declares unknown {unknown}")
+    stored = mapping.get("tag")
+    tag = int(stored) if stored is not None else None
+    name = str(mapping.get("name") or "")
+    kind = _kind_of(mapping.get("kind"))
+    versions = canonical_versions(str(version) for version in mapping.get("versions") or ())
+    _refuse_record(name, tag, kind, versions, mapping.get("event_types"))
+    built = fix_field(
+        name,
+        tag or 0,
+        str(mapping.get("type") or "") or None,
+        description=str(mapping.get("description") or "") or None,
+        values=values_of(mapping.get("values")),
+    )
+    fix = built.fix
+    if tag is None:
+        # A namespaced field has no tag, and a `0` where one goes would
+        # collide with every other one of them in a tag index.
+        fix.tag = None
+        fix.kind = NAMESPACE
+    fix.versions = versions
+    fix.column = str(mapping.get("column") or "")
+    fix.note = str(mapping.get("note") or "")
+    fix.event_types = _event_types(mapping.get("event_types"))
+    fix.states = _states(mapping.get("states"))
+    fix.msgtypes = [str(one) for one in mapping.get("used_in") or ()]
+    fix.components = [str(one) for one in mapping.get("components") or ()]
+    fix.named_aliases = _aliases_of(mapping.get("aliases"))
+    return built
 
-    @property
-    def folded(self) -> str:
-        """The canonical name as it is matched."""
-        return fold(self.name)
 
-    @property
-    def newest(self) -> str:
-        """The version this record's reading was taken from."""
-        return newest_of(self.versions)
+def _refuse_record(
+    name: str, tag: int | None, kind: str, versions: Sequence[str], event_types: Any
+) -> None:
+    """Every reason a field record could answer no lookup, said once."""
+    if not name.strip():
+        raise ValueError("a FIX field record has no name")
+    if kind not in KINDS:
+        raise ValueError(f"unknown FIX field kind {kind!r}; one of {sorted(KINDS)}")
+    if kind == STANDARD and not tag:
+        raise ValueError(f"standard FIX field {name!r} has no tag")
+    if kind == NAMESPACE and tag:
+        raise ValueError(f"namespaced FIX field {name!r} must not claim tag {tag}")
+    if not versions:
+        raise ValueError(f"FIX field {name!r} is declared for no version")
+    if event_types and tag != 35:
+        raise ValueError("FIX event types belong to MsgType <35>")
 
-    def declares(self, version: str) -> bool:
-        """Whether this field holds for `version`, wildcard included."""
-        return version in self.versions or ANY_VERSION in self.versions
 
-    def spellings(self) -> tuple[str, ...]:
-        """Every name this record answers to: canonical first, then its aliases.
+def record_document(record: Field) -> dict[str, Any]:
+    """One record as its shard holds it, under the unprefixed keys it has always used."""
+    fix = record.fix
+    return _document(
+        {
+            "name": fix.canonical,
+            "tag": fix.tag,
+            "kind": "" if record_kind(record) == STANDARD else record_kind(record),
+            "column": fix.column,
+            "note": fix.note,
+            "type": fix.type,
+            "description": record.description,
+            "versions": list(fix.versions),
+            "values": [one.into_dict() for one in fix.enumerated],
+            "event_types": _enum_document(fix.event_types),
+            "states": _enum_document(fix.states),
+            "used_in": list(fix.msgtypes),
+            "components": list(fix.components),
+            "aliases": [alias.into_dict() for alias in fix.named_aliases],
+        }
+    )
 
-        In resolution order and deduplicated by fold, so a caller walking it is
-        walking the precedence `FixRegistry` applies.
-        """
-        found: dict[str, str] = {self.folded: self.name}
-        for alias in self.aliases:
-            found.setdefault(alias.folded, alias.name)
-        return tuple(found.values())
 
-    @property
-    def encoded(self) -> Mapping[str, str]:
-        """`{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both
-        reach `1`. The one conversion the dictionary performs, derived from
-        the values and cached, never stored beside them: it was three hundred
-        kilobytes saying nothing the values do not already say."""
-        return encodings_of(self.values)[0]
+def record_kind(record: Field) -> str:
+    """Whether a record is a numbered FIX field or a name outside the standard."""
+    return NAMESPACE if record.fix.tag is None else STANDARD
 
-    def value_of(self, value: str) -> FixFieldValue | None:
-        """The record for one wire value, or None where no version defines it."""
-        spelled = str(value)
-        for one in self.values:
-            if one.value == spelled:
-                return one
+
+def record_copy(record: Field) -> Field:
+    """A record nothing else holds, so a caller mutating it corrupts no cache."""
+    return Field(
+        name=record.name,
+        dtype=record.dtype,
+        nullable=record.nullable,
+        metadata=dict(record.metadata),
+    )
+
+
+def record_for(record: Field, version: str) -> Field | None:
+    """This record as `version` declares it, or None when that version has none.
+
+    The reading is the same for every version that declares it -- that is what
+    one record per identity means -- and only `fix:version` differs, because a
+    caller still has to know which version it asked about.
+    """
+    if not record.fix.declares(version):
         return None
+    built = record_copy(record)
+    built.fix.version = version
+    built.fix.pop("versions", None)
+    built.fix.pop("aliases", None)
+    return built
 
-    def encode(self, value: str) -> str:
-        """The FIX value a spelling names, or the spelling itself when none does."""
-        return self.encoded.get(encoded_key(value), str(value))
 
-    def meaning(self, value: str) -> str | None:
-        """What one value means, where this field enumerates its values.
+def records_for(record: Field, order: Sequence[str]) -> list[Field]:
+    """This record as every version in `order` declares it, in that order."""
+    fix = record.fix
+    found = [record_for(record, version) for version in order if fix.declares(version)]
+    if not found and ANY_VERSION in fix.versions:
+        found = [record_for(record, ANY_VERSION)]
+    return [member for member in found if member is not None]
 
-        The other direction from `translate`, and the prose before the symbol:
-        `Side <54>` value `1` is "Buy" for a person and `BUY` for a program,
-        and this is read by people. None where the field enumerates nothing or
-        no version of it defines the value -- which is honest, and better than
-        echoing back a code the dictionary does not know.
 
-        Read off the record and never stored beside the value: it is one
-        string per enumerated field per row, derivable from the dictionary
-        the row is read under.
-        """
-        found = self.value_of(value)
-        if found is None:
-            return None
-        return found.meaning or (found.aliases[0] if found.aliases else None)
+def merged_record(record: Field, order: Sequence[str] = ()) -> Field:
+    """The declaration `scalar()` hands out: one identity, every version of it.
 
-    def event_type(self, value: Any) -> EventType:
-        """The configured kind of one MsgType, MISC when known, else UNKNOWN."""
-        spelled = str(value) if value is not None else ""
-        configured = self.event_types.get(spelled)
-        if configured is not None:
-            return configured
-        return EventType.MISC if self.value_of(spelled) else EventType.UNKNOWN
+    `order` names the versions newest first, which is the order `fix:versions`
+    carries them in; the record's own canonical order is used when nothing is
+    named.
+    """
+    fix = record.fix
+    listed = [version for version in order if fix.declares(version)] or list(fix.versions)
+    if not listed:
+        raise KeyError(f"FIX field {fix.name!r} declares none of {list(order)}")
+    built = record_copy(record)
+    built.fix.name = fix.canonical
+    built.fix.version = listed[0]
+    built.fix.versions = listed
+    return built
 
-    def into_field(self, version: str) -> Field | None:
-        """This field as `version` declares it, or None when that version has none.
 
-        The reading is the same for every version that declares it -- that is
-        what one record per identity means -- and only `fix:version` differs,
-        because a caller still has to know which version it asked about.
-        """
-        if not self.declares(version):
-            return None
-        built = fix_field(
-            self.name,
-            int(self.tag or 0),
-            self.type or None,
-            description=self.description or None,
-            version=version,
-            values=self.values,
-        )
-        fix = built.fix
-        if self.tag is None:
-            # A namespaced field has no tag, and a `0` where one goes would
-            # collide with every other one of them in a tag index.
-            fix.tag = None
-            fix.kind = NAMESPACE
-        fix.column = self.column
-        fix.note = self.note
-        fix.event_types = self.event_types
-        fix.states = self.states
-        fix.msgtypes = self.used_in
-        fix.components = self.components
-        return built
+def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field:
+    """One record out of the same field read from several versions.
 
-    def into_fields(self, order: Sequence[str]) -> list[Field]:
-        """This field as every version in `order` declares it, in that order."""
-        found = [self.into_field(version) for version in order if self.declares(version)]
-        if not found and ANY_VERSION in self.versions:
-            found = [self.into_field(ANY_VERSION)]
-        return [member for member in found if member is not None]
-
-    def into_merged(self, order: Sequence[str] = ()) -> Field:
-        """The declaration `scalar()` hands out: one identity, every version of it.
-
-        `order` names the versions newest first, which is the order
-        `fix:versions` carries them in; the record's own canonical order is
-        used when nothing is named.
-        """
-        listed = [version for version in order if self.declares(version)] or list(self.versions)
-        built = self.into_field(listed[0])
-        if built is None:  # pragma: no cover - `declares` selected these versions
-            raise KeyError(f"FIX field {self.name!r} declares none of {list(order)}")
-        built.fix.name = self.name
-        built.fix.versions = listed
-        built.fix.aliases = [alias.into_dict() for alias in self.aliases]
-        return built
-
-    def into_dict(self) -> dict[str, Any]:
-        """The record as its shard holds it."""
-        return _document(
-            {
-                "name": self.name,
-                "tag": self.tag,
-                "kind": "" if self.kind == STANDARD else self.kind,
-                "column": self.column,
-                "note": self.note,
-                "type": self.type,
-                "description": self.description,
-                "versions": list(self.versions),
-                "values": [one.into_dict() for one in self.values],
-                "event_types": _enum_document(self.event_types),
-                "states": _enum_document(self.states),
-                "used_in": list(self.used_in),
-                "components": list(self.components),
-                "aliases": [alias.into_dict() for alias in self.aliases],
-            }
-        )
-
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
-        """Build one record from its stored document."""
-        unknown = sorted(set(mapping) - set(RECORD_KEYS))
-        if unknown:
-            raise ValueError(f"a FIX field record declares unknown {unknown}")
-        tag = mapping.get("tag")
-        return cls(
-            name=str(mapping.get("name") or ""),
-            tag=int(tag) if tag is not None else None,
-            kind=_kind_of(mapping.get("kind")),
-            versions=tuple(str(version) for version in mapping.get("versions") or ()),
-            type=str(mapping.get("type") or ""),
-            description=str(mapping.get("description") or ""),
-            values=values_of(mapping.get("values")),
-            event_types=_event_types(mapping.get("event_types")),
-            states=_states(mapping.get("states")),
-            used_in=tuple(str(name) for name in mapping.get("used_in") or ()),
-            components=tuple(str(name) for name in mapping.get("components") or ()),
-            note=str(mapping.get("note") or ""),
-            aliases=_aliases_of(mapping.get("aliases")),
-            column=str(mapping.get("column") or ""),
-        )
-
-    @classmethod
-    def from_fields(cls, members: Sequence[Field], versions: Sequence[str]) -> Self:
-        """One record out of the same field read from several versions.
-
-        `members` and `versions` run **oldest first** together, so a newer
-        reading simply overwrites what an older one said -- which is the whole
-        collapse rule, and the reason a value only 4.2 ever had survives it.
-        """
-        if not members:
-            raise ValueError("a FIX field record needs at least one declaration")
-        latest = members[-1]
-        tag = latest.fix.get("tag")
-        values: dict[str, FixFieldValue] = {}
-        event_types: dict[str, EventType] = {}
-        states: dict[str, State] = {}
-        for member in members:
-            for one in member.fix.enumerated:
-                values[one.value] = merged_value(values.get(one.value), one)
-            event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
-            states.update(_states(_json_any(member.fix.get("states"))))
-        # Newest first, unlike the values: where a field is used is a list and
-        # not a mapping, so the newest version's reading leads it rather than
-        # correcting it key by key.
-        used_in: list[str] = []
-        components: list[str] = []
-        for member in reversed(members):
-            for name in _json_sequence(member.fix.get("msgtypes")):
-                if name not in used_in:
-                    used_in.append(name)
-            for name in _json_sequence(member.fix.get("components")):
-                if name not in components:
-                    components.append(name)
-        return cls(
-            name=latest.name,
-            tag=int(tag) if tag else None,
-            kind=STANDARD if tag else NAMESPACE,
-            versions=tuple(versions),
-            type=str(latest.fix.get("type") or ""),
-            description=latest.description,
-            values=tuple(values.values()),
-            event_types=event_types,
-            states=states,
-            used_in=tuple(used_in),
-            components=tuple(components),
-            note=str(latest.fix.get("note") or ""),
-            column=str(latest.fix.get("column") or ""),
-        )
+    `members` and `versions` run **oldest first** together, so a newer reading
+    simply overwrites what an older one said -- which is the whole collapse
+    rule, and the reason a value only 4.2 ever had survives it.
+    """
+    if not members:
+        raise ValueError("a FIX field record needs at least one declaration")
+    latest = members[-1]
+    values: dict[str, FixFieldValue] = {}
+    event_types: dict[str, EventType] = {}
+    states: dict[str, State] = {}
+    for member in members:
+        for one in member.fix.enumerated:
+            values[one.value] = merged_value(values.get(one.value), one)
+        event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
+        states.update(_states(_json_any(member.fix.get("states"))))
+    # Newest first, unlike the values: where a field is used is a list and not
+    # a mapping, so the newest version's reading leads it rather than
+    # correcting it key by key.
+    used_in: list[str] = []
+    components: list[str] = []
+    for member in reversed(members):
+        for name in _json_sequence(member.fix.get("msgtypes")):
+            if name not in used_in:
+                used_in.append(name)
+        for name in _json_sequence(member.fix.get("components")):
+            if name not in components:
+                components.append(name)
+    built = record_copy(latest)
+    fix = built.fix
+    fix.name = latest.name
+    fix.versions = canonical_versions(versions)
+    fix.pop("version", None)
+    # The same refusals a stored document meets: a collapse is a write, and a
+    # record no lookup could answer for must not reach a shard from either side.
+    _refuse_record(fix.canonical, fix.tag, record_kind(built), fix.versions, event_types)
+    fix.enumerated = tuple(values.values())
+    fix.event_types = event_types
+    fix.states = states
+    fix.msgtypes = used_in
+    fix.components = components
+    return built
 
 
 @dataclasses.dataclass(frozen=True)

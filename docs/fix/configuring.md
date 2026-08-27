@@ -160,9 +160,12 @@ fields:
 - `field` names its field however the log does: a tag, a canonical name, or a
   rendered key. It resolves through the same index a parsed key resolves
   through.
-- `type` is an Arrow type as Arrow spells one. A FIX datatype (`UTCDateOnly`)
-  is accepted and normalizes to it, so a rule read back always states its unit
-  and its zone -- `type: date` comes back `date32[day]`.
+- `type` is an Arrow type as Arrow spells one. A FIX datatype (`UTCDateOnly`,
+  `date`) is accepted and normalizes to what the dictionary projects it to, so
+  a rule read back always states its unit and its zone -- and every FIX
+  temporal projects to an instant, so both of those come back `timestamp[ns]`.
+  A rule that wants the day says `date32[day]`, which is exactly what the
+  `MaturityDate` rule above is for.
 - `values` maps what a feed writes to what it means, and wins the dictionary's
   own translation for that field.
 

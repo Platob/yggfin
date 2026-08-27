@@ -46,7 +46,17 @@ LINE = [
     "plugin_code",
     "message",
     "protocol_code",
+    # The standard header, which the raw stage lifts out of `entries` into
+    # columns of its own -- so it arrives here already parsed, and this stage
+    # declares the same seven names in the same places, in the standard's own
+    # order: `BeginString` is a message's first field and `MsgType` its third.
+    "BeginString",
+    "BodyLength",
     "MsgType",
+    "MsgSeqNum",
+    "SenderCompID",
+    "TargetCompID",
+    "SendingTime",
     "entries",
     "direction",
 ]
@@ -54,7 +64,6 @@ MESSAGE = [
     "unix_source",
     "protocol_version",
     "protocol_version_source",
-    "MsgSeqNum",
     "Parties",
     "TrdRegTimestamps",
     "SideTrdRegTS",
@@ -72,6 +81,33 @@ TRAILING_COMPONENTS = [
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
 RAW_TAGS = {55: "Symbol", 34: "MsgSeqNum"}
+
+#: The standard header the raw stage lifts out of `entries` into columns of its
+#: own, and the tag each is lifted by. Only the discriminator answers to a
+#: rendered name as well: a bridge's own `#BEGINSTRING=` spelling stays an
+#: argument, because which name a feed writes is data. Spelled out rather than
+#: imported from `rekep.text.message.SESSION_FIELDS`, so a field quietly leaving
+#: that tuple cannot move both sides of an assertion together.
+LIFTED_HEADER = {
+    "BeginString": "8",
+    "BodyLength": "9",
+    "MsgType": "35",
+    "MsgSeqNum": "34",
+    "SenderCompID": "49",
+    "TargetCompID": "56",
+    "SendingTime": "52",
+}
+
+#: The three of the seven the two stages hold differently: the raw stage is
+#: protocol-neutral and keeps every one of them as the text the payload spelled,
+#: and this stage is the one that reads the dictionary. The other four are text
+#: on both sides. `CheckSum <10>` is not lifted at all -- it is the boundary the
+#: lift is measured against -- so it reaches this stage inside `entries`.
+RETYPED_HEADER = {
+    "BodyLength": pyarrow.int64(),
+    "MsgSeqNum": pyarrow.int64(),
+    "SendingTime": pyarrow.timestamp("us", tz="UTC"),
+}
 
 #: The flattened message layer, derived from the module that names it and
 #: pinned below -- so a column renamed in one file and not in the other fails
@@ -119,11 +155,14 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     `entries` carries every field the line held, so the raw string is dropped
     rather than stored a second time. An all-null column costs nothing on
     disk, which is what makes one stored shape across the three tables
-    affordable.
+    affordable. The seven standard-header columns are payload too -- a line
+    that spelled none of them leaves all seven null -- so what stays required
+    is the provenance a line always has.
     """
     field = FixMsg.into_field()
+    payload = {"message", "entries", "direction", *LIFTED_HEADER}
     for name in LINE:
-        if name in {"message", "MsgType", "entries", "direction"}:
+        if name in payload:
             assert field.field(name).nullable, f"a row may leave {name} null"
             continue
         assert not field.field(name).nullable, name
@@ -135,6 +174,22 @@ def test_only_fixmsg_adds_registry_metadata_to_the_promoted_message_type() -> No
 
     assert raw.nullable and "fix:tag" not in raw.metadata
     assert parsed.nullable and parsed.fix["tag"] == "35"
+
+
+def test_the_lifted_header_arrives_as_text_and_is_typed_here() -> None:
+    """The raw stage lifts seven header fields out of `entries` and keeps every
+    one as the text the payload spelled, carrying no dictionary at all. This
+    stage is the one that reads the dictionary: the same seven names arrive
+    tagged, and three of them stop being text."""
+    raw = Message.into_field()
+    parsed = FixMsg.into_field()
+    for name, tag in LIFTED_HEADER.items():
+        assert raw.field(name).nullable and raw.field(name).dtype == pyarrow.string(), name
+        assert not [key for key in raw.field(name).metadata if key.startswith("fix:")], name
+        assert parsed.field(name).fix["tag"] == tag, name
+        assert parsed.field(name).dtype == RETYPED_HEADER.get(name, pyarrow.string()), name
+    assert "CheckSum" not in raw.names, "the boundary the lift is measured against is not lifted"
+    assert parsed.field("CheckSum").fix["tag"] == "10"
 
 
 def test_a_line_always_says_which_protocol_it_carries() -> None:
@@ -439,7 +494,9 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         ("AAPL", "1", 1.0),
         ("MSFT", "2", 2.0),
     ]
-    assert legs[0]["LegMaturityDate"] == datetime.date(2027, 1, 15)
+    assert legs[0]["LegMaturityDate"] == datetime.datetime(2027, 1, 15), (
+        "a FIX date projects as an instant, like every other temporal datatype"
+    )
     assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
     assert batch.column("entries")[0].as_py() == [], "nothing of either group is stored twice"
 
@@ -794,6 +851,15 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
 
     assert raw.schema.names == Message.into_field().names
     assert raw.column("MsgType").to_pylist() == ["D", "8", None]
+    assert raw.column("BeginString").to_pylist() == ["FIX.4.4", None, None], (
+        "the tag is lifted; the bridge's rendered `#BEGINSTRING=` stays an argument"
+    )
+    assert [entry["key"] for entry in raw.column("entries")[1].as_py()] == [
+        "BEGINSTRING",
+        "ORIGCLORDID",
+        "ISINCODE",
+    ], "only the discriminator answers to a rendered header name"
+    assert raw.column("MsgSeqNum").to_pylist() == ["7", None, None], "text, until this stage"
     assert raw.column("protocol_code").to_pylist() == ["FIX", "UL", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
@@ -1090,15 +1156,158 @@ def test_fixmsg_conversion_preserves_static_extra_columns(
     assert parsed.column("capture_id").to_pylist() == ["day-1"]
 
 
-def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
+def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
     registry: FixRegistry,
 ) -> None:
-    raw = _raw_batch(Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"))
-    assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
+    """Seven header fields leave `entries` upstream, and this stage reads them
+    off the columns rather than walking the list again for facts already in
+    hand. `CheckSum <10>` is the boundary they are lifted before, so it is not
+    one of them and still arrives as an argument like any other."""
+    line = "8=FIX.4.4|9=61|35=D|34=7|49=ME|52=20260814-09:30:00.000|56=YOU|11=C1|55=IBM|10=000|"
+    raw = _raw_batch(Message(message=line))
+
+    assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == ["11", "55", "10"]
+    assert {name: raw.column(name).to_pylist()[0] for name in LIFTED_HEADER} == {
+        "BeginString": "FIX.4.4",
+        "BodyLength": "61",
+        "MsgSeqNum": "7",
+        "MsgType": "D",
+        "SenderCompID": "ME",
+        "SendingTime": "20260814-09:30:00.000",
+        "TargetCompID": "YOU",
+    }
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("Symbol").to_pylist() == [None]
+    assert parsed.column("BeginString").to_pylist() == ["FIX.4.4"]
+    assert parsed.column("BodyLength").to_pylist() == [61]
+    assert parsed.column("MsgSeqNum").to_pylist() == [7]
+    assert parsed.column("SenderCompID").to_pylist() == ["ME"]
+    assert parsed.column("TargetCompID").to_pylist() == ["YOU"]
+    assert parsed.column("SendingTime").to_pylist() == [
+        datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
+    ]
+    assert parsed.column("protocol_version").to_pylist() == ["4.4"]
+    assert parsed.column("protocol_version_source").to_pylist() == ["begin_string"]
+    assert parsed.column("CheckSum").to_pylist() == ["000"], "the trailer is read, not lifted"
+
+    # One row at a time reaches the same seven, cast the same way: the scalar
+    # path lifts what the vectorized one lifts, and leaves what it leaves.
+    scalar = FixMsg.from_text(line)
+    assert (scalar.BeginString, scalar.BodyLength, scalar.MsgType) == ("FIX.4.4", 61, "D")
+    assert (scalar.MsgSeqNum, scalar.SenderCompID, scalar.TargetCompID) == (7, "ME", "YOU")
+    assert scalar.SendingTime == datetime.datetime(2026, 8, 14, 9, 30), (
+        "the instant the column holds, read one value at a time and left naive"
+    )
+    assert [(entry.tag, entry.value) for entry in scalar.entries or ()] == [
+        (11, "C1"),
+        (55, "IBM"),
+        (10, "000"),
+    ]
+
+
+def test_a_header_field_spelled_two_ways_stays_where_a_reader_can_see_it(
+    registry: FixRegistry,
+) -> None:
+    """Two readings of one fact is not one statement of it: a row spelling a
+    header field twice with two values lifts neither reading, and this stage
+    does not go looking in `entries` for what the column left null. Spelled
+    twice with one value it is one statement, lifted once, and every occurrence
+    leaves the list."""
+    raw = _raw_batch(
+        Message(
+            message=(
+                "8=FIX.4.4|35=D|52=20260814-09:30:00.000|52=20260814-09:31:00.000|"
+                "34=7|34=7|11=C1|10=000|"
+            )
+        )
+    )
+
+    assert raw.column("SendingTime").to_pylist() == [None]
+    assert raw.column("MsgSeqNum").to_pylist() == ["7"]
+    assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
+        "52",
+        "52",
+        "11",
+        "10",
+    ]
+
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
+
+    assert parsed.column("SendingTime").to_pylist() == [None]
+    assert parsed.column("MsgSeqNum").to_pylist() == [7]
+    assert [(entry["tag"], entry["value"]) for entry in parsed.column("entries")[0].as_py()] == [
+        (52, "20260814-09:30:00.000"),
+        (52, "20260814-09:31:00.000"),
+    ]
+
+
+def test_a_batch_written_before_the_header_columns_still_reads(
+    registry: FixRegistry,
+) -> None:
+    """The raw contract kept the whole header in `entries` before it lifted it,
+    and a table written that way is still read: every reader here falls back to
+    the list, whether the column is null or the stored batch never had it."""
+    assert Message.into_field_metadata() == {"version": "3"}, (
+        "the version that lifted the header out of the list it is read back from"
+    )
+    stored = Message(message="8=FIX.4.4|35=D|11=C1|10=000|").into_row()
+    stored["message"] = None
+    stored["entries"] = [
+        {"tag": int(tag), "key": tag, "value": value}
+        for tag, value in (
+            ("8", "FIX.4.4"),
+            ("35", "D"),
+            ("34", "7"),
+            ("49", "ME"),
+            ("52", "20260814-09:30:00.000"),
+            ("56", "YOU"),
+            ("11", "C1"),
+            ("10", "000"),
+        )
+    ]
+    for name in LIFTED_HEADER:
+        stored[name] = None
+    legacy = pyarrow.RecordBatch.from_pylist(
+        [stored], schema=Message.into_field().into_arrow_schema()
+    )
+    codec = FixCodec(registry=registry)
+
+    read = FixMsg.from_message_batch(legacy, codec)
+    absent = FixMsg.from_message_batch(
+        legacy.drop_columns([name for name in LIFTED_HEADER if name != "MsgType"]), codec
+    )
+
+    for batch in (read, absent):
+        assert batch.column("MsgType").to_pylist() == ["D"]
+        assert batch.column("MsgSeqNum").to_pylist() == [7]
+        assert batch.column("SenderCompID").to_pylist() == ["ME"]
+        assert batch.column("TargetCompID").to_pylist() == ["YOU"]
+        assert batch.column("SendingTime").to_pylist() == [
+            datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
+        ]
+        assert batch.column("protocol_version").to_pylist() == ["4.4"]
+        assert batch.column("protocol_version_source").to_pylist() == ["begin_string"]
+        assert batch.column("ClOrdID").to_pylist() == ["C1"]
+
+
+def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
+    registry: FixRegistry,
+) -> None:
+    raw = _raw_batch(
+        Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"),
+        Message(message="8=FIX.4.4|35=D|10=000|52=20260814-09:30:00.000|"),
+    )
+    assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
+    assert raw.column("entries")[1].as_py()[-1]["key"] == "52"
+    assert raw.column("SendingTime").to_pylist() == [None, None], (
+        "the header is lifted before the checksum, so a field behind it is not lifted either"
+    )
+
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
+
+    assert parsed.column("Symbol").to_pylist() == [None, None]
+    assert parsed.column("SendingTime").to_pylist() == [None, None]
     assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
 
 
@@ -1169,14 +1378,15 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
 
     parsed = FixMsg.from_message_batch(raw, codec)
 
+    assert raw.column("BeginString").to_pylist() == ["FIX.4.2", "FIX.4.2"], (
+        "the envelope left `entries` for its own column, and is not gone"
+    )
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
-        "8",
         "SIDE",
         "55",
         "10",
     ]
     assert [entry["key"] for entry in raw.column("entries")[1].as_py()] == [
-        "8",
         "54",
         "55",
         "10",
@@ -1247,11 +1457,13 @@ def test_every_promoted_name_is_the_registrys_exact_spelling() -> None:
 
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
-    """Raw protocol fields and the generic envelope have separate names."""
-    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == {
-        "MsgType",
-        "MsgSeqNum",
-    }
+    """Raw protocol fields and the generic envelope have separate names.
+
+    The only names the two layers share are the standard header the raw stage
+    lifts, and they are shared on purpose: one field, one column, read as text
+    upstream and as the dictionary types it here.
+    """
+    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == set(LIFTED_HEADER)
 
 
 def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(

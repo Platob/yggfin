@@ -6,12 +6,11 @@ test says which FIX definition it rests on.
 
 from __future__ import annotations
 
-import dataclasses
 import datetime
 
 import pytest
 
-from rekep.fix import FixFieldValue, FixRegistry, fix_field
+from rekep.fix import FixFieldValue, FixRegistry, fix_field, record_copy
 from rekep.market import (
     MIC,
     NIL,
@@ -431,9 +430,16 @@ def test_a_price_the_venue_did_not_send_is_absent_and_not_zero() -> None:
 
 
 def test_a_local_market_expiry_date_is_preserved_but_not_guessed_as_utc() -> None:
+    """`ExpireDate <432>` is a day in a place the message never names.
+
+    It reads as the instant the day begins -- every FIX temporal does, which
+    is what keeps a zone applicable to it later -- and no zone is applied to
+    it here, which is what `eunix` staying null says: the package does not
+    know what midnight local means and will not guess.
+    """
     (order,) = events("35=D|55=AAPL|11=CL-1|59=6|432=20260821|60=20260821-10:00:00")
     assert order.eunix is None
-    assert order.metadata["432"] == "20260821"
+    assert order.metadata["432"] == "20260821-00:00:00.000000"
 
 
 def test_an_explicit_expiry_time_wins_over_the_day() -> None:
@@ -935,14 +941,21 @@ def test_one_reading_of_a_dictionary_serves_every_message_that_uses_it() -> None
     assert "54" not in order.metadata
 
 
+def _restated(record, states):
+    """One record with different lifecycle states, holding nothing else's."""
+    restated = record_copy(record)
+    restated.fix.states = states
+    return restated
+
+
 def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     entry = FixRegistry.from_builtin().entry("OrdStatus")
-    registry.add_field(dataclasses.replace(entry, states={"0": State.NEW}))
+    registry.add_field(_restated(entry, {"0": State.NEW}))
     first = MarketTags.of(registry)
     first_state = first.states["OrdStatus"]["0"]
 
-    registry.update_field(dataclasses.replace(entry, states={"0": State.CANCELLED}))
+    registry.update_field(_restated(entry, {"0": State.CANCELLED}))
     second = MarketTags.of(registry)
 
     assert second is not first
@@ -963,16 +976,13 @@ def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) ->
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     entry = FixRegistry.from_builtin().entry("ExecType")
     assert entry is not None
-    registry.add_field(
-        dataclasses.replace(
-            entry,
-            values=[
-                FixFieldValue(value="T", meaning="Trade Correct"),
-                FixFieldValue(value="U", meaning="Trade Bust"),
-            ],
-            states={"T": State.REPLACED, "U": State.REJECTED},
-        )
-    )
+    configured = record_copy(entry)
+    configured.fix.enumerated = [
+        FixFieldValue(value="T", meaning="Trade Correct"),
+        FixFieldValue(value="U", meaning="Trade Bust"),
+    ]
+    configured.fix.states = {"T": State.REPLACED, "U": State.REJECTED}
+    registry.add_field(configured)
 
     tags = MarketTags.of(registry, "4.4")
     assert tags.execution_states["G"] is State.REPLACED

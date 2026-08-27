@@ -22,10 +22,9 @@ from rekep.enums import (
     State,
     TimeInForce,
 )
-from rekep.fields import StructField
+from rekep.fields import StructField, encoded_key
 from rekep.fix.access import FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS
-from rekep.fix.entries import encoded_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
@@ -365,7 +364,7 @@ class MarketTags:
             code
             for entry in (builtin, configured)
             if entry is not None
-            for spelling, code in entry.encoded.items()
+            for spelling, code in entry.fix.encoded.items()
             if spelling.startswith("trade")
         )
         coded = {
@@ -420,7 +419,7 @@ class MarketTags:
             if entry is None:
                 continue
             for handler in sorted(HANDLERS):
-                value = entry.encode(handler)
+                value = entry.fix.encode(handler)
                 if value != handler:
                     found[value] = handler
         return types.MappingProxyType(found)
@@ -486,7 +485,7 @@ class MarketTags:
         found: set[str] = set()
         for name in self.rendered():
             entry = None if self.access.registry is None else self.access.registry.resolve(name)
-            spellings = entry.spellings() if entry is not None else (name,)
+            spellings = entry.fix.spellings() if entry is not None else (name,)
             found.update(spelled.casefold() for spelled in spellings)
         return frozenset(found)
 
@@ -533,7 +532,7 @@ def _worded_values(registry: FixRegistry, field: str, coded: Mapping[str, Any]) 
         entry = source.entry(field)
         if entry is None:
             continue
-        for spelling, code in entry.encoded.items():
+        for spelling, code in entry.fix.encoded.items():
             # One or two characters is a code respelled, not a word -- codes
             # are case-sensitive and the exact lookup owns them, on both the
             # scalar and the flat path alike.

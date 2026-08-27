@@ -70,7 +70,9 @@ def into_flat_fixmsg_batch(
     ):
         return None
 
-    protocol_version, protocol_version_source = _versions(codec, entries, tags, values, rows)
+    protocol_version, protocol_version_source = _versions(
+        codec, entries, tags, values, rows, columns.get("BeginString")
+    )
     versions = compute.drop_null(compute.unique(protocol_version))
     if protocol_version.null_count or len(versions) != 1:
         return None
@@ -149,7 +151,7 @@ def flat_fixmsg_positions(
     misplaced = _misplaced_checksum_rows(entries, parents, tags)
     eligible = compute.and_(eligible, compute.invert(misplaced))
 
-    versions, _ = _versions(codec, entries, tags, values, rows)
+    versions, _ = _versions(codec, entries, tags, values, rows, columns.get("BeginString"))
     eligible = compute.and_(eligible, compute.is_valid(versions))
     positions = sequence(rows)
     for version in compute.drop_null(compute.unique(compute.filter(versions, eligible))).sort():
@@ -224,11 +226,17 @@ def _versions(
     tags: pyarrow.Array,
     values: pyarrow.Array,
     rows: int,
+    begin_strings: pyarrow.Array | None = None,
 ) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Resolve one common non-transport BeginString once for the whole batch."""
-    begins = compute.equal(tags, 8)
-    if compute.sum(begins).as_py() == rows:
-        distinct = compute.unique(compute.filter(values, begins))
+    """Resolve one common non-transport BeginString once for the whole batch.
+
+    `begin_strings` is the column the raw stage lifted the tag into; a batch
+    written before it existed still carries the tag in `entries`, so both are
+    read and the column leads.
+    """
+    spelled = _begin_strings(entries, tags, values, rows, begin_strings)
+    if spelled is not None and spelled.null_count == 0:
+        distinct = compute.unique(spelled)
         if len(distinct) == 1:
             spelling = distinct[0].as_py()
             if not _version_key(spelling).startswith("FIXT"):
@@ -238,7 +246,26 @@ def _versions(
                         pyarrow.repeat(pyarrow.scalar(version), rows),
                         pyarrow.repeat(pyarrow.scalar(BEGIN_STRING_SOURCE), rows),
                     )
-    return codec.versions_of_entries(entries)
+    return codec.versions_of_entries(entries, begin_strings)
+
+
+def _begin_strings(
+    entries: pyarrow.Array,
+    tags: pyarrow.Array,
+    values: pyarrow.Array,
+    rows: int,
+    lifted: pyarrow.Array | None,
+) -> pyarrow.Array | None:
+    """One `BeginString` per row, from the column first and the tag second."""
+    begins = compute.equal(tags, 8)
+    inline = None
+    if compute.sum(begins, min_count=0).as_py() == rows:
+        inline = compute.filter(values, begins)
+    if lifted is None:
+        return inline
+    column = lifted.combine_chunks() if isinstance(lifted, pyarrow.ChunkedArray) else lifted
+    column = column.cast(pyarrow.string(), safe=False)
+    return column if inline is None else compute.coalesce(column, inline)
 
 
 def _complete_tagged(codec: Any, entries: pyarrow.Array, version: str) -> pyarrow.Array:

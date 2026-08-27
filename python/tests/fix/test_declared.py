@@ -81,10 +81,13 @@ def test_a_tag_the_dictionary_does_not_number_reads_as_declared(registry: FixReg
 
 def test_a_declared_type_is_held_as_arrow_spells_it() -> None:
     """A dumped rule states its unit and its zone whichever spelling wrote it."""
-    assert FieldRule(field="X", type="date").type == "date32[day]"
-    assert FieldRule(field="X", type="UTCDateOnly").type == "date32[day]"
     assert FieldRule(field="X", type="date32[day]").type == "date32[day]"
     assert FieldRule(field="X", type="int").type == "int32"
+    # A FIX datatype normalizes to what the dictionary projects it to, and
+    # every point in time projects to an instant. A rule that wants the day
+    # says so in Arrow's own spelling, which is the line above.
+    assert FieldRule(field="X", type="date").type == "timestamp[ns]"
+    assert FieldRule(field="X", type="UTCDateOnly").type == "timestamp[ns]"
 
 
 def test_a_type_that_is_neither_arrow_nor_fix_is_refused() -> None:

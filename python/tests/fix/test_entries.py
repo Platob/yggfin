@@ -17,21 +17,24 @@ import pyarrow
 import pytest
 
 from rekep.enums import EventType, State
-from rekep.fields import Field
+from rekep.fields import Field, encoded_key, encodings_of
 from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
     STANDARD,
     Alias,
     ComponentEntry,
-    FieldEntry,
     FixFieldValue,
     canonical_versions,
-    encoded_key,
-    encodings_of,
+    collapsed_record,
     fold,
+    merged_record,
     name_of,
     newest_of,
+    record_document,
+    record_for,
+    record_kind,
+    record_of,
     slug_of,
     values_of,
 )
@@ -39,7 +42,7 @@ from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
 
 
-def _entry(**changed: object) -> FieldEntry:
+def _entry(**changed: object) -> Field:
     """A numbered field declared for two versions, unless a test says otherwise."""
     declared: dict[str, object] = {
         "name": "FakeRole",
@@ -48,7 +51,7 @@ def _entry(**changed: object) -> FieldEntry:
         "type": "int",
         "description": "A role that no standard has.",
     }
-    return FieldEntry(**{**declared, **changed})
+    return record_of({**declared, **changed})
 
 
 # -- what a file is named ----------------------------------------------------
@@ -121,7 +124,7 @@ def test_the_transport_never_owns_an_application_fields_reading() -> None:
     """FIXT1.1 carries session fields; it does not redefine what they mean."""
     assert newest_of(("4.4", "FIXT1.1", "5.0")) == "5.0"
     assert newest_of(("FIXT1.1",)) == "FIXT1.1", "unless nothing else declares it"
-    assert _entry(versions=("4.4", "FIXT1.1")).newest == "4.4"
+    assert _entry(versions=("4.4", "FIXT1.1")).fix.newest == "4.4"
 
 
 # -- what a record refuses ---------------------------------------------------
@@ -142,69 +145,75 @@ def test_a_vendor_field_must_not_claim_a_tag() -> None:
     """The two kinds are what a field *is*, and a tagged vendor field is neither."""
     with pytest.raises(ValueError, match="must not claim tag"):
         _entry(kind=NAMESPACE)
-    assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).kind == NAMESPACE
+    assert record_kind(_entry(name="FAKE.CODE", tag=None, kind=NAMESPACE)) == NAMESPACE
 
 
 def test_a_stored_record_may_only_state_what_the_schema_has() -> None:
     """A key the schema does not have is a fact nothing downstream would read."""
     with pytest.raises(ValueError, match="declares unknown"):
-        FieldEntry.from_dict({"name": "FakeRole", "tag": 1, "versions": ["4.4"], "invented": "y"})
+        record_of({"name": "FakeRole", "tag": 1, "versions": ["4.4"], "invented": "y"})
 
 
 # -- what a record answers ---------------------------------------------------
 
 
 def test_a_record_is_keyed_by_its_tag_and_a_namespaced_one_by_its_name() -> None:
-    assert _entry().key == 90001
-    assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).key == "fake.code"
+    assert _entry().fix.key == 90001
+    assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).fix.key == "fake.code"
 
 
 def test_a_record_answers_to_its_name_then_to_its_aliases() -> None:
     """Two tiers, and the second is where a spelling only 4.2 used now lives."""
-    entry = _entry(aliases=(Alias(name="FakeRoleCode", source="4.2"), Alias(name="FakeRolle")))
-    assert entry.spellings() == ("FakeRole", "FakeRoleCode", "FakeRolle")
+    entry = _entry(
+        aliases=[
+            Alias(name="FakeRoleCode", source="4.2").into_dict(),
+            Alias(name="FakeRolle").into_dict(),
+        ]
+    )
+    assert entry.fix.spellings() == ("FakeRole", "FakeRoleCode", "FakeRolle")
 
 
 def test_an_alias_that_folds_to_a_name_the_record_has_adds_nothing() -> None:
     """`FAKEROLE` is how a bridge shouts `FakeRole`, and matching folds case."""
-    assert _entry(aliases=(Alias(name="FAKEROLE"),)).spellings() == ("FakeRole",)
+    assert _entry(aliases=[Alias(name="FAKEROLE").into_dict()]).fix.spellings() == ("FakeRole",)
 
 
 def test_an_alias_spelled_with_separators_is_a_spelling_of_its_own() -> None:
     """It is not folded onto the name, so it has to be recorded to be matched."""
-    assert _entry(aliases=(Alias(name="fake_role"),)).spellings() == ("FakeRole", "fake_role")
+    entry = _entry(aliases=[Alias(name="fake_role").into_dict()])
+    assert entry.fix.spellings() == ("FakeRole", "fake_role")
 
 
 def test_a_version_the_record_never_saw_has_no_declaration() -> None:
     """Absent is not "present and untyped": a caller has to be able to tell."""
-    assert _entry().into_field("4.0") is None
-    assert _entry().into_field("4.2").name == "FakeRole", "one reading, for every version"
-    assert _entry().into_field("4.2").fix["version"] == "4.2", "and it says which was asked"
+    assert record_for(_entry(), "4.0") is None
+    assert record_for(_entry(), "4.2").name == "FakeRole", "one reading, for every version"
+    assert record_for(_entry(), "4.2").fix["version"] == "4.2", "and it says which was asked"
 
 
 def test_message_usage_is_published_as_fix_msgtypes_metadata() -> None:
-    member = _entry(used_in=("ExecutionReport",)).into_field("4.2")
+    member = record_for(_entry(used_in=("ExecutionReport",)), "4.2")
 
     assert member is not None
     assert json.loads(member.fix["msgtypes"]) == ["ExecutionReport"]
     assert "used_in" not in member.fix
-    assert FieldEntry.from_fields([member], ["4.2"]).used_in == ("ExecutionReport",)
+    assert collapsed_record([member], ["4.2"]).fix.msgtypes == ("ExecutionReport",)
 
 
 def test_a_wildcard_record_answers_for_every_version() -> None:
     """What a field outside the standard has: one reading, whatever was negotiated."""
     entry = _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE, versions=(ANY_VERSION,))
-    assert entry.into_field("4.0") is not None
-    assert entry.into_field("5.0.SP2").fix["version"] == "5.0.SP2"
-    assert "tag" not in entry.into_field("4.4").fix, "no tag, rather than tag zero"
-    assert entry.into_field("4.4").fix["kind"] == NAMESPACE
+    assert record_for(entry, "4.0") is not None
+    assert record_for(entry, "5.0.SP2").fix["version"] == "5.0.SP2"
+    assert "tag" not in record_for(entry, "4.4").fix, "no tag, rather than tag zero"
+    assert record_for(entry, "4.4").fix["kind"] == NAMESPACE
 
 
 def test_a_declared_column_travels_with_the_field() -> None:
     entry = _entry(
         name="FAKE.CODE", tag=None, kind=NAMESPACE, versions=(ANY_VERSION,), column="fake"
     )
-    assert entry.into_field("4.4").fix["column"] == "fake"
+    assert record_for(entry, "4.4").fix["column"] == "fake"
 
 
 # -- codecs ------------------------------------------------------------------
@@ -232,14 +241,14 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
             FixFieldValue(value="2", meaning="Sell", aliases=("SELL_SHORT",)),
         ],
     )
-    assert entry.encode("Buy") == "1"
-    assert entry.encode("BUY") == "1"
-    assert entry.encode("sell short") == "2", "the symbol, spaced as a person would write it"
-    assert entry.encode("1") == "1", "and a raw value maps to itself"
-    assert entry.encode("nothing here") == "nothing here", "or falls through untouched"
-    assert entry.meaning("1") == "Buy", "and the value itself carries what it means"
-    assert entry.meaning("3") is None, "an unknown wire value means nothing here"
-    assert not hasattr(entry, "decode"), "there is no reverse: the wire value is the fact"
+    assert entry.fix.encode("Buy") == "1"
+    assert entry.fix.encode("BUY") == "1"
+    assert entry.fix.encode("sell short") == "2", "the symbol, spaced as a person would write it"
+    assert entry.fix.encode("1") == "1", "and a raw value maps to itself"
+    assert entry.fix.encode("nothing here") == "nothing here", "or falls through untouched"
+    assert entry.fix.meaning("1") == "Buy", "and the value itself carries what it means"
+    assert entry.fix.meaning("3") is None, "an unknown wire value means nothing here"
+    assert not hasattr(entry.fix, "decode"), "there is no reverse: the wire value is the fact"
 
 
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
@@ -247,7 +256,7 @@ def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}))
     assert "cross" not in found
     assert collisions == {"cross": ("1", "2")}
-    assert _entry(values={"1": "Cross", "2": "cross!"}).encode("Cross") == "Cross"
+    assert _entry(values={"1": "Cross", "2": "cross!"}).fix.encode("Cross") == "Cross"
 
 
 def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> None:
@@ -266,11 +275,11 @@ def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> No
 def test_a_recorded_spelling_reaches_its_value_and_survives_a_rebuild() -> None:
     """An estate's own spelling is an alias of the value, beside the dictionary's."""
     entry = _entry(values=[FixFieldValue(value="1", meaning="Buy", aliases=("achat",))])
-    assert entry.encode("achat") == "1"
-    assert entry.encode("Buy") == "1", "and the dictionary's own are still there"
-    restored = FieldEntry.from_dict(entry.into_dict())
-    assert restored.encode("achat") == "1"
-    assert restored.value_of("1").aliases == ("achat",), "the spelling survives on the value"
+    assert entry.fix.encode("achat") == "1"
+    assert entry.fix.encode("Buy") == "1", "and the dictionary's own are still there"
+    restored = record_of(record_document(entry))
+    assert restored.fix.encode("achat") == "1"
+    assert restored.fix.value_of("1").aliases == ("achat",), "the spelling survives on the value"
 
 
 def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
@@ -281,12 +290,12 @@ def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
         event_types={"D": EventType.ORDER},
     )
 
-    restored = FieldEntry.from_dict(entry.into_dict())
-    assert restored.event_types == {"D": EventType.ORDER}
-    assert json.loads(restored.into_merged().fix["event_types"]) == {"D": int(EventType.ORDER)}
-    assert restored.event_type("D") is EventType.ORDER
-    assert restored.event_type("0") is EventType.MISC, "known FIX traffic, but not market data"
-    assert restored.event_type("U1") is EventType.UNKNOWN, "not declared by this registry"
+    restored = record_of(record_document(entry))
+    assert restored.fix.event_types == {"D": EventType.ORDER}
+    assert json.loads(merged_record(restored).fix["event_types"]) == {"D": int(EventType.ORDER)}
+    assert restored.fix.event_type("D") is EventType.ORDER
+    assert restored.fix.event_type("0") is EventType.MISC, "known FIX traffic, but not market data"
+    assert restored.fix.event_type("U1") is EventType.UNKNOWN, "not declared by this registry"
 
 
 def test_market_configuration_round_trips_through_field_metadata() -> None:
@@ -298,18 +307,18 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
         states={"D": State.PENDING_NEW},
     )
 
-    restored = FieldEntry.from_dict(entry.into_dict())
-    metadata = restored.into_merged().fix
+    restored = record_of(record_document(entry))
+    metadata = merged_record(restored).fix
 
-    assert restored.event_types == {"D": EventType.ORDER}
-    assert restored.states == {"D": State.PENDING_NEW}
-    assert restored.encode("new_order_single") == "D"
-    assert restored.encode("NewOrderSingle") == "D", "however the caller spells it"
-    assert "handlers" not in restored.into_dict()
-    assert restored.into_dict()["event_types"] == {
+    assert restored.fix.event_types == {"D": EventType.ORDER}
+    assert restored.fix.states == {"D": State.PENDING_NEW}
+    assert restored.fix.encode("new_order_single") == "D"
+    assert restored.fix.encode("NewOrderSingle") == "D", "however the caller spells it"
+    assert "handlers" not in record_document(restored)
+    assert record_document(restored)["event_types"] == {
         "D": {"name": "ORDER", "id": int(EventType.ORDER)}
     }
-    assert restored.into_dict()["states"] == {
+    assert record_document(restored)["states"] == {
         "D": {"name": "PENDING_NEW", "id": int(State.PENDING_NEW)}
     }
     assert json.loads(metadata["states"]) == {"D": int(State.PENDING_NEW)}
@@ -318,20 +327,16 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
 def test_an_id_no_event_kind_has_ever_stored_is_refused() -> None:
     """A dead id must not load as a silently degraded member."""
     with pytest.raises(ValueError, match="unknown EventType"):
-        _entry(name="MsgType", tag=35, event_types={"D": 999})  # type: ignore[dict-item]
+        _entry(name="MsgType", tag=35, event_types={"D": 999})
     with pytest.raises(ValueError, match="unknown EventType"):
-        _entry(
-            name="MsgType",
-            tag=35,
-            event_types={"D": {"name": "ORDER", "id": 999}},  # type: ignore[dict-item]
-        )
+        _entry(name="MsgType", tag=35, event_types={"D": {"name": "ORDER", "id": 999}})
 
 
 def test_event_kinds_only_belong_to_msg_type_and_must_name_a_stable_code() -> None:
     with pytest.raises(ValueError, match="belong to MsgType"):
         _entry(event_types={"D": EventType.ORDER})
     with pytest.raises(ValueError, match="unknown EventType"):
-        _entry(name="MsgType", tag=35, event_types={"D": "invented"})  # type: ignore[dict-item]
+        _entry(name="MsgType", tag=35, event_types={"D": "invented"})
 
 
 @pytest.mark.parametrize(
@@ -344,7 +349,7 @@ def test_event_kinds_only_belong_to_msg_type_and_must_name_a_stable_code() -> No
 )
 def test_enum_documents_require_an_exact_string_name_and_integer_id(value: object) -> None:
     with pytest.raises(ValueError, match="unknown EventType"):
-        _entry(name="MsgType", tag=35, event_types={"D": value})  # type: ignore[dict-item]
+        _entry(name="MsgType", tag=35, event_types={"D": value})
 
 
 # -- reading a record back ---------------------------------------------------
@@ -352,13 +357,13 @@ def test_enum_documents_require_an_exact_string_name_and_integer_id(value: objec
 
 def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
     entry = _entry(
-        aliases=(Alias(name="FAKEROLE", source="pco", occurrences=3),),
+        aliases=[Alias(name="FAKEROLE", source="pco", occurrences=3).into_dict()],
         values=[FixFieldValue(value="1", meaning="One", aliases=("ONE",))],
         used_in=("Execution Report",),
         components=("FakeParties",),
         note="no longer used",
     )
-    assert FieldEntry.from_dict(entry.into_dict()) == entry
+    assert record_of(record_document(entry)) == entry
 
 
 def test_a_stored_alias_may_be_a_bare_name_or_carry_its_provenance() -> None:
@@ -373,7 +378,7 @@ def test_a_stored_alias_may_be_a_bare_name_or_carry_its_provenance() -> None:
 
 def test_an_empty_part_is_not_written_into_the_document() -> None:
     """A shard is a file people read; empties are noise in a diff."""
-    stored = _entry().into_dict()
+    stored = record_document(_entry())
     assert stored == {
         "name": "FakeRole",
         "tag": 90001,
@@ -387,8 +392,10 @@ def test_an_empty_part_is_not_written_into_the_document() -> None:
 
 
 def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -> None:
-    entry = _entry(values={"1": "One", "2": "Two"}, aliases=(Alias(name="FakeRoleCode"),))
-    merged = entry.into_merged(("4.4", "4.2", "4.0"))
+    entry = _entry(
+        values={"1": "One", "2": "Two"}, aliases=[Alias(name="FakeRoleCode").into_dict()]
+    )
+    merged = merged_record(entry, ("4.4", "4.2", "4.0"))
     assert merged.name == "FakeRole"
     assert merged.dtype == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
@@ -399,7 +406,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
 
 def test_a_merged_declaration_falls_back_to_the_records_own_order() -> None:
     """A caller with no version list still gets the record, not an exception."""
-    assert _entry().into_merged().fix["version"] == "4.2"
+    assert merged_record(_entry()).fix["version"] == "4.2"
 
 
 # -- components --------------------------------------------------------------
@@ -476,27 +483,28 @@ def test_a_record_is_built_from_the_same_field_read_from_several_versions() -> N
         fix_field("FakeRoleCode", 90001, "char", version="4.2"),
         fix_field("FakeRole", 90001, "int", version="4.4"),
     ]
-    entry = FieldEntry.from_fields(members, ["4.2", "4.4"])
-    assert entry.name == "FakeRole" and entry.tag == 90001 and entry.kind == STANDARD
-    assert entry.type == "int" and entry.versions == ("4.2", "4.4")
+    entry = collapsed_record(members, ["4.2", "4.4"])
+    assert entry.fix.canonical == "FakeRole"
+    assert entry.fix.tag == 90001 and record_kind(entry) == STANDARD
+    assert entry.fix.type == "int" and entry.fix.versions == ("4.2", "4.4")
 
 
 def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> None:
     """A value that only ever existed in 4.2 still parses, and a correction still wins."""
     older = fix_field("FakeRole", 90001, "int", version="4.2", values={"1": "First", "2": "Gone"})
     newer = fix_field("FakeRole", 90001, "int", version="4.4", values={"1": "Corrected"})
-    entry = FieldEntry.from_fields([older, newer], ["4.2", "4.4"])
-    assert entry.values == values_of({"1": "Corrected", "2": "Gone"})
+    entry = collapsed_record([older, newer], ["4.2", "4.4"])
+    assert entry.fix.enumerated == values_of({"1": "Corrected", "2": "Gone"})
 
 
 def test_a_record_needs_at_least_one_reading() -> None:
     with pytest.raises(ValueError, match="at least one declaration"):
-        FieldEntry.from_fields([], [])
+        collapsed_record([], [])
     with pytest.raises(ValueError, match="at least one declaration"):
         ComponentEntry.from_components([], [])
 
 
 def test_a_field_with_no_tag_becomes_a_vendor_record() -> None:
     member = Field(name="FAKE.CODE", dtype=pyarrow.string(), metadata={"fix:type": "String"})
-    entry = FieldEntry.from_fields([member], [ANY_VERSION])
-    assert entry.kind == NAMESPACE and entry.tag is None
+    entry = collapsed_record([member], [ANY_VERSION])
+    assert record_kind(entry) == NAMESPACE and entry.fix.tag is None

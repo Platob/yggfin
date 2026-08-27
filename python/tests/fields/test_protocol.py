@@ -208,9 +208,9 @@ def test_the_fix_view_answers_what_a_registry_record_does() -> None:
     record = registry.entry("Side")
 
     assert side.fix.spellings()[0] == "Side"
-    assert side.fix.meaning("1") == record.meaning("1")
-    assert side.fix.encode("Buy") == record.encode("Buy") == "1"
+    assert side.fix.meaning("1") == record.fix.meaning("1")
+    assert side.fix.encode("Buy") == record.fix.encode("Buy") == "1"
     assert not hasattr(side.fix, "decode"), "one direction: the wire value is the fact"
     assert side.fix.declares("4.4") and not side.fix.declares("9.9")
-    assert msg_type.fix.event_type("D") is registry.entry("MsgType").event_type("D")
+    assert msg_type.fix.event_type("D") is registry.entry("MsgType").fix.event_type("D")
     assert msg_type.fix.event_type("nothing-declares-this").name == "UNKNOWN"

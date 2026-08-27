@@ -50,7 +50,7 @@ from rekep.fix.components import (
     # that column's own default under `get_type_hints`.
     SecurityAltID as SecurityAltIDEntry,
 )
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import cast_arrow_fix, scalar_fix_value
 from rekep.fix.message import (
     group_pairs,
     indexed_group_pairs,
@@ -63,7 +63,7 @@ from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
-from rekep.text.message import Message
+from rekep.text.message import SESSION_FIELDS, Message
 
 _EVENT_CODE = pyarrow.int64()
 _CONTRACT_METADATA = MappingProxyType({"version": "2"})
@@ -691,6 +691,7 @@ class FixMsg(Message):
                 "xhash": NIL,
             }
         )
+        values.update(_session_values(source))
         values.update(declared)
         msg_type = values.get("MsgType")
         if "etype" not in declared and msg_type is not None and source.etype == EventType.UNKNOWN:
@@ -1077,6 +1078,7 @@ class FixMsg(Message):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
         rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
+        columns.update(_session_batch_columns(columns))
         messages = columns.get("message")
         if messages is not None:
             protocols = codec.categorise(messages, columns.get("plugin_code"))
@@ -1179,6 +1181,11 @@ class FixMsg(Message):
     ) -> pyarrow.RecordBatch:
         """Transcribe rows through the registry's complete configurable path."""
         rows = batch.num_rows
+        # Every way into this method hands over columns taken straight off a
+        # batch, including the fast path's fallback slice, so the header
+        # columns the raw stage lifted are read as this stage stores them here
+        # rather than at each caller.
+        columns = {**columns, **_session_batch_columns(columns)}
         parts, positions = [], []
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
@@ -1198,7 +1205,9 @@ class FixMsg(Message):
                 parts.append(codec.into_message_entries(pairs))
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
-        protocol_version, protocol_version_source = codec.versions_of_entries(entries)
+        protocol_version, protocol_version_source = codec.versions_of_entries(
+            entries, columns.get("BeginString")
+        )
         columns.update(
             {
                 "protocol_code": protocols,
@@ -2305,6 +2314,59 @@ def _id_source(value: Any) -> str:
     text = "" if value is None else str(value)
     named = IdSource.__members__.get(text.strip().upper())
     return named.into_fix() if named is not None and named.into_fix() else text
+
+
+@functools.cache
+def _session_types() -> Mapping[str, Any]:
+    """Which of the lifted header fields this stage stores as something else.
+
+    The raw stage is protocol-neutral and keeps every one of them as the text
+    the payload spelled; a `BodyLength` is a number here and a `SendingTime` an
+    instant, so the two stages disagree on exactly three of the seven and this
+    is the list of them.
+    """
+    declared = FixMsg.into_field()
+    return {
+        name: declared.field(name).dtype
+        for name, _ in SESSION_FIELDS
+        if not pyarrow.types.is_string(declared.field(name).dtype)
+    }
+
+
+def _session_batch_columns(columns: Mapping[str, Any]) -> dict[str, Any]:
+    """The header columns the raw stage lifted, read as this stage stores them.
+
+    The raw stage is protocol-neutral and keeps every one of them as text; a
+    `BodyLength` is a number here and a `SendingTime` an instant, so the three
+    that differ are cast once for the whole batch instead of being scanned for
+    again in `entries`.
+    """
+    found: dict[str, Any] = {}
+    for name, dtype in _session_types().items():
+        column = columns.get(name)
+        if column is None:
+            continue
+        if pyarrow.types.is_string(column.type):
+            found[name] = cast_arrow_fix(column, dtype)
+    return found
+
+
+def _session_values(source: Message) -> dict[str, Any]:
+    """The header fields the raw stage already lifted, as this stage holds them.
+
+    Read off the columns rather than out of `entries`: the raw stage parsed
+    them once, and scanning the list again for facts already in hand is what
+    this exists to stop.
+    """
+    typed = _session_types()
+    found: dict[str, Any] = {}
+    for name, _ in SESSION_FIELDS:
+        value = getattr(source, name, None)
+        if value is None:
+            continue
+        dtype = typed.get(name)
+        found[name] = value if dtype is None else scalar_fix_value(value, dtype)
+    return found
 
 
 def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:

@@ -217,7 +217,7 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
     """The real dictionary uses one codec path for prose, symbols and values."""
-    stamps = registry.resolve("TrdRegTimestampType")
+    stamps = registry.resolve("TrdRegTimestampType").fix
     assert stamps.encode("Order Submission Time") == "10"
     assert stamps.encode("ORDER_SUBMISSION_TIME") == "10"
     assert stamps.encode("ordersubmissiontime") == "10"
@@ -368,7 +368,7 @@ def test_the_builtin_projection_matches_the_published_versions(
     # 170 is the vendor field, which `tags()` cannot map because it has no tag.
     assert len(builtin.tags()) == 177
     assert len(builtin.field_entries()) == 180
-    assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
+    assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     selected = {
         int(tag)
         for version in registry.versions
@@ -522,7 +522,7 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     # correct one in each case, and never a string standing in for a number.
     assert registry.field("RatioQty", "4.3").dtype == pyarrow.float64()
     assert registry.field("MaturityDay", "4.1").dtype == pyarrow.int64()
-    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.date32()
+    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("ns")
 
 
 # -- the second source --------------------------------------------------------

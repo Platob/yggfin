@@ -696,7 +696,9 @@ def test_a_leg_is_the_exact_fix_named_shape() -> None:
         "buffer",
     ]
     assert field.field("LegSymbol").metadata["fix:tag"] == "600"
-    assert field.field("LegMaturityDate").dtype == pyarrow.date32()
+    assert field.field("LegMaturityDate").dtype == pyarrow.timestamp("us"), (
+        "a LocalMktDate is the instant the day begins, in a zone the message never names"
+    )
     assert field.field("LegRatioQty").dtype == pyarrow.float64()
     assert field.field("LegPutOrCall").dtype == pyarrow.int32()
     assert LEGS.value_field.nullable is False
@@ -752,7 +754,7 @@ def test_legs_resolve_through_the_shared_instrument_leg_component() -> None:
 
     first, second = legs.to_pylist()[0]
     assert (first["LegSymbol"], first["LegSide"], first["LegRatioQty"]) == ("AAPL", "1", 1.0)
-    assert first["LegMaturityDate"] == datetime.date(2027, 1, 15)
+    assert first["LegMaturityDate"] == datetime.datetime(2027, 1, 15)
     assert first["LegStrikePrice"] == 150.5
     assert (second["LegSymbol"], second["LegSide"], second["LegCurrency"]) == ("MSFT", "2", "USD")
     assert _pairs(residual.to_pylist()[0]) == [(55, "SPREAD"), (10, "000")]

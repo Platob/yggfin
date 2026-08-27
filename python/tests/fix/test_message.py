@@ -66,8 +66,11 @@ def test_tag_18_never_reads_as_a_beginstring() -> None:
 @pytest.mark.parametrize("line", [PIPE, SOHED, CARET])
 def test_the_two_spellings_parse_identically(line: str) -> None:
     parsed = FixMsg.from_text(line)
+
     assert _raw(parsed, 8).startswith("FIX")
-    assert _raw(parsed, 9) in {"2058", "100"}
+    # A lifted header field answers from its column, and `BodyLength` is a
+    # number there: the raw stage keeps the text, this stage keeps the reading.
+    assert _raw(parsed, 9) in {2058, 100}
 
 
 def test_the_pipe_message_has_every_field() -> None:

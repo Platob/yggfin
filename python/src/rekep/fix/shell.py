@@ -10,11 +10,22 @@ from functools import cache
 from typing import Any
 
 from rekep.console import Console
+from rekep.fields import Field
+from rekep.filesystems import read_bytes
 from rekep.fix import quickfix
-from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import (
+    ANY_VERSION,
+    NAMESPACE,
+    STANDARD,
+    Alias,
+    ComponentEntry,
+    record_copy,
+    record_kind,
+    record_of,
+)
 from rekep.fix.fields import FIX_SCALARS
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import field_document
+from rekep.fix.store import DOCUMENT_SUFFIXES, document_of, field_document, is_document
 
 #: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
@@ -205,24 +216,25 @@ class Shell:
 
     def _show(self, rest: str) -> None:
         """One field identity: its reading, the versions declaring it, its values."""
-        entry = self._entry(rest)
-        if entry is None:
+        record = self._record(rest)
+        if record is None:
             return
+        fix = record.fix
         rows = [
-            _detail(self.console, "tag", entry.tag or "-"),
-            _detail(self.console, "kind", entry.kind),
-            _detail(self.console, "type", entry.type or "-"),
-            _detail(self.console, "column", entry.column or "-"),
-            _detail(self.console, "versions", ", ".join(entry.versions)),
-            _detail(self.console, "spellings", ", ".join(entry.spellings())),
+            _detail(self.console, "tag", fix.tag or "-"),
+            _detail(self.console, "kind", record_kind(record)),
+            _detail(self.console, "type", fix.type or "-"),
+            _detail(self.console, "column", fix.column or "-"),
+            _detail(self.console, "versions", ", ".join(fix.versions)),
+            _detail(self.console, "spellings", ", ".join(fix.spellings())),
             _detail(
                 self.console,
                 "about",
-                _clipped(entry.description, max(20, self.console.width - 18)) or "-",
+                _clipped(record.description, max(20, self.console.width - 18)) or "-",
             ),
         ]
-        self.console.panel(entry.name, rows)
-        values = entry.values
+        self.console.panel(fix.canonical, rows)
+        values = fix.enumerated
         if values:
             self.console.table(
                 ("value", "means", "symbol"),
@@ -387,35 +399,39 @@ class Shell:
             self.console.warn("say which: `add-field field.json`")
             return
         path = _unquoted(path)
-        entry = FieldEntry.from_file(path)
-        self._field_panel(entry, source=path)
+        record = _declaration(path)
+        self._field_panel(record, source=path)
         verb = "update" if update else "add"
-        if not self._confirm(f"{verb} {entry.name}"):
+        if not self._confirm(f"{verb} {record.fix.canonical}"):
             self.console.warn("nothing was written")
             return
-        stored = self.registry.update_field(entry) if update else self.registry.add_field(entry)
-        self.console.ok(f"{'updated' if update else 'added'} {stored.name}")
+        stored = self.registry.update_field(record) if update else self.registry.add_field(record)
+        self.console.ok(f"{'updated' if update else 'added'} {stored.fix.canonical}")
 
     def _add(self, rest: str) -> None:
         """Build one field identity by answering for each part of it."""
-        entry = self._built(None, name=rest)
-        if entry is None:
+        record = self._built(None, name=rest)
+        if record is None:
             return
-        self.registry.add_field(entry)
-        self.console.ok(f"added {entry.name} {self.console.glyph('arrow')} {field_document(entry)}")
+        self.registry.add_field(record)
+        self.console.ok(
+            f"added {record.fix.canonical} {self.console.glyph('arrow')} {field_document(record)}"
+        )
 
     def _edit(self, rest: str) -> None:
         """Change one stored identity, keeping every part left unanswered."""
-        held = self._entry(rest)
+        held = self._record(rest)
         if held is None:
             return
-        entry = self._built(held)
-        if entry is None:
+        record = self._built(held)
+        if record is None:
             return
-        self.registry.update_field(dataclasses.replace(entry, aliases=held.aliases))
-        self.console.ok(f"updated {entry.name}")
+        written = record_copy(record)
+        written.fix.named_aliases = held.fix.named_aliases
+        self.registry.update_field(written)
+        self.console.ok(f"updated {written.fix.canonical}")
 
-    def _built(self, held: FieldEntry | None, name: str = "") -> FieldEntry | None:
+    def _built(self, held: Field | None, name: str = "") -> Field | None:
         """One field identity, question by question, confirmed before it is returned.
 
         `held` supplies every default when there is one, so editing is
@@ -424,65 +440,68 @@ class Shell:
         """
         console = self.console
         console.rule("field")
-        name = self._ask_for("name", held.name if held else name)
+        name = self._ask_for("name", held.fix.canonical if held else name)
         if not name:
             console.warn("a field needs a name")
             return None
         tag = self._ask_for(
-            "tag (blank for a field FIX never numbered)", str(held.tag or "") if held else ""
+            "tag (blank for a field FIX never numbered)", str(held.fix.tag or "") if held else ""
         )
         if tag and not tag.isdigit():
             console.warn(f"{tag!r} is not a tag")
             return None
         version = self._ask_for(
             "versions it is declared for, comma separated (`*` holds for all of them)",
-            ", ".join(held.versions) if held else self._newest(),
+            ", ".join(held.fix.versions) if held else self._newest(),
         )
-        versions = tuple(part.strip() for part in version.split(",") if part.strip())
+        versions = [part.strip() for part in version.split(",") if part.strip()]
         if not versions:
             console.warn("a field is declared for at least one version")
             return None
         console.note(f"types: {', '.join(sorted(FIX_SCALARS)[:12])}{console.glyph('ellipsis')}")
-        datatype = self._ask_for("FIX datatype", (held.type if held else "") or "String")
+        datatype = self._ask_for("FIX datatype", (held.fix.type if held else "") or "String")
         described = self._ask_for("one factual line about it", held.description if held else "")
         column = self._ask_for(
-            "parsed-log column, when the log declares one", held.column if held else ""
+            "parsed-log column, when the log declares one", held.fix.column if held else ""
         )
-        entry = FieldEntry(
-            name=name,
-            tag=int(tag) if tag else None,
-            kind=STANDARD if tag else NAMESPACE,
-            aliases=held.aliases if held else (),
-            versions=versions,
-            type=datatype,
-            description=described,
-            values=held.values if held else (),
-            column=column,
+        record = record_of(
+            {
+                "name": name,
+                "tag": int(tag) if tag else None,
+                "kind": STANDARD if tag else NAMESPACE,
+                "aliases": list(held.fix.aliases) if held else [],
+                "versions": versions,
+                "type": datatype,
+                "description": described,
+                "values": list(held.fix.enumerated) if held else [],
+                "column": column,
+            }
         )
-        self._field_panel(entry)
+        self._field_panel(record)
         if not self._confirm("write it"):
             console.warn("nothing was written")
             return None
-        return entry
+        return record
 
-    def _field_panel(self, entry: FieldEntry, *, source: str = "") -> None:
+    def _field_panel(self, record: Field, *, source: str = "") -> None:
         """Show one complete field record before a write."""
+        fix = record.fix
         rows = [
-            _detail(self.console, "tag", entry.tag or "-"),
-            _detail(self.console, "kind", entry.kind),
-            _detail(self.console, "versions", ", ".join(entry.versions)),
-            _detail(self.console, "type", entry.type or "-"),
-            _detail(self.console, "description", _clipped(entry.description, 60) or "-"),
-            _detail(self.console, "column", entry.column or "-"),
+            _detail(self.console, "tag", fix.tag or "-"),
+            _detail(self.console, "kind", record_kind(record)),
+            _detail(self.console, "versions", ", ".join(fix.versions)),
+            _detail(self.console, "type", fix.type or "-"),
+            _detail(self.console, "description", _clipped(record.description, 60) or "-"),
+            _detail(self.console, "column", fix.column or "-"),
         ]
         if source:
             rows.append(_detail(self.console, "source", source))
-        self.console.panel(entry.name, rows)
+        self.console.panel(fix.canonical, rows)
 
     def _alias(self, rest: str) -> None:
         """Record another spelling one field has been observed under."""
-        entry = self._entry(rest)
-        if entry is None:
+        record = self._record(rest)
+        if record is None:
             return
         spelling = self._ask_for("the spelling to record", "")
         if not spelling:
@@ -497,7 +516,7 @@ class Shell:
         self.console.panel(
             "alias",
             [
-                _detail(self.console, "field", entry.name),
+                _detail(self.console, "field", record.fix.canonical),
                 _detail(self.console, "spelling", proposed.name),
                 _detail(self.console, "source", proposed.source or "-"),
                 _detail(self.console, "occurrences", proposed.occurrences),
@@ -507,23 +526,24 @@ class Shell:
             self.console.warn("nothing was written")
             return
         updated = self.registry.alias_field(
-            entry.name,
+            record.fix.canonical,
             proposed,
         )
-        self.console.ok(f"{updated.name} answers to {', '.join(updated.spellings())}")
+        self.console.ok(f"{updated.fix.canonical} answers to {', '.join(updated.fix.spellings())}")
 
     def _remove(self, rest: str) -> None:
         """Delete one field identity, after saying which one it resolved to."""
-        entry = self._entry(rest)
-        if entry is None:
+        record = self._record(rest)
+        if record is None:
             return
-        if not self._confirm(f"remove {entry.name}"):
+        name = record.fix.canonical
+        if not self._confirm(f"remove {name}"):
             self.console.warn("kept")
             return
-        if self.registry.remove_field(entry.name):
-            self.console.ok(f"removed {entry.name}")
+        if self.registry.remove_field(name):
+            self.console.ok(f"removed {name}")
         else:
-            self.console.fail(f"{entry.name} was not in this store")
+            self.console.fail(f"{name} was not in this store")
 
     def _check(self, rest: str) -> None:
         """Everything inconsistent about this store; nothing means it is sound."""
@@ -618,14 +638,14 @@ class Shell:
         answer = self._ask(f"  {question}? [y/N] {self.console.glyph('prompt')} ").strip().lower()
         return answer in YES
 
-    def _entry(self, name: str) -> FieldEntry | None:
+    def _record(self, name: str) -> Field | None:
         """The identity `name` resolves to, saying what else it could have meant."""
         if not name:
             self.console.warn("name a field: `show PartyRole`")
             return None
-        entry = self.registry.entry(name)
-        if entry is not None:
-            return entry
+        record = self.registry.entry(name)
+        if record is not None:
+            return record
         self.console.fail(f"no field {name!r} in this store")
         near = self.registry.search(name, limit=5)
         if near:
@@ -638,6 +658,21 @@ def _clipped(text: str, width: int) -> str:
     text = " ".join(str(text).split())
     suffix = "..."
     return text if len(text) <= width else text[: max(0, width - len(suffix))] + suffix
+
+
+def _declaration(path: str) -> Field:
+    """The field record one complete declaration document states.
+
+    JSON or YAML, decided by the name the store decides it by, because an
+    extension is the only thing that says which format a file holds; a name
+    that says neither is refused before its bytes are read as either.
+    """
+    spelled = f"{path}.yaml" if path.endswith(".yml") else path
+    if not is_document(spelled):
+        raise ValueError(
+            f"{path} is not a document this can read: name it {' or '.join(DOCUMENT_SUFFIXES)}"
+        )
+    return record_of(document_of(read_bytes(path), spelled))
 
 
 def _unquoted(text: str) -> str:
@@ -666,6 +701,6 @@ def shell(
     ).run()
 
 
-#: Re-exported so a caller building an entry document has the same names the
+#: Re-exported so a caller building a stored document has the same names the
 #: prompt uses, without importing two modules to do it.
-__all__ = ["ComponentEntry", "FieldEntry", "Shell", "shell"]
+__all__ = ["ComponentEntry", "Shell", "record_of", "shell"]
