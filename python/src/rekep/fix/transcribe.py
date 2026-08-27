@@ -792,7 +792,7 @@ class FixCodec(Convertible):
             name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()
         }
         columns.update(
-            (field.name, pyarrow.nulls(rows, field.arrow_type)) for field in declared.values()
+            (field.name, pyarrow.nulls(rows, field.data_type)) for field in declared.values()
         )
         if isinstance(entries, pyarrow.ChunkedArray):
             entries = entries.combine_chunks()
@@ -856,7 +856,7 @@ class FixCodec(Convertible):
                 column = _cast(raw, fields[one], FLAT_TYPES[one])
             else:
                 field = declared[named[-1 - one].as_py()]
-                column = cast_arrow_fix(raw, field.arrow_type)
+                column = cast_arrow_fix(raw, field.data_type)
             changed = _raw_spelling_changed(raw, column)
             if compute.any(changed, min_count=0).as_py():
                 retained_identities.append(compute.filter(identities, changed))
@@ -1561,7 +1561,7 @@ def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
     return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in ENTRY_PARTS)
 
 
-def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
+def _cast(column: Any, field: Field, data_type: pyarrow.DataType) -> Any:
     """One lifted column at the width its log column stores.
 
     Both steps go through `cast_arrow_fix` where the first left text, because
@@ -1569,13 +1569,13 @@ def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
     a declared reading of `20260821-10:00:00` as a string still has to land in
     a timestamp column, and a raw cast of it would take the batch with it.
     """
-    read = cast_arrow_fix(column, field.arrow_type)
-    if read.type.equals(arrow_type):
+    read = cast_arrow_fix(column, field.data_type)
+    if read.type.equals(data_type):
         return read
     kinds = pyarrow.types
     if kinds.is_string(read.type) or kinds.is_large_string(read.type):
-        return cast_arrow_fix(read, arrow_type)
-    return read.cast(arrow_type, safe=False)
+        return cast_arrow_fix(read, data_type)
+    return read.cast(data_type, safe=False)
 
 
 def _raw_spelling_changed(raw: Any, typed: Any) -> Any:
@@ -1678,7 +1678,7 @@ def _mapped(
     mask: Any,
     keys: Any,
     items: Any,
-    arrow_type: pyarrow.DataType,
+    data_type: pyarrow.DataType,
 ) -> pyarrow.Array:
     """One half of a split, with the source's own rows and nulls.
 
@@ -1690,12 +1690,12 @@ def _mapped(
     with nothing in it".
     """
     offsets = _selected_offsets(source, lengths, mask)
-    if pyarrow.types.is_map(arrow_type):
-        return pyarrow.MapArray.from_arrays(offsets, keys, items, type=arrow_type)
+    if pyarrow.types.is_map(data_type):
+        return pyarrow.MapArray.from_arrays(offsets, keys, items, type=data_type)
     entries = pyarrow.StructArray.from_arrays(
-        [keys, items], fields=[arrow_type.value_type.field(0), arrow_type.value_type.field(1)]
+        [keys, items], fields=[data_type.value_type.field(0), data_type.value_type.field(1)]
     )
-    return pyarrow.ListArray.from_arrays(offsets, entries, type=arrow_type)
+    return pyarrow.ListArray.from_arrays(offsets, entries, type=data_type)
 
 
 def _selected_offsets(source: Any, lengths: Any, mask: Any) -> pyarrow.Array:

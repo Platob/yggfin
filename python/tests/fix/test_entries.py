@@ -274,7 +274,7 @@ def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
 
     restored = FieldEntry.from_dict(entry.into_dict())
     assert restored.event_types == {"D": EventType.ORDER}
-    assert json.loads(restored.into_merged().fix["event_types"]) == {"D": 110}
+    assert json.loads(restored.into_merged().fix["event_types"]) == {"D": int(EventType.ORDER)}
     assert restored.event_type("D") is EventType.ORDER
     assert restored.event_type("0") is EventType.MISC, "known FIX traffic, but not market data"
     assert restored.event_type("U1") is EventType.UNKNOWN, "not declared by this registry"
@@ -297,7 +297,9 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
     assert restored.encode("new_order_single") == "D"
     assert restored.decode("D") == "newordersingle"
     assert "handlers" not in restored.into_dict()
-    assert restored.into_dict()["event_types"] == {"D": {"name": "ORDER", "id": 110}}
+    assert restored.into_dict()["event_types"] == {
+        "D": {"name": "ORDER", "id": int(EventType.ORDER)}
+    }
     assert restored.into_dict()["states"] == {"D": {"name": "PENDING_NEW", "id": 110}}
     assert json.loads(metadata["states"]) == {"D": int(State.PENDING_NEW)}
 
@@ -366,7 +368,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
     entry = _entry(values={"1": "One", "2": "Two"}, aliases=(Alias(name="FakeRoleCode"),))
     merged = entry.into_merged(("4.4", "4.2", "4.0"))
     assert merged.name == "FakeRole"
-    assert merged.arrow_type == pyarrow.int32()
+    assert merged.data_type == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
     assert merged.fix["version"] == "4.4", "the version the reading was taken from"
     assert json.loads(merged.fix["values"]) == {"1": "One", "2": "Two"}
@@ -470,6 +472,6 @@ def test_a_record_needs_at_least_one_reading() -> None:
 
 
 def test_a_field_with_no_tag_becomes_a_vendor_record() -> None:
-    member = Field(name="FAKE.CODE", arrow_type=pyarrow.string(), metadata={"fix:type": "String"})
+    member = Field(name="FAKE.CODE", data_type=pyarrow.string(), metadata={"fix:type": "String"})
     entry = FieldEntry.from_fields([member], [ANY_VERSION])
     assert entry.kind == NAMESPACE and entry.tag is None

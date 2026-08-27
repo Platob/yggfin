@@ -582,7 +582,7 @@ def test_the_whole_unified_table_comes_back_in_one_call(store: Offline) -> None:
     assert sorted(merged) == ["FakeCode", "FakeRole"]
     scalar = store.scalar("FakeRole")
     assert merged["FakeRole"].name == scalar.name
-    assert merged["FakeRole"].arrow_type == scalar.arrow_type
+    assert merged["FakeRole"].data_type == scalar.data_type
     assert merged["FakeRole"].metadata == scalar.metadata, "the same declaration, in bulk"
     assert json.loads(merged["FakeRole"].fix["versions"]) == ["9.1", "9.0"]
 
@@ -1336,7 +1336,7 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
     assert group.nullable, "the group itself is optional in this declaration"
     member = group.item.field("fake_role")
     assert not member.nullable, "and its one member is required"
-    assert member.arrow_type == pyarrow.int32(), "typed from the dictionary, not guessed"
+    assert member.data_type == pyarrow.int32(), "typed from the dictionary, not guessed"
 
 
 def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:

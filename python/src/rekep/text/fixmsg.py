@@ -306,7 +306,7 @@ class FixMsg(Message):
     Parties: Annotated[
         list[Party] | None,
         Field(
-            arrow_type=PARTIES,
+            data_type=PARTIES,
             metadata={"fix:component": "Parties"},
         ),
     ] = None
@@ -315,7 +315,7 @@ class FixMsg(Message):
     TrdRegTimestamps: Annotated[
         list[TrdRegTimestamp] | None,
         Field(
-            arrow_type=TRD_REG_TIMESTAMPS,
+            data_type=TRD_REG_TIMESTAMPS,
             metadata={"fix:component": "TrdRegTimestamps"},
         ),
     ] = None
@@ -324,7 +324,7 @@ class FixMsg(Message):
     SideTrdRegTS: Annotated[
         list[SideTrdRegTimestamp] | None,
         Field(
-            arrow_type=SIDE_TRD_REG_TIMESTAMPS,
+            data_type=SIDE_TRD_REG_TIMESTAMPS,
             metadata={"fix:component": "SideTrdRegTS"},
         ),
     ] = None
@@ -612,7 +612,7 @@ class FixMsg(Message):
     SecurityAltID: Annotated[
         list[SecurityAltIDEntry] | None,
         Field(
-            arrow_type=SECURITY_ALT_IDS,
+            data_type=SECURITY_ALT_IDS,
             metadata={"fix:component": "SecurityAltID"},
         ),
     ] = None
@@ -621,7 +621,7 @@ class FixMsg(Message):
     Legs: Annotated[
         list[Leg] | None,
         Field(
-            arrow_type=LEGS,
+            data_type=LEGS,
             metadata={"fix:component": "Legs"},
         ),
     ] = None
@@ -1773,7 +1773,7 @@ class FixMsg(Message):
                 "security_id": batch.column("SecurityID"),
                 "security_id_source": batch.column("SecurityIDSource"),
                 "isin_code": batch.column("ISINCODE"),
-                "alt_ids": normalized.alt_ids(target.field("alt_ids").arrow_type),
+                "alt_ids": normalized.alt_ids(target.field("alt_ids").data_type),
                 "security_type": batch.column("SecurityType"),
                 "cfi": batch.column("CFICode"),
                 "exchange": batch.column("SecurityExchange"),
@@ -1787,7 +1787,7 @@ class FixMsg(Message):
                 "strike": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
                 "option_kind": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
                 "label": normalized.first("SecurityDesc"),
-                "legs": normalized.legs(target.field("legs").arrow_type),
+                "legs": normalized.legs(target.field("legs").data_type),
             }
         )
         raw = pyarrow.RecordBatch.from_arrays(
@@ -2014,32 +2014,32 @@ class _NormalizedInstrumentFields:
             return pyarrow.nulls(len(roots), pyarrow.string())
         return compute.take(values, compute.index_in(roots, value_set=ids))
 
-    def alt_ids(self, arrow_type: pyarrow.DataType | None) -> pyarrow.Array:
+    def alt_ids(self, data_type: pyarrow.DataType | None) -> pyarrow.Array:
         """Alternative identifiers as one nullable Arrow map per row."""
-        assert arrow_type is not None
+        assert data_type is not None
         roots, parents, values = self._roots("NoSecurityAltID", "SecurityAltID", nonblank=True)
         sizes = dense_counts(parents, self.rows)
         sources = _id_source_name_arrow(
             self._member(roots, "NoSecurityAltID", "SecurityAltIDSource")
         )
         return build_map(
-            arrow_type,
+            data_type,
             sizes,
             sources,
             values,
             mask=pyarrow.compute.equal(sizes, 0),
         )
 
-    def legs(self, arrow_type: pyarrow.DataType | None) -> pyarrow.Array:
+    def legs(self, data_type: pyarrow.DataType | None) -> pyarrow.Array:
         """Normalized leg groups as one nullable Arrow list per row."""
-        assert arrow_type is not None
+        assert data_type is not None
         roots, parents, xhash = self._roots("NoLegs", "xhash")
         sizes = dense_counts(parents, self.rows)
 
         def member(name: str) -> pyarrow.Array:
             return self._member(roots, "NoLegs", name)
 
-        item = arrow_type.value_type
+        item = data_type.value_type
         columns = {
             "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
@@ -2062,7 +2062,7 @@ class _NormalizedInstrumentFields:
             fields=[item.field(index) for index in range(item.num_fields)],
         )
         return build_list(
-            arrow_type,
+            data_type,
             sizes,
             entries,
             mask=pyarrow.compute.equal(sizes, 0),

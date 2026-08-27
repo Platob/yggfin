@@ -65,7 +65,7 @@ class Entry(Convertible, Mapping[str, Any]):
     __folded: str | None = None
     __folded_lead: str | None = None
 
-    tag: Annotated[int, Field(arrow_type=TAG)] = 0
+    tag: Annotated[int, Field(data_type=TAG)] = 0
     """Numeric identity written or resolved; zero while unresolved."""
 
     key: str = ""
@@ -329,7 +329,7 @@ class Entry(Convertible, Mapping[str, Any]):
 
 
 ENTRIES: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field("item", Entry.into_field().arrow_type, nullable=False)
+    pyarrow.field("item", Entry.into_field().data_type, nullable=False)
 )
 ENTRY_PARTS: tuple[str, ...] = tuple(member.name for member in ENTRIES.value_type)
 

@@ -162,7 +162,11 @@ def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
 
     found = Message.parse_arrow(messages, EVENT_TYPES)
 
-    assert found["etype"].to_pylist() == [10, 110, 320]
+    assert found["etype"].to_pylist() == [
+        int(EventType.MISC),
+        int(EventType.ORDER),
+        int(EventType.BOOK),
+    ]
     assert found["MsgType"].to_pylist() == [None, "D", "W"]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
@@ -178,7 +182,7 @@ def test_unstructured_long_rows_never_enter_the_key_value_splitter(monkeypatch) 
     monkeypatch.setattr(Entry, "parse_arrow", classmethod(unexpected))
     found = Message.parse_arrow(pyarrow.array(["x" * 1_000_000, "diagnostic A=1"]), EVENT_TYPES)
 
-    assert found["etype"].to_pylist() == [10, 10]
+    assert found["etype"].to_pylist() == [int(EventType.MISC), int(EventType.MISC)]
     assert found["entries"].to_pylist() == [[], []]
 
 
@@ -246,4 +250,4 @@ def test_empty_input_keeps_the_declared_column_types() -> None:
 
     assert found["etype"].type == pyarrow.int32()
     assert found["MsgType"].type == pyarrow.string()
-    assert found["entries"].type == Message.into_field().field("entries").arrow_type
+    assert found["entries"].type == Message.into_field().field("entries").data_type

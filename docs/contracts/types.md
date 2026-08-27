@@ -20,7 +20,7 @@ class Quote(Convertible):
     day: Annotated[datetime.date, Field.partition_key()]
     """Trading day."""
 
-    size: Annotated[int, Field(arrow_type=pyarrow.int32())]
+    size: Annotated[int, Field(data_type=pyarrow.int32())]
     """Quantity in lots."""
 
     note: str | None = None

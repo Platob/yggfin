@@ -182,9 +182,7 @@ class Order(MarketEvent):
     parent_order_id: Annotated[str | None, fix_tag("ParentOrderID")] = None
     """Venue order identity of the parent in a replace chain, where a bridge says it."""
 
-    cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", arrow_type=pyarrow.int32())] = (
-        None
-    )
+    cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", data_type=pyarrow.int32())] = None
     """Why a cancel or amend was refused, in FIX's own codes; null off a reject."""
 
     cxl_rej_response_to: Annotated[str | None, fix_tag("CxlRejResponseTo")] = None

@@ -36,22 +36,22 @@ def value_of(member: Field, row: int) -> Any:
     read meaning into what the scaffolding put in the rest.
     """
     kinds = pyarrow.types
-    arrow_type = member.arrow_type
-    if kinds.is_struct(arrow_type):
+    data_type = member.data_type
+    if kinds.is_struct(data_type):
         return {inner.name: value_of(inner, row) for inner in member.fields if not inner.nullable}
-    if kinds.is_list(arrow_type) or kinds.is_large_list(arrow_type):
+    if kinds.is_list(data_type) or kinds.is_large_list(data_type):
         return []
-    if kinds.is_map(arrow_type):
+    if kinds.is_map(data_type):
         return {}
-    if arrow_type == pyarrow.binary(16):
+    if data_type == pyarrow.binary(16):
         return identifier(row).bytes
-    if kinds.is_date(arrow_type):
+    if kinds.is_date(data_type):
         return DAY
-    if kinds.is_integer(arrow_type):
+    if kinds.is_integer(data_type):
         return UNIX if member.name.endswith("unix") else 0
-    if kinds.is_floating(arrow_type):
+    if kinds.is_floating(data_type):
         return 0.0
-    if kinds.is_boolean(arrow_type):
+    if kinds.is_boolean(data_type):
         return False
     return ""
 

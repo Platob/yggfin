@@ -299,50 +299,50 @@ def metrics_for(source: StructField) -> dict[str, str]:
         **dict.fromkeys(source.primary_keys(), ""),
     }
     properties = {
-        f"{COLUMN_METRICS}.{name}": _mode(source.field(name).arrow_type) for name in declared
+        f"{COLUMN_METRICS}.{name}": _mode(source.field(name).data_type) for name in declared
     }
-    counted = len(_leaves(source.arrow_type))
+    counted = len(_leaves(source.data_type))
     if counted > DEFAULT_INFERRED:
         properties[INFERRED_METRICS] = str(min(counted, MAX_INFERRED))
     return properties
 
 
-def _mode(arrow_type: pyarrow.DataType) -> str:
-    """The metrics mode a column of `arrow_type` is worth collecting under.
+def _mode(data_type: pyarrow.DataType) -> str:
+    """The metrics mode a column of `data_type` is worth collecting under.
 
     A bound on a long string is the string, in every manifest entry that names
     the file; sixteen characters is Iceberg's own default and prunes a prefix
     filter just as well. Anything fixed-width is cheap enough to keep whole.
     """
     kinds = pyarrow.types
-    if kinds.is_string(arrow_type) or kinds.is_large_string(arrow_type):
+    if kinds.is_string(data_type) or kinds.is_large_string(data_type):
         return "truncate(16)"
-    if kinds.is_binary(arrow_type) or kinds.is_large_binary(arrow_type):
+    if kinds.is_binary(data_type) or kinds.is_large_binary(data_type):
         return "truncate(16)"
     return "full"
 
 
-def _leaves(arrow_type: pyarrow.DataType) -> list[str]:
-    """Every leaf of `arrow_type`, in the pre-order Iceberg counts in.
+def _leaves(data_type: pyarrow.DataType) -> list[str]:
+    """Every leaf of `data_type`, in the pre-order Iceberg counts in.
 
     A list contributes its item's leaves and a map its key and value, which is
     what makes a nested member expensive against a budget it can never benefit
     from: Iceberg collects no bounds for a field under a repeated one.
     """
     kinds = pyarrow.types
-    if kinds.is_struct(arrow_type):
+    if kinds.is_struct(data_type):
         found: list[str] = []
-        for index in range(arrow_type.num_fields):
-            member = arrow_type.field(index)
+        for index in range(data_type.num_fields):
+            member = data_type.field(index)
             found += _under(member.name, member.type)
         return found
-    if kinds.is_list(arrow_type) or kinds.is_large_list(arrow_type):
-        return _under("item", arrow_type.field(0).type)
-    if kinds.is_map(arrow_type):
-        return _under("key", arrow_type.key_type) + _under("value", arrow_type.item_type)
+    if kinds.is_list(data_type) or kinds.is_large_list(data_type):
+        return _under("item", data_type.field(0).type)
+    if kinds.is_map(data_type):
+        return _under("key", data_type.key_type) + _under("value", data_type.item_type)
     return [""]
 
 
-def _under(name: str, arrow_type: pyarrow.DataType) -> list[str]:
-    """`_leaves` of `arrow_type`, each spelled below `name`."""
-    return [f"{name}.{one}" if one else name for one in _leaves(arrow_type)]
+def _under(name: str, data_type: pyarrow.DataType) -> list[str]:
+    """`_leaves` of `data_type`, each spelled below `name`."""
+    return [f"{name}.{one}" if one else name for one in _leaves(data_type)]

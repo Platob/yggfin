@@ -69,14 +69,14 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
     arrow_batch = batch.select([f.name for f in fillable])
 
     struct_array = batch.column("venue")
-    struct_field = Field(name="venue", arrow_type=WIDER_VENUE, nullable=True)
+    struct_field = Field(name="venue", data_type=WIDER_VENUE, nullable=True)
     list_array = batch.column("legs")
     list_field = Field(
-        name="legs", arrow_type=pyarrow.list_(pyarrow.field("item", WIDER_VENUE)), nullable=True
+        name="legs", data_type=pyarrow.list_(pyarrow.field("item", WIDER_VENUE)), nullable=True
     )
     map_array = batch.column("tags")
     map_field = Field(
-        name="tags", arrow_type=pyarrow.map_(pyarrow.string(), pyarrow.int32()), nullable=True
+        name="tags", data_type=pyarrow.map_(pyarrow.string(), pyarrow.int32()), nullable=True
     )
 
     # A batch far wider than the target: the columns nobody asked for must not
@@ -91,14 +91,14 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
     map_array = batch.column("tags")
     struct_of_map = Field(
         name="tags",
-        arrow_type=pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())]),
+        data_type=pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())]),
         nullable=True,
     )
     map_of_struct = Field(
-        name="venue", arrow_type=pyarrow.map_(pyarrow.string(), pyarrow.string()), nullable=True
+        name="venue", data_type=pyarrow.map_(pyarrow.string(), pyarrow.string()), nullable=True
     )
-    list_of_struct = Field(name="venue", arrow_type=pyarrow.list_(pyarrow.string()), nullable=True)
-    large_list = Field(name="legs", arrow_type=pyarrow.large_list(WIDER_VENUE), nullable=True)
+    list_of_struct = Field(name="venue", data_type=pyarrow.list_(pyarrow.string()), nullable=True)
+    large_list = Field(name="legs", data_type=pyarrow.large_list(WIDER_VENUE), nullable=True)
 
     return [
         ("batch, already shaped", lambda: field.cast_arrow_batch(matching), None),
@@ -116,12 +116,12 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
         (
             "list of structs",
             lambda: list_field.cast_arrow_array(list_array),
-            lambda: list_array.cast(list_field.arrow_type),
+            lambda: list_array.cast(list_field.data_type),
         ),
         (
             "map, narrowed value",
             lambda: map_field.cast_arrow_array(map_array),
-            lambda: map_array.cast(map_field.arrow_type),
+            lambda: map_array.cast(map_field.data_type),
         ),
         (
             "stream of 16 batches",
@@ -136,7 +136,7 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
         (
             "list -> large list",
             lambda: large_list.cast_arrow_array(list_array),
-            lambda: list_array.cast(large_list.arrow_type),
+            lambda: list_array.cast(large_list.data_type),
         ),
     ]
 
@@ -151,7 +151,7 @@ def verify(rows: int) -> None:
     assert cast.column("desk").null_count == rows, "the missing column was not filled"
     for name in ("venue", "legs", "tags"):
         ours = field.field(name).cast_arrow_array(batch.column(name))
-        theirs = batch.column(name).cast(field.field(name).arrow_type)
+        theirs = batch.column(name).cast(field.field(name).data_type)
         assert ours.equals(theirs), f"{name}: recursion and arrow disagree"
 
 

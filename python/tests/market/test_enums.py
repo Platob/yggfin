@@ -33,10 +33,9 @@ RANGED = (
     MarketKind,
     AssetKind,
     OptionKind,
-    EventType,
 )
 
-PACKED = (Side, TimeInForce)
+PACKED = (Side, TimeInForce, EventType)
 
 
 def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
@@ -380,6 +379,23 @@ def test_an_option_kind_reads_the_fix_characters_it_is_written_as() -> None:
     assert OptionKind.from_fix("0") is OptionKind.PUT
     assert OptionKind.from_fix("1") is OptionKind.CALL
     assert OptionKind.from_fix("") is OptionKind.UNKNOWN
+
+
+def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
+    """The stored value is the mnemonic; band order rides in ranks, and a
+    pushed scan filters on the finite code sets the ranks spell."""
+    assert EventType.ORDER.code == "ORDR"
+    assert int(EventType.ORDER) == int.from_bytes(b"ORDR", "big", signed=True)
+    assert EventType.ORDER.band is EventType.INTENT
+    assert EventType.MISC.band is EventType.UNKNOWN
+    market = EventType.ranked_at_least(EventType.INTENT)
+    assert set(market) == {
+        int(member) for member in EventType if member not in (EventType.UNKNOWN, EventType.MISC)
+    }
+    assert set(EventType.ranked_below(EventType.INTENT)) == {
+        int(EventType.UNKNOWN),
+        int(EventType.MISC),
+    }
 
 
 def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:

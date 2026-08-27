@@ -1172,7 +1172,7 @@ class FixRegistry(Convertible):
         *,
         version: str | None = None,
         name: str = "",
-        arrow_type: Any = _DEFAULT,
+        data_type: Any = _DEFAULT,
         nullable: bool | None = None,
         metadata: dict[str, str] | None = None,
     ) -> Field:
@@ -1183,7 +1183,7 @@ class FixRegistry(Convertible):
         declared = {**(metadata or {}), **source.metadata, "fix:name": source.name}
         return Field(
             name=name or source.name,
-            arrow_type=source.arrow_type if arrow_type is _DEFAULT else arrow_type,
+            data_type=source.data_type if data_type is _DEFAULT else data_type,
             nullable=nullable,
             metadata=declared,
         )
@@ -1302,9 +1302,9 @@ class FixRegistry(Convertible):
     def _component_types(self, version: str) -> dict[str, Any]:
         """`{FIX member name: Arrow type}` for one version, for a projection."""
         return {
-            member.name: member.arrow_type
+            member.name: member.data_type
             for member in self.fields(self._spelling(version))
-            if member.arrow_type is not None
+            if member.data_type is not None
         }
 
     def resolve(self, name: str) -> FieldEntry | None:

@@ -60,7 +60,7 @@ class ClassBuilder:
 
     def annotation(self, member: Field) -> Any:
         """The Python annotation that projects back to exactly `member`."""
-        inner = self.python_type(member.arrow_type, member.name)
+        inner = self.python_type(member.data_type, member.name)
         declared = self.declaration(member, inner)
         if member.nullable:
             inner = inner | None
@@ -72,9 +72,9 @@ class ClassBuilder:
         The type is only carried when inference would produce a different one:
         an `int32` has to be said, an `int64` says itself.
         """
-        inferred = FieldBuilder().field("probe", inner).arrow_type
+        inferred = FieldBuilder().field("probe", inner).data_type
         return Field(
-            arrow_type=member.arrow_type if inferred != member.arrow_type else None,
+            data_type=member.data_type if inferred != member.data_type else None,
             metadata=member.metadata,
         )
 
@@ -83,7 +83,7 @@ class ClassBuilder:
         declaration's job."""
         kinds = pyarrow.types
         if kinds.is_struct(data_type):
-            return self.dataclass(Field.from_arrow_type(data_type, name), _class_name(name))
+            return self.dataclass(Field.from_data_type(data_type, name), _class_name(name))
         if kinds.is_list(data_type) or kinds.is_large_list(data_type):
             return list[self.annotation(Field.from_arrow_field(data_type.field(0)))]
         if kinds.is_map(data_type):

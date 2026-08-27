@@ -115,7 +115,7 @@ def as_entry_list(array: pyarrow.Array) -> pyarrow.Array:
 
 
 def build_list(
-    arrow_type: pyarrow.DataType,
+    data_type: pyarrow.DataType,
     sizes: pyarrow.Array,
     values: pyarrow.Array,
     mask: pyarrow.Array | None = None,
@@ -127,22 +127,22 @@ def build_list(
     cast lines the slots up.
     """
     kinds = pyarrow.types
-    if kinds.is_large_list(arrow_type):
+    if kinds.is_large_list(data_type):
         offsets = list_offsets(sizes, pyarrow.int64())
-        return pyarrow.LargeListArray.from_arrays(offsets, values, type=arrow_type, mask=mask)
-    if kinds.is_list_view(arrow_type) or kinds.is_large_list_view(arrow_type):
-        large = kinds.is_large_list_view(arrow_type)
+        return pyarrow.LargeListArray.from_arrays(offsets, values, type=data_type, mask=mask)
+    if kinds.is_list_view(data_type) or kinds.is_large_list_view(data_type):
+        large = kinds.is_large_list_view(data_type)
         width = pyarrow.int64() if large else pyarrow.int32()
         build = pyarrow.LargeListViewArray if large else pyarrow.ListViewArray
         offsets = list_offsets(sizes, width)[:-1]
         return build.from_arrays(
-            offsets, without_validity(sizes.cast(width)), values, type=arrow_type, mask=mask
+            offsets, without_validity(sizes.cast(width)), values, type=data_type, mask=mask
         )
-    if kinds.is_fixed_size_list(arrow_type):
-        plain = pyarrow.list_(arrow_type.field(0))
-        return build_list(plain, sizes, values, mask).cast(arrow_type)
+    if kinds.is_fixed_size_list(data_type):
+        plain = pyarrow.list_(data_type.field(0))
+        return build_list(plain, sizes, values, mask).cast(data_type)
     offsets = list_offsets(sizes, pyarrow.int32())
-    return pyarrow.ListArray.from_arrays(offsets, values, type=arrow_type, mask=mask)
+    return pyarrow.ListArray.from_arrays(offsets, values, type=data_type, mask=mask)
 
 
 def list_type_like(source: pyarrow.DataType, item: pyarrow.Field) -> pyarrow.DataType:
@@ -160,7 +160,7 @@ def list_type_like(source: pyarrow.DataType, item: pyarrow.Field) -> pyarrow.Dat
 
 
 def rewrap_list(
-    arrow_type: pyarrow.DataType,
+    data_type: pyarrow.DataType,
     array: pyarrow.Array,
     values: pyarrow.Array,
     mask: pyarrow.Array | None = None,
@@ -175,22 +175,22 @@ def rewrap_list(
     """
     kinds = pyarrow.types
     offsets = without_validity(array.offsets)
-    if kinds.is_large_list(arrow_type):
-        return pyarrow.LargeListArray.from_arrays(offsets, values, type=arrow_type, mask=mask)
-    if kinds.is_list_view(arrow_type) or kinds.is_large_list_view(arrow_type):
+    if kinds.is_large_list(data_type):
+        return pyarrow.LargeListArray.from_arrays(offsets, values, type=data_type, mask=mask)
+    if kinds.is_list_view(data_type) or kinds.is_large_list_view(data_type):
         build = (
             pyarrow.LargeListViewArray
-            if kinds.is_large_list_view(arrow_type)
+            if kinds.is_large_list_view(data_type)
             else pyarrow.ListViewArray
         )
         return build.from_arrays(
-            offsets, without_validity(array.sizes), values, type=arrow_type, mask=mask
+            offsets, without_validity(array.sizes), values, type=data_type, mask=mask
         )
-    return pyarrow.ListArray.from_arrays(offsets, values, type=arrow_type, mask=mask)
+    return pyarrow.ListArray.from_arrays(offsets, values, type=data_type, mask=mask)
 
 
 def rewrap_map(
-    arrow_type: pyarrow.DataType,
+    data_type: pyarrow.DataType,
     array: pyarrow.Array,
     keys: pyarrow.Array,
     items: pyarrow.Array,
@@ -198,12 +198,12 @@ def rewrap_map(
 ) -> pyarrow.Array:
     """`rewrap_list` for a map: the same entries, around cast halves."""
     return pyarrow.MapArray.from_arrays(
-        without_validity(array.offsets), keys, items, type=arrow_type, mask=mask
+        without_validity(array.offsets), keys, items, type=data_type, mask=mask
     )
 
 
 def build_map(
-    arrow_type: pyarrow.DataType,
+    data_type: pyarrow.DataType,
     sizes: pyarrow.Array,
     keys: pyarrow.Array,
     items: pyarrow.Array,
@@ -211,7 +211,7 @@ def build_map(
 ) -> pyarrow.Array:
     """Entries cut into rows of `sizes` as a map."""
     offsets = list_offsets(sizes, pyarrow.int32())
-    return pyarrow.MapArray.from_arrays(offsets, keys, items, type=arrow_type, mask=mask)
+    return pyarrow.MapArray.from_arrays(offsets, keys, items, type=data_type, mask=mask)
 
 
 # -- struct-likes -----------------------------------------------------------

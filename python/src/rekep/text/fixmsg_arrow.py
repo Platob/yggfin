@@ -291,7 +291,7 @@ def _lifted_columns(
         column_rows = sorted_parents.slice(at, run)
         identities = sorted_identities.slice(at, run)
         at += run
-        column = _cast(raw, fields[tag].arrow_type, TYPES[tag])
+        column = _cast(raw, fields[tag].data_type, TYPES[tag])
         changed = _raw_spelling_changed(raw, column)
         if compute.any(changed, min_count=0).as_py():
             retained_identities.append(compute.filter(identities, changed))

@@ -97,8 +97,8 @@ def test_party_is_the_exact_fix_named_shape() -> None:
     assert Party.into_field().field("PartyID").metadata["fix:tag"] == "448"
     assert Party.into_field().field("PartyIDSource").metadata["fix:tag"] == "447"
     assert Party.into_field().field("PartyRole").metadata["fix:tag"] == "452"
-    assert Party.into_field().field("PartyRole").arrow_type == pyarrow.int32()
-    assert Party.into_field().field("buffer").arrow_type == pyarrow.map_(
+    assert Party.into_field().field("PartyRole").data_type == pyarrow.int32()
+    assert Party.into_field().field("buffer").data_type == pyarrow.map_(
         pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
     )
     assert PARTIES.value_field.nullable is False
@@ -704,9 +704,9 @@ def test_a_leg_is_the_exact_fix_named_shape() -> None:
         "buffer",
     ]
     assert field.field("LegSymbol").metadata["fix:tag"] == "600"
-    assert field.field("LegMaturityDate").arrow_type == pyarrow.date32()
-    assert field.field("LegRatioQty").arrow_type == pyarrow.float64()
-    assert field.field("LegPutOrCall").arrow_type == pyarrow.int32()
+    assert field.field("LegMaturityDate").data_type == pyarrow.date32()
+    assert field.field("LegRatioQty").data_type == pyarrow.float64()
+    assert field.field("LegPutOrCall").data_type == pyarrow.int32()
     assert LEGS.value_field.nullable is False
 
 

@@ -55,7 +55,7 @@ def test_an_identifier_is_a_long_in_every_engine() -> None:
     assert str(schema.find_field("hash").field_type) == "long"
     assert str(schema.find_field("xhash").field_type) == "long"
     back = StructField.from_iceberg_schema(schema)
-    assert back.field("hash").arrow_type == pyarrow.int64()
+    assert back.field("hash").data_type == pyarrow.int64()
 
 
 def test_a_ranged_code_is_an_iceberg_int() -> None:

@@ -108,7 +108,7 @@ class Event(MarketConvertible):
     unix_partition: Annotated[
         int,
         Field.partition_key(
-            arrow_type=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION
+            data_type=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION
         ),
     ] = 0
     """`unix`'s hour boundary in whole epoch seconds; the partition value."""
@@ -143,7 +143,7 @@ class Event(MarketConvertible):
     xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linked_events: Annotated[list[tuple[int, int]], Field(arrow_type=_LINKED_EVENTS_TYPE)] = (
+    linked_events: Annotated[list[tuple[int, int]], Field(data_type=_LINKED_EVENTS_TYPE)] = (
         dataclasses.field(default_factory=list)
     )
     """Related event times and lifecycle identities, primary match first."""
@@ -157,7 +157,7 @@ class Event(MarketConvertible):
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    codes: Annotated[dict[str, str], Field(arrow_type=CODES_TYPE)] = dataclasses.field(
+    codes: Annotated[dict[str, str], Field(data_type=CODES_TYPE)] = dataclasses.field(
         default_factory=dict
     )
     """Every other identifier the source spelled, by the name that carried it."""
@@ -258,7 +258,7 @@ class Event(MarketConvertible):
         without a caller knowing which it was handed.
         """
         declared = cls.into_event_type()
-        return declared == kind or (kind == EventType.band_of(kind) and declared.band == kind)
+        return declared == kind or (kind.band is kind and declared.band is kind)
 
     @classmethod
     def is_order(cls) -> bool:
@@ -361,7 +361,7 @@ class Event(MarketConvertible):
         floating = tuple(
             member.name
             for member in cls.into_field().fields
-            if member.name in names and pyarrow.types.is_floating(member.arrow_type)
+            if member.name in names and pyarrow.types.is_floating(member.data_type)
         )
         return operator.attrgetter(*names), operator.attrgetter(*floating) if floating else None
 
@@ -859,7 +859,7 @@ class MarketEvent(Event):
         field = cls.into_field()
         if not len(events):
             return pyarrow.RecordBatch.from_arrays(
-                [pyarrow.array([], type=member.arrow_type) for member in field.fields],
+                [pyarrow.array([], type=member.data_type) for member in field.fields],
                 schema=field.into_arrow_schema(),
             )
         projected = struct_columns(events)

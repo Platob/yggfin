@@ -318,10 +318,10 @@ class FieldAccess:
         temporal = self._temporal_fields.get(field, _MISSING)
         if temporal is _MISSING:
             record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
-            arrow_type = None if record is None else self._arrow_type(record)
+            data_type = None if record is None else self._arrow_type(record)
             temporal = (
-                arrow_type
-                if arrow_type is not None and pyarrow.types.is_temporal(arrow_type)
+                data_type
+                if data_type is not None and pyarrow.types.is_temporal(data_type)
                 else None
             )
             self._temporal_fields[field] = temporal
@@ -347,11 +347,11 @@ class FieldAccess:
         if record is None:
             return coherent_fix_value(raw)
         text = record.encode(raw)
-        arrow_type = self._arrow_type(record)
-        if arrow_type is None or pyarrow.types.is_string(arrow_type):
+        data_type = self._arrow_type(record)
+        if data_type is None or pyarrow.types.is_string(data_type):
             return text
         try:
-            return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), arrow_type)[0].as_py()
+            return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), data_type)[0].as_py()
         except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, ValueError):
             return text
 
@@ -377,7 +377,7 @@ class FieldAccess:
             return None
         if record.key not in self._arrow_types:
             try:
-                found = self.registry.field(record.key, self.version).arrow_type
+                found = self.registry.field(record.key, self.version).data_type
             except (KeyError, OSError, ValueError):
                 found = None
             self._arrow_types[record.key] = found

@@ -75,7 +75,7 @@ def test_a_tag_the_dictionary_does_not_number_reads_as_declared(registry: FixReg
     """Which is the whole point: a vendor tag no dictionary will ever carry."""
     codec = codec_of(registry, {"rules": [{"field": "9999", "type": "utctimestamp"}]})
     field = codec.tag_field(9999, "4.4")
-    assert field is not None and pyarrow.types.is_timestamp(field.arrow_type)
+    assert field is not None and pyarrow.types.is_timestamp(field.data_type)
     assert codec_of(registry).tag_field(9999, "4.4") is None
 
 
@@ -128,7 +128,7 @@ def test_declared_readings_round_trip_through_a_document() -> None:
     )
     back = FieldRules.from_dict(rules.into_dict())
     assert [one.field for one in back] == ["60", "Side"]
-    assert back.rules[0].arrow_type == pyarrow.date32()
+    assert back.rules[0].data_type == pyarrow.date32()
     assert back.rules[1].values == {"BUYSIDE": "1"}
 
 

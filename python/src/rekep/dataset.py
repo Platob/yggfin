@@ -403,7 +403,7 @@ def _polars_table(frame: Any, target: StructField, polars: Any) -> pyarrow.Table
     """Export at the newest compatible level, then enforce the Arrow contract."""
     compatibility = getattr(polars, "CompatLevel", None)
     options = {}
-    if compatibility is not None and not _needs_compatible_polars_arrow(target.arrow_type):
+    if compatibility is not None and not _needs_compatible_polars_arrow(target.data_type):
         options["compat_level"] = compatibility.newest()
     return target.cast_arrow_table(frame.to_arrow(**options))
 

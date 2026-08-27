@@ -98,8 +98,8 @@ def test_the_hour_floors_on_both_sides_of_the_epoch() -> None:
 
 
 def test_the_partition_clock_is_narrower_than_the_instant() -> None:
-    assert Order.into_field().field("unix_partition").arrow_type == pyarrow.int32()
-    assert Order.into_field().field("unix").arrow_type == pyarrow.int64()
+    assert Order.into_field().field("unix_partition").data_type == pyarrow.int32()
+    assert Order.into_field().field("unix").data_type == pyarrow.int64()
     assert Order.into_field().field("unix_partition").metadata["unit"] == "second"
     assert Order.into_field().field("unix").metadata["unit"] == "ns"
 
@@ -242,8 +242,8 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     """One string names the lifecycle; the rest are a map and not a column each."""
     declared = Event.into_field()
     assert "fix:tag" not in declared.field("code").metadata, "a lifecycle is not a FIX field"
-    assert declared.field("code").arrow_type == pyarrow.string()
-    assert declared.field("codes").arrow_type == CODES_TYPE
+    assert declared.field("code").data_type == pyarrow.string()
+    assert declared.field("codes").data_type == CODES_TYPE
     assert declared.names.index("codes") == declared.names.index("code") + 1
     assert MarketEvent.into_field().names == declared.names + [
         name for name in MarketEvent.into_field().names if name not in declared.names

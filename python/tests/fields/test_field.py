@@ -29,7 +29,7 @@ class Book(Convertible):
     """A book of orders."""
 
     name: str
-    size: Annotated[int, Field(arrow_type=pyarrow.int32(), metadata={"unit": "lots"})]
+    size: Annotated[int, Field(data_type=pyarrow.int32(), metadata={"unit": "lots"})]
     price: decimal.Decimal
     opened: datetime.datetime
     venues: list[Venue]
@@ -115,7 +115,7 @@ def test_a_scalar_projection_can_override_its_outer_name() -> None:
     assert named == Venue.into_field(name="logs.venues")
     assert isinstance(named, StructField) and type(named) is type(declared)
     assert named.name == "logs.venues"
-    assert named.arrow_type == declared.arrow_type and named.metadata == declared.metadata
+    assert named.data_type == declared.data_type and named.metadata == declared.metadata
     assert declared.name == "Venue", "naming a table does not mutate the cached contract"
 
 
@@ -148,7 +148,7 @@ def test_a_subclass_gets_its_own_projection_not_its_bases() -> None:
 def test_a_field_holds_a_name_a_type_and_metadata() -> None:
     member = Venue.into_field().field("mic")
     assert member.name == "mic"
-    assert member.arrow_type == pyarrow.string()
+    assert member.data_type == pyarrow.string()
     assert member.metadata == {"description": "ISO 10383 market identifier."}
     assert member.description == "ISO 10383 market identifier."
 
@@ -161,22 +161,22 @@ def test_metadata_is_always_a_dict_of_text() -> None:
 
 
 def test_an_unstated_nullability_reads_as_not_null() -> None:
-    assert Field(name="x", arrow_type=pyarrow.string()).nullable is None
-    assert not Field(name="x", arrow_type=pyarrow.string()).into_arrow_field().nullable
+    assert Field(name="x", data_type=pyarrow.string()).nullable is None
+    assert not Field(name="x", data_type=pyarrow.string()).into_arrow_field().nullable
 
 
 def test_merge_lets_the_later_declaration_win() -> None:
-    merged = Field(arrow_type=pyarrow.int64(), metadata={"unit": "lots", "a": "1"}).merge(
-        Field(arrow_type=pyarrow.int32(), metadata={"unit": "bps"})
+    merged = Field(data_type=pyarrow.int64(), metadata={"unit": "lots", "a": "1"}).merge(
+        Field(data_type=pyarrow.int32(), metadata={"unit": "bps"})
     )
-    assert merged.arrow_type == pyarrow.int32()
+    assert merged.data_type == pyarrow.int32()
     assert merged.metadata == {"unit": "bps", "a": "1"}
 
 
 @pytest.mark.parametrize(
     ("extra", "expected"),
     [
-        (pyarrow.int16(), Field(arrow_type=pyarrow.int16())),
+        (pyarrow.int16(), Field(data_type=pyarrow.int16())),
         ({"unit": "bps"}, Field(metadata={"unit": "bps"})),
         ("The day.", Field(metadata={"description": "The day."})),
         (object(), Field()),
@@ -190,7 +190,7 @@ def test_a_field_without_a_type_cannot_convert() -> None:
     with pytest.raises(TypeError, match="no Arrow type"):
         Field(name="x").into_arrow_field()
     with pytest.raises(TypeError, match="no Arrow type"):
-        Field(name="x").into_arrow_type()
+        Field(name="x").into_data_type()
 
 
 # -- arrow, both ways -------------------------------------------------------
@@ -218,7 +218,7 @@ def test_a_class_can_publish_contract_metadata() -> None:
 
 
 def test_a_scalar_field_is_a_one_column_schema() -> None:
-    schema = Field(name="x", arrow_type=pyarrow.int64()).into_arrow_schema()
+    schema = Field(name="x", data_type=pyarrow.int64()).into_arrow_schema()
     assert schema.names == ["x"]
 
 
@@ -231,9 +231,9 @@ def test_an_arrow_field_round_trips() -> None:
     assert Field.from_arrow_field(original).into_arrow_field().equals(original)
 
 
-def test_from_arrow_type_names_a_bare_type() -> None:
-    built = Field.from_arrow_type(pyarrow.int32(), "size")
-    assert (built.name, built.arrow_type, built.nullable) == ("size", pyarrow.int32(), False)
+def test_from_data_type_names_a_bare_type() -> None:
+    built = Field.from_data_type(pyarrow.int32(), "size")
+    assert (built.name, built.data_type, built.nullable) == ("size", pyarrow.int32(), False)
 
 
 @pytest.mark.parametrize(
@@ -257,7 +257,7 @@ def test_from_reads_a_plain_dataclass_and_a_bare_type() -> None:
         mic: str
 
     assert Field.from_(Plain).names == ["mic"]
-    assert Field.from_(pyarrow.int32(), "size").arrow_type == pyarrow.int32()
+    assert Field.from_(pyarrow.int32(), "size").data_type == pyarrow.int32()
 
 
 def test_from_refuses_what_names_no_shape() -> None:
@@ -270,8 +270,8 @@ def test_from_refuses_what_names_no_shape() -> None:
     [
         (pyarrow.Schema, "arrow_schema"),
         (pyarrow.Field, "arrow_field"),
-        (pyarrow.DataType, "arrow_type"),
-        (pyarrow.StructType, "arrow_type"),
+        (pyarrow.DataType, "data_type"),
+        (pyarrow.StructType, "data_type"),
         (dict, "dict"),
     ],
 )
@@ -281,7 +281,7 @@ def test_into_redirects_on_the_requested_arrow_type(requested: type, stem: str) 
 
 def test_into_the_requested_type() -> None:
     assert Book.into_field().into_(pyarrow.Schema).equals(Book.into_field().into_arrow_schema())
-    assert Book.into_field().into_(pyarrow.DataType) == Book.into_field().arrow_type
+    assert Book.into_field().into_(pyarrow.DataType) == Book.into_field().data_type
 
 
 # -- describing a field -----------------------------------------------------
@@ -305,7 +305,7 @@ def test_a_dump_nests_rather_than_flattening() -> None:
 def test_a_dump_promotes_protocol_metadata_to_named_maps() -> None:
     original = Field(
         name="side",
-        arrow_type=pyarrow.int32(),
+        data_type=pyarrow.int32(),
         nullable=False,
         metadata={
             "fix:tag": "54",
@@ -341,7 +341,7 @@ def test_a_protocol_map_and_legacy_metadata_cannot_disagree() -> None:
 def test_yaml_keeps_scalar_metadata_and_protocol_maps_inline() -> None:
     original = Field(
         name="side",
-        arrow_type=pyarrow.int32(),
+        data_type=pyarrow.int32(),
         nullable=False,
         metadata={"unit": "code", "iceberg:primary_key": "true", "enum:name": "Side"},
     )
@@ -359,7 +359,7 @@ def test_a_dump_round_trips_through_plain_containers() -> None:
 
 
 @pytest.mark.parametrize(
-    "arrow_type",
+    "data_type",
     [
         pyarrow.decimal128(38, 9),
         pyarrow.decimal256(50, 3),
@@ -381,14 +381,14 @@ def test_a_dump_round_trips_through_plain_containers() -> None:
         pyarrow.map_(pyarrow.string(), pyarrow.list_(pyarrow.int64())),
     ],
 )
-def test_every_type_survives_a_dump(arrow_type: pyarrow.DataType) -> None:
+def test_every_type_survives_a_dump(data_type: pyarrow.DataType) -> None:
     """The spellings Arrow has no alias for are rebuilt, not lost."""
-    original = Field(name="value", arrow_type=arrow_type, nullable=False)
-    assert Field.from_dict(original.into_dict()).arrow_type == arrow_type
+    original = Field(name="value", data_type=data_type, nullable=False)
+    assert Field.from_dict(original.into_dict()).data_type == data_type
 
 
 @pytest.mark.parametrize(
-    ("arrow_type", "named"),
+    ("data_type", "named"),
     [
         (pyarrow.list_(pyarrow.int32()), "list"),
         (pyarrow.large_list(pyarrow.int32()), "large_list"),
@@ -397,26 +397,26 @@ def test_every_type_survives_a_dump(arrow_type: pyarrow.DataType) -> None:
         (pyarrow.list_(pyarrow.int32(), 3), "fixed_size_list"),
     ],
 )
-def test_a_dump_names_the_list_flavour(arrow_type: pyarrow.DataType, named: str) -> None:
+def test_a_dump_names_the_list_flavour(data_type: pyarrow.DataType, named: str) -> None:
     """A contract file says which flavour it is, so a reader rebuilds that one."""
-    assert Field(name="value", arrow_type=arrow_type).into_dict()["type"] == named
+    assert Field(name="value", data_type=data_type).into_dict()["type"] == named
 
 
 def test_a_map_dumps_whether_its_keys_are_sorted() -> None:
     """Arrow compares two maps that disagree on it as different types."""
     sorted_keys = pyarrow.map_(pyarrow.string(), pyarrow.int32(), keys_sorted=True)
-    dumped = Field(name="value", arrow_type=sorted_keys).into_dict()
+    dumped = Field(name="value", data_type=sorted_keys).into_dict()
     assert dumped["keys_sorted"] is True
-    assert Field.from_dict(dumped).arrow_type == sorted_keys
-    plain = Field(name="value", arrow_type=pyarrow.map_(pyarrow.string(), pyarrow.int32()))
+    assert Field.from_dict(dumped).data_type == sorted_keys
+    plain = Field(name="value", data_type=pyarrow.map_(pyarrow.string(), pyarrow.int32()))
     assert "keys_sorted" not in plain.into_dict()
 
 
 def test_a_fixed_width_binary_survives_the_spelling_arrow_prints() -> None:
     """`fixed_size_binary[16]` is what `str(type)` writes and what Arrow cannot read back."""
     assert arrow_type_for("fixed_size_binary[16]") == pyarrow.binary(16)
-    original = Field(name="uuid", arrow_type=pyarrow.binary(16))
-    assert Field.from_dict(original.into_dict()).arrow_type == pyarrow.binary(16)
+    original = Field(name="uuid", data_type=pyarrow.binary(16))
+    assert Field.from_dict(original.into_dict()).data_type == pyarrow.binary(16)
 
 
 @pytest.mark.parametrize("size", [-1, 2.7, True, "3", None])
@@ -439,7 +439,7 @@ def test_keys_sorted_is_read_strictly(written: object, sorted_keys: bool) -> Non
         "key": {"type": "string"},
         "value": {"type": "int32"},
     }
-    assert Field.from_dict(dumped).arrow_type.keys_sorted is sorted_keys
+    assert Field.from_dict(dumped).data_type.keys_sorted is sorted_keys
 
 
 def test_a_flag_that_is_neither_true_nor_false_is_refused() -> None:
@@ -469,7 +469,7 @@ def test_a_field_with_no_type_is_refused_by_name() -> None:
 
 
 def test_a_fixed_size_list_dumps_the_width_it_needs_back() -> None:
-    dumped = Field(name="value", arrow_type=pyarrow.list_(pyarrow.int32(), 3)).into_dict()
+    dumped = Field(name="value", data_type=pyarrow.list_(pyarrow.int32(), 3)).into_dict()
     assert dumped["list_size"] == 3
     del dumped["list_size"]
     with pytest.raises(ValueError, match="list_size"):
@@ -488,7 +488,7 @@ def test_a_field_serialises_itself(tmp_path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("arrow_type", "expected"),
+    ("data_type", "expected"),
     [
         (None, Field),
         (pyarrow.int64(), Field),
@@ -501,13 +501,13 @@ def test_a_field_serialises_itself(tmp_path) -> None:
         (pyarrow.map_(pyarrow.string(), pyarrow.int64()), MapField),
     ],
 )
-def test_the_arrow_type_picks_the_subclass(arrow_type: object, expected: type) -> None:
-    assert type(Field(name="x", arrow_type=arrow_type)) is expected
+def test_the_arrow_type_picks_the_subclass(data_type: object, expected: type) -> None:
+    assert type(Field(name="x", data_type=data_type)) is expected
 
 
 def test_every_way_of_building_one_lands_on_the_same_class() -> None:
     struct = pyarrow.struct([("a", pyarrow.int64())])
-    assert isinstance(Field.from_arrow_type(struct, "x"), StructField)
+    assert isinstance(Field.from_data_type(struct, "x"), StructField)
     assert isinstance(Field.from_arrow_field(pyarrow.field("x", struct)), StructField)
     assert isinstance(
         Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())])), StructField
@@ -520,19 +520,19 @@ def test_every_way_of_building_one_lands_on_the_same_class() -> None:
 
 def test_asking_for_a_subclass_is_honoured() -> None:
     """The redirect is for `Field(...)`; a subclass named outright is built."""
-    assert type(StructField(name="x", arrow_type=pyarrow.struct([]))) is StructField
+    assert type(StructField(name="x", data_type=pyarrow.struct([]))) is StructField
 
 
 def test_a_container_reaches_what_is_inside_it() -> None:
-    assert Book.into_field().field("venues").item.field("mic").arrow_type == pyarrow.string()
+    assert Book.into_field().field("venues").item.field("mic").data_type == pyarrow.string()
     limits = Book.into_field().field("limits")
-    assert limits.key.arrow_type == pyarrow.string()
-    assert limits.value.arrow_type == pyarrow.int64()
+    assert limits.key.data_type == pyarrow.string()
+    assert limits.value.data_type == pyarrow.int64()
     assert limits.value.nullable, "`int | None` values stay nullable through the map"
 
 
 def test_a_leaf_has_no_fields() -> None:
-    assert Field(name="x", arrow_type=pyarrow.int64()).fields == ()
+    assert Field(name="x", data_type=pyarrow.int64()).fields == ()
 
 
 # -- keys and partitions ----------------------------------------------------
@@ -571,7 +571,7 @@ def test_a_nullable_key_is_refused_at_declaration() -> None:
 
 
 def test_a_nullable_key_is_refused_by_the_setter() -> None:
-    built = Field(name="symbol", arrow_type=pyarrow.string(), nullable=True)
+    built = Field(name="symbol", data_type=pyarrow.string(), nullable=True)
     with pytest.raises(TypeError, match="primary key and cannot be nullable"):
         built.is_primary_key = True
 
@@ -595,7 +595,7 @@ def test_setting_something_deep_reaches_the_root() -> None:
 
 
 def test_a_partition_can_be_taken_back_off() -> None:
-    built = Field(name="day", arrow_type=pyarrow.date32())
+    built = Field(name="day", data_type=pyarrow.date32())
     built.is_partition_key = "day"
     assert built.is_partition_key and built.partition_transform == "day"
     built.is_partition_key = False
@@ -629,7 +629,7 @@ def test_a_column_can_be_partitioned_on_and_sorted_on_at_once() -> None:
 
 
 def test_a_sort_key_can_be_taken_back_off() -> None:
-    built = Field(name="unix", arrow_type=pyarrow.int64())
+    built = Field(name="unix", data_type=pyarrow.int64())
     built.is_sort_key = "desc"
     assert built.is_sort_key and built.sort_direction == "desc"
     built.is_sort_key = False
@@ -675,25 +675,25 @@ def test_an_exact_external_sort_priority_survives_the_arrow_round_trip() -> None
 def test_a_changed_declaration_drops_what_was_derived_from_it() -> None:
     built = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]), "Quote")
     before = built.into_arrow_schema()
-    built.field("symbol").arrow_type = pyarrow.large_string()
+    built.field("symbol").data_type = pyarrow.large_string()
     assert built.into_arrow_schema() is not before
     assert built.into_arrow_schema().field("symbol").type == pyarrow.large_string()
 
 
 def test_every_list_flavour_keeps_its_own_shape() -> None:
     """A member set on a large list must not come back a plain one."""
-    for arrow_type in (
+    for data_type in (
         pyarrow.list_(pyarrow.int64()),
         pyarrow.large_list(pyarrow.int64()),
         pyarrow.list_view(pyarrow.int64()),
         pyarrow.large_list_view(pyarrow.int64()),
         pyarrow.list_(pyarrow.int64(), 3),
     ):
-        built = Field(name="values", arrow_type=arrow_type)
+        built = Field(name="values", data_type=data_type)
         built.item.description = "One value."
-        assert built.arrow_type.id == arrow_type.id, str(arrow_type)
+        assert built.data_type.id == data_type.id, str(data_type)
         assert built.item.description == "One value."
 
 
 def test_a_fixed_size_list_says_how_wide_it_is() -> None:
-    assert Field(name="x", arrow_type=pyarrow.list_(pyarrow.int64(), 3)).list_size == 3
+    assert Field(name="x", data_type=pyarrow.list_(pyarrow.int64(), 3)).list_size == 3

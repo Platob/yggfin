@@ -2,8 +2,9 @@
 
 `tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
 `FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
-`etype >= INTENT` before any FIX dictionary work begins. A disjoint
-`etype < INTENT` scan retains terminal operational and unrecognized rows.
+`etype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary work
+begins. A disjoint scan over `EventType.ranked_below(INTENT)` retains terminal
+operational and unrecognized rows.
 
 ## Run this step
 

@@ -101,6 +101,11 @@ class _AsciiInt32(enum.IntEnum):
         """Protocol spelling, or empty for `UNKNOWN`."""
         return self._code
 
+    @property
+    def rank(self) -> int:
+        """Ordering rank: the packed code unless the member declares one."""
+        return self._rank
+
     def into_str(self) -> str:
         """Return the ISO/FIX spelling."""
         return self.code

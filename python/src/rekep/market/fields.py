@@ -73,7 +73,7 @@ class MarketConvertible(Convertible):
         return tuple(
             member.name
             for member in cls.into_field().fields
-            if pyarrow.types.is_floating(member.arrow_type)
+            if pyarrow.types.is_floating(member.data_type)
         )
 
     def normalize_float_members(self) -> None:
@@ -86,29 +86,29 @@ class MarketConvertible(Convertible):
 
 def fix_tag(name: str, **declared: Any) -> Field:
     """A model annotation backed by the packaged FIX registry."""
-    registry = FixRegistry.from_builtin().scalar(name, arrow_type=None)
+    registry = FixRegistry.from_builtin().scalar(name, data_type=None)
     return registry.merge(Field(**declared))
 
 
-def unkeyed(arrow_type: pyarrow.DataType) -> pyarrow.DataType:
-    """`arrow_type` with every nested primary and partition key declaration dropped."""
+def unkeyed(data_type: pyarrow.DataType) -> pyarrow.DataType:
+    """`data_type` with every nested primary and partition key declaration dropped."""
     kinds = pyarrow.types
-    if kinds.is_struct(arrow_type):
+    if kinds.is_struct(data_type):
         return pyarrow.struct(
-            [_unkeyed(arrow_type.field(index)) for index in range(arrow_type.num_fields)]
+            [_unkeyed(data_type.field(index)) for index in range(data_type.num_fields)]
         )
-    if kinds.is_map(arrow_type):
+    if kinds.is_map(data_type):
         return pyarrow.map_(
-            _unkeyed(arrow_type.key_field),
-            _unkeyed(arrow_type.item_field),
-            keys_sorted=arrow_type.keys_sorted,
+            _unkeyed(data_type.key_field),
+            _unkeyed(data_type.item_field),
+            keys_sorted=data_type.keys_sorted,
         )
-    if kinds.is_fixed_size_list(arrow_type):
-        return pyarrow.list_(_unkeyed(arrow_type.field(0)), arrow_type.list_size)
+    if kinds.is_fixed_size_list(data_type):
+        return pyarrow.list_(_unkeyed(data_type.field(0)), data_type.list_size)
     for matches, build in _LISTS:
-        if matches(arrow_type):
-            return build(_unkeyed(arrow_type.field(0)))
-    return arrow_type
+        if matches(data_type):
+            return build(_unkeyed(data_type.field(0)))
+    return data_type
 
 
 # -- helpers ----------------------------------------------------------------

@@ -161,7 +161,7 @@ def fix_field(
     its enumerated values all land in the `fix` protocol's metadata, where
     `field.fix["tag"]` reads them back without the prefix.
     """
-    built = Field(name=name, arrow_type=arrow_type_of(datatype), nullable=True, metadata=metadata)
+    built = Field(name=name, data_type=arrow_type_of(datatype), nullable=True, metadata=metadata)
     if description:
         built.description = description
     fix = built.fix
@@ -210,7 +210,7 @@ class FieldRule(Convertible):
         self.type = str(found)
 
     @functools.cached_property
-    def arrow_type(self) -> pyarrow.DataType | None:
+    def data_type(self) -> pyarrow.DataType | None:
         """`type` as Arrow holds it; None where the rule only translates values."""
         return declared_arrow_type(self.type)
 
@@ -227,14 +227,14 @@ class FieldRule(Convertible):
 
     def applied(self, declared: Field | None, name: str) -> Field | None:
         """`declared` read this rule's way, or a field of its own where none is."""
-        arrow_type = self.arrow_type
-        if arrow_type is None:
+        data_type = self.data_type
+        if data_type is None:
             return declared
         if declared is None:
-            return Field(name=name, arrow_type=arrow_type, nullable=True)
-        if declared.arrow_type.equals(arrow_type):
+            return Field(name=name, data_type=data_type, nullable=True)
+        if declared.data_type.equals(data_type):
             return declared
-        return dataclasses.replace(declared, arrow_type=arrow_type)
+        return dataclasses.replace(declared, data_type=data_type)
 
 
 @scalar
@@ -378,22 +378,22 @@ def _zone_offset(match: re.Match[str]) -> int | None:
 
 
 def scalar_fix_temporal(
-    text: str, arrow_type: pyarrow.DataType
+    text: str, data_type: pyarrow.DataType
 ) -> datetime.datetime | datetime.date | datetime.time | None:
     """Read one FIX temporal without starting an Arrow kernel pipeline."""
     nanos = unix_of(text)
     if nanos is None:
         return None
     kinds = pyarrow.types
-    if kinds.is_date(arrow_type):
+    if kinds.is_date(data_type):
         days = nanos // _A_DAY
         try:
             return datetime.date.fromordinal(EPOCH_ORDINAL + days)
         except ValueError:
             return None
 
-    divisor = {"s": NANOS, "ms": 1_000_000, "us": 1_000, "ns": 1}[arrow_type.unit]
-    if kinds.is_time(arrow_type):
+    divisor = {"s": NANOS, "ms": 1_000_000, "us": 1_000, "ns": 1}[data_type.unit]
+    if kinds.is_time(data_type):
         canonical = (nanos % _A_DAY) // divisor * divisor
         _, within_day = divmod(canonical, _A_DAY)
         seconds, fraction = divmod(within_day, NANOS)
@@ -426,7 +426,7 @@ def scalar_fix_temporal(
     )
 
 
-def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
+def cast_arrow_fix(values: Any, data_type: pyarrow.DataType) -> Any:
     """A column of FIX text as the type its field declares, in kernels.
 
     The other half of `FixCodec.tag_field`: that says what a tag *is*, this
@@ -436,25 +436,25 @@ def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
     """
     kinds = pyarrow.types
     if isinstance(values, pyarrow.ChunkedArray):
-        chunks = [cast_arrow_fix(chunk, arrow_type) for chunk in values.chunks]
-        return pyarrow.chunked_array(chunks, type=arrow_type)
-    if values.type.equals(arrow_type):
+        chunks = [cast_arrow_fix(chunk, data_type) for chunk in values.chunks]
+        return pyarrow.chunked_array(chunks, type=data_type)
+    if values.type.equals(data_type):
         return values
     if len(values) and values.null_count == len(values):
         # A session field no message in this batch carried, which is most of
         # them on most batches. Nothing to read, and the kernels below would
         # run a regex over a column that is entirely absent.
-        return pyarrow.nulls(len(values), arrow_type)
-    if kinds.is_boolean(arrow_type):
-        return cast_arrow_bool(values).cast(arrow_type)
+        return pyarrow.nulls(len(values), data_type)
+    if kinds.is_boolean(data_type):
+        return cast_arrow_bool(values).cast(data_type)
     text = pyarrow.compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
-    if kinds.is_temporal(arrow_type):
-        return _cast_arrow_stamp(text, arrow_type)
-    if kinds.is_integer(arrow_type):
-        return _cast_arrow_integer(text, arrow_type)
-    if kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
-        return _only(text, _DECIMAL).cast(arrow_type, safe=False)
-    return text.cast(arrow_type, safe=False)
+    if kinds.is_temporal(data_type):
+        return _cast_arrow_stamp(text, data_type)
+    if kinds.is_integer(data_type):
+        return _cast_arrow_integer(text, data_type)
+    if kinds.is_floating(data_type) or kinds.is_decimal(data_type):
+        return _only(text, _DECIMAL).cast(data_type, safe=False)
+    return text.cast(data_type, safe=False)
 
 
 #: The five value shapes an unregistered key still spells unambiguously.
@@ -528,7 +528,7 @@ def _only(text: Any, pattern: str) -> Any:
     return compute.if_else(matched, text, pyarrow.scalar(None, pyarrow.string()))
 
 
-def _cast_arrow_integer(text: Any, arrow_type: pyarrow.DataType) -> Any:
+def _cast_arrow_integer(text: Any, data_type: pyarrow.DataType) -> Any:
     """Read the complete target integer range while nulling overflow per row."""
     compute = pyarrow.compute
     # Decimal128 is the checked staging type Arrow's integer parser lacks: it
@@ -537,8 +537,8 @@ def _cast_arrow_integer(text: Any, arrow_type: pyarrow.DataType) -> Any:
     readable = compute.replace_substring_regex(readable, r"^\+", "")
     staging = pyarrow.decimal128(21, 0)
     values = readable.cast(staging)
-    bits = arrow_type.bit_width
-    signed = pyarrow.types.is_signed_integer(arrow_type)
+    bits = data_type.bit_width
+    signed = pyarrow.types.is_signed_integer(data_type)
     lower = -(1 << (bits - 1)) if signed else 0
     upper = (1 << (bits - int(signed))) - 1
     inside = compute.fill_null(
@@ -549,21 +549,21 @@ def _cast_arrow_integer(text: Any, arrow_type: pyarrow.DataType) -> Any:
         False,
     )
     safe = compute.if_else(inside, values, pyarrow.scalar(decimal.Decimal(0), staging)).cast(
-        arrow_type
+        data_type
     )
-    return compute.if_else(inside, safe, pyarrow.scalar(None, arrow_type))
+    return compute.if_else(inside, safe, pyarrow.scalar(None, data_type))
 
 
-def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
+def _cast_arrow_stamp(text: Any, data_type: pyarrow.DataType) -> Any:
     """A FIX time column parsed without letting one malformed row stop its batch."""
     compute = pyarrow.compute
     canonical = compute.fill_null(compute.match_substring_regex(text, _FULL_STAMP_PATTERN), True)
     if compute.all(canonical).as_py():
-        return _cast_arrow_full_stamp(text, arrow_type)
-    return _cast_arrow_stamp_general(text, arrow_type)
+        return _cast_arrow_full_stamp(text, data_type)
+    return _cast_arrow_stamp_general(text, data_type)
 
 
-def _cast_arrow_full_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
+def _cast_arrow_full_stamp(text: Any, data_type: pyarrow.DataType) -> Any:
     """A homogeneous column of canonical full FIX timestamps."""
     compute = pyarrow.compute
     integer = pyarrow.int64()
@@ -650,10 +650,10 @@ def _cast_arrow_full_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
         compute.equal(compute.binary_length(fraction), 0), pyarrow.scalar("0"), fraction
     )
     nanos = compute.cast(compute.utf8_rpad(fraction, 9, "0"), pyarrow.int64())
-    return _temporal(seconds, nanos, valid, arrow_type)
+    return _temporal(seconds, nanos, valid, data_type)
 
 
-def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
+def _cast_arrow_stamp_general(text: Any, data_type: pyarrow.DataType) -> Any:
     """All admitted FIX temporal spellings."""
     compute = pyarrow.compute
     parts = compute.extract_regex(text, STAMP_PATTERN)
@@ -733,33 +733,33 @@ def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
     seconds = compute.subtract(seconds, zone_seconds)
     fraction = compute.cast(compute.utf8_rpad(part("fraction", "0"), 9, "0"), pyarrow.int64())
 
-    return _temporal(seconds, fraction, valid, arrow_type)
+    return _temporal(seconds, fraction, valid, data_type)
 
 
-def _temporal(seconds: Any, fraction: Any, valid: Any, arrow_type: pyarrow.DataType) -> Any:
+def _temporal(seconds: Any, fraction: Any, valid: Any, data_type: pyarrow.DataType) -> Any:
     """Parsed seconds and nanoseconds as the temporal type asked for."""
     compute = pyarrow.compute
     kinds = pyarrow.types
     zero = pyarrow.scalar(0, pyarrow.int64())
     safe_seconds = compute.if_else(valid, seconds, zero)
-    if kinds.is_date(arrow_type):
+    if kinds.is_date(data_type):
         stamps = compute.if_else(valid, safe_seconds, pyarrow.scalar(None, pyarrow.int64()))
-        return stamps.cast(pyarrow.timestamp("s")).cast(arrow_type, safe=False)
+        return stamps.cast(pyarrow.timestamp("s")).cast(data_type, safe=False)
 
-    factor = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": NANOS}[arrow_type.unit]
+    factor = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": NANOS}[data_type.unit]
     divisor = NANOS // factor
     subunits = compute.divide(fraction, pyarrow.scalar(divisor, pyarrow.int64()))
-    if kinds.is_time(arrow_type):
-        storage = pyarrow.int32() if arrow_type.bit_width == 32 else pyarrow.int64()
+    if kinds.is_time(data_type):
+        storage = pyarrow.int32() if data_type.bit_width == 32 else pyarrow.int64()
         base = (
             safe_seconds.cast(pyarrow.timestamp("s"))
-            .cast(arrow_type, safe=False)
+            .cast(data_type, safe=False)
             .cast(storage)
             .cast(pyarrow.int64())
         )
         units = compute.add(base, compute.if_else(valid, subunits, zero))
-        values = units.cast(storage).cast(arrow_type)
-        return compute.if_else(valid, values, pyarrow.scalar(None, arrow_type))
+        values = units.cast(storage).cast(data_type)
+        return compute.if_else(valid, values, pyarrow.scalar(None, data_type))
 
     # Bound in the destination unit before multiplying: a four-digit year fits
     # timestamp[s/us] even when it cannot fit timestamp[ns].
@@ -791,5 +791,5 @@ def _temporal(seconds: Any, fraction: Any, valid: Any, arrow_type: pyarrow.DataT
     safe_seconds = compute.if_else(inside, seconds, zero)
     safe_subunits = compute.if_else(inside, subunits, zero)
     units = compute.add(compute.multiply(safe_seconds, factor), safe_subunits)
-    values = units.cast(arrow_type, safe=False)
-    return compute.if_else(inside, values, pyarrow.scalar(None, arrow_type))
+    values = units.cast(data_type, safe=False)
+    return compute.if_else(inside, values, pyarrow.scalar(None, data_type))

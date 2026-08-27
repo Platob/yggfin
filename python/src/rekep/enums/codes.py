@@ -57,25 +57,55 @@ class AssetKind(Ranged):
         return self >= AssetKind.DERIVATIVE
 
 
-class EventType(Ranged):
-    """Event kind banded by what the row asserts."""
+class EventType(_FixedAsciiInt32):
+    """Event kind stored as a four-byte ASCII mnemonic, banded by rank.
+
+    The stored value is the readable mnemonic; the band order the row
+    predicates reason over rides in each member's rank, so a kind question
+    compares ranks and a storage scan filters on the finite code sets
+    `ranked_at_least`/`ranked_below` spell.
+    """
+
+    WIDTH = enum.nonmember(100)
 
     UNKNOWN = 0
-    MISC = 10
-    INTENT = 100
-    ORDER = 110
-    QUOTE = 120
-    FACT = 200
-    EXECUTION = 210
-    STATE = 300
-    BOOK = 320
-    INSTRUMENT_STATE = 400
-    INSTRUMENT = 410
+    MISC = "MISC", "", 10
+    INTENT = "INTE", "", 100
+    ORDER = "ORDR", "", 110
+    QUOTE = "QUOT", "", 120
+    FACT = "FACT", "", 200
+    EXECUTION = "EXEC", "", 210
+    STATE = "STAT", "", 300
+    BOOK = "BOOK", "", 320
+    INSTRUMENT_STATE = "ISTA", "", 400
+    INSTRUMENT = "INST", "", 410
+
+    @property
+    def band(self) -> EventType:
+        """The band-floor member this kind's rank sits in."""
+        return type(self)._bands()[self._rank // self.WIDTH * self.WIDTH]
+
+    @classmethod
+    @functools.cache
+    def _bands(cls) -> Mapping[int, EventType]:
+        return MappingProxyType(
+            {member._rank: member for member in cls if member._rank % cls.WIDTH == 0}
+        )
+
+    @classmethod
+    def ranked_at_least(cls, floor: EventType) -> tuple[int, ...]:
+        """Stored codes ranked at or above `floor`, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member._rank >= floor._rank)
+
+    @classmethod
+    def ranked_below(cls, floor: EventType) -> tuple[int, ...]:
+        """Stored codes ranked below `floor`, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member._rank < floor._rank)
 
     @property
     def is_snapshot(self) -> bool:
         """Whether the row is a state rather than an occurrence."""
-        return self >= EventType.STATE
+        return self._rank >= EventType.STATE._rank
 
 
 class IdSource(Ranged):

@@ -9,7 +9,7 @@ from rekep import Field, ProtocolMetadata
 def make_field() -> Field:
     return Field(
         name="side",
-        arrow_type=pyarrow.string(),
+        data_type=pyarrow.string(),
         nullable=True,
         metadata={"fix:tag": "54", "fix:type": "char", "description": "Side of order."},
     )
@@ -79,7 +79,7 @@ def test_a_write_through_the_proxy_rebuilds_the_container() -> None:
 
 
 def test_the_key_properties_read_through_the_iceberg_protocol() -> None:
-    built = Field(name="k", arrow_type=pyarrow.int64(), nullable=False)
+    built = Field(name="k", data_type=pyarrow.int64(), nullable=False)
     built.is_primary_key = True
     assert built.iceberg["primary_key"] == "true"
     built.iceberg["partition_key"] = "day"

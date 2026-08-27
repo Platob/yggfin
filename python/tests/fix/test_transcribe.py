@@ -913,7 +913,7 @@ def test_the_typed_reading_of_a_value_is_a_cast_against_the_field_that_knows(
     """Values stay text here; `tag_field` is where a type comes from."""
     side = codec.tag_field(54, "4.4")
     assert side.name == "Side"
-    assert side.arrow_type == pyarrow.string(), "char is a string, as FIX_SCALARS says"
+    assert side.data_type == pyarrow.string(), "char is a string, as FIX_SCALARS says"
     assert "1" in side.fix["values"]
 
 
@@ -1036,7 +1036,7 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
     )
     assert {name: column.type for name, column in columns.items()} == {
         name: TYPES[tag] for tag, name in COLUMNS.items()
-    } | {field.name: field.arrow_type for field in NAMESPACE_COLUMNS.values()}
+    } | {field.name: field.data_type for field in NAMESPACE_COLUMNS.values()}
     assert columns[COLUMNS[57]].to_pylist() == [None], "never sent, so never guessed"
 
 

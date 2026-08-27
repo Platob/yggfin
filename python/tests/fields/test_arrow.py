@@ -52,7 +52,7 @@ class Book(Convertible):
     name: str
     opened: datetime.date
     side: Side
-    size: Annotated[int, Field(arrow_type=pyarrow.int32(), metadata={"unit": "lots"})]
+    size: Annotated[int, Field(data_type=pyarrow.int32(), metadata={"unit": "lots"})]
     venues: list[Venue]
     limits: dict[str, int]
     root: pathlib.Path | None = None
@@ -126,8 +126,8 @@ def test_item_nullability_survives_into_the_list() -> None:
         tight: list[str]
 
     declared = members(Holder)
-    assert declared["loose"].arrow_type.field(0).nullable
-    assert not declared["tight"].arrow_type.field(0).nullable
+    assert declared["loose"].data_type.field(0).nullable
+    assert not declared["tight"].data_type.field(0).nullable
 
 
 # -- type inference ---------------------------------------------------------
@@ -187,13 +187,13 @@ def test_a_nested_class_becomes_a_struct(schema: pyarrow.Schema) -> None:
 
 def test_the_class_field_is_a_struct_named_after_the_class() -> None:
     assert Venue.into_field().name == "Venue"
-    assert pyarrow.types.is_struct(Venue.into_field().arrow_type)
+    assert pyarrow.types.is_struct(Venue.into_field().data_type)
     assert not Venue.into_field().nullable
     assert [member.name for member in Venue.into_field().fields] == ["mic", "timeout"]
 
 
 def test_a_member_is_reachable_by_name() -> None:
-    assert Venue.into_field().field("mic").arrow_type == pyarrow.string()
+    assert Venue.into_field().field("mic").data_type == pyarrow.string()
     with pytest.raises(KeyError, match="no member"):
         Venue.into_field().field("absent")
 
@@ -212,7 +212,7 @@ def test_declared_metadata_is_attached(schema: pyarrow.Schema) -> None:
 @pytest.mark.parametrize(
     ("extra", "check"),
     [
-        (pyarrow.int16(), lambda f: f.arrow_type == pyarrow.int16()),
+        (pyarrow.int16(), lambda f: f.data_type == pyarrow.int16()),
         ({"unit": "bps"}, lambda f: f.metadata["unit"] == "bps"),
         ("a bare string is a description", lambda f: f.description),
     ],
@@ -231,7 +231,7 @@ def test_declarations_merge_left_to_right() -> None:
         day: Annotated[str, {"unit": "day"}, "The day.", pyarrow.large_string()]
 
     declared = members(Mixed)["day"]
-    assert declared.arrow_type == pyarrow.large_string()
+    assert declared.data_type == pyarrow.large_string()
     assert declared.metadata["unit"] == "day"
     assert declared.description == "The day."
 
@@ -365,9 +365,11 @@ def test_a_class_without_readable_source_still_projects() -> None:
 # -- refusals ---------------------------------------------------------------
 
 
-def test_a_self_referential_class_is_refused_not_chased() -> None:
-    with pytest.raises(TypeError, match="no recursive types"):
-        Node.into_field().into_arrow_schema()
+def test_a_self_referential_class_builds_one_level_then_binary() -> None:
+    """Arrow has no recursive types: one nested level keeps the shape
+    readable, and whatever sits below it defaults to a binary leaf."""
+    child = Node.into_field().into_arrow_schema().field("child")
+    assert child.type.field("child").type == pyarrow.binary()
 
 
 def test_a_non_optional_union_is_refused() -> None:
@@ -387,7 +389,7 @@ def test_an_unknown_leaf_is_refused_with_a_way_out() -> None:
     class Holder(Convertible):
         value: Opaque
 
-    with pytest.raises(TypeError, match=r"Field\(arrow_type="):
+    with pytest.raises(TypeError, match=r"Field\(data_type="):
         Holder.into_field().into_arrow_schema()
 
 

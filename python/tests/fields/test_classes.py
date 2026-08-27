@@ -30,7 +30,7 @@ class Book(Convertible):
     name: str
     """Human name of the book."""
 
-    size: Annotated[int, Field(arrow_type=pyarrow.int32(), metadata={"unit": "lots"})]
+    size: Annotated[int, Field(data_type=pyarrow.int32(), metadata={"unit": "lots"})]
     price: decimal.Decimal
     opened: datetime.datetime
     venues: list[Venue]
@@ -68,7 +68,7 @@ def test_an_explicit_name_wins() -> None:
 
 
 def test_an_anonymous_struct_falls_back_to_a_name() -> None:
-    anonymous = Field.from_arrow_type(pyarrow.struct([("a", pyarrow.int64())]))
+    anonymous = Field.from_data_type(pyarrow.struct([("a", pyarrow.int64())]))
     assert anonymous.into_dataclass().__name__ == "ArrowFields"
 
 
@@ -79,8 +79,8 @@ def test_the_rebuilt_class_is_keyword_only(rebuilt: type) -> None:
 
 
 def test_exact_types_are_carried_not_re_inferred(rebuilt: type) -> None:
-    assert rebuilt.into_field().field("size").arrow_type == pyarrow.int32()
-    assert rebuilt.into_field().field("price").arrow_type == pyarrow.decimal128(38, 9)
+    assert rebuilt.into_field().field("size").data_type == pyarrow.int32()
+    assert rebuilt.into_field().field("price").data_type == pyarrow.decimal128(38, 9)
 
 
 def test_metadata_and_descriptions_survive(rebuilt: type) -> None:
@@ -89,7 +89,7 @@ def test_metadata_and_descriptions_survive(rebuilt: type) -> None:
 
 
 def test_a_nested_structs_own_descriptions_survive(rebuilt: type) -> None:
-    item = rebuilt.into_field().field("venues").arrow_type.field(0)
+    item = rebuilt.into_field().field("venues").data_type.field(0)
     assert item.type.field(0).metadata[b"description"] == b"ISO 10383 market identifier."
 
 

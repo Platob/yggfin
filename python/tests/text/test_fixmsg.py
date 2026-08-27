@@ -141,7 +141,7 @@ def test_a_line_always_says_which_protocol_it_carries() -> None:
     """`OTHER` is an answer and not a missing one -- it is most of a capture --
     so the column is NOT NULL and the fall-through is what a line starts as."""
     assert not FixMsg.into_field().field("protocol_code").nullable
-    assert FixMsg.into_field().field("protocol_code").arrow_type == pyarrow.string()
+    assert FixMsg.into_field().field("protocol_code").data_type == pyarrow.string()
     assert FixMsg().protocol_code == NO_PROTOCOL
 
 
@@ -162,14 +162,14 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     """`tag` and `key` are how a consumer addresses a field, so neither is null:
     a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
     member = FixMsg.into_field().field("entries")
-    assert pyarrow.types.is_list(member.arrow_type)
+    assert pyarrow.types.is_list(member.data_type)
     assert member.item.nullable is False
     assert member.item.field("tag").nullable is False
     assert member.item.field("key").nullable is False
     assert member.item.field("value").nullable is False
     for name in ("namespace", "comp"):
         assert member.item.field(name).nullable is True, name
-        assert member.item.field(name).arrow_type == pyarrow.string(), name
+        assert member.item.field(name).data_type == pyarrow.string(), name
     assert all(isinstance(entry, Entry) for entry in FixMsg(entries=[(55, "IBM")]).entries or ())
 
 
@@ -625,10 +625,10 @@ def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
         expected = registry.scalar(tag)
         actual = Party.into_field().field(name)
         assert actual.fix["name"] == expected.name
-        assert actual.arrow_type == expected.arrow_type
+        assert actual.data_type == expected.data_type
         assert actual.metadata == expected.metadata
         assert actual.description == expected.description
-    assert Party.into_field().field("buffer").arrow_type == pyarrow.map_(
+    assert Party.into_field().field("buffer").data_type == pyarrow.map_(
         pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
     )
 
@@ -647,7 +647,7 @@ def test_the_key_is_the_moment_and_the_line() -> None:
 def test_the_partition_is_the_hour_the_line_falls_in() -> None:
     """An identity partition on an integer, so every engine below reads it alike."""
     assert FixMsg.into_field().partition_keys() == {"unix_partition": "identity"}
-    assert FixMsg.into_field().field("unix_partition").arrow_type == pyarrow.int32()
+    assert FixMsg.into_field().field("unix_partition").data_type == pyarrow.int32()
 
 
 def test_every_unix_column_declares_its_unit() -> None:
@@ -665,8 +665,8 @@ def test_the_line_digest_is_an_int64_like_every_other_identifier() -> None:
     is `(unix, hash)` -- so two digests only meet if they also share a
     nanosecond."""
     for name in ("hash", "xhash"):
-        assert FixMsg.into_field().field(name).arrow_type == pyarrow.int64(), name
-    assert FixMsg.into_field().field("unix").arrow_type == pyarrow.int64()
+        assert FixMsg.into_field().field(name).data_type == pyarrow.int64(), name
+    assert FixMsg.into_field().field("unix").data_type == pyarrow.int64()
 
 
 def test_a_line_is_unclassified_until_something_classifies_it() -> None:
@@ -740,7 +740,7 @@ def test_typed_components_share_stored_access_and_group_projection() -> None:
 
 def test_mic_is_a_lossless_optional_int32_code() -> None:
     member = FixMsg.into_field().field("mic")
-    assert member.nullable and member.arrow_type == pyarrow.int32()
+    assert member.nullable and member.data_type == pyarrow.int32()
     assert member.metadata["enum:encoding"] == "ascii-big-endian"
     assert member.metadata["enum:pattern"] == "[A-Z0-9]{4}"
     assert "enum:dynamic" not in member.metadata
@@ -748,7 +748,7 @@ def test_mic_is_a_lossless_optional_int32_code() -> None:
 
 def test_reason_is_generic_optional_text_on_every_event() -> None:
     member = Event.into_field().field("reason")
-    assert member.nullable and member.arrow_type == pyarrow.string()
+    assert member.nullable and member.data_type == pyarrow.string()
     assert "fix:tag" not in member.metadata
 
 
@@ -1265,21 +1265,17 @@ def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(
     for tag, column in FLAT:
         if tag in STAMPS:
             continue
-        assert FixMsg.into_field().field(column).arrow_type == registry.field(tag).arrow_type, (
-            column
-        )
+        assert FixMsg.into_field().field(column).data_type == registry.field(tag).data_type, column
 
 
 def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
     registry: FixRegistry,
 ) -> None:
     """Promoted FIX clocks use Iceberg's width and their documented UTC zone."""
-    dictated = {
-        tag for tag, _ in FLAT if pyarrow.types.is_timestamp(registry.field(tag).arrow_type)
-    }
+    dictated = {tag for tag, _ in FLAT if pyarrow.types.is_timestamp(registry.field(tag).data_type)}
     assert dictated == set(STAMPS)
     for tag in STAMPS:
-        assert FixMsg.into_field().field(COLUMNS[tag]).arrow_type == pyarrow.timestamp(
+        assert FixMsg.into_field().field(COLUMNS[tag]).data_type == pyarrow.timestamp(
             "us", tz="UTC"
         ), tag
 
@@ -1287,12 +1283,12 @@ def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
 def test_timestamp_projection_is_naive_until_the_fix_documentation_says_utc() -> None:
     local = Field(
         name="LocalStamp",
-        arrow_type=pyarrow.timestamp("ns"),
+        data_type=pyarrow.timestamp("ns"),
         metadata={"fix:type": "Time"},
     )
     utc = Field(
         name="UtcStamp",
-        arrow_type=pyarrow.timestamp("ns"),
+        data_type=pyarrow.timestamp("ns"),
         metadata={"fix:type": "UTCTimestamp"},
     )
     assert _physical_type(local) == pyarrow.timestamp("us")
@@ -1320,7 +1316,7 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
 
 def test_rendered_isincode_keeps_its_source_identity() -> None:
     field = FixMsg.into_field().field("ISINCODE")
-    assert field.arrow_type == pyarrow.string()
+    assert field.data_type == pyarrow.string()
     assert field.fix == {"name": "ISINCODE", "type": "String"}
 
 
