@@ -52,21 +52,13 @@ Producers cast before writing; consumers load the same contract and may use
 ### Version 2: codes are mnemonics
 
 Version 2 recodes every stable code. A code is now the ASCII mnemonic it
-reads as, packed right-justified into its column, so `state` holds `FILLED`
-rather than `410`; the columns whose codes outgrew four bytes -- `etype`,
-`state` and both `kind` flavours -- widened from `int` to `long`.
+reads as, packed left-justified into its column, so `state` holds `41FILLED`
+rather than `410`; `etype`, `state` and both `kind` flavours widened from
+`int` to `long` to hold eight bytes.
 
-Reading is covered: `from_stored` resolves an id from any generation this
-package has written, so a warm registry cache, a stored `Field`'s metadata
-and a row decoded through a declaration all keep naming the same members.
-
-Writing into a version 1 table is not, and cannot be: Iceberg will not
-promote a `long` into an `int` column. A table written before version 2
-needs its `etype`, `state` and `kind` columns widened -- an
-`ALTER TABLE ... ALTER COLUMN ... TYPE bigint` through an engine that
-speaks Iceberg schema evolution -- before a version 2 producer can append
-to it. Existing rows keep their old ids and read back correctly once the
-column is wide enough to hold them.
+There is no in-package migration. `from_int` reads version 2 values and
+nothing else, so a store, a registry document or an Iceberg table written by
+an earlier version must be rebuilt rather than read or appended to.
 
 ## Publishing
 

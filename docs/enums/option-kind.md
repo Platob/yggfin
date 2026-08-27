@@ -12,6 +12,6 @@ readable mnemonic.
 
 | Key | Mnemonic | Stored value | Rank | FIX code |
 | --- | --- | ---: | ---: | --- |
-| `UNKNOWN` | | 0 | 0 | |
-| `PUT` | `PUT` | 5264724 | 100 | `0` |
-| `CALL` | `CALL` | 1128352844 | 200 | `1` |
+| `UNKNOWN` |  | 0 | 0 |  |
+| `PUT` | `PUT` | 5788625255031373824 | 100 | `0` |
+| `CALL` | `CALL` | 4846238563328589824 | 200 | `1` |

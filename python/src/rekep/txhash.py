@@ -19,6 +19,8 @@ import pyarrow
 import pyarrow.compute
 import xxhash
 
+from rekep.fields import Field, TimestampField
+
 #: The Arrow type every txhash is.
 TXHASH = pyarrow.int64()
 
@@ -121,6 +123,152 @@ def digest_arrow(values: Any) -> pyarrow.Array:
     column = _column(values).cast(TXHASH)
     low = pyarrow.compute.bit_wise_and(column, pyarrow.scalar(DIGEST_MASK, TXHASH))
     return low.cast(pyarrow.uint32(), safe=False)
+
+
+# -- hashing what a row is made of ------------------------------------------
+
+
+def h64_arrow_arrays(clock: Any, *columns: Any, seed: int = 0) -> pyarrow.Array:
+    """One txhash per row over several columns, anchored to `clock`.
+
+    `clock` is whatever names the instant -- a timestamp column, an epoch
+    integer column, or text -- read through `TimestampField` to UTC epoch
+    seconds. Each column is rendered to its field's own bytes and the
+    renderings are framed together, so two rows hash alike exactly when
+    every value does.
+    """
+    seconds = epoch_seconds_arrow(clock)
+    if not columns:
+        raise ValueError("at least one column is required")
+    rows = len(seconds)
+    for column in columns:
+        if len(_column(column)) != rows:
+            raise ValueError("every column must have the same number of rows")
+    return h64_arrow(seconds, _framed(columns), seed=seed)
+
+
+def h64_arrow_batch(batch: Any, clock: Any, *names: str, seed: int = 0) -> pyarrow.Array:
+    """One txhash per row of `batch` over the columns `names` selects.
+
+    `clock` names the column the instant comes from; `names` the columns
+    that make up the identity, in the order they are hashed.
+    """
+    if not names:
+        raise ValueError("at least one column name is required")
+    return h64_arrow_arrays(batch.column(clock), *(batch.column(name) for name in names), seed=seed)
+
+
+def h64_dataclass(value: Any, clock: str, *names: str, seed: int = 0) -> int:
+    """One txhash of `value`'s members, anchored to its `clock` member.
+
+    The scalar twin of `h64_arrow_batch`: the same fields, rendered to the
+    same bytes and framed the same way, so a row hashed one at a time and a
+    column hashed all at once agree.
+    """
+    field = _struct_field_of(value)
+    members = {member.name: member for member in field.fields}
+    selected = names or tuple(name for name in members if name != clock)
+    payload = b"".join(
+        _frame(members[name].into_bytes(getattr(value, name, None))) for name in selected
+    )
+    return couple(
+        _seconds(_epoch_seconds(members[clock], getattr(value, clock, None))),
+        xxh32_of(payload, seed),
+    )
+
+
+def epoch_seconds_arrow(clock: Any) -> pyarrow.Array:
+    """A clock column as whole UTC epoch seconds, `int32`.
+
+    A timestamp column is read on its own unit through `TimestampField`;
+    text is parsed as an instant first; an integer column is already
+    seconds.
+    """
+    compute = pyarrow.compute
+    column = _column(clock)
+    kinds = pyarrow.types
+    if kinds.is_string(column.type) or kinds.is_large_string(column.type):
+        column = compute.strptime(column, format="%Y-%m-%dT%H:%M:%S", unit="s", error_is_null=True)
+    if kinds.is_timestamp(column.type):
+        seconds = TimestampField.into_unix_arrow(column, "s")
+        return seconds.cast(pyarrow.int32(), safe=False)
+    if kinds.is_date(column.type):
+        return TimestampField.into_unix_arrow(
+            column.cast(pyarrow.timestamp("s"), safe=False), "s"
+        ).cast(pyarrow.int32(), safe=False)
+    if not kinds.is_integer(column.type):
+        raise TypeError(f"a clock column must be an instant or epoch seconds, got {column.type}")
+    return column.cast(pyarrow.int32())
+
+
+def _epoch_seconds(field: Any, value: Any) -> Any:
+    """One clock value as whole UTC epoch seconds."""
+    if value is None:
+        raise ValueError(f"{field.name or 'the clock'} has no value to anchor a hash to")
+    read = field.cast_py(value)
+    if isinstance(read, int):
+        return read
+    return _seconds(read)
+
+
+def _framed(columns: Any) -> pyarrow.Array:
+    """Every column's rendered bytes, framed and joined into one payload."""
+    compute = pyarrow.compute
+    parts: list[Any] = []
+    for column in columns:
+        rendered = _rendered(column)
+        parts += [_lengths(rendered), rendered]
+    return compute.binary_join_element_wise(
+        *parts,
+        pyarrow.scalar(b"", type=pyarrow.binary()),
+        null_handling="replace",
+        null_replacement=b"",
+    )
+
+
+def _rendered(column: Any) -> pyarrow.Array:
+    """One column as the bytes its field stores it in, row by row."""
+    found = _column(column)
+    field = Field(name="", dtype=found.type)
+    if pyarrow.types.is_binary(found.type):
+        return found
+    if pyarrow.types.is_string(found.type) or pyarrow.types.is_large_string(found.type):
+        return found.cast(pyarrow.binary(), safe=False)
+    return pyarrow.array(
+        [None if one is None else field.into_bytes(one) for one in found.to_pylist()],
+        pyarrow.binary(),
+    )
+
+
+def _lengths(rendered: pyarrow.Array) -> pyarrow.Array:
+    """Each row's payload length, framed as eight big-endian bytes."""
+    sizes = pyarrow.compute.binary_length(rendered).to_pylist()
+    return pyarrow.array(
+        [_frame_length(size) for size in sizes],
+        pyarrow.binary(),
+    )
+
+
+def _frame_length(size: Any) -> bytes:
+    return _ABSENT if size is None else int(size).to_bytes(8, "big", signed=True)
+
+
+def _frame(payload: bytes) -> bytes:
+    """One part's bytes behind its length, so two parts cannot run together."""
+    return len(payload).to_bytes(8, "big", signed=True) + payload
+
+
+#: The length an absent part is framed with, so absent and empty differ.
+_ABSENT = (-1).to_bytes(8, "big", signed=True)
+
+
+def _struct_field_of(value: Any) -> Any:
+    """The declaration behind a dataclass instance."""
+    declared = type(value)
+    into_field = getattr(declared, "into_field", None)
+    if into_field is None:
+        raise TypeError(f"{declared.__name__} declares no field to hash")
+    return into_field()
 
 
 def _seconds(value: Any) -> int:

@@ -151,9 +151,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes, XXH3-64,
   and two's-complement `int64` storage. Numbers are never formatted as text.
-- Store market notions as ASCII codes packed into one integer, right-justified.
-  Ranks carry the band order, so live and terminal checks compare ranks and a
-  storage scan pushes the finite code set `ranked_at_least` names.
+- Store market notions as ASCII codes packed into one integer, left-justified
+  and padded with trailing NULs, so the value orders as its text does. Ranks
+  carry the band order, so live and terminal checks compare ranks and a storage
+  scan pushes the finite code set `ranked_at_least` names.
 - Nest nothing a reader filters on. Keep instrument identity and book summary
   values flat.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.

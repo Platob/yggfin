@@ -9,45 +9,40 @@ assert Currency.from_str("$") is usd
 ```
 
 Currency packs its three uppercase letters as big-endian ASCII in an
-`int32`, right-justified with a leading NUL like every other ASCII code --
-so the stored value is simply the integer of the letters themselves, and no
-decimal count rides in the value. `Currency.register` accepts another
-ISO 4217 alphabetic code; the table lists the built-in members.
-
-An earlier release stored `CCCn` -- the letters plus an ASCII decimal-count
-digit in the fourth byte. `Currency.from_stored` (and the replay readers
-built on `from_str`) still read that generation: the letters name the
-currency and the digit drops. `from_int` stays exact on today's codes.
+`int32`, left-justified with a trailing NUL like every other ASCII code, so
+the stored value orders exactly as the code does and carries nothing but the
+letters. `Currency.register` accepts another ISO 4217 alphabetic code; the
+table lists the built-in members.
 
 | Key | Stored value |
 | --- | ---: |
 | `UNKNOWN` | 0 |
-| `USD` | 5,591,876 |
-| `EUR` | 4,543,826 |
-| `GBP` | 4,670,032 |
-| `JPY` | 4,870,233 |
-| `CHF` | 4,409,414 |
-| `CAD` | 4,407,620 |
-| `AUD` | 4,281,668 |
-| `NZD` | 5,134,916 |
-| `CNY` | 4,410,969 |
-| `HKD` | 4,737,860 |
-| `SGD` | 5,457,732 |
-| `SEK` | 5,457,227 |
-| `NOK` | 5,132,107 |
-| `DKK` | 4,475,723 |
-| `PLN` | 5,262,414 |
-| `CZK` | 4,414,027 |
-| `HUF` | 4,740,422 |
-| `MXN` | 5,068,878 |
-| `BRL` | 4,346,444 |
-| `ZAR` | 5,914,962 |
-| `INR` | 4,804,178 |
-| `KRW` | 4,936,279 |
-| `TWD` | 5,527,364 |
-| `XAU` | 5,783,893 |
-| `XAG` | 5,783,879 |
-| `XPT` | 5,787,732 |
-| `XPD` | 5,787,716 |
-| `XTS` | 5,788,755 |
-| `XXX` | 5,789,784 |
+| `USD` | 1,431,520,256 |
+| `EUR` | 1,163,219,456 |
+| `GBP` | 1,195,528,192 |
+| `JPY` | 1,246,779,648 |
+| `CHF` | 1,128,809,984 |
+| `CAD` | 1,128,350,720 |
+| `AUD` | 1,096,107,008 |
+| `NZD` | 1,314,538,496 |
+| `CNY` | 1,129,208,064 |
+| `HKD` | 1,212,892,160 |
+| `SGD` | 1,397,179,392 |
+| `SEK` | 1,397,050,112 |
+| `NOK` | 1,313,819,392 |
+| `DKK` | 1,145,785,088 |
+| `PLN` | 1,347,177,984 |
+| `CZK` | 1,129,990,912 |
+| `HUF` | 1,213,548,032 |
+| `MXN` | 1,297,632,768 |
+| `BRL` | 1,112,689,664 |
+| `ZAR` | 1,514,230,272 |
+| `INR` | 1,229,869,568 |
+| `KRW` | 1,263,687,424 |
+| `TWD` | 1,415,005,184 |
+| `XAU` | 1,480,676,608 |
+| `XAG` | 1,480,673,024 |
+| `XPT` | 1,481,659,392 |
+| `XPD` | 1,481,655,296 |
+| `XTS` | 1,481,921,280 |
+| `XXX` | 1,482,184,704 |

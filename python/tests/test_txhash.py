@@ -122,3 +122,90 @@ def test_mismatched_lengths_and_wrong_types_are_refused() -> None:
         txhash.h64_arrow(pyarrow.array([1.5]), pyarrow.array(["a"]))
     with pytest.raises(TypeError, match="binary column"):
         txhash.h64_arrow(pyarrow.array([1], pyarrow.int32()), pyarrow.array([2]))
+
+
+# -- hashing what a row is made of -------------------------------------------
+
+
+def _batch() -> pyarrow.RecordBatch:
+    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    return pyarrow.RecordBatch.from_arrays(
+        [
+            pyarrow.array([when, when], pyarrow.timestamp("us", tz="UTC")),
+            pyarrow.array(["BTC", "ETH"]),
+            pyarrow.array([1, 2], pyarrow.int32()),
+        ],
+        names=["unix", "symbol", "qty"],
+    )
+
+
+def test_several_columns_hash_as_one_framed_payload() -> None:
+    batch = _batch()
+    hashed = txhash.h64_arrow_arrays(
+        batch.column("unix"), batch.column("symbol"), batch.column("qty")
+    )
+    assert hashed.type == pyarrow.int64()
+    assert txhash.seconds_arrow(hashed).to_pylist() == [1_700_000_000] * 2
+    assert hashed[0].as_py() != hashed[1].as_py(), "different rows, different digests"
+    assert txhash.h64_arrow_batch(batch, "unix", "symbol", "qty").to_pylist() == hashed.to_pylist()
+
+
+def test_framing_keeps_neighbouring_values_apart() -> None:
+    """`ab` then `c` must not hash like `a` then `bc`."""
+    clock = pyarrow.array([0, 0], pyarrow.int32())
+    left = txhash.h64_arrow_arrays(clock, pyarrow.array(["ab", "a"]), pyarrow.array(["c", "bc"]))
+    assert left[0].as_py() != left[1].as_py()
+
+
+def test_a_clock_may_be_a_timestamp_epoch_seconds_or_text() -> None:
+    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    payload = pyarrow.array(["x"])
+    stamps = txhash.h64_arrow_arrays(
+        pyarrow.array([when], pyarrow.timestamp("us", tz="UTC")), payload
+    )
+    seconds = txhash.h64_arrow_arrays(pyarrow.array([1_700_000_000], pyarrow.int32()), payload)
+    spelled = txhash.h64_arrow_arrays(pyarrow.array(["2023-11-14T22:13:20"]), payload)
+    assert stamps.to_pylist() == seconds.to_pylist() == spelled.to_pylist()
+    nanos = pyarrow.array([1_700_000_000_000_000_000], pyarrow.timestamp("ns", tz="UTC"))
+    assert txhash.epoch_seconds_arrow(nanos).to_pylist() == [1_700_000_000]
+    assert txhash.epoch_seconds_arrow(nanos).type == pyarrow.int32()
+
+
+def test_a_dataclass_hashes_exactly_as_its_batch_does() -> None:
+    """The whole point of one renderer: a row hashed alone and a column hashed
+    all at once are the same value."""
+    import pyarrow as pa
+
+    from rekep import Convertible, scalar
+
+    @scalar
+    class Trade(Convertible):
+        unix: datetime.datetime
+        symbol: str
+        qty: int
+
+    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    rows = [Trade(unix=when, symbol="BTC", qty=1), Trade(unix=when, symbol="ETH", qty=2)]
+    scalars = [txhash.h64_dataclass(row, "unix", "symbol", "qty") for row in rows]
+    field = Trade.into_field()
+    batch = pa.RecordBatch.from_arrays(
+        [
+            field.field("unix").cast_arrow_array(pa.array([row.unix for row in rows])),
+            pa.array([row.symbol for row in rows]),
+            field.field("qty").cast_arrow_array(pa.array([row.qty for row in rows])),
+        ],
+        names=["unix", "symbol", "qty"],
+    )
+    assert txhash.h64_arrow_batch(batch, "unix", "symbol", "qty").to_pylist() == scalars
+
+
+def test_the_selectors_and_the_shapes_are_checked() -> None:
+    batch = _batch()
+    with pytest.raises(ValueError, match="at least one column"):
+        txhash.h64_arrow_arrays(batch.column("unix"))
+    with pytest.raises(ValueError, match="at least one column name"):
+        txhash.h64_arrow_batch(batch, "unix")
+    with pytest.raises(ValueError, match="same number of rows"):
+        txhash.h64_arrow_arrays(batch.column("unix"), pyarrow.array(["only-one"]))
+    with pytest.raises(TypeError, match="clock column"):
+        txhash.h64_arrow_arrays(pyarrow.array([1.5]), pyarrow.array(["x"]))

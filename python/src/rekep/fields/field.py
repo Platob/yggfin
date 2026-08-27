@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
+import decimal
 import functools
 import json
 import re
+import struct
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
@@ -666,6 +669,38 @@ class Field(Convertible):
             return array
         return array.cast(self.dtype, safe=safe)
 
+    def cast_arrow_scalar(self, value: Any, *, safe: bool = False) -> pyarrow.Scalar:
+        """One value as a `pyarrow.Scalar` of this field's type."""
+        if isinstance(value, pyarrow.Scalar):
+            return value if value.type == self.dtype else value.cast(self.dtype)
+        return pyarrow.scalar(self.cast_py(value), type=self.dtype, from_pandas=not safe)
+
+    def cast_py(self, value: Any) -> Any:
+        """One value as the Python type this field's Arrow type stands for.
+
+        Integers are `int`, floats `float`, instants `datetime`, lists
+        `list`, structs the dataclass the declaration spells. `None` stays
+        `None`, and a value the type cannot hold raises rather than being
+        silently rounded into it.
+        """
+        if value is None:
+            return None
+        if isinstance(value, pyarrow.Scalar):
+            value = value.as_py()
+            if value is None:
+                return None
+        return _py_of(self.dtype, value)
+
+    def into_bytes(self, value: Any) -> bytes:
+        """One value as the bytes this field stores it in.
+
+        Fixed-width numbers are exactly their width, big-endian; an instant
+        is its epoch integer in the declared unit, UTC; text is UTF-8. A
+        nested value is its members' bytes concatenated, so one field's
+        rendering is one blob whatever its shape.
+        """
+        return BinaryField.encode(self, value)
+
 
 # -- clocks -----------------------------------------------------------------
 
@@ -753,6 +788,84 @@ class TimestampField(Field):
         elif target > source:
             ticks = compute.divide(ticks, pyarrow.scalar(target // source, pyarrow.int64()))
         return ticks.cast(self.dtype, safe=False)
+
+
+# -- bytes and dictionaries -------------------------------------------------
+
+
+class BinaryField(Field):
+    """A binary column, and the value-to-bytes rendering every field shares.
+
+    One rule per Arrow type, so a value has one blob wherever it is rendered:
+    a fixed-width number is exactly its width big-endian, an instant is its
+    epoch integer in the declared unit, text is UTF-8, and a nested value is
+    its members' bytes concatenated.
+    """
+
+    #: How many bytes each fixed-width type occupies, and how it is read.
+    WIDTHS: Mapping[str, int] = MappingProxyType(
+        {"int8": 1, "int16": 2, "int32": 4, "int64": 8, "float": 4, "double": 8}
+    )
+
+    @classmethod
+    def encode(cls, field: Field, value: Any) -> bytes:
+        """`value` as the bytes `field` stores it in."""
+        if value is None:
+            return b""
+        return _bytes_of(field, value)
+
+    def cast_py(self, value: Any) -> Any:
+        """Bytes, as the column holds them."""
+        if value is None:
+            return None
+        if isinstance(value, pyarrow.Scalar):
+            value = value.as_py()
+        return value if isinstance(value, bytes) else _bytes_of(self, value)
+
+
+class DictionaryField(Field):
+    """A dictionary column: positions into a values array, and the values.
+
+    The casts a dictionary needs sit here rather than being branched for at
+    every call site -- what the indices are, what the values are, and how a
+    plain column of values becomes one.
+    """
+
+    @property
+    def index_type(self) -> pyarrow.DataType:
+        """The Arrow type the positions are stored in."""
+        return self.dtype.index_type
+
+    @property
+    def value_type(self) -> pyarrow.DataType:
+        """The Arrow type the dictionary's values are."""
+        return self.dtype.value_type
+
+    @property
+    def values(self) -> Field:
+        """The values as a field of their own, for casting through."""
+        return Field(name=self.name, dtype=self.value_type, nullable=self.nullable)
+
+    def cast_py(self, value: Any) -> Any:
+        """One value as the Python type the *values* stand for."""
+        return self.values.cast_py(value)
+
+    def into_bytes(self, value: Any) -> bytes:
+        """A dictionary value is its value's bytes: the position is storage."""
+        return self.values.into_bytes(value)
+
+    def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
+        """`array` as this dictionary, encoding a plain column of values."""
+        if isinstance(array, pyarrow.ChunkedArray):
+            return pyarrow.chunked_array(
+                [self.cast_arrow_array(chunk, safe=safe) for chunk in array.chunks],
+                type=self.dtype,
+            )
+        if array.type == self.dtype:
+            return array
+        if pyarrow.types.is_dictionary(array.type):
+            return array.cast(self.dtype, safe=safe)
+        return self.values.cast_arrow_array(array, safe=safe).dictionary_encode().cast(self.dtype)
 
 
 # -- containers -------------------------------------------------------------
@@ -1560,6 +1673,10 @@ _KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
     (pyarrow.types.is_fixed_size_list, "FixedSizeListField"),
     (pyarrow.types.is_list, "ListField"),
     (pyarrow.types.is_timestamp, "TimestampField"),
+    (pyarrow.types.is_dictionary, "DictionaryField"),
+    (pyarrow.types.is_binary, "BinaryField"),
+    (pyarrow.types.is_large_binary, "BinaryField"),
+    (pyarrow.types.is_fixed_size_binary, "BinaryField"),
 )
 
 
@@ -1640,6 +1757,160 @@ def _flag(mapping: Mapping[str, Any], key: str) -> bool:
         f"field {mapping.get(NAME, '')!r} has {key}={value!r}: write true or false, since it is "
         "part of the type and not a value to be coerced"
     )
+
+
+def _py_of(dtype: pyarrow.DataType, value: Any) -> Any:
+    """One value as the Python type `dtype` stands for."""
+    kinds = pyarrow.types
+    if kinds.is_dictionary(dtype):
+        return _py_of(dtype.value_type, value)
+    if kinds.is_boolean(dtype):
+        return bool(value)
+    if kinds.is_integer(dtype):
+        return int(value)
+    if kinds.is_floating(dtype):
+        return float(value)
+    if kinds.is_decimal(dtype):
+        return value if isinstance(value, decimal.Decimal) else decimal.Decimal(str(value))
+    if kinds.is_string(dtype) or kinds.is_large_string(dtype):
+        return value if isinstance(value, str) else str(value)
+    if kinds.is_binary(dtype) or kinds.is_large_binary(dtype) or kinds.is_fixed_size_binary(dtype):
+        return value if isinstance(value, bytes) else bytes(value)
+    if kinds.is_timestamp(dtype):
+        return _instant_of(dtype, value)
+    if kinds.is_date(dtype):
+        return value if isinstance(value, datetime.date) else _instant_of(dtype, value).date()
+    if kinds.is_time(dtype):
+        if isinstance(value, datetime.time):
+            return value
+        return datetime.time.fromisoformat(str(value))
+    if kinds.is_duration(dtype):
+        if isinstance(value, datetime.timedelta):
+            return value
+        return datetime.timedelta(**{_DURATIONS[dtype.unit]: int(value)})
+    if kinds.is_struct(dtype):
+        return _dataclass_of(dtype, value)
+    if kinds.is_map(dtype):
+        items = value.items() if isinstance(value, Mapping) else value
+        return {_py_of(dtype.key_type, key): _py_of(dtype.item_type, item) for key, item in items}
+    if _is_list_like(dtype):
+        item = dtype.value_type
+        return [_py_of(item, one) for one in value]
+    return value
+
+
+#: What a duration's unit is called where `timedelta` takes it.
+_DURATIONS: Mapping[str, str] = MappingProxyType(
+    {"s": "seconds", "ms": "milliseconds", "us": "microseconds", "ns": "microseconds"}
+)
+
+
+def _instant_of(dtype: pyarrow.DataType, value: Any) -> datetime.datetime:
+    """One value as an aware `datetime`, read on the type's own clock."""
+    if isinstance(value, datetime.datetime):
+        found = value
+    elif isinstance(value, datetime.date):
+        found = datetime.datetime(value.year, value.month, value.day)
+    elif isinstance(value, str):
+        found = datetime.datetime.fromisoformat(value)
+    else:
+        unit = getattr(dtype, "unit", "us")
+        seconds = int(value) / (1_000_000_000 / TimestampField.FACTORS[unit])
+        found = datetime.datetime.fromtimestamp(seconds, datetime.UTC)
+    zone = getattr(dtype, "tz", None)
+    if zone is None:
+        return found.replace(tzinfo=None) if found.tzinfo is not None else found
+    return found.replace(tzinfo=datetime.UTC) if found.tzinfo is None else found
+
+
+@functools.cache
+def _declared_dataclass(dtype: pyarrow.DataType) -> type:
+    """The one dataclass a struct type spells -- built once, so a value cast
+    twice is the same class both times."""
+    return Field(name="", dtype=dtype).into_dataclass()
+
+
+def _dataclass_of(dtype: pyarrow.DataType, value: Any) -> Any:
+    """One struct value as the dataclass its declaration spells."""
+    declared = _declared_dataclass(dtype)
+    if isinstance(value, declared):
+        return value
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        value = dataclasses.asdict(value)
+    members = {member.name: member for member in Field(name="", dtype=dtype).fields}
+    read = value if isinstance(value, Mapping) else dict(zip(members, value, strict=False))
+    return declared(**{name: member.cast_py(read.get(name)) for name, member in members.items()})
+
+
+def _bytes_of(field: Field, value: Any) -> bytes:
+    """One value as the bytes its field stores it in."""
+    dtype, kinds = field.dtype, pyarrow.types
+    if kinds.is_dictionary(dtype):
+        return field.values.into_bytes(value)
+    if kinds.is_boolean(dtype):
+        return b"\x01" if value else b"\x00"
+    if kinds.is_string(dtype) or kinds.is_large_string(dtype):
+        return str(value).encode("utf-8")
+    if kinds.is_binary(dtype) or kinds.is_large_binary(dtype) or kinds.is_fixed_size_binary(dtype):
+        return value if isinstance(value, bytes) else bytes(value)
+    if kinds.is_timestamp(dtype) or kinds.is_date(dtype) or kinds.is_time(dtype):
+        return _stamp_bytes(field, value)
+    if kinds.is_duration(dtype):
+        found = field.cast_py(value)
+        scale = TimestampField.FACTORS["s"] / TimestampField.FACTORS[dtype.unit]
+        ticks = int(found.total_seconds() * scale)
+        return ticks.to_bytes(8, "big", signed=True)
+    if kinds.is_decimal(dtype):
+        return str(field.cast_py(value)).encode("ascii")
+    if kinds.is_integer(dtype) or kinds.is_floating(dtype):
+        return _number_bytes(dtype, field.cast_py(value))
+    if kinds.is_struct(dtype):
+        read = _member_values(field, value)
+        return b"".join(member.into_bytes(read.get(member.name)) for member in field.fields)
+    if kinds.is_map(dtype):
+        items = value.items() if isinstance(value, Mapping) else (value or ())
+        return b"".join(
+            field.key.into_bytes(key) + field.value.into_bytes(item) for key, item in items
+        )
+    if _is_list_like(dtype):
+        return b"".join(field.item.into_bytes(one) for one in (value or ()))
+    raise TypeError(f"no byte rendering for {dtype}")
+
+
+def _member_values(field: Field, value: Any) -> Mapping[str, Any]:
+    """A struct value as `{member name: value}`, whatever shape it arrived in."""
+    if isinstance(value, Mapping):
+        return value
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {member.name: getattr(value, member.name, None) for member in field.fields}
+    return dict(zip((member.name for member in field.fields), value or (), strict=False))
+
+
+def _number_bytes(dtype: pyarrow.DataType, value: Any) -> bytes:
+    """A fixed-width number as exactly its width, big-endian."""
+    named = str(dtype)
+    width = BinaryField.WIDTHS.get(named, 8)
+    if pyarrow.types.is_floating(dtype):
+        return struct.pack(">f" if width == 4 else ">d", float(value))
+    return int(value).to_bytes(width, "big", signed=not named.startswith("u"))
+
+
+def _stamp_bytes(field: Field, value: Any) -> bytes:
+    """An instant as its epoch integer in the declared unit, UTC."""
+    dtype = field.dtype
+    found = field.cast_py(value)
+    if isinstance(found, datetime.time):
+        micros = (found.hour * 3600 + found.minute * 60 + found.second) * 1_000_000
+        ticks = (micros + found.microsecond) * 1_000 // TimestampField.FACTORS[dtype.unit]
+    elif isinstance(found, datetime.datetime):
+        aware = found if found.tzinfo is not None else found.replace(tzinfo=datetime.UTC)
+        nanos = int(aware.timestamp() * 1_000_000) * 1_000
+        ticks = nanos // TimestampField.FACTORS[getattr(dtype, "unit", "us")]
+    else:
+        ticks = found.toordinal() - datetime.date(1970, 1, 1).toordinal()
+        if str(dtype) == "date64[ms]":
+            ticks *= 86_400_000
+    return int(ticks).to_bytes(8, "big", signed=True)
 
 
 def _anonymous(member: Field) -> dict[str, Any]:

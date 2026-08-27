@@ -85,19 +85,20 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
   "values": {"8": "ExecutionReport", "D": "NewOrderSingle", "W": "MarketDataSnapshotFullRefresh"},
   "event_types": {
     "8": {"name": "EXECUTION", "id": 4996819942064276804},
-    "D": {"name": "ORDER", "id": 340682622290},
-    "W": {"name": "BOOK", "id": 1112493899}
+    "D": {"name": "ORDER", "id": 5715705941605744640},
+    "W": {"name": "BOOK", "id": 4778124913204527104}
   },
-  "states": {"D": {"name": "PENDING_NEW", "id": 22594200592598359}},
+  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}},
   "encoded": {"newordersingle": "D"},
   "decoded": {"D": "newordersingle"}
 }
 ```
 
 The `id` is the member's stored `int64` -- its ASCII mnemonic packed
-big-endian (`EXECUTED`, `ORDER`, `BOOK`). The name is authoritative on
-load: a store written by the original ordinal release, whose ids were the
-members' ranks (`210`, `110`, `320`), still reads back to the same members.
+big-endian and left-justified (`EXECUTED`, `ORDER`, `BOOK`). The name and the
+id must agree on load; a document carrying an id this release does not store
+is refused, so a registry written by an earlier release is rewritten, not
+migrated.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent
@@ -119,11 +120,11 @@ use `State` members; registry documents store both their names and integer ids.
   "name": "ExecType",
   "tag": 150,
   "states": {
-    "0": {"name": "NEW", "id": 5129559},
-    "1": {"name": "PARTIALLY_FILLED", "id": 5782993918430366796},
-    "2": {"name": "FILLED", "id": 77280626623812},
-    "G": {"name": "REPLACED", "id": 5928232772945790276},
-    "H": {"name": "CANCELLED", "id": 4846240724859766084}
+    "0": {"name": "NEW", "id": 3616758035474546688},
+    "1": {"name": "PARTIALLY_FILLED", "id": 3688817884324579660},
+    "2": {"name": "FILLED", "id": 3760864444457698628},
+    "G": {"name": "REPLACED", "id": 3833216690499109700},
+    "H": {"name": "CANCELLED", "id": 3832918705633971268}
   }
 }
 ```
