@@ -42,12 +42,15 @@ every dropped reading is written to `data/fix-conflicts.json`. Its counts are
 pinned in `rekep.fix.publish.CONFLICT_BASELINE`, so a refresh that introduces
 conflicts nobody looked at fails rather than shipping them.
 
-Add a field, record a spelling, or check the whole store:
+Promote a rendered bridge name into a typed column, record a spelling, or
+check the whole store. `promote` is one call whether the name is brand new or
+a classification run already declared it without a column; it refuses a
+standard tagged field and refuses to move a column already assigned:
 
 ```bash
 cd python
-uv run rekep fix registry add-field --store ../data/fix \
-    --name TECH.CLIENTID --type String --column tech_client_id
+uv run rekep fix registry promote --store ../data/fix \
+    --name TECH.CLIENTID --column tech_client_id
 uv run rekep fix registry check --store ../data/fix
 ```
 

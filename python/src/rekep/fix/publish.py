@@ -131,6 +131,24 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "SideTrdRegTimestampType",
     "SideTrdRegTimestampSrc",
     "NoSideTrdRegTS",
+    "SecurityAltID",
+    "SecurityAltIDSource",
+    "NoSecurityAltID",
+    "LegSymbol",
+    "LegSecurityID",
+    "LegSecurityIDSource",
+    "LegSecurityType",
+    "LegCFICode",
+    "LegSecurityExchange",
+    "LegMaturityDate",
+    "LegMaturityMonthYear",
+    "LegStrikePrice",
+    "LegPutOrCall",
+    "LegContractMultiplier",
+    "LegCurrency",
+    "LegSide",
+    "LegRatioQty",
+    "NoLegs",
 )
 
 #: Fields the market translation reads, whether or not it stores each as its
@@ -157,12 +175,11 @@ MARKET_FIELDS: tuple[str, ...] = (
     "NumberOfOrders",
     "TrdMatchID",
     "ExDestination",
-    "NoSecurityAltID",
-    "SecurityAltID",
-    "SecurityAltIDSource",
-    "NoLegs",
+    "NoSides",
+    "ClOrdLinkID",
+    "CxlRejResponseTo",
+    "SettlCurrFxRateCalc",
     "MaturityMonthYear",
-    "LegMaturityMonthYear",
     "StopPx",
     "ExecRefID",
     "TradeID",
@@ -174,19 +191,6 @@ MARKET_FIELDS: tuple[str, ...] = (
     "StrikePrice",
     "PutOrCall",
     "SecurityDesc",
-    "LegSymbol",
-    "LegSide",
-    "LegRatioQty",
-    "LegSecurityID",
-    "LegSecurityIDSource",
-    "LegCFICode",
-    "LegSecurityType",
-    "LegSecurityExchange",
-    "LegCurrency",
-    "LegContractMultiplier",
-    "LegMaturityDate",
-    "LegStrikePrice",
-    "LegPutOrCall",
 )
 
 #: Fields no declaration here names but real bridge traffic carries, so a key
@@ -231,7 +235,7 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 
 #: Fields FIX never numbered that the parsed log gives a column of its own.
 #: Selected by name, because a name is all such a field has.
-NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE",)
+NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
 #: Every key the packaged projection selects, in declaration order.
 PROJECTED: tuple[str, ...] = tuple(

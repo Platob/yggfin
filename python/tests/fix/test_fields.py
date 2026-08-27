@@ -395,3 +395,48 @@ def test_the_value_reading_is_one_function_under_every_name_it_is_imported_by() 
 def _unreachable(*_arguments: object, **_named: object) -> int:
     """Stands in for the scalar reading where the vectorised one must have answered."""
     raise AssertionError("the scalar reading is the fallback, not the path a good column takes")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # The bridge's colon-free clock, whole or nothing.
+        ("094510", "1970-01-01T09:45:10"),
+        ("094510.250", "1970-01-01T09:45:10.250000"),
+        ("20260814-094510.250", "2026-08-14T09:45:10.250000"),
+        ("20260814094510", "2026-08-14T09:45:10"),
+        ("0945", None),
+        ("20260814-0945", "2026-08-14T00:00:00"),
+        # A trailing zone offset moves a clock, is a calendar label on a
+        # date-only value, and `Z` is a no-op either way.
+        ("20260814-09:45:10-0400", "2026-08-14T13:45:10"),
+        ("09:30:00-04:00", "1970-01-01T13:30:00"),
+        ("20260814-0400s", "2026-08-14T00:00:00"),
+        ("20260814+0200", "2026-08-14T00:00:00"),
+        # What stays unreadable, stays unreadable.
+        ("-0400", None),
+        ("20260814-9945", None),
+        ("1234", None),
+        ("99:99:99", None),
+    ],
+)
+def test_bridge_spellings_read_the_same_on_both_engines(text: str, expected: str | None) -> None:
+    """Colon-free clocks and trailing offsets, scalar and Arrow agreeing.
+
+    Real UL rows carry `TRANSACTTIME=094510` and `EVENTDATE=20260814-0400s`,
+    which the strict pattern nulled; both forms now read, and an offset moves
+    the instant rather than being waved through as if it were `Z`.
+    """
+    import datetime as _datetime
+
+    nanos = unix_of(text)
+    scalar = (
+        None
+        if nanos is None
+        else _datetime.datetime.fromtimestamp(nanos / 1_000_000_000, _datetime.UTC).replace(
+            tzinfo=None
+        )
+    )
+    assert (None if scalar is None else scalar.isoformat()) == expected
+    (arrow,) = cast_arrow_fix(pyarrow.array([text]), pyarrow.timestamp("us")).to_pylist()
+    assert arrow == scalar

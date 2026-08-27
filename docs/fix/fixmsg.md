@@ -26,6 +26,11 @@ split structured key/value syntax once into ordered `Kwarg` values. They assign
 `MsgType` plus a syntax-only `protocol_code`. The `FixMsg` conversion owns
 dictionary resolution, structured components, event time and market identities;
 it consumes those stored arguments instead of tokenizing the payload again.
+The conversion classifies each line with the codec's own rules, and the stored
+`protocol_code` fills only the rows those rules call `OTHER`: an enrichment
+echo whose `MSGTYPE=` is real but whose `#` markers are absent parses as the
+bridge message the syntax probe already saw, while every line the rules do
+name keeps their reading.
 Long prose and diagnostics that contain neither a discriminator nor two
 delimiter-separated assignments skip tokenization entirely. Use
 `exclude_msgtypes=("0", "1")` on the text reader to discard operational
@@ -87,11 +92,30 @@ Structured FIX components also use their FIX spellings:
 - `Parties`, with `PartyID`, `PartyIDSource`, `PartyRole`, and a flexible
   `buffer`;
 - `TrdRegTimestamps`;
-- `SideTrdRegTS`.
+- `SideTrdRegTS`;
+- `SecurityAltID`, with `SecurityAltID`, `SecurityAltIDSource`, and `buffer`;
+- `Legs`, with the `InstrumentLeg` members `rekep.market.instrument.Leg`
+  reads, and `buffer` for the rest.
 
 `FixMsg.get` reads promoted columns and `kwargs` through the same registry
 accessor, whether the caller names a numeric tag, canonical field name,
-component path or namespace-qualified key.
+component path or namespace-qualified key. A key no registry record explains
+still answers typed where its value spells one of five unambiguous shapes --
+integer, float, dashed date, clock time, boolean word -- and stays text
+otherwise; the raw spelling is kept either way. That is a floor under
+registry promotion, not a replacement: a field worth a real typed column
+gets one through `rekep fix registry promote`.
+
+`direction` says which way a line moved where its header verb says so --
+`Receiving : 8=FIX...` reads False, `Sending : ...` True -- read against
+`rekep.fix.rules.DIRECTION_PATTERNS`, and only where the verb opens the line
+before the payload's first token, so the same words inside a payload never
+answer. It is resolved at the message stage, where the raw line and its
+protocol reading last coexist, and stored on `Message`; the FIX stage
+re-resolves any row still carrying its text and keeps the stored answer
+where `parse_fix` projected the text away. Null is most rows: bridge re-log
+lines repeat a payload without repeating the verb, and no answer beats a
+guessed one.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. In that form the named discriminator and named flat fields are

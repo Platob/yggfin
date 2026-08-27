@@ -41,7 +41,7 @@ from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
-from rekep.text.fixmsg import FixMsg
+from rekep.text.fixmsg import COMPONENT_COLUMNS, FixMsg
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -68,6 +68,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     "ExecType",
     "ExecTransType",
     "CxlRejReason",
+    "CxlRejResponseTo",
     "NoMDEntries",
     "MDEntryType",
     "MDEntryPx",
@@ -87,6 +88,9 @@ CARRIED_FIELDS: tuple[str, ...] = (
     "SecurityAltID",
     "SecurityAltIDSource",
     "NoLegs",
+    # The group a multi-sided TradeCaptureReport splits by: each entry is one
+    # Execution, so the count is read and is not an extra.
+    "NoSides",
     # The older way to say when a contract expires, which `maturity` falls back
     # to. A venue that sends it usually sends no `MaturityDate <541>` at all.
     "MaturityMonthYear",
@@ -125,6 +129,17 @@ _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
     }
 )
 
+#: The regulatory groups' member fields, which say "this entry carries its
+#: own clock" even where a count-free rendering omits the group's count.
+_REGULATORY_MEMBERS: tuple[str, ...] = (
+    "TrdRegTimestamp",
+    "TrdRegTimestampType",
+    "TrdRegTimestampOrigin",
+    "SideTrdRegTimestamp",
+    "SideTrdRegTimestampType",
+    "SideTrdRegTimestampSrc",
+)
+
 #: MDEntryType <269> to the side of the book an entry belongs to. Everything
 #: else it enumerates -- an index value, a settlement price, a session high,
 #: an imbalance -- is a statistic about the market rather than an order in it,
@@ -137,10 +152,30 @@ ENTRY_HANDLERS = frozenset({"marketdatasnapshotfullrefresh", "marketdataincremen
 ORDER_HANDLERS = frozenset(
     {"newordersingle", "ordercancelrequest", "ordercancelreplacerequest", "ordercancelreject"}
 )
-QUOTE_HANDLERS = frozenset({"quotestatusreport", "quoteresponse", "quote", "quotecancel"})
-MASS_QUOTE_HANDLER = "massquote"
+#: The reject is the one order message whose real state lives in `OrdStatus
+#: <39>` -- it says where the order *stands* after the refusal -- so dispatch
+#: reads it there rather than settling for the MsgType's asserted state.
+CANCEL_REJECT_HANDLER = "ordercancelreject"
+QUOTE_HANDLERS = frozenset(
+    {"quotestatusreport", "quoteresponse", "quote", "quotecancel", "quoterequest"}
+)
+MASS_QUOTE_HANDLERS = frozenset({"massquote", "massquoteack"})
 EXECUTION_REPORT_HANDLER = "executionreport"
-EXECUTION_HANDLER = "tradecapturereport"
+#: The request decodes like the report it echoes -- but only when it carries
+#: a trade: a plain query fabricates nothing.
+EXECUTION_REQUEST_HANDLER = "tradecapturereportrequest"
+EXECUTION_HANDLERS = frozenset({"tradecapturereport", EXECUTION_REQUEST_HANDLER})
+
+#: What says a report request actually carries a trade rather than criteria.
+#: Fields both translation paths read, so the gate answers the same flat.
+_TRADE_EVIDENCE_FIELDS: tuple[str, ...] = (
+    "LastPx",
+    "LastQty",
+    "TradeID",
+    "TrdMatchID",
+    "ExecID",
+    "ExecRefID",
+)
 
 #: Every field `FixEvents.instrument` reads, the two repeating groups included.
 #: An entry of a refresh that names none of them is not describing another
@@ -188,6 +223,12 @@ ENTRY_TRADE = "2"
 # Standardisation is intentionally many-to-one for order kinds and lifecycle
 # states. Keep the wire spelling beside the standard code for an audit.
 _STATE_FIELDS = ("OrdStatus", "ExecType", "MDUpdateAction", "QuoteStatus", "QuoteRespType")
+
+#: Bridge shorthand observed on real UL rows for spellings the dictionary
+#: writes longer -- `EXECTYPE=cancel` where its vocabulary says `canceled`.
+#: Folded wherever the dictionary's own spellings are folded, never over an
+#: explicit code.
+_SPELLING_SHORTHAND: Mapping[str, str] = types.MappingProxyType({"cancel": "canceled"})
 RAW_METADATA_FIELDS = frozenset(_STATE_FIELDS) | {
     "OrdType",
     "CxlQty",
@@ -287,10 +328,20 @@ class MarketTags:
         return self.access.registry or FixRegistry.from_builtin()
 
     @functools.cached_property
-    def states(self) -> Mapping[str, Mapping[str, State]]:
-        """Field-specific state maps fixed for this registry reading."""
+    def _coded_states(self) -> Mapping[str, Mapping[str, State]]:
+        """The state maps by wire code alone, for set derivations to reason over."""
         return types.MappingProxyType(
             {name: _registry_values(self.registry, "state_values", name) for name in _STATE_FIELDS}
+        )
+
+    @functools.cached_property
+    def states(self) -> Mapping[str, Mapping[str, State]]:
+        """Field-specific state maps, word spellings folded beside the codes."""
+        return types.MappingProxyType(
+            {
+                name: types.MappingProxyType(_worded_values(self.registry, name, coded))
+                for name, coded in self._coded_states.items()
+            }
         )
 
     @functools.cached_property
@@ -301,7 +352,7 @@ class MarketTags:
     @functools.cached_property
     def execution_states(self) -> Mapping[str, State]:
         """Trade-bearing ExecTypes as completed execution occurrences."""
-        states = self.states["ExecType"]
+        states = self._coded_states["ExecType"]
         builtin = FixRegistry.from_builtin().entry("ExecType")
         configured = self.registry.entry("ExecType")
         trade_codes = frozenset(
@@ -311,26 +362,38 @@ class MarketTags:
             for spelling, code in entry.encoded.items()
             if spelling.startswith("trade")
         )
+        coded = {
+            code: State.FILLED if state is State.PARTIALLY_FILLED else state
+            for code, state in states.items()
+            if state in (State.PARTIALLY_FILLED, State.FILLED) or code in trade_codes
+        }
+        return types.MappingProxyType(_worded_values(self.registry, "ExecType", coded))
+
+    @functools.cached_property
+    def order_kinds(self) -> Mapping[str, MarketKind]:
+        """`OrdType <40>` codes and dictionary spellings, as the kind each means."""
         return types.MappingProxyType(
-            {
-                code: State.FILLED if state is State.PARTIALLY_FILLED else state
-                for code, state in states.items()
-                if state in (State.PARTIALLY_FILLED, State.FILLED) or code in trade_codes
-            }
+            _worded_values(self.registry, "OrdType", MarketKind.fix_mapping()[40])
+        )
+
+    @functools.cached_property
+    def execution_kinds(self) -> Mapping[str, MarketKind]:
+        """`ExecType <150>` codes and dictionary spellings, as the kind each means."""
+        return types.MappingProxyType(
+            _worded_values(self.registry, "ExecType", MarketKind.fix_mapping()[150])
         )
 
     @functools.cached_property
     def exec_type_fallbacks(self) -> Mapping[str, State]:
         """ExecType lifecycle fallbacks that describe the Order, not an Execution."""
-        states = self.states["ExecType"]
+        states = self._coded_states["ExecType"]
         execution_codes = self.execution_states
-        return types.MappingProxyType(
-            {
-                code: state
-                for code, state in states.items()
-                if code not in execution_codes or state in (State.PARTIALLY_FILLED, State.FILLED)
-            }
-        )
+        coded = {
+            code: state
+            for code, state in states.items()
+            if code not in execution_codes or state in (State.PARTIALLY_FILLED, State.FILLED)
+        }
+        return types.MappingProxyType(_worded_values(self.registry, "ExecType", coded))
 
     @functools.cached_property
     def handlers(self) -> Mapping[str, str]:
@@ -360,12 +423,51 @@ class MarketTags:
         """Every tag a shape already stores, plus the two framing fields.
 
         What `FixEvents.extras` drops: a field with a column of its own is not
-        metadata, and a length or a checksum is not data at all.
+        metadata, and a length or a checksum is not data at all. The rendered
+        identities FIX never numbered are claimed through
+        `rendered_spellings`, because their pairs keep the source spelling.
         """
         tag_text = self.access.tag_text
         return frozenset(tag_text(name) for name in self.standard()) | frozenset(
             tag_text(name) for name in FRAMING_FIELDS
         )
+
+    @classmethod
+    @functools.cache
+    def rendered(cls) -> frozenset[str]:
+        """Stored fields FIX never numbered, spelled as the registry does.
+
+        The tagless half of `standard()`: a shape member annotated with a
+        namespace record carries the record's name and no tag.
+        """
+        found: set[str] = set()
+
+        def visit(struct: StructField) -> None:
+            for member in struct.fields:
+                if member.fix.get("name") and not member.fix.get("tag"):
+                    found.add(str(member.fix["name"]))
+                if member.fields:
+                    visit(member)
+
+        for shape in (MarketEvent, Order, Execution, Instrument):
+            visit(shape.into_field())
+        return frozenset(found)
+
+    @functools.cached_property
+    def rendered_spellings(self) -> frozenset[str]:
+        """Every spelling a stored rendered field answers to, case-folded.
+
+        A tagged pair canonicalizes to its wire tag, so `claimed` matches it
+        exactly; a namespace pair keeps the spelling the bridge wrote --
+        `PARENTCLORDID` stays `PARENTCLORDID` -- so its claim has to cover
+        the record's canonical name, its aliases, and any casing of either.
+        """
+        found: set[str] = set()
+        for name in self.rendered():
+            entry = None if self.access.registry is None else self.access.registry.resolve(name)
+            spellings = entry.spellings() if entry is not None else (name,)
+            found.update(spelled.casefold() for spelled in spellings)
+        return frozenset(found)
 
     @functools.cached_property
     def audited(self) -> frozenset[str]:
@@ -388,6 +490,51 @@ def _registry_values(registry: FixRegistry, method: str, field: str) -> Mapping[
     if registry is builtin or not configured:
         return defaults
     return types.MappingProxyType({**defaults, **configured})
+
+
+def _worded_values(registry: FixRegistry, field: str, coded: Mapping[str, Any]) -> dict[str, Any]:
+    """`coded` plus the dictionary's word spellings for the same codes.
+
+    Bridges render `ORDSTATUS=canceled` where the wire says `4`. The parse
+    stage rewrites the spellings its version's dictionary lists, and this
+    fold answers for a scalar-built row and for a spelling that reached a
+    stored column unrewritten. Folded *after* any set is derived from the
+    codes, so a word means exactly what its code means there -- never a code
+    the derivation excluded. A case variant of the code itself is not a word
+    and adds nothing: FIX codes are case-sensitive, so it stays out. An
+    explicit code always wins a collision.
+    """
+    if not coded:
+        return dict(coded)
+    builtin = FixRegistry.from_builtin()
+    spelled: dict[str, Any] = {}
+    for source in dict.fromkeys((builtin, registry)):
+        entry = source.entry(field)
+        if entry is None:
+            continue
+        for spelling, code in entry.encoded.items():
+            # One or two characters is a code respelled, not a word -- codes
+            # are case-sensitive and the exact lookup owns them, on both the
+            # scalar and the flat path alike.
+            if len(spelling) <= 2 or spelling.casefold() == str(code).casefold():
+                continue
+            value = coded.get(code)
+            if value is not None:
+                spelled.setdefault(spelling, value)
+    for shorthand, spelling in _SPELLING_SHORTHAND.items():
+        value = spelled.get(spelling)
+        if value is not None:
+            spelled.setdefault(shorthand, value)
+    return {**spelled, **coded}
+
+
+def _coded(table: Mapping[str, Any], value: Any, default: Any) -> Any:
+    """One coded or word-spelled wire value through a folded lookup table."""
+    raw = str(value).strip() if value is not None else ""
+    found = table.get(raw)
+    if found is None:
+        found = table.get(raw.casefold())
+    return found if found is not None else default
 
 
 #: What a probe of a message's fields answers for a key it does not carry --
@@ -518,10 +665,7 @@ class FixEvents(Convertible):
     def _flat_by_tag(self) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip."""
         message = self.message
-        if any(
-            getattr(message, name, None) is not None
-            for name in ("Parties", "TrdRegTimestamps", "SideTrdRegTS")
-        ):
+        if any(getattr(message, name, None) is not None for name in COMPONENT_COLUMNS):
             return None
         entries = message.kwargs or ()
         if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
@@ -579,12 +723,12 @@ class FixEvents(Convertible):
         return self.by_folded_tag.get(encoded_key(field if type(field) is str else str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
-        """Standard state for one field-specific FIX code."""
-        return self.dictionary.states.get(field, {}).get(self.get(field) or "", default)
+        """Standard state for one field-specific FIX code or word spelling."""
+        return _coded(self.dictionary.states.get(field, {}), self.get(field), default)
 
     def execution_state(self, default: State = State.UNKNOWN) -> State:
         """State of the completed execution carried by this ExecType."""
-        return self.dictionary.execution_states.get(self.get("ExecType") or "", default)
+        return _coded(self.dictionary.execution_states, self.get("ExecType"), default)
 
     @functools.cached_property
     def _message_kind(self) -> str:
@@ -599,16 +743,19 @@ class FixEvents(Convertible):
         handler = self.dictionary.handlers.get(kind)
         if handler in ENTRY_HANDLERS:
             yield from self._entries(kind)
-        elif handler == MASS_QUOTE_HANDLER:
-            yield from self._mass_quotes()
+        elif handler in MASS_QUOTE_HANDLERS:
+            yield from self._mass_quotes(kind)
         elif handler in QUOTE_HANDLERS:
             yield from self._quotes(kind)
         elif handler == EXECUTION_REPORT_HANDLER:
             yield from self._reported()
-        elif handler == EXECUTION_HANDLER:
-            yield self.into_execution()
+        elif handler in EXECUTION_HANDLERS:
+            yield from self._sides(requested=handler == EXECUTION_REQUEST_HANDLER)
         elif handler in ORDER_HANDLERS and kind in self.dictionary.ordered:
-            yield self.into_order(self.dictionary.ordered[kind])
+            seeded = self.dictionary.ordered[kind]
+            if handler == CANCEL_REJECT_HANDLER:
+                seeded = self.state_of("OrdStatus", seeded)
+            yield self.into_order(seeded)
 
     def into_instruments(self) -> Iterator[Instrument]:
         """Distinct repeating-entry instruments, or the header fallback."""
@@ -638,7 +785,7 @@ class FixEvents(Convertible):
                 yield self._inside(entry)
             if not entries:
                 yield self
-        elif handler == MASS_QUOTE_HANDLER:
+        elif handler in MASS_QUOTE_HANDLERS:
             yield from self._quote_readers()
         else:
             yield self
@@ -684,8 +831,103 @@ class FixEvents(Convertible):
             elif entry_type == ENTRY_TRADE:
                 yield inside.into_entry_execution()
 
-    def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
-        """A repeating-group entry completed by its message header."""
+    def _sides(self, requested: bool = False) -> Iterator[Execution]:
+        """A TradeCaptureReport, one Execution per `NoSides <552>` entry.
+
+        A multi-sided report carries `Side <54>`, `OrderID <37>`, `ClOrdID
+        <11>` and `Account <1>` *inside* each side entry, so one flat read
+        kept one side's identity and silently dropped the other's. Each side
+        reads the report level plus its own entry -- never a sibling's: the
+        whole-message first-occurrence view would hand side one's account to
+        a side two that did not repeat it. The report-level facts --
+        `TrdMatchID <880>`, `LastPx <31>`, `LastQty <32>` -- fall through
+        where an entry is silent, the report's resolved clock keeps steering
+        a side that carries no clock of its own, and a report with no side
+        entries at all is one execution, read flat as before.
+        """
+        entries, report = self._side_entries()
+        if not entries:
+            # A report request with no side entries and no trade content is a
+            # query, and a query fabricates no execution.
+            if requested and not any(self.get(name) for name in _TRADE_EVIDENCE_FIELDS):
+                return
+            yield self.into_execution()
+            return
+        level: dict[str, Any] = {}
+        for key, value in report:
+            level.setdefault(key, value)
+        clocks = self._clock_keys
+        for entry in entries:
+            inside = self._inside(entry, base=level)
+            if not any(key in clocks for key, _ in inside.pairs):
+                inside.__dict__["transacted"] = self.transacted
+            yield inside.into_execution()
+
+    def _side_entries(self) -> tuple[list[list[tuple[str, str]]], list[tuple[str, str]]]:
+        """`(side entries, report-level pairs)`, split without collapsing repeats.
+
+        Segments and not `group_pairs`: a side regularly nests a multi-entry
+        `NoPartyIDs` group, whose repeated tags would end a first-repeat scan
+        in the middle of side one and silently drop every side after it. A
+        segment runs from one delimiter to the next, whatever repeats inside.
+        """
+        count_tag = self.access.tag_text("NoSides")
+        if self._flat_by_tag is not None and count_tag not in self.by_tag:
+            return [], []
+        prefix, entries = _group_segments(
+            self.pairs, count_tag, self._side_delimiter, with_prefix=True
+        )
+        if entries or not self._has_indexed_pairs:
+            return entries, prefix
+        indexed = indexed_group_pairs(self.source_pairs, "NoSides")
+        report = [pair for pair in self.pairs if "NOSIDES[" not in str(pair[0]).upper()]
+        return indexed, report
+
+    @functools.cached_property
+    def _side_delimiter(self) -> str:
+        """The tag that opens one side entry, off the selected declaration."""
+        fallback = self.access.tag_text("Side")
+        registry = self.registry
+        if registry is None:
+            return fallback
+        versions = (self.version,) if self.version else registry.versions
+        for version in versions:
+            try:
+                components = registry.components(version)
+            except (KeyError, OSError, ValueError):
+                continue
+            by_name = {component.name.lower(): component for component in components}
+            root = by_name.get("trdcaprptsidegrp")
+            if root is None:
+                continue
+            sides = _declared_group(root.members, "NoSides", by_name)
+            named = _first_declared_name(sides.members, by_name) if sides else None
+            if named:
+                return self.access.tag_text(named)
+        return fallback
+
+    @functools.cached_property
+    def _clock_keys(self) -> frozenset[str]:
+        """Every key `TRANSACTED` reads, as this dictionary's wire tags.
+
+        The regulatory groups count by their members and their counts: a side
+        carrying its own `SideTrdRegTS` resolves its own instant, and only a
+        side with no clock at all keeps the report's answer.
+        """
+        named = {field for rung in TRANSACTED for field in rung.fields}
+        named.update(_REGULATORY_GROUPS.values())
+        named.update(_REGULATORY_MEMBERS)
+        return frozenset(self.access.tag_text(field) for field in named)
+
+    def _inside(
+        self, entry: list[tuple[str, str]], base: Mapping[str, Any] | None = None
+    ) -> FixEvents:
+        """A repeating-group entry completed by its message header.
+
+        `base` narrows what falls through: the whole message's first
+        occurrences by default, or only the report level for a group whose
+        entries are peers that must not answer for each other.
+        """
         inside = FixEvents(
             message=type(self.message).from_pairs(entry),
             venue=self.venue,
@@ -700,13 +942,13 @@ class FixEvents(Convertible):
         own = inside.by_tag
         if all(inside.get(field) is None for field in INSTRUMENT_FIELDS):
             inside.__dict__["instrument"] = self.instrument
-        inside.__dict__["by_tag"] = {**self.by_tag, **own}
+        inside.__dict__["by_tag"] = {**(self.by_tag if base is None else base), **own}
         return inside
 
-    def _mass_quotes(self) -> Iterator[Order]:
-        """A MassQuote <i>, one two-sided quote entry at a time."""
+    def _mass_quotes(self, kind: str) -> Iterator[Order]:
+        """A MassQuote <i> or its acknowledgement, one quote entry at a time."""
         for quote in self._quote_readers():
-            yield from quote._quotes("i")
+            yield from quote._quotes(kind)
 
     def _quote_readers(self) -> Iterator[FixEvents]:
         """MassQuote entries flattened through their enclosing quote set."""
@@ -808,7 +1050,7 @@ class FixEvents(Convertible):
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
         if state is State.UNKNOWN:
-            state = self.dictionary.exec_type_fallbacks.get(exec_type, State.UNKNOWN)
+            state = _coded(self.dictionary.exec_type_fallbacks, exec_type, State.UNKNOWN)
         order_qty = _number(get("OrderQty"))
         cumulative = _number(get("CumQty"))
         leaves = _number(get("LeavesQty"))
@@ -840,13 +1082,18 @@ class FixEvents(Convertible):
                 px=_number(get("Price")),
                 qty=transition.current_qty,
                 prev_qty=transition.previous_qty,
-                kind=MarketKind.from_fix(get("OrdType"), MarketKind.UNKNOWN, tag=40),
+                kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
                 tif=tif,
                 stop_px=_number(get("StopPx")),
                 hidden_qty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
                 order_id=get("OrderID"),
                 client_order_id=get("ClOrdID"),
                 prev_client_order_id=get("OrigClOrdID"),
+                clord_link_id=get("ClOrdLinkID"),
+                parent_client_order_id=get("ParentClOrdID"),
+                parent_order_id=get("ParentOrderID"),
+                cxl_rej_reason=_integer(get("CxlRejReason")),
+                cxl_rej_response_to=get("CxlRejResponseTo"),
                 **self._shared(),
             )
         )
@@ -890,7 +1137,7 @@ class FixEvents(Convertible):
                 cunix=unix,
                 runix=self.runix or unix,
                 state=self.execution_state(),
-                kind=MarketKind.from_fix(get("ExecType"), MarketKind.UNKNOWN, tag=150),
+                kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("LastPx")),
                 qty=_number(get("LastQty")),
@@ -907,6 +1154,10 @@ class FixEvents(Convertible):
                 filled_qty=_number(get("CumQty")),
                 leaves_qty=_number(get("LeavesQty")),
                 aggressor=_flag(get("AggressorIndicator")),
+                settl_date=_date(get("SettlDate")),
+                settl_type=get("SettlType"),
+                settl_currency=get("SettlCurrency"),
+                settl_curr_fx_rate_calc=get("SettlCurrFxRateCalc"),
                 **self._shared(),
             ),
             order,
@@ -1004,10 +1255,45 @@ class FixEvents(Convertible):
             legs=self.into_legs() or None,
         )
 
+    def _component_entries(self, column: str) -> list[dict[str, str]] | None:
+        """One resolved component column in `_group`'s first-value-by-name shape.
+
+        None when the parse stage did not resolve the column, which is what
+        sends a scalar-built message down the pair-walking fallback. A stored
+        row hands entries back as mappings and a constructed one as `@scalar`
+        rows; both answer here, typed members rendered back to the wire's
+        spelling so the same readers serve both paths, and `buffer` merged
+        after them because a member kept as text was one a column could not
+        hold.
+        """
+        entries = getattr(self.message, column, None)
+        if entries is None:
+            return None
+        found: list[dict[str, str]] = []
+        for entry in entries:
+            if isinstance(entry, Mapping):
+                values = dict(entry)
+            else:
+                values = {
+                    member.name: getattr(entry, member.name, None)
+                    for member in dataclasses.fields(entry)
+                }
+            resolved: dict[str, str] = {}
+            for name, value in values.items():
+                if name != "buffer" and value is not None:
+                    resolved.setdefault(name, render_fix_value(value))
+            for name, value in dict(values.get("buffer") or {}).items():
+                resolved.setdefault(name, value)
+            found.append(resolved)
+        return found
+
     def into_alt_ids(self) -> dict[str, str]:
         """Every alternative identifier the message carried, by the scheme's name."""
+        entries = self._component_entries("SecurityAltID")
+        if entries is None:
+            entries = self._group("NoSecurityAltID")
         found: dict[str, str] = {}
-        for entry in self._group("NoSecurityAltID"):
+        for entry in entries:
             named = entry.get("SecurityAltID")
             raw_scheme = entry.get("SecurityAltIDSource")
             scheme = IdSource.from_fix(raw_scheme, IdSource.UNKNOWN)
@@ -1024,8 +1310,11 @@ class FixEvents(Convertible):
         `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
         same one, against a different set of tags.
         """
+        entries = self._component_entries("Legs")
+        if entries is None:
+            entries = self._group("NoLegs")
         built = []
-        for entry in self._group("NoLegs"):
+        for entry in entries:
             cfi, security_type = entry.get("LegCFICode"), entry.get("LegSecurityType")
             built.append(
                 Leg(
@@ -1173,9 +1462,15 @@ class FixEvents(Convertible):
         return found
 
     def _reason(self) -> str | None:
-        """FIX text or the first structured reject/restatement reason."""
-        if text := self.get("Text"):
-            return str(text)
+        """The first structured reject/restatement reason, completed by FIX text.
+
+        The code leads because it is typed and `Text <58>` is prose: a reject
+        carrying both used to keep the prose alone, and the code -- the one
+        part a filter can match -- was dropped with it. `CxlRejResponseTo
+        <434>` says which request a reject answers, so it rides beside the
+        reason rather than landing only in the untyped metadata map.
+        """
+        parts: list[str] = []
         for name in (
             "OrdRejReason",
             "CxlRejReason",
@@ -1185,9 +1480,19 @@ class FixEvents(Convertible):
             value = self.get(name)
             if value is None:
                 continue
-            label = self.access.meaning(name, str(value))
-            return f"{name}={value}: {label}" if label else f"{name}={value}"
-        return None
+            parts.append(self._coded_reason(name, value))
+            break
+        response_to = self.get("CxlRejResponseTo")
+        if response_to is not None:
+            parts.append(self._coded_reason("CxlRejResponseTo", response_to))
+        if text := self.get("Text"):
+            parts.append(str(text))
+        return "; ".join(parts) if parts else None
+
+    def _coded_reason(self, name: str, value: Any) -> str:
+        """One coded field spelled with the meaning the dictionary gives it."""
+        label = self.access.meaning(name, str(value))
+        return f"{name}={value}: {label}" if label else f"{name}={value}"
 
     def _shared(self) -> dict[str, Any]:
         """The shared envelope with event-owned metadata."""
@@ -1217,10 +1522,11 @@ class FixEvents(Convertible):
     def extras(self) -> dict[str, str]:
         """Every field the shapes have no column for, under the key it arrived as."""
         claimed, audited = self.dictionary.claimed, self.dictionary.audited
+        rendered = self.dictionary.rendered_spellings
         return {
             key: str(value)
             for key, value in self.by_tag.items()
-            if key not in claimed or key in audited
+            if (key not in claimed and key.casefold() not in rendered) or key in audited
         }
 
 

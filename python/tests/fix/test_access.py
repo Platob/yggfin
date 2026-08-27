@@ -84,6 +84,38 @@ def test_one_call_answers_the_stored_text_and_the_typed_reading(access: FieldAcc
     assert found.value == 125.0
 
 
+def test_an_unregistered_value_reads_back_coherently_typed(access: FieldAccess) -> None:
+    """The floor under registry promotion: a key no record explains still
+    gets the plainest reading its value spells -- integer, float, dashed
+    date, clock time or boolean word -- and anything else stays the text it
+    was. Only the typed half sniffs; `raw` is the stored fact either way."""
+    import datetime
+
+    def read(value: str) -> object:
+        stored = [
+            {"tag": 0, "key": "CONVERSATIONID", "value": value, "namespace": None, "comp": None}
+        ]
+        return access.reading(stored, "CONVERSATIONID")
+
+    assert read("12345").value == 12345
+    assert read("007").value == 7 and read("007").raw == "007", "raw keeps the spelling"
+    assert read("-2.50").value == -2.5
+    assert read("2026-08-21").value == datetime.date(2026, 8, 21)
+    assert read("20260821").value == 20260821, "an all-digit run is likelier an identifier"
+    assert read("13:45:59.123").value == datetime.time(13, 45, 59, 123000)
+    assert read("true").value is True
+    assert read("N").value is False
+    assert read("ULBRIDGE01").value == "ULBRIDGE01", "an identifier is not a number"
+    assert read("2026-13-45").value == "2026-13-45", "an impossible day is not a date"
+    assert read("25:00:00").value == "25:00:00", "nor an impossible clock a time"
+    assert read("202608-21").value == "202608-21", "a half-dashed run is a code"
+    assert read("13:4559").value == "13:4559", "and so is a half-coloned one"
+    endless = "9" * 5000
+    assert read(endless).value == endless, "past int()'s digit cap, a run is text"
+    saturated = "1" + "0" * 309 + ".5"
+    assert read(saturated).value == saturated, "past float64, infinity is a fabrication"
+
+
 def test_a_value_spelled_by_its_meaning_resolves_through_the_dictionary(
     access: FieldAccess,
 ) -> None:

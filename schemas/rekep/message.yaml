@@ -134,3 +134,7 @@ fields:
       type: string
       nullable: true
       description: Indexed container prefix.
+- name: direction
+  type: bool
+  nullable: true
+  description: True where the line says it was sent, False received; null undirected.

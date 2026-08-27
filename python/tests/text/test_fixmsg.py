@@ -48,6 +48,7 @@ LINE = [
     "protocol_code",
     "MsgType",
     "kwargs",
+    "direction",
 ]
 MESSAGE = [
     "unix_source",
@@ -58,6 +59,15 @@ MESSAGE = [
     "TrdRegTimestamps",
     "SideTrdRegTS",
     "ISINCODE",
+    "ParentClOrdID",
+    "ParentOrderID",
+]
+#: Structured components declared after every flat column: Iceberg collects
+#: bounds for leaf columns in declaration order, and this contract crosses
+#: that cutoff -- a list declared earlier would push flat columns past it.
+TRAILING_COMPONENTS = [
+    "SecurityAltID",
+    "Legs",
 ]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
@@ -73,7 +83,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 109
+EXPECTED_LOG_COLUMNS = 114
 
 
 @pytest.fixture(scope="module")
@@ -87,7 +97,7 @@ def test_a_log_line_is_an_event() -> None:
     assert issubclass(FixMsg, Event)
     assert (
         FixMsg.into_field().into_arrow_schema().names
-        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS
+        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS + TRAILING_COMPONENTS
     )
 
 
@@ -113,7 +123,7 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     """
     field = FixMsg.into_field()
     for name in LINE:
-        if name in {"message", "MsgType", "kwargs"}:
+        if name in {"message", "MsgType", "kwargs", "direction"}:
             assert field.field(name).nullable, f"a row may leave {name} null"
             continue
         assert not field.field(name).nullable, name
@@ -272,6 +282,171 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
         [("279", "0"), ("269", "0"), ("55", "ENTRY"), ("270", "100"), ("271", "1")]
     ]
     assert [event.symbol for event in depth.into_market_events(fix_version="4.4")] == ["ENTRY"]
+
+
+def test_instrument_groups_resolve_into_their_structured_columns(
+    registry: FixRegistry,
+) -> None:
+    """Alt-ids and legs land typed, leave `kwargs`, and read back identically."""
+    line = (
+        "8=FIX.4.4|35=d|55=SPREAD|48=XS123|22=4|"
+        "454=2|455=US0378331005|456=4|455=037833100|456=1|"
+        "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
+        "600=MSFT|624=2|623=2|556=USD|687=9|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    alt_ids = batch.column("SecurityAltID")[0].as_py()
+    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+        ("US0378331005", "4"),
+        ("037833100", "1"),
+    ]
+    legs = batch.column("Legs")[0].as_py()
+    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+        ("AAPL", "1", 1.0),
+        ("MSFT", "2", 2.0),
+    ]
+    assert legs[0]["LegMaturityDate"] == datetime.date(2027, 1, 15)
+    assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
+    assert batch.column("kwargs")[0].as_py() == [], "nothing of either group is stored twice"
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    assert stored.group(454, (455, 456)) == [
+        [("455", "US0378331005"), ("456", "4")],
+        [("455", "037833100"), ("456", "1")],
+    ]
+    assert [dict(entry).get("600") for entry in map(dict, stored.group(555))] == ["AAPL", "MSFT"]
+
+    instrument = next(iter(stored.into_fix_events().into_instruments()))
+    direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
+    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.isin_code == "XS123", "the primary ISIN outranks the alternative"
+    assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", "BUY", 1.0),
+        ("MSFT", "SELL", 2.0),
+    ]
+    assert instrument == direct, "the resolved columns and the pair walk agree"
+
+
+def test_rendered_indexed_instrument_groups_resolve_the_same_way(
+    registry: FixRegistry,
+) -> None:
+    """The bridge's `NOLEGS[i]=...` spelling reaches the same typed columns."""
+    member = "\x04\x03"
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=d|#SYMBOL=SPREAD|"
+        f"#NOSECURITYALTID=1|#NOSECURITYALTID[0]=SECURITYALTID=US0378331005{member}"
+        f"SECURITYALTIDSOURCE=4{member}|"
+        f"#NOLEGS=2|#NOLEGS[0]=LEGSYMBOL=AAPL{member}LEGSIDE=1{member}LEGRATIOQTY=1{member}|"
+        f"#NOLEGS[1]=LEGSYMBOL=MSFT{member}LEGSIDE=2{member}LEGRATIOQTY=2{member}"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("protocol_code")[0].as_py() == "UL"
+    alt_ids = batch.column("SecurityAltID")[0].as_py()
+    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+        ("US0378331005", "4"),
+    ]
+    legs = batch.column("Legs")[0].as_py()
+    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+        ("AAPL", "1", 1.0),
+        ("MSFT", "2", 2.0),
+    ]
+
+    instrument = next(
+        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
+    )
+    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", "BUY", 1.0),
+        ("MSFT", "SELL", 2.0),
+    ]
+
+
+def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry) -> None:
+    """A group inside one market-data entry is that entry's, not the message's.
+
+    The scoped extractors leave it in `kwargs`, so the per-entry instrument
+    readers find it exactly where the scalar walk does -- hoisting it into the
+    message-level column would have filed the identifier under whichever
+    instrument the header names.
+    """
+    line = (
+        "8=FIX.4.4|35=X|52=20260814-00:05:01.149|268=2|"
+        "279=0|269=0|55=BTC-USD|270=100.0|271=5|"
+        "279=0|269=0|55=ETH-USD|48=ETH-ID|454=1|455=US0378331005|456=4|270=99.0|271=1|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("SecurityAltID")[0].as_py() is None
+    assert 454 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    direct = FixMsg.from_text(line, "|")
+    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    assert found == [
+        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+    ]
+    assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN": "US0378331005"})]
+
+
+def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
+    registry: FixRegistry,
+) -> None:
+    """The same ownership, one nesting deeper: quote sets scope quote entries."""
+    line = (
+        "8=FIX.4.4|35=i|117=Q1|296=1|302=S1|295=2|"
+        "299=E1|55=AAA|132=1|133=2|"
+        "299=E2|55=BBB|454=1|455=037833100|456=1|132=3|133=4|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("SecurityAltID")[0].as_py() is None
+
+    stored = FixMsg.from_dict(batch.to_pylist()[0])
+    direct = FixMsg.from_text(line, "|")
+    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    assert found == [
+        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+    ]
+    assert found == [("AAA", None), ("BBB", {"CUSIP": "037833100"})]
+
+
+def test_a_4_3_row_answers_from_the_column_and_from_kwargs_at_once(
+    registry: FixRegistry,
+) -> None:
+    """4.3 declares `SecAltIDGrp` and no legs component, so one stored row must
+    read `alt_ids` off the resolved column while `legs` still walk the pairs."""
+    line = (
+        "8=FIX.4.3|35=d|55=SPREAD|454=1|455=US0378331005|456=4|"
+        "555=2|600=AAPL|624=1|623=1|600=MSFT|624=2|623=2|10=000"
+    )
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert [entry["SecurityAltID"] for entry in batch.column("SecurityAltID")[0].as_py()] == [
+        "US0378331005"
+    ]
+    assert batch.column("Legs")[0].as_py() is None
+    assert 555 in [entry["tag"] for entry in batch.column("kwargs")[0].as_py()]
+
+    instrument = next(
+        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
+    )
+    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
+        ("AAPL", "BUY"),
+        ("MSFT", "SELL"),
+    ]
 
 
 def test_typed_timestamps_keep_direct_and_stored_book_outputs_equal(
@@ -537,7 +712,7 @@ def test_fixmsg_preserves_the_message_stage_type_and_event_code(
 
 def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) -> None:
     raw = _raw_batch(
-        Message(message="8=FIX.4.4|35=D|11=A|VendorField=x|10=000|"),
+        Message(message="Sending : 8=FIX.4.4|35=D|11=A|VendorField=x|10=000|"),
         Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#CLORDID=B|10=000|"),
     )
     codec = FixCodec(registry=registry)
@@ -552,6 +727,11 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
     assert projected.column("kwargs").equals(whole.column("kwargs"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert projected.column("message").null_count == projected.num_rows
+    # The production shape: `parse_fix` reads with `message` projected out,
+    # so the direction the message stage stored is the one the parsed row
+    # carries -- identical to what the text would have answered.
+    assert whole.column("direction").to_pylist() == [True, None]
+    assert projected.column("direction").equals(whole.column("direction"))
 
 
 def test_staged_protocol_matching_the_codec_survives_projection(
@@ -921,7 +1101,7 @@ def test_fix_names_do_not_alias_the_generic_event_envelope() -> None:
 
 def test_every_promoted_name_is_the_registrys_exact_spelling() -> None:
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 92
+    assert len(names) == 110
     assert all(field.name == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
         6: "AvgPx",
@@ -1011,3 +1191,108 @@ def test_rendered_isincode_keeps_its_source_identity() -> None:
     field = FixMsg.into_field().field("ISINCODE")
     assert field.arrow_type == pyarrow.string()
     assert field.fix == {"name": "ISINCODE", "type": "String"}
+
+
+def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegistry) -> None:
+    """An enrichment echo writes real bridge fields with a `MSGTYPE=` and no
+    `#` markers: the rules alone say OTHER and drop that payload unread, but
+    the message stage's syntax reading said UL, and that answer is data. The
+    fill is one-directional -- a recompute that named a protocol keeps it --
+    so operational vocabulary stays MISC and a `35=UL` wrapper the probe
+    stored as FIX still parses as the bridge message it is."""
+    echo = Message(
+        message="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
+        "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
+    )
+    assert echo.protocol_code == "UL", "the syntax probe already said so"
+    heartbeat = Message(message="heartbeat emitted seq=7")
+    assert heartbeat.protocol_code == "OTHER", "the probe has no MISC vocabulary"
+    wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
+    assert wrapped.protocol_code == "FIX", "the probe reads only the envelope"
+
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(echo, heartbeat, wrapped), FixCodec(registry=registry)
+    )
+    assert batch.column("protocol_code").to_pylist() == ["UL", "MISC", "UL"]
+    assert batch.column("ClOrdID").to_pylist()[0] == "PL024819", "promoted, not dropped"
+    assert batch.column("Account").to_pylist()[0] == "807768.001"
+    assert batch.column("MsgType").to_pylist()[0] == "D"
+    assert batch.column("protocol_version").to_pylist()[0] == "4.4"
+    assert batch.column("kwargs").to_pylist()[1] is None, "operational rows stay unread"
+
+    # Without a version the registry cannot resolve the spellings, but the
+    # rescued row still keeps its arguments and its identities -- both were
+    # simply null while the row read as OTHER.
+    bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
+    assert bare.protocol_code == "UL"
+    lone = FixMsg.from_message_arrow_batch(_raw_batch(bare), FixCodec(registry=registry))
+    assert lone.column("protocol_code").to_pylist() == ["UL"]
+    assert [(entry["key"], entry["value"]) for entry in lone.column("kwargs").to_pylist()[0]] == [
+        ("ACCOUNT", "59.1"),
+        ("CLORDID", "PL9"),
+        ("SIDE", "2"),
+    ]
+    assert ("cl_ord_id", "PL9") in lone.column("codes").to_pylist()[0]
+
+
+def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:
+    """`Receiving`/`Sending` before the payload's first token is the direction;
+    the same words inside the payload -- a reject's prose, a bridge value --
+    answer nothing, and neither does a line saying both or neither."""
+    lines = [
+        "Receiving : 8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|38=5|44=10|58=order sent late|10=000",
+        "Sending : 8=FIX.4.4|35=8|37=O1|11=C1|17=E1|54=1|39=0|150=0|10=000",
+        "Message received: 8=FIX.4.4|35=0|10=000",
+        "toBridge Sending #MSGTYPE=D|#CLORDID=C2|#SYMBOL=MSFT|#SIDE=1",
+        "RouteMessage : 8=FIX.4.4|35=D|11=C3|55=IBM|54=2|38=1|10=000",
+        "Receiving Sending 8=FIX.4.4|35=D|11=C4|10=000",
+        # A rendered bridge line anchors on the `UL` rule's own vocabulary,
+        # not `UL_WIRE`'s: a verb only inside its payload answers nothing.
+        "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
+        "just some heartbeat prose",
+    ]
+    batch = FixMsg.from_message_arrow_batch(
+        _raw_batch(*(Message(message=line) for line in lines)), FixCodec(registry=registry)
+    )
+
+    assert batch.column("direction").to_pylist() == [
+        False,
+        True,
+        False,
+        True,
+        None,
+        None,
+        None,
+        None,
+    ]
+
+    # A stored batch written before the column existed computes it fresh,
+    # through the split path too: the wire row is flat-translated, the
+    # rendered row falls back, and both slices must carry the answer.
+    raw = _raw_batch(*(Message(message=line) for line in lines[:2] + [lines[3]]))
+    legacy = raw.remove_column(raw.schema.get_field_index("direction"))
+    relived = FixMsg.from_message_arrow_batch(legacy, FixCodec(registry=registry))
+    assert relived.column("direction").to_pylist() == [False, True, True]
+
+    # A rescued row -- stored UL, no rule pattern in its text -- has no
+    # payload anchor, and an unanchored verb answers nothing rather than
+    # answering from anywhere.
+    rescued = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
+    assert rescued.protocol_code == "UL"
+    anchorless = FixMsg.from_message_arrow_batch(_raw_batch(rescued), FixCodec(registry=registry))
+    assert anchorless.column("protocol_code").to_pylist() == ["UL"]
+    assert anchorless.column("direction").to_pylist() == [None]
+
+    # A projected row reparsed without its raw message keeps the resolved
+    # answer: direction is the message stage's fact, and nothing recomputes
+    # it where the text that carried the verb is gone.
+    projected = Message(message="", protocol_code="FIX", direction=True).into_dict()
+    projected["message"] = None
+    projected["kwargs"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
+    again = FixMsg.from_message_arrow_batch(
+        pyarrow.RecordBatch.from_pylist(
+            [projected], schema=Message.into_field().into_arrow_schema()
+        ),
+        FixCodec(registry=registry),
+    )
+    assert again.column("direction").to_pylist() == [True]

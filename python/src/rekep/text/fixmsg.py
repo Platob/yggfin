@@ -31,15 +31,26 @@ from rekep.fix.columns import (
     IDENTIFIER_FIELDS,
     ISIN_CODE,
     KWARGS,
+    PARENT_CL_ORD_ID,
+    PARENT_ORDER_ID,
     Kwarg,
 )
 from rekep.fix.components import (
+    LEGS,
     PARTIES,
+    SECURITY_ALT_IDS,
     SIDE_TRD_REG_TIMESTAMPS,
     TRD_REG_TIMESTAMPS,
+    Leg,
     Party,
     SideTrdRegTimestamp,
     TrdRegTimestamp,
+)
+from rekep.fix.components import (
+    # Aliased because `FixMsg` names its column after the member that opens an
+    # entry, and an annotation spelling the bare class name would resolve to
+    # that column's own default under `get_type_hints`.
+    SecurityAltID as SecurityAltIDEntry,
 )
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
@@ -75,7 +86,14 @@ _COMPONENT_GROUPS: tuple[tuple[str, str, type[Any]], ...] = (
     ("Parties", "NoPartyIDs", Party),
     ("TrdRegTimestamps", "NoTrdRegTimestamps", TrdRegTimestamp),
     ("SideTrdRegTS", "NoSideTrdRegTS", SideTrdRegTimestamp),
+    ("SecurityAltID", "NoSecurityAltID", SecurityAltIDEntry),
+    ("Legs", "NoLegs", Leg),
 )
+
+#: The parsed columns that hold one structured component each. What the
+#: market translator checks before taking its flat shortcut, published here so
+#: a component added above is one edit and not a hunt for hardcoded tuples.
+COMPONENT_COLUMNS: tuple[str, ...] = tuple(column for column, _, _ in _COMPONENT_GROUPS)
 
 
 @functools.cache
@@ -261,6 +279,12 @@ class FixMsg(Message):
 
     ISINCODE: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
+
+    ParentClOrdID: Annotated[str | None, PARENT_CL_ORD_ID] = None
+    """Client order identity of the parent in a replace chain, bridge-rendered."""
+
+    ParentOrderID: Annotated[str | None, PARENT_ORDER_ID] = None
+    """Venue order identity of the parent in a replace chain, bridge-rendered."""
 
     # -- what a message says, flattened ---------------------------------------
     #
@@ -525,6 +549,30 @@ class FixMsg(Message):
 
     QuoteEntryID: Annotated[str | None, DECLARATIONS[299]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
+
+    # Last, and lists: what the instrument's two repeating groups carry. Last
+    # because Iceberg counts leaf columns in declaration order for the bounds
+    # it collects, and this contract already crosses that cutoff -- a nested
+    # member declared earlier would push flat columns past it. The three
+    # components above predate the cutoff being crossed; new ones go here.
+
+    SecurityAltID: Annotated[
+        list[SecurityAltIDEntry] | None,
+        Field(
+            arrow_type=SECURITY_ALT_IDS,
+            metadata={"fix:component": "SecurityAltID"},
+        ),
+    ] = None
+    """FIX SecAltIDGrp entries -- every other identifier; null when absent."""
+
+    Legs: Annotated[
+        list[Leg] | None,
+        Field(
+            arrow_type=LEGS,
+            metadata={"fix:component": "Legs"},
+        ),
+    ] = None
+    """FIX InstrmtLegGrp entries -- a multileg's legs; null when absent."""
 
     @classmethod
     def from_text(
@@ -800,6 +848,46 @@ class FixMsg(Message):
         messages = columns.get("message")
         if messages is not None:
             protocols = codec.categorise(messages, columns.get("plugin_code"))
+            stored_protocols = columns.get("protocol_code")
+            if stored_protocols is not None:
+                # The message stage classified these same rows once, from
+                # syntax the rules cannot always see: a rendered payload whose
+                # `MSGTYPE=` discriminator is real but whose `#` markers are
+                # not there carries genuine bridge data the `BRIDGE` pattern
+                # alone would drop into OTHER unread. The stored reading fills
+                # only what the recompute could not name -- never the other
+                # way around, because the rules also see what the syntax probe
+                # cannot: a `35=UL` wrapper without `MSGTYPE=` is stored FIX
+                # but must parse under the bridge's named codec, and known
+                # operational vocabulary is MISC only here.
+                protocols = pyarrow.compute.if_else(
+                    pyarrow.compute.equal(protocols, NO_PROTOCOL),
+                    pyarrow.compute.fill_null(
+                        stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
+                    ),
+                    protocols,
+                )
+            # Direction reads the verb before the payload, so it is resolved
+            # here, where the classification saying which token opens the
+            # payload was just computed -- and written back onto the batch,
+            # appended where a stored batch predates the column, so the
+            # partial fast path's slices carry it too. Only a row that
+            # still has its text answers fresh: a projected row dropped the
+            # message, and the stored answer is the only one there is.
+            direction = codec.rules.into_arrow_direction_array(messages, protocols)
+            stored_direction = columns.get("direction")
+            if stored_direction is not None:
+                direction = pyarrow.compute.if_else(
+                    pyarrow.compute.is_valid(messages), direction, stored_direction
+                )
+            columns["direction"] = direction
+            if "direction" in batch.schema.names:
+                at = batch.schema.get_field_index("direction")
+                batch = batch.set_column(at, batch.schema.field(at), direction)
+            else:
+                batch = batch.append_column(
+                    Message.into_field().into_arrow_schema().field("direction"), direction
+                )
         else:
             protocols = columns.get("protocol_code")
             if protocols is None:

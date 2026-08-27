@@ -506,6 +506,7 @@ MESSAGE_COLUMNS = [
     "protocol_code",
     "MsgType",
     "kwargs",
+    "direction",
 ]
 
 FIX_COLUMNS = {

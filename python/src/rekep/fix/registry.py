@@ -31,6 +31,7 @@ from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
 from rekep.fix.entries import (
     ANY_VERSION,
+    NAMESPACE,
     Alias,
     ComponentEntry,
     FieldEntry,
@@ -1418,6 +1419,89 @@ class FixRegistry(Convertible):
             dataclasses.replace(
                 entry,
                 aliases=(*entry.aliases, *(a for a in added if a.folded not in held)),
+            )
+        )
+
+    def promote_field(
+        self,
+        name: str,
+        column: str,
+        *,
+        type: str = "",
+        description: str = "",
+        aliases: Sequence[Alias | str] = (),
+    ) -> FieldEntry:
+        """Register a rendered name and the column it is lifted into, in one call.
+
+        The one entry point for promoting a bridge-proprietary spelling into a
+        typed column. A name the store has never seen becomes a new namespaced
+        entry carrying `column`; a name a classification run already
+        registered without one -- the half-done state the `add_field` plus
+        `into_entry` two-step leaves -- is completed in place, keeping every
+        alias and count it has gathered. A `type` or `description` said here
+        is the newest reading and wins; one left unsaid keeps what the entry
+        holds -- `String`, for a type nobody has ever said, because that is
+        what every rendered value is until someone says otherwise.
+        Three refusals, all data problems to resolve rather than
+        overwrite: a standard tagged field, whose column the dictionary
+        decides; an entry already lifted into a different column; and a
+        column some other field already landed in -- runs disagreeing about
+        where a field lands are a conflict, not a newer answer.
+        """
+        if not str(name).strip():
+            raise ValueError("promoting a FIX field requires its name")
+        column = str(column).strip()
+        if not column:
+            raise ValueError(f"promoting FIX field {name!r} requires the column it is lifted into")
+        added: tuple[Alias, ...] = ()
+        for alias in aliases:
+            one = alias if isinstance(alias, Alias) else Alias(name=alias)
+            if one.folded not in {a.folded for a in added}:
+                added = (*added, one)
+        held = self.resolve(name)
+        claimed = next(
+            (
+                one
+                for one in self._entries[0].values()
+                if one.column == column and (held is None or one.key != held.key)
+            ),
+            None,
+        )
+        if claimed is not None:
+            raise ValueError(
+                f"column {column!r} is already {claimed.name!r}'s; "
+                "two fields cannot land in one column"
+            )
+        if held is None:
+            return self.add_field(
+                FieldEntry(
+                    name=name,
+                    kind=NAMESPACE,
+                    versions=(ANY_VERSION,),
+                    type=type or "String",
+                    description=description,
+                    aliases=added,
+                    column=column,
+                )
+            )
+        if held.kind != NAMESPACE:
+            raise KeyError(
+                f"FIX field {held.name!r} is standard, with tag {held.tag}; promotion "
+                "registers rendered bridge fields only"
+            )
+        if held.column and held.column != column:
+            raise ValueError(
+                f"FIX field {held.name!r} is already lifted into {held.column!r}; "
+                f"refusing to move it to {column!r}"
+            )
+        spelled = {held.folded, *(alias.folded for alias in held.aliases)}
+        return self.update_field(
+            dataclasses.replace(
+                held,
+                type=type or held.type or "String",
+                description=description or held.description,
+                aliases=(*held.aliases, *(a for a in added if a.folded not in spelled)),
+                column=column,
             )
         )
 

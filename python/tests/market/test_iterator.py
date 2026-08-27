@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 from pathlib import Path
 
 import pyarrow
@@ -2117,3 +2118,155 @@ def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
 
 def test_purge_alive_on_an_empty_stream_emits_nothing() -> None:
     assert list(BookIterator.from_events([], purge_alive=True)) == []
+
+
+def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() -> None:
+    """A row whose legs or alt-ids live in resolved columns skips the flat path.
+
+    Before componentization these rows carried `NoSecurityAltID <454>` or
+    `NoLegs <555>` in `kwargs`, which is what `_COMPLEX_FIELDS` read to send
+    them to the scalar translator. The groups are lifted with their count tags
+    now, so the resolved column is the only remaining evidence -- and the
+    routing must not quietly change with the storage. The batch still
+    translates, through the scalar reference, to exactly what the scalar
+    events say.
+    """
+    from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
+    from rekep.market.fix_arrow import flat_market_positions
+
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    plain = FixMsg(
+        unix=BASE + 1,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="D",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ClOrdID="C-1",
+        Side="1",
+        OrdType="2",
+        OrderQty=10.0,
+        Price=100.0,
+    )
+    identified = dataclasses.replace(
+        plain,
+        ClOrdID="C-2",
+        SecurityAltID=[SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4")],
+    )
+    # A refused extraction -- the count lies -- leaves the group in `kwargs`
+    # and the column null, so this row rides the pre-existing kwargs check.
+    refused = dataclasses.replace(
+        plain,
+        ClOrdID="C-3",
+        kwargs=[(555, "9"), (600, "AAPL"), (624, "1")],
+    )
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist(
+        [plain.into_dict(), identified.into_dict(), refused.into_dict()], schema
+    )
+
+    assert into_flat_market_batches(batch, {"registry": registry}) is None
+    positions = [
+        where.to_pylist() for where in flat_market_positions(batch, {"registry": registry})
+    ]
+    assert positions == [[0]], "only the row with no group evidence at all stays flat"
+
+    expected = [
+        event
+        for message in FixMsg.from_arrow_reader([batch])
+        for event in message.into_market_events(registry=registry)
+        if isinstance(event, Order)
+    ]
+    found = [
+        translated
+        for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry)
+        if event_type is Order
+    ]
+    assert [order.client_order_id for order in expected] == ["C-1", "C-2", "C-3"]
+    expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
+    assert pyarrow.Table.from_batches(found).equals(expected_table)
+
+
+def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> None:
+    """A cancel-reject's OrdStatus, an intent link and settlement facts read
+    identically flat and scalar -- and the batch is flat-eligible, so the
+    equality is between two live paths and not one falling back."""
+    registry = FixRegistry(cache_dir=DATA, offline=True)
+    linked = FixMsg(
+        unix=BASE + 1,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="D",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ClOrdID="C-1",
+        Side="1",
+        OrdType="2",
+        OrderQty=10.0,
+        Price=100.0,
+        ParentClOrdID="P-1",
+        ParentOrderID="V-9",
+        kwargs=[(583, "LINK-1")],
+    )
+    rejected = dataclasses.replace(
+        linked,
+        MsgType="9",
+        ClOrdID="C-2",
+        OrigClOrdID="C-1",
+        OrdStatus="2",
+        ParentClOrdID=None,
+        ParentOrderID=None,
+        kwargs=None,
+    )
+    settled = FixMsg(
+        unix=BASE + 3,
+        unix_source="TransactTime",
+        BeginString="FIX.4.4",
+        MsgType="AE",
+        Symbol="ETH-USD",
+        mic=MIC.from_str("XPAR"),
+        ExecID="E-1",
+        Side="2",
+        LastPx=99.5,
+        LastQty=3.0,
+        kwargs=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
+    )
+    schema = FixMsg.into_field().into_arrow_schema()
+    batch = pyarrow.RecordBatch.from_pylist(
+        [linked.into_dict(), rejected.into_dict(), settled.into_dict()], schema
+    )
+
+    translated = into_flat_market_batches(batch, {"registry": registry})
+    assert translated is not None, "every row here is flat-eligible"
+    orders, executions = translated
+
+    assert orders.column("clord_link_id").to_pylist() == ["LINK-1", None]
+    assert orders.column("parent_client_order_id").to_pylist() == ["P-1", None]
+    assert orders.column("parent_order_id").to_pylist() == ["V-9", None]
+    assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
+        "the reject reads where the order stands from OrdStatus"
+    )
+    assert executions.column("settl_date").to_pylist() == [datetime.date(2026, 8, 18)]
+    assert executions.column("settl_type").to_pylist() == ["W2"]
+    assert executions.column("settl_currency").to_pylist() == ["USD"]
+    assert executions.column("settl_curr_fx_rate_calc").to_pylist() == ["M"]
+
+    expected = {Order: [], Execution: []}
+    for message in FixMsg.from_arrow_reader([batch]):
+        for event in message.into_market_events(registry=registry):
+            if type(event) in expected:
+                expected[type(event)].append(event)
+    expected_orders = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected[Order])))
+    assert pyarrow.Table.from_batches([orders]).equals(expected_orders)
+    # The execution row compares attribute-wise: a scalar event carrying a
+    # date cannot ride `into_arrow_reader` yet (a pre-existing limit its
+    # Instrument.maturity shares), and the identity hashes are the strong
+    # half of the parity anyway.
+    (scalar_execution,) = expected[Execution]
+    (row,) = executions.to_pylist()
+    assert row["hash"] == scalar_execution.hash
+    assert row["xhash"] == scalar_execution.xhash
+    for name in ("exec_id", "px", "qty", "settl_type", "settl_currency"):
+        assert row[name] == getattr(scalar_execution, name), name
+    assert row["settl_date"] == scalar_execution.settl_date
+    assert row["settl_curr_fx_rate_calc"] == scalar_execution.settl_curr_fx_rate_calc

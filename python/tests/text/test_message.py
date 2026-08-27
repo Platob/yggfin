@@ -22,6 +22,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "protocol_code",
         "MsgType",
         "kwargs",
+        "direction",
     ]
     assert all(
         not any(key.startswith("fix:") for key in field.metadata)
@@ -52,6 +53,31 @@ def test_a_direct_kwarg_drops_a_leading_marker_and_normalizes_the_required_value
         ("PAIR", "1"),
         ("MAP", "2"),
     ]
+
+
+def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
+    """`parse_fix` reads these rows back with `message` projected out, so the
+    message stage is where the verb before the payload has to become the
+    stored answer -- for the batch reading and the scalar row alike."""
+    lines = [
+        "Receiving : 8=FIX.4.4|35=D|11=C1|10=000",
+        "Sending : 8=FIX.4.4|35=8|37=O1|39=0|10=000",
+        # A rendered line the probe reads as UL but no rule pattern anchors:
+        # an unanchored verb answers nothing rather than from anywhere.
+        "Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5",
+        # The verb inside a payload value is prose, not movement.
+        "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
+        "just some heartbeat prose",
+    ]
+    parsed = Message.parse_arrow(pyarrow.array(lines))
+    assert parsed["direction"].to_pylist() == [False, True, None, None, None]
+
+    assert Message(message=lines[0]).direction is False
+    assert Message(message=lines[1]).direction is True
+    assert Message(message=lines[4]).direction is None
+    assert Message(message=lines[0], direction=True).direction is True, (
+        "an explicitly stored answer is not recomputed"
+    )
 
 
 def test_a_message_always_has_a_non_null_argument_list() -> None:

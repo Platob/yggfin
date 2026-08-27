@@ -271,6 +271,20 @@ def update_field(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def promote_field(arguments: argparse.Namespace) -> int:
+    """Register a rendered field and the column it is lifted into, in one call."""
+    registry = _registry(arguments)
+    entry = registry.promote_field(
+        arguments.name,
+        arguments.column,
+        type=arguments.type,
+        description=arguments.description,
+        aliases=tuple(arguments.alias),
+    )
+    CONSOLE.ok(f"promoted {entry.name} {CONSOLE.glyph('arrow')} column {entry.column}")
+    return 0
+
+
 def remove_field(arguments: argparse.Namespace) -> int:
     """Delete one field identity, saying so when the store did not have it."""
     if not _registry(arguments).remove_field(arguments.name):
@@ -613,6 +627,24 @@ def _parser() -> argparse.ArgumentParser:
 
     described(verb("add-field", "register a field identity the store does not have", add_field))
     described(verb("update-field", "replace a stored field identity", update_field))
+
+    promoting = verb(
+        "promote", "register a rendered field and its parsed-log column in one call", promote_field
+    )
+    promoting.add_argument("--name", required=True, help="the field's canonical name")
+    promoting.add_argument(
+        "--column", required=True, help="the parsed-log column the field is lifted into"
+    )
+    promoting.add_argument(
+        "--type",
+        default="",
+        help="its FIX datatype; unsaid keeps what the entry holds, or String",
+    )
+    promoting.add_argument("--description", default="", help="one factual line about it")
+    promoting.add_argument(
+        "--alias", action="append", default=[], help="another spelling; repeatable"
+    )
+
     verb("remove-field", "delete a field identity", remove_field).add_argument(
         "--name", required=True, help="the field to remove, by any name it answers to"
     )

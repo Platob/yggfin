@@ -421,6 +421,31 @@ fields:
       nullable: true
       description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
       fix: {tag: '41', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: OrigClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: clord_link_id
+      type: string
+      nullable: true
+      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
+      fix: {tag: '583', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
+    - name: parent_client_order_id
+      type: string
+      nullable: true
+      description: Client order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentClOrdID, name: ParentClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: parent_order_id
+      type: string
+      nullable: true
+      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentOrderID, name: ParentOrderID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: cxl_rej_reason
+      type: int32
+      nullable: true
+      description: Code to identify reason for cancel rejection.
+      fix: {tag: '102', type: int, version: 5.0.SP2, values: '{"0":"Too late to cancel","1":"Unknown order","2":"Broker / Exchange Option","3":"Order already in Pending Cancel or Pending Replace status","4":"Unable to process Order Mass Cancel Request <q>","5":"OrigOrdModTime <586> did not match last TransactTime <60> of order","6":"Duplicate ClOrdID <11> received","99":"Other","18":"Invalid price increment","7":"Price exceeds current price","8":"Price exceeds current price band"}', value_names: '{"0":"TOO_LATE_TO_CANCEL","1":"UNKNOWN_ORDER","2":"BROKER_CREDIT","3":"ORDER_ALREADY_IN_PENDING_STATUS","6":"DUPLICATE_CL_ORD_ID","5":"ORIG_ORD_MOD_TIME","4":"UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST","99":"OTHER","18":"INVALID_PRICE_INCREMENT","7":"PRICE_EXCEEDS_CURRENT_PRICE","8":"PRICE_EXCEEDS_CURRENT_PRICE_BAND"}', msgtypes: '["OrderCancelReject"]', name: CxlRejReason, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: cxl_rej_response_to
+      type: string
+      nullable: true
+      description: Identifies the type of request that a Cancel Reject <9> is in response to.
+      fix: {tag: '434', type: char, version: 5.0.SP2, values: '{"1":"Order Cancel Request <F>","2":"Order Cancel/Replace Request <G>"}', value_names: '{"1":"ORDER_CANCEL_REQUEST","2":"ORDER_CANCEL_REPLACE_REQUEST"}', msgtypes: '["OrderCancelReject"]', name: CxlRejResponseTo, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'}
 - name: executions
   type: list
   description: Execution evidence belonging to this book delta.
@@ -622,6 +647,26 @@ fields:
       nullable: true
       description: Used to identify whether the order initiator is an aggressor or not in the trade.
       fix: {tag: '1057', type: Boolean, version: 5.0.SP2, values: '{"Y":"Order initiator is aggressor","N":"Order initiator is passive"}', value_names: '{"Y":"YES","N":"NO"}', msgtypes: '["ExecutionReport"]', components: '["TrdCapRptAckSideGrp","TrdCapRptSideGrp"]', name: AggressorIndicator, versions: '["5.0.SP2","5.0.SP1","5.0"]'}
+    - name: settl_date
+      type: date32[day]
+      nullable: true
+      description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format. If present, this field overrides SettlType <63> . This field is required if the value of SettlType <63> is "6" (Future) or "8" (Sellers Option). This field must be omitted if the value of SettlType <63> is "7" (When and If Issued) (expressed in local time at place of settlement)
+      fix: {tag: '64', type: LocalMktDate, version: 5.0.SP2, msgtypes: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","TradeCaptureReportAck","AllocationReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","NewOrderSingle","OrderCancelReplaceRequest","AllocationInstruction","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","QuoteRequestReject","MassQuoteAcknowledgement","NewOrderList","MassQuote","BidRequest","BidResponse","QuoteRequest","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["BidCompReqGrp","BidCompRspGrp","InstrmtMDReqGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","SettlObligationInstructions"]', name: SettlDate, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', aliases: '[{"name":"FutSettDate","source":"4.0","occurrences":0}]'}
+    - name: settl_type
+      type: string
+      nullable: true
+      description: Indicates order settlement period. If present, SettlDate <64> overrides this field. If both SettlType <63> and SettlDate <64> are omitted, the default for SettlType <63> is "0" (Regular) Regular is defined as the default settlement period for the particular security on the exchange of execution. In Fixed Income the contents of this field may influence the instrument definition if the SecurityID <48> is ambiguous. In the US an active Treasury offering may be re-opened, and for a time one CUSIP will apply to both the current and "when-issued" securities. Supplying a value of "7" clarifies the instrument description; any other value or the absence of this field should cause the respondent to default to the active issue. Additionally the following patterns may be uses as well as enum values Dx = FX tenor expression for "days", e.g. "D5", where "x" is any integer > 0 Mx = FX tenor expression for "months", e.g. "M3", where "x" is any integer > 0 Wx = FX tenor expression for "weeks", e.g. "W13", where "x" is any integer > 0 Yx = FX tenor expression for "years", e.g. "Y1", where "x" is any integer > 0 Noted that for FX the tenors expressed using Dx, Mx, Wx, and Yx values do not denote business days, but calendar days.
+      fix: {tag: '63', type: String, version: 5.0.SP2, values: '{"0":"Regular / FX Spot settlement (T+1 or T+2 depending on currency)","1":"Cash (TOD / T+0)","2":"Next Day (TOM / T+1)","3":"T+2","4":"T+3","5":"T+4","6":"Future","7":"When And If Issued","8":"Sellers Option","9":"T+5","A":"T+1 (Removed in FIX 4.4, use \"2 = Next Day (T+)\" value)","B":"Broken date - for FX expressing non-standard tenor, SettlDate <64> must be specified","C":"FX Spot Next settlement (Spot+1, aka next day)"}', value_names: '{"0":"REGULAR","1":"CASH","2":"NEXT_DAY","3":"T_PLUS2","4":"T_PLUS3","5":"T_PLUS4","6":"FUTURE","7":"WHEN_AND_IF_ISSUED","8":"SELLERS_OPTION","9":"T_PLUS5","A":"T1","B":"BROKEN_DATE","C":"FX_SPOT_NEXT_SETTLEMENT"}', msgtypes: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","TradeCaptureReportAck","AllocationReport","AllocationInstructionAlert","NewOrderSingle","OrderCancelReplaceRequest","AllocationInstruction","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","QuoteRequestReject","NewOrderList","BidRequest","BidResponse","QuoteRequest","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["BidCompReqGrp","BidCompRspGrp","InstrmtMDReqGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotReqGrp","QuotReqRjctGrp","StrmAsgnReqInstrmtGrp","StrmAsgnRptInstrmtGrp"]', name: SettlType, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', aliases: '[{"name":"SettlmntTyp","source":"4.0","occurrences":0}]'}
+    - name: settl_currency
+      type: string
+      nullable: true
+      description: 'Currency code of settlement denomination. See Appendix 6-A: "Valid Currency Codes" for information on obtaining'
+      fix: {tag: '120', type: Currency, version: 5.0.SP2, msgtypes: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","SettlementInstructionRequest","NewOrderSingle","OrderCancelReplaceRequest","Quote","AllocationReport","NewOrderList","AllocationInstruction","NewOrderCross","CrossOrderCancelReplaceRequest","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["AllocGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotReqGrp","SettlInstGrp","SettlObligationInstructions","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]', name: SettlCurrency, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: settl_curr_fx_rate_calc
+      type: string
+      nullable: true
+      description: Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided.
+      fix: {tag: '156', type: char, version: 5.0.SP2, values: '{"M":"Multiply","D":"Divide"}', value_names: '{"D":"DIVIDE","M":"MULTIPLY"}', msgtypes: '["ExecutionReport","QuoteStatusReport","QuoteResponse","Confirmation","Quote","TradeCaptureReport","AllocationReport","AllocationInstruction","Allocation"]', components: '["AllocGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]', name: SettlCurrFxRateCalc, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'}
 - name: bid_alive
   type: list
   description: Complete living bid orders, populated only on snapshots.
@@ -809,6 +854,31 @@ fields:
       nullable: true
       description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
       fix: {tag: '41', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: OrigClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: clord_link_id
+      type: string
+      nullable: true
+      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
+      fix: {tag: '583', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
+    - name: parent_client_order_id
+      type: string
+      nullable: true
+      description: Client order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentClOrdID, name: ParentClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: parent_order_id
+      type: string
+      nullable: true
+      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentOrderID, name: ParentOrderID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: cxl_rej_reason
+      type: int32
+      nullable: true
+      description: Code to identify reason for cancel rejection.
+      fix: {tag: '102', type: int, version: 5.0.SP2, values: '{"0":"Too late to cancel","1":"Unknown order","2":"Broker / Exchange Option","3":"Order already in Pending Cancel or Pending Replace status","4":"Unable to process Order Mass Cancel Request <q>","5":"OrigOrdModTime <586> did not match last TransactTime <60> of order","6":"Duplicate ClOrdID <11> received","99":"Other","18":"Invalid price increment","7":"Price exceeds current price","8":"Price exceeds current price band"}', value_names: '{"0":"TOO_LATE_TO_CANCEL","1":"UNKNOWN_ORDER","2":"BROKER_CREDIT","3":"ORDER_ALREADY_IN_PENDING_STATUS","6":"DUPLICATE_CL_ORD_ID","5":"ORIG_ORD_MOD_TIME","4":"UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST","99":"OTHER","18":"INVALID_PRICE_INCREMENT","7":"PRICE_EXCEEDS_CURRENT_PRICE","8":"PRICE_EXCEEDS_CURRENT_PRICE_BAND"}', msgtypes: '["OrderCancelReject"]', name: CxlRejReason, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: cxl_rej_response_to
+      type: string
+      nullable: true
+      description: Identifies the type of request that a Cancel Reject <9> is in response to.
+      fix: {tag: '434', type: char, version: 5.0.SP2, values: '{"1":"Order Cancel Request <F>","2":"Order Cancel/Replace Request <G>"}', value_names: '{"1":"ORDER_CANCEL_REQUEST","2":"ORDER_CANCEL_REPLACE_REQUEST"}', msgtypes: '["OrderCancelReject"]', name: CxlRejResponseTo, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'}
 - name: ask_alive
   type: list
   description: Complete living ask orders, populated only on snapshots.
@@ -996,3 +1066,28 @@ fields:
       nullable: true
       description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
       fix: {tag: '41', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: OrigClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: clord_link_id
+      type: string
+      nullable: true
+      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
+      fix: {tag: '583', type: String, version: 5.0.SP2, msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
+    - name: parent_client_order_id
+      type: string
+      nullable: true
+      description: Client order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentClOrdID, name: ParentClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: parent_order_id
+      type: string
+      nullable: true
+      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
+      fix: {type: String, version: 5.0.SP2, kind: namespace, column: ParentOrderID, name: ParentOrderID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'}
+    - name: cxl_rej_reason
+      type: int32
+      nullable: true
+      description: Code to identify reason for cancel rejection.
+      fix: {tag: '102', type: int, version: 5.0.SP2, values: '{"0":"Too late to cancel","1":"Unknown order","2":"Broker / Exchange Option","3":"Order already in Pending Cancel or Pending Replace status","4":"Unable to process Order Mass Cancel Request <q>","5":"OrigOrdModTime <586> did not match last TransactTime <60> of order","6":"Duplicate ClOrdID <11> received","99":"Other","18":"Invalid price increment","7":"Price exceeds current price","8":"Price exceeds current price band"}', value_names: '{"0":"TOO_LATE_TO_CANCEL","1":"UNKNOWN_ORDER","2":"BROKER_CREDIT","3":"ORDER_ALREADY_IN_PENDING_STATUS","6":"DUPLICATE_CL_ORD_ID","5":"ORIG_ORD_MOD_TIME","4":"UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST","99":"OTHER","18":"INVALID_PRICE_INCREMENT","7":"PRICE_EXCEEDS_CURRENT_PRICE","8":"PRICE_EXCEEDS_CURRENT_PRICE_BAND"}', msgtypes: '["OrderCancelReject"]', name: CxlRejReason, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
+    - name: cxl_rej_response_to
+      type: string
+      nullable: true
+      description: Identifies the type of request that a Cancel Reject <9> is in response to.
+      fix: {tag: '434', type: char, version: 5.0.SP2, values: '{"1":"Order Cancel Request <F>","2":"Order Cancel/Replace Request <G>"}', value_names: '{"1":"ORDER_CANCEL_REQUEST","2":"ORDER_CANCEL_REPLACE_REQUEST"}', msgtypes: '["OrderCancelReject"]', name: CxlRejResponseTo, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'}

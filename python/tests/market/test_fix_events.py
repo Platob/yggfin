@@ -1097,3 +1097,318 @@ def test_every_tag_the_instrument_reads_is_declared() -> None:
     assert read, "the reading is there to be read"
     assert read <= INSTRUMENT_FIELDS, f"undeclared: {sorted(read - INSTRUMENT_FIELDS)}"
     assert {"NoSecurityAltID", "NoLegs"} <= INSTRUMENT_FIELDS
+
+
+def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
+    """A parsed row's typed `SecurityAltID`/`Legs` answer without a pair walk.
+
+    The parse stage lifts both groups out of `kwargs`, so a stored row has no
+    count tag left to re-parse -- the resolved columns are the only place the
+    entries live, and the instrument they build must equal the one the same
+    wire line builds through the scalar fallback.
+    """
+    from rekep.fix.components import Leg as LegEntry
+    from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
+
+    stored = FixMsg(
+        BeginString="FIX.4.4",
+        MsgType="d",
+        Symbol="SPREAD",
+        protocol_version="4.4",
+        SecurityAltID=[
+            SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4"),
+            SecurityAltIDEntry(SecurityAltID="037833100", SecurityAltIDSource="1"),
+        ],
+        Legs=[
+            LegEntry(
+                LegSymbol="AAPL",
+                LegSide="1",
+                LegRatioQty=1.0,
+                LegMaturityDate=datetime.date(2027, 1, 15),
+                LegStrikePrice=150.5,
+            ),
+            LegEntry(LegSymbol="MSFT", LegSide="2", LegRatioQty=2.0, LegCurrency="USD"),
+        ],
+    )
+    reader = FixEvents(message=stored)
+    instrument = reader.instrument
+
+    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.isin_code == "US0378331005"
+    assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
+        ("AAPL", Side.BUY, 1.0),
+        ("MSFT", Side.SELL, 2.0),
+    ]
+    assert instrument.legs[0].maturity == datetime.date(2027, 1, 15)
+    assert instrument.legs[0].strike == 150.5
+    assert instrument.legs[1].currency == Currency.USD
+
+    wire = (
+        "8=FIX.4.4|35=d|55=SPREAD|454=2|455=US0378331005|456=4|455=037833100|456=1|"
+        "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
+        "600=MSFT|624=2|623=2|556=USD"
+    )
+    assert instrument == FixEvents.from_text(wire).instrument
+
+
+def test_a_two_sided_trade_capture_report_is_one_execution_per_side() -> None:
+    """`Side <54>`, `OrderID <37>`, `ClOrdID <11>` live inside each `NoSides
+    <552>` entry, so a flat read kept one side's identity and dropped the
+    other's. Each side resolves the report-level facts through the merged
+    view -- the match id, the price, the quantity and the clock are the
+    report's -- and its own identifiers over them."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=RPT-1|880=M-1|31=99.5|32=7|75=20260814|"
+        "55=EUR/USD|60=20260814-09:30:00|552=2|"
+        "54=1|37=O-BUY|11=C-BUY|1=ACC-B|"
+        "54=2|37=O-SELL|11=C-SELL|1=ACC-S|10=000"
+    )
+    events = list(FixEvents.from_text(wire))
+
+    assert [type(one) for one in events] == [Execution, Execution]
+    assert [(one.side, one.order_id, one.client_order_id) for one in events] == [
+        (Side.BUY, "O-BUY", "C-BUY"),
+        (Side.SELL, "O-SELL", "C-SELL"),
+    ]
+    assert {one.trade_id for one in events} == {"M-1"}
+    assert {(one.px, one.qty, one.unix) for one in events} == {(99.5, 7.0, events[0].unix)}
+    assert events[0].xhash != events[1].xhash, "two sides, two lifecycles"
+
+
+def test_a_single_sided_or_flat_trade_capture_report_stays_one_execution() -> None:
+    single = (
+        "8=FIX.4.4|35=AE|571=R2|880=M-2|31=101|32=3|55=AAPL|60=20260814-10:00:00|"
+        "552=1|54=1|37=O-9|11=C-9|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(single))
+    assert (execution.side, execution.order_id, execution.px) == (Side.BUY, "O-9", 101.0)
+
+    flat = (
+        "8=FIX.4.4|35=AE|571=R3|880=M-3|31=50|32=1|55=MSFT|54=2|37=O-3|60=20260814-11:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(flat))
+    assert (execution.side, execution.order_id) == (Side.SELL, "O-3")
+
+
+def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
+    """The bridge's `NOSIDES[i]=...` spelling reaches the same two executions,
+    with report-level legs untouched by the split."""
+    member = "\x04\x03"
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=AE|#TRADEREPORTID=RPT-9|#TRDMATCHID=M-9|"
+        "#LASTPX=1.0842|#LASTQTY=1000000|#SYMBOL=EUR/USD|#TRANSACTTIME=20260814-09:30:00|"
+        f"#NOLEGS=2|#NOLEGS[0]=LEGSYMBOL=EUR/USD-NEAR{member}LEGSIDE=1{member}LEGRATIOQTY=1{member}|"
+        f"#NOLEGS[1]=LEGSYMBOL=EUR/USD-FAR{member}LEGSIDE=2{member}LEGRATIOQTY=1{member}|"
+        f"#NOSIDES=2|#NOSIDES[0]=SIDE=1{member}ORDERID=O-BUY{member}CLORDID=C-BUY{member}|"
+        f"#NOSIDES[1]=SIDE=2{member}ORDERID=O-SELL{member}CLORDID=C-SELL{member}"
+    )
+    events = list(FixMsg.from_text(line).into_fix_events(fix_version="4.4"))
+
+    assert [(one.side, one.order_id) for one in events] == [
+        (Side.BUY, "O-BUY"),
+        (Side.SELL, "O-SELL"),
+    ]
+    assert {one.trade_id for one in events} == {"M-9"}
+    instrument = next(
+        iter(FixMsg.from_text(line).into_fix_events(fix_version="4.4").into_instruments())
+    )
+    assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
+
+
+def test_a_cancel_reject_reads_where_the_order_stands_from_ordstatus() -> None:
+    """`OrderCancelReject <9>` is the one order message whose real state lives
+    in `OrdStatus <39>` -- it says where the order stands after the refusal --
+    and its coded reason leads the prose instead of being dropped by it."""
+    line = (
+        "8=FIX.4.4|35=9|37=O-1|11=C-2|41=C-1|39=2|102=1|434=1|"
+        "58=Too late to cancel|60=20260814-10:00:00|10=000"
+    )
+    (order,) = list(FixEvents.from_text(line))
+
+    assert order.state is State.FILLED
+    assert order.cxl_rej_reason == 1
+    assert order.cxl_rej_response_to == "1"
+    assert order.reason is not None
+    coded, response, text = order.reason.split("; ")
+    assert coded.startswith("CxlRejReason=1")
+    assert response.startswith("CxlRejResponseTo=1")
+    assert text == "Too late to cancel"
+
+
+def test_a_cancel_reject_without_ordstatus_stays_unknown() -> None:
+    line = "8=FIX.4.4|35=9|37=O-1|11=C-2|41=C-1|60=20260814-10:00:00|10=000"
+    (order,) = list(FixEvents.from_text(line))
+    assert order.state is State.UNKNOWN
+
+
+def test_a_quote_request_with_prices_is_read_like_any_other_quote() -> None:
+    """`QuoteRequest <R>` used to dispatch to nothing; one carrying prices is
+    two indicative sides, exactly as a quote would be."""
+    line = (
+        "8=FIX.4.4|35=R|131=QR-1|55=EUR/USD|132=1.08|134=1000000|"
+        "133=1.081|135=2000000|60=20260814-10:00:00|10=000"
+    )
+    bid, ask = list(FixEvents.from_text(line))
+    assert (bid.side, bid.px, bid.qty) == (Side.BID, 1.08, 1000000.0)
+    assert (ask.side, ask.px, ask.qty) == (Side.ASK, 1.081, 2000000.0)
+
+
+def test_a_mass_quote_acknowledgement_reads_its_entries() -> None:
+    """`MassQuoteAcknowledgement <b>` carries the same quote sets `i` does,
+    and a rejecting acknowledgement is what says the quote never stood."""
+    line = (
+        "8=FIX.4.4|35=b|117=Q-1|297=5|296=1|302=S1|295=1|299=E1|55=AAA|"
+        "132=9|134=5|60=20260814-10:00:00|10=000"
+    )
+    (entry,) = list(FixEvents.from_text(line))
+    assert entry.state is State.REJECTED
+    # Rejected is terminal, so the working quantity is zeroed and the asked
+    # size survives as the previous one.
+    assert (entry.side, entry.px, entry.qty, entry.prev_qty) == (Side.BID, 9.0, 0.0, 5.0)
+
+
+def test_a_trade_capture_report_request_carrying_a_trade_is_an_execution() -> None:
+    line = (
+        "8=FIX.4.4|35=AD|568=REQ-1|571=R-1|880=M-1|31=100|32=5|55=AAPL|54=1|"
+        "37=O-1|60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(line))
+    assert isinstance(execution, Execution)
+    assert (execution.side, execution.px, execution.qty, execution.trade_id) == (
+        Side.BUY,
+        100.0,
+        5.0,
+        "M-1",
+    )
+
+
+def test_an_execution_carries_how_its_trade_settles() -> None:
+    line = (
+        "8=FIX.4.4|35=AE|571=R-2|880=M-2|31=1.0842|32=1000000|55=EUR/USD|"
+        "64=20260818|63=W2|120=USD|156=M|552=1|54=1|37=O-2|11=C-7|"
+        "60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(line))
+    assert execution.settl_date == datetime.date(2026, 8, 18)
+    assert execution.settl_type == "W2"
+    assert execution.settl_currency == "USD"
+    assert execution.settl_curr_fx_rate_calc == "M"
+
+
+def test_the_order_intent_link_identifier_is_typed_and_coded() -> None:
+    line = "8=FIX.4.4|35=D|11=C-1|583=LINK-9|55=AAPL|54=1|38=5|44=10|60=20260814-10:00:00|10=000"
+    (order,) = list(FixEvents.from_text(line))
+    assert order.clord_link_id == "LINK-9"
+    assert order.codes["cl_ord_link_id"] == "LINK-9"
+
+
+def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
+    """`ParentClOrdID`/`ParentOrderID` are registry namespace fields -- FIX
+    never numbered them -- and a rendered line's spellings resolve through
+    the same records the parsed column is lifted with."""
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=C-2|#PARENTCLORDID=P-1|"
+        "#PARENTORDERID=V-9|#SYMBOL=AAPL|#SIDE=1|#ORDERQTY=5|#PRICE=10|"
+        "#TRANSACTTIME=20260814-10:00:00"
+    )
+    (order,) = list(FixEvents.from_text(line))
+    assert order.parent_client_order_id == "P-1"
+    assert order.parent_order_id == "V-9"
+    assert order.client_order_id == "C-2"
+    assert "PARENTCLORDID" not in order.metadata, "a field with a column is not metadata"
+    assert "PARENTORDERID" not in order.metadata, "under the bridge's spelling either"
+
+
+def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
+    """`SIDE=buy`, `ORDSTATUS=canceled`, `EXECTYPE=cancel`, `ORDTYPE=limit`
+    and `TIMEINFORCE=gtd` are how real bridges render the codes; a scalar
+    reader resolves each where it used to record `UNKNOWN`."""
+    line = (
+        "8=FIX.4.4|35=8|37=O-1|11=C-1|17=E-1|54=buy|39=canceled|150=cancel|"
+        "40=limit|59=gtd|38=5|44=10|126=20260820-17:30:00|60=20260814-10:00:00|10=000"
+    )
+    (order,) = list(FixEvents.from_text(line))
+    assert order.state is State.CANCELLED
+    assert order.side is Side.BUY
+    assert order.kind is MarketKind.LIMIT_ORDER
+    assert order.tif is TimeInForce.GTD
+    assert order.eunix is not None, "a GTD spelled out still reads its expiry"
+
+
+def test_a_side_never_answers_with_its_siblings_fields() -> None:
+    """The report level falls through to every side; a field one side carried
+    alone does not -- the whole-message first-occurrence view would have
+    handed side one's client id and account to a side two that sent neither."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-1|880=M-1|31=99.5|32=7|55=EUR/USD|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|11=C-BUY|1=ACC-B|54=2|37=O-SELL|10=000"
+    )
+    first, second = list(FixEvents.from_text(wire))
+
+    assert (first.client_order_id, second.client_order_id) == ("C-BUY", None)
+    assert "1" not in (second.metadata or {}).values(), "no borrowed account either"
+    assert {one.trade_id for one in (first, second)} == {"M-1"}, (
+        "the report level still falls through"
+    )
+    assert {one.px for one in (first, second)} == {99.5}
+
+
+def test_a_side_with_nested_parties_does_not_truncate_the_sides_after_it() -> None:
+    """A side regularly nests a multi-entry `NoPartyIDs`, whose repeated tags
+    would end a first-repeat scan in the middle of side one."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-2|880=M-2|31=100|32=5|55=AAPL|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|453=2|448=DESK-A|447=D|452=1|448=XPAR|447=G|452=17|"
+        "54=2|37=O-SELL|10=000"
+    )
+    events = list(FixEvents.from_text(wire))
+
+    assert [(one.side, one.order_id) for one in events] == [
+        (Side.BUY, "O-BUY"),
+        (Side.SELL, "O-SELL"),
+    ]
+
+
+def test_a_side_without_its_own_clock_keeps_the_reports_resolution() -> None:
+    """A report-level regulatory stamp outranks `TransactTime <60>` on the
+    report, and each side that carries no clock of its own keeps that answer
+    rather than re-resolving from the entry's weaker fields."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-3|880=M-3|31=100|32=5|55=AAPL|"
+        "768=1|769=20260814-09:29:58|770=1|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|54=2|37=O-SELL|10=000"
+    )
+    outer = FixEvents.from_text(wire)
+    events = list(outer)
+
+    assert {one.unix for one in events} == {outer.transacted.unix}
+    assert outer.transacted.source.startswith("TrdRegTimestamps")
+
+
+def test_a_pure_trade_report_query_fabricates_no_execution() -> None:
+    """`TradeCaptureReportRequest <AD>` decodes like the report it echoes --
+    but a request carrying only criteria is a question, not a trade."""
+    query = "8=FIX.4.4|35=AD|568=REQ-7|569=0|263=1|60=20260814-10:00:00|10=000"
+    assert list(FixEvents.from_text(query)) == []
+
+    echoed = (
+        "8=FIX.4.4|35=AD|568=REQ-8|571=R-1|880=M-1|31=100|32=5|55=AAPL|54=1|"
+        "60=20260814-10:00:00|10=000"
+    )
+    (execution,) = list(FixEvents.from_text(echoed))
+    assert (execution.trade_id, execution.px) == ("M-1", 100.0)
+
+
+def test_a_side_with_its_own_regulatory_stamp_keeps_it() -> None:
+    """The report's clock steers only a side with no clock of its own: a side
+    carrying `SideTrdRegTS` resolves its own instant, above the report's."""
+    wire = (
+        "8=FIX.4.4|35=AE|571=R-4|880=M-4|31=100|32=5|55=AAPL|"
+        "768=1|769=20260814-09:29:58|770=1|60=20260814-09:30:00|"
+        "552=2|54=1|37=O-BUY|"
+        "54=2|37=O-SELL|1016=1|1012=20260814-09:29:59|1013=1|10=000"
+    )
+    first, second = list(FixEvents.from_text(wire))
+
+    assert first.unix == unix_of("20260814-09:29:58"), "no clock of its own, the report's"
+    assert second.unix == unix_of("20260814-09:29:59"), "its own stamp, not the report's"

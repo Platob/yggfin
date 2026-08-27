@@ -8,6 +8,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, NO_PROTOCOL, Rule, Rules
+from rekep.fix.message import WIRE_MSG_TYPE
 from rekep.fix.rules import (
     CODEC_KEYS,
     DEFAULT_RULES,
@@ -18,6 +19,7 @@ from rekep.fix.rules import (
     UL,
     UL_WIRE,
     UNKNOWN_CATEGORY,
+    joined_pattern,
 )
 from rekep.market import EventType
 
@@ -63,7 +65,7 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
 
 def test_the_built_in_patterns_are_the_parser_s_own() -> None:
     """One answer to "where does a message start", not two that drift apart."""
-    assert DEFAULT.rule("FIX").pattern == BEGIN_STRING
+    assert DEFAULT.rule("FIX").pattern == joined_pattern(BEGIN_STRING, WIRE_MSG_TYPE)
     assert {rule.pattern for rule in DEFAULT.rules if rule.protocol == "UL"} == {
         BRIDGE,
         BRIDGE_WIRE,
@@ -122,12 +124,44 @@ def test_a_lone_marked_key_in_prose_is_not_a_bridge_message() -> None:
     assert DEFAULT.categorise("send #FOO=bar #BAZ=1").protocol == "UL"
 
 
-def test_a_rule_accepts_several_message_patterns() -> None:
-    rules = Rules(rules=[Rule(protocol="OPS", patterns=[r"\bready\b", r"\bstopped\b"]), OTHER])
+def test_a_rule_joins_several_patterns_into_one_alternation() -> None:
+    """`joined_pattern` is the one spelling for "any of these", both paths."""
+    rules = Rules(
+        rules=[Rule(protocol="OPS", pattern=joined_pattern(r"\bready\b", r"\bstopped\b")), OTHER]
+    )
     messages = pyarrow.array(["service ready", "service stopped", "service busy"])
     scalar = [rules.categorise(message).protocol for message in messages.to_pylist()]
     assert scalar == ["OPS", "OPS", NO_PROTOCOL]
     assert rules.into_arrow_protocol_array(messages).to_pylist() == scalar
+
+
+def test_joined_pattern_scopes_a_branch_s_leading_flags() -> None:
+    """A global `(?i)` is illegal mid-pattern in Python `re`; the join rewrites
+    it into the scoped form both engines accept, and the flag stays local to
+    its own branch rather than leaking across the alternation."""
+    joined = joined_pattern(r"(?i)ready", r"stopped")
+    assert joined == r"(?i:ready)|(?:stopped)"
+    rules = Rules(rules=[Rule(protocol="OPS", pattern=joined), OTHER])
+    lines = ["service READY", "service STOPPED", "service stopped"]
+    scalar = [rules.categorise(line).protocol for line in lines]
+    assert scalar == ["OPS", NO_PROTOCOL, "OPS"]
+    assert rules.into_arrow_protocol_array(pyarrow.array(lines)).to_pylist() == scalar
+    assert joined_pattern("", r"x", "") == r"(?:x)", "empty branches are no branches"
+    assert joined_pattern("") == ""
+
+
+def test_joined_branches_keep_their_named_groups_apart() -> None:
+    """Two branches spelling the same capture name matched fine as separate
+    patterns; the join renames per branch rather than becoming a pattern
+    neither engine accepts. One branch stays verbatim."""
+    joined = joined_pattern(r"(?P<v>ready)", r"(?P<v>stopped)")
+    assert joined == r"(?:(?P<j0_v>ready))|(?:(?P<j1_v>stopped))"
+    rules = Rules(rules=[Rule(protocol="OPS", pattern=joined), OTHER])
+    lines = ["ready", "stopped", "busy"]
+    scalar = [rules.categorise(line).protocol for line in lines]
+    assert scalar == ["OPS", "OPS", NO_PROTOCOL]
+    assert rules.into_arrow_protocol_array(pyarrow.array(lines)).to_pylist() == scalar
+    assert joined_pattern(r"(?P<v>x)") == r"(?:(?P<v>x))"
 
 
 def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
@@ -139,10 +173,29 @@ def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
         assert rules.into_arrow_protocol_array(messages).to_pylist() == [scalar]
 
 
-def test_a_plural_pattern_passed_as_one_string_stays_one_pattern() -> None:
-    rule = Rule(protocol="OWN", patterns=r"ready|stopped")  # type: ignore[arg-type]
-    assert rule.patterns == [r"ready|stopped"]
-    assert rule.matches("service stopped")
+def test_a_stored_document_with_the_retired_patterns_list_still_reads() -> None:
+    """`patterns` collapsed into `pattern`; a document from that shape keeps
+    classifying the same lines rather than silently losing every regex past
+    the first, and a plural spelling stored as one string stays one branch."""
+    loaded = Rules.from_dict(
+        {
+            "rules": [
+                {"protocol": "OPS", "pattern": r"\bready\b", "patterns": [r"\bstopped\b"]},
+                {"protocol": "OWN", "patterns": r"paused|resumed"},
+                {"protocol": NO_PROTOCOL},
+            ]
+        }
+    )
+    assert loaded.rule("OPS").pattern == joined_pattern(r"\bready\b", r"\bstopped\b")
+    assert loaded.rule("OWN").pattern == joined_pattern(r"paused|resumed")
+    lines = ["service ready", "service stopped", "service paused", "service busy"]
+    assert [loaded.categorise(line).protocol for line in lines] == [
+        "OPS",
+        "OPS",
+        "OWN",
+        NO_PROTOCOL,
+    ]
+    assert Rules.from_dict(loaded.into_dict()) == loaded, "and the new shape round-trips"
 
 
 def test_the_misc_rule_recognises_known_operational_lines() -> None:
@@ -155,14 +208,14 @@ def test_the_misc_rule_recognises_known_operational_lines() -> None:
     assert DEFAULT.categorise("heartbeat 7") == MISC
 
 
-def test_default_rule_instances_and_pattern_lists_are_isolated() -> None:
+def test_default_rule_instances_are_isolated() -> None:
     assert Rules.into_default() is DEFAULT
     first, second = Rules(), Rules()
-    first.rules[3].patterns.append("first only")
-    assert "first only" not in second.rules[3].patterns
-    assert "first only" not in DEFAULT.rules[3].patterns
+    first.rules[3].pattern = "first only"
+    assert second.rules[3].pattern != "first only"
+    assert DEFAULT.rules[3].pattern != "first only"
+    assert MISC.pattern != "first only"
     assert first.rules[3] is not second.rules[3]
-    assert first.rules[3].patterns is not second.rules[3].patterns
 
 
 def test_a_null_message_is_other_rather_than_null() -> None:

@@ -72,11 +72,11 @@ VERSIONS: list[str] = INDEX["versions"]
 #: zero", so a rebuild that lost half the dictionary and still produced a
 #: readable store fails here.
 #:
-#: Fourteen tag shards and `named.json`, against 6072 field documents before
+#: Fourteen tag shards and `named.json`, against 6074 field documents before
 #: the records were made cross-version: the tag space is sparse, so 87 of the
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
-EXPECTED_FIELD_RECORDS = 6072
+EXPECTED_FIELD_RECORDS = 6074
 EXPECTED_COMPONENT_FILES = 730
 
 #: The collapse report, committed beside the dictionary it describes.
@@ -166,7 +166,7 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         assert str(record["tag"]) == key, "a record is filed under its own tag"
         tags.add(record["tag"])
         assert set(record["versions"]) <= set(VERSIONS), key
-    assert vendor == 1, "ISINCODE, and every other one the log gives a column"
+    assert vendor == 3, "ISINCODE and the parent identities the log gives columns"
     assert held["ISINCODE"]["column"] == "ISINCODE"
     assert [alias["name"] for alias in held["ISINCODE"]["aliases"]] == ["AMON.ISINCODE"]
 
@@ -351,8 +351,8 @@ def test_the_builtin_projection_matches_the_published_versions(
     # records, because `FutSettDate` and `SettlDate` are one tag under two
     # spellings and the collapse keeps the older one as an alias. One of the
     # 170 is the vendor field, which `tags()` cannot map because it has no tag.
-    assert len(builtin.tags()) == 173
-    assert len(builtin.field_entries()) == 174
+    assert len(builtin.tags()) == 177
+    assert len(builtin.field_entries()) == 180
     assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
     selected = {
         int(tag)
@@ -375,8 +375,13 @@ def test_the_builtin_projection_matches_the_published_versions(
         ]
         assert builtin.fields(version) == expected, version
     # A field FIX never numbered holds for every version and sorts after the
-    # numbered ones, so it is the tail of the newest version too.
-    assert builtin.fields("5.0.SP2")[-1].name == "ISINCODE"
+    # numbered ones, so the named identities are the tail of the newest
+    # version too.
+    assert [member.name for member in builtin.fields("5.0.SP2")[-3:]] == [
+        "ISINCODE",
+        "ParentClOrdID",
+        "ParentOrderID",
+    ]
 
 
 def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -> None:

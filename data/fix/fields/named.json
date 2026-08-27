@@ -13,5 +13,25 @@
     "name": "AMON.ISINCODE"
    }
   ]
+ },
+ "ParentClOrdID": {
+  "name": "ParentClOrdID",
+  "kind": "namespace",
+  "column": "ParentClOrdID",
+  "type": "String",
+  "description": "Client order identity of the parent in a replace chain, as the bridge renders it.",
+  "versions": [
+   "*"
+  ]
+ },
+ "ParentOrderID": {
+  "name": "ParentOrderID",
+  "kind": "namespace",
+  "column": "ParentOrderID",
+  "type": "String",
+  "description": "Venue order identity of the parent in a replace chain, as the bridge renders it.",
+  "versions": [
+   "*"
+  ]
  }
 }

@@ -7,6 +7,7 @@ import datetime
 import decimal
 import functools
 import json
+import math
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -283,13 +284,21 @@ def cast_arrow_bool(array: Any) -> Any:
 #: because logs rewrite the separator, and a trailing `Z` because feeds add
 #: one. Both halves optional, so one pattern reads all three.
 #:
+#: Two bridge spellings are admitted beside the standard's. A colon-free
+#: clock (`094510`, `20260814-094510.250`) lands in `compact`, whole -- six
+#: digits or nothing, so a bare `0945` stays unreadable rather than becoming
+#: a guess. A trailing zone offset (`-0400`, `+02:00`, a bridge's `-0400s`)
+#: lands in the `z*` groups and is *applied to a clock*, where `Z` is a
+#: no-op; on a date-only value it is a calendar label and moves nothing --
+#: which is also what a four-digit tail after a bare date reads as.
+#:
 #: One source string for both engines: `re` reads a value, RE2 reads a column,
 #: and the two are contracted to agree like every other pattern in this package.
 STAMP_PATTERN = (
     r"^[ \t]*(?:(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?"
-    r"(?:[-T ]?(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?"
+    r"(?:[-T ]?(?P<hour>\d{2})(?::(?P<minute>\d{2})(?::(?P<second>\d{2}))?|(?P<compact>\d{4}))"
     r"(?:\.(?P<fraction>\d{1,9}))?)?"
-    r"[ \t]*Z?[ \t]*$"
+    r"[ \t]*(?:Z|(?P<zsign>[+-])(?P<zhour>\d{2}):?(?P<zminute>\d{2})s?)?[ \t]*$"
 )
 _STAMP = re.compile(STAMP_PATTERN, re.ASCII)
 _FULL_STAMP_PATTERN = r"^[0-9]{8}-[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?$"
@@ -316,9 +325,11 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
     match = _STAMP.match(text)
     if match is None:
         return None
-    year, month, dayof, hour, minute, second, fraction = match.group(
-        "year", "month", "day", "hour", "minute", "second", "fraction"
+    year, month, dayof, hour, minute, second, compact, fraction = match.group(
+        "year", "month", "day", "hour", "minute", "second", "compact", "fraction"
     )
+    if compact:
+        minute, second = compact[:2], compact[2:]
     if year is None and hour is None:
         return None
     if year is None:
@@ -329,7 +340,13 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
         except ValueError:
             return None
         base = (ordinal - EPOCH_ORDINAL) * _A_DAY
+    offset = _zone_offset(match)
+    if offset is None:
+        return None
     if hour is None:
+        # A zone suffix on a date names the calendar the day is in; it moves
+        # no clock, and subtracting it would land east-of-UTC dates on the
+        # previous civil day.
         return base
     hours, minutes, secs = int(hour), int(minute), int(second) if second else 0
     # Range-checked, because `\d{2}` is not: `99:99:99` parsed as a shape and
@@ -340,7 +357,24 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
     # A fraction's scale is its own width: `.5` is half a second, `.000000001`
     # is one nanosecond. Padding to nine and reading it as an integer is that.
     nanos = int(fraction.ljust(9, "0")) if fraction else 0
-    return base + (hours * 3600 + minutes * 60 + secs) * NANOS + nanos
+    return base + (hours * 3600 + minutes * 60 + secs) * NANOS + nanos - offset
+
+
+def _zone_offset(match: re.Match[str]) -> int | None:
+    """A trailing zone offset in nanoseconds, zero when absent, None when absurd.
+
+    Applied, where `Z` is a no-op: `09:30:00-04:00` is 13:30 UTC. The bounds
+    are the civil ones -- no zone is more than 14 hours out -- so `-9945`
+    stays unreadable rather than becoming an instant nobody sent.
+    """
+    zsign, zhour, zminute = match.group("zsign", "zhour", "zminute")
+    if not zsign:
+        return 0
+    hours, minutes = int(zhour), int(zminute)
+    if hours > 14 or minutes > 59:
+        return None
+    seconds = hours * 3600 + minutes * 60
+    return (-seconds if zsign == "-" else seconds) * NANOS
 
 
 def scalar_fix_temporal(
@@ -421,6 +455,70 @@ def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
     if kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
         return _only(text, _DECIMAL).cast(arrow_type, safe=False)
     return text.cast(arrow_type, safe=False)
+
+
+#: The five value shapes an unregistered key still spells unambiguously.
+#: Ordered most-frequent-first as measured across three real captures; an
+#: all-digit run reads as an integer even where it could be a compact date,
+#: because an identifier is the likelier reading and the loss is one sniff.
+#: The date and time shapes are fully punctuated for the same reason: with
+#: the compact spellings already read as integers, a half-dashed or
+#: half-coloned run is a code, not a calendar.
+_COHERENT_INT = re.compile(r"-?\d+", re.ASCII)
+_COHERENT_FLOAT = re.compile(r"-?\d+\.\d+", re.ASCII)
+_COHERENT_DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})", re.ASCII)
+_COHERENT_TIME = re.compile(r"(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?", re.ASCII)
+_COHERENT_TRUE = frozenset({"true", "yes", "y"})
+_COHERENT_FALSE = frozenset({"false", "no", "n"})
+
+
+def coherent_fix_value(text: str) -> Any:
+    """The plainest typed reading of a value no dictionary explains.
+
+    The floor under registry promotion: 30.1% of parsed arguments across
+    three real captures carry a key the registry does not know, and 39.5% of
+    those values spell an integer, a float, a compact date, a clock time or a
+    boolean word unambiguously. Anything worth a real typed column should
+    still be promoted through `FixRegistry.promote_field`; this only stops
+    "unregistered" from meaning "always an untyped string" for the rest. The
+    order is fixed and first match wins; a spelling that fits none of the
+    five -- identifiers, session names, free text -- comes back untouched,
+    and so does a shape whose parts are not a real calendar day or clock.
+    """
+    if _COHERENT_INT.fullmatch(text):
+        try:
+            return int(text)
+        except ValueError:
+            # CPython caps int() parsing at 4300 digits; a run past it is an
+            # identifier or noise, and either way it reads back as the text.
+            return text
+    if _COHERENT_FLOAT.fullmatch(text):
+        parsed = float(text)
+        # float() saturates to infinity past float64 instead of raising; a
+        # spelling that wide is an identifier or noise, and either way the
+        # text is the honest answer where infinity would be a fabrication.
+        return parsed if math.isfinite(parsed) else text
+    if found := _COHERENT_DATE.fullmatch(text):
+        try:
+            return datetime.date(int(found[1]), int(found[2]), int(found[3]))
+        except ValueError:
+            return text
+    if found := _COHERENT_TIME.fullmatch(text):
+        try:
+            return datetime.time(
+                int(found[1]),
+                int(found[2]),
+                int(found[3]),
+                int((found[4] or "0").ljust(6, "0")[:6]),
+            )
+        except ValueError:
+            return text
+    folded = text.lower()
+    if folded in _COHERENT_TRUE:
+        return True
+    if folded in _COHERENT_FALSE:
+        return False
+    return text
 
 
 def _only(text: Any, pattern: str) -> Any:
@@ -575,11 +673,22 @@ def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
     date = compute.binary_join_element_wise(
         part("year", "1970"), part("month", "01"), part("day", "01"), "-"
     )
-    second = part("second", "00")
+    # A colon-free clock carries its minute and second in `compact`, whole.
+    compact = given("compact")
+    minute = compute.if_else(
+        compact,
+        compute.utf8_slice_codeunits(part("compact", "0000"), 0, 2),
+        part("minute", "00"),
+    )
+    second = compute.if_else(
+        compact,
+        compute.utf8_slice_codeunits(part("compact", "0000"), 2, 4),
+        part("second", "00"),
+    )
     leap = compute.equal(second, "60")
     clock = compute.binary_join_element_wise(
         part("hour", "00"),
-        part("minute", "00"),
+        minute,
         compute.if_else(leap, pyarrow.scalar("59"), second),
         ":",
     )
@@ -588,17 +697,40 @@ def _cast_arrow_stamp_general(text: Any, arrow_type: pyarrow.DataType) -> Any:
     # `strptime` normalizes impossible civil dates and clocks. A round trip
     # distinguishes that normalization from a value the wire actually carried.
     canonical = compute.strftime(parsed, format="%Y-%m-%dT%H:%M:%S")
+    # A trailing zone offset is applied, where `Z` is a no-op -- and bounded
+    # by the civil ones, so `-9945` stays unreadable rather than becoming an
+    # instant nobody sent.
+    zone_hours = compute.cast(part("zhour", "0"), pyarrow.int64())
+    zone_minutes = compute.cast(part("zminute", "0"), pyarrow.int64())
+    zone_ok = compute.or_(
+        compute.invert(given("zsign")),
+        compute.and_(compute.less_equal(zone_hours, 14), compute.less_equal(zone_minutes, 59)),
+    )
+    zone_seconds = compute.add(
+        compute.multiply(zone_hours, 3_600), compute.multiply(zone_minutes, 60)
+    )
+    zone_seconds = compute.if_else(
+        compute.equal(part("zsign", "+"), "-"),
+        compute.negate_checked(zone_seconds),
+        zone_seconds,
+    )
+    # A zone suffix on a date-only value names the calendar, not a clock.
+    zone_seconds = compute.if_else(given("hour"), zone_seconds, pyarrow.scalar(0, pyarrow.int64()))
     valid = compute.fill_null(
         compute.and_(
-            compute.and_(present, compute.equal(canonical, stamp)),
-            compute.or_(
-                compute.invert(given("year")),
-                compute.not_equal(part("year", "1970"), "0000"),
+            compute.and_(
+                compute.and_(present, compute.equal(canonical, stamp)),
+                compute.or_(
+                    compute.invert(given("year")),
+                    compute.not_equal(part("year", "1970"), "0000"),
+                ),
             ),
+            zone_ok,
         ),
         False,
     )
     seconds = compute.add(parsed.cast(pyarrow.int64()), compute.cast(leap, pyarrow.int64()))
+    seconds = compute.subtract(seconds, zone_seconds)
     fraction = compute.cast(compute.utf8_rpad(part("fraction", "0"), 9, "0"), pyarrow.int64())
 
     return _temporal(seconds, fraction, valid, arrow_type)

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import functools
 from collections.abc import Iterator
 from types import MappingProxyType
 from typing import Annotated, Any
+
+import pyarrow
 
 from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import scalar
@@ -167,6 +170,25 @@ class Order(MarketEvent):
 
     prev_client_order_id: Annotated[str | None, fix_tag("OrigClOrdID")] = None
     """Identifier the sender gave the version this one replaced."""
+
+    clord_link_id: Annotated[str | None, fix_tag("ClOrdLinkID")] = None
+    """Identifier linking the order versions of one intent across replace chains."""
+
+    # Bridge-rendered identities FIX never numbered: the same registry
+    # annotation, resolved through a namespace record rather than a tag.
+    parent_client_order_id: Annotated[str | None, fix_tag("ParentClOrdID")] = None
+    """Client order identity of the parent in a replace chain, where a bridge says it."""
+
+    parent_order_id: Annotated[str | None, fix_tag("ParentOrderID")] = None
+    """Venue order identity of the parent in a replace chain, where a bridge says it."""
+
+    cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", arrow_type=pyarrow.int32())] = (
+        None
+    )
+    """Why a cancel or amend was refused, in FIX's own codes; null off a reject."""
+
+    cxl_rej_response_to: Annotated[str | None, fix_tag("CxlRejResponseTo")] = None
+    """Which request a reject answers: a cancel, or a cancel/replace."""
 
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
@@ -380,6 +402,22 @@ class Execution(MarketEvent):
 
     aggressor: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
     """Whether this side took liquidity; null when the venue does not say."""
+
+    # How the trade settles. Common on real TradeCaptureReports, and money is
+    # wrong without them: a fill priced in one currency can settle in another,
+    # on a date the venue names rather than the trade's own.
+
+    settl_date: Annotated[datetime.date | None, fix_tag("SettlDate")] = None
+    """When the trade settles; null when the venue leaves it to convention."""
+
+    settl_type: Annotated[str | None, fix_tag("SettlType")] = None
+    """How the settlement date was chosen, in FIX's own codes."""
+
+    settl_currency: Annotated[str | None, fix_tag("SettlCurrency")] = None
+    """ISO 4217 currency the trade settles in, when it differs from `ccy`."""
+
+    settl_curr_fx_rate_calc: Annotated[str | None, fix_tag("SettlCurrFxRateCalc")] = None
+    """Whether the settlement FX rate multiplies or divides."""
 
     def complete_from(self, previous: Event) -> None:
         """A report completed from the one before it on the same order."""

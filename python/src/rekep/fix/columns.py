@@ -138,6 +138,32 @@ _STAMP_GROUP_FIELDS: tuple[str, ...] = (
     "NoSideTrdRegTS",
 )
 
+# Fields materialized inside the two structured instrument components -- the
+# alternative identifiers of `NoSecurityAltID <454>` and the legs of `NoLegs
+# <555>`. Declared here so each has a `DECLARATIONS` entry to annotate its
+# column with; none of them is a flat column of its own, because each belongs
+# to an entry.
+_INSTRUMENT_GROUP_FIELDS: tuple[str, ...] = (
+    "SecurityAltID",
+    "SecurityAltIDSource",
+    "NoSecurityAltID",
+    "LegSymbol",
+    "LegSecurityID",
+    "LegSecurityIDSource",
+    "LegSecurityType",
+    "LegCFICode",
+    "LegSecurityExchange",
+    "LegMaturityDate",
+    "LegMaturityMonthYear",
+    "LegStrikePrice",
+    "LegPutOrCall",
+    "LegContractMultiplier",
+    "LegCurrency",
+    "LegSide",
+    "LegRatioQty",
+    "NoLegs",
+)
+
 # FIX's documentation establishes UTC for these four timestamps.
 _STAMP_FIELDS: tuple[str, ...] = (
     "SendingTime",
@@ -184,6 +210,7 @@ _IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
     ("orig_cl_ord_id", "OrigClOrdID"),
     ("cl_ord_id", "ClOrdID"),
     ("secondary_cl_ord_id", "SecondaryClOrdID"),
+    ("cl_ord_link_id", "ClOrdLinkID"),
     ("exec_id", "ExecID"),
     ("secondary_exec_id", "SecondaryExecID"),
     ("exec_ref_id", "ExecRefID"),
@@ -212,7 +239,14 @@ IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
     (stored, name, _identifier_tag(name)) for stored, name in _IDENTIFIER_NAMES
 )
 
-_ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
+_ORDER = (
+    _SESSION_FIELDS
+    + _COMMON_FIELDS
+    + _QUOTE_FIELDS
+    + _PARTY_FIELDS
+    + _STAMP_GROUP_FIELDS
+    + _INSTRUMENT_GROUP_FIELDS
+)
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
 FIXMSG_FIELDS: Mapping[int, Field] = MappingProxyType(
     {int(member.fix["tag"]): member for member in _FIELDS}
@@ -332,6 +366,8 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
 NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
-#: The one the parsed log declares by name, kept as a name so `FixMsg.ISINCODE`
-#: can annotate itself with it.
+#: The ones the parsed log declares by name, kept as names so `FixMsg` can
+#: annotate its columns with them.
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]
+PARENT_CL_ORD_ID: Field = NAMESPACE_FIELDS["ParentClOrdID"]
+PARENT_ORDER_ID: Field = NAMESPACE_FIELDS["ParentOrderID"]

@@ -27,7 +27,9 @@ from rekep.fix.columns import (
 from rekep.fix.columns import TYPES as FLAT_TYPES
 from rekep.fix.components import (
     ComponentGroup,
+    Legs,
     Parties,
+    SecurityAltIDs,
     SideTrdRegTimestamps,
     TrdRegTimestamps,
 )
@@ -894,6 +896,8 @@ class FixCodec(Convertible):
                 "Parties": Parties,
                 "TrdRegTimestamps": TrdRegTimestamps,
                 "SideTrdRegTS": SideTrdRegTimestamps,
+                "SecurityAltID": SecurityAltIDs,
+                "Legs": Legs,
             }
         )
 

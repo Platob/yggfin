@@ -237,13 +237,19 @@ class Classified(Convertible):
             occurrences=self.count.total,
         )
 
-    def into_entry(self) -> FieldEntry:
-        """This namespaced name as the record declaring it would be."""
+    def into_entry(self, column: str = "") -> FieldEntry:
+        """This namespaced name as the record declaring it would be.
+
+        `column` names the parsed-log column the field is lifted into, for a
+        caller that already knows it; the empty default leaves the entry in
+        the pairs, completable later through `FixRegistry.promote_field`.
+        """
         return FieldEntry(
             name=self.name,
             kind="namespace",
             versions=(ANY_VERSION,),
             type="String",
+            column=column,
         )
 
 

@@ -13,8 +13,11 @@ from rekep.fields.arrays import build_list, build_map, dense_counts, interleave,
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.market.fix import (
-    EXECUTION_HANDLER,
+    _TRADE_EVIDENCE_FIELDS,
+    CANCEL_REJECT_HANDLER,
+    EXECUTION_HANDLERS,
     EXECUTION_REPORT_HANDLER,
+    EXECUTION_REQUEST_HANDLER,
     ORDER_HANDLERS,
     MarketTags,
 )
@@ -24,6 +27,7 @@ from rekep.market.orders import Execution, Order
 _REASON_FIELDS = (
     "OrdRejReason",
     "CxlRejReason",
+    "CxlRejResponseTo",
     "QuoteRejectReason",
     "ExecRestatementReason",
 )
@@ -45,6 +49,7 @@ _COMPLEX_FIELDS = (
 _READ_FIELDS = (
     "AggressorIndicator",
     "ClOrdID",
+    "ClOrdLinkID",
     "CumQty",
     "Currency",
     "CxlQty",
@@ -61,6 +66,10 @@ _READ_FIELDS = (
     "OrdType",
     "OrigClOrdID",
     "Price",
+    "SettlCurrency",
+    "SettlCurrFxRateCalc",
+    "SettlDate",
+    "SettlType",
     "Side",
     "StopPx",
     "Symbol",
@@ -79,6 +88,21 @@ _FLOAT_FIELDS = (
     "OrderQty",
     "Price",
     "StopPx",
+)
+#: Wire codes with the word spellings a bridge renders beside them, exact
+#: codes winning any collision -- the flat mirror of `from_fix`'s fallback.
+_SIDE_CODES = {**Side.worded_codes(), **Side._fix_codes()}
+_TIF_CODES = {**TimeInForce.worded_codes(), **TimeInForce._fix_codes()}
+#: Resolved component columns whose presence sends a row to the scalar
+#: translator. The regulatory clocks steer transaction time; the instrument
+#: groups feed `alt_ids` and `legs` -- their count tags in `kwargs` used to
+#: mark these rows, and the resolved column is where that presence lives now.
+#: `Parties` is deliberately absent: order and execution rows never read it.
+_COMPONENT_EXCLUSIONS = (
+    "TrdRegTimestamps",
+    "SideTrdRegTS",
+    "SecurityAltID",
+    "Legs",
 )
 
 
@@ -128,7 +152,7 @@ def flat_market_parts(
         kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REPORT_HANDLER
     )
     execution_types = tuple(
-        kind for kind, handler in tags.handlers.items() if handler == EXECUTION_HANDLER
+        kind for kind, handler in tags.handlers.items() if handler in EXECUTION_HANDLERS
     )
     supported_types = (*order_types, *report_types, *execution_types)
     if not supported_types:
@@ -138,7 +162,7 @@ def flat_market_parts(
         return None
     if any(
         (column := columns.get(name)) is not None and column.null_count < batch.num_rows
-        for name in ("TrdRegTimestamps", "SideTrdRegTS")
+        for name in _COMPONENT_EXCLUSIONS
     ):
         return None
     entries = compute.list_flatten(kwargs)
@@ -167,11 +191,7 @@ def flat_market_parts(
     symbol = values.text("Symbol", fallback="")
     if compute.any(compute.match_substring_regex(symbol, r"^[A-Za-z]{3}/[A-Za-z]{3}$")).as_py():
         return None
-    tif_text = values.text("TimeInForce")
-    expiring = compute.fill_null(
-        compute.is_in(tif_text, value_set=pyarrow.array(["6", "A"])), False
-    )
-    if compute.any(expiring, min_count=0).as_py():
+    if compute.any(_expiring_rows(values), min_count=0).as_py():
         return None
     for name in _FLOAT_FIELDS:
         value = values.number(name)
@@ -192,12 +212,21 @@ def flat_market_parts(
     order_at = compute.indices_nonzero(
         compute.is_in(msg_type, value_set=pyarrow.array((*order_types, *report_types)))
     ).cast(pyarrow.int64())
-    execution_at = compute.indices_nonzero(
-        compute.or_(
-            compute.is_in(msg_type, value_set=pyarrow.array(execution_types)),
-            report_executions,
+    execution_rows = compute.is_in(msg_type, value_set=pyarrow.array(execution_types))
+    request_types = tuple(
+        kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REQUEST_HANDLER
+    )
+    if request_types:
+        # A report request with no trade content is a query, mirroring the
+        # scalar reader: it fabricates no execution row.
+        requests = compute.is_in(msg_type, value_set=pyarrow.array(request_types))
+        execution_rows = compute.and_(
+            execution_rows,
+            compute.or_(compute.invert(requests), _trade_evidence_rows(values)),
         )
-    ).cast(pyarrow.int64())
+    execution_at = compute.indices_nonzero(compute.or_(execution_rows, report_executions)).cast(
+        pyarrow.int64()
+    )
     reports_set = pyarrow.array(report_types)
     orders = _orders(values, shared, tags, order_at, reports_set) if len(order_at) else None
     executions = (
@@ -240,7 +269,8 @@ def flat_market_positions(
             for kind, handler in tags.handlers.items()
             if (
                 (handler in ORDER_HANDLERS and kind in tags.ordered)
-                or handler in {EXECUTION_REPORT_HANDLER, EXECUTION_HANDLER}
+                or handler == EXECUTION_REPORT_HANDLER
+                or handler in EXECUTION_HANDLERS
             )
         )
         if not supported:
@@ -261,13 +291,39 @@ def flat_market_positions(
             yield where
 
 
+def _trade_evidence_rows(values: _Values) -> pyarrow.Array:
+    """Rows whose report request actually carries a trade, not just criteria."""
+    evidence = pyarrow.repeat(pyarrow.scalar(False), values.rows)
+    for name in _TRADE_EVIDENCE_FIELDS:
+        text = values.text(name)
+        evidence = compute.or_(evidence, compute.fill_null(compute.not_equal(text, ""), False))
+    return evidence
+
+
+def _expiring_rows(values: _Values) -> pyarrow.Array:
+    """Rows whose time-in-force reads an expiry the flat translation cannot.
+
+    The literal codes and their word spellings both count: a `gtd` a bridge
+    wrote out resolves to the same expiring code the scalar reader sees, and
+    a row it resolves on needs `ExpireDate <432>`/`ExpireTime <126>`, which
+    only the scalar path reads.
+    """
+    text = values.text("TimeInForce")
+    literal = compute.is_in(text, value_set=pyarrow.array(["6", "A"]))
+    worded = compute.equal(
+        _mapped(text, _TIF_CODES, TimeInForce.UNKNOWN),
+        int(TimeInForce.GTD),
+    )
+    return compute.fill_null(compute.or_(literal, worded), False)
+
+
 def _eligible_market_rows(
     columns: Mapping[str, pyarrow.Array], tags: MarketTags, rows: int
 ) -> pyarrow.Array:
     """Identify rows for which the flat translator mirrors scalar semantics."""
     eligible = pyarrow.repeat(pyarrow.scalar(True), rows)
     kwargs = columns["kwargs"]
-    for name in ("TrdRegTimestamps", "SideTrdRegTS"):
+    for name in _COMPONENT_EXCLUSIONS:
         column = columns.get(name)
         if column is not None:
             eligible = compute.and_(eligible, compute.is_null(column))
@@ -296,11 +352,7 @@ def _eligible_market_rows(
         eligible,
         compute.invert(compute.match_substring_regex(symbol, r"^[A-Za-z]{3}/[A-Za-z]{3}$")),
     )
-    expiring = compute.fill_null(
-        compute.is_in(values.text("TimeInForce"), value_set=pyarrow.array(["6", "A"])),
-        False,
-    )
-    eligible = compute.and_(eligible, compute.invert(expiring))
+    eligible = compute.and_(eligible, compute.invert(_expiring_rows(values)))
     for name in _FLOAT_FIELDS:
         value = values.number(name)
         eligible = compute.and_(eligible, compute.fill_null(compute.is_finite(value), True))
@@ -429,6 +481,20 @@ def _orders(
     )
     exec_state = shared.take(values.mapped("ExecType", tags.execution_states, State.UNKNOWN), where)
     state = compute.if_else(compute.is_in(msg_type, value_set=report_types), ord_status, state)
+    # A cancel-reject's real state is `OrdStatus <39>` -- where the order
+    # stands after the refusal -- mirroring the scalar dispatch's read.
+    reject_types = tuple(
+        kind for kind, handler in tags.handlers.items() if handler == CANCEL_REJECT_HANDLER
+    )
+    if reject_types:
+        state = compute.if_else(
+            compute.and_(
+                compute.is_in(msg_type, value_set=pyarrow.array(reject_types)),
+                compute.not_equal(ord_status, int(State.UNKNOWN)),
+            ),
+            ord_status,
+            state,
+        )
     state = compute.if_else(
         compute.equal(state, int(State.UNKNOWN)),
         shared.take(values.mapped("ExecType", tags.exec_type_fallbacks, State.UNKNOWN), where),
@@ -450,13 +516,9 @@ def _orders(
         previous,
     )
     current = compute.if_else(terminal, pyarrow.scalar(0.0), current)
-    side = shared.take(values.mapped("Side", Side._fix_codes(), Side.UNKNOWN), where)
-    kind = shared.take(
-        values.mapped("OrdType", MarketKind.fix_mapping()[40], MarketKind.UNKNOWN), where
-    )
-    tif = shared.take(
-        values.mapped("TimeInForce", TimeInForce._fix_codes(), TimeInForce.DAY), where
-    )
+    side = shared.take(values.mapped("Side", _SIDE_CODES, Side.UNKNOWN), where)
+    kind = shared.take(values.mapped("OrdType", tags.order_kinds, MarketKind.UNKNOWN), where)
+    tif = shared.take(values.mapped("TimeInForce", _TIF_CODES, TimeInForce.DAY), where)
     immediate = compute.is_in(
         tif,
         value_set=pyarrow.array([int(TimeInForce.IOC), int(TimeInForce.FOK)], pyarrow.int32()),
@@ -547,6 +609,12 @@ def _orders(
         "order_id": order_id,
         "client_order_id": client_id,
         "prev_client_order_id": previous_client_id,
+        # The reject-only columns stay null here: a row carrying either is
+        # `_REASON_FIELDS`-complex and translates through the scalar path.
+        "clord_link_id": shared.take(values.text("ClOrdLinkID"), where),
+        # Namespace identities live in their resolved columns, never as tags.
+        "parent_client_order_id": shared.take(values.text("ParentClOrdID"), where),
+        "parent_order_id": shared.take(values.text("ParentOrderID"), where),
     }
     return _batch(Order, columns, len(where))
 
@@ -565,10 +633,8 @@ def _executions(
     reported = compute.is_in(msg_type, value_set=report_types)
     unix = shared.take(shared.unix, where)
     state = shared.take(values.mapped("ExecType", tags.execution_states, State.UNKNOWN), where)
-    side = shared.take(values.mapped("Side", Side._fix_codes(), Side.UNKNOWN), where)
-    kind = shared.take(
-        values.mapped("ExecType", MarketKind.fix_mapping()[150], MarketKind.UNKNOWN), where
-    )
+    side = shared.take(values.mapped("Side", _SIDE_CODES, Side.UNKNOWN), where)
+    kind = shared.take(values.mapped("ExecType", tags.execution_kinds, MarketKind.UNKNOWN), where)
     exec_id = shared.take(values.text("ExecID"), where)
     exec_ref_id = shared.take(values.text("ExecRefID"), where)
     trade_id = shared.take(
@@ -725,6 +791,10 @@ def _executions(
         "leaves_qty": leaves,
         "vwap": vwap,
         "aggressor": aggressor,
+        "settl_date": shared.take(values.raw("SettlDate", pyarrow.date32()), where),
+        "settl_type": shared.take(values.text("SettlType"), where),
+        "settl_currency": shared.take(values.text("SettlCurrency"), where),
+        "settl_curr_fx_rate_calc": shared.take(values.text("SettlCurrFxRateCalc"), where),
     }
     return _batch(Execution, columns, rows)
 
@@ -981,8 +1051,37 @@ def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> 
     values = pyarrow.array([int(value) for value in mapping.values()], pyarrow.int32())
     if not len(keys):
         return _constant(len(source), int(default), pyarrow.int32())
+    # Trimmed like the scalar reading strips, so `"1 "` is the code it is on
+    # both paths.
+    source = compute.utf8_trim_whitespace(source)
     positions = compute.index_in(source, value_set=keys)
-    return compute.fill_null(compute.take(values, positions), int(default)).cast(pyarrow.int32())
+    found = compute.take(values, positions)
+    if found.null_count > source.null_count:
+        # A word spelling arrives in whatever case the bridge wrote. Fold the
+        # word keys once and fill only what the exact pass left behind. Only
+        # words: a one- or two-character key is a wire code, case-sensitive
+        # by the standard and read by the exact pass alone -- the same reach
+        # the scalar `_coded` lookup has. A key two words collide on is
+        # dropped rather than guessed.
+        folded: dict[str, int] = {}
+        collided: set[str] = set()
+        for key, value in mapping.items():
+            if len(key) <= 2:
+                continue
+            low = key.casefold()
+            if low in folded and folded[low] != int(value):
+                collided.add(low)
+            folded.setdefault(low, int(value))
+        for low in collided:
+            folded.pop(low, None)
+        if folded:
+            worded = compute.index_in(
+                compute.utf8_lower(compute.utf8_trim_whitespace(source)),
+                value_set=pyarrow.array(list(folded), pyarrow.string()),
+            )
+            fallback = compute.take(pyarrow.array(list(folded.values()), pyarrow.int32()), worded)
+            found = compute.coalesce(found, fallback)
+    return compute.fill_null(found, int(default)).cast(pyarrow.int32())
 
 
 def _first_nonempty(*columns: pyarrow.Array, fallback: str | None = None) -> pyarrow.Array:
