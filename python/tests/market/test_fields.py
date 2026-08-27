@@ -52,7 +52,7 @@ FLAVOURS = (
 )
 
 
-def metadata_in(data_type: pyarrow.DataType) -> list[dict[bytes, bytes]]:
+def metadata_in(dtype: pyarrow.DataType) -> list[dict[bytes, bytes]]:
     """Every nested field's metadata, at any depth.
 
     Walked rather than read off `str(type)`: Arrow does not print field
@@ -60,16 +60,16 @@ def metadata_in(data_type: pyarrow.DataType) -> list[dict[bytes, bytes]]:
     pass whether the key was stripped or not.
     """
     found = []
-    for index in range(data_type.num_fields):
-        member = data_type.field(index)
+    for index in range(dtype.num_fields):
+        member = dtype.field(index)
         found.append(dict(member.metadata or {}))
         found += metadata_in(member.type)
     return found
 
 
-def keys_in(data_type: pyarrow.DataType) -> set[bytes]:
-    """Every metadata key anywhere inside `data_type`."""
-    return {key for metadata in metadata_in(data_type) for key in metadata}
+def keys_in(dtype: pyarrow.DataType) -> set[bytes]:
+    """Every metadata key anywhere inside `dtype`."""
+    return {key for metadata in metadata_in(dtype) for key in metadata}
 
 
 @scalar
@@ -89,14 +89,14 @@ def test_an_identifier_is_a_plain_int64() -> None:
     for shape in SHAPES:
         for name in ("hash", "xhash"):
             if name in shape.into_field().names:
-                assert shape.into_field().field(name).data_type == pyarrow.int64(), shape.__name__
+                assert shape.into_field().field(name).dtype == pyarrow.int64(), shape.__name__
 
 
 def test_a_market_code_is_int32_and_not_int64() -> None:
     """The base builder takes the width of a Python int, which is twice what is needed."""
-    assert MarketFieldBuilder().data_type(State) == pyarrow.int32()
-    assert MarketFieldBuilder().data_type(Side) == pyarrow.int32()
-    assert FieldBuilder().data_type(State) == pyarrow.int64()
+    assert MarketFieldBuilder().arrow_type(State) == pyarrow.int32()
+    assert MarketFieldBuilder().arrow_type(Side) == pyarrow.int32()
+    assert FieldBuilder().arrow_type(State) == pyarrow.int64()
 
 
 def test_every_market_code_column_of_every_shape_is_int32() -> None:
@@ -104,7 +104,7 @@ def test_every_market_code_column_of_every_shape_is_int32() -> None:
     for shape in SHAPES:
         for member in shape.into_field().fields:
             if member.name in ("state", "side", "kind", "tif", "option_kind"):
-                assert member.data_type == pyarrow.int32(), f"{shape.__name__}.{member.name}"
+                assert member.dtype == pyarrow.int32(), f"{shape.__name__}.{member.name}"
 
 
 def test_the_instrument_is_one_flat_event_contract() -> None:
@@ -126,7 +126,7 @@ def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
 @pytest.mark.parametrize("flavour", FLAVOURS, ids=lambda build: build.__name__)
 def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavour) -> None:
     """Crossing every branch of the walk, which is where a kind check goes wrong."""
-    inside = flavour(Keyed.into_field().data_type)
+    inside = flavour(Keyed.into_field().dtype)
     stripped = unkeyed(inside)
     assert type(stripped) is type(inside)
     assert str(stripped).split("<", 1)[0] == str(inside).split("<", 1)[0]
@@ -135,14 +135,14 @@ def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavou
 
 
 def test_a_fixed_size_list_keeps_the_width_that_is_part_of_its_type() -> None:
-    inside = pyarrow.list_(pyarrow.field("item", Keyed.into_field().data_type), 3)
+    inside = pyarrow.list_(pyarrow.field("item", Keyed.into_field().dtype), 3)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_fixed_size_list(stripped) and stripped.list_size == 3
     assert keys_in(stripped) == {DESCRIPTION.encode()}
 
 
 def test_a_key_inside_a_map_is_stripped_on_both_halves() -> None:
-    inside = pyarrow.map_(pyarrow.string(), Keyed.into_field().data_type, keys_sorted=True)
+    inside = pyarrow.map_(pyarrow.string(), Keyed.into_field().dtype, keys_sorted=True)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_map(stripped) and stripped.keys_sorted
     assert keys_in(stripped) == {DESCRIPTION.encode()}
@@ -301,7 +301,7 @@ class Holder(MarketConvertible):
 
 def test_a_nested_shape_of_one_member_is_that_member_and_not_a_struct_of_one() -> None:
     """A struct of one is a nesting level carrying nothing, and it costs a pushdown."""
-    one = Holder.into_field().field("one").data_type
+    one = Holder.into_field().field("one").dtype
     assert isinstance(one, Newtype)
     assert one.storage_type == pyarrow.string()
     assert one.shape_name == "Ticker", "and the class it came from is still on it"
@@ -309,23 +309,21 @@ def test_a_nested_shape_of_one_member_is_that_member_and_not_a_struct_of_one() -
 
 
 def test_a_nested_shape_of_two_members_is_still_a_struct() -> None:
-    two = Holder.into_field().field("two").data_type
+    two = Holder.into_field().field("two").dtype
     assert pyarrow.types.is_struct(two) and two.num_fields == 2
 
 
 def test_the_storage_is_what_a_store_that_never_heard_of_the_extension_sees() -> None:
     """Which is why this is safe to publish: the bytes are the storage type's."""
     column = pyarrow.array(["AAPL", "MSFT"])
-    wrapped = pyarrow.ExtensionArray.from_storage(
-        Holder.into_field().field("one").data_type, column
-    )
+    wrapped = pyarrow.ExtensionArray.from_storage(Holder.into_field().field("one").dtype, column)
     assert wrapped.storage.equals(column)
     assert wrapped.type.storage_type == pyarrow.string()
 
 
 def test_a_shape_of_one_member_projected_on_its_own_is_still_a_struct() -> None:
     """The rule is about a member of something else, not about a table."""
-    assert pyarrow.types.is_struct(Ticker.into_field().data_type)
+    assert pyarrow.types.is_struct(Ticker.into_field().dtype)
     assert single_member(Ticker) == ("Ticker", str)
     assert single_member(Pair) is None
     assert single_member(str) is None

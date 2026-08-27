@@ -60,7 +60,7 @@ class ClassBuilder:
 
     def annotation(self, member: Field) -> Any:
         """The Python annotation that projects back to exactly `member`."""
-        inner = self.python_type(member.data_type, member.name)
+        inner = self.python_type(member.dtype, member.name)
         declared = self.declaration(member, inner)
         if member.nullable:
             inner = inner | None
@@ -72,40 +72,40 @@ class ClassBuilder:
         The type is only carried when inference would produce a different one:
         an `int32` has to be said, an `int64` says itself.
         """
-        inferred = FieldBuilder().field("probe", inner).data_type
+        inferred = FieldBuilder().field("probe", inner).dtype
         return Field(
-            data_type=member.data_type if inferred != member.data_type else None,
+            dtype=member.dtype if inferred != member.dtype else None,
             metadata=member.metadata,
         )
 
-    def python_type(self, data_type: pyarrow.DataType, name: str) -> Any:
+    def python_type(self, dtype: pyarrow.DataType, name: str) -> Any:
         """Plainest Python annotation for one Arrow type; exactness is the
         declaration's job."""
         kinds = pyarrow.types
-        if kinds.is_struct(data_type):
-            return self.dataclass(Field.from_data_type(data_type, name), _class_name(name))
-        if kinds.is_list(data_type) or kinds.is_large_list(data_type):
-            return list[self.annotation(Field.from_arrow_field(data_type.field(0)))]
-        if kinds.is_map(data_type):
-            key = self.python_type(data_type.key_type, f"{name}_key")
-            return dict[key, self.annotation(Field.from_arrow_field(data_type.item_field))]
-        if kinds.is_boolean(data_type):
+        if kinds.is_struct(dtype):
+            return self.dataclass(Field.from_arrow_type(dtype, name), _class_name(name))
+        if kinds.is_list(dtype) or kinds.is_large_list(dtype):
+            return list[self.annotation(Field.from_arrow_field(dtype.field(0)))]
+        if kinds.is_map(dtype):
+            key = self.python_type(dtype.key_type, f"{name}_key")
+            return dict[key, self.annotation(Field.from_arrow_field(dtype.item_field))]
+        if kinds.is_boolean(dtype):
             return bool
-        if kinds.is_integer(data_type):
+        if kinds.is_integer(dtype):
             return int
-        if kinds.is_floating(data_type):
+        if kinds.is_floating(dtype):
             return float
-        if kinds.is_decimal(data_type):
+        if kinds.is_decimal(dtype):
             return decimal.Decimal
-        if kinds.is_timestamp(data_type):
+        if kinds.is_timestamp(dtype):
             return datetime.datetime
-        if kinds.is_date(data_type):
+        if kinds.is_date(dtype):
             return datetime.date
-        if kinds.is_time(data_type):
+        if kinds.is_time(dtype):
             return datetime.time
-        if kinds.is_duration(data_type):
+        if kinds.is_duration(dtype):
             return datetime.timedelta
-        if kinds.is_binary(data_type) or kinds.is_large_binary(data_type):
+        if kinds.is_binary(dtype) or kinds.is_large_binary(dtype):
             return bytes
         return str
 

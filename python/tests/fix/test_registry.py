@@ -206,7 +206,7 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
     registry.fields("4.4")
     side = registry.field("Side", "4.4")
     assert side.name == "Side"
-    assert side.data_type == pyarrow.string(), "char projects to string"
+    assert side.dtype == pyarrow.string(), "char projects to string"
     assert side.nullable
     assert side.description == "Side of order."
     assert side.fix["type"] == "char"
@@ -216,7 +216,7 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
 
 def test_a_boolean_field_projects_to_arrow_bool(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
-    assert registry.field(43, "4.4").data_type == pyarrow.bool_()
+    assert registry.field(43, "4.4").dtype == pyarrow.bool_()
 
 
 def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) -> None:
@@ -224,7 +224,7 @@ def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) 
     registry.fields("4.4")
     maturity = registry.field(205, "4.4")
     assert maturity.name == "MaturityDay"
-    assert maturity.data_type == pyarrow.string()
+    assert maturity.dtype == pyarrow.string()
     assert maturity.fix["note"] == "no longer used", "the parenthetical is annotation, not name"
 
 
@@ -802,10 +802,10 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
 
 def test_a_scalar_is_fresh_and_an_explicit_version_stays_exact() -> None:
     registry = FixRegistry.from_builtin()
-    first = registry.scalar("Price", name="px", data_type=None)
-    second = registry.scalar("Price", name="px", data_type=None)
+    first = registry.scalar("Price", name="px", dtype=None)
+    second = registry.scalar("Price", name="px", dtype=None)
     assert first == second and first is not second
-    assert first.name == "px" and first.data_type is None and first.nullable is None
+    assert first.name == "px" and first.dtype is None and first.nullable is None
     first.fix["tag"] = "999"
     assert second.fix["tag"] == "44"
 
@@ -879,7 +879,7 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     by_tag = {field.fix["tag"]: field for field in registry.fields("4.4")}
     assert "828" not in {"43", "54", "103", "205"}, "the fixture's extra tag"
     assert by_tag["828"].name == "TrdType"
-    assert by_tag["828"].data_type == pyarrow.int32(), "typed from the spec"
+    assert by_tag["828"].dtype == pyarrow.int32(), "typed from the spec"
     assert not by_tag["828"].description, "and with no prose, because there is none"
 
 

@@ -177,7 +177,7 @@ def test_the_spec_comes_back_as_partition_keys(schema: object) -> None:
 def test_the_widths_are_the_stores_own(schema: object) -> None:
     """A field that renamed pyiceberg's widths would make every read convert."""
     built = StructField.from_iceberg_schema(schema)
-    assert built.field("symbol").data_type == pyarrow.large_string()
+    assert built.field("symbol").dtype == pyarrow.large_string()
 
 
 def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:
@@ -246,7 +246,7 @@ def test_ids_ride_under_the_protocol_prefix() -> None:
     from rekep.fields import FIELD_ID
     from rekep.iceberg.fields import PARQUET_FIELD_ID
 
-    field = Field(name="mic", data_type=pyarrow.string())
+    field = Field(name="mic", dtype=pyarrow.string())
     field.field_id = 7
     assert field.metadata[FIELD_ID] == "7"
     assert FIELD_ID == "iceberg:field_id"
@@ -275,7 +275,7 @@ def _widened(leaves: int) -> StructField:
         list(source.arrow_fields)
         + [pyarrow.field(f"pad{index}", pyarrow.int64()) for index in range(leaves - 2)]
     )
-    return StructField(name=source.name, data_type=grown, metadata=source.metadata)
+    return StructField(name=source.name, dtype=grown, metadata=source.metadata)
 
 
 def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:

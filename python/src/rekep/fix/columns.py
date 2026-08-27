@@ -176,11 +176,11 @@ _STAMP_FIELDS: tuple[str, ...] = (
 
 def _physical_type(member: Field) -> pyarrow.DataType:
     """Registry type at Iceberg width, zoned only when FIX documents UTC."""
-    data_type = member.data_type
-    if data_type is None:  # pragma: no cover - generated registry invariant
+    dtype = member.dtype
+    if dtype is None:  # pragma: no cover - generated registry invariant
         raise ValueError(f"FIX field {member.name!r} has no Arrow type")
-    if not pyarrow.types.is_timestamp(data_type):
-        return data_type
+    if not pyarrow.types.is_timestamp(dtype):
+        return dtype
     datatype = member.fix.get("type", "").strip().lower()
     documented = (member.description or "").lower()
     timezone = "UTC" if datatype.startswith("utc") or "expressed in utc" in documented else None
@@ -193,7 +193,7 @@ def _declaration(member: Field) -> Field:
     metadata["fix:name"] = member.name
     return Field(
         name=member.name,
-        data_type=_physical_type(member),
+        dtype=_physical_type(member),
         nullable=True,
         metadata=metadata,
     )
@@ -271,7 +271,7 @@ QUOTE: tuple[tuple[int, str], ...] = tuple(
 FLAT: tuple[tuple[int, str], ...] = SESSION + COMMON + QUOTE
 COLUMNS: Mapping[int, str] = MappingProxyType(dict(FLAT))
 TYPES: Mapping[int, pyarrow.DataType] = MappingProxyType(
-    {tag: DECLARATIONS[tag].data_type for tag in COLUMNS}
+    {tag: DECLARATIONS[tag].dtype for tag in COLUMNS}
 )
 TAGS: pyarrow.Array = pyarrow.array(sorted(COLUMNS), pyarrow.int32())
 QUOTE_GROUP_COUNTS: pyarrow.Array = pyarrow.array(
@@ -321,7 +321,7 @@ def _namespace_column(entry: Field) -> Field:
     """One namespaced field as the log column it is lifted into."""
     return Field(
         name=entry.fix["column"],
-        data_type=entry.data_type,
+        dtype=entry.dtype,
         nullable=True,
         metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
     )

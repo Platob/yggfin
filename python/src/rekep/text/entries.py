@@ -234,6 +234,6 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     )
     offsets = compute.take(counted, tokens.offsets)
     entries = pyarrow.StructArray.from_arrays(
-        Entry.structure_arrow(keys, values), fields=list(Entry.into_field().data_type)
+        Entry.structure_arrow(keys, values), fields=list(Entry.into_field().dtype)
     )
     return pyarrow.ListArray.from_arrays(offsets, entries, type=ENTRIES)

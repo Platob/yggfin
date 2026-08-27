@@ -95,8 +95,6 @@ def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
 ) -> None:
     """The physical UTC projection and registry timestamp types agree."""
     for tag in STAMPS:
-        assert registry.field(tag).data_type == pyarrow.timestamp("ns"), tag
-    timestamps = {
-        tag for tag, _ in FLAT if registry.field(tag).data_type == pyarrow.timestamp("ns")
-    }
+        assert registry.field(tag).dtype == pyarrow.timestamp("ns"), tag
+    timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("ns")}
     assert timestamps == STAMPS, "and every lifted timestamp is in it"

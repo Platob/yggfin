@@ -617,7 +617,7 @@ class ComponentEntry(Convertible):
         members = _component_fields(self.members, types or {}, components or {}, frozenset())
         return Field(
             name=snake_of(self.name),
-            data_type=pyarrow.struct([member.into_arrow_field() for member in members]),
+            dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
             nullable=True,
             metadata={"fix:component": self.name, "fix:version": version},
         )
@@ -705,7 +705,7 @@ def _component_fields(
             built.append(
                 Field(
                     name=snake_of(member.name),
-                    data_type=pyarrow.list_(
+                    dtype=pyarrow.list_(
                         pyarrow.field(
                             "item",
                             pyarrow.struct([one.into_arrow_field() for one in item]),
@@ -723,11 +723,11 @@ def _component_fields(
                 continue
             built.extend(_component_fields(nested.members, types, components, seen | {key}))
         else:
-            data_type = types.get(member.name) or pyarrow.string()
+            dtype = types.get(member.name) or pyarrow.string()
             built.append(
                 Field(
                     name=snake_of(member.name),
-                    data_type=data_type,
+                    dtype=dtype,
                     nullable=not member.required,
                     metadata={"fix:name": member.name},
                 )

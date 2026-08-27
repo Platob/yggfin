@@ -35,7 +35,7 @@ def test_entry_is_the_required_ordered_argument_shape() -> None:
     assert field.names == ["tag", "key", "value", "namespace", "comp"]
     assert field.field("key").nullable is False
     assert field.field("value").nullable is False
-    assert Message.into_field().field("entries").item.data_type == field.data_type
+    assert Message.into_field().field("entries").item.dtype == field.dtype
 
 
 def test_one_entry_shape_serves_storage_and_reading_alike() -> None:

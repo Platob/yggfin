@@ -1379,11 +1379,11 @@ def _datetime_micros(value: datetime.datetime) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000 + delta.microseconds
 
 
-def _zeros(count: int, data_type: pyarrow.DataType) -> pyarrow.Array:
+def _zeros(count: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     """A column of `count` zeros -- the envelope members a parsed line leaves unset.
 
     Zero and not null, because they are NOT NULL columns: what a log line does
     not have is stated, so a store never has to widen a column for it later,
     and a value repeated down a whole file encodes away to nothing on disk.
     """
-    return pyarrow.repeat(pyarrow.scalar(0, data_type), count)
+    return pyarrow.repeat(pyarrow.scalar(0, dtype), count)

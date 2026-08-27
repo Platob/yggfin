@@ -400,7 +400,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
     entry = _entry(values={"1": "One", "2": "Two"}, aliases=(Alias(name="FakeRoleCode"),))
     merged = entry.into_merged(("4.4", "4.2", "4.0"))
     assert merged.name == "FakeRole"
-    assert merged.data_type == pyarrow.int32()
+    assert merged.dtype == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
     assert merged.fix["version"] == "4.4", "the version the reading was taken from"
     assert json.loads(merged.fix["values"]) == {"1": "One", "2": "Two"}
@@ -504,6 +504,6 @@ def test_a_record_needs_at_least_one_reading() -> None:
 
 
 def test_a_field_with_no_tag_becomes_a_vendor_record() -> None:
-    member = Field(name="FAKE.CODE", data_type=pyarrow.string(), metadata={"fix:type": "String"})
+    member = Field(name="FAKE.CODE", dtype=pyarrow.string(), metadata={"fix:type": "String"})
     entry = FieldEntry.from_fields([member], [ANY_VERSION])
     assert entry.kind == NAMESPACE and entry.tag is None

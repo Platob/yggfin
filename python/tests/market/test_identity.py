@@ -289,13 +289,13 @@ PARTS: list[tuple[str, object, object, object]] = [
 ]
 
 
-@pytest.mark.parametrize("label,part,stored,data_type", PARTS, ids=[row[0] for row in PARTS])
+@pytest.mark.parametrize("label,part,stored,dtype", PARTS, ids=[row[0] for row in PARTS])
 def test_the_three_ways_a_part_arrives_all_hash_the_same(
-    label: str, part: object, stored: object, data_type: object
+    label: str, part: object, stored: object, dtype: object
 ) -> None:
     """A part is one value, whichever door it comes in by."""
     scalar = hash_of("X", part)
-    column = built("X", pyarrow.array([stored], type=data_type))[0]
+    column = built("X", pyarrow.array([stored], type=dtype))[0]
     broadcast = built("X", part)[0]
     assert scalar == column, f"{label}: the column builder disagrees"
     assert scalar == broadcast, f"{label}: a broadcast scalar disagrees"
@@ -331,11 +331,11 @@ def test_a_dictionary_column_hashes_its_values_not_its_indices() -> None:
     ]
 
 
-@pytest.mark.parametrize("data_type", [pyarrow.null(), pyarrow.int64(), pyarrow.float64()])
+@pytest.mark.parametrize("dtype", [pyarrow.null(), pyarrow.int64(), pyarrow.float64()])
 def test_null_is_absent_whatever_supported_arrow_column_carries_it(
-    data_type: pyarrow.DataType,
+    dtype: pyarrow.DataType,
 ) -> None:
-    assert built(pyarrow.array([None], type=data_type)) == [hash_of(None)]
+    assert built(pyarrow.array([None], type=dtype)) == [hash_of(None)]
 
 
 def test_an_identifier_column_can_itself_be_a_part() -> None:

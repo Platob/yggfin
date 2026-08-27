@@ -61,7 +61,7 @@ def test_a_python_int_hint_remains_int64() -> None:
     class Example:
         value: int
 
-    assert Example.into_field().field("value").data_type == pyarrow.int64()
+    assert Example.into_field().field("value").dtype == pyarrow.int64()
 
 
 def test_the_timezone_carrying_types_stay_text() -> None:
@@ -71,7 +71,7 @@ def test_the_timezone_carrying_types_stay_text() -> None:
 
 
 @pytest.mark.parametrize(
-    "data_type",
+    "dtype",
     [
         pyarrow.timestamp("ns"),
         pyarrow.timestamp("us"),
@@ -94,16 +94,16 @@ def test_the_timezone_carrying_types_stay_text() -> None:
     ],
 )
 def test_the_scalar_temporal_reader_matches_the_arrow_boundary(
-    data_type: pyarrow.DataType, text: str
+    dtype: pyarrow.DataType, text: str
 ) -> None:
-    vector = cast_arrow_fix(pyarrow.array([text]), data_type)
-    if getattr(data_type, "unit", None) == "ns":
+    vector = cast_arrow_fix(pyarrow.array([text]), dtype)
+    if getattr(dtype, "unit", None) == "ns":
         vector = pyarrow.compute.floor_temporal(vector, unit="microsecond")
         vector = vector.cast(
-            pyarrow.time64("us") if pyarrow.types.is_time(data_type) else pyarrow.timestamp("us")
+            pyarrow.time64("us") if pyarrow.types.is_time(dtype) else pyarrow.timestamp("us")
         )
     vector_value = vector[0].as_py()
-    scalar = scalar_fix_temporal(text, data_type)
+    scalar = scalar_fix_temporal(text, dtype)
 
     expected = text if vector_value is None else render_fix_value(vector_value)
     actual = text if scalar is None else render_fix_value(scalar)
@@ -123,7 +123,7 @@ def test_a_fix_field_is_a_generic_field_with_fix_metadata() -> None:
         values={"1": "Buy", "2": "Sell"},
     )
     assert built.name == "Side"
-    assert built.data_type == pyarrow.string()
+    assert built.dtype == pyarrow.string()
     assert built.nullable, "required-ness belongs to messages, not to the field"
     assert built.description == "Side of order."
     assert built.fix["tag"] == "54"
@@ -286,7 +286,7 @@ def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
 
 
 @pytest.mark.parametrize(
-    "data_type",
+    "dtype",
     [
         pyarrow.timestamp("ns"),
         pyarrow.timestamp("us"),
@@ -297,7 +297,7 @@ def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
     ],
 )
 def test_canonical_full_stamps_match_the_general_temporal_reader(
-    data_type: pyarrow.DataType,
+    dtype: pyarrow.DataType,
 ) -> None:
     canonical = [
         "19700101-00:00:00",
@@ -313,10 +313,10 @@ def test_canonical_full_stamps_match_the_general_temporal_reader(
         "20260821-23:59:61",
         None,
     ]
-    fast = cast_arrow_fix(pyarrow.array(canonical), data_type)
+    fast = cast_arrow_fix(pyarrow.array(canonical), dtype)
     # One admitted noncanonical spelling selects the general reader for its
     # whole batch, giving an independent boundary for the canonical prefix.
-    general = cast_arrow_fix(pyarrow.array([*canonical, "20260821T10:30:00"]), data_type)
+    general = cast_arrow_fix(pyarrow.array([*canonical, "20260821T10:30:00"]), dtype)
     assert fast.equals(general.slice(0, len(canonical)))
 
 
@@ -351,10 +351,10 @@ def test_a_valid_date_uses_the_destination_temporal_range() -> None:
 
 
 @pytest.mark.parametrize(
-    "data_type", [pyarrow.date32(), pyarrow.timestamp("s"), pyarrow.timestamp("us")]
+    "dtype", [pyarrow.date32(), pyarrow.timestamp("s"), pyarrow.timestamp("us")]
 )
-def test_year_zero_is_not_a_valid_fix_date(data_type: pyarrow.DataType) -> None:
-    read = cast_arrow_fix(pyarrow.array(["00000101", "00000101-00:00:00"]), data_type)
+def test_year_zero_is_not_a_valid_fix_date(dtype: pyarrow.DataType) -> None:
+    read = cast_arrow_fix(pyarrow.array(["00000101", "00000101-00:00:00"]), dtype)
     assert read.null_count == 2
 
 

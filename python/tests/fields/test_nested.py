@@ -15,8 +15,8 @@ from rekep.fields import arrays
 ENTRY = pyarrow.struct([("key", pyarrow.string()), ("value", pyarrow.int64())])
 
 
-def _shape(data_type: pyarrow.DataType, name: str = "value") -> Field:
-    return Field(name=name, data_type=data_type, nullable=True)
+def _shape(dtype: pyarrow.DataType, name: str = "value") -> Field:
+    return Field(name=name, dtype=dtype, nullable=True)
 
 
 # -- list flavours ----------------------------------------------------------
@@ -141,7 +141,7 @@ def test_a_not_null_member_may_not_come_back_holding_nulls() -> None:
     batch = pyarrow.record_batch({"message": pyarrow.array(["a", None, "c"])})
     shape = Field(
         name="row",
-        data_type=pyarrow.struct([pyarrow.field("message", pyarrow.string(), nullable=False)]),
+        dtype=pyarrow.struct([pyarrow.field("message", pyarrow.string(), nullable=False)]),
     )
     with pytest.raises(ValueError, match="not nullable and 1 of 3"):
         shape.cast_arrow_batch(batch)
@@ -152,7 +152,7 @@ def test_an_empty_map_is_not_a_map_without_the_member() -> None:
     entries = pyarrow.map_(pyarrow.string(), pyarrow.int64())
     shape = Field(
         name="row",
-        data_type=pyarrow.struct(
+        dtype=pyarrow.struct(
             [
                 pyarrow.field(
                     "attrs",
@@ -177,7 +177,7 @@ def test_a_member_added_inside_any_list_flavour_survives_a_merge(flavour) -> Non
     grown = pyarrow.struct(
         [pyarrow.field("a", pyarrow.int32()), pyarrow.field("b", pyarrow.string())]
     )
-    shape = Field(name="row", data_type=pyarrow.struct([pyarrow.field("c", flavour(small))]))
+    shape = Field(name="row", dtype=pyarrow.struct([pyarrow.field("c", flavour(small))]))
     batch = pyarrow.record_batch(
         {"c": pyarrow.array([[{"a": 1, "b": "kept"}]], type=flavour(grown))}
     )
@@ -189,7 +189,7 @@ def test_a_cast_attaches_the_comments_even_when_the_types_already_match() -> Non
     """Whether a column keeps its comment cannot depend on another column's type."""
     shape = Field(
         name="Tick",
-        data_type=pyarrow.struct(
+        dtype=pyarrow.struct(
             [pyarrow.field("v", pyarrow.int64(), metadata={"description": "the answer"})]
         ),
         metadata={"namespace": "demo"},

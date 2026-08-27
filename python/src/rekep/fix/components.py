@@ -154,7 +154,7 @@ class Leg:
 
 def _entries_type(row: type) -> pyarrow.DataType:
     """The list one component's entries land in: never a null entry, ever."""
-    return pyarrow.list_(pyarrow.field("item", row.into_field().data_type, nullable=False))
+    return pyarrow.list_(pyarrow.field("item", row.into_field().dtype, nullable=False))
 
 
 PARTIES: pyarrow.DataType = _entries_type(Party)
@@ -374,7 +374,7 @@ class ComponentGroup:
                 else compute.and_(members, compute.is_in(keys, value_set=self._tags_named(member)))
             )
             text, at = _first_for_party(values, positions, party_group, matched, party_groups)
-            target = row_field.field(column).data_type
+            target = row_field.field(column).dtype
             readable = _readable(text, target)
             lifted.append(
                 cast_arrow_fix(
@@ -396,7 +396,7 @@ class ComponentGroup:
         buffered = compute.and_(buffered, bufferable)
         buffered_party = compute.filter(party_index, buffered).cast(pyarrow.int64())
         buffer_sizes = dense_counts(buffered_party, len(party_groups))
-        buffer_type = row_field.field("buffer").data_type
+        buffer_type = row_field.field("buffer").dtype
         assert buffer_type is not None
         buffers = build_map(
             buffer_type,
@@ -705,7 +705,7 @@ class ComponentGroup:
         return pyarrow.array(sorted(found), pyarrow.int32())
 
 
-def _readable(text: Any, data_type: pyarrow.DataType) -> Any:
+def _readable(text: Any, dtype: pyarrow.DataType) -> Any:
     """Which values a column of this type can hold, as a mask over `text`.
 
     The mask and not the cast: `cast_arrow_fix` already nulls what it cannot
@@ -714,17 +714,17 @@ def _readable(text: Any, data_type: pyarrow.DataType) -> Any:
     """
     compute = pyarrow.compute
     kinds = pyarrow.types
-    if kinds.is_integer(data_type):
+    if kinds.is_integer(dtype):
         pattern = _SIGNED
-    elif kinds.is_floating(data_type) or kinds.is_decimal(data_type):
+    elif kinds.is_floating(dtype) or kinds.is_decimal(dtype):
         pattern = _DECIMAL
-    elif kinds.is_temporal(data_type):
+    elif kinds.is_temporal(dtype):
         # The cast itself, not its pattern: the reader range-checks what the
         # shape alone admits -- an absurd clock, an impossible zone -- and a
         # gate that answered from the shape would mark such text readable,
         # project the null the cast makes of it, and drop the text nobody
         # can then explain.
-        return compute.is_valid(cast_arrow_fix(text, data_type))
+        return compute.is_valid(cast_arrow_fix(text, dtype))
     else:
         return compute.is_valid(text)
     return compute.fill_null(compute.match_substring_regex(text, pattern), False)

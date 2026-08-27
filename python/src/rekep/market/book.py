@@ -112,7 +112,7 @@ class Book(MarketEvent):
     prev_bid_qty: float | None = None
     """Best-bid quantity on the preceding book version."""
 
-    bid_depth: Annotated[int, Field(data_type=pyarrow.int32())] = 0
+    bid_depth: Annotated[int, Field(dtype=pyarrow.int32())] = 0
     """How many levels are live on the buy side."""
 
     ask_px: float | None = None
@@ -127,7 +127,7 @@ class Book(MarketEvent):
     prev_ask_qty: float | None = None
     """Best-offer quantity on the preceding book version."""
 
-    ask_depth: Annotated[int, Field(data_type=pyarrow.int32())] = 0
+    ask_depth: Annotated[int, Field(dtype=pyarrow.int32())] = 0
     """How many levels are live on the sell side."""
 
     bid_levels: list[Level] = dataclasses.field(default_factory=list)

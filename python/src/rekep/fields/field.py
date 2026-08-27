@@ -76,7 +76,7 @@ _DOCUMENT_KEYS = frozenset(
 )
 
 #: The declaration; everything else a field holds is derived from these.
-DECLARED = ("name", "data_type", "nullable", "metadata")
+DECLARED = ("name", "dtype", "nullable", "metadata")
 
 _DERIVED = (
     "fields",
@@ -149,7 +149,7 @@ class Field(Convertible):
                 Field: "field",
                 pyarrow.Schema: "arrow_schema",
                 pyarrow.Field: "arrow_field",
-                pyarrow.DataType: "data_type",
+                pyarrow.DataType: "arrow_type",
                 # Last, so every narrower key wins: a class declares its own
                 # shape, and anything else lands in `from_class`'s refusal.
                 object: "class",
@@ -168,25 +168,25 @@ class Field(Convertible):
     _parent = None
 
     name: str = ""
-    data_type: pyarrow.DataType | None = None
+    dtype: pyarrow.DataType | None = None
     nullable: bool | None = None
     metadata: Mapping[str, str] | None = None
 
     def __new__(
         cls,
         name: str = "",
-        data_type: pyarrow.DataType | None = None,
+        dtype: pyarrow.DataType | None = None,
         nullable: bool | None = None,
         metadata: Mapping[str, str] | None = None,
     ) -> Field:
-        """Redirect to the subclass `data_type` calls for.
+        """Redirect to the subclass `dtype` calls for.
 
         Declared here rather than in a factory so that every path that builds a
         field -- `Field(...)`, `from_arrow_field`, `from_dict`, a builder --
         lands on the right class without any of them having to know the rule.
         Asking for a subclass explicitly is honoured as written.
         """
-        return object.__new__(_class_for(data_type) if cls is Field else cls)
+        return object.__new__(_class_for(dtype) if cls is Field else cls)
 
     def __post_init__(self) -> None:
         """Normalise metadata to a plain `str -> str` dict, never None.
@@ -364,7 +364,7 @@ class Field(Convertible):
         """Combine two declarations, letting `other` win where it says anything."""
         return Field(
             name=other.name or self.name,
-            data_type=other.data_type if other.data_type is not None else self.data_type,
+            dtype=other.dtype if other.dtype is not None else self.dtype,
             nullable=other.nullable if other.nullable is not None else self.nullable,
             metadata={**self.metadata, **other.metadata},
         )
@@ -389,7 +389,7 @@ class Field(Convertible):
         if isinstance(extra, Field):
             return extra
         if isinstance(extra, pyarrow.DataType):
-            return cls(data_type=extra)
+            return cls(dtype=extra)
         if isinstance(extra, Mapping):
             return cls(metadata=extra)
         if isinstance(extra, str):
@@ -489,15 +489,15 @@ class Field(Convertible):
         """Take an Arrow field as it stands, metadata decoded."""
         return Field(
             name=source.name,
-            data_type=source.type,
+            dtype=source.type,
             nullable=source.nullable,
             metadata=decoded(source.metadata),
         )
 
     @classmethod
-    def from_data_type(cls, source: pyarrow.DataType, name: str = "") -> Field:
+    def from_arrow_type(cls, source: pyarrow.DataType, name: str = "") -> Field:
         """An Arrow type as a field, non-nullable and undocumented."""
-        return Field(name=name, data_type=source, nullable=False)
+        return Field(name=name, dtype=source, nullable=False)
 
     @classmethod
     def from_arrow_schema(cls, source: pyarrow.Schema, name: str | None = None) -> StructField:
@@ -510,7 +510,7 @@ class Field(Convertible):
         metadata = decoded(source.metadata)
         return Field(
             name=name or metadata.pop(NAME, ""),
-            data_type=pyarrow.struct(list(source)),
+            dtype=pyarrow.struct(list(source)),
             nullable=False,
             metadata=metadata,
         )
@@ -524,7 +524,7 @@ class Field(Convertible):
             metadata[DESCRIPTION] = described
         return Field(
             name=mapping.get(NAME, ""),
-            data_type=cls._type_of(mapping),
+            dtype=cls._type_of(mapping),
             nullable=bool(mapping.get("nullable", False)),
             metadata=metadata,
         )
@@ -573,11 +573,11 @@ class Field(Convertible):
     @functools.cached_property
     def arrow_field(self) -> pyarrow.Field:
         """This field as Arrow's own, built once per declaration."""
-        if self.data_type is None:
+        if self.dtype is None:
             raise TypeError(f"field {self.name!r} has no Arrow type to convert")
         return pyarrow.field(
             self.name,
-            self.data_type,
+            self.dtype,
             nullable=bool(self.nullable),
             metadata=dict(self.metadata) or None,
         )
@@ -586,11 +586,11 @@ class Field(Convertible):
         """This field as Arrow's own, unstated nullability reading NOT NULL."""
         return self.arrow_field
 
-    def into_data_type(self) -> pyarrow.DataType:
+    def into_arrow_type(self) -> pyarrow.DataType:
         """This field's Arrow type."""
-        if self.data_type is None:
+        if self.dtype is None:
             raise TypeError(f"field {self.name!r} has no Arrow type to convert")
-        return self.data_type
+        return self.dtype
 
     def into_arrow_schema(self) -> pyarrow.Schema:
         """This field as a schema of one column."""
@@ -644,7 +644,7 @@ class Field(Convertible):
 
     def kind(self) -> str:
         """How `into_dict` names this field's type."""
-        return str(self.data_type)
+        return str(self.dtype)
 
     def nested(self) -> dict[str, Any]:
         """What `into_dict` says about what is inside this field; nothing here."""
@@ -694,11 +694,11 @@ class Field(Convertible):
         if isinstance(array, pyarrow.ChunkedArray):
             return pyarrow.chunked_array(
                 [self.cast_arrow_array(chunk, safe=safe) for chunk in array.chunks],
-                type=self.data_type,
+                type=self.dtype,
             )
-        if array.type == self.data_type:
+        if array.type == self.dtype:
             return array
-        return array.cast(self.data_type, safe=safe)
+        return array.cast(self.dtype, safe=safe)
 
 
 # -- containers -------------------------------------------------------------
@@ -715,7 +715,7 @@ class ListField(Field):
     @functools.cached_property
     def item(self) -> Field:
         """What one element of the list is, as a field of its own."""
-        return self._member_of(self.data_type.field(0))
+        return self._member_of(self.dtype.field(0))
 
     @property
     def fields(self) -> tuple[Field, ...]:
@@ -726,7 +726,7 @@ class ListField(Field):
         return pyarrow.list_(item)
 
     def _member_changed(self, member: Field) -> None:
-        self.data_type = self.with_item(member.into_arrow_field())
+        self.dtype = self.with_item(member.into_arrow_field())
 
     def kind(self) -> str:
         return "list"
@@ -739,7 +739,7 @@ class ListField(Field):
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """Cast the values, then cut them back into rows of this flavour."""
-        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.data_type:
+        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.dtype:
             return super().cast_arrow_array(array, safe=safe)
         if pyarrow.types.is_struct(array.type):
             columns = [
@@ -748,7 +748,7 @@ class ListField(Field):
             ]
             values, _ = arrays.interleave(columns, len(array))
             sizes = arrays.repeat_sizes(len(columns), len(array))
-            return arrays.build_list(self.data_type, sizes, values, arrays.null_mask(array))
+            return arrays.build_list(self.dtype, sizes, values, arrays.null_mask(array))
         source = array.type
         if not _is_list_like(source):
             return super().cast_arrow_array(array, safe=safe)
@@ -765,14 +765,14 @@ class ListField(Field):
             return False
         views = kinds.is_list_view(array.type) or kinds.is_large_list_view(array.type)
         return not views or arrays.list_type_like(array.type, self.item.into_arrow_field()) == (
-            self.data_type
+            self.dtype
         )
 
     def _rebuilt(self, array: Any, *, safe: bool) -> Any:
         """Cut the rows again, from the sizes: right for any layout at all."""
         sizes, values = arrays.list_parts(array)
         return arrays.build_list(
-            self.data_type,
+            self.dtype,
             sizes,
             self.item.cast_arrow_array(values, safe=safe),
             arrays.null_mask(array),
@@ -796,13 +796,13 @@ class ListField(Field):
             self.item.cast_arrow_array(array.values, safe=safe),
             arrays.null_mask(array),
         )
-        if middle == self.data_type:
+        if middle == self.dtype:
             return wrapped
         try:
-            return wrapped.cast(self.data_type, safe)
+            return wrapped.cast(self.dtype, safe)
         except pyarrow.ArrowNotImplementedError:
             # A flavour Arrow will not cast between at all: cut the rows again.
-            return type(self)(name=self.name, data_type=self.data_type)._rebuilt(wrapped, safe=True)
+            return type(self)(name=self.name, dtype=self.dtype)._rebuilt(wrapped, safe=True)
 
 
 class LargeListField(ListField):
@@ -841,7 +841,7 @@ class FixedSizeListField(ListField):
     @property
     def list_size(self) -> int:
         """How many elements every row holds."""
-        return self.data_type.list_size
+        return self.dtype.list_size
 
     def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
         return pyarrow.list_(item, self.list_size)
@@ -860,12 +860,12 @@ class MapField(Field):
     @functools.cached_property
     def key(self) -> Field:
         """The key half of one entry."""
-        return self._member_of(self.data_type.key_field)
+        return self._member_of(self.dtype.key_field)
 
     @functools.cached_property
     def value(self) -> Field:
         """The value half of one entry."""
-        return self._member_of(self.data_type.item_field)
+        return self._member_of(self.dtype.item_field)
 
     @property
     def fields(self) -> tuple[Field, ...]:
@@ -874,7 +874,7 @@ class MapField(Field):
     def _member_changed(self, member: Field) -> None:
         halves = {"key": self.key, "value": self.value}
         halves[member.name if member.name in halves else "value"] = member
-        self.data_type = pyarrow.map_(
+        self.dtype = pyarrow.map_(
             halves["key"].into_arrow_field(), halves["value"].into_arrow_field()
         )
 
@@ -888,7 +888,7 @@ class MapField(Field):
         dump that left it out read back as a map a cast would refuse.
         """
         described: dict[str, Any] = {}
-        if self.data_type.keys_sorted:
+        if self.dtype.keys_sorted:
             described["keys_sorted"] = True
         described["key"] = _anonymous(self.key)
         described["value"] = _anonymous(self.value)
@@ -906,7 +906,7 @@ class MapField(Field):
         two-member structs** is already a map physically, so its halves are
         cast and rebuilt.
         """
-        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.data_type:
+        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.dtype:
             return super().cast_arrow_array(array, safe=safe)
         if pyarrow.types.is_struct(array.type):
             return self._from_struct(array, safe=safe)
@@ -918,7 +918,7 @@ class MapField(Field):
             # the builder a slice of the offsets buffer, which Arrow refuses
             # beside a validity mask. Cutting the entries again works for both.
             return arrays.rewrap_map(
-                self.data_type,
+                self.dtype,
                 array,
                 self.key.cast_arrow_array(array.keys, safe=safe),
                 self.value.cast_arrow_array(array.items, safe=safe),
@@ -932,7 +932,7 @@ class MapField(Field):
             )
         halves = list(arrays.struct_columns(entries).values())
         return arrays.build_map(
-            self.data_type,
+            self.dtype,
             sizes,
             self.key.cast_arrow_array(halves[0], safe=safe),
             self.value.cast_arrow_array(halves[1], safe=safe),
@@ -947,19 +947,19 @@ class MapField(Field):
             # what Arrow infers from a column of empty dictionaries, and what
             # the general path below cannot build, having nothing to lay out.
             return arrays.build_map(
-                self.data_type,
+                self.dtype,
                 arrays.repeat_sizes(0, len(array)),
-                pyarrow.array([], self.data_type.key_type),
-                pyarrow.array([], self.data_type.item_type),
+                pyarrow.array([], self.dtype.key_type),
+                pyarrow.array([], self.dtype.item_type),
                 arrays.null_mask(array),
             )
         values, member = arrays.interleave(
             [self.value.cast_arrow_array(column, safe=safe) for column in columns.values()],
             len(array),
         )
-        keys = arrays.names_array(list(columns), member, self.key.data_type)
+        keys = arrays.names_array(list(columns), member, self.key.dtype)
         sizes = arrays.repeat_sizes(len(columns), len(array))
-        return arrays.build_map(self.data_type, sizes, keys, values, arrays.null_mask(array))
+        return arrays.build_map(self.dtype, sizes, keys, values, arrays.null_mask(array))
 
 
 class StructField(Field):
@@ -996,10 +996,8 @@ class StructField(Field):
         changes, and each member is a live view of this struct, so setting
         something on one rebuilds this field around it.
         """
-        data_type = self.data_type
-        return tuple(
-            self._member_of(data_type.field(index)) for index in range(data_type.num_fields)
-        )
+        dtype = self.dtype
+        return tuple(self._member_of(dtype.field(index)) for index in range(dtype.num_fields))
 
     @functools.cached_property
     def _by_name(self) -> dict[str, Field]:
@@ -1073,7 +1071,7 @@ class StructField(Field):
             }
             if current != dict(ordered):
                 self.metadata = _without(self.metadata, SORT_ORDER)
-        self.data_type = pyarrow.struct(
+        self.dtype = pyarrow.struct(
             [
                 (member if other.name == member.name else other).into_arrow_field()
                 for other in self.fields
@@ -1172,7 +1170,7 @@ class StructField(Field):
         (Arrow's `map_lookup`, one pass per member), and a **list** by
         position, so `list[a, b]` fills the first two members.
         """
-        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.data_type:
+        if isinstance(array, pyarrow.ChunkedArray) or array.type == self.dtype:
             return super().cast_arrow_array(array, safe=safe)
         column_of = self._column_of(array)
         if column_of is None:
@@ -1235,7 +1233,7 @@ class StructField(Field):
                     )
                 columns.append(cast)
             elif member.nullable:
-                columns.append(pyarrow.nulls(length, member.data_type))
+                columns.append(pyarrow.nulls(length, member.dtype))
             else:
                 raise ValueError(
                     f"column {self._path(member.name)!r} is missing and not nullable, so it "
@@ -1510,26 +1508,26 @@ _KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
 )
 
 
-def _class_for(data_type: pyarrow.DataType | None) -> type[Field]:
-    """The `Field` subclass that speaks for `data_type`."""
-    if data_type is None:
+def _class_for(dtype: pyarrow.DataType | None) -> type[Field]:
+    """The `Field` subclass that speaks for `dtype`."""
+    if dtype is None:
         return Field
     for matches, name in _KINDS:
-        if matches(data_type):
+        if matches(dtype):
             return globals()[name]
     return Field
 
 
-def _is_list_like(data_type: pyarrow.DataType) -> bool:
-    """Whether rows of `data_type` are runs of values: any list flavour, or a map."""
+def _is_list_like(dtype: pyarrow.DataType) -> bool:
+    """Whether rows of `dtype` are runs of values: any list flavour, or a map."""
     kinds = pyarrow.types
     return bool(
-        kinds.is_list(data_type)
-        or kinds.is_large_list(data_type)
-        or kinds.is_list_view(data_type)
-        or kinds.is_large_list_view(data_type)
-        or kinds.is_fixed_size_list(data_type)
-        or kinds.is_map(data_type)
+        kinds.is_list(dtype)
+        or kinds.is_large_list(dtype)
+        or kinds.is_list_view(dtype)
+        or kinds.is_large_list_view(dtype)
+        or kinds.is_fixed_size_list(dtype)
+        or kinds.is_map(dtype)
     )
 
 

@@ -152,22 +152,22 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     """The other half of a mislabel: the right tag on a column of the wrong type."""
     if member.fix.get("kind") == "namespace":
         declared = NAMESPACE_FIELDS[member.fix["name"]]
-        assert member.data_type == declared.data_type, path
+        assert member.dtype == declared.dtype, path
         return
     datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "")
     expected = arrow_type_of(datatype)
-    if member.data_type == expected:
+    if member.dtype == expected:
         return
     narrowed = NARROWED.get(datatype.lower())
-    assert narrowed is not None and member.data_type == narrowed, (
-        f"{path} is {member.data_type} where FIX {datatype!r} is {expected}"
+    assert narrowed is not None and member.dtype == narrowed, (
+        f"{path} is {member.dtype} where FIX {datatype!r} is {expected}"
     )
 
 
 def test_an_int32_narrowing_is_explicit_for_its_fix_datatype() -> None:
     """Every narrowed protocol value must be named in the compatibility table."""
     for path, member in DECLARED:
-        if member.data_type != pyarrow.int32():
+        if member.dtype != pyarrow.int32():
             continue
         datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "").lower()
         assert datatype in NARROWED, f"{path} narrowed a FIX {datatype!r}"
@@ -192,7 +192,7 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
     """`ClOrdID` on an order and on an execution must be one column, not two."""
     by_name: dict[str, set[tuple[str, Any]]] = {}
     for _, member in DECLARED:
-        by_name.setdefault(member.fix["name"], set()).add((member.name, member.data_type))
+        by_name.setdefault(member.fix["name"], set()).add((member.name, member.dtype))
     for name, spellings in by_name.items():
         if name == "Symbol":
             assert spellings == {("symbol", pyarrow.string())}, (

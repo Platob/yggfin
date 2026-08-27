@@ -103,7 +103,7 @@ def load(arguments: argparse.Namespace) -> int:
     schema = shape.into_arrow_schema()
     print(f"{shape.name or '<unnamed>'}: {len(schema.names)} columns, builds")
     for member in getattr(shape, "fields", ()):
-        print(f"  {member.name}: {member.data_type}{_marks(member)}")
+        print(f"  {member.name}: {member.dtype}{_marks(member)}")
     if isinstance(shape, StructField):
         print(f"  primary keys: {shape.primary_keys() or '-'}")
         print(f"  partition keys: {shape.partition_keys() or '-'}")

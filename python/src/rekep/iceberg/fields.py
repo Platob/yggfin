@@ -199,8 +199,8 @@ def _has_ids(field: pyarrow.Field) -> bool:
     """Whether `field` and everything under it carries an Iceberg column id."""
     if PARQUET_FIELD_ID not in (field.metadata or {}):
         return False
-    data_type = field.type
-    return all(_has_ids(data_type.field(index)) for index in range(data_type.num_fields))
+    dtype = field.type
+    return all(_has_ids(dtype.field(index)) for index in range(dtype.num_fields))
 
 
 def _documented(schema: pyarrow.Schema) -> pyarrow.Schema:
@@ -224,19 +224,17 @@ def _document(field: pyarrow.Field) -> pyarrow.Field:
     )
 
 
-def _document_type(data_type: pyarrow.DataType) -> pyarrow.DataType:
+def _document_type(dtype: pyarrow.DataType) -> pyarrow.DataType:
     kinds = pyarrow.types
-    if kinds.is_struct(data_type):
-        return pyarrow.struct(
-            [_document(data_type.field(index)) for index in range(data_type.num_fields)]
-        )
-    if kinds.is_list(data_type):
-        return pyarrow.list_(_document(data_type.field(0)))
-    if kinds.is_large_list(data_type):
-        return pyarrow.large_list(_document(data_type.field(0)))
-    if kinds.is_map(data_type):
-        return pyarrow.map_(_document(data_type.key_field), _document(data_type.item_field))
-    return data_type
+    if kinds.is_struct(dtype):
+        return pyarrow.struct([_document(dtype.field(index)) for index in range(dtype.num_fields)])
+    if kinds.is_list(dtype):
+        return pyarrow.list_(_document(dtype.field(0)))
+    if kinds.is_large_list(dtype):
+        return pyarrow.large_list(_document(dtype.field(0)))
+    if kinds.is_map(dtype):
+        return pyarrow.map_(_document(dtype.key_field), _document(dtype.item_field))
+    return dtype
 
 
 def _described(schema: pyarrow.Schema) -> pyarrow.Schema:
@@ -257,19 +255,17 @@ def _describe(field: pyarrow.Field) -> pyarrow.Field:
     )
 
 
-def _describe_type(data_type: pyarrow.DataType) -> pyarrow.DataType:
+def _describe_type(dtype: pyarrow.DataType) -> pyarrow.DataType:
     kinds = pyarrow.types
-    if kinds.is_struct(data_type):
-        return pyarrow.struct(
-            [_describe(data_type.field(index)) for index in range(data_type.num_fields)]
-        )
-    if kinds.is_list(data_type):
-        return pyarrow.list_(_describe(data_type.field(0)))
-    if kinds.is_large_list(data_type):
-        return pyarrow.large_list(_describe(data_type.field(0)))
-    if kinds.is_map(data_type):
-        return pyarrow.map_(_describe(data_type.key_field), _describe(data_type.item_field))
-    return data_type
+    if kinds.is_struct(dtype):
+        return pyarrow.struct([_describe(dtype.field(index)) for index in range(dtype.num_fields)])
+    if kinds.is_list(dtype):
+        return pyarrow.list_(_describe(dtype.field(0)))
+    if kinds.is_large_list(dtype):
+        return pyarrow.large_list(_describe(dtype.field(0)))
+    if kinds.is_map(dtype):
+        return pyarrow.map_(_describe(dtype.key_field), _describe(dtype.item_field))
+    return dtype
 
 
 #: How many **leaf** columns Iceberg collects bounds for by default, in
@@ -298,51 +294,49 @@ def metrics_for(source: StructField) -> dict[str, str]:
         **source.sort_keys(),
         **dict.fromkeys(source.primary_keys(), ""),
     }
-    properties = {
-        f"{COLUMN_METRICS}.{name}": _mode(source.field(name).data_type) for name in declared
-    }
-    counted = len(_leaves(source.data_type))
+    properties = {f"{COLUMN_METRICS}.{name}": _mode(source.field(name).dtype) for name in declared}
+    counted = len(_leaves(source.dtype))
     if counted > DEFAULT_INFERRED:
         properties[INFERRED_METRICS] = str(min(counted, MAX_INFERRED))
     return properties
 
 
-def _mode(data_type: pyarrow.DataType) -> str:
-    """The metrics mode a column of `data_type` is worth collecting under.
+def _mode(dtype: pyarrow.DataType) -> str:
+    """The metrics mode a column of `dtype` is worth collecting under.
 
     A bound on a long string is the string, in every manifest entry that names
     the file; sixteen characters is Iceberg's own default and prunes a prefix
     filter just as well. Anything fixed-width is cheap enough to keep whole.
     """
     kinds = pyarrow.types
-    if kinds.is_string(data_type) or kinds.is_large_string(data_type):
+    if kinds.is_string(dtype) or kinds.is_large_string(dtype):
         return "truncate(16)"
-    if kinds.is_binary(data_type) or kinds.is_large_binary(data_type):
+    if kinds.is_binary(dtype) or kinds.is_large_binary(dtype):
         return "truncate(16)"
     return "full"
 
 
-def _leaves(data_type: pyarrow.DataType) -> list[str]:
-    """Every leaf of `data_type`, in the pre-order Iceberg counts in.
+def _leaves(dtype: pyarrow.DataType) -> list[str]:
+    """Every leaf of `dtype`, in the pre-order Iceberg counts in.
 
     A list contributes its item's leaves and a map its key and value, which is
     what makes a nested member expensive against a budget it can never benefit
     from: Iceberg collects no bounds for a field under a repeated one.
     """
     kinds = pyarrow.types
-    if kinds.is_struct(data_type):
+    if kinds.is_struct(dtype):
         found: list[str] = []
-        for index in range(data_type.num_fields):
-            member = data_type.field(index)
+        for index in range(dtype.num_fields):
+            member = dtype.field(index)
             found += _under(member.name, member.type)
         return found
-    if kinds.is_list(data_type) or kinds.is_large_list(data_type):
-        return _under("item", data_type.field(0).type)
-    if kinds.is_map(data_type):
-        return _under("key", data_type.key_type) + _under("value", data_type.item_type)
+    if kinds.is_list(dtype) or kinds.is_large_list(dtype):
+        return _under("item", dtype.field(0).type)
+    if kinds.is_map(dtype):
+        return _under("key", dtype.key_type) + _under("value", dtype.item_type)
     return [""]
 
 
-def _under(name: str, data_type: pyarrow.DataType) -> list[str]:
-    """`_leaves` of `data_type`, each spelled below `name`."""
-    return [f"{name}.{one}" if one else name for one in _leaves(data_type)]
+def _under(name: str, dtype: pyarrow.DataType) -> list[str]:
+    """`_leaves` of `dtype`, each spelled below `name`."""
+    return [f"{name}.{one}" if one else name for one in _leaves(dtype)]

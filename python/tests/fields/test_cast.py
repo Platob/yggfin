@@ -17,7 +17,7 @@ class Tick(Convertible):
     symbol: str
     """Instrument."""
 
-    size: Annotated[int, Field(data_type=pyarrow.int32())]
+    size: Annotated[int, Field(dtype=pyarrow.int32())]
     """Quantity, narrow on purpose."""
 
     day: datetime.date
@@ -337,18 +337,18 @@ def venue(**members: pyarrow.DataType) -> pyarrow.DataType:
 
 def test_an_array_that_already_matches_is_handed_back() -> None:
     array = pyarrow.array([1, 2], type=pyarrow.int32())
-    assert Field(name="size", data_type=pyarrow.int32()).cast_arrow_array(array) is array
+    assert Field(name="size", dtype=pyarrow.int32()).cast_arrow_array(array) is array
 
 
 def test_a_leaf_array_is_cast() -> None:
     array = pyarrow.array([2**40], type=pyarrow.int64())
-    cast = Field(name="size", data_type=pyarrow.int32()).cast_arrow_array(array)
+    cast = Field(name="size", dtype=pyarrow.int32()).cast_arrow_array(array)
     assert cast.type == pyarrow.int32(), "unsafe by default, like every other cast here"
 
 
 def test_a_chunked_array_is_cast_chunk_by_chunk() -> None:
     chunked = pyarrow.chunked_array([[1, 2], [3]], type=pyarrow.int64())
-    cast = Field(name="size", data_type=pyarrow.int32()).cast_arrow_array(chunked)
+    cast = Field(name="size", dtype=pyarrow.int32()).cast_arrow_array(chunked)
     assert isinstance(cast, pyarrow.ChunkedArray)
     assert cast.num_chunks == 2, "the chunking survives; a column is never materialised whole"
     assert cast.type == pyarrow.int32()
@@ -362,7 +362,7 @@ def test_a_struct_array_is_cast_member_by_member() -> None:
     )
     target = Field(
         name="venue",
-        data_type=pyarrow.struct(
+        dtype=pyarrow.struct(
             [
                 pyarrow.field("mic", pyarrow.string(), nullable=False),
                 pyarrow.field("size", pyarrow.int32()),
@@ -371,7 +371,7 @@ def test_a_struct_array_is_cast_member_by_member() -> None:
         nullable=True,
     )
     cast = target.cast_arrow_array(array)
-    assert cast.type == target.data_type
+    assert cast.type == target.dtype
     assert cast.to_pylist() == [{"mic": "XPAR", "size": None}, None], "the null row stays null"
 
 
@@ -379,7 +379,7 @@ def test_a_missing_non_nullable_member_names_its_path() -> None:
     array = pyarrow.array([{"mic": "XPAR"}], type=venue(mic=pyarrow.string()))
     target = Field(
         name="venue",
-        data_type=pyarrow.struct(
+        dtype=pyarrow.struct(
             [("mic", pyarrow.string()), pyarrow.field("desk", pyarrow.string(), nullable=False)]
         ),
     )
@@ -392,9 +392,9 @@ def test_a_list_of_structs_casts_its_item() -> None:
         [[{"mic": "XPAR"}], None, []], type=pyarrow.list_(venue(mic=pyarrow.string()))
     )
     item = pyarrow.struct([("mic", pyarrow.large_string()), ("desk", pyarrow.string())])
-    target = Field(name="legs", data_type=pyarrow.list_(pyarrow.field("item", item)), nullable=True)
+    target = Field(name="legs", dtype=pyarrow.list_(pyarrow.field("item", item)), nullable=True)
     cast = target.cast_arrow_array(array)
-    assert cast.type == target.data_type
+    assert cast.type == target.dtype
     assert cast.to_pylist() == [[{"mic": "XPAR", "desk": None}], None, []]
 
 
@@ -405,11 +405,11 @@ def test_a_map_casts_both_halves() -> None:
     )
     target = Field(
         name="tags",
-        data_type=pyarrow.map_(pyarrow.large_string(), venue(n=pyarrow.int32())),
+        dtype=pyarrow.map_(pyarrow.large_string(), venue(n=pyarrow.int32())),
         nullable=True,
     )
     cast = target.cast_arrow_array(array)
-    assert cast.type == target.data_type
+    assert cast.type == target.dtype
     assert cast.to_pylist() == [[("a", {"n": 1})], None]
 
 
@@ -420,10 +420,10 @@ def test_the_recursion_agrees_with_arrows_own_cast() -> None:
     )
     target = Field(
         name="legs",
-        data_type=pyarrow.list_(pyarrow.field("item", venue(mic=pyarrow.large_string()))),
+        dtype=pyarrow.list_(pyarrow.field("item", venue(mic=pyarrow.large_string()))),
         nullable=True,
     )
-    assert target.cast_arrow_array(array).equals(array.cast(target.data_type))
+    assert target.cast_arrow_array(array).equals(array.cast(target.dtype))
 
 
 # -- tables -----------------------------------------------------------------
@@ -508,7 +508,7 @@ def test_merge_with_takes_whatever_names_a_shape() -> None:
     other = pyarrow.schema([("symbol", pyarrow.large_string()), ("desk", pyarrow.string())])
     for source in (other, Field.from_arrow_schema(other), Tick):
         merged = Tick.into_field().merge_with(source)
-        assert merged.field("symbol").data_type == pyarrow.string(), "this field's type wins"
+        assert merged.field("symbol").dtype == pyarrow.string(), "this field's type wins"
         assert "size" in merged.names
 
 
@@ -521,10 +521,10 @@ def test_merge_with_adds_what_the_other_has() -> None:
 
 def test_merge_with_an_arrow_field_directly() -> None:
     venue = pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.string()))
-    target = Field(name="venue", data_type=struct_of(mic=pyarrow.large_string()))
+    target = Field(name="venue", dtype=struct_of(mic=pyarrow.large_string()))
     merged = target.merge_with_arrow_field(venue)
     assert merged.names == ["mic", "desk"]
-    assert merged.field("mic").data_type == pyarrow.large_string(), "this field's type wins"
+    assert merged.field("mic").dtype == pyarrow.large_string(), "this field's type wins"
 
 
 def test_merge_with_recurses_into_a_member() -> None:

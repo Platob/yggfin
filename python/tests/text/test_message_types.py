@@ -271,4 +271,4 @@ def test_empty_input_keeps_the_declared_column_types() -> None:
 
     assert found["etype"].type == pyarrow.int32()
     assert found["MsgType"].type == pyarrow.string()
-    assert found["entries"].type == Message.into_field().field("entries").data_type
+    assert found["entries"].type == Message.into_field().field("entries").dtype

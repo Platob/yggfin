@@ -107,9 +107,7 @@ class Event(MarketConvertible):
     # against 93 over 168 hourly partitions, 27 against 164 over 336.
     unix_partition: Annotated[
         int,
-        Field.partition_key(
-            data_type=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION
-        ),
+        Field.partition_key(dtype=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION),
     ] = 0
     """`unix`'s hour boundary in whole epoch seconds; the partition value."""
 
@@ -143,7 +141,7 @@ class Event(MarketConvertible):
     xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linked_events: Annotated[list[tuple[int, int]], Field(data_type=_LINKED_EVENTS_TYPE)] = (
+    linked_events: Annotated[list[tuple[int, int]], Field(dtype=_LINKED_EVENTS_TYPE)] = (
         dataclasses.field(default_factory=list)
     )
     """Related event times and lifecycle identities, primary match first."""
@@ -157,7 +155,7 @@ class Event(MarketConvertible):
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    codes: Annotated[dict[str, str], Field(data_type=CODES_TYPE)] = dataclasses.field(
+    codes: Annotated[dict[str, str], Field(dtype=CODES_TYPE)] = dataclasses.field(
         default_factory=dict
     )
     """Every other identifier the source spelled, by the name that carried it."""
@@ -361,7 +359,7 @@ class Event(MarketConvertible):
         floating = tuple(
             member.name
             for member in cls.into_field().fields
-            if member.name in names and pyarrow.types.is_floating(member.data_type)
+            if member.name in names and pyarrow.types.is_floating(member.dtype)
         )
         return operator.attrgetter(*names), operator.attrgetter(*floating) if floating else None
 
@@ -859,7 +857,7 @@ class MarketEvent(Event):
         field = cls.into_field()
         if not len(events):
             return pyarrow.RecordBatch.from_arrays(
-                [pyarrow.array([], type=member.data_type) for member in field.fields],
+                [pyarrow.array([], type=member.dtype) for member in field.fields],
                 schema=field.into_arrow_schema(),
             )
         projected = struct_columns(events)

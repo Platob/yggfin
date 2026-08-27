@@ -182,16 +182,16 @@ def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
 
 def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
     ccy = MarketEvent.into_field().field("ccy")
-    assert ccy.nullable and ccy.data_type == pyarrow.int32()
+    assert ccy.nullable and ccy.dtype == pyarrow.int32()
     assert ccy.fix["name"] == "Currency" and ccy.fix["tag"] == "15"
     assert ccy.fix["type"] == "Currency", "the newest reading, and 4.0's char is collapsed"
     assert json.loads(ccy.fix["versions"])[0] == "5.0.SP2"
-    assert MarketEvent.into_field().field("px_unit").data_type == pyarrow.string()
+    assert MarketEvent.into_field().field("px_unit").dtype == pyarrow.string()
 
 
 def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
     link = Execution.into_field().field("linked_events")
-    assert link.data_type.equals(
+    assert link.dtype.equals(
         pyarrow.list_(
             pyarrow.field(
                 "item",
@@ -211,7 +211,7 @@ def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
     assert (
         Execution.into_field()
         .field("parent_hash")
-        .data_type.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
+        .dtype.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
     )
 
 
@@ -230,9 +230,7 @@ def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
     assert "bid" not in names and "ask" not in names, "the sides are columns, not structs"
     for side in ("bid", "ask"):
         assert {f"{side}_px", f"{side}_qty", f"{side}_depth", f"{side}_levels"} <= names
-        assert Book.into_field().field(f"{side}_levels").item.data_type == (
-            Level.into_field().data_type
-        )
+        assert Book.into_field().field(f"{side}_levels").item.dtype == (Level.into_field().dtype)
     assert not names & {"bid_hash", "ask_hash", "bid_total_qty", "ask_total_qty", "micro_px"}
     assert {"vwap", "exec_px", "prev_exec_px"} <= names
     assert {"deltas", "executions", "bid_alive", "ask_alive"} <= names
@@ -250,7 +248,7 @@ def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:
 
 def test_a_level_is_not_an_event_because_it_has_no_life_of_its_own() -> None:
     assert "hash" not in Level.into_field().names
-    assert Level.into_field().field("px").data_type == pyarrow.float64()
+    assert Level.into_field().field("px").dtype == pyarrow.float64()
     assert not Level.into_field().field("px").nullable
     assert not Level.into_field().field("qty").nullable, "zero quantity marks a deletion"
 
@@ -258,8 +256,8 @@ def test_a_level_is_not_an_event_because_it_has_no_life_of_its_own() -> None:
 def test_the_metadata_map_keeps_what_the_venue_sent_in_order() -> None:
     """A struct would need the keys known in advance, and a venue does not agree."""
     carried = MarketEvent.into_field().field("metadata")
-    assert pyarrow.types.is_map(carried.data_type)
-    assert carried.key.data_type == pyarrow.string()
+    assert pyarrow.types.is_map(carried.dtype)
+    assert carried.key.dtype == pyarrow.string()
 
 
 #: Iceberg collects column bounds for this many **leaf** columns, in pre-order:
@@ -310,25 +308,25 @@ FILTERED = {
 }
 
 
-def leaves(data_type: pyarrow.DataType, prefix: str = "") -> list[str]:
-    """Every leaf column of `data_type`, in the pre-order Iceberg counts in."""
+def leaves(dtype: pyarrow.DataType, prefix: str = "") -> list[str]:
+    """Every leaf column of `dtype`, in the pre-order Iceberg counts in."""
     kinds = pyarrow.types
-    if kinds.is_struct(data_type):
+    if kinds.is_struct(dtype):
         found: list[str] = []
-        for index in range(data_type.num_fields):
-            member = data_type.field(index)
+        for index in range(dtype.num_fields):
+            member = dtype.field(index)
             found += leaves(member.type, f"{prefix}{member.name}.")
         return found
-    if kinds.is_list(data_type) or kinds.is_large_list(data_type):
-        return leaves(data_type.field(0).type, f"{prefix}item.") or [f"{prefix}item"]
-    if kinds.is_map(data_type):
+    if kinds.is_list(dtype) or kinds.is_large_list(dtype):
+        return leaves(dtype.field(0).type, f"{prefix}item.") or [f"{prefix}item"]
+    if kinds.is_map(dtype):
         return [f"{prefix}key", f"{prefix}value"]
     return [prefix.rstrip(".")]
 
 
 def test_the_leaf_walk_finds_the_nesting_it_is_supposed_to() -> None:
     """Otherwise the budget test below passes by counting too few columns."""
-    counted = leaves(Book.into_field().data_type)
+    counted = leaves(Book.into_field().dtype)
     assert len(counted) > 60, "a book is wide, or this walk is wrong"
     assert "bid_levels.item.px" in counted, "the walk reached inside a list of structs"
     assert "instrument" not in Book.into_field().names and "metadata.key" in counted
@@ -341,7 +339,7 @@ def test_every_column_a_reader_filters_on_is_inside_the_metrics_budget(
     shape: type, names: tuple[str, ...]
 ) -> None:
     """A filter column past the cutoff prunes nothing and looks like it works."""
-    counted = leaves(shape.into_field().data_type)
+    counted = leaves(shape.into_field().dtype)
     for name in names:
         assert name in counted, f"{shape.__name__} has no leaf {name}"
         assert counted.index(name) + 1 <= METRICS_BUDGET, (

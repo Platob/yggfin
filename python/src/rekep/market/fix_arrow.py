@@ -409,16 +409,16 @@ class _Values:
         self.residual = FieldAccess.first_arrow_fields(entries, requested, rows)
         self._cache: dict[tuple[str, str], pyarrow.Array] = {}
 
-    def raw(self, name: str, data_type: pyarrow.DataType) -> pyarrow.Array:
-        key = (name, str(data_type))
+    def raw(self, name: str, dtype: pyarrow.DataType) -> pyarrow.Array:
+        key = (name, str(dtype))
         found = self._cache.get(key)
         if found is not None:
             return found
         available = []
         for column in (self.columns.get(name), self.residual.get(name)):
             if column is not None:
-                available.append(cast_arrow_fix(column, data_type))
-        found = compute.coalesce(*available) if available else pyarrow.nulls(self.rows, data_type)
+                available.append(cast_arrow_fix(column, dtype))
+        found = compute.coalesce(*available) if available else pyarrow.nulls(self.rows, dtype)
         self._cache[key] = found
         return found
 
@@ -581,9 +581,7 @@ def _orders(
         "eunix": eunix,
         "hash": event_hash,
         "xhash": xhash,
-        "linked_events": _empty_lists(
-            len(where), Order.into_field().field("linked_events").data_type
-        ),
+        "linked_events": _empty_lists(len(where), Order.into_field().field("linked_events").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
@@ -695,15 +693,15 @@ def _executions(
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
     linked_values = pyarrow.StructArray.from_arrays(
         [compute.filter(order_unix, reported), compute.filter(order_xhash, reported)],
-        fields=list(Execution.into_field().field("linked_events").data_type.value_type),
+        fields=list(Execution.into_field().field("linked_events").dtype.value_type),
     )
     linked = build_list(
-        Execution.into_field().field("linked_events").data_type,
+        Execution.into_field().field("linked_events").dtype,
         linked_sizes,
         linked_values,
     )
     parent = build_list(
-        Execution.into_field().field("parent_hash").data_type,
+        Execution.into_field().field("parent_hash").dtype,
         linked_sizes,
         compute.filter(order_hash, reported),
     )
@@ -1027,8 +1025,8 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
         parents = compute.take(parents, order)
         keys = compute.take(keys, order)
         items = compute.take(items, order)
-    data_type = Order.into_field().field("metadata").data_type
-    return build_map(data_type, dense_counts(parents, rows), keys, items)
+    dtype = Order.into_field().field("metadata").dtype
+    return build_map(dtype, dense_counts(parents, rows), keys, items)
 
 
 def _currencies(source: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -1104,16 +1102,16 @@ def _nonnegative(column: pyarrow.Array) -> pyarrow.Array:
     )
 
 
-def _empty_lists(rows: int, data_type: pyarrow.DataType) -> pyarrow.Array:
+def _empty_lists(rows: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     return build_list(
-        data_type,
+        dtype,
         pyarrow.repeat(pyarrow.scalar(0, pyarrow.int64()), rows),
-        pyarrow.array([], type=data_type.value_type),
+        pyarrow.array([], type=dtype.value_type),
     )
 
 
-def _constant(rows: int, value: Any, data_type: pyarrow.DataType) -> pyarrow.Array:
-    return pyarrow.repeat(pyarrow.scalar(value, data_type), rows)
+def _constant(rows: int, value: Any, dtype: pyarrow.DataType) -> pyarrow.Array:
+    return pyarrow.repeat(pyarrow.scalar(value, dtype), rows)
 
 
 def _batch(

@@ -32,7 +32,7 @@ class MarketFieldBuilder(FieldBuilder):
             return pyarrow.int32()
         return super().scalar(annotation)
 
-    def data_type(self, annotation: Any) -> pyarrow.DataType:
+    def arrow_type(self, annotation: Any) -> pyarrow.DataType:
         """A member's type, with the keys stripped from anything nested inside it.
 
         Only members reach here -- a class projected as a whole goes through
@@ -41,8 +41,8 @@ class MarketFieldBuilder(FieldBuilder):
         """
         single = single_member(annotation)
         if single is not None:
-            return Newtype(self.data_type(single[1]), single[0])
-        return unkeyed(super().data_type(annotation))
+            return Newtype(self.arrow_type(single[1]), single[0])
+        return unkeyed(super().arrow_type(annotation))
 
     def field(self, name: str, annotation: Any, *, description: str | None = None) -> Field:
         """One member, with what its enum means written into the schema beside it."""
@@ -73,7 +73,7 @@ class MarketConvertible(Convertible):
         return tuple(
             member.name
             for member in cls.into_field().fields
-            if pyarrow.types.is_floating(member.data_type)
+            if pyarrow.types.is_floating(member.dtype)
         )
 
     def normalize_float_members(self) -> None:
@@ -86,29 +86,27 @@ class MarketConvertible(Convertible):
 
 def fix_tag(name: str, **declared: Any) -> Field:
     """A model annotation backed by the packaged FIX registry."""
-    registry = FixRegistry.from_builtin().scalar(name, data_type=None)
+    registry = FixRegistry.from_builtin().scalar(name, dtype=None)
     return registry.merge(Field(**declared))
 
 
-def unkeyed(data_type: pyarrow.DataType) -> pyarrow.DataType:
-    """`data_type` with every nested primary and partition key declaration dropped."""
+def unkeyed(dtype: pyarrow.DataType) -> pyarrow.DataType:
+    """`dtype` with every nested primary and partition key declaration dropped."""
     kinds = pyarrow.types
-    if kinds.is_struct(data_type):
-        return pyarrow.struct(
-            [_unkeyed(data_type.field(index)) for index in range(data_type.num_fields)]
-        )
-    if kinds.is_map(data_type):
+    if kinds.is_struct(dtype):
+        return pyarrow.struct([_unkeyed(dtype.field(index)) for index in range(dtype.num_fields)])
+    if kinds.is_map(dtype):
         return pyarrow.map_(
-            _unkeyed(data_type.key_field),
-            _unkeyed(data_type.item_field),
-            keys_sorted=data_type.keys_sorted,
+            _unkeyed(dtype.key_field),
+            _unkeyed(dtype.item_field),
+            keys_sorted=dtype.keys_sorted,
         )
-    if kinds.is_fixed_size_list(data_type):
-        return pyarrow.list_(_unkeyed(data_type.field(0)), data_type.list_size)
+    if kinds.is_fixed_size_list(dtype):
+        return pyarrow.list_(_unkeyed(dtype.field(0)), dtype.list_size)
     for matches, build in _LISTS:
-        if matches(data_type):
-            return build(_unkeyed(data_type.field(0)))
-    return data_type
+        if matches(dtype):
+            return build(_unkeyed(dtype.field(0)))
+    return dtype
 
 
 # -- helpers ----------------------------------------------------------------

@@ -505,9 +505,9 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     # The dictionary's own slips (`Quantity`, `Day`, `Stirng`) are older
     # versions' spellings, and a record keeps the newest -- which is the
     # correct one in each case, and never a string standing in for a number.
-    assert registry.field("RatioQty", "4.3").data_type == pyarrow.float64()
-    assert registry.field("MaturityDay", "4.1").data_type == pyarrow.int64()
-    assert registry.field("LegFutSettDate", "4.3").data_type == pyarrow.date32()
+    assert registry.field("RatioQty", "4.3").dtype == pyarrow.float64()
+    assert registry.field("MaturityDay", "4.1").dtype == pyarrow.int64()
+    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.date32()
 
 
 # -- the second source --------------------------------------------------------
