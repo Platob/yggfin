@@ -209,3 +209,87 @@ def test_the_selectors_and_the_shapes_are_checked() -> None:
         txhash.h64_arrow_arrays(batch.column("unix"), pyarrow.array(["only-one"]))
     with pytest.raises(TypeError, match="clock column"):
         txhash.h64_arrow_arrays(pyarrow.array([1.5]), pyarrow.array(["x"]))
+
+
+# -- one hundred and twenty-eight bits wide ----------------------------------
+
+
+def test_the_wide_couple_is_exact_and_reversible() -> None:
+    value = txhash.h128(1_700_000_000_000_000, b"payload")
+    assert txhash.micros_of(value) == 1_700_000_000_000_000
+    assert txhash.digest64_of(value) == xxhash.xxh64_intdigest(b"payload")
+    assert value == txhash.couple128(1_700_000_000_000_000, txhash.digest64_of(value))
+    assert value < 10**38, "and it fits the decimal a column stores it in"
+
+
+def test_the_wide_couple_orders_by_time_first() -> None:
+    assert txhash.h128(1, b"zzz") < txhash.h128(2, b"aaa")
+    assert txhash.couple128(-1, txhash.DIGEST64_MASK) < txhash.couple128(0, 0)
+
+
+def test_a_wide_clock_or_digest_out_of_range_is_refused() -> None:
+    with pytest.raises(OverflowError, match="int64"):
+        txhash.couple128(1 << 63, 0)
+    with pytest.raises(OverflowError, match="int64"):
+        txhash.couple128(0, 1 << 64)
+
+
+def test_the_wide_kernel_matches_the_scalar_row_for_row() -> None:
+    micros = [0, 1_700_000_000_000_000, -5]
+    payloads = ["", "one", "café"]
+    hashed = txhash.h128_arrow(
+        pyarrow.array(micros, pyarrow.int64()), pyarrow.array(payloads, pyarrow.string())
+    )
+    assert hashed.type == txhash.TXHASH128
+    assert [int(one) for one in hashed.to_pylist()] == [
+        txhash.h128(tick, text) for tick, text in zip(micros, payloads, strict=True)
+    ]
+
+
+def test_the_wide_halves_come_back_out_of_a_column() -> None:
+    values = pyarrow.array([txhash.h128(100, b"a"), None], txhash.TXHASH128)
+    assert txhash.micros_arrow(values).to_pylist() == [100, None]
+    assert txhash.digest64_arrow(values).to_pylist() == [txhash.xxh64_of(b"a"), None]
+    assert txhash.micros_arrow(values).type == pyarrow.int64()
+    assert txhash.digest64_arrow(values).type == pyarrow.uint64()
+
+
+def test_a_null_on_either_side_is_a_null_wide_txhash() -> None:
+    hashed = txhash.h128_arrow(
+        pyarrow.array([1, None, 3], pyarrow.int64()), pyarrow.array(["a", "b", None])
+    )
+    assert [None if one is None else int(one) for one in hashed.to_pylist()] == [
+        txhash.h128(1, "a"),
+        None,
+        None,
+    ]
+
+
+def test_the_wide_builders_agree_across_arrays_batch_and_dataclass() -> None:
+    from rekep import Convertible, scalar
+
+    @scalar
+    class Trade(Convertible):
+        unix: datetime.datetime
+        symbol: str
+        qty: int
+
+    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    rows = [Trade(unix=when, symbol="BTC", qty=1), Trade(unix=when, symbol="ETH", qty=2)]
+    field = Trade.into_field()
+    batch = pyarrow.RecordBatch.from_arrays(
+        [
+            field.field("unix").cast_arrow_array(pyarrow.array([row.unix for row in rows])),
+            pyarrow.array([row.symbol for row in rows]),
+            field.field("qty").cast_arrow_array(pyarrow.array([row.qty for row in rows])),
+        ],
+        names=["unix", "symbol", "qty"],
+    )
+    columns = txhash.h128_arrow_arrays(
+        batch.column("unix"), batch.column("symbol"), batch.column("qty")
+    )
+    selected = txhash.h128_arrow_batch(batch, "unix", "symbol", "qty")
+    assert [int(one) for one in columns.to_pylist()] == [int(one) for one in selected.to_pylist()]
+    assert (
+        txhash.epoch_micros_arrow(batch.column("unix")).to_pylist() == [1_700_000_000_000_000] * 2
+    )
