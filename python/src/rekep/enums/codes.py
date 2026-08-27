@@ -14,38 +14,38 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from rekep.enums.ranged import AsciiInt32, AsciiInt64, Ranged
+from rekep.enums.ascii_codes import AsciiInt32, AsciiInt64
 
 
-class AssetKind(Ranged):
-    """Tradable asset kind banded by settlement."""
+class AssetKind(AsciiInt64):
+    """Tradable asset kind, banded by settlement."""
 
     UNKNOWN = 0
-    CASH = 100
-    EQUITY = 110, "E"
-    DEBT = 120, "D"
-    FUND = 130, "C"
-    CURRENCY = 140, "T"
-    COMMODITY = 150, "J"
-    INDEX = 160, "M"
-    DERIVATIVE = 200
-    FUTURE = 210, "F"
-    OPTION = 220, "O"
-    SWAP = 230, "S"
-    WARRANT = 240, "R"
-    FORWARD = 250
-    STRUCTURED = 300
-    SPREAD = 310
-    MULTILEG = 320
-    BASKET = 330
-    FINANCING = 400
-    REPO = 410
-    LOAN = 420
+    CASH = "CASH", "", 100
+    EQUITY = "EQUITY", "E", 110
+    DEBT = "DEBT", "D", 120
+    FUND = "FUND", "C", 130
+    CURRENCY = "CURRENCY", "T", 140
+    COMMODITY = "COMMDTY", "J", 150
+    INDEX = "INDEX", "M", 160
+    DERIVATIVE = "DERIV", "", 200
+    FUTURE = "FUTURE", "F", 210
+    OPTION = "OPTION", "O", 220
+    SWAP = "SWAP", "S", 230
+    WARRANT = "WARRANT", "R", 240
+    FORWARD = "FORWARD", "", 250
+    STRUCTURED = "STRUCTD", "", 300
+    SPREAD = "SPREAD", "", 310
+    MULTILEG = "MULTILEG", "", 320
+    BASKET = "BASKET", "", 330
+    FINANCING = "FINANCE", "", 400
+    REPO = "REPO", "", 410
+    LOAN = "LOAN", "", 420
 
     @property
     def is_derivative(self) -> bool:
         """Whether derivative-specific instrument fields apply."""
-        return self >= AssetKind.DERIVATIVE
+        return self.rank >= AssetKind.DERIVATIVE.rank
 
 
 class EventType(AsciiInt64):
@@ -57,8 +57,6 @@ class EventType(AsciiInt64):
     member's rank, so a kind question compares ranks and a storage scan
     filters on the finite code sets `ranked_at_least`/`ranked_below` spell.
     """
-
-    WIDTH = enum.nonmember(100)
 
     UNKNOWN = 0
     MISC = "MISC", "", 10
@@ -73,102 +71,80 @@ class EventType(AsciiInt64):
     INSTRUMENT = "INSTRMT", "", 410
 
     @property
-    def band(self) -> EventType:
-        """The band-floor member this kind's rank sits in."""
-        return type(self)._bands()[self._rank // self.WIDTH * self.WIDTH]
-
-    @classmethod
-    @functools.cache
-    def _bands(cls) -> Mapping[int, EventType]:
-        return MappingProxyType(
-            {member._rank: member for member in cls if member._rank % cls.WIDTH == 0}
-        )
-
-    @classmethod
-    def ranked_at_least(cls, floor: EventType) -> tuple[int, ...]:
-        """Stored codes ranked at or above `floor`, for a pushed scan filter."""
-        return tuple(int(member) for member in cls if member._rank >= floor._rank)
-
-    @classmethod
-    def ranked_below(cls, floor: EventType) -> tuple[int, ...]:
-        """Stored codes ranked below `floor`, for a pushed scan filter."""
-        return tuple(int(member) for member in cls if member._rank < floor._rank)
-
-    @property
     def is_snapshot(self) -> bool:
         """Whether the row is a state rather than an occurrence."""
         return self._rank >= EventType.STATE._rank
 
 
-class IdSource(Ranged):
-    """Instrument identifier scheme banded by issuer."""
+class IdSource(AsciiInt64):
+    """Instrument identifier scheme, banded by issuer."""
 
     UNKNOWN = 0
-    REGISTERED = 100
-    ISIN = 110, "4"
-    CUSIP = 120, "1"
-    SEDOL = 130, "2"
-    COMMON = 140, "G"
-    VENDOR = 200
-    RIC = 210, "5"
-    BLOOMBERG = 220, "A"
-    LOCAL = 300
-    WERTPAPIER = 310, "B"
-    DUTCH = 320, "C"
-    VALOREN = 330, "D"
-    SICOVAM = 340, "E"
-    BELGIAN = 350, "F"
-    QUIK = 360, "3"
-    VENUE = 400
-    EXCHANGE = 410, "8"
-    CTA = 420, "9"
-    OPRA = 430, "J"
-    CLEARING = 440, "H"
-    MARKETPLACE = 450, "M"
-    OTHER = 500
-    CURRENCY = 510, "6"
-    COUNTRY = 520, "7"
-    ISDA_SPEC = 530, "I"
-    ISDA_URL = 540, "K"
-    CREDIT_LETTER = 550, "L"
+    REGISTERED = "REGISTRD", "", 100
+    ISIN = "ISIN", "4", 110
+    CUSIP = "CUSIP", "1", 120
+    SEDOL = "SEDOL", "2", 130
+    COMMON = "COMMON", "G", 140
+    VENDOR = "VENDOR", "", 200
+    RIC = "RIC", "5", 210
+    BLOOMBERG = "BLOOMBRG", "A", 220
+    LOCAL = "LOCAL", "", 300
+    WERTPAPIER = "WERTPAPR", "B", 310
+    DUTCH = "DUTCH", "C", 320
+    VALOREN = "VALOREN", "D", 330
+    SICOVAM = "SICOVAM", "E", 340
+    BELGIAN = "BELGIAN", "F", 350
+    QUIK = "QUIK", "3", 360
+    VENUE = "VENUE", "", 400
+    EXCHANGE = "EXCHANGE", "8", 410
+    CTA = "CTA", "9", 420
+    OPRA = "OPRA", "J", 430
+    CLEARING = "CLEARING", "H", 440
+    MARKETPLACE = "MKTPLACE", "M", 450
+    OTHER = "OTHER", "", 500
+    CURRENCY = "CURRENCY", "6", 510
+    COUNTRY = "COUNTRY", "7", 520
+    ISDA_SPEC = "ISDASPEC", "I", 530
+    ISDA_URL = "ISDAURL", "K", 540
+    CREDIT_LETTER = "CRDTLTTR", "L", 550
 
     @property
     def is_registered(self) -> bool:
         """Whether identifiers in this scheme are globally issued."""
-        return self.band == IdSource.REGISTERED
+        return self.band is IdSource.REGISTERED
 
 
-class MarketKind(Ranged):
-    """Order pricing and execution semantics in stable bands."""
+class MarketKind(AsciiInt64):
+    """Order pricing and execution semantics, in stable bands."""
 
     UNKNOWN = 0
-    MARKET = 100
-    MARKET_ORDER = 110
-    MARKET_IF_TOUCHED = 120
-    MARKET_TO_LIMIT = 130
-    LIMIT = 200
-    LIMIT_ORDER = 210
-    LIMIT_ON_CLOSE = 220
-    LIMIT_OR_BETTER = 230
-    STOP = 300
-    STOP_ORDER = 310
-    STOP_LIMIT = 320
-    PEGGED = 400
-    PEGGED_ORDER = 410
-    PREVIOUSLY_QUOTED = 420
-    PREVIOUSLY_INDICATED = 430
-    EXECUTION = 500
-    ORDER_STATUS = 510
-    TRADE = 520
-    TRADE_CORRECT = 530
-    TRADE_CANCEL = 540
-    LOCKED = 550
-    RELEASED = 560
-    CLEARING = 600
-    CLEARING_HOLD = 610
-    RELEASED_TO_CLEARING = 620
-    ACTIVATION = 700
-    TRIGGERED = 710
+    MARKET = "MARKET", "", 100
+    MARKET_ORDER = "MKTORDER", "", 110
+    MARKET_IF_TOUCHED = "MKTIFTCH", "", 120
+    MARKET_TO_LIMIT = "MKTTOLMT", "", 130
+    LIMIT = "LIMIT", "", 200
+    LIMIT_ORDER = "LMTORDER", "", 210
+    LIMIT_ON_CLOSE = "LMTCLOSE", "", 220
+    LIMIT_OR_BETTER = "LMTBETTR", "", 230
+    STOP = "STOP", "", 300
+    STOP_ORDER = "STPORDER", "", 310
+    STOP_LIMIT = "STOPLMT", "", 320
+    PEGGED = "PEGGED", "", 400
+    PEGGED_ORDER = "PEGORDER", "", 410
+    PREVIOUSLY_QUOTED = "PREVQUOT", "", 420
+    PREVIOUSLY_INDICATED = "PREVINDC", "", 430
+    EXECUTION = "EXEC", "", 500
+    ORDER_STATUS = "ORDSTAT", "", 510
+    TRADE = "TRADE", "", 520
+    TRADE_CORRECT = "TRDCORRC", "", 530
+    TRADE_CANCEL = "TRDCANCL", "", 540
+    LOCKED = "LOCKED", "", 550
+    RELEASED = "RELEASED", "", 560
+    CLEARING = "CLEARING", "", 600
+    CLEARING_HOLD = "CLRHOLD", "", 610
+    RELEASED_TO_CLEARING = "RELTOCLR", "", 620
+    ACTIVATION = "ACTIVATN", "", 700
+    TRIGGERED = "TRIGGERD", "", 710
 
     @classmethod
     def fix_mapping(cls) -> dict[int, dict[str, MarketKind]]:
@@ -278,66 +254,73 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 }
 
 
-class OptionKind(Ranged):
+class OptionKind(AsciiInt64):
     """Option direction read from FIX `PutOrCall <201>`."""
 
     UNKNOWN = 0
-    PUT = 100, "0"
-    CALL = 200, "1"
+    PUT = "PUT", "0", 100
+    CALL = "CALL", "1", 200
 
 
-class State(Ranged):
-    """Event lifecycle ordered by completion."""
+class State(AsciiInt64):
+    """Event lifecycle, ordered by completion.
 
+    The stored value is the readable mnemonic; the completion order rides in
+    each member's rank, so "still live" and "finished" are rank questions
+    and a storage scan filters on the code sets `ranked_at_least`,
+    `ranked_below` and `ranked_between` spell.
+    """
+
+    #: The rank the terminal states begin at.
     TERMINAL = enum.nonmember(400)
 
     UNKNOWN = 0
     """Nothing has been stated."""
-    PENDING = 100
+    PENDING = "PENDING", "", 100
     """Band floor: requested but not acknowledged."""
-    PENDING_NEW = 110
+    PENDING_NEW = "PENDNEW", "", 110
     """Awaiting first venue acknowledgement."""
-    OPEN = 200
+    OPEN = "OPEN", "", 200
     """Band floor: live at the venue."""
-    NEW = 210
+    NEW = "NEW", "", 210
     """Acknowledged and working."""
-    ACCEPTED = 220
+    ACCEPTED = "ACCEPTED", "", 220
     """Accepted but not yet working."""
-    PENDING_REPLACE = 230
+    PENDING_REPLACE = "PENDRPLC", "", 230
     """Amendment pending while the original remains live."""
-    PENDING_CANCEL = 240
+    PENDING_CANCEL = "PENDCNCL", "", 240
     """Cancellation pending while the order remains live."""
-    SUSPENDED = 250
+    SUSPENDED = "SUSPEND", "", 250
     """Held by the venue and resumable."""
-    STOPPED = 260
+    STOPPED = "STOPPED", "", 260
     """Stopped at a price awaiting a trade."""
-    PARTIAL = 300
+    PARTIAL = "PARTIAL", "", 300
     """Band floor: live and partly complete."""
-    PARTIALLY_FILLED = 310
+    PARTIALLY_FILLED = "PARTFILL", "", 310
     """Some quantity traded; the rest remains live."""
-    DONE = 400
+    DONE = "DONE", "", 400
     """Band floor and first terminal state."""
-    FILLED = 410
+    FILLED = "FILLED", "", 410
     """Every share traded."""
-    DONE_FOR_DAY = 420
+    DONE_FOR_DAY = "DONEDAY", "", 420
     """Over for the session."""
-    CALCULATED = 430
+    CALCULATED = "CALCULTD", "", 430
     """Priced and closed by the venue."""
-    CLOSED = 500
+    CLOSED = "CLOSED", "", 500
     """Band floor: over without completion."""
-    CANCELLED = 510
+    CANCELLED = "CANCELED", "", 510
     """Withdrawn before completion."""
-    REPLACED = 520
+    REPLACED = "REPLACED", "", 520
     """Superseded by an amendment."""
-    EXPIRED = 530
+    EXPIRED = "EXPIRED", "", 530
     """Reached expiry while live."""
-    INTERNAL_EXPIRED = 540
+    INTERNAL_EXPIRED = "INTEXPRD", "", 540
     """Expired locally after one day without a newer observation."""
-    FAILED = 600
+    FAILED = "FAILED", "", 600
     """Band floor: refused."""
-    REJECTED = 610
+    REJECTED = "REJECTED", "", 610
     """Refused; reason fields explain why."""
-    INTERNAL_REJECTED = 620
+    INTERNAL_REJECTED = "INTREJCT", "", 620
     """Refused by this pipeline before it could change market state."""
 
     @classmethod
@@ -439,12 +422,22 @@ class State(Ranged):
     @property
     def is_live(self) -> bool:
         """Whether the event is working at the venue."""
-        return State.OPEN <= self < State.TERMINAL
+        return State.OPEN.rank <= self.rank < State.TERMINAL
 
     @property
     def is_terminal(self) -> bool:
         """Whether no further lifecycle transition is expected."""
-        return self >= State.TERMINAL
+        return self.rank >= State.TERMINAL
+
+    @classmethod
+    def live_codes(cls) -> tuple[int, ...]:
+        """Stored codes of the live states, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member.is_live)
+
+    @classmethod
+    def terminal_codes(cls) -> tuple[int, ...]:
+        """Stored codes of the terminal states, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member.is_terminal)
 
 
 class MIC(AsciiInt32):

@@ -100,9 +100,9 @@ def _quantity_transition(
         current = leaves
     elif total is not None and cumulative is not None:
         current = max(total - cumulative, 0.0)
-    elif previous is not None and last is not None and normalized >= State.PARTIAL:
+    elif previous is not None and last is not None and normalized.rank >= State.PARTIAL.rank:
         current = max(previous - last, 0.0)
-    elif total is not None and last is not None and normalized >= State.PARTIAL:
+    elif total is not None and last is not None and normalized.rank >= State.PARTIAL.rank:
         current = max(total - last, 0.0)
     elif previous is not None:
         current = previous
@@ -112,7 +112,7 @@ def _quantity_transition(
     if normalized is State.PARTIALLY_FILLED and execution_state is State.FILLED and current == 0:
         normalized = State.FILLED
 
-    if previous is None and normalized >= State.PARTIAL:
+    if previous is None and normalized.rank >= State.PARTIAL.rank:
         if leaves is not None and last is not None:
             previous = leaves + last
         elif current is not None and last is not None:

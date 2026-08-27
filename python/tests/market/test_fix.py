@@ -27,11 +27,16 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 SHAPES = (MarketEvent, Order, Execution, Book, Instrument, Level)
 
-#: FIX datatypes this package deliberately stores as a narrower or different
-#: Arrow type. A `char` enumeration becomes a banded `int32` code, and a FIX
-#: `int` that is a code or a count becomes `int32`; Currency packs its short
-#: UTF-8 code into the same width. Each remains lossless for its domain.
-NARROWED = {"char": pyarrow.int32(), "currency": pyarrow.int32(), "int": pyarrow.int32()}
+#: FIX datatypes this package deliberately stores as a different Arrow type.
+#: An enumerated `char` or `int` becomes a packed ASCII code, as wide as the
+#: enum that declares it -- four bytes for `Side`, eight for `State` -- and
+#: Currency packs its short code the same way. Each remains lossless for its
+#: domain.
+NARROWED = {
+    "char": (pyarrow.int32(), pyarrow.int64()),
+    "currency": (pyarrow.int32(),),
+    "int": (pyarrow.int32(), pyarrow.int64()),
+}
 
 
 def dictionary() -> dict[str, dict[str, Any]]:
@@ -158,8 +163,8 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     expected = arrow_type_of(datatype)
     if member.dtype == expected:
         return
-    narrowed = NARROWED.get(datatype.lower())
-    assert narrowed is not None and member.dtype == narrowed, (
+    narrowed = NARROWED.get(datatype.lower(), ())
+    assert member.dtype in narrowed, (
         f"{path} is {member.dtype} where FIX {datatype!r} is {expected}"
     )
 

@@ -10,7 +10,7 @@ from typing import Any
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.enums import AsciiInt32, Ranged
+from rekep.enums import AsciiInt32
 from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
 
@@ -27,8 +27,6 @@ class MarketFieldBuilder(FieldBuilder):
         """
         if isinstance(annotation, type) and issubclass(annotation, AsciiInt32):
             return annotation.into_arrow_type().index_type
-        if isinstance(annotation, type) and issubclass(annotation, Ranged):
-            return pyarrow.int32()
         return super().scalar(annotation)
 
     def arrow_type(self, annotation: Any) -> pyarrow.DataType:
@@ -227,8 +225,8 @@ def _values_of(indices: Any, target: pyarrow.DataType) -> Any:
     """The dictionary an array of bare indices points into.
 
     There is nothing to look them up in, so the dictionary is the indices'
-    own range: index `i` means value `i`, which is exactly true for a `Ranged`
-    code stored as itself and is the only reading that loses nothing. Built
+    own range: index `i` means value `i`, which is the only reading of bare
+    indices that loses nothing. Built
     with `cumulative_sum` over `repeat`, never a Python `range`.
     """
     compute = pyarrow.compute

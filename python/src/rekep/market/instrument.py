@@ -9,7 +9,16 @@ import re
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any
 
-from rekep.enums import AssetKind, Currency, EventType, IdSource, OptionKind, Ranged, Side, State
+from rekep.enums import (
+    AsciiInt32,
+    AssetKind,
+    Currency,
+    EventType,
+    IdSource,
+    OptionKind,
+    Side,
+    State,
+)
 from rekep.fields import Field, scalar
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import HOUR, Event
@@ -200,8 +209,8 @@ class Instrument(Event):
             if theirs in (None, "", NIL) or theirs == mine:
                 continue
             # A code that is `UNKNOWN` is not knowledge, and the zero every
-            # `Ranged` starts at is what says so.
-            if isinstance(mine, Ranged) and (not theirs or mine):
+            # stable code starts at is what says so.
+            if isinstance(mine, AsciiInt32) and (not theirs or mine):
                 continue
             if mine in (None, "", NIL) or not mine:
                 filled[name] = theirs

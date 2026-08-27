@@ -206,7 +206,7 @@ class FixMetadata(ProtocolMetadata):
         declared = self.get("states")
         if not declared:
             return {}
-        return {key: State(value) for key, value in json.loads(declared).items()}
+        return {key: State.from_stored(value) for key, value in json.loads(declared).items()}
 
     @states.setter
     def states(self, value: Mapping[str, Any] | None) -> None:

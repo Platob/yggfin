@@ -1676,7 +1676,9 @@ class BookIterator:
         )
         for key in dict.fromkeys(candidate for candidate in candidates if candidate is not None):
             order = state.reported.get(key)
-            if order is None or order.unix != execution.unix or order.state < State.PARTIAL:
+            if order is None or order.unix != execution.unix:
+                continue
+            if order.state.rank < State.PARTIAL.rank:
                 continue
             return key, order
         return None
@@ -1957,7 +1959,7 @@ class BookIterator:
             kind = getattr(event, "kind", MarketKind.UNKNOWN)
             if not event.side.sign:
                 reasons.append("side is missing")
-            price_required = kind.band == MarketKind.LIMIT or kind is MarketKind.STOP_LIMIT
+            price_required = kind.band is MarketKind.LIMIT or kind is MarketKind.STOP_LIMIT
             invalid_price = event.px is not None and not math.isfinite(event.px)
             if price_required and event.px is None or invalid_price:
                 reasons.append("required price is missing or non-finite")

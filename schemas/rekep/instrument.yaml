@@ -56,9 +56,9 @@ fields:
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
 - name: state
-  type: int32
-  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over.'
-  enum: {name: State, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":110,"F":240,"G":230,"9":0},"39":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"D":220,"E":230},"150":{"0":210,"1":310,"2":410,"3":420,"4":510,"5":520,"6":240,"7":260,"8":610,"9":250,"A":110,"B":430,"C":530,"E":230,"F":310,"G":520,"H":510},"279":{"0":210,"1":200,"2":510,"3":510,"4":510,"5":200},"297":{"0":220,"1":510,"2":510,"3":510,"4":510,"5":610,"6":510,"7":530,"9":610,"10":100,"11":510,"12":200,"13":200,"14":510,"15":510,"16":200,"17":510,"18":200,"19":240,"21":410,"22":410,"23":530},"694":{"1":410,"2":200,"3":530,"4":200,"5":510,"6":510,"7":510,"8":510,"9":200,"10":200,"11":220,"12":510}}'}
+  type: int64
+  description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
+  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","22594200592272967":"PENDING","22594200592598359":"PENDING_NEW","1330660686":"OPEN","5129559":"NEW","4702676400884434244":"ACCEPTED","5784115351773006915":"PENDING_REPLACE","5784115351521215308":"PENDING_CANCEL","23456239384350276":"SUSPENDED","23455122693571908":"STOPPED","22589819994063180":"PARTIAL","5782993918430366796":"PARTIALLY_FILLED","1146048069":"DONE","77280626623812":"FILLED","19227496004469081":"DONE_FOR_DAY","4846238526104949828":"CALCULATED","73995027432772":"CLOSED","4846240724859766084":"CANCELLED","5928232772945790276":"REPLACED","19518875243791684":"EXPIRED","5282252069763306052":"INTERNAL_EXPIRED","77246216553796":"FAILED","5928226145845921092":"REJECTED","5282252125278716756":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":22594200592598359,"F":5784115351521215308,"G":5784115351773006915,"9":0},"39":{"0":5129559,"1":5782993918430366796,"2":77280626623812,"3":19227496004469081,"4":4846240724859766084,"5":5928232772945790276,"6":5784115351521215308,"7":23455122693571908,"8":5928226145845921092,"9":23456239384350276,"A":22594200592598359,"B":4846238526104949828,"C":19518875243791684,"D":4702676400884434244,"E":5784115351773006915},"150":{"0":5129559,"1":5782993918430366796,"2":77280626623812,"3":19227496004469081,"4":4846240724859766084,"5":5928232772945790276,"6":5784115351521215308,"7":23455122693571908,"8":5928226145845921092,"9":23456239384350276,"A":22594200592598359,"B":4846238526104949828,"C":19518875243791684,"E":5784115351773006915,"F":5782993918430366796,"G":5928232772945790276,"H":4846240724859766084},"279":{"0":5129559,"1":1330660686,"2":4846240724859766084,"3":4846240724859766084,"4":4846240724859766084,"5":1330660686},"297":{"0":4702676400884434244,"1":4846240724859766084,"2":4846240724859766084,"3":4846240724859766084,"4":4846240724859766084,"5":5928226145845921092,"6":4846240724859766084,"7":19518875243791684,"9":5928226145845921092,"10":22594200592272967,"11":4846240724859766084,"12":1330660686,"13":1330660686,"14":4846240724859766084,"15":4846240724859766084,"16":1330660686,"17":4846240724859766084,"18":1330660686,"19":5784115351521215308,"21":77280626623812,"22":77280626623812,"23":19518875243791684},"694":{"1":77280626623812,"2":1330660686,"3":19518875243791684,"4":1330660686,"5":4846240724859766084,"6":4846240724859766084,"7":4846240724859766084,"8":4846240724859766084,"9":1330660686,"10":1330660686,"11":4702676400884434244,"12":4846240724859766084}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, aliases: '{"CALCULATED":"CALCULTD","CANCELLED":"CANCELED","DONE_FOR_DAY":"DONEDAY","INTERNAL_EXPIRED":"INTEXPRD","INTERNAL_REJECTED":"INTREJCT","PARTIALLY_FILLED":"PARTFILL","PENDING_CANCEL":"PENDCNCL","PENDING_NEW":"PENDNEW","PENDING_REPLACE":"PENDRPLC","SUSPENDED":"SUSPEND"}'}
 - name: code
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
@@ -94,9 +94,9 @@ fields:
   description: Ticker symbol. Common, "human understood" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
   fix: {tag: '55', type: String, version: 5.0.SP2, msgtypes: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]', components: '["Instrument"]', name: Symbol, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'}
 - name: kind
-  type: int32
+  type: int64
   description: What it settles as, read from the first character of the CFI code.
-  enum: {name: AssetKind, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'}
+  enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","1128354632":"CASH","76215625536601":"EQUITY","1145389652":"DEBT","1179995716":"FUND","4851874686865130329":"CURRENCY","18946016867013721":"COMMODITY","314845709656":"INDEX","293220796758":"DERIVATIVE","77332301042245":"FUTURE","87206430068558":"OPTION","1398227280":"SWAP","24560144796962388":"WARRANT","19790463439557188":"FORWARD","23455135661511748":"STRUCTURED","91604442759492":"SPREAD","5572444038831555911":"MULTILEG","72848337749332":"BASKET","19783848821670725":"FINANCING","1380274255":"REPO","1280262478":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}', fix_aliases: '{"C":"FUND","D":"DEBT","E":"EQUITY","F":"FUTURE","J":"COMMDTY","M":"INDEX","O":"OPTION","R":"WARRANT","S":"SWAP","T":"CURRENCY"}'}
 - name: security_id
   type: string
   nullable: true
@@ -167,10 +167,10 @@ fields:
   description: Strike Price for an Option.
   fix: {tag: '202', type: Price, version: 5.0.SP2, msgtypes: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]', components: '["Instrument"]', name: StrikePrice, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'}
 - name: option_kind
-  type: int32
+  type: int64
   description: Indicates whether an option contract is a put or call
   fix: {tag: '201', type: int, version: 5.0.SP2, values: '{"0":"Put","1":"Call"}', value_names: '{"0":"PUT","1":"CALL","2":"OTHER","3":"CHOOSER"}', msgtypes: '["IndicationofInterest","Advertisement","ExecutionReport","QuoteStatusRequest","QuoteAcknowledgement","News","SecurityDefinitionRequest","Email","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","NewOrderList","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","Allocation","ListStrikePrice","DontKnowTrade","QuoteRequest","Quote","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","QuoteCancel"]', components: '["Instrument"]', name: PutOrCall, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'}
-  enum: {name: OptionKind, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'}
+  enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5264724":"PUT","1128352844":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, fix_aliases: '{"0":"PUT","1":"CALL"}'}
 - name: label
   type: string
   nullable: true
@@ -201,9 +201,9 @@ fields:
       description: The ratio of quantity for this individual leg relative to the entire multileg security.
       fix: {tag: '623', type: float, version: 5.0.SP2, components: '["InstrumentLeg"]', name: LegRatioQty, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
     - name: kind
-      type: int32
+      type: int64
       description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`.
-      enum: {name: AssetKind, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'}
+      enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","1128354632":"CASH","76215625536601":"EQUITY","1145389652":"DEBT","1179995716":"FUND","4851874686865130329":"CURRENCY","18946016867013721":"COMMODITY","314845709656":"INDEX","293220796758":"DERIVATIVE","77332301042245":"FUTURE","87206430068558":"OPTION","1398227280":"SWAP","24560144796962388":"WARRANT","19790463439557188":"FORWARD","23455135661511748":"STRUCTURED","91604442759492":"SPREAD","5572444038831555911":"MULTILEG","72848337749332":"BASKET","19783848821670725":"FINANCING","1380274255":"REPO","1280262478":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}', fix_aliases: '{"C":"FUND","D":"DEBT","E":"EQUITY","F":"FUTURE","J":"COMMDTY","M":"INDEX","O":"OPTION","R":"WARRANT","S":"SWAP","T":"CURRENCY"}'}
     - name: security_id
       type: string
       nullable: true
@@ -251,7 +251,7 @@ fields:
       description: Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description
       fix: {tag: '612', type: Price, version: 5.0.SP2, components: '["InstrumentLeg"]', name: LegStrikePrice, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'}
     - name: option_kind
-      type: int32
+      type: int64
       description: Refer to definition of PutOrCall <201>
       fix: {tag: '1358', type: int, version: 5.0.SP2, components: '["InstrumentLeg"]', name: LegPutOrCall, versions: '["5.0.SP2","5.0.SP1"]'}
-      enum: {name: OptionKind, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'}
+      enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5264724":"PUT","1128352844":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-left, fix_aliases: '{"0":"PUT","1":"CALL"}'}

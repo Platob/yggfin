@@ -14,7 +14,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.enums import MIC, Currency, EventType, IdSource, OptionKind, Side
+from rekep.enums import MIC, AssetKind, Currency, EventType, IdSource, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -2069,9 +2069,14 @@ class _NormalizedInstrumentFields:
         )
 
 
-def _stored_code(values: pyarrow.Array) -> pyarrow.Array:
-    """A stored stable integer code, with malformed values degraded to unknown."""
-    return pyarrow.compute.fill_null(cast_arrow_fix(values, pyarrow.int32()), 0)
+def _stored_code(values: pyarrow.Array, declared: type[Any] = AssetKind) -> pyarrow.Array:
+    """A stored stable integer code, with malformed values degraded to unknown.
+
+    As wide as the code's own declaration: a column stores the width its enum
+    packs into, never a width a call site guessed.
+    """
+    stored = declared.into_arrow_type().index_type
+    return pyarrow.compute.fill_null(cast_arrow_fix(values, stored), 0)
 
 
 @functools.cache
@@ -2080,7 +2085,7 @@ def _fix_enum_arrays(enum_type: type[Any]) -> tuple[pyarrow.Array, pyarrow.Array
     declared = {spelling: int(member) for member in enum_type if (spelling := member.into_fix())}
     return (
         pyarrow.array(declared, pyarrow.string()),
-        pyarrow.array(declared.values(), pyarrow.int32()),
+        pyarrow.array(declared.values(), enum_type.into_arrow_type().index_type),
     )
 
 
@@ -2091,7 +2096,7 @@ def _fix_enum_arrow(values: pyarrow.Array, enum_type: type[Any]) -> pyarrow.Arra
     text = compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
     return compute.fill_null(
         compute.take(codes, compute.index_in(text, value_set=spellings)), 0
-    ).cast(pyarrow.int32())
+    ).cast(enum_type.into_arrow_type().index_type)
 
 
 @functools.cache

@@ -300,7 +300,9 @@ def test_market_configuration_round_trips_through_field_metadata() -> None:
     assert restored.into_dict()["event_types"] == {
         "D": {"name": "ORDER", "id": int(EventType.ORDER)}
     }
-    assert restored.into_dict()["states"] == {"D": {"name": "PENDING_NEW", "id": 110}}
+    assert restored.into_dict()["states"] == {
+        "D": {"name": "PENDING_NEW", "id": int(State.PENDING_NEW)}
+    }
     assert json.loads(metadata["states"]) == {"D": int(State.PENDING_NEW)}
 
 

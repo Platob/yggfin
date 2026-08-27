@@ -1,8 +1,8 @@
 """The codes are a contract with data already on disk, so they are pinned here.
 
-A `Ranged` value is written into a column and read back years later by a build
-that has moved on. That makes renumbering a member a silent rewrite of what
-stored rows mean -- the one failure this package's contracts exist to prevent
+A code is written into a column and read back years later by a build that
+has moved on. That makes recoding a member a silent rewrite of what stored
+rows mean -- the one failure this package's contracts exist to prevent
 -- so the table below is a literal, checked against the enum. It is meant to be
 awkward to change: adding a line is fine, editing one is a migration.
 """
@@ -13,7 +13,7 @@ import pyarrow
 import pytest
 
 import rekep.enums
-import rekep.enums.ranged as enum_module
+import rekep.enums.ascii_codes as enum_module
 from rekep.enums import (
     MIC,
     AssetKind,
@@ -22,24 +22,28 @@ from rekep.enums import (
     IdSource,
     MarketKind,
     OptionKind,
-    Ranged,
     Side,
     State,
     TimeInForce,
 )
 
-RANGED = (
+#: The vocabularies that rank their members in hundred-wide bands, so a
+#: detailed code says what it broadly means without the stored value being
+#: an ordinal.
+BANDED = (
     State,
     MarketKind,
     AssetKind,
     OptionKind,
+    IdSource,
+    EventType,
 )
 
 PACKED = (Side, TimeInForce, EventType)
 
 
 def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
-    """Two modules: `ranged` is what a code is built on, `codes` is the codes."""
+    """Two modules: `ascii_codes` is what a code is built on, `codes` is the codes."""
     codes = (
         MIC,
         AssetKind,
@@ -53,14 +57,13 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         TimeInForce,
     )
     assert {kind.__module__ for kind in codes} == {"rekep.enums.codes"}
-    assert Ranged.__module__ == "rekep.enums.ranged"
+    assert enum_module.AsciiInt32.__module__ == "rekep.enums.ascii_codes"
     assert {name for name in dir(rekep.enums) if not name.startswith("_")} == {
         *(kind.__name__ for kind in codes),
         "AsciiInt32",
         "AsciiInt64",
-        "Ranged",
+        "ascii_codes",
         "codes",
-        "ranged",
     }
 
 
@@ -180,33 +183,34 @@ def test_mic_columns_pack_in_kernels_and_keep_invalid_values_null() -> None:
     ]
 
 
-#: What `State` means on disk. Written out rather than derived, so a renumbering
-#: fails here instead of in a year's worth of stored orders.
+#: What `State` means on disk: each mnemonic as the integer of its own bytes.
+#: Written out rather than derived, so a recoding fails here instead of in a
+#: year's worth of stored orders.
 STATE_CODES = {
     "UNKNOWN": 0,
-    "PENDING": 100,
-    "PENDING_NEW": 110,
-    "OPEN": 200,
-    "NEW": 210,
-    "ACCEPTED": 220,
-    "PENDING_REPLACE": 230,
-    "PENDING_CANCEL": 240,
-    "SUSPENDED": 250,
-    "STOPPED": 260,
-    "PARTIAL": 300,
-    "PARTIALLY_FILLED": 310,
-    "DONE": 400,
-    "FILLED": 410,
-    "DONE_FOR_DAY": 420,
-    "CALCULATED": 430,
-    "CLOSED": 500,
-    "CANCELLED": 510,
-    "REPLACED": 520,
-    "EXPIRED": 530,
-    "INTERNAL_EXPIRED": 540,
-    "FAILED": 600,
-    "REJECTED": 610,
-    "INTERNAL_REJECTED": 620,
+    "PENDING": int.from_bytes(b"PENDING", "big"),
+    "PENDING_NEW": int.from_bytes(b"PENDNEW", "big"),
+    "OPEN": int.from_bytes(b"OPEN", "big"),
+    "NEW": int.from_bytes(b"NEW", "big"),
+    "ACCEPTED": int.from_bytes(b"ACCEPTED", "big"),
+    "PENDING_REPLACE": int.from_bytes(b"PENDRPLC", "big"),
+    "PENDING_CANCEL": int.from_bytes(b"PENDCNCL", "big"),
+    "SUSPENDED": int.from_bytes(b"SUSPEND", "big"),
+    "STOPPED": int.from_bytes(b"STOPPED", "big"),
+    "PARTIAL": int.from_bytes(b"PARTIAL", "big"),
+    "PARTIALLY_FILLED": int.from_bytes(b"PARTFILL", "big"),
+    "DONE": int.from_bytes(b"DONE", "big"),
+    "FILLED": int.from_bytes(b"FILLED", "big"),
+    "DONE_FOR_DAY": int.from_bytes(b"DONEDAY", "big"),
+    "CALCULATED": int.from_bytes(b"CALCULTD", "big"),
+    "CLOSED": int.from_bytes(b"CLOSED", "big"),
+    "CANCELLED": int.from_bytes(b"CANCELED", "big"),
+    "REPLACED": int.from_bytes(b"REPLACED", "big"),
+    "EXPIRED": int.from_bytes(b"EXPIRED", "big"),
+    "INTERNAL_EXPIRED": int.from_bytes(b"INTEXPRD", "big"),
+    "FAILED": int.from_bytes(b"FAILED", "big"),
+    "REJECTED": int.from_bytes(b"REJECTED", "big"),
+    "INTERNAL_REJECTED": int.from_bytes(b"INTREJCT", "big"),
 }
 
 #: The same, for the side of a market. `BID` and `ASK` are aliases and so do
@@ -258,13 +262,13 @@ def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
     assert TimeInForce.IOC < TimeInForce.SESSION <= TimeInForce.DAY < TimeInForce.RESTING
 
 
-@pytest.mark.parametrize("declared", (*RANGED, *PACKED), ids=lambda cls: cls.__name__)
+@pytest.mark.parametrize("declared", (*BANDED, *PACKED), ids=lambda cls: cls.__name__)
 def test_zero_is_unknown_everywhere(declared: type) -> None:
     """Every code column reads `0` as "nothing was said", with no exception."""
     assert declared(0).name == "UNKNOWN"
 
 
-@pytest.mark.parametrize("declared", (*RANGED, *PACKED), ids=lambda cls: cls.__name__)
+@pytest.mark.parametrize("declared", (*BANDED, *PACKED), ids=lambda cls: cls.__name__)
 def test_no_two_members_share_a_fix_character(declared: type) -> None:
     """A shared character would make `from_fix` pick one meaning and drop the other."""
     codes = [member.into_fix() for member in declared if member.into_fix()]
@@ -277,17 +281,17 @@ def test_no_two_members_share_a_fix_character(declared: type) -> None:
 FIX_CODED = (
     Side,
     TimeInForce,
-    *(ranged for ranged in RANGED if ranged not in (EventType, State)),
+    *(banded for banded in BANDED if banded not in (EventType, State, MarketKind)),
 )
 
 
-@pytest.mark.parametrize("ranged", FIX_CODED, ids=lambda cls: cls.__name__)
-def test_every_fix_character_round_trips(ranged: type[Ranged]) -> None:
+@pytest.mark.parametrize("declared", FIX_CODED, ids=lambda cls: cls.__name__)
+def test_every_fix_character_round_trips(declared: type) -> None:
     """`from_fix` is the exact inverse of `into_fix`, for every member that has one."""
-    coded = [member for member in ranged if member.into_fix()]
-    assert coded, f"{ranged.__name__} declares no FIX characters"
+    coded = [member for member in declared if member.into_fix()]
+    assert coded, f"{declared.__name__} declares no FIX characters"
     for member in coded:
-        assert ranged.from_fix(member.into_fix()) is member
+        assert declared.from_fix(member.into_fix()) is member
 
 
 def test_market_kind_fix_values_are_tag_scoped() -> None:
@@ -349,43 +353,40 @@ def test_protocol_neutral_enums_claim_no_fix_field() -> None:
     assert not any(member.into_fix() for member in EventType)
     assert not any(member.into_fix() for member in State)
     assert EventType.from_fix("0") is EventType.UNKNOWN
+    assert State.from_fix("0") is State.UNKNOWN
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
-def test_every_band_floor_is_itself_a_member(ranged: type[Ranged]) -> None:
-    """`from_code` degrades an unknown value to its band, so the band must exist."""
-    for member in ranged:
-        assert member.band in set(ranged), f"{member.name} sits in a band nothing names"
+@pytest.mark.parametrize("declared", BANDED, ids=lambda cls: cls.__name__)
+def test_every_band_floor_is_itself_a_member(declared: type) -> None:
+    """A member's band is the floor its rank sits in, so the floor must exist."""
+    for member in declared:
+        assert member.band in set(declared), f"{member.name} sits in a band nothing names"
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
-def test_nothing_reaches_into_the_private_range(ranged: type[Ranged]) -> None:
-    """Everything from `PRIVATE` up belongs to whoever runs the feed, not to us."""
-    assert max(int(member) for member in ranged) < Ranged.PRIVATE
+@pytest.mark.parametrize("declared", BANDED, ids=lambda cls: cls.__name__)
+def test_a_rank_is_a_band_offset_and_the_codes_are_unique(declared: type) -> None:
+    """Ranks order the vocabulary; the packed codes identify it."""
+    assert max(member.rank for member in declared) < enum_module.PRIVATE_RANK
+    assert len({int(member) for member in declared}) == len(list(declared))
+    for member in declared:
+        assert member.band.rank == member.rank // declared.WIDTH * declared.WIDTH
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
-def test_band_arithmetic_agrees_with_the_member(ranged: type[Ranged]) -> None:
-    """`band_of` works on a raw code and must give what the member itself says."""
-    for member in ranged:
-        assert ranged.band_of(int(member)) == member.band
+def test_a_stored_state_reads_back_from_either_generation_of_id() -> None:
+    """Ranks are the ordinals the banded release stored, so an old column still
+    names its member; a strict read of today's codes stays exact."""
+    assert State.from_stored(410) is State.FILLED
+    assert State.from_stored(int(State.FILLED)) is State.FILLED
+    assert State.from_stored(9999) is State.UNKNOWN
+    assert State.from_int(410) is State.UNKNOWN, "the strict reader answers on codes"
 
 
-def test_an_unknown_code_degrades_to_its_band_and_keeps_the_band_true() -> None:
-    """A state this build has never seen still answers "is it over?" correctly."""
-    invented = int(State.DONE) + 90  # a terminal state a later release might add
-    assert invented not in set(State)
-    assert State.from_code(invented) is State.DONE
-    assert State.from_code(invented).is_terminal
-    assert State.band_of(invented) >= State.TERMINAL
-
-
-def test_a_code_in_no_band_reads_as_unknown_rather_than_raising() -> None:
+def test_a_code_no_state_spells_reads_as_unknown_rather_than_raising() -> None:
     """A column is an integer, so a reader must survive anything that lands in it."""
-    assert State.from_code(9999) is State.UNKNOWN
-    assert State.from_code(None) is State.UNKNOWN
-    assert State.from_code("nonsense") is State.UNKNOWN
-    assert State.from_code(9999, default=State.REJECTED) is State.REJECTED
+    assert State.from_int(9999) is State.UNKNOWN
+    assert State.from_int(None) is State.UNKNOWN
+    assert State.from_int("nonsense") is State.UNKNOWN
+    assert State.from_int(9999, default=State.REJECTED) is State.REJECTED
     assert State.from_fix("~") is State.UNKNOWN
 
 
@@ -396,7 +397,10 @@ def test_the_terminal_boundary_is_crossed_from_both_sides() -> None:
     assert State.PARTIALLY_FILLED in live and State.PENDING_CANCEL in live
     assert State.FILLED in over and State.REJECTED in over and State.CANCELLED in over
     assert State.PENDING_NEW not in live and State.PENDING_NEW not in over
-    assert max(live) < State.TERMINAL <= min(over)
+    assert max(member.rank for member in live) < State.TERMINAL
+    assert State.TERMINAL <= min(member.rank for member in over)
+    assert set(State.live_codes()) == {int(member) for member in live}
+    assert set(State.terminal_codes()) == {int(member) for member in over}
 
 
 def test_a_pending_amendment_is_live_because_the_order_still_is() -> None:

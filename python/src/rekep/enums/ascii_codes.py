@@ -1,11 +1,12 @@
-"""Bases for the stable codes: banded integers, and ASCII packed into one.
+"""The base every stable code is built on: ASCII packed into one integer.
 
-Two mechanisms, and which one a code uses is a property of the code. A banded
-integer orders its members and degrades an unknown value to its band; an
-ASCII mnemonic packs a fixed width of characters -- right-justified, padded
-with leading NULs -- into the integer the column stores, so the stored
-value is readable without a lookup, exact under a pushed code-set filter,
-and a shorter code sorts before every longer one it prefixes.
+A code packs a fixed width of characters -- right-justified, padded with
+leading NULs -- into the integer the column stores, so the stored value is
+readable without a lookup and exact under a pushed code-set filter. Order
+is a separate fact: a member may declare a *rank*, and a vocabulary that
+ranks in hundred-wide bands answers "what does this broadly mean" through
+`band` and "which codes rank at least this" through `ranked_at_least`,
+without the stored value having to be an ordinal.
 """
 
 from __future__ import annotations
@@ -24,67 +25,12 @@ import pyarrow
 #: same value is the same member, bounded so a stream of junk cannot grow it
 #: without limit.
 _ASCII_REGISTERED_LIMIT = 4_096
+
+#: Where a feed's own ranks begin: everything from here up belongs to whoever
+#: runs it, so nothing this package declares may reach it.
+PRIVATE_RANK = 9_000
 _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
-
-
-class Ranged(enum.IntEnum):
-    """Banded integer code carrying its FIX character."""
-
-    WIDTH = enum.nonmember(100)
-    PRIVATE = enum.nonmember(9000)
-
-    def __new__(cls, value: int, fix_code: str = "") -> Self:
-        member = int.__new__(cls, value)
-        member._value_ = value
-        member._fix_code = fix_code
-        member._band = value // cls.WIDTH * cls.WIDTH
-        return member
-
-    @property
-    def band(self) -> int:
-        """Band floor used by range predicates."""
-        return self._band
-
-    @classmethod
-    def band_of(cls, value: int) -> int:
-        """Return a raw code's band floor."""
-        return int(value) // cls.WIDTH * cls.WIDTH
-
-    def into_fix(self) -> str:
-        """Return the FIX character, or empty when none exists."""
-        return self._fix_code
-
-    @classmethod
-    def from_code(cls, value: Any, default: Self | None = None) -> Self:
-        """Read a code, degrading unknown members to their band."""
-        try:
-            return cls(int(value))
-        except (ValueError, TypeError):
-            pass
-        try:
-            return cls(cls.band_of(value))
-        except (ValueError, TypeError):
-            return default if default is not None else cls(0)
-
-    @classmethod
-    def from_fix(cls, code: Any, default: Self | None = None) -> Self:
-        """Read a case-sensitive FIX character."""
-        member = cls._fix_codes().get(str(code).strip() if code is not None else "")
-        if member is not None:
-            return member
-        return default if default is not None else cls(0)
-
-    @classmethod
-    def _missing_(cls, value: Any) -> Self | None:
-        if isinstance(value, str):
-            return cls.__members__.get(value.strip().upper())
-        return None
-
-    @classmethod
-    @functools.cache
-    def _fix_codes(cls) -> dict[str, Self]:
-        return {member._fix_code: member for member in cls if member._fix_code}
 
 
 class AsciiInt32(enum.IntEnum):
@@ -102,6 +48,10 @@ class AsciiInt32(enum.IntEnum):
     """
 
     BYTE_WIDTH = enum.nonmember(4)
+
+    #: How wide a rank band is, for the vocabularies that declare ranks in
+    #: bands. A code that ranks itself has one band of its own.
+    WIDTH = enum.nonmember(100)
 
     def __new__(cls, value: int | str, fix_code: str = "", rank: int | None = None) -> Self:
         text = str(value).strip().upper() if isinstance(value, str) else ""
@@ -269,6 +219,43 @@ class AsciiInt32(enum.IntEnum):
     def ranked(cls) -> Mapping[int, Self]:
         """Compiled members by declared rank -- the ids an ordinal release stored."""
         return MappingProxyType({member._rank: member for member in cls})
+
+    @property
+    def band(self) -> Self:
+        """The band-floor member this code's rank sits in.
+
+        A vocabulary that declares ranks in hundred-wide bands says what a
+        detailed code broadly means -- `FILLED` is a `DONE` -- without the
+        stored value having to be an ordinal.
+        """
+        return type(self)._bands()[self._rank // self.WIDTH * self.WIDTH]
+
+    @classmethod
+    @functools.cache
+    def _bands(cls) -> Mapping[int, Self]:
+        return MappingProxyType(
+            {member._rank: member for member in cls if member._rank % cls.WIDTH == 0}
+        )
+
+    @classmethod
+    def ranked_at_least(cls, floor: Self) -> tuple[int, ...]:
+        """Stored codes ranked at or above `floor`, for a pushed scan filter.
+
+        What replaces a range predicate over the stored value: the codes are
+        mnemonics rather than ordinals, so a scan names the finite set it
+        wants instead of a boundary.
+        """
+        return tuple(int(member) for member in cls if member._rank >= floor._rank)
+
+    @classmethod
+    def ranked_below(cls, floor: Self) -> tuple[int, ...]:
+        """Stored codes ranked below `floor`, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member._rank < floor._rank)
+
+    @classmethod
+    def ranked_between(cls, floor: Self, ceiling: Self) -> tuple[int, ...]:
+        """Stored codes ranked in `[floor, ceiling)`, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if floor._rank <= member._rank < ceiling._rank)
 
     @classmethod
     @functools.cache

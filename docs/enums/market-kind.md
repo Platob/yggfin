@@ -14,33 +14,33 @@ Market kinds share one normalized vocabulary across order, execution and quote
 fields. FIX values are tag-scoped, so conversion always supplies the source
 tag instead of treating a wire character as globally unique.
 
-| Key | Stored value | Meaning |
-| --- | ---: | --- |
-| `UNKNOWN` | 0 | No market kind was resolved. |
-| `MARKET` | 100 | Band floor for market-priced orders. |
-| `MARKET_ORDER` | 110 | Execute at the available market price. |
-| `MARKET_IF_TOUCHED` | 120 | Become a market order at its trigger. |
-| `MARKET_TO_LIMIT` | 130 | Execute at market, then rest the remainder as a limit. |
-| `LIMIT` | 200 | Band floor for limit-priced orders. |
-| `LIMIT_ORDER` | 210 | Execute only at the limit or better. |
-| `LIMIT_ON_CLOSE` | 220 | Limit order for the closing auction. |
-| `LIMIT_OR_BETTER` | 230 | Limit price permitting price improvement. |
-| `STOP` | 300 | Band floor for stop instructions. |
-| `STOP_ORDER` | 310 | Become a market order at the stop. |
-| `STOP_LIMIT` | 320 | Become a limit order at the stop. |
-| `PEGGED` | 400 | Band floor for reference-priced instructions. |
-| `PEGGED_ORDER` | 410 | Price follows a declared reference. |
-| `PREVIOUSLY_QUOTED` | 420 | Execute against an earlier quote. |
-| `PREVIOUSLY_INDICATED` | 430 | Execute against an earlier indication. |
-| `EXECUTION` | 500 | Band floor for execution reports. |
-| `ORDER_STATUS` | 510 | Report order state without a trade. |
-| `TRADE` | 520 | Report an execution. |
-| `TRADE_CORRECT` | 530 | Correct a prior execution. |
-| `TRADE_CANCEL` | 540 | Cancel a prior execution. |
-| `LOCKED` | 550 | Lock a trade for clearing. |
-| `RELEASED` | 560 | Release a locked trade. |
-| `CLEARING` | 600 | Band floor for clearing state. |
-| `CLEARING_HOLD` | 610 | Hold before clearing. |
-| `RELEASED_TO_CLEARING` | 620 | Release to clearing. |
-| `ACTIVATION` | 700 | Band floor for activation state. |
-| `TRIGGERED` | 710 | A condition activated the instruction. |
+| Key | Mnemonic | Stored value | Rank |
+| --- | --- | ---: | ---: |
+| `UNKNOWN` | | 0 | 0 |
+| `MARKET` | `MARKET` | 84942948877652 | 100 |
+| `MARKET_ORDER` | `MKTORDER` | 5569638063833105746 | 110 |
+| `MARKET_IF_TOUCHED` | `MKTIFTCH` | 5569638037863023432 | 120 |
+| `MARKET_TO_LIMIT` | `MKTTOLMT` | 5569638085258136916 | 130 |
+| `LIMIT` | `LIMIT` | 327647316308 | 200 |
+| `LIMIT_ORDER` | `LMTORDER` | 5498143419748599122 | 210 |
+| `LIMIT_ON_CLOSE` | `LMTCLOSE` | 5498143368109052741 | 220 |
+| `LIMIT_OR_BETTER` | `LMTBETTR` | 5498143363696972882 | 230 |
+| `STOP` | `STOP` | 1398034256 | 300 |
+| `STOP_ORDER` | `STPORDER` | 6004512504804558162 | 310 |
+| `STOP_LIMIT` | `STOPLMT` | 23455122693311828 | 320 |
+| `PEGGED` | `PEGGED` | 88258478818628 | 400 |
+| `PEGGED_ORDER` | `PEGORDER` | 5784107702435464530 | 410 |
+| `PREVIOUSLY_QUOTED` | `PREVQUOT` | 5787764708158558036 | 420 |
+| `PREVIOUSLY_INDICATED` | `PREVINDC` | 5787764708023878723 | 430 |
+| `EXECUTION` | `EXEC` | 1163412803 | 500 |
+| `ORDER_STATUS` | `ORDSTAT` | 22326976569426260 | 510 |
+| `TRADE` | `TRADE` | 362157261893 | 520 |
+| `TRADE_CORRECT` | `TRDCORRC` | 6075993903160513091 | 530 |
+| `TRADE_CANCEL` | `TRDCANCL` | 6075993902925366092 | 540 |
+| `LOCKED` | `LOCKED` | 83903315133764 | 550 |
+| `RELEASED` | `RELEASED` | 5928228344835556676 | 560 |
+| `CLEARING` | `CLEARING` | 4849327045626908231 | 600 |
+| `CLEARING_HOLD` | `CLRHOLD` | 18942739723799620 | 610 |
+| `RELEASED_TO_CLEARING` | `RELTOCLR` | 5928228409493900370 | 620 |
+| `ACTIVATION` | `ACTIVATN` | 4702695109861397582 | 700 |
+| `TRIGGERED` | `TRIGGERD` | 6075999417763451460 | 710 |

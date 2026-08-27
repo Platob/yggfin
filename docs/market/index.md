@@ -21,8 +21,8 @@ for event in FixMsg.from_text(line).into_market_events(fix_version="4.4"):
 
 ## State
 
-`State` is one ordered integer vocabulary. Pending, live, partial, terminal,
-closed, and failed bands support range predicates. Venue rejection/expiry uses
+`State` is one ranked vocabulary. Pending, live, partial, terminal, closed
+and failed bands answer what a detailed state broadly means. Venue rejection/expiry uses
 `REJECTED`/`EXPIRED`; records rejected or expired by this pipeline use
 `INTERNAL_REJECTED`/`INTERNAL_EXPIRED` so audit queries can separate them.
 
@@ -49,9 +49,10 @@ There is no separate reference model or contract.
 ```python
 from rekep.enums import State
 
-# Bands make "still live" and "finished" range predicates rather than lists:
-# every open state sorts inside `OPEN`, every finished one inside `DONE`.
-resting = State.OPEN <= state < State.DONE
+# Ranks make "still live" and "finished" one question each, and the finite
+# code sets they name are what a storage scan pushes down.
+resting = state.is_live
+scanned = State.live_codes()
 ```
 
 ## When it happened

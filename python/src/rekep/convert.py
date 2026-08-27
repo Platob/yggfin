@@ -220,7 +220,7 @@ def _suffixes(name: str) -> list[str]:
 #: a six-branch subclass chain per field: on ten thousand `Order` rows it was
 #: 678,000 `isinstance` calls and 56.5 us a row.
 #:
-#: Exact, and that is the point: `Ranged` is an `int` and must not pass
+#: Exact, and that is the point: a stable code is an `int` and must not pass
 #: through, `datetime` is a `date` and must not either. A subclass falls to the
 #: chain below and is encoded as what it is.
 _VERBATIM = frozenset({int, float, str, bool, bytes, type(None)})

@@ -499,7 +499,7 @@ def _orders(
         compute.equal(state, int(State.UNKNOWN)),
         shared.take(values.mapped("ExecType", tags.exec_type_fallbacks, State.UNKNOWN), where),
         state,
-    ).cast(pyarrow.int32())
+    ).cast(_code_type(State.UNKNOWN))
     total = shared.take(values.number("OrderQty"), where)
     cumulative = shared.take(values.number("CumQty"), where)
     leaves = shared.take(values.number("LeavesQty"), where)
@@ -509,7 +509,7 @@ def _orders(
     state, previous, current = _quantity_transition(
         state, exec_state, total, cumulative, leaves, last, cancelled
     )
-    terminal = compute.greater_equal(state, int(State.DONE))
+    terminal = _ranked_at_least(state, State.DONE)
     previous = compute.if_else(
         compute.and_(terminal, compute.and_(compute.is_null(previous), compute.is_valid(current))),
         current,
@@ -641,7 +641,9 @@ def _executions(
     corrected = compute.and_(
         compute.is_in(
             state,
-            value_set=pyarrow.array([int(State.REPLACED), int(State.CANCELLED)], pyarrow.int32()),
+            value_set=pyarrow.array(
+                [int(State.REPLACED), int(State.CANCELLED)], _code_type(State.UNKNOWN)
+            ),
         ),
         compute.fill_null(compute.not_equal(exec_ref_id, ""), False),
     )
@@ -840,8 +842,8 @@ def _quantity_transition(
         infer,
         compute.if_else(completely_filled, int(State.FILLED), int(State.PARTIALLY_FILLED)),
         state,
-    ).cast(pyarrow.int32())
-    terminal = compute.greater_equal(state, int(State.DONE))
+    ).cast(_code_type(State.UNKNOWN))
+    terminal = _ranked_at_least(state, State.DONE)
     total_minus_cumulative = compute.max_element_wise(compute.subtract(total, cumulative), zero)
     previous_terminal = compute.coalesce(
         compute.if_else(
@@ -859,7 +861,7 @@ def _quantity_transition(
         last,
         cumulative,
     )
-    partial = compute.greater_equal(state, int(State.PARTIAL))
+    partial = _ranked_at_least(state, State.PARTIAL)
     current = compute.coalesce(
         leaves,
         compute.if_else(
@@ -908,7 +910,7 @@ def _quantity_transition(
         ),
         int(State.FILLED),
         state,
-    ).cast(pyarrow.int32())
+    ).cast(_code_type(State.UNKNOWN))
     current = compute.if_else(terminal, zero, current)
     return state, previous, current
 
@@ -929,7 +931,7 @@ def _replaced_state(
         int(State.FILLED),
         compute.if_else(partial, int(State.PARTIALLY_FILLED), int(State.NEW)),
     )
-    return compute.if_else(replaced, normalized, state).cast(pyarrow.int32())
+    return compute.if_else(replaced, normalized, state).cast(_code_type(State.UNKNOWN))
 
 
 def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
@@ -1032,23 +1034,42 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
 def _currencies(source: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
     unique = compute.drop_null(compute.unique(source))
     if not len(unique):
-        return pyarrow.nulls(len(source), pyarrow.int32()), pyarrow.repeat(
+        return pyarrow.nulls(len(source), _code_type(Currency.UNKNOWN)), pyarrow.repeat(
             pyarrow.scalar(""), len(source)
         )
     members = [Currency.from_fix(value.as_py()) for value in unique]
     positions = compute.index_in(source, value_set=unique)
     ccy = compute.take(
-        pyarrow.array([int(member) for member in members], pyarrow.int32()), positions
+        pyarrow.array([int(member) for member in members], _code_type(Currency.UNKNOWN)), positions
     )
     unit = compute.take(pyarrow.array([member.into_str() for member in members]), positions)
     return ccy, compute.fill_null(unit, "")
 
 
+def _ranked_at_least(codes: pyarrow.Array, floor: Any) -> pyarrow.Array:
+    """Rows whose stored code ranks at or above `floor`.
+
+    The stored value is a mnemonic, not an ordinal, so "at least this far
+    along" is membership of the finite set the ranks name rather than a
+    comparison of the packed bytes.
+    """
+    wanted = pyarrow.array(sorted(type(floor).ranked_at_least(floor)), _code_type(floor))
+    return compute.fill_null(compute.is_in(codes, value_set=wanted), False)
+
+
+def _code_type(default: Any) -> pyarrow.DataType:
+    """The Arrow width one stable code's column stores, off the code itself."""
+    declared = type(default)
+    into_arrow_type = getattr(declared, "into_arrow_type", None)
+    return pyarrow.int32() if into_arrow_type is None else into_arrow_type().index_type
+
+
 def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> pyarrow.Array:
+    stored = _code_type(default)
     keys = pyarrow.array(list(mapping), pyarrow.string())
-    values = pyarrow.array([int(value) for value in mapping.values()], pyarrow.int32())
+    values = pyarrow.array([int(value) for value in mapping.values()], stored)
     if not len(keys):
-        return _constant(len(source), int(default), pyarrow.int32())
+        return _constant(len(source), int(default), stored)
     # Trimmed like the scalar reading strips, so `"1 "` is the code it is on
     # both paths.
     source = compute.utf8_trim_whitespace(source)
@@ -1077,9 +1098,9 @@ def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> 
                 compute.utf8_lower(compute.utf8_trim_whitespace(source)),
                 value_set=pyarrow.array(list(folded), pyarrow.string()),
             )
-            fallback = compute.take(pyarrow.array(list(folded.values()), pyarrow.int32()), worded)
+            fallback = compute.take(pyarrow.array(list(folded.values()), stored), worded)
             found = compute.coalesce(found, fallback)
-    return compute.fill_null(found, int(default)).cast(pyarrow.int32())
+    return compute.fill_null(found, int(default)).cast(stored)
 
 
 def _first_nonempty(*columns: pyarrow.Array, fallback: str | None = None) -> pyarrow.Array:

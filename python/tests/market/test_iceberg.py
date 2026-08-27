@@ -58,10 +58,11 @@ def test_an_identifier_is_a_long_in_every_engine() -> None:
     assert back.field("hash").dtype == pyarrow.int64()
 
 
-def test_a_ranged_code_is_an_iceberg_int() -> None:
+def test_a_stable_code_is_a_plain_iceberg_integer() -> None:
+    """A code is an integer to Iceberg, as wide as its own declaration packs."""
     schema = MarketEvent.into_field().into_iceberg_schema()
-    assert str(schema.find_field("state").field_type) == "int"
-    assert str(schema.find_field("side").field_type) == "int"
+    assert str(schema.find_field("state").field_type) == "long", "State packs eight bytes"
+    assert str(schema.find_field("side").field_type) == "int", "Side packs four"
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -116,7 +117,8 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
 
     assert read.num_rows == 3
     assert read.column("hash").to_pylist() == given.column("hash").to_pylist()
-    assert read.column("state").type == pyarrow.int32(), "the code stayed narrow"
+    assert read.column("state").type == pyarrow.int64(), "the code kept its own width"
+    assert read.column("side").type == pyarrow.int32(), "and a four-byte code stayed narrow"
     assert read.column("unix_partition").type == pyarrow.int32()
     assert read.column("hash").type == pyarrow.int64(), "and the identifier stayed a long"
     written = [task.file for task in dataset.iceberg_table.scan().plan_files()]

@@ -150,7 +150,7 @@ class Event(MarketConvertible):
     """Which version of `xhash` this is, counting up from the first."""
 
     state: State = State.UNKNOWN
-    """Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over."""
+    """Where the lifecycle stands, as a ranked code: `is_terminal` is over."""
 
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
@@ -790,7 +790,7 @@ class MarketEvent(Event):
             # only class where the multiplier can be assumed rather than read.
             # `band` is the floor as an `int`, which is what a range predicate
             # compares against -- so this is `==` and never `is`.
-            if instrument.kind.band != AssetKind.CASH:
+            if instrument.kind.band is not AssetKind.CASH:
                 return None
             multiplier = 1.0
         return self.px * self.qty * multiplier

@@ -92,19 +92,25 @@ def test_an_identifier_is_a_plain_int64() -> None:
                 assert shape.into_field().field(name).dtype == pyarrow.int64(), shape.__name__
 
 
-def test_a_market_code_is_int32_and_not_int64() -> None:
-    """The base builder takes the width of a Python int, which is twice what is needed."""
-    assert MarketFieldBuilder().arrow_type(State) == pyarrow.int32()
+def test_a_market_code_column_is_as_wide_as_its_code_declares() -> None:
+    """The base builder takes the width of a Python int, which says nothing about
+    the code; the market builder takes the width the code itself packs into."""
+    assert MarketFieldBuilder().arrow_type(State) == pyarrow.int64()
     assert MarketFieldBuilder().arrow_type(Side) == pyarrow.int32()
     assert FieldBuilder().arrow_type(State) == pyarrow.int64()
 
 
-def test_every_market_code_column_of_every_shape_is_int32() -> None:
+def test_every_market_code_column_of_every_shape_matches_its_enum() -> None:
     """The rule is worth nothing if one shape quietly bypasses the builder."""
     for shape in SHAPES:
+        hints = get_type_hints(shape, include_extras=True)
         for member in shape.into_field().fields:
-            if member.name in ("state", "side", "kind", "tif", "option_kind"):
-                assert member.dtype == pyarrow.int32(), f"{shape.__name__}.{member.name}"
+            declared = enum_of(hints.get(member.name))
+            if declared is None:
+                continue
+            assert member.dtype == declared.into_arrow_type().index_type, (
+                f"{shape.__name__}.{member.name}"
+            )
 
 
 def test_the_instrument_is_one_flat_event_contract() -> None:
@@ -257,7 +263,8 @@ def test_the_published_contract_carries_the_member_table() -> None:
     """Which is the whole point: the file is what a consumer reads, not the code."""
     keys = Order.into_field().into_dict()
     state = next(member for member in keys["fields"] if member["name"] == "state")
-    assert json.loads(state["enum"]["values"])["410"] == "FILLED"
+    assert json.loads(state["enum"]["values"])[str(int(State.FILLED))] == "FILLED"
+    assert state["type"] == "int64", "as wide as the code it stores"
 
 
 def test_market_kind_metadata_keeps_each_tags_original_wire_mapping() -> None:

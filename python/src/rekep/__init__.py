@@ -2,7 +2,7 @@
 
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
-from rekep.enums import AsciiInt32, AsciiInt64, Currency, MarketKind, Ranged
+from rekep.enums import AsciiInt32, AsciiInt64, Currency, MarketKind
 from rekep.fields import (
     Field,
     FieldBuilder,
@@ -64,7 +64,6 @@ __all__ = [
     "Message",
     "Order",
     "ProtocolMetadata",
-    "Ranged",
     "StructField",
     "Task",
     "TextFile",
