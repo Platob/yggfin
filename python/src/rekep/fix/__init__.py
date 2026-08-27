@@ -36,8 +36,10 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    FixFieldValue,
     encoded_key,
     slug_of,
+    values_of,
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
@@ -122,6 +124,7 @@ __all__ = [
     "FLAT",
     "FieldAccess",
     "FieldEntry",
+    "FixFieldValue",
     "FieldRule",
     "FieldRules",
     "FixCodec",
@@ -174,6 +177,7 @@ __all__ = [
     "detect_entry_separator",
     "detect_separator",
     "encoded_key",
+    "values_of",
     "fix_field",
     "infer_version_from_pairs",
     "message_bodies",

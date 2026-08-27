@@ -37,9 +37,10 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
-    _json_mapping,
+    FixFieldValue,
     encodings_of,
     fold,
+    folded_values,
     newest_of,
     newest_rank,
     slug_of,
@@ -812,22 +813,18 @@ def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEnt
         return dataclasses.replace(
             fresh,
             versions=versions,
-            values={**held.values, **fresh.values},
-            value_names={**held.value_names, **fresh.value_names},
+            values=folded_values(held.values, fresh.values, newest=fresh.values),
             event_types={**fresh.event_types, **held.event_types},
             states={**fresh.states, **held.states},
             used_in=_union(held.used_in, fresh.used_in),
             components=_union(held.components, fresh.components),
-            encoded=dict(held.encoded),
-            decoded=dict(held.decoded),
             aliases=_displaced(held, fresh.name),
             column=held.column or fresh.column,
         )
     return dataclasses.replace(
         held,
         versions=versions,
-        values={**fresh.values, **held.values},
-        value_names={**fresh.value_names, **held.value_names},
+        values=folded_values(held.values, fresh.values, newest=held.values),
         event_types={**fresh.event_types, **held.event_types},
         states={**fresh.states, **held.states},
         used_in=_union(held.used_in, fresh.used_in),
@@ -960,12 +957,12 @@ class Collision(Convertible):
 #: the newest, and reporting six thousand of those would bury the ones that
 #: matter.
 VALUES = "values"
-VALUE_NAMES = "value_names"
+ALIASES = "aliases"
 TYPE = "type"
 NAME = "name"
 NOTE = "note"
 MEMBERS = "members"
-PARTS: tuple[str, ...] = (VALUES, VALUE_NAMES, TYPE, NAME, NOTE, MEMBERS)
+PARTS: tuple[str, ...] = (VALUES, ALIASES, TYPE, NAME, NOTE, MEMBERS)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1043,7 +1040,7 @@ def collapse(
             [member for _, member in found], [version for version, _ in found]
         )
         collapses.extend(_field_collapses(entry, found))
-        _, clashing = encodings_of(entry.values, entry.value_names)
+        _, clashing = encodings_of(entry.values)
         collisions.extend(
             Collision(entry.name, spelling, tuple(owners), entry.tag)
             for spelling, owners in sorted(clashing.items())
@@ -1062,7 +1059,7 @@ def collapse(
         entry = entries.get(tag)
         if entry is None:
             continue
-        declared = entry.values.keys() | entry.value_names.keys()
+        declared = {one.value for one in entry.values}
         defaults = {code: state for code, state in mapping.items() if code in declared}
         entries[tag] = dataclasses.replace(entry, states={**defaults, **entry.states})
 
@@ -1096,11 +1093,13 @@ def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> l
         for part, readings in parts.items()
         if (one := _collapsed(entry, part, readings)) is not None
     ]
-    for part in (VALUES, VALUE_NAMES):
+    for part, reading_of in ((VALUES, _meaning_of), (ALIASES, _alias_of)):
         keyed: dict[str, list[tuple[str, str]]] = {}
         for version, member in found:
-            for value, reading in _json_mapping(member.fix.get(part)).items():
-                keyed.setdefault(value, []).append((version, reading))
+            for one in member.fix.enumerated:
+                reading = reading_of(one)
+                if reading:
+                    keyed.setdefault(one.value, []).append((version, reading))
         dropped = [
             Dropped(version, reading, value)
             for value, readings in sorted(keyed.items())
@@ -1110,6 +1109,16 @@ def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> l
         if dropped:
             collapses.append(Collapse(entry.name, part, entry.newest, tuple(dropped), entry.tag))
     return collapses
+
+
+def _meaning_of(one: FixFieldValue) -> str:
+    """The prose one value carries, for the collapse report."""
+    return one.meaning
+
+
+def _alias_of(one: FixFieldValue) -> str:
+    """The spelling that leads one value's aliases, for the collapse report."""
+    return one.aliases[0] if one.aliases else ""
 
 
 def _collapsed(

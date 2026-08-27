@@ -61,8 +61,8 @@ def test_fix_transcribe_uses_the_published_registry_in_both_directions() -> None
         assert f"data-{direction}-debug" in page
         assert f"data-{direction}-protocol" in page
         assert f"data-{direction}-structure" in page
-    assert "field.encoded" in script
-    assert "field.decoded" in script
+    assert "function codecs(field)" in script, "the lookups are derived from the values"
+    assert "field.encoded" not in script and "field.decoded" not in script
     assert "protocolOf" in script
     assert "structureOf" in script
     assert "expandPayloadPairs" in script

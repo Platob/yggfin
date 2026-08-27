@@ -25,6 +25,7 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    FixFieldValue,
     canonical_versions,
     encoded_key,
     encodings_of,
@@ -32,6 +33,7 @@ from rekep.fix.entries import (
     name_of,
     newest_of,
     slug_of,
+    values_of,
 )
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
@@ -225,8 +227,10 @@ def test_every_spelling_of_one_value_normalizes_to_one_key(spelled: str) -> None
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
     """One lookup path, not two: `Side=Buy`, `Side=BUY` and `Side=1` all reach `1`."""
     entry = _entry(
-        values={"1": "Buy", "2": "Sell"},
-        value_names={"1": "BUY", "2": "SELL_SHORT"},
+        values=[
+            FixFieldValue(value="1", meaning="Buy", aliases=("BUY",)),
+            FixFieldValue(value="2", meaning="Sell", aliases=("SELL_SHORT",)),
+        ],
     )
     assert entry.encode("Buy") == "1"
     assert entry.encode("BUY") == "1"
@@ -240,28 +244,33 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
 
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     """An ambiguous translation that picks one silently is worse than none."""
-    found, collisions = encodings_of({"1": "Cross", "2": "cross!"}, {})
+    found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}))
     assert "cross" not in found
-    assert collisions == {"cross": ["1", "2"]}
+    assert collisions == {"cross": ("1", "2")}
     assert _entry(values={"1": "Cross", "2": "cross!"}).encode("Cross") == "Cross"
 
 
 def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> None:
-    """Tag 770 lists keys 8 to 34 under `value_names` and not under `values`."""
-    found, _ = encodings_of({"1": "Execution Time"}, {"1": "EXECUTION_TIME", "10": "SUBMITTED"})
+    """Tag 770 lists keys 8 to 34 with a symbol and no prose."""
+    found, _ = encodings_of(
+        (
+            FixFieldValue(value="1", meaning="Execution Time", aliases=("EXECUTION_TIME",)),
+            FixFieldValue(value="10", aliases=("SUBMITTED",)),
+        )
+    )
     assert found["executiontime"] == "1"
     assert found["submitted"] == "10"
     assert found["10"] == "10", "and the raw value keys itself even with no prose"
 
 
-def test_hand_written_codecs_survive_a_rebuild() -> None:
-    """The generated map is the default, not the whole map."""
-    entry = _entry(values={"1": "Buy"}, encoded={"achat": "1"}, decoded={"1": "achat"})
+def test_a_recorded_spelling_reaches_its_value_and_survives_a_rebuild() -> None:
+    """An estate's own spelling is an alias of the value, beside the dictionary's."""
+    entry = _entry(values=[FixFieldValue(value="1", meaning="Buy", aliases=("achat",))])
     assert entry.encode("achat") == "1"
-    assert entry.encode("Buy") == "1", "and the generated ones are still there"
+    assert entry.encode("Buy") == "1", "and the dictionary's own are still there"
     restored = FieldEntry.from_dict(entry.into_dict())
     assert restored.encode("achat") == "1"
-    assert restored.decode("1") == "achat"
+    assert restored.decode("1") == "achat", "the leading alias is the canonical decoding"
 
 
 def test_msg_type_event_kinds_round_trip_through_the_record_and_field() -> None:
@@ -344,8 +353,7 @@ def test_enum_documents_require_an_exact_string_name_and_integer_id(value: objec
 def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
     entry = _entry(
         aliases=(Alias(name="FAKEROLE", source="pco", occurrences=3),),
-        values={"1": "One"},
-        value_names={"1": "ONE"},
+        values=[FixFieldValue(value="1", meaning="One", aliases=("ONE",))],
         used_in=("Execution Report",),
         components=("FakeParties",),
         note="no longer used",
@@ -385,7 +393,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
     assert merged.dtype == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
     assert merged.fix["version"] == "4.4", "the version the reading was taken from"
-    assert json.loads(merged.fix["values"]) == {"1": "One", "2": "Two"}
+    assert merged.fix.enumerated == values_of({"1": "One", "2": "Two"})
     assert json.loads(merged.fix["aliases"])[0]["name"] == "FakeRoleCode"
 
 
@@ -475,7 +483,7 @@ def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> Non
     older = fix_field("FakeRole", 90001, "int", version="4.2", values={"1": "First", "2": "Gone"})
     newer = fix_field("FakeRole", 90001, "int", version="4.4", values={"1": "Corrected"})
     entry = FieldEntry.from_fields([older, newer], ["4.2", "4.4"])
-    assert entry.values == {"1": "Corrected", "2": "Gone"}
+    assert entry.values == values_of({"1": "Corrected", "2": "Gone"})
 
 
 def test_a_record_needs_at_least_one_reading() -> None:

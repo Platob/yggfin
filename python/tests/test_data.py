@@ -65,6 +65,14 @@ def records() -> dict[str, dict[str, object]]:
     return {key: record for shard in members("fields").values() for key, record in shard.items()}
 
 
+def stored_value(record: dict[str, object], value: str) -> dict[str, object]:
+    """One enumerated value out of a stored record, by what the wire carries."""
+    for one in record.get("values") or ():
+        if one["value"] == value:
+            return one
+    raise AssertionError(f"{record.get('name')} declares no value {value!r}")
+
+
 INDEX: dict[str, object] = member("versions.json")
 VERSIONS: list[str] = INDEX["versions"]
 
@@ -181,11 +189,12 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
         assert all(str(name).isalnum() for name in record.get("components", ())), key
 
     msg_type = held["35"]
-    assert msg_type["values"]["8"] == "ExecutionReport"
+    assert stored_value(msg_type, "8")["meaning"] == "ExecutionReport"
+    assert stored_value(msg_type, "i")["meaning"] == "MassQuote"
     assert "handlers" not in msg_type
-    assert msg_type["encoded"]["executionreport"] == "8"
-    assert msg_type["encoded"]["massquote"] == "i"
-    assert msg_type["decoded"]["8"] == "executionreport"
+    assert "encoded" not in msg_type and "decoded" not in msg_type, (
+        "a lookup derived from the values is not stored beside them"
+    )
     assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
 
 
@@ -207,7 +216,7 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegis
     assert stamps.encode("ordersubmissiontime") == "10"
     assert stamps.encode("10") == "10"
     assert stamps.decode("10") == "ordersubmissiontime"
-    assert records()["770"]["encoded"]["ordersubmissiontime"] == "10"
+    assert stored_value(records()["770"], "10")["aliases"] == ["ORDER_SUBMISSION_TIME"]
 
 
 def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
@@ -275,7 +284,7 @@ def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
     assert side.fix["tag"] == "54"
     assert side.fix["version"] == "5.0.SP2", "the newest version that has it"
     assert side.description == "Side of order."
-    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert side.fix.value_of("1").meaning == "Buy"
     assert registry.field(35).name == "MsgType"
     assert [member.fix["version"] for member in registry.lookup("Side")] == [
         version for version in VERSIONS if version != "FIXT1.1"
@@ -318,11 +327,11 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    # Just under half of the published dictionary for two fields, and nearly all
+    # Just over half of the published dictionary for two fields, and nearly all
     # of the remainder is component declarations: those travel whole rather than being
     # selected with the fields, because a component says where a repeating
     # group starts and ends and a tree missing members would end it elsewhere.
-    assert target.stat().st_size < DATA.stat().st_size * 51 // 100
+    assert target.stat().st_size < DATA.stat().st_size * 56 // 100
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
     assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"
@@ -523,15 +532,19 @@ def test_the_published_dictionary_carries_the_symbol_beside_the_description(
     wants an identifier should not have to invent one by upper-casing prose.
     """
     side = registry.field(54, "4.4")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["1"] == "BUY"
-    assert json.loads(side.fix["value_names"])["3"] == "BUY_MINUS"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("1").aliases == ("BUY",)
+    assert side.fix.value_of("3").aliases == ("BUY_MINUS",)
 
 
 def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry) -> None:
     """Derived from the archive, then pinned: a version that lost them fails here."""
     counted = {
-        version: sum(1 for member in registry.fields(version) if member.fix.get("value_names"))
+        version: sum(
+            1
+            for member in registry.fields(version)
+            if any(one.aliases for one in member.fix.enumerated)
+        )
         for version in registry.versions
     }
     assert counted == {
@@ -556,7 +569,7 @@ def test_a_symbol_is_never_written_where_a_description_goes(registry: OfflineReg
     shouted = 0
     for version in registry.versions:
         for member in registry.fields(version):
-            for text in json.loads(member.fix.get("values") or "{}").values():
+            for text in (one.meaning for one in member.fix.enumerated):
                 if text and text.isupper() and "_" in text:
                     shouted += 1
     assert shouted == 0

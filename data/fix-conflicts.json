@@ -1,7 +1,7 @@
 {
  "counts": {
   "values": 152,
-  "value_names": 24,
+  "aliases": 24,
   "type": 214,
   "name": 40,
   "note": 18,
@@ -707,7 +707,7 @@
   {
    "name": "AllocRejCode",
    "tag": 88,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -2529,7 +2529,7 @@
   {
    "name": "CxlRejResponseTo",
    "tag": 434,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -2721,7 +2721,7 @@
   {
    "name": "DeskType",
    "tag": 1033,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -2739,7 +2739,7 @@
   {
    "name": "DeskTypeSource",
    "tag": 1034,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -3234,7 +3234,7 @@
   {
    "name": "EncryptMethod",
    "tag": 98,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -3300,7 +3300,7 @@
   {
    "name": "ExecAckStatus",
    "tag": 1036,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -3726,7 +3726,7 @@
   {
    "name": "ExecInst",
    "tag": 18,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -4199,7 +4199,7 @@
   {
    "name": "GTBookingInst",
    "tag": 427,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -4288,7 +4288,7 @@
   {
    "name": "HaltReason",
    "tag": 327,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -5445,7 +5445,7 @@
   {
    "name": "MassCancelRejectReason",
    "tag": 532,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -5725,7 +5725,7 @@
   {
    "name": "MDEntryType",
    "tag": 269,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -6125,7 +6125,7 @@
   {
    "name": "MsgType",
    "tag": 35,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -7028,7 +7028,7 @@
   {
    "name": "OrdRejReason",
    "tag": 103,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -7615,7 +7615,7 @@
   {
    "name": "OrderHandlingInstSource",
    "tag": 1032,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -7814,7 +7814,7 @@
     },
     {
      "version": "4.3",
-     "reading": "BIC (Bank Identification Code\u2014Swift managed) code (ISO 9362 \u2014 See Appendix 6-B )",
+     "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 — See Appendix 6-B )",
      "key": "B"
     }
    ]
@@ -7910,7 +7910,7 @@
   {
    "name": "PartyRole",
    "tag": 452,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -8390,7 +8390,7 @@
   {
    "name": "PriceType",
    "tag": 423,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -8854,7 +8854,7 @@
   {
    "name": "QuoteCancelType",
    "tag": 298,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -10714,7 +10714,7 @@
   {
    "name": "SecurityType",
    "tag": 167,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -10893,7 +10893,7 @@
   {
    "name": "SessionRejectReason",
    "tag": 373,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -11828,7 +11828,7 @@
   {
    "name": "TickRuleType",
    "tag": 1209,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -12166,7 +12166,7 @@
   {
    "name": "TradeCondition",
    "tag": 277,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -12235,7 +12235,7 @@
   {
    "name": "TradeReportRejectReason",
    "tag": 751,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -12360,7 +12360,7 @@
   {
    "name": "TradingSessionSubID",
    "tag": 625,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {
@@ -12953,7 +12953,7 @@
   {
    "name": "YieldType",
    "tag": 235,
-   "part": "value_names",
+   "part": "aliases",
    "kept": "5.0.SP2",
    "dropped": [
     {

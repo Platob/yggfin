@@ -838,28 +838,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL",
-   "1": "INITIAL_AND_FINAL",
-   "2": "FINAL",
-   "3": "ANY_PERIOD"
-  },
-  "encoded": {
-   "initial": "0",
-   "initialandfinal": "1",
-   "final": "2",
-   "anyperiod": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "initial",
-   "1": "initialandfinal",
-   "2": "final",
-   "3": "anyperiod"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INITIAL_AND_FINAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FINAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ANY_PERIOD"
+    ]
+   }
+  ]
  },
  "42605": {
   "name": "PaymentStreamCompoundingFixedRate",
@@ -1420,20 +1428,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "VOLATILITY",
-   "1": "VARIANCE"
-  },
-  "encoded": {
-   "volatility": "0",
-   "variance": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "volatility",
-   "1": "variance"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "VOLATILITY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "VARIANCE"
+    ]
+   }
+  ]
  },
  "42675": {
   "name": "PaymentStreamLinkMaximumBoundary",
@@ -1474,24 +1484,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PREVIOUS",
-   "1": "LAST",
-   "2": "BOTH"
-  },
-  "encoded": {
-   "previous": "0",
-   "last": "1",
-   "both": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "previous",
-   "1": "last",
-   "2": "both"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LAST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BOTH"
+    ]
+   }
+  ]
  },
  "42680": {
   "name": "PaymentStreamDaysAdjustmentIndicator",
@@ -1716,32 +1731,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "FLAT_FEE",
-   "1": "AMORTIZED_FEE",
-   "2": "FUNDING_FEE",
-   "3": "FLAT_AND_FUNDING_FEE",
-   "4": "AMORTIZED_AND_FUNDING_FEE"
-  },
-  "encoded": {
-   "flatfee": "0",
-   "amortizedfee": "1",
-   "fundingfee": "2",
-   "flatandfundingfee": "3",
-   "amortizedandfundingfee": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "flatfee",
-   "1": "amortizedfee",
-   "2": "fundingfee",
-   "3": "flatandfundingfee",
-   "4": "amortizedandfundingfee"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "FLAT_FEE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "AMORTIZED_FEE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FUNDING_FEE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FLAT_AND_FUNDING_FEE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "AMORTIZED_AND_FUNDING_FEE"
+    ]
+   }
+  ]
  },
  "42708": {
   "name": "ProvisionBreakFeeRate",
@@ -1766,20 +1792,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PRICE_VALUATION",
-   "1": "DIVIDEND_VALUATION"
-  },
-  "encoded": {
-   "pricevaluation": "0",
-   "dividendvaluation": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "pricevaluation",
-   "1": "dividendvaluation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PRICE_VALUATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_VALUATION"
+    ]
+   }
+  ]
  },
  "42711": {
   "name": "ReturnRateValuationDateRelativeTo",
@@ -1988,24 +2016,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL",
-   "1": "INTERIM",
-   "2": "FINAL"
-  },
-  "encoded": {
-   "initial": "0",
-   "interim": "1",
-   "final": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "initial",
-   "1": "interim",
-   "2": "final"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTERIM"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FINAL"
+    ]
+   }
+  ]
  },
  "42737": {
   "name": "ReturnRateCommissionBasis",
@@ -2102,44 +2135,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "OPEN",
-   "1": "OFFICIAL_SETTL_PX",
-   "2": "XETRA",
-   "3": "CLOSE",
-   "4": "DERIVATIVES_CLOSE",
-   "5": "HIGH",
-   "6": "LOW",
-   "7": "AS_SPECIFIED_IN_MASTER_CONFIRMATION"
-  },
-  "encoded": {
-   "open": "0",
-   "officialsettlpx": "1",
-   "xetra": "2",
-   "close": "3",
-   "derivativesclose": "4",
-   "high": "5",
-   "low": "6",
-   "asspecifiedinmasterconfirmation": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "open",
-   "1": "officialsettlpx",
-   "2": "xetra",
-   "3": "close",
-   "4": "derivativesclose",
-   "5": "high",
-   "6": "low",
-   "7": "asspecifiedinmasterconfirmation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "OPEN"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OFFICIAL_SETTL_PX"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "XETRA"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DERIVATIVES_CLOSE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "HIGH"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "LOW"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "AS_SPECIFIED_IN_MASTER_CONFIRMATION"
+    ]
+   }
+  ]
  },
  "42749": {
   "name": "ReturnRateQuoteTime",
@@ -2228,24 +2281,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "FUTURES_PRICE",
-   "2": "OPTIONS_PRICE"
-  },
-  "encoded": {
-   "none": "0",
-   "futuresprice": "1",
-   "optionsprice": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "futuresprice",
-   "2": "optionsprice"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FUTURES_PRICE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OPTIONS_PRICE"
+    ]
+   }
+  ]
  },
  "42760": {
   "name": "ReturnRateFinalPriceFallback",
@@ -2302,28 +2360,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "GROSS",
-   "1": "NET",
-   "2": "ACCRUED",
-   "3": "CLEAN_NET"
-  },
-  "encoded": {
-   "gross": "0",
-   "net": "1",
-   "accrued": "2",
-   "cleannet": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "gross",
-   "1": "net",
-   "2": "accrued",
-   "3": "cleannet"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "GROSS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ACCRUED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CLEAN_NET"
+    ]
+   }
+  ]
  },
  "42767": {
   "name": "ReturnRatePrice",
@@ -2348,20 +2414,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ABSOLUTE_TERMS",
-   "1": "PERCENTAGE_OF_NOTIONAL"
-  },
-  "encoded": {
-   "absoluteterms": "0",
-   "percentageofnotional": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "absoluteterms",
-   "1": "percentageofnotional"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ABSOLUTE_TERMS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE_OF_NOTIONAL"
+    ]
+   }
+  ]
  },
  "42770": {
   "name": "NoReturnRateValuationDateBusinessCenters",
@@ -2506,24 +2574,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EXECUTION",
-   "1": "PORTFOLIO_REBALANCING",
-   "2": "STANDARD"
-  },
-  "encoded": {
-   "execution": "0",
-   "portfoliorebalancing": "1",
-   "standard": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "execution",
-   "1": "portfoliorebalancing",
-   "2": "standard"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EXECUTION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PORTFOLIO_REBALANCING"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STANDARD"
+    ]
+   }
+  ]
  },
  "42788": {
   "name": "NoUnderlyingCashSettlDateBusinessCenters",

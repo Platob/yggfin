@@ -117,9 +117,10 @@ def test_fix_metadata_reads_and_writes_typed_values() -> None:
     assert built.metadata["fix:tag"] == "55"
     built.fix.tag = None
     assert "fix:tag" not in built.metadata
-    built.fix.meanings = {"1": "Buy"}
-    assert built.metadata["fix:values"] == '{"1":"Buy"}'
+    built.fix.enumerated = {"1": "Buy"}
+    assert built.metadata["fix:values"] == '[{"value":"1","meaning":"Buy"}]'
     assert built.fix.meanings == {"1": "Buy"}
+    assert built.fix.value_of("1").meaning == "Buy"
     built.fix.versions = ["4.4", "4.2"]
     assert built.fix.versions == ("4.4", "4.2")
     built.fix.versions = ()
@@ -194,6 +195,7 @@ def test_the_typed_views_stay_the_mapping_they_advertise() -> None:
     assert sorted(built.fix.values()) == ["54", "char"]
     assert sorted(built.enum.values()) == []
     assert built.fix.meanings == {}, "the decoded map answers under its own name"
+    assert built.fix.enumerated == (), "and the enumerated values under theirs"
 
 
 def test_the_fix_view_answers_what_a_registry_record_does() -> None:

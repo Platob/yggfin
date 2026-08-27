@@ -190,24 +190,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_CROSS",
-   "1": "CROSS_REJECTED",
-   "2": "CROSS_ACCEPTED"
-  },
-  "encoded": {
-   "nocross": "0",
-   "crossrejected": "1",
-   "crossaccepted": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "nocross",
-   "1": "crossrejected",
-   "2": "crossaccepted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_CROSS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CROSS_REJECTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CROSS_ACCEPTED"
+    ]
+   }
+  ]
  },
  "2524": {
   "name": "TradeReportingIndicator",
@@ -216,52 +221,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_REPORTED",
-   "1": "ON_BOOK",
-   "2": "SI_SELLER",
-   "3": "SI_BUYER",
-   "4": "NON_SI_SELLER",
-   "5": "SUB_DELEGATION_BY_FIRM",
-   "6": "REPORTABLE",
-   "7": "NON_SI_BUYER",
-   "8": "OFF_BOOK",
-   "9": "NOT_REPORTABLE"
-  },
-  "encoded": {
-   "notreported": "0",
-   "onbook": "1",
-   "siseller": "2",
-   "sibuyer": "3",
-   "nonsiseller": "4",
-   "subdelegationbyfirm": "5",
-   "reportable": "6",
-   "nonsibuyer": "7",
-   "offbook": "8",
-   "notreportable": "9",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9"
-  },
-  "decoded": {
-   "0": "notreported",
-   "1": "onbook",
-   "2": "siseller",
-   "3": "sibuyer",
-   "4": "nonsiseller",
-   "5": "subdelegationbyfirm",
-   "6": "reportable",
-   "7": "nonsibuyer",
-   "8": "offbook",
-   "9": "notreportable"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_REPORTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ON_BOOK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SI_SELLER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SI_BUYER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NON_SI_SELLER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SUB_DELEGATION_BY_FIRM"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "REPORTABLE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "NON_SI_BUYER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "OFF_BOOK"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "NOT_REPORTABLE"
+    ]
+   }
+  ]
  },
  "2525": {
   "name": "AffiliatedFirmsTradeIndicator",
@@ -310,60 +341,92 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ASW_SPREAD",
-   "2": "OIS",
-   "3": "Z_SPREAD",
-   "4": "DISCOUNT_MARGIN",
-   "5": "I_SPREAD",
-   "6": "OAS",
-   "7": "G_SPREAD",
-   "8": "CDS_BASIS",
-   "9": "CDS_INTERPOLATED_BASIS",
-   "10": "DV01",
-   "11": "PV01",
-   "12": "CS01"
-  },
-  "encoded": {
-   "aswspread": "1",
-   "ois": "2",
-   "zspread": "3",
-   "discountmargin": "4",
-   "ispread": "5",
-   "oas": "6",
-   "gspread": "7",
-   "cdsbasis": "8",
-   "cdsinterpolatedbasis": "9",
-   "dv01": "10",
-   "pv01": "11",
-   "cs01": "12",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12"
-  },
-  "decoded": {
-   "1": "aswspread",
-   "2": "ois",
-   "3": "zspread",
-   "4": "discountmargin",
-   "5": "ispread",
-   "6": "oas",
-   "7": "gspread",
-   "8": "cdsbasis",
-   "9": "cdsinterpolatedbasis",
-   "10": "dv01",
-   "11": "pv01",
-   "12": "cs01"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ASW_SPREAD"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OIS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "Z_SPREAD"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DISCOUNT_MARGIN"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "I_SPREAD"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "OAS"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "G_SPREAD"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "CDS_BASIS"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "CDS_INTERPOLATED_BASIS"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "DV01"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "PV01"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "CS01"
+    ]
+   }
+  ]
  },
  "2531": {
   "name": "RelativeValue",
@@ -380,24 +443,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BID",
-   "2": "MID",
-   "3": "OFFER"
-  },
-  "encoded": {
-   "bid": "1",
-   "mid": "2",
-   "offer": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "bid",
-   "2": "mid",
-   "3": "offer"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "OFFER"
+    ]
+   }
+  ]
  },
  "2533": {
   "name": "BidSpread",
@@ -422,68 +490,106 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "START_INSTRUMENT_REF_DATA",
-   "2": "END_INSTRUMENT_REF_DATA",
-   "3": "START_OFF_MARKET_TRADES",
-   "4": "END_OFF_MARKET_TRADES",
-   "5": "START_ORDER_BOOK_TRADES",
-   "6": "END_ORDER_BOOK_TRADES",
-   "7": "START_OPEN_INTEREST",
-   "8": "END_OPEN_INTEREST",
-   "9": "START_SETTLEMENT_PRICES",
-   "10": "END_SETTLEMENT_PRICES",
-   "11": "START_STATS_REF_DATA",
-   "12": "END_STATS_REF_DATA",
-   "13": "START_STATISTICS",
-   "14": "END_STATISTICS"
-  },
-  "encoded": {
-   "startinstrumentrefdata": "1",
-   "endinstrumentrefdata": "2",
-   "startoffmarkettrades": "3",
-   "endoffmarkettrades": "4",
-   "startorderbooktrades": "5",
-   "endorderbooktrades": "6",
-   "startopeninterest": "7",
-   "endopeninterest": "8",
-   "startsettlementprices": "9",
-   "endsettlementprices": "10",
-   "startstatsrefdata": "11",
-   "endstatsrefdata": "12",
-   "startstatistics": "13",
-   "endstatistics": "14",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14"
-  },
-  "decoded": {
-   "1": "startinstrumentrefdata",
-   "2": "endinstrumentrefdata",
-   "3": "startoffmarkettrades",
-   "4": "endoffmarkettrades",
-   "5": "startorderbooktrades",
-   "6": "endorderbooktrades",
-   "7": "startopeninterest",
-   "8": "endopeninterest",
-   "9": "startsettlementprices",
-   "10": "endsettlementprices",
-   "11": "startstatsrefdata",
-   "12": "endstatsrefdata",
-   "13": "startstatistics",
-   "14": "endstatistics"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "START_INSTRUMENT_REF_DATA"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "END_INSTRUMENT_REF_DATA"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "START_OFF_MARKET_TRADES"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "END_OFF_MARKET_TRADES"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "START_ORDER_BOOK_TRADES"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "END_ORDER_BOOK_TRADES"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "START_OPEN_INTEREST"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "END_OPEN_INTEREST"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "START_SETTLEMENT_PRICES"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "END_SETTLEMENT_PRICES"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "START_STATS_REF_DATA"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "END_STATS_REF_DATA"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "START_STATISTICS"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "END_STATISTICS"
+    ]
+   }
+  ]
  },
  "2536": {
   "name": "MDReportCount",
@@ -540,24 +646,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ACTIVE",
-   "2": "INACTIVE",
-   "3": "PUBLISHED"
-  },
-  "encoded": {
-   "active": "1",
-   "inactive": "2",
-   "published": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "active",
-   "2": "inactive",
-   "3": "published"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACTIVE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INACTIVE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PUBLISHED"
+    ]
+   }
+  ]
  },
  "2543": {
   "name": "MarketSegmentType",
@@ -566,24 +677,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "POOL",
-   "2": "RETAIL",
-   "3": "WHOLESALE"
-  },
-  "encoded": {
-   "pool": "1",
-   "retail": "2",
-   "wholesale": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "pool",
-   "2": "retail",
-   "3": "wholesale"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "POOL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "RETAIL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WHOLESALE"
+    ]
+   }
+  ]
  },
  "2544": {
   "name": "MarketSegmentSubType",
@@ -592,16 +708,15 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "INTER_PRODUCT_SPREAD"
-  },
-  "encoded": {
-   "interproductspread": "1",
-   "1": "1"
-  },
-  "decoded": {
-   "1": "interproductspread"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTER_PRODUCT_SPREAD"
+    ]
+   }
+  ]
  },
  "2545": {
   "name": "NoRelatedMarketSegments",
@@ -626,24 +741,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "MARKET_SEGMENT_POOL_MEMBER",
-   "2": "RETAIL_SEGMENT",
-   "3": "WHOLESALE_SEGMENT"
-  },
-  "encoded": {
-   "marketsegmentpoolmember": "1",
-   "retailsegment": "2",
-   "wholesalesegment": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "marketsegmentpoolmember",
-   "2": "retailsegment",
-   "3": "wholesalesegment"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MARKET_SEGMENT_POOL_MEMBER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "RETAIL_SEGMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WHOLESALE_SEGMENT"
+    ]
+   }
+  ]
  },
  "2548": {
   "name": "NoAuctionTypeRules",
@@ -740,20 +860,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "N": "NO",
-   "Y": "YES"
-  },
-  "encoded": {
-   "no": "N",
-   "yes": "Y",
-   "n": "N",
-   "y": "Y"
-  },
-  "decoded": {
-   "N": "no",
-   "Y": "yes"
-  }
+  "values": [
+   {
+    "value": "N",
+    "meaning": "",
+    "aliases": [
+     "NO"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "YES"
+    ]
+   }
+  ]
  },
  "2560": {
   "name": "NoFlexProductEligibilities",
@@ -842,20 +964,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_PRIORITY",
-   "1": "UNCONDITIONAL_PRIORITY"
-  },
-  "encoded": {
-   "nopriority": "0",
-   "unconditionalpriority": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "nopriority",
-   "1": "unconditionalpriority"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_PRIORITY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNCONDITIONAL_PRIORITY"
+    ]
+   }
+  ]
  },
  "2571": {
   "name": "TickRuleProductComplex",
@@ -928,40 +1052,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "SHARES",
-   "2": "DERIVATIVES",
-   "3": "PAYMENT_VS_PAYMENT",
-   "4": "NOTIONAL",
-   "5": "CASCADE",
-   "6": "REPURCHASE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "shares": "1",
-   "derivatives": "2",
-   "paymentvspayment": "3",
-   "notional": "4",
-   "cascade": "5",
-   "repurchase": "6",
-   "other": "99",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "99": "99"
-  },
-  "decoded": {
-   "1": "shares",
-   "2": "derivatives",
-   "3": "paymentvspayment",
-   "4": "notional",
-   "5": "cascade",
-   "6": "repurchase",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SHARES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "DERIVATIVES"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PAYMENT_VS_PAYMENT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NOTIONAL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CASCADE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "REPURCHASE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2580": {
   "name": "NoClearingPriceParameters",
@@ -1066,20 +1207,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AUTOMATIC",
-   "1": "MANUAL"
-  },
-  "encoded": {
-   "automatic": "0",
-   "manual": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "automatic",
-   "1": "manual"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MANUAL"
+    ]
+   }
+  ]
  },
  "2593": {
   "name": "NoOrderAttributes",
@@ -1096,72 +1239,113 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AGGREGATED_ORDER",
-   "1": "PENDING_ALLOCATION",
-   "2": "LIQUIDITY_PROVISION_ACTIVITY_ORDER",
-   "3": "RISK_REDUCTION_ORDER",
-   "4": "ALGORITHMIC_ORDER",
-   "5": "SYSTEMATIC_INTERNALISER_ORDER",
-   "6": "ALL_EXECUTIONS_SUBMITTED_TO_APA",
-   "7": "ORDER_EXECUTION_INSTRUCTED_BY_CLIENT",
-   "8": "LARGE_IN_SCALE",
-   "9": "HIDDEN",
-   "10": "SUBJECT_TO_EUSTO",
-   "11": "SUBJECT_TO_UKSTO",
-   "12": "REPRESENTATIVE_ORDER",
-   "13": "LINKAGE_TYPE",
-   "14": "EXEMPT_FROM_STO"
-  },
-  "encoded": {
-   "aggregatedorder": "0",
-   "pendingallocation": "1",
-   "liquidityprovisionactivityorder": "2",
-   "riskreductionorder": "3",
-   "algorithmicorder": "4",
-   "systematicinternaliserorder": "5",
-   "allexecutionssubmittedtoapa": "6",
-   "orderexecutioninstructedbyclient": "7",
-   "largeinscale": "8",
-   "hidden": "9",
-   "subjecttoeusto": "10",
-   "subjecttouksto": "11",
-   "representativeorder": "12",
-   "linkagetype": "13",
-   "exemptfromsto": "14",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14"
-  },
-  "decoded": {
-   "0": "aggregatedorder",
-   "1": "pendingallocation",
-   "2": "liquidityprovisionactivityorder",
-   "3": "riskreductionorder",
-   "4": "algorithmicorder",
-   "5": "systematicinternaliserorder",
-   "6": "allexecutionssubmittedtoapa",
-   "7": "orderexecutioninstructedbyclient",
-   "8": "largeinscale",
-   "9": "hidden",
-   "10": "subjecttoeusto",
-   "11": "subjecttouksto",
-   "12": "representativeorder",
-   "13": "linkagetype",
-   "14": "exemptfromsto"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AGGREGATED_ORDER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PENDING_ALLOCATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "LIQUIDITY_PROVISION_ACTIVITY_ORDER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "RISK_REDUCTION_ORDER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ALGORITHMIC_ORDER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SYSTEMATIC_INTERNALISER_ORDER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ALL_EXECUTIONS_SUBMITTED_TO_APA"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ORDER_EXECUTION_INSTRUCTED_BY_CLIENT"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "LARGE_IN_SCALE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "HIDDEN"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "SUBJECT_TO_EUSTO"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "SUBJECT_TO_UKSTO"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "REPRESENTATIVE_ORDER"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "LINKAGE_TYPE"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "EXEMPT_FROM_STO"
+    ]
+   }
+  ]
  },
  "2595": {
   "name": "OrderAttributeValue",
@@ -1202,20 +1386,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CLOSE",
-   "1": "HEDGE_ELECTION"
-  },
-  "encoded": {
-   "close": "0",
-   "hedgeelection": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "close",
-   "1": "hedgeelection"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "HEDGE_ELECTION"
+    ]
+   }
+  ]
  },
  "2600": {
   "name": "StrikeIndexCurvePoint",
@@ -1232,24 +1418,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BID",
-   "1": "MID",
-   "2": "OFFER"
-  },
-  "encoded": {
-   "bid": "0",
-   "mid": "1",
-   "offer": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "bid",
-   "1": "mid",
-   "2": "offer"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFFER"
+    ]
+   }
+  ]
  },
  "2602": {
   "name": "ExtraordinaryEventAdjustmentMethod",
@@ -1258,20 +1449,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CALCULATION_AGENT",
-   "1": "OPTIONS_EXCHANGE"
-  },
-  "encoded": {
-   "calculationagent": "0",
-   "optionsexchange": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "calculationagent",
-   "1": "optionsexchange"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CALCULATION_AGENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OPTIONS_EXCHANGE"
+    ]
+   }
+  ]
  },
  "2603": {
   "name": "ExchangeLookAlike",
@@ -1392,24 +1585,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EXECUTION",
-   "1": "PORTFOLIO_REBALANCING",
-   "2": "STANDARD"
-  },
-  "encoded": {
-   "execution": "0",
-   "portfoliorebalancing": "1",
-   "standard": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "execution",
-   "1": "portfoliorebalancing",
-   "2": "standard"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EXECUTION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PORTFOLIO_REBALANCING"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STANDARD"
+    ]
+   }
+  ]
  },
  "2618": {
   "name": "PositionID",
@@ -1530,36 +1728,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "MARKET_VALUATION",
-   "1": "PORTFOLIO_VALUE",
-   "2": "VALUE_CONFIRMED",
-   "3": "COLLATERAL_CREDIT_VALUE",
-   "4": "ADDITIONAL_COLLATERAL_VALUE",
-   "5": "ESTIMATED_MARKET_VALUATION"
-  },
-  "encoded": {
-   "marketvaluation": "0",
-   "portfoliovalue": "1",
-   "valueconfirmed": "2",
-   "collateralcreditvalue": "3",
-   "additionalcollateralvalue": "4",
-   "estimatedmarketvaluation": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "marketvaluation",
-   "1": "portfoliovalue",
-   "2": "valueconfirmed",
-   "3": "collateralcreditvalue",
-   "4": "additionalcollateralvalue",
-   "5": "estimatedmarketvaluation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "MARKET_VALUATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PORTFOLIO_VALUE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "VALUE_CONFIRMED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "COLLATERAL_CREDIT_VALUE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ADDITIONAL_COLLATERAL_VALUE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ESTIMATED_MARKET_VALUATION"
+    ]
+   }
+  ]
  },
  "2633": {
   "name": "NoMiscFeeSubTypes",
@@ -1632,44 +1844,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNSPECIFIED",
-   "1": "ACCEPTANCE",
-   "2": "BROKER",
-   "3": "CLEARING_BROKER",
-   "4": "RETAIL",
-   "5": "SALES_COMMISSION",
-   "6": "LOCAL_COMMISSION",
-   "7": "RESEARCH_PAYMENT"
-  },
-  "encoded": {
-   "unspecified": "0",
-   "acceptance": "1",
-   "broker": "2",
-   "clearingbroker": "3",
-   "retail": "4",
-   "salescommission": "5",
-   "localcommission": "6",
-   "researchpayment": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "unspecified",
-   "1": "acceptance",
-   "2": "broker",
-   "3": "clearingbroker",
-   "4": "retail",
-   "5": "salescommission",
-   "6": "localcommission",
-   "7": "researchpayment"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNSPECIFIED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTANCE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BROKER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CLEARING_BROKER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "RETAIL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SALES_COMMISSION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "LOCAL_COMMISSION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "RESEARCH_PAYMENT"
+    ]
+   }
+  ]
  },
  "2642": {
   "name": "CommissionBasis",
@@ -1878,20 +2110,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NON_ALGORITHMIC_TRADE",
-   "1": "ALGORITHMIC_TRADE"
-  },
-  "encoded": {
-   "nonalgorithmictrade": "0",
-   "algorithmictrade": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "nonalgorithmictrade",
-   "1": "algorithmictrade"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NON_ALGORITHMIC_TRADE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ALGORITHMIC_TRADE"
+    ]
+   }
+  ]
  },
  "2668": {
   "name": "NoTrdRegPublications",
@@ -1908,40 +2142,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PRE_TRADE_TRANSPARENCY_WAIVER",
-   "1": "POST_TRADE_DEFERRAL",
-   "2": "EXEMPT_FROM_PUBLICATION",
-   "3": "ORDER_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
-   "4": "PRICE_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
-   "5": "ORDER_LEVEL_PUBLICATION_TO_THE_PUBLIC",
-   "6": "PUBLICATION_INTERNAL_TO_EXECUTION_VENUE"
-  },
-  "encoded": {
-   "pretradetransparencywaiver": "0",
-   "posttradedeferral": "1",
-   "exemptfrompublication": "2",
-   "orderlevelpublicationtosubscribers": "3",
-   "pricelevelpublicationtosubscribers": "4",
-   "orderlevelpublicationtothepublic": "5",
-   "publicationinternaltoexecutionvenue": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "pretradetransparencywaiver",
-   "1": "posttradedeferral",
-   "2": "exemptfrompublication",
-   "3": "orderlevelpublicationtosubscribers",
-   "4": "pricelevelpublicationtosubscribers",
-   "5": "orderlevelpublicationtothepublic",
-   "6": "publicationinternaltoexecutionvenue"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PRE_TRADE_TRANSPARENCY_WAIVER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "POST_TRADE_DEFERRAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXEMPT_FROM_PUBLICATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ORDER_LEVEL_PUBLICATION_TO_SUBSCRIBERS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PRICE_LEVEL_PUBLICATION_TO_SUBSCRIBERS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ORDER_LEVEL_PUBLICATION_TO_THE_PUBLIC"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PUBLICATION_INTERNAL_TO_EXECUTION_VENUE"
+    ]
+   }
+  ]
  },
  "2670": {
   "name": "TrdRegPublicationReason",
@@ -1950,80 +2201,127 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_BOOK_ORDER_DUE_TO_AVERAGE_SPREAD_PRICE",
-   "1": "NO_BOOK_ORDER_DUE_TO_REF_PRICE",
-   "2": "NO_BOOK_ORDER_DUE_TO_OTHER_CONDITIONS",
-   "3": "NO_PUBLIC_PRICE_DUE_TO_REF_PRICE",
-   "4": "NO_PUBLIC_PRICE_DUE_TO_ILLIQUID",
-   "5": "NO_PUBLIC_PRICE_DUE_TO_ORDER_SIZE",
-   "6": "DEFERRAL_DUE_TO_LARGE_IN_SCALE",
-   "7": "DEFERRAL_DUE_TO_ILLIQUID",
-   "8": "DEFERRAL_DUE_TO_SIZE_SPECIFIC",
-   "9": "NO_PUBLIC_PRICE_DUE_TO_LARGE_IN_SCALE",
-   "10": "NO_PUBLIC_PRICE_SIZE_DUE_TO_ORDER_HIDDEN",
-   "11": "EXEMPTED_DUE_TO_SECURITIES_FINANCING_TRANSACTION",
-   "12": "EXEMPTED_DUE_TO_ESCB_POLICY_TRANSACTION",
-   "13": "EXCEPTION_DUE_TO_REPORT_BY_PAPER",
-   "14": "EXCEPTION_DUE_TO_TRADE_EXECUTED_WITH_NON_REPORTING_PARTY",
-   "15": "EXCEPTION_DUE_TO_INTRA_FIRM_ORDER",
-   "16": "REPORTED_OUTSIDE_REPORTING_HOURS"
-  },
-  "encoded": {
-   "nobookorderduetoaveragespreadprice": "0",
-   "nobookorderduetorefprice": "1",
-   "nobookorderduetootherconditions": "2",
-   "nopublicpriceduetorefprice": "3",
-   "nopublicpriceduetoilliquid": "4",
-   "nopublicpriceduetoordersize": "5",
-   "deferralduetolargeinscale": "6",
-   "deferralduetoilliquid": "7",
-   "deferralduetosizespecific": "8",
-   "nopublicpriceduetolargeinscale": "9",
-   "nopublicpricesizeduetoorderhidden": "10",
-   "exemptedduetosecuritiesfinancingtransaction": "11",
-   "exemptedduetoescbpolicytransaction": "12",
-   "exceptionduetoreportbypaper": "13",
-   "exceptionduetotradeexecutedwithnonreportingparty": "14",
-   "exceptionduetointrafirmorder": "15",
-   "reportedoutsidereportinghours": "16",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16"
-  },
-  "decoded": {
-   "0": "nobookorderduetoaveragespreadprice",
-   "1": "nobookorderduetorefprice",
-   "2": "nobookorderduetootherconditions",
-   "3": "nopublicpriceduetorefprice",
-   "4": "nopublicpriceduetoilliquid",
-   "5": "nopublicpriceduetoordersize",
-   "6": "deferralduetolargeinscale",
-   "7": "deferralduetoilliquid",
-   "8": "deferralduetosizespecific",
-   "9": "nopublicpriceduetolargeinscale",
-   "10": "nopublicpricesizeduetoorderhidden",
-   "11": "exemptedduetosecuritiesfinancingtransaction",
-   "12": "exemptedduetoescbpolicytransaction",
-   "13": "exceptionduetoreportbypaper",
-   "14": "exceptionduetotradeexecutedwithnonreportingparty",
-   "15": "exceptionduetointrafirmorder",
-   "16": "reportedoutsidereportinghours"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_BOOK_ORDER_DUE_TO_AVERAGE_SPREAD_PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NO_BOOK_ORDER_DUE_TO_REF_PRICE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NO_BOOK_ORDER_DUE_TO_OTHER_CONDITIONS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "NO_PUBLIC_PRICE_DUE_TO_REF_PRICE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NO_PUBLIC_PRICE_DUE_TO_ILLIQUID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "NO_PUBLIC_PRICE_DUE_TO_ORDER_SIZE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "DEFERRAL_DUE_TO_LARGE_IN_SCALE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "DEFERRAL_DUE_TO_ILLIQUID"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "DEFERRAL_DUE_TO_SIZE_SPECIFIC"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "NO_PUBLIC_PRICE_DUE_TO_LARGE_IN_SCALE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "NO_PUBLIC_PRICE_SIZE_DUE_TO_ORDER_HIDDEN"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "EXEMPTED_DUE_TO_SECURITIES_FINANCING_TRANSACTION"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "EXEMPTED_DUE_TO_ESCB_POLICY_TRANSACTION"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "EXCEPTION_DUE_TO_REPORT_BY_PAPER"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "EXCEPTION_DUE_TO_TRADE_EXECUTED_WITH_NON_REPORTING_PARTY"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "EXCEPTION_DUE_TO_INTRA_FIRM_ORDER"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "REPORTED_OUTSIDE_REPORTING_HOURS"
+    ]
+   }
+  ]
  },
  "2671": {
   "name": "SideTradeReportingIndicator",
@@ -2064,64 +2362,99 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "TRADING_RISK_CONTROL",
-   "2": "CLEARING_RISK_CONTROL",
-   "3": "MARKET_MAKER_PROTECTION",
-   "4": "STOP_TRADING",
-   "5": "EMERGENCY_ACTION",
-   "6": "SESSION_LOSS_LOGOUT",
-   "7": "DUPLICATE_LOGIN",
-   "8": "PRODUCT_NOT_TRADED",
-   "9": "INSTRUMENT_NOT_TRADED",
-   "10": "COMPLE_INSTRUMENT_DELETED",
-   "11": "CIRCUIT_BREAKER_ACTIVATED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "none": "0",
-   "tradingriskcontrol": "1",
-   "clearingriskcontrol": "2",
-   "marketmakerprotection": "3",
-   "stoptrading": "4",
-   "emergencyaction": "5",
-   "sessionlosslogout": "6",
-   "duplicatelogin": "7",
-   "productnottraded": "8",
-   "instrumentnottraded": "9",
-   "compleinstrumentdeleted": "10",
-   "circuitbreakeractivated": "11",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "tradingriskcontrol",
-   "2": "clearingriskcontrol",
-   "3": "marketmakerprotection",
-   "4": "stoptrading",
-   "5": "emergencyaction",
-   "6": "sessionlosslogout",
-   "7": "duplicatelogin",
-   "8": "productnottraded",
-   "9": "instrumentnottraded",
-   "10": "compleinstrumentdeleted",
-   "11": "circuitbreakeractivated",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRADING_RISK_CONTROL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLEARING_RISK_CONTROL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "MARKET_MAKER_PROTECTION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "STOP_TRADING"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "EMERGENCY_ACTION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SESSION_LOSS_LOGOUT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "DUPLICATE_LOGIN"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PRODUCT_NOT_TRADED"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_NOT_TRADED"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "COMPLE_INSTRUMENT_DELETED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "CIRCUIT_BREAKER_ACTIVATED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2676": {
   "name": "MaximumPriceDeviation",
@@ -2138,20 +2471,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ORDER_SUSPENDED",
-   "1": "INSTRUMENT_SUSPENDED"
-  },
-  "encoded": {
-   "ordersuspended": "0",
-   "instrumentsuspended": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "ordersuspended",
-   "1": "instrumentsuspended"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ORDER_SUSPENDED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_SUSPENDED"
+    ]
+   }
+  ]
  },
  "2678": {
   "name": "TotalNotAffectedOrders",
@@ -2168,28 +2503,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_CHANGE",
-   "1": "EXECUTING_PARTY_CHANGE",
-   "2": "ENTERING_PARTY_CHANGE",
-   "3": "SPECIFIED_PARTY_CHANGE"
-  },
-  "encoded": {
-   "nochange": "0",
-   "executingpartychange": "1",
-   "enteringpartychange": "2",
-   "specifiedpartychange": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "nochange",
-   "1": "executingpartychange",
-   "2": "enteringpartychange",
-   "3": "specifiedpartychange"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_CHANGE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "EXECUTING_PARTY_CHANGE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ENTERING_PARTY_CHANGE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SPECIFIED_PARTY_CHANGE"
+    ]
+   }
+  ]
  },
  "2680": {
   "name": "LegAccount",
@@ -2206,28 +2549,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "STANDARD_ITM",
-   "1": "ATMITM",
-   "2": "ATM_CALL_ITM",
-   "3": "ATM_PUT_ITM"
-  },
-  "encoded": {
-   "standarditm": "0",
-   "atmitm": "1",
-   "atmcallitm": "2",
-   "atmputitm": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "standarditm",
-   "1": "atmitm",
-   "2": "atmcallitm",
-   "3": "atmputitm"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "STANDARD_ITM"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ATMITM"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ATM_CALL_ITM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ATM_PUT_ITM"
+    ]
+   }
+  ]
  },
  "2682": {
   "name": "LegInTheMoneyCondition",
@@ -2412,28 +2763,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_RESTRICTION",
-   "1": "TRADED_ONLY_ON_TRADING_VENUE",
-   "2": "TRADED_ONLY_ON_SI",
-   "3": "TRADED_ON_TRADING_VENUE_OR_SI"
-  },
-  "encoded": {
-   "norestriction": "0",
-   "tradedonlyontradingvenue": "1",
-   "tradedonlyonsi": "2",
-   "tradedontradingvenueorsi": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "norestriction",
-   "1": "tradedonlyontradingvenue",
-   "2": "tradedonlyonsi",
-   "3": "tradedontradingvenueorsi"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_RESTRICTION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRADED_ONLY_ON_TRADING_VENUE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TRADED_ONLY_ON_SI"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TRADED_ON_TRADING_VENUE_OR_SI"
+    ]
+   }
+  ]
  },
  "2705": {
   "name": "MarketCondition",
@@ -2442,24 +2801,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NORMAL",
-   "1": "STRESSED",
-   "2": "EXCEPTIONAL"
-  },
-  "encoded": {
-   "normal": "0",
-   "stressed": "1",
-   "exceptional": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "normal",
-   "1": "stressed",
-   "2": "exceptional"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NORMAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "STRESSED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXCEPTIONAL"
+    ]
+   }
+  ]
  },
  "2706": {
   "name": "NoQuoteAttributes",
@@ -2476,32 +2840,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "QUOTE_ABOVE_STANDARD_MARKET_SIZE",
-   "1": "QUOTE_ABOVE_SPECIFIC_INSTRUMENT_SIZE",
-   "2": "QUOTE_APPLICABLE_FOR_LIQUIDTY_PROVISION_ACTIVITY",
-   "3": "QUOTE_ISSUER_STATUS",
-   "4": "BID_OR_ASK_REQUEST"
-  },
-  "encoded": {
-   "quoteabovestandardmarketsize": "0",
-   "quoteabovespecificinstrumentsize": "1",
-   "quoteapplicableforliquidtyprovisionactivity": "2",
-   "quoteissuerstatus": "3",
-   "bidoraskrequest": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "quoteabovestandardmarketsize",
-   "1": "quoteabovespecificinstrumentsize",
-   "2": "quoteapplicableforliquidtyprovisionactivity",
-   "3": "quoteissuerstatus",
-   "4": "bidoraskrequest"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_ABOVE_STANDARD_MARKET_SIZE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_ABOVE_SPECIFIC_INSTRUMENT_SIZE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_APPLICABLE_FOR_LIQUIDTY_PROVISION_ACTIVITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_ISSUER_STATUS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BID_OR_ASK_REQUEST"
+    ]
+   }
+  ]
  },
  "2708": {
   "name": "QuoteAttributeValue",
@@ -2526,24 +2901,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCRUED_INTEREST_IS_FACTORED",
-   "1": "TAX_IS_FACTORED",
-   "2": "BOND_AMORTIZATION_IS_FACTORED"
-  },
-  "encoded": {
-   "accruedinterestisfactored": "0",
-   "taxisfactored": "1",
-   "bondamortizationisfactored": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "accruedinterestisfactored",
-   "1": "taxisfactored",
-   "2": "bondamortizationisfactored"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCRUED_INTEREST_IS_FACTORED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TAX_IS_FACTORED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BOND_AMORTIZATION_IS_FACTORED"
+    ]
+   }
+  ]
  },
  "2711": {
   "name": "MDValueTier",
@@ -2552,24 +2932,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "RANGE1",
-   "2": "RANGE2",
-   "3": "RANGE3"
-  },
-  "encoded": {
-   "range1": "1",
-   "range2": "2",
-   "range3": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "range1",
-   "2": "range2",
-   "3": "range3"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RANGE1"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "RANGE2"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "RANGE3"
+    ]
+   }
+  ]
  },
  "2712": {
   "name": "MiscFeeQualifier",
@@ -2578,20 +2963,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CONTRIBUTES",
-   "1": "DOES_NOT_CONTRIBUTE"
-  },
-  "encoded": {
-   "contributes": "0",
-   "doesnotcontribute": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "contributes",
-   "1": "doesnotcontribute"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CONTRIBUTES"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DOES_NOT_CONTRIBUTE"
+    ]
+   }
+  ]
  },
  "2713": {
   "name": "MiscFeeDesc",
@@ -2696,24 +3083,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RESEARCH_PAYMENT_ACCOUNT",
-   "1": "COMMISSION_SHARING_AGREEMENT",
-   "2": "OTHER_TYPE_RESEARCH_PAYMENT"
-  },
-  "encoded": {
-   "researchpaymentaccount": "0",
-   "commissionsharingagreement": "1",
-   "othertyperesearchpayment": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "researchpaymentaccount",
-   "1": "commissionsharingagreement",
-   "2": "othertyperesearchpayment"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RESEARCH_PAYMENT_ACCOUNT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "COMMISSION_SHARING_AGREEMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OTHER_TYPE_RESEARCH_PAYMENT"
+    ]
+   }
+  ]
  },
  "2726": {
   "name": "AllocCommissionAmountSubType",
@@ -2802,40 +3194,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ARGUS_MC_CLOSKEY",
-   "1": "BALTIC",
-   "2": "EXCHANGE",
-   "3": "GLOBAL_COAL",
-   "4": "IHS_MC_CLOSKEY",
-   "5": "PLATTS",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "argusmccloskey": "0",
-   "baltic": "1",
-   "exchange": "2",
-   "globalcoal": "3",
-   "ihsmccloskey": "4",
-   "platts": "5",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "argusmccloskey",
-   "1": "baltic",
-   "2": "exchange",
-   "3": "globalcoal",
-   "4": "ihsmccloskey",
-   "5": "platts",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ARGUS_MC_CLOSKEY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BALTIC"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "GLOBAL_COAL"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "IHS_MC_CLOSKEY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PLATTS"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2737": {
   "name": "FinancialInstrumentShortName",
@@ -2932,28 +3341,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ADMIT_TO_TRADE_REQUEST_DATE",
-   "1": "ADMIT_TO_TRADE_APPROVAL_DATE",
-   "2": "ADMIT_TO_TRADE_OR_FIRST_TRADE_DATE",
-   "3": "TERMINATION_DATE"
-  },
-  "encoded": {
-   "admittotraderequestdate": "0",
-   "admittotradeapprovaldate": "1",
-   "admittotradeorfirsttradedate": "2",
-   "terminationdate": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "admittotraderequestdate",
-   "1": "admittotradeapprovaldate",
-   "2": "admittotradeorfirsttradedate",
-   "3": "terminationdate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ADMIT_TO_TRADE_REQUEST_DATE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADMIT_TO_TRADE_APPROVAL_DATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ADMIT_TO_TRADE_OR_FIRST_TRADE_DATE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TERMINATION_DATE"
+    ]
+   }
+  ]
  },
  "2749": {
   "name": "ExecutionTimestamp",
@@ -2994,52 +3411,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "DIVIDEND",
-   "2": "VARIANCE",
-   "3": "VOLATILITY",
-   "4": "TOTAL_RETURN",
-   "5": "CONTRACT_FOR_DIFFERENCE",
-   "6": "CREDIT_DEFAULT",
-   "7": "SPREAD_BET",
-   "8": "PRICE",
-   "9": "FORWARD_PRICE_UNDERLYING_INSTRUMENT",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "dividend": "1",
-   "variance": "2",
-   "volatility": "3",
-   "totalreturn": "4",
-   "contractfordifference": "5",
-   "creditdefault": "6",
-   "spreadbet": "7",
-   "price": "8",
-   "forwardpriceunderlyinginstrument": "9",
-   "other": "99",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "99": "99"
-  },
-  "decoded": {
-   "1": "dividend",
-   "2": "variance",
-   "3": "volatility",
-   "4": "totalreturn",
-   "5": "contractfordifference",
-   "6": "creditdefault",
-   "7": "spreadbet",
-   "8": "price",
-   "9": "forwardpriceunderlyinginstrument",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "VARIANCE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "VOLATILITY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_RETURN"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CONTRACT_FOR_DIFFERENCE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_DEFAULT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SPREAD_BET"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PRICE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "FORWARD_PRICE_UNDERLYING_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2754": {
   "name": "LegDeliveryRouteOrCharter",
@@ -3120,28 +3563,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TIME_WEIGHTED_AVERAGE_PRICE",
-   "1": "VOLUME_WEIGHTED_AVERAGE_PRICE",
-   "2": "PERCENT_OF_VOLUME_AVERAGE_PRICE",
-   "3": "LIMIT_ORDER_AVERAGE_PRICE"
-  },
-  "encoded": {
-   "timeweightedaverageprice": "0",
-   "volumeweightedaverageprice": "1",
-   "percentofvolumeaverageprice": "2",
-   "limitorderaverageprice": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "timeweightedaverageprice",
-   "1": "volumeweightedaverageprice",
-   "2": "percentofvolumeaverageprice",
-   "3": "limitorderaverageprice"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TIME_WEIGHTED_AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "VOLUME_WEIGHTED_AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PERCENT_OF_VOLUME_AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "LIMIT_ORDER_AVERAGE_PRICE"
+    ]
+   }
+  ]
  },
  "2764": {
   "name": "AveragePriceStartTime",
@@ -3174,32 +3625,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ADDED",
-   "1": "CANCELED",
-   "2": "REPLACED",
-   "3": "CHANGED",
-   "4": "PENDING"
-  },
-  "encoded": {
-   "added": "0",
-   "canceled": "1",
-   "replaced": "2",
-   "changed": "3",
-   "pending": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "added",
-   "1": "canceled",
-   "2": "replaced",
-   "3": "changed",
-   "4": "pending"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ADDED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CANCELED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REPLACED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CHANGED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PENDING"
+    ]
+   }
+  ]
  },
  "2768": {
   "name": "AllocRequestStatus",
@@ -3208,20 +3670,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2769": {
   "name": "AllocAvgPxIndicator",
@@ -3262,40 +3726,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_MATCHING_CONFIRMATION",
-   "1": "NO_MATCHING_ALLOCATION",
-   "2": "ALLOCATION_DATA_ELEMENT_MISSING",
-   "3": "CONFIRMATION_DATA_ELEMENT_MISSING",
-   "4": "DATA_DIFFERENCE_NOT_WITHIN_TOLERANCE",
-   "5": "MATCH_WITHIN_TOLERANCE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "nomatchingconfirmation": "0",
-   "nomatchingallocation": "1",
-   "allocationdataelementmissing": "2",
-   "confirmationdataelementmissing": "3",
-   "datadifferencenotwithintolerance": "4",
-   "matchwithintolerance": "5",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "nomatchingconfirmation",
-   "1": "nomatchingallocation",
-   "2": "allocationdataelementmissing",
-   "3": "confirmationdataelementmissing",
-   "4": "datadifferencenotwithintolerance",
-   "5": "matchwithintolerance",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_MATCHING_CONFIRMATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NO_MATCHING_ALLOCATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ALLOCATION_DATA_ELEMENT_MISSING"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CONFIRMATION_DATA_ELEMENT_MISSING"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DATA_DIFFERENCE_NOT_WITHIN_TOLERANCE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "MATCH_WITHIN_TOLERANCE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2774": {
   "name": "MatchExceptionElementType",
@@ -3304,84 +3785,134 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ACCRUED_INTEREST",
-   "2": "DEAL_PRICE",
-   "3": "TRADE_DATE",
-   "4": "SETTLEMENT_DATE",
-   "5": "SIDE_INDICATOR",
-   "6": "TRADED_CURRENCY",
-   "7": "ACCOUNT_ID",
-   "8": "EXECUTING_BROKER_ID",
-   "9": "SETTLEMENT_CURRENCY_AND_AMOUNT",
-   "10": "INVESTMENT_MANAGER_ID",
-   "11": "NET_AMOUNT",
-   "12": "PLACE_OF_SETTLEMENT",
-   "13": "COMMISSIONS",
-   "14": "SECURITY_IDENTIFIER",
-   "15": "QUALITY_ALLOCATED",
-   "16": "PRINCIPAL",
-   "17": "FEES",
-   "18": "TAX"
-  },
-  "encoded": {
-   "accruedinterest": "1",
-   "dealprice": "2",
-   "tradedate": "3",
-   "settlementdate": "4",
-   "sideindicator": "5",
-   "tradedcurrency": "6",
-   "accountid": "7",
-   "executingbrokerid": "8",
-   "settlementcurrencyandamount": "9",
-   "investmentmanagerid": "10",
-   "netamount": "11",
-   "placeofsettlement": "12",
-   "commissions": "13",
-   "securityidentifier": "14",
-   "qualityallocated": "15",
-   "principal": "16",
-   "fees": "17",
-   "tax": "18",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18"
-  },
-  "decoded": {
-   "1": "accruedinterest",
-   "2": "dealprice",
-   "3": "tradedate",
-   "4": "settlementdate",
-   "5": "sideindicator",
-   "6": "tradedcurrency",
-   "7": "accountid",
-   "8": "executingbrokerid",
-   "9": "settlementcurrencyandamount",
-   "10": "investmentmanagerid",
-   "11": "netamount",
-   "12": "placeofsettlement",
-   "13": "commissions",
-   "14": "securityidentifier",
-   "15": "qualityallocated",
-   "16": "principal",
-   "17": "fees",
-   "18": "tax"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCRUED_INTEREST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "DEAL_PRICE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TRADE_DATE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SETTLEMENT_DATE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SIDE_INDICATOR"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "TRADED_CURRENCY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ACCOUNT_ID"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "EXECUTING_BROKER_ID"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "SETTLEMENT_CURRENCY_AND_AMOUNT"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "INVESTMENT_MANAGER_ID"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "NET_AMOUNT"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "PLACE_OF_SETTLEMENT"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "COMMISSIONS"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "QUALITY_ALLOCATED"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "PRINCIPAL"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "FEES"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "TAX"
+    ]
+   }
+  ]
  },
  "2775": {
   "name": "MatchExceptionElementName",
@@ -3422,20 +3953,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "FIXED_AMOUNT",
-   "2": "PERCENTAGE"
-  },
-  "encoded": {
-   "fixedamount": "1",
-   "percentage": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "fixedamount",
-   "2": "percentage"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIXED_AMOUNT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ]
  },
  "2780": {
   "name": "MatchExceptionText",
@@ -3460,20 +3993,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "MANDATORY",
-   "2": "OPTIONAL"
-  },
-  "encoded": {
-   "mandatory": "1",
-   "optional": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "mandatory",
-   "2": "optional"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MANDATORY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OPTIONAL"
+    ]
+   }
+  ]
  },
  "2783": {
   "name": "MatchingDataPointValue",
@@ -3522,24 +4057,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "CANCEL",
-   "2": "REPLACE"
-  },
-  "encoded": {
-   "new": "0",
-   "cancel": "1",
-   "replace": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "cancel",
-   "2": "replace"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CANCEL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REPLACE"
+    ]
+   }
+  ]
  },
  "2789": {
   "name": "AggregatedQty",
@@ -3556,20 +4096,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2791": {
   "name": "TradeAggregationRejectReason",
@@ -3578,24 +4120,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNKNOWN_ORDERS",
-   "1": "UNKNOWN_EXECUTION_FILLS",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "unknownorders": "0",
-   "unknownexecutionfills": "1",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "unknownorders",
-   "1": "unknownexecutionfills",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_ORDERS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_EXECUTION_FILLS"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2792": {
   "name": "TradeAggregationReportID",
@@ -3628,24 +4175,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "REGULAR",
-   "1": "OFFSHORE",
-   "2": "ONSHORE"
-  },
-  "encoded": {
-   "regular": "0",
-   "offshore": "1",
-   "onshore": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "regular",
-   "1": "offshore",
-   "2": "onshore"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "REGULAR"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OFFSHORE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ONSHORE"
+    ]
+   }
+  ]
  },
  "2796": {
   "name": "FXBenchmarkRateFix",
@@ -3718,24 +4270,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "REPLACE",
-   "2": "STATUS"
-  },
-  "encoded": {
-   "new": "0",
-   "replace": "1",
-   "status": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "replace",
-   "2": "status"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REPLACE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STATUS"
+    ]
+   }
+  ]
  },
  "2805": {
   "name": "ReplaceText",
@@ -3752,28 +4309,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECEIVED",
-   "1": "ACCEPTED",
-   "2": "REJECTED",
-   "3": "DISPUTED"
-  },
-  "encoded": {
-   "received": "0",
-   "accepted": "1",
-   "rejected": "2",
-   "disputed": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "received",
-   "1": "accepted",
-   "2": "rejected",
-   "3": "disputed"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DISPUTED"
+    ]
+   }
+  ]
  },
  "2807": {
   "name": "CancelText",
@@ -3814,20 +4379,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "CANCEL"
-  },
-  "encoded": {
-   "new": "0",
-   "cancel": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "cancel"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CANCEL"
+    ]
+   }
+  ]
  },
  "2812": {
   "name": "PayRequestID",
@@ -3844,28 +4411,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECEIVED",
-   "1": "ACCEPTED",
-   "2": "REJECTED",
-   "3": "DISPUTED"
-  },
-  "encoded": {
-   "received": "0",
-   "accepted": "1",
-   "rejected": "2",
-   "disputed": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "received",
-   "1": "accepted",
-   "2": "rejected",
-   "3": "disputed"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DISPUTED"
+    ]
+   }
+  ]
  },
  "2814": {
   "name": "EncodedPostTradePaymentDesc",
@@ -3914,20 +4489,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DEBIT_PAY",
-   "1": "CREDIT_RECEIVE"
-  },
-  "encoded": {
-   "debitpay": "0",
-   "creditreceive": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "debitpay",
-   "1": "creditreceive"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DEBIT_PAY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_RECEIVE"
+    ]
+   }
+  ]
  },
  "2820": {
   "name": "PostTradePaymentDesc",
@@ -3960,32 +4537,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "INITIATED",
-   "2": "PENDING",
-   "3": "CONFIRMED",
-   "4": "REJECTED"
-  },
-  "encoded": {
-   "new": "0",
-   "initiated": "1",
-   "pending": "2",
-   "confirmed": "3",
-   "rejected": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "initiated",
-   "2": "pending",
-   "3": "confirmed",
-   "4": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INITIATED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PENDING"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CONFIRMED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2824": {
   "name": "PostTradePaymentType",
@@ -4034,20 +4622,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "N": "NO",
-   "Y": "YES"
-  },
-  "encoded": {
-   "no": "N",
-   "yes": "Y",
-   "n": "N",
-   "y": "Y"
-  },
-  "decoded": {
-   "N": "no",
-   "Y": "yes"
-  }
+  "values": [
+   {
+    "value": "N",
+    "meaning": "",
+    "aliases": [
+     "NO"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "YES"
+    ]
+   }
+  ]
  },
  "2830": {
   "name": "EventInitiatorType",
@@ -4056,24 +4646,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "C": "CUSTOMER_OR_CLIENT",
-   "E": "EXCHANGE_OR_EXECUTION_VENUE",
-   "F": "FIRM_OR_BROKER"
-  },
-  "encoded": {
-   "customerorclient": "C",
-   "exchangeorexecutionvenue": "E",
-   "firmorbroker": "F",
-   "c": "C",
-   "e": "E",
-   "f": "F"
-  },
-  "decoded": {
-   "C": "customerorclient",
-   "E": "exchangeorexecutionvenue",
-   "F": "firmorbroker"
-  }
+  "values": [
+   {
+    "value": "C",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER_OR_CLIENT"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_OR_EXECUTION_VENUE"
+    ]
+   },
+   {
+    "value": "F",
+    "meaning": "",
+    "aliases": [
+     "FIRM_OR_BROKER"
+    ]
+   }
+  ]
  },
  "2831": {
   "name": "NBBOEntryType",
@@ -4082,24 +4677,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BID",
-   "1": "OFFER",
-   "2": "MID_PRICE"
-  },
-  "encoded": {
-   "bid": "0",
-   "offer": "1",
-   "midprice": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "bid",
-   "1": "offer",
-   "2": "midprice"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OFFER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MID_PRICE"
+    ]
+   }
+  ]
  },
  "2832": {
   "name": "NBBOPrice",
@@ -4124,28 +4724,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_APPLICABLE",
-   "1": "DIRECT",
-   "2": "SIP",
-   "3": "HYBRID"
-  },
-  "encoded": {
-   "notapplicable": "0",
-   "direct": "1",
-   "sip": "2",
-   "hybrid": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "notapplicable",
-   "1": "direct",
-   "2": "sip",
-   "3": "hybrid"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_APPLICABLE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DIRECT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SIP"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "HYBRID"
+    ]
+   }
+  ]
  },
  "2835": {
   "name": "OrderOriginationFirmID",
@@ -4170,20 +4778,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "N": "NO",
-   "Y": "YES"
-  },
-  "encoded": {
-   "no": "N",
-   "yes": "Y",
-   "n": "N",
-   "y": "Y"
-  },
-  "decoded": {
-   "N": "no",
-   "Y": "yes"
-  }
+  "values": [
+   {
+    "value": "N",
+    "meaning": "",
+    "aliases": [
+     "NO"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "YES"
+    ]
+   }
+  ]
  },
  "2838": {
   "name": "CurrentWorkingPrice",
@@ -4200,20 +4810,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "N": "NO",
-   "Y": "YES"
-  },
-  "encoded": {
-   "no": "N",
-   "yes": "Y",
-   "n": "N",
-   "y": "Y"
-  },
-  "decoded": {
-   "N": "no",
-   "Y": "yes"
-  }
+  "values": [
+   {
+    "value": "N",
+    "meaning": "",
+    "aliases": [
+     "NO"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "YES"
+    ]
+   }
+  ]
  },
  "2840": {
   "name": "CollateralReinvestmentRate",
@@ -4254,32 +4866,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "MONEY_MARKET_FUND",
-   "1": "OTHER_COMINGLED_POOL",
-   "2": "REPO_MARKET",
-   "3": "DIRECT_PURCHASE_OF_SECURITIES",
-   "4": "OTHER_INVESTMENTS"
-  },
-  "encoded": {
-   "moneymarketfund": "0",
-   "othercomingledpool": "1",
-   "repomarket": "2",
-   "directpurchaseofsecurities": "3",
-   "otherinvestments": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "moneymarketfund",
-   "1": "othercomingledpool",
-   "2": "repomarket",
-   "3": "directpurchaseofsecurities",
-   "4": "otherinvestments"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "MONEY_MARKET_FUND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OTHER_COMINGLED_POOL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REPO_MARKET"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DIRECT_PURCHASE_OF_SECURITIES"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "OTHER_INVESTMENTS"
+    ]
+   }
+  ]
  },
  "2845": {
   "name": "NoCollateralReinvestments",
@@ -4296,40 +4919,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "REPO",
-   "1": "CASH",
-   "2": "FREE_CEDITS",
-   "3": "CUSTOMER_SHORT_SALES",
-   "4": "BROKER_SHORT_SALES",
-   "5": "UNSECURED_BORROWING",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "repo": "0",
-   "cash": "1",
-   "freecedits": "2",
-   "customershortsales": "3",
-   "brokershortsales": "4",
-   "unsecuredborrowing": "5",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "repo",
-   "1": "cash",
-   "2": "freecedits",
-   "3": "customershortsales",
-   "4": "brokershortsales",
-   "5": "unsecuredborrowing",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "REPO"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CASH"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FREE_CEDITS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER_SHORT_SALES"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BROKER_SHORT_SALES"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "UNSECURED_BORROWING"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2847": {
   "name": "FundingSourceCurrency",
@@ -4362,20 +5002,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "POSTED",
-   "1": "RECEIVED"
-  },
-  "encoded": {
-   "posted": "0",
-   "received": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "posted",
-   "1": "received"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "POSTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   }
+  ]
  },
  "2862": {
   "name": "SideCollateralReinvestmentRate",
@@ -4464,24 +5106,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EXCLUSIVE_ARRANGEMENT",
-   "1": "COLLATERAL_REUSE",
-   "2": "COLLATERAL_ARRANGMENT_TYPE"
-  },
-  "encoded": {
-   "exclusivearrangement": "0",
-   "collateralreuse": "1",
-   "collateralarrangmenttype": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "exclusivearrangement",
-   "1": "collateralreuse",
-   "2": "collateralarrangmenttype"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EXCLUSIVE_ARRANGEMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "COLLATERAL_REUSE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COLLATERAL_ARRANGMENT_TYPE"
+    ]
+   }
+  ]
  },
  "2873": {
   "name": "TransactionAttributeValue",
@@ -4562,20 +5209,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_ROUTING_ARRANGMENT_IN_PLACE",
-   "1": "ROUTING_ARRANGEMENT_IN_PLACE"
-  },
-  "encoded": {
-   "noroutingarrangmentinplace": "0",
-   "routingarrangementinplace": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "noroutingarrangmentinplace",
-   "1": "routingarrangementinplace"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_ROUTING_ARRANGMENT_IN_PLACE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ROUTING_ARRANGEMENT_IN_PLACE"
+    ]
+   }
+  ]
  },
  "2884": {
   "name": "ContraRoutingArrangmentIndicator",
@@ -4616,32 +5265,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NON_FIX_SOURCE",
-   "1": "SYSTEM_ORDER_IDENTIFIER",
-   "2": "CLIENT_ORDER_IDENTIFIER",
-   "3": "SECONDARY_ORDER_IDENTIFIER",
-   "4": "SECONDARY_CLIENT_ORDER_IDENTIFIER"
-  },
-  "encoded": {
-   "nonfixsource": "0",
-   "systemorderidentifier": "1",
-   "clientorderidentifier": "2",
-   "secondaryorderidentifier": "3",
-   "secondaryclientorderidentifier": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "nonfixsource",
-   "1": "systemorderidentifier",
-   "2": "clientorderidentifier",
-   "3": "secondaryorderidentifier",
-   "4": "secondaryclientorderidentifier"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NON_FIX_SOURCE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SYSTEM_ORDER_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLIENT_ORDER_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SECONDARY_ORDER_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SECONDARY_CLIENT_ORDER_IDENTIFIER"
+    ]
+   }
+  ]
  },
  "2889": {
   "name": "RelatedOrderQty",
@@ -4658,24 +5318,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_SPECIFIED",
-   "1": "ORDER_AGGREGATION",
-   "2": "ORDER_SPLIT"
-  },
-  "encoded": {
-   "notspecified": "0",
-   "orderaggregation": "1",
-   "ordersplit": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "notspecified",
-   "1": "orderaggregation",
-   "2": "ordersplit"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_SPECIFIED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ORDER_AGGREGATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ORDER_SPLIT"
+    ]
+   }
+  ]
  },
  "2891": {
   "name": "UPICode",
@@ -4732,36 +5397,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "CUSIP",
-   "2": "SEDOL",
-   "4": "ISIN_NUMBER",
-   "6": "ISO_CURRENCY_CODE",
-   "S": "FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER",
-   "Y": "DIGITAL_TOKEN_IDENTIFIER"
-  },
-  "encoded": {
-   "cusip": "1",
-   "sedol": "2",
-   "isinnumber": "4",
-   "isocurrencycode": "6",
-   "financialinstrumentglobalidentifier": "S",
-   "digitaltokenidentifier": "Y",
-   "1": "1",
-   "2": "2",
-   "4": "4",
-   "6": "6",
-   "s": "S",
-   "y": "Y"
-  },
-  "decoded": {
-   "1": "cusip",
-   "2": "sedol",
-   "4": "isinnumber",
-   "6": "isocurrencycode",
-   "S": "financialinstrumentglobalidentifier",
-   "Y": "digitaltokenidentifier"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CUSIP"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SEDOL"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ISIN_NUMBER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ISO_CURRENCY_CODE"
+    ]
+   },
+   {
+    "value": "S",
+    "meaning": "",
+    "aliases": [
+     "FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "DIGITAL_TOKEN_IDENTIFIER"
+    ]
+   }
+  ]
  },
  "2898": {
   "name": "LegCurrencyCodeSource",
@@ -5290,20 +5969,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_MULTI_JRSDCTN_ELIGIBLE",
-   "1": "MULTI_JRSDCTN_ELIGIBLE"
-  },
-  "encoded": {
-   "notmultijrsdctneligible": "0",
-   "multijrsdctneligible": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "notmultijrsdctneligible",
-   "1": "multijrsdctneligible"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_MULTI_JRSDCTN_ELIGIBLE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MULTI_JRSDCTN_ELIGIBLE"
+    ]
+   }
+  ]
  },
  "2964": {
   "name": "SelfMatchPreventionInstruction",
@@ -5312,23 +5993,28 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "CANCEL_AGGRESSIVE",
-   "2": "CANCEL_PASSIVE",
-   "3": "CANCEL_AGGRESSIVE_PASSIVE"
-  },
-  "encoded": {
-   "cancelaggressive": "1",
-   "cancelpassive": "2",
-   "cancelaggressivepassive": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "cancelaggressive",
-   "2": "cancelpassive",
-   "3": "cancelaggressivepassive"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_AGGRESSIVE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_PASSIVE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_AGGRESSIVE_PASSIVE"
+    ]
+   }
+  ]
  }
 }

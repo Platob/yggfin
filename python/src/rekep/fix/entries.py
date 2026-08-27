@@ -16,7 +16,6 @@ tags, rather than living in a second incompatible mapping.
 from __future__ import annotations
 
 import dataclasses
-import functools
 import json
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -29,6 +28,13 @@ from rekep.convert import Convertible
 from rekep.entries import fold
 from rekep.enums import EventType, State
 from rekep.fields import Field
+from rekep.fields.metadata import (
+    FixFieldValue,
+    decodings_of,
+    encoded_key,
+    encodings_of,
+    values_of,
+)
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecGroup, SpecMember
 
@@ -61,11 +67,8 @@ RECORD_KEYS: tuple[str, ...] = (
     "description",
     "versions",
     "values",
-    "value_names",
     "event_types",
     "states",
-    "encoded",
-    "decoded",
     "used_in",
     "components",
     "aliases",
@@ -73,11 +76,6 @@ RECORD_KEYS: tuple[str, ...] = (
 
 _SLUG_SPLIT = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", re.ASCII)
 _SLUG_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
-
-#: What an encoded key keeps: nothing that is not a letter or a digit. This
-#: is what makes `ORDER_SUBMISSION_TIME` and `Order Submission Time` one key --
-#: lowercasing alone does not, because of the underscores and the spaces.
-_ENCODED_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 
 # Registry identifiers come from prose pages as often as from XML. A suffix is
 # annotation, never part of the FIX name that a renderer writes.
@@ -159,56 +157,6 @@ def newest_rank(version: str) -> tuple[int, ...]:
     return (1 - transport, *numbers)
 
 
-@functools.lru_cache(maxsize=4096)
-def encoded_key(text: str) -> str:
-    """A value or its name as `encoded` keys it: casefolded letters and digits.
-
-    `ORDER_SUBMISSION_TIME`, `Order Submission Time` and `ordersubmissiontime`
-    are one key; plain lowercasing leaves three.
-
-    Memoized because a feed asks the same few hundred spellings of it on every
-    single message -- a hundred thousand calls over two thousand lines, of
-    which two hundred were distinct (benchmarks/bench_market.py).
-    """
-    return _ENCODED_DROP.sub("", str(text).casefold())
-
-
-def encodings_of(
-    values: Mapping[str, str], value_names: Mapping[str, str]
-) -> tuple[dict[str, str], dict[str, list[str]]]:
-    """`({normalized spelling: value}, {dropped spelling: the values claiming it})`.
-
-    Built from the prose, the symbols and the raw values themselves, so a
-    caller has one lookup path rather than two. A spelling two values both
-    normalize to is emitted for neither: an ambiguous translation that silently
-    picks one is worse than none, and the lookup falls through to the raw value.
-    """
-    claimed: dict[str, list[str]] = {}
-    for source in (values, value_names):
-        for value, spelled in source.items():
-            _claim(claimed, encoded_key(spelled), str(value))
-    for value in (*values, *value_names):
-        _claim(claimed, encoded_key(value), str(value))
-    found = {key: owners[0] for key, owners in claimed.items() if key and len(owners) == 1}
-    collisions = {key: owners for key, owners in claimed.items() if key and len(owners) > 1}
-    return found, collisions
-
-
-def decodings_of(values: Mapping[str, str], value_names: Mapping[str, str]) -> dict[str, str]:
-    """Wire values to one deterministic normalized string each."""
-    decoded: dict[str, str] = {}
-    for value in dict.fromkeys((*values, *value_names)):
-        source = value_names.get(value) or values.get(value) or value
-        decoded[str(value)] = encoded_key(source) or str(value)
-    return decoded
-
-
-def _claim(claimed: dict[str, list[str]], key: str, value: str) -> None:
-    owners = claimed.setdefault(key, [])
-    if value not in owners:
-        owners.append(value)
-
-
 @dataclasses.dataclass(frozen=True)
 class Alias(Convertible):
     """Another name one identity has been seen under, and where that was seen.
@@ -269,22 +217,15 @@ class FieldEntry(Convertible):
     versions: tuple[str, ...] = ()
     type: str = ""
     description: str = ""
-    #: `{value: prose}` from the dictionary and `{value: SYMBOL}` from the
-    #: spec, unioned across versions so a value only 4.2 ever had still parses.
-    values: Mapping[str, str] = dataclasses.field(default_factory=dict)
-    value_names: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    #: Every value this field enumerates -- what the wire carries, what it
+    #: means, and the other spellings naming it -- unioned across versions so
+    #: a value only 4.2 ever had still parses. `encode` and `decode` derive
+    #: their lookups from this list rather than storing them beside it.
+    values: tuple[FixFieldValue, ...] = ()
     #: `{MsgType: EventType}` for classifying a message before transcription.
     event_types: Mapping[str, EventType] = dataclasses.field(default_factory=dict)
     #: `{wire value: State}` for this field's market lifecycle meaning.
     states: Mapping[str, State] = dataclasses.field(default_factory=dict)
-    #: `{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both reach
-    #: `1`. Generated from `values` and `value_names`; a hand-written entry
-    #: here survives a rebuild, because the generated map is the default and
-    #: not the whole map. Read through `encode`, off the record -- a
-    #: projected `Field` carries the values it was built from, not this.
-    encoded: Mapping[str, str] = dataclasses.field(default_factory=dict)
-    #: `{value: normalized spelling}` for simple string decoding.
-    decoded: Mapping[str, str] = dataclasses.field(default_factory=dict)
     used_in: tuple[str, ...] = ()
     components: tuple[str, ...] = ()
     note: str = ""
@@ -310,11 +251,7 @@ class FieldEntry(Convertible):
         object.__setattr__(self, "versions", canonical_versions(self.versions))
         object.__setattr__(self, "event_types", _event_types(self.event_types))
         object.__setattr__(self, "states", _states(self.states))
-        generated, _ = encodings_of(self.values, self.value_names)
-        object.__setattr__(self, "encoded", {**generated, **dict(self.encoded)})
-        object.__setattr__(
-            self, "decoded", {**decodings_of(self.values, self.value_names), **dict(self.decoded)}
-        )
+        object.__setattr__(self, "values", values_of(self.values))
 
     @property
     def key(self) -> int | str:
@@ -346,6 +283,27 @@ class FieldEntry(Convertible):
             found.setdefault(alias.folded, alias.name)
         return tuple(found.values())
 
+    @property
+    def encoded(self) -> Mapping[str, str]:
+        """`{normalized spelling: value}`, so `Side=Buy` and `Side=BUY` both
+        reach `1`. Derived from the values and cached, never stored beside
+        them: it is three hundred kilobytes of dictionary that says nothing
+        the values do not already say."""
+        return encodings_of(self.values)[0]
+
+    @property
+    def decoded(self) -> Mapping[str, str]:
+        """`{value: normalized spelling}` for simple string decoding."""
+        return decodings_of(self.values)
+
+    def value_of(self, value: str) -> FixFieldValue | None:
+        """The record for one wire value, or None where no version defines it."""
+        spelled = str(value)
+        for one in self.values:
+            if one.value == spelled:
+                return one
+        return None
+
     def encode(self, value: str) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
@@ -367,8 +325,10 @@ class FieldEntry(Convertible):
         string per enumerated field per row, derivable from the dictionary
         the row is read under.
         """
-        spelled = str(value)
-        return self.values.get(spelled) or self.value_names.get(spelled)
+        found = self.value_of(value)
+        if found is None:
+            return None
+        return found.meaning or (found.aliases[0] if found.aliases else None)
 
     def event_type(self, value: Any) -> EventType:
         """The configured kind of one MsgType, MISC when known, else UNKNOWN."""
@@ -376,9 +336,7 @@ class FieldEntry(Convertible):
         configured = self.event_types.get(spelled)
         if configured is not None:
             return configured
-        if spelled in self.values or spelled in self.value_names:
-            return EventType.MISC
-        return EventType.UNKNOWN
+        return EventType.MISC if self.value_of(spelled) else EventType.UNKNOWN
 
     def into_field(self, version: str) -> Field | None:
         """This field as `version` declares it, or None when that version has none.
@@ -405,7 +363,6 @@ class FieldEntry(Convertible):
             fix.kind = NAMESPACE
         fix.column = self.column
         fix.note = self.note
-        fix.value_names = self.value_names
         fix.event_types = self.event_types
         fix.states = self.states
         fix.msgtypes = self.used_in
@@ -447,12 +404,9 @@ class FieldEntry(Convertible):
                 "type": self.type,
                 "description": self.description,
                 "versions": list(self.versions),
-                "values": dict(self.values),
-                "value_names": dict(self.value_names),
+                "values": [one.into_dict() for one in self.values],
                 "event_types": _enum_document(self.event_types),
                 "states": _enum_document(self.states),
-                "encoded": dict(self.encoded),
-                "decoded": dict(self.decoded),
                 "used_in": list(self.used_in),
                 "components": list(self.components),
                 "aliases": [alias.into_dict() for alias in self.aliases],
@@ -473,12 +427,9 @@ class FieldEntry(Convertible):
             versions=tuple(str(version) for version in mapping.get("versions") or ()),
             type=str(mapping.get("type") or ""),
             description=str(mapping.get("description") or ""),
-            values=_strings(mapping.get("values")),
-            value_names=_strings(mapping.get("value_names")),
+            values=values_of(mapping.get("values")),
             event_types=_event_types(mapping.get("event_types")),
             states=_states(mapping.get("states")),
-            encoded=_strings(mapping.get("encoded")),
-            decoded=_strings(mapping.get("decoded")),
             used_in=tuple(str(name) for name in mapping.get("used_in") or ()),
             components=tuple(str(name) for name in mapping.get("components") or ()),
             note=str(mapping.get("note") or ""),
@@ -498,13 +449,12 @@ class FieldEntry(Convertible):
             raise ValueError("a FIX field record needs at least one declaration")
         latest = members[-1]
         tag = latest.fix.get("tag")
-        values: dict[str, str] = {}
-        value_names: dict[str, str] = {}
+        values: dict[str, FixFieldValue] = {}
         event_types: dict[str, EventType] = {}
         states: dict[str, State] = {}
         for member in members:
-            values.update(_json_mapping(member.fix.get("values")))
-            value_names.update(_json_mapping(member.fix.get("value_names")))
+            for one in member.fix.enumerated:
+                values[one.value] = merged_value(values.get(one.value), one)
             event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
             states.update(_states(_json_any(member.fix.get("states"))))
         # Newest first, unlike the values: where a field is used is a list and
@@ -526,8 +476,7 @@ class FieldEntry(Convertible):
             versions=tuple(versions),
             type=str(latest.fix.get("type") or ""),
             description=latest.description,
-            values=values,
-            value_names=value_names,
+            values=tuple(values.values()),
             event_types=event_types,
             states=states,
             used_in=tuple(used_in),
@@ -746,11 +695,34 @@ def _aliases_of(declared: Any) -> tuple[Alias, ...]:
     return tuple(found.values())
 
 
-def _strings(mapping: Any) -> dict[str, str]:
-    """One stored `{value: text}` map, with both halves read as text."""
-    if not isinstance(mapping, Mapping):
-        return {}
-    return {str(key): str(value) for key, value in mapping.items()}
+def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldValue:
+    """One value read twice: each half taken from the newer reading that has it.
+
+    The prose and the spellings collapse independently, because a version
+    that lists a value without writing it up still names it -- so a reading
+    that says nothing about one half does not erase the other's.
+    """
+    if held is None:
+        return fresh
+    return dataclasses.replace(
+        fresh,
+        meaning=fresh.meaning or held.meaning,
+        aliases=fresh.aliases or held.aliases,
+    )
+
+
+def folded_values(
+    held: Sequence[FixFieldValue],
+    fresh: Sequence[FixFieldValue],
+    *,
+    newest: Sequence[FixFieldValue],
+) -> tuple[FixFieldValue, ...]:
+    """Two readings of one field's values, with `newest` winning each half."""
+    older = fresh if newest is held else held
+    found = {one.value: one for one in older}
+    for one in newest:
+        found[one.value] = merged_value(found.get(one.value), one)
+    return tuple(found.values())
 
 
 def _event_types(mapping: Any) -> dict[str, EventType]:

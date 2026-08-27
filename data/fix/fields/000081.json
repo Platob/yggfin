@@ -1910,52 +1910,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PERIODIC",
-   "1": "INITIAL",
-   "2": "SINGLE",
-   "3": "DIVIDEND",
-   "4": "INTEREST",
-   "5": "DIVIDEND_RETURN",
-   "6": "PRICE_RETURN",
-   "7": "TOTAL_RETURN",
-   "8": "VARIANCE",
-   "9": "CORRELATION"
-  },
-  "encoded": {
-   "periodic": "0",
-   "initial": "1",
-   "single": "2",
-   "dividend": "3",
-   "interest": "4",
-   "dividendreturn": "5",
-   "pricereturn": "6",
-   "totalreturn": "7",
-   "variance": "8",
-   "correlation": "9",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9"
-  },
-  "decoded": {
-   "0": "periodic",
-   "1": "initial",
-   "2": "single",
-   "3": "dividend",
-   "4": "interest",
-   "5": "dividendreturn",
-   "6": "pricereturn",
-   "7": "totalreturn",
-   "8": "variance",
-   "9": "correlation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PERIODIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SINGLE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INTEREST"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_RETURN"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PRICE_RETURN"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_RETURN"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "VARIANCE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "CORRELATION"
+    ]
+   }
+  ]
  },
  "40739": {
   "name": "PaymentStreamMarketRate",
@@ -2004,20 +2030,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "STANDARD",
-   "1": "FRA"
-  },
-  "encoded": {
-   "standard": "0",
-   "fra": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "standard",
-   "1": "fra"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "STANDARD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FRA"
+    ]
+   }
+  ]
  },
  "40745": {
   "name": "PaymentStreamDiscountRate",
@@ -2042,28 +2070,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "FLAT",
-   "2": "STRAIGHT",
-   "3": "SPREAD_EXCLUSIVE"
-  },
-  "encoded": {
-   "none": "0",
-   "flat": "1",
-   "straight": "2",
-   "spreadexclusive": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "flat",
-   "2": "straight",
-   "3": "spreadexclusive"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FLAT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STRAIGHT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SPREAD_EXCLUSIVE"
+    ]
+   }
+  ]
  },
  "40748": {
   "name": "PaymentStreamInitialPrincipalExchangeIndicator",
@@ -2120,32 +2156,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR",
-   "T": "TERM"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "term": "T",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr",
-   "t": "T"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year",
-   "T": "term"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   },
+   {
+    "value": "T",
+    "meaning": "",
+    "aliases": [
+     "TERM"
+    ]
+   }
+  ]
  },
  "40755": {
   "name": "PaymentStreamPaymentRollConvention",
@@ -2194,28 +2241,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40761": {
   "name": "PaymentStreamResetDateRelativeTo",
@@ -2264,40 +2319,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "MON": "MONDAY",
-   "TUE": "TUESDAY",
-   "WED": "WEDNESDAY",
-   "THU": "THURSDAY",
-   "FRI": "FRIDAY",
-   "SAT": "SATURDAY",
-   "SUN": "SUNDAY"
-  },
-  "encoded": {
-   "monday": "MON",
-   "tuesday": "TUE",
-   "wednesday": "WED",
-   "thursday": "THU",
-   "friday": "FRI",
-   "saturday": "SAT",
-   "sunday": "SUN",
-   "mon": "MON",
-   "tue": "TUE",
-   "wed": "WED",
-   "thu": "THU",
-   "fri": "FRI",
-   "sat": "SAT",
-   "sun": "SUN"
-  },
-  "decoded": {
-   "MON": "monday",
-   "TUE": "tuesday",
-   "WED": "wednesday",
-   "THU": "thursday",
-   "FRI": "friday",
-   "SAT": "saturday",
-   "SUN": "sunday"
-  }
+  "values": [
+   {
+    "value": "MON",
+    "meaning": "",
+    "aliases": [
+     "MONDAY"
+    ]
+   },
+   {
+    "value": "TUE",
+    "meaning": "",
+    "aliases": [
+     "TUESDAY"
+    ]
+   },
+   {
+    "value": "WED",
+    "meaning": "",
+    "aliases": [
+     "WEDNESDAY"
+    ]
+   },
+   {
+    "value": "THU",
+    "meaning": "",
+    "aliases": [
+     "THURSDAY"
+    ]
+   },
+   {
+    "value": "FRI",
+    "meaning": "",
+    "aliases": [
+     "FRIDAY"
+    ]
+   },
+   {
+    "value": "SAT",
+    "meaning": "",
+    "aliases": [
+     "SATURDAY"
+    ]
+   },
+   {
+    "value": "SUN",
+    "meaning": "",
+    "aliases": [
+     "SUNDAY"
+    ]
+   }
+  ]
  },
  "40767": {
   "name": "PaymentStreamInitialFixingDateRelativeTo",
@@ -2490,28 +2562,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BLOOMBERG",
-   "1": "REUTERS",
-   "2": "TELERATE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "bloomberg": "0",
-   "reuters": "1",
-   "telerate": "2",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "bloomberg",
-   "1": "reuters",
-   "2": "telerate",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BLOOMBERG"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REUTERS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TELERATE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "40791": {
   "name": "PaymentStreamRateIndexCurveUnit",
@@ -2520,28 +2600,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40792": {
   "name": "PaymentStreamRateIndexCurvePeriod",
@@ -2574,20 +2662,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SHORT",
-   "1": "LONG"
-  },
-  "encoded": {
-   "short": "0",
-   "long": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "short",
-   "1": "long"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SHORT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LONG"
+    ]
+   }
+  ]
  },
  "40796": {
   "name": "PaymentStreamRateTreatment",
@@ -2596,20 +2686,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BOND_EQUIVALENT_YIELD",
-   "1": "MONEY_MARKET_YIELD"
-  },
-  "encoded": {
-   "bondequivalentyield": "0",
-   "moneymarketyield": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "bondequivalentyield",
-   "1": "moneymarketyield"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BOND_EQUIVALENT_YIELD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MONEY_MARKET_YIELD"
+    ]
+   }
+  ]
  },
  "40797": {
   "name": "PaymentStreamCapRate",
@@ -2626,20 +2718,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUYER",
-   "2": "SELLER"
-  },
-  "encoded": {
-   "buyer": "1",
-   "seller": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "buyer",
-   "2": "seller"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUYER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELLER"
+    ]
+   }
+  ]
  },
  "40799": {
   "name": "PaymentStreamCapRateSellSide",
@@ -2664,20 +2758,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUYER",
-   "2": "SELLER"
-  },
-  "encoded": {
-   "buyer": "1",
-   "seller": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "buyer",
-   "2": "seller"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUYER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELLER"
+    ]
+   }
+  ]
  },
  "40802": {
   "name": "PaymentStreamFloorRateSellSide",
@@ -2718,20 +2814,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNWEIGHTED",
-   "1": "WEIGHTED"
-  },
-  "encoded": {
-   "unweighted": "0",
-   "weighted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "unweighted",
-   "1": "weighted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNWEIGHTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "WEIGHTED"
+    ]
+   }
+  ]
  },
  "40807": {
   "name": "PaymentStreamNegativeRateTreatment",
@@ -2740,20 +2838,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ZERO_INTEREST_RATE_METHOD",
-   "1": "NEGATIVE_INTEREST_RATE_METHOD"
-  },
-  "encoded": {
-   "zerointerestratemethod": "0",
-   "negativeinterestratemethod": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "zerointerestratemethod",
-   "1": "negativeinterestratemethod"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ZERO_INTEREST_RATE_METHOD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NEGATIVE_INTEREST_RATE_METHOD"
+    ]
+   }
+  ]
  },
  "40808": {
   "name": "PaymentStreamInflationLagPeriod",
@@ -2770,28 +2870,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40810": {
   "name": "PaymentStreamInflationLagDayType",
@@ -2800,36 +2908,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUSINESS",
-   "1": "CALENDAR",
-   "2": "COMMODITY_BUSINESS",
-   "3": "CURRENCY_BUSINESS",
-   "4": "EXCHANGE_BUSINESS",
-   "5": "SCHEDULED_TRADING_DAY"
-  },
-  "encoded": {
-   "business": "0",
-   "calendar": "1",
-   "commoditybusiness": "2",
-   "currencybusiness": "3",
-   "exchangebusiness": "4",
-   "scheduledtradingday": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "business",
-   "1": "calendar",
-   "2": "commoditybusiness",
-   "3": "currencybusiness",
-   "4": "exchangebusiness",
-   "5": "scheduledtradingday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUSINESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALENDAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY_BUSINESS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY_BUSINESS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BUSINESS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED_TRADING_DAY"
+    ]
+   }
+  ]
  },
  "40811": {
   "name": "PaymentStreamInflationInterpolationMethod",
@@ -2838,20 +2960,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "LINEAR_ZERO_YIELD"
-  },
-  "encoded": {
-   "none": "0",
-   "linearzeroyield": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "linearzeroyield"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LINEAR_ZERO_YIELD"
+    ]
+   }
+  ]
  },
  "40812": {
   "name": "PaymentStreamInflationIndexSource",
@@ -2892,24 +3016,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "ISDA",
-   "2": "AFMA"
-  },
-  "encoded": {
-   "none": "0",
-   "isda": "1",
-   "afma": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "isda",
-   "2": "afma"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ISDA"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AFMA"
+    ]
+   }
+  ]
  },
  "40817": {
   "name": "PaymentStreamNonDeliverableRefCurrency",
@@ -2998,20 +3127,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNADJUSTED",
-   "1": "ADJUSTED"
-  },
-  "encoded": {
-   "unadjusted": "0",
-   "adjusted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "unadjusted",
-   "1": "adjusted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNADJUSTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADJUSTED"
+    ]
+   }
+  ]
  },
  "40828": {
   "name": "NoPaymentSchedules",
@@ -3028,108 +3159,176 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOTIONAL",
-   "1": "CASH_FLOW",
-   "2": "FX_LINKED_NOTIONAL",
-   "3": "FIXED_RATE",
-   "4": "FUTURE_VALUE_NOTIONAL",
-   "5": "KNOWN_AMOUNT",
-   "6": "FLOATING_RATE_MULTIPLIER",
-   "7": "SPREAD",
-   "8": "CAP_RATE",
-   "9": "FLOOR_RATE",
-   "10": "NON_DELIVERABLE_SETTL_PAYMENT_DATES",
-   "11": "NON_DELIVERABLE_SETTL_CALCULATION_DATES",
-   "12": "NON_DELIVERABLE_FX_FIXING_DATES",
-   "13": "SETTL_PERIOD_NOTNL",
-   "14": "SETTL_PERIOD_PX",
-   "15": "CALC_PERIOD",
-   "16": "DIVIDEND_ACCRUAL_RATE_MULTIPLIER",
-   "17": "DIVIDEND_ACCRUAL_RATE_SPREAD",
-   "18": "DIVIDEND_ACCRUAL_CAP_RATE",
-   "19": "DIVIDEND_ACCRUAL_FLOOR_RATE",
-   "20": "COMPOUNDING_RATE_MULTIPLIER",
-   "21": "COMPOUNDING_RATE_SPREAD",
-   "22": "COMPOUNDING_CAP_RATE",
-   "23": "COMPOUNDING_FLOOR_RATE"
-  },
-  "encoded": {
-   "notional": "0",
-   "cashflow": "1",
-   "fxlinkednotional": "2",
-   "fixedrate": "3",
-   "futurevaluenotional": "4",
-   "knownamount": "5",
-   "floatingratemultiplier": "6",
-   "spread": "7",
-   "caprate": "8",
-   "floorrate": "9",
-   "nondeliverablesettlpaymentdates": "10",
-   "nondeliverablesettlcalculationdates": "11",
-   "nondeliverablefxfixingdates": "12",
-   "settlperiodnotnl": "13",
-   "settlperiodpx": "14",
-   "calcperiod": "15",
-   "dividendaccrualratemultiplier": "16",
-   "dividendaccrualratespread": "17",
-   "dividendaccrualcaprate": "18",
-   "dividendaccrualfloorrate": "19",
-   "compoundingratemultiplier": "20",
-   "compoundingratespread": "21",
-   "compoundingcaprate": "22",
-   "compoundingfloorrate": "23",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23"
-  },
-  "decoded": {
-   "0": "notional",
-   "1": "cashflow",
-   "2": "fxlinkednotional",
-   "3": "fixedrate",
-   "4": "futurevaluenotional",
-   "5": "knownamount",
-   "6": "floatingratemultiplier",
-   "7": "spread",
-   "8": "caprate",
-   "9": "floorrate",
-   "10": "nondeliverablesettlpaymentdates",
-   "11": "nondeliverablesettlcalculationdates",
-   "12": "nondeliverablefxfixingdates",
-   "13": "settlperiodnotnl",
-   "14": "settlperiodpx",
-   "15": "calcperiod",
-   "16": "dividendaccrualratemultiplier",
-   "17": "dividendaccrualratespread",
-   "18": "dividendaccrualcaprate",
-   "19": "dividendaccrualfloorrate",
-   "20": "compoundingratemultiplier",
-   "21": "compoundingratespread",
-   "22": "compoundingcaprate",
-   "23": "compoundingfloorrate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOTIONAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CASH_FLOW"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FX_LINKED_NOTIONAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FIXED_RATE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "FUTURE_VALUE_NOTIONAL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "KNOWN_AMOUNT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "FLOATING_RATE_MULTIPLIER"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SPREAD"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "CAP_RATE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "FLOOR_RATE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "NON_DELIVERABLE_SETTL_PAYMENT_DATES"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "NON_DELIVERABLE_SETTL_CALCULATION_DATES"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "NON_DELIVERABLE_FX_FIXING_DATES"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SETTL_PERIOD_NOTNL"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "SETTL_PERIOD_PX"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "CALC_PERIOD"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_ACCRUAL_RATE_MULTIPLIER"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_ACCRUAL_RATE_SPREAD"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_ACCRUAL_CAP_RATE"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_ACCRUAL_FLOOR_RATE"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_RATE_MULTIPLIER"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_RATE_SPREAD"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_CAP_RATE"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_FLOOR_RATE"
+    ]
+   }
+  ]
  },
  "40830": {
   "name": "PaymentScheduleStubType",
@@ -3290,20 +3489,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL",
-   "1": "PREVIOUS"
-  },
-  "encoded": {
-   "initial": "0",
-   "previous": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "initial",
-   "1": "previous"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS"
+    ]
+   }
+  ]
  },
  "40850": {
   "name": "PaymentScheduleFixingDateUnadjusted",
@@ -3496,28 +3697,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL",
-   "1": "FINAL",
-   "2": "COMPOUNDING_INITIAL",
-   "3": "COMPOUNDING_FINAL"
-  },
-  "encoded": {
-   "initial": "0",
-   "final": "1",
-   "compoundinginitial": "2",
-   "compoundingfinal": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "initial",
-   "1": "final",
-   "2": "compoundinginitial",
-   "3": "compoundingfinal"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FINAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_INITIAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING_FINAL"
+    ]
+   }
+  ]
  },
  "40874": {
   "name": "PaymentStubLength",
@@ -3526,20 +3735,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SHORT",
-   "1": "LONG"
-  },
-  "encoded": {
-   "short": "0",
-   "long": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "short",
-   "1": "long"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SHORT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LONG"
+    ]
+   }
+  ]
  },
  "40875": {
   "name": "PaymentStubRate",
@@ -3908,36 +4119,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUSINESS",
-   "1": "CALENDAR",
-   "2": "COMMODITY_BUSINESS",
-   "3": "CURRENCY_BUSINESS",
-   "4": "EXCHANGE_BUSINESS",
-   "5": "SCHEDULED_TRADING_DAY"
-  },
-  "encoded": {
-   "business": "0",
-   "calendar": "1",
-   "commoditybusiness": "2",
-   "currencybusiness": "3",
-   "exchangebusiness": "4",
-   "scheduledtradingday": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "business",
-   "1": "calendar",
-   "2": "commoditybusiness",
-   "3": "currencybusiness",
-   "4": "exchangebusiness",
-   "5": "scheduledtradingday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUSINESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALENDAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY_BUSINESS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY_BUSINESS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BUSINESS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED_TRADING_DAY"
+    ]
+   }
+  ]
  },
  "40921": {
   "name": "BusinessDayConvention",
@@ -3946,44 +4171,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_APPLICABLE",
-   "1": "NONE",
-   "2": "FOLLOWING_DAY",
-   "3": "FLOATING_RATE_NOTE",
-   "4": "MODIFIED_FOLLOWING_DAY",
-   "5": "PRECEDING_DAY",
-   "6": "MODIFIED_PRECEDING_DAY",
-   "7": "NEAREST_DAY"
-  },
-  "encoded": {
-   "notapplicable": "0",
-   "none": "1",
-   "followingday": "2",
-   "floatingratenote": "3",
-   "modifiedfollowingday": "4",
-   "precedingday": "5",
-   "modifiedprecedingday": "6",
-   "nearestday": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "notapplicable",
-   "1": "none",
-   "2": "followingday",
-   "3": "floatingratenote",
-   "4": "modifiedfollowingday",
-   "5": "precedingday",
-   "6": "modifiedprecedingday",
-   "7": "nearestday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_APPLICABLE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FOLLOWING_DAY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FLOATING_RATE_NOTE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "MODIFIED_FOLLOWING_DAY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PRECEDING_DAY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "MODIFIED_PRECEDING_DAY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "NEAREST_DAY"
+    ]
+   }
+  ]
  },
  "40922": {
   "name": "DateRollConvention",
@@ -3992,180 +4237,330 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "FIRST_DAY",
-   "2": "SECOND_DAY",
-   "3": "THIRD_DAY",
-   "4": "FOURTH_DAY",
-   "5": "FIFTH_DAY",
-   "6": "SIXTH_DAY",
-   "7": "SEVENTH_DAY",
-   "8": "EIGHTH_DAY",
-   "9": "NINTH_DAY",
-   "10": "TENTH_DAY",
-   "11": "ELEVENTH_DAY",
-   "12": "TWELVTH_DAY",
-   "13": "THIRTEENTH_DAY",
-   "14": "FORTEENTH_DAY",
-   "15": "FIFTEENTH_DAY",
-   "16": "SIXTEENTH_DAY",
-   "17": "SEVENTEENTH_DAY",
-   "18": "EIGHTEENTH_DAY",
-   "19": "NINETEENTH_DAY",
-   "20": "TWENTIETH_DAY",
-   "21": "TWENTY_FIRST_DAY",
-   "22": "TWENTY_SECOND_DAY",
-   "23": "TWENTY_THIRD_DAY",
-   "24": "TWENTY_FOURTH_DAY",
-   "25": "TWENTY_FIFTH_DAY",
-   "26": "TWENTY_SIXTH_DAY",
-   "27": "TWENTY_SEVENTH_DAY",
-   "28": "TWENTY_EIGTH_DA28Y",
-   "29": "TWENTY_NINTH_DAY",
-   "30": "THIRTIETH_DAY",
-   "EOM": "EOM",
-   "FRN": "FRN",
-   "IMM": "IMM",
-   "IMMCAD": "IMMCAD",
-   "IMMAUD": "IMMAUD",
-   "IMMNZD": "IMMNZD",
-   "SFE": "SFE",
-   "NONE": "NONE",
-   "TBILL": "TBILL",
-   "MON": "MON",
-   "TUE": "TUE",
-   "WED": "WED",
-   "THU": "THU",
-   "FRI": "FRI",
-   "SAT": "SAT",
-   "SUN": "SUN"
-  },
-  "encoded": {
-   "firstday": "1",
-   "secondday": "2",
-   "thirdday": "3",
-   "fourthday": "4",
-   "fifthday": "5",
-   "sixthday": "6",
-   "seventhday": "7",
-   "eighthday": "8",
-   "ninthday": "9",
-   "tenthday": "10",
-   "eleventhday": "11",
-   "twelvthday": "12",
-   "thirteenthday": "13",
-   "forteenthday": "14",
-   "fifteenthday": "15",
-   "sixteenthday": "16",
-   "seventeenthday": "17",
-   "eighteenthday": "18",
-   "nineteenthday": "19",
-   "twentiethday": "20",
-   "twentyfirstday": "21",
-   "twentysecondday": "22",
-   "twentythirdday": "23",
-   "twentyfourthday": "24",
-   "twentyfifthday": "25",
-   "twentysixthday": "26",
-   "twentyseventhday": "27",
-   "twentyeigthda28y": "28",
-   "twentyninthday": "29",
-   "thirtiethday": "30",
-   "eom": "EOM",
-   "frn": "FRN",
-   "imm": "IMM",
-   "immcad": "IMMCAD",
-   "immaud": "IMMAUD",
-   "immnzd": "IMMNZD",
-   "sfe": "SFE",
-   "none": "NONE",
-   "tbill": "TBILL",
-   "mon": "MON",
-   "tue": "TUE",
-   "wed": "WED",
-   "thu": "THU",
-   "fri": "FRI",
-   "sat": "SAT",
-   "sun": "SUN",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30"
-  },
-  "decoded": {
-   "1": "firstday",
-   "2": "secondday",
-   "3": "thirdday",
-   "4": "fourthday",
-   "5": "fifthday",
-   "6": "sixthday",
-   "7": "seventhday",
-   "8": "eighthday",
-   "9": "ninthday",
-   "10": "tenthday",
-   "11": "eleventhday",
-   "12": "twelvthday",
-   "13": "thirteenthday",
-   "14": "forteenthday",
-   "15": "fifteenthday",
-   "16": "sixteenthday",
-   "17": "seventeenthday",
-   "18": "eighteenthday",
-   "19": "nineteenthday",
-   "20": "twentiethday",
-   "21": "twentyfirstday",
-   "22": "twentysecondday",
-   "23": "twentythirdday",
-   "24": "twentyfourthday",
-   "25": "twentyfifthday",
-   "26": "twentysixthday",
-   "27": "twentyseventhday",
-   "28": "twentyeigthda28y",
-   "29": "twentyninthday",
-   "30": "thirtiethday",
-   "EOM": "eom",
-   "FRN": "frn",
-   "IMM": "imm",
-   "IMMCAD": "immcad",
-   "IMMAUD": "immaud",
-   "IMMNZD": "immnzd",
-   "SFE": "sfe",
-   "NONE": "none",
-   "TBILL": "tbill",
-   "MON": "mon",
-   "TUE": "tue",
-   "WED": "wed",
-   "THU": "thu",
-   "FRI": "fri",
-   "SAT": "sat",
-   "SUN": "sun"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIRST_DAY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SECOND_DAY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "THIRD_DAY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "FOURTH_DAY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "FIFTH_DAY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SIXTH_DAY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SEVENTH_DAY"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "EIGHTH_DAY"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "NINTH_DAY"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "TENTH_DAY"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "ELEVENTH_DAY"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "TWELVTH_DAY"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "THIRTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "FORTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "FIFTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "SIXTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "SEVENTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "EIGHTEENTH_DAY"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "NINETEENTH_DAY"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "TWENTIETH_DAY"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_FIRST_DAY"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_SECOND_DAY"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_THIRD_DAY"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_FOURTH_DAY"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_FIFTH_DAY"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_SIXTH_DAY"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_SEVENTH_DAY"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_EIGTH_DA28Y"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "TWENTY_NINTH_DAY"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "THIRTIETH_DAY"
+    ]
+   },
+   {
+    "value": "EOM",
+    "meaning": "",
+    "aliases": [
+     "EOM"
+    ]
+   },
+   {
+    "value": "FRN",
+    "meaning": "",
+    "aliases": [
+     "FRN"
+    ]
+   },
+   {
+    "value": "IMM",
+    "meaning": "",
+    "aliases": [
+     "IMM"
+    ]
+   },
+   {
+    "value": "IMMCAD",
+    "meaning": "",
+    "aliases": [
+     "IMMCAD"
+    ]
+   },
+   {
+    "value": "IMMAUD",
+    "meaning": "",
+    "aliases": [
+     "IMMAUD"
+    ]
+   },
+   {
+    "value": "IMMNZD",
+    "meaning": "",
+    "aliases": [
+     "IMMNZD"
+    ]
+   },
+   {
+    "value": "SFE",
+    "meaning": "",
+    "aliases": [
+     "SFE"
+    ]
+   },
+   {
+    "value": "NONE",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "TBILL",
+    "meaning": "",
+    "aliases": [
+     "TBILL"
+    ]
+   },
+   {
+    "value": "MON",
+    "meaning": "",
+    "aliases": [
+     "MON"
+    ]
+   },
+   {
+    "value": "TUE",
+    "meaning": "",
+    "aliases": [
+     "TUE"
+    ]
+   },
+   {
+    "value": "WED",
+    "meaning": "",
+    "aliases": [
+     "WED"
+    ]
+   },
+   {
+    "value": "THU",
+    "meaning": "",
+    "aliases": [
+     "THU"
+    ]
+   },
+   {
+    "value": "FRI",
+    "meaning": "",
+    "aliases": [
+     "FRI"
+    ]
+   },
+   {
+    "value": "SAT",
+    "meaning": "",
+    "aliases": [
+     "SAT"
+    ]
+   },
+   {
+    "value": "SUN",
+    "meaning": "",
+    "aliases": [
+     "SUN"
+    ]
+   }
+  ]
  },
  "40923": {
   "name": "NoLegBusinessCenters",
@@ -4734,56 +5129,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL",
-   "1": "INTERMEDIATE",
-   "2": "FINAL",
-   "3": "PREPAID",
-   "4": "POSTPAID",
-   "5": "VARIABLE",
-   "6": "FIXED",
-   "7": "SWAP",
-   "8": "CONDITIONAL",
-   "9": "FIXED_RATE",
-   "10": "FLOATING_RATE"
-  },
-  "encoded": {
-   "initial": "0",
-   "intermediate": "1",
-   "final": "2",
-   "prepaid": "3",
-   "postpaid": "4",
-   "variable": "5",
-   "fixed": "6",
-   "swap": "7",
-   "conditional": "8",
-   "fixedrate": "9",
-   "floatingrate": "10",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "0": "initial",
-   "1": "intermediate",
-   "2": "final",
-   "3": "prepaid",
-   "4": "postpaid",
-   "5": "variable",
-   "6": "fixed",
-   "7": "swap",
-   "8": "conditional",
-   "9": "fixedrate",
-   "10": "floatingrate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTERMEDIATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FINAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PREPAID"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "POSTPAID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "VARIABLE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "FIXED"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SWAP"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "CONDITIONAL"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "FIXED_RATE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "FLOATING_RATE"
+    ]
+   }
+  ]
  },
  "40994": {
   "name": "NoComplexEventAveragingObservations",

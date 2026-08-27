@@ -11,7 +11,7 @@ import datetime
 
 import pytest
 
-from rekep.fix import FixRegistry, fix_field
+from rekep.fix import FixFieldValue, FixRegistry, fix_field
 from rekep.market import (
     MIC,
     NIL,
@@ -966,10 +966,11 @@ def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) ->
     registry.add_field(
         dataclasses.replace(
             entry,
-            values={},
-            value_names={},
+            values=[
+                FixFieldValue(value="T", meaning="Trade Correct"),
+                FixFieldValue(value="U", meaning="Trade Bust"),
+            ],
             states={"T": State.REPLACED, "U": State.REJECTED},
-            encoded={"tradecorrect": "T", "tradebust": "U"},
         )
     )
 

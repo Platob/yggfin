@@ -129,7 +129,7 @@ def test_a_fix_field_is_a_generic_field_with_fix_metadata() -> None:
     assert built.fix["tag"] == "54"
     assert built.fix["type"] == "char"
     assert built.fix["version"] == "4.4"
-    assert '"1":"Buy"' in built.fix["values"]
+    assert built.fix.value_of("1").meaning == "Buy"
 
 
 # -- booleans ----------------------------------------------------------------

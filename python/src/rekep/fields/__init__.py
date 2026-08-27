@@ -33,6 +33,7 @@ from rekep.fields.field import (
 )
 from rekep.fields.metadata import (
     EnumMetadata,
+    FixFieldValue,
     FixMetadata,
     IcebergMetadata,
     ProtocolMetadata,
@@ -56,6 +57,7 @@ __all__ = [
     "EnumMetadata",
     "Field",
     "FieldBuilder",
+    "FixFieldValue",
     "FixMetadata",
     "FixedSizeListField",
     "IcebergMetadata",

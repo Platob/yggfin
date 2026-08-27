@@ -25,8 +25,9 @@ where each field is used -- in messages *and* in component blocks, which is how
 a field FIX only carries inside a component (`TrdRegTimestamp <769>`, and three
 hundred others in 4.4 alone) records where it lives. The QuickFIX spec supplies
 the symbolic name of every enumerated value and every field an extension pack
-numbered past what the site wrote up. Both are needed: without the spec there
-are no symbols, and the `encoded`/`decoded` string codecs are built from them.
+numbered past what the site wrote up. Both are needed: without the spec a
+value has no symbol, and the string codecs are derived from every spelling a
+value carries.
 
 ```python
 from rekep.fix import FixRegistry

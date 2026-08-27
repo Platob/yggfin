@@ -82,15 +82,17 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
 {
   "name": "MsgType",
   "tag": 35,
-  "values": {"8": "ExecutionReport", "D": "NewOrderSingle", "W": "MarketDataSnapshotFullRefresh"},
+  "values": [
+    {"value": "8", "meaning": "ExecutionReport"},
+    {"value": "D", "meaning": "NewOrderSingle"},
+    {"value": "W", "meaning": "MarketDataSnapshotFullRefresh"}
+  ],
   "event_types": {
     "8": {"name": "EXECUTION", "id": 4996819942064276804},
     "D": {"name": "ORDER", "id": 5715705941605744640},
     "W": {"name": "BOOK", "id": 4778124913204527104}
   },
-  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}},
-  "encoded": {"newordersingle": "D"},
-  "decoded": {"D": "newordersingle"}
+  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}}
 }
 ```
 
@@ -105,7 +107,7 @@ registry but without a market mapping is also `MISC`; a private value absent
 from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
 these terminal values cannot enter `fix.market` accidentally.
 
-The normalized `decoded` values are also the market dispatch names:
+A value's normalized name is also its market dispatch name:
 `D` is `newordersingle` and `W` is `marketdatasnapshotfullrefresh`. The market
 layer owns which of those standard names it implements; the registry carries
 no second handler vocabulary. Operational MsgTypes are source policy configured

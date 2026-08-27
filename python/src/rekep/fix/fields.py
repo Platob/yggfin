@@ -6,10 +6,9 @@ import dataclasses
 import datetime
 import decimal
 import functools
-import json
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pyarrow
@@ -150,7 +149,7 @@ def fix_field(
     *,
     description: str | None = None,
     version: str | None = None,
-    values: Mapping[str, str] | None = None,
+    values: Mapping[str, str] | Sequence[Any] | None = None,
     metadata: Mapping[str, str] | None = None,
 ) -> Field:
     """One FIX field as a generic `Field`, its FIX identity under `fix:` keys.
@@ -171,7 +170,7 @@ def fix_field(
     if version:
         fix["version"] = version
     if values:
-        fix["values"] = json.dumps(dict(values), separators=(",", ":"))
+        fix.enumerated = values
     return built
 
 

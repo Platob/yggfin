@@ -221,17 +221,17 @@ class Shell:
             ),
         ]
         self.console.panel(entry.name, rows)
-        values = list({**entry.values, **entry.value_names})
+        values = entry.values
         if values:
             self.console.table(
                 ("value", "means", "symbol"),
                 [
                     (
-                        self.console.style(value, "yellow"),
-                        _clipped(entry.values.get(value, ""), max(20, self.console.width - 44)),
-                        entry.value_names.get(value, "-"),
+                        self.console.style(one.value, "yellow"),
+                        _clipped(one.meaning, max(20, self.console.width - 44)),
+                        one.aliases[0] if one.aliases else "-",
                     )
-                    for value in values[:PAGE]
+                    for one in values[:PAGE]
                 ],
             )
             if len(values) > PAGE:
@@ -454,8 +454,7 @@ class Shell:
             versions=versions,
             type=datatype,
             description=described,
-            values=dict(held.values) if held else {},
-            value_names=dict(held.value_names) if held else {},
+            values=held.values if held else (),
             column=column,
         )
         self._field_panel(entry)

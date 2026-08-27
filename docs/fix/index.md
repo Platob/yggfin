@@ -59,9 +59,12 @@ not one per version:
 ```json
 {"54": {"name": "Side", "tag": 54, "type": "char",
         "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
-        "values": {"1": "Buy"}, "value_names": {"1": "BUY"},
-        "encoded": {"buy": "1", "1": "1"}, "decoded": {"1": "buy"}}}
+        "values": [{"value": "1", "meaning": "Buy", "aliases": ["BUY"]}]}}
 ```
+
+One enumerated value is one record -- what the wire carries, what it means,
+and every other spelling naming it -- and the lookups a parse needs are
+derived from it, never stored beside it.
 
 Records live in tag-range shards of five hundred, named by the shard index:
 
@@ -103,9 +106,9 @@ that walk for an application field: it is the session transport, and letting it
 win would give a session-layer reading to fields it merely carries.
 
 Enumerated values are the *union* across versions with the newest winning per
-key, so a value that only ever existed in 4.2 still parses -- and `values` and
-`value_names` do not always agree on which keys they list, which the union
-handles without inventing an entry in the other map.
+value, so a value that only ever existed in 4.2 still parses. Each half of a
+value collapses on its own: a version that lists a value without writing it up
+still names it, so its silence does not erase the prose another version had.
 
 Every reading a collapse drops is written to `data/fix-conflicts.json`: the
 field, its tag, the part, the readings it saw with their versions and which one
@@ -121,20 +124,22 @@ that grows past them fails.
 `TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. Each raw value
 maps to itself, so a caller has one lookup path and not two.
 
-It is built from both `values` and `value_names`, normalized by casefold and
-then by dropping every character outside `[a-z0-9]` -- which is what makes
-`ORDER_SUBMISSION_TIME` and `Order Submission Time` one key, where plain
-lowercasing leaves two.
+It is derived from every spelling a value carries -- the prose, the aliases
+and the value itself -- normalized by casefold and then by dropping every
+character outside `[a-z0-9]`, which is what makes `ORDER_SUBMISSION_TIME` and
+`Order Submission Time` one key where plain lowercasing leaves two.
 
-`decoded` provides the deterministic inverse, preferring the QuickFIX symbol,
-then the dictionary value, then the wire value. Every result uses the same
-lowercase alphanumeric normalization.
+`decoded` is the deterministic inverse, preferring the leading alias (the
+QuickFIX symbol), then the prose, then the wire value, under the same
+normalization.
+
+Both are cached and never stored: they were three hundred kilobytes of the
+published dictionary saying nothing the values did not already say. Recording
+an estate's own spelling is one more alias on the value it names.
 
 Two values that normalize alike emit neither key: an ambiguous encoding that
 silently picks one is worse than none, and the lookup falls through to the raw
-value. The dropped keys are counted with the conflict report. A hand-written
-entry in a record survives a rebuild -- the generated map is the default, not
-the whole map.
+value. The dropped keys are counted with the conflict report.
 
 ```python
 field = registry.resolve("TrdRegTimestampType")

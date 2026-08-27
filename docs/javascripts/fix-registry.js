@@ -19,6 +19,31 @@
         ],
     );
   const normalized = (value) => String(value ?? "").trim().toLowerCase();
+  const encodedKey = (value) => String(value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+  // One field's spelling lookup, derived from its values exactly as the
+  // package derives it: a spelling two values share is emitted for neither.
+  function encodings(field) {
+    const claimed = new Map();
+    for (const one of list(field.values)) {
+      const value = String(one.value);
+      for (const spelled of [one.meaning || "", ...list(one.aliases), value]) {
+        const key = encodedKey(spelled);
+        if (!key) continue;
+        const owners = claimed.get(key) || [];
+        if (!owners.includes(value)) owners.push(value);
+        claimed.set(key, owners);
+      }
+    }
+    const found = {};
+    for (const [key, owners] of claimed) if (owners.length === 1) found[key] = owners[0];
+    return found;
+  }
+
+  // What one value decodes to: its leading alias, then its prose, then itself.
+  const decodedValue = (one) =>
+    encodedKey(list(one.aliases)[0] || one.meaning || "") || String(one.value);
+
   const list = (value) => (Array.isArray(value) ? value : []);
   const object = (value) => (value && typeof value === "object" ? value : {});
   const chips = (values) =>
@@ -115,11 +140,7 @@
     select("[data-summary-components]").textContent = number.format(components.length);
     select("[data-summary-fields]").textContent = number.format(fields.length);
     select("[data-summary-enums]").textContent = number.format(
-      fields.filter(
-        (field) =>
-          Object.keys(object(field.values)).length > 0 ||
-          Object.keys(object(field.value_names)).length > 0,
-      ).length,
+      fields.filter((field) => list(field.values).length > 0).length,
     );
     select("[data-summary-versions]").textContent = number.format(versions.length);
 
@@ -380,15 +401,15 @@
     }
 
     function renderFieldDetail(field) {
-      const valueCodes = [
-        ...new Set([
-          ...Object.keys(object(field.values)),
-          ...Object.keys(object(field.value_names)),
-          ...Object.keys(object(field.decoded)),
-          ...Object.keys(object(field.states)),
-          ...Object.keys(object(field.event_types)),
-        ]),
-      ];
+      const declared = new Map(list(field.values).map((one) => [String(one.value), one]));
+      for (const code of [
+        ...Object.keys(object(field.states)),
+        ...Object.keys(object(field.event_types)),
+      ]) {
+        if (!declared.has(code)) declared.set(code, { value: code, meaning: "", aliases: [] });
+      }
+      const valueCodes = [...declared.values()];
+      const encoded = encodings(field);
       const source =
         field.tag === undefined
           ? "fields/named.json"
@@ -412,7 +433,7 @@
         ${componentReferences.length ? `<h4>Components</h4><p>${componentReferences.map((name) => componentLink(name)).join(" · ")}</p>` : ""}
         ${messageReferences.length ? `<h4>Messages</h4><p>${messageReferences.map((name) => messageLink(name)).join(" · ")}</p>` : ""}
         ${valueCodes.length ? valueTable(field, valueCodes) : ""}
-        ${Object.keys(object(field.encoded)).length ? encodingTable(field.encoded) : ""}
+        ${Object.keys(encoded).length ? encodingTable(encoded) : ""}
         <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${source}`)}">View repository record →</a>`;
       fieldDetail.hidden = false;
     }
@@ -443,18 +464,19 @@
         .join("")}</ul>`;
     }
 
-    function valueTable(field, codes) {
+    function valueTable(field, values) {
       return `<h4>Values</h4><div class="fix-registry__table-wrap fix-registry__detail-table"><table class="fix-registry__table">
         <thead><tr><th>Wire</th><th>Meaning</th><th>Symbol</th><th>Decoded</th><th>State / event</th></tr></thead>
-        <tbody>${codes
-          .map((code) => {
+        <tbody>${values
+          .map((one) => {
+            const code = String(one.value);
             const configured = object(field.states)[code] || object(field.event_types)[code];
             const enumText = configured
               ? typeof configured === "object"
                 ? `${configured.name} (${configured.id})`
                 : configured
               : "";
-            return `<tr><td><code>${escape(code)}</code></td><td>${escape(object(field.values)[code] || "")}</td><td><code>${escape(object(field.value_names)[code] || "")}</code></td><td><code>${escape(object(field.decoded)[code] || "")}</code></td><td>${escape(enumText)}</td></tr>`;
+            return `<tr><td><code>${escape(code)}</code></td><td>${escape(one.meaning || "")}</td><td><code>${escape(list(one.aliases)[0] || "")}</code></td><td><code>${escape(decodedValue(one))}</code></td><td>${escape(enumText)}</td></tr>`;
           })
           .join("")}</tbody></table></div>`;
     }
@@ -562,8 +584,7 @@
   function fieldUsages(field) {
     const usages = [];
     if (field.tag === undefined) usages.push("namespace");
-    if (Object.keys(object(field.values)).length || Object.keys(object(field.value_names)).length)
-      usages.push("enumerated");
+    if (list(field.values).length) usages.push("enumerated");
     if (list(field.components).length) usages.push("component");
     if (list(field.used_in).length) usages.push("message");
     return usages.length ? usages : ["plain"];

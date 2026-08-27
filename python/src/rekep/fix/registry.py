@@ -35,6 +35,7 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    FixFieldValue,
     fold,
     name_of,
     newest_rank,
@@ -583,18 +584,11 @@ class FixRegistry(Convertible):
                         or not isinstance(record.get("aliases", []), list)
                         or any(
                             key in record and not isinstance(record[key], Mapping)
-                            for key in (
-                                "values",
-                                "value_names",
-                                "event_types",
-                                "states",
-                                "encoded",
-                                "decoded",
-                            )
+                            for key in ("event_types", "states")
                         )
                         or any(
                             key in record and not isinstance(record[key], list)
-                            for key in ("used_in", "components")
+                            for key in ("values", "used_in", "components")
                         )
                     ):
                         raise ValueError(f"FIX field {stored!r} in {name!r} has invalid metadata")
@@ -1054,7 +1048,7 @@ class FixRegistry(Convertible):
                 tag = member.fix.get("tag")
                 known = spec.get(int(tag)) if tag and tag.isdigit() else None
                 if known and known.values:
-                    member.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
+                    member.fix.enumerated = _named_values(member.fix.enumerated, known.values)
                     enriched += 1
             session = parse_session(document) or self.session(version)
             components = list(parse_components(document).values())
@@ -1121,7 +1115,7 @@ class FixRegistry(Convertible):
         entry = self.entry(35)
         if entry is None:
             return MappingProxyType({})
-        msg_types = dict.fromkeys((*entry.values, *entry.value_names, *entry.event_types))
+        msg_types = dict.fromkeys((*(one.value for one in entry.values), *entry.event_types))
         return MappingProxyType({value: entry.event_type(value) for value in msg_types})
 
     def msg_types(self, event_type: EventType | int) -> frozenset[str]:
@@ -1659,7 +1653,7 @@ class FixRegistry(Convertible):
                 tag = member.fix.get("tag")
                 known = spec.get(int(tag)) if tag and tag.isdigit() else None
                 if known and known.values:
-                    member.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
+                    member.fix.enumerated = _named_values(member.fix.enumerated, known.values)
             self._store_fields(
                 version,
                 stored,
@@ -1739,11 +1733,7 @@ class FixRegistry(Convertible):
             if components:
                 built.fix["components"] = json.dumps(components, separators=(",", ":"))
             if known and known.values:
-                # The symbol, beside the description and never over it: the
-                # spec's `description=` attribute holds `BUY`, which is the
-                # value's *name*, and writing that where the prose goes would
-                # replace "Buy" with shouting.
-                built.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
+                built.fix.enumerated = _named_values(built.fix.enumerated, known.values)
             fields.append(built)
         return fields
 
@@ -2203,6 +2193,27 @@ def _values(markup: str, *, names: bool = False) -> dict[str, str]:
             if label:
                 found.setdefault(value[1], label)
     return found
+
+
+def _named_values(held: Any, symbols: Mapping[str, str]) -> tuple[FixFieldValue, ...]:
+    """The spec's symbols beside the prose, never over it.
+
+    The spec's `description=` attribute holds `BUY`, which is the value's
+    *name*: writing it where the prose goes would replace "Buy" with
+    shouting, so it leads the aliases instead. A value only the spec knows
+    becomes a record with no prose rather than none at all.
+    """
+    found = {one.value: one for one in held}
+    for value, symbol in symbols.items():
+        spelled = str(value)
+        one = found.get(spelled)
+        if one is None:
+            found[spelled] = FixFieldValue(value=spelled, aliases=(str(symbol),))
+        else:
+            found[spelled] = dataclasses.replace(
+                one, aliases=tuple(dict.fromkeys((str(symbol), *one.aliases)))
+            )
+    return tuple(found.values())
 
 
 def _used_in(markup: str, kind: str = MESSAGE_LINK) -> list[str]:

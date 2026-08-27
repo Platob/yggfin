@@ -10,7 +10,7 @@ import pyarrow
 import pytest
 
 from rekep import FixCodec, Message
-from rekep.fix import FixRegistry
+from rekep.fix import FixFieldValue, FixRegistry
 from rekep.market import (
     MIC,
     AssetKind,
@@ -604,12 +604,12 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     configured = {
         "MsgType": dataclasses.replace(
             msg_type,
-            values={"Q": "NewOrderSingle", "R": "ExecutionReport"},
-            value_names={"Q": "NEW_ORDER_SINGLE", "R": "EXECUTION_REPORT"},
+            values=[
+                FixFieldValue(value="Q", meaning="NewOrderSingle", aliases=("NEW_ORDER_SINGLE",)),
+                FixFieldValue(value="R", meaning="ExecutionReport", aliases=("EXECUTION_REPORT",)),
+            ],
             event_types={"Q": EventType.ORDER, "R": EventType.EXECUTION},
             states={"Q": State.PENDING_NEW},
-            encoded={},
-            decoded={},
         ),
         "OrdStatus": dataclasses.replace(
             ord_status,

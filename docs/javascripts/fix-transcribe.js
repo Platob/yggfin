@@ -643,6 +643,45 @@
     )?.input_value;
   }
 
+  // One field's lookups, derived from its values exactly as the package
+  // derives them: a spelling two values share is emitted for neither, and a
+  // value decodes to its leading alias before its prose.
+  const codecCache = new WeakMap();
+
+  function codecs(field) {
+    const held = codecCache.get(field);
+    if (held) return held;
+    const values = list(field.values);
+    const claimed = new Map();
+    const decoded = {};
+    const meanings = {};
+    for (const one of values) {
+      const value = String(one.value);
+      const aliases = list(one.aliases).map(String);
+      const meaning = one.meaning ? String(one.meaning) : "";
+      if (meaning) meanings[value] = meaning;
+      decoded[value] = encodedKey(aliases[0] || meaning) || value;
+      for (const spelled of [meaning, ...aliases, value]) {
+        const key = encodedKey(spelled);
+        if (!key) continue;
+        const owners = claimed.get(key) || [];
+        if (!owners.includes(value)) owners.push(value);
+        claimed.set(key, owners);
+      }
+    }
+    const encoded = {};
+    for (const [key, owners] of claimed) if (owners.length === 1) encoded[key] = owners[0];
+    const found = {
+      encoded,
+      decoded,
+      meanings,
+      values,
+      known: new Set(values.map((one) => String(one.value))),
+    };
+    codecCache.set(field, found);
+    return found;
+  }
+
   function declaration(field, version) {
     if (!version) return "unresolved";
     const versions = list(field.versions);
@@ -653,18 +692,16 @@
     const field = lookupField(pair.input_key, registry);
     if (!field) return unresolvedPair(pair, "decode");
     const raw = pair.input_value;
-    const encodings = object(field.encoded);
+    const reading = codecs(field);
+    const encodings = reading.encoded;
     const encoded = pair.input_form === "named" && own(encodings, encodedKey(raw));
     const wireValue = encoded ? encodings[encodedKey(raw)] : raw;
-    const decoded = own(object(field.decoded), wireValue) ? field.decoded[wireValue] : raw;
-    const meaning =
-      object(field.values)[wireValue] ?? object(field.value_names)[wireValue] ?? null;
+    const decoded = own(reading.decoded, wireValue) ? reading.decoded[wireValue] : raw;
+    const meaning = reading.meanings[wireValue] ?? null;
     const typed = parseValue(wireValue, field.type);
     const versionStatus = declaration(field, version);
-    const enumerated = Object.keys(object(field.values)).length > 0 ||
-      Object.keys(object(field.value_names)).length > 0;
-    const knownValue =
-      own(object(field.values), wireValue) || own(object(field.value_names), wireValue);
+    const enumerated = reading.values.length > 0;
+    const knownValue = reading.known.has(wireValue);
     const state =
       versionStatus === "other-version"
         ? "other-version"
@@ -702,11 +739,11 @@
     if (!field) return unresolvedPair(pair, "encode");
     const versionStatus = declaration(field, version);
     const mayTranscribe = versionStatus === "declared";
-    const encodings = object(field.encoded);
+    const reading = codecs(field);
+    const encodings = reading.encoded;
     const valueKey = encodedKey(pair.input_value);
     const encoded = mayTranscribe && own(encodings, valueKey);
-    const enumerated = Object.keys(object(field.values)).length > 0 ||
-      Object.keys(object(field.value_names)).length > 0;
+    const enumerated = reading.values.length > 0;
     const outputValue = encoded ? encodings[valueKey] : pair.input_value;
     const outputKey = mayTranscribe ? String(field.tag ?? field.name) : pair.input_key;
     const typed = parseValue(outputValue, field.type);
@@ -731,8 +768,8 @@
       datatype: field.type || null,
       typed_value: typed.valid ? typed.value : null,
       wire_value: outputValue,
-      decoded: own(object(field.decoded), outputValue) ? field.decoded[outputValue] : outputValue,
-      meaning: object(field.values)[outputValue] ?? object(field.value_names)[outputValue] ?? null,
+      decoded: own(reading.decoded, outputValue) ? reading.decoded[outputValue] : outputValue,
+      meaning: reading.meanings[outputValue] ?? null,
       version_status: versionStatus,
       output_key: outputKey,
       output_value: outputValue,

@@ -32,7 +32,14 @@ import rekep
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix import registry as registry_module
-from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import (
+    ANY_VERSION,
+    NAMESPACE,
+    Alias,
+    ComponentEntry,
+    FieldEntry,
+    values_of,
+)
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 from rekep.fix.registry import FixRegistry, _problems
@@ -617,7 +624,7 @@ def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> No
 
     entry = entries[90001]
     assert entry.type == "int" and entry.versions == ("9.0", "9.1")
-    assert entry.values == {"1": "Is", "2": "Gone"}, "the union, newest winning per key"
+    assert entry.values == values_of({"1": "Is", "2": "Gone"}), "the union, newest winning per key"
 
     counts = report.counts()
     assert counts["type"] == 1 and counts["values"] == 1
@@ -1140,7 +1147,7 @@ def test_a_ttl_of_zero_never_reaches_upstream(store: Offline) -> None:
 
 def test_a_store_younger_than_its_ttl_is_served_untouched(store: Offline) -> None:
     registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0)
-    assert "value_names" not in registry.field(90001, "9.1").fix
+    assert not any(one.aliases for one in registry.field(90001, "9.1").fix.enumerated)
     assert registry.refresh_if_stale() is False
     assert not registry.__dict__.get("fetched")
 
@@ -1161,7 +1168,7 @@ def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> 
         "FIX91.xml",
     ], "every version the store holds, so none of it goes stale behind the others"
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
-    assert json.loads(reopened.field(90001, "9.1").fix["value_names"]) == {"1": "FAKE_ONE"}
+    assert reopened.field(90001, "9.1").fix.value_of("1").aliases == ("FAKE_ONE",)
     assert reopened.component("FakeParties", "9.1").members[0].name == "NoFakeParties"
 
 

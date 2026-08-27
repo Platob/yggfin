@@ -27,7 +27,7 @@ from rekep.fix.store import ConflictReport
 CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
     {
         "values": 152,
-        "value_names": 24,
+        "aliases": 24,
         "type": 214,
         "name": 40,
         "note": 18,

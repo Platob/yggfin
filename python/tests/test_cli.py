@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, StructField, cli
-from rekep.fix.entries import Alias, FieldEntry
+from rekep.fix.entries import Alias, FieldEntry, values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.registry import FixRegistry
 
@@ -624,7 +624,7 @@ def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: P
         == 0
     )
     stored = reopened(store).resolve("FAKE.VENUE.CODE")
-    assert stored.values == {"A": "Alpha"}
+    assert stored.values == values_of({"A": "Alpha"})
     assert stored.column == "fake_venue_code"
 
 

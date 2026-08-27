@@ -12,10 +12,17 @@ is an `int`, `iceberg.primary_key` a `bool`, `enum.members` the decoded
 site, and a writer cannot spell it two ways. A decoded map whose stored key
 would shadow a mapping method (`values`) answers under its own name, so the
 view stays the `MutableMapping` it advertises.
+
+A FIX field's enumerated values are `FixFieldValue` records rather than
+several parallel maps: one value knows what it means and every spelling
+that names it, and the lookups a parse needs -- spelling to value, value to
+normalized name -- are derived from that one list and cached, never stored
+beside it.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import json
 import re
@@ -23,6 +30,7 @@ from collections.abc import Iterator, Mapping, MutableMapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from rekep.convert import Convertible
 from rekep.enums import EventType, State
 
 if TYPE_CHECKING:
@@ -60,27 +68,129 @@ def encoded_key(text: Any) -> str:
     return _ENCODED_DROP.sub("", str(text).casefold())
 
 
-@functools.lru_cache(maxsize=1024)
-def _encodings(values: tuple[tuple[str, str], ...], names: tuple[tuple[str, str], ...]) -> Any:
-    """`(spelling -> value, value -> name)` for one field's declared values.
+@dataclasses.dataclass(frozen=True)
+class FixFieldValue(Convertible):
+    """One enumerated value of one FIX field, and everything that names it.
 
-    A spelling two values both normalize to is emitted for neither: an
-    ambiguous translation that silently picks one is worse than none.
+    The wire value, the prose a person reads, and every other spelling the
+    dictionary or a feed writes for it. One record instead of the four
+    parallel maps this replaces: the value's meaning, its spec symbol, the
+    spelling-to-value lookup and the value-to-name one were all the same
+    fact stored four times, and only the first two are facts at all --
+    `encodings_of` and `decodings_of` derive the rest.
+    """
+
+    value: str = ""
+    """What the wire carries: `Side <54>` value `1`."""
+
+    meaning: str = ""
+    """What it means, as the dictionary's prose spells it: `Buy`."""
+
+    aliases: tuple[str, ...] = ()
+    """Every other spelling naming this value, the spec symbol (`BUY`) first."""
+
+    def __post_init__(self) -> None:
+        """Refuse an unnamed value and settle the spellings' shape."""
+        value = str(self.value).strip()
+        if not value:
+            raise ValueError("a FIX field value carries no value")
+        object.__setattr__(self, "value", value)
+        object.__setattr__(self, "meaning", str(self.meaning or ""))
+        object.__setattr__(self, "aliases", _aliases(self.aliases))
+
+    @property
+    def name(self) -> str:
+        """The normalized name this value decodes to.
+
+        The spec symbol before the prose, because a symbol is written to be
+        one token where prose is written to be read: `Immediate or Cancel
+        (IOC)` and `IMMEDIATE_OR_CANCEL` do not normalize alike, and the
+        symbol is the one a program means.
+        """
+        for spelled in (*self.aliases, self.meaning):
+            found = encoded_key(spelled)
+            if found:
+                return found
+        return self.value
+
+    def spellings(self) -> tuple[str, ...]:
+        """Every spelling that names this value, the raw value included."""
+        return tuple(one for one in (self.meaning, *self.aliases, self.value) if one)
+
+    def into_dict(self) -> dict[str, Any]:
+        """The value as it is stored, carrying aliases only when it has any."""
+        found: dict[str, Any] = {"value": self.value, "meaning": self.meaning}
+        if self.aliases:
+            found["aliases"] = list(self.aliases)
+        return found
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> FixFieldValue:
+        """One value from its stored document."""
+        return cls(
+            value=str(mapping.get("value") or ""),
+            meaning=str(mapping.get("meaning") or ""),
+            aliases=tuple(str(one) for one in mapping.get("aliases") or ()),
+        )
+
+
+def _aliases(declared: Any) -> tuple[str, ...]:
+    """Declared alternative spellings, stripped, non-empty and deduplicated."""
+    found: dict[str, str] = {}
+    for one in declared or ():
+        spelled = str(one).strip()
+        if spelled:
+            found.setdefault(spelled, spelled)
+    return tuple(found)
+
+
+def values_of(declared: Any) -> tuple[FixFieldValue, ...]:
+    """One field's enumerated values from whatever spelling declared them.
+
+    A list of records is the stored spelling and a `{value: meaning}` mapping
+    is the one a declaration writes by hand; both land here, so no caller has
+    to build the records to state four values.
+    """
+    if not declared:
+        return ()
+    if isinstance(declared, Mapping):
+        return tuple(
+            FixFieldValue(value=str(value), meaning=str(meaning))
+            for value, meaning in declared.items()
+        )
+    return tuple(
+        one if isinstance(one, FixFieldValue) else FixFieldValue.from_dict(one) for one in declared
+    )
+
+
+@functools.lru_cache(maxsize=8192)
+def encodings_of(values: tuple[FixFieldValue, ...]) -> Any:
+    """`({normalized spelling: value}, {dropped spelling: the values claiming it})`.
+
+    Built from the prose, the symbols and the raw values themselves, so a
+    caller has one lookup path rather than several. A spelling two values
+    both normalize to is emitted for neither: an ambiguous translation that
+    silently picks one is worse than none, and the lookup falls through to
+    the raw value.
+
+    Cached wide enough to hold the whole published dictionary, because a
+    transcription walks every field of a version and asks each for this.
     """
     claimed: dict[str, list[str]] = {}
-    for source in (values, names):
-        for value, spelled in source:
-            claimed.setdefault(encoded_key(spelled), []).append(str(value))
-    for value, _ in values:
-        claimed.setdefault(encoded_key(value), []).append(str(value))
-    encoded = {key: found[0] for key, found in claimed.items() if key and len(set(found)) == 1}
-    decoded = {str(value): encoded_key(spelled) for value, spelled in (*values, *names) if spelled}
-    return MappingProxyType(encoded), MappingProxyType(decoded)
+    for one in values:
+        for spelled in one.spellings():
+            owners = claimed.setdefault(encoded_key(spelled), [])
+            if one.value not in owners:
+                owners.append(one.value)
+    found = {key: owners[0] for key, owners in claimed.items() if key and len(owners) == 1}
+    dropped = {key: tuple(owners) for key, owners in claimed.items() if key and len(owners) > 1}
+    return MappingProxyType(found), MappingProxyType(dropped)
 
 
-def encodings_of(values: Mapping[str, str], names: Mapping[str, str]) -> Any:
-    """`_encodings` over two plain mappings."""
-    return _encodings(tuple(sorted(values.items())), tuple(sorted(names.items())))
+@functools.lru_cache(maxsize=8192)
+def decodings_of(values: tuple[FixFieldValue, ...]) -> Mapping[str, str]:
+    """`{wire value: normalized name}`, one deterministic string each."""
+    return MappingProxyType({one.value: one.name for one in values})
 
 
 class ProtocolMetadata(MutableMapping):
@@ -211,7 +321,7 @@ class _Document:
 
 
 class FixMetadata(ProtocolMetadata):
-    """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.meanings`.
+    """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.enumerated`.
 
     What a registry record states about a field, read off the field itself
     -- the step that lets a generic `Field` carry a record whole, without a
@@ -228,12 +338,35 @@ class FixMetadata(ProtocolMetadata):
     column = _Text()
     note = _Text()
     component = _Text()
-    meanings = _Document("values")
-    value_names = _Document()
     versions = _Document(shape=tuple)
     msgtypes = _Document(shape=tuple)
     components = _Document(shape=tuple)
     aliases = _Document(shape=tuple)
+
+    @property
+    def enumerated(self) -> tuple[FixFieldValue, ...]:
+        """Every value this field enumerates, in the order the record lists them.
+
+        Stored under `fix:values` and read under its own name, because a
+        `values` attribute would shadow the mapping's own `values()` -- the
+        same reason `meanings` and `EnumMetadata.members` are spelled as they
+        are.
+        """
+        declared = self.get("values")
+        return values_of(json.loads(declared)) if declared else ()
+
+    @enumerated.setter
+    def enumerated(self, declared: Any) -> None:
+        found = values_of(declared)
+        if not found:
+            self.pop("values", None)
+            return
+        self["values"] = json.dumps([one.into_dict() for one in found], separators=(",", ":"))
+
+    @property
+    def meanings(self) -> dict[str, str]:
+        """`{wire value: prose}` for the values that define one."""
+        return {one.value: one.meaning for one in self.enumerated if one.meaning}
 
     @property
     def event_types(self) -> dict[str, EventType]:
@@ -285,11 +418,19 @@ class FixMetadata(ProtocolMetadata):
 
     def encode(self, value: Any) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
-        return self._codecs()[0].get(encoded_key(value), str(value))
+        return self.encoded.get(encoded_key(value), str(value))
 
     def decode(self, value: Any) -> str:
         """The normalized name of a FIX value, or the value when none is known."""
-        return self._codecs()[1].get(str(value), str(value))
+        return self.decoded.get(str(value), str(value))
+
+    def value_of(self, value: Any) -> FixFieldValue | None:
+        """The record for one wire value, or None where no version defines it."""
+        spelled = str(value)
+        for one in self.enumerated:
+            if one.value == spelled:
+                return one
+        return None
 
     def meaning(self, value: Any) -> str | None:
         """What one value means where this field enumerates its values.
@@ -297,8 +438,10 @@ class FixMetadata(ProtocolMetadata):
         The prose before the symbol -- `Side <54>` value `1` is "Buy" for a
         person -- and None where nothing defines it.
         """
-        spelled = str(value)
-        return self.meanings.get(spelled) or self.value_names.get(spelled)
+        found = self.value_of(value)
+        if found is None:
+            return None
+        return found.meaning or (found.aliases[0] if found.aliases else None)
 
     def event_type(self, value: Any) -> EventType:
         """The configured kind of one MsgType, MISC when known, else UNKNOWN."""
@@ -306,23 +449,17 @@ class FixMetadata(ProtocolMetadata):
         configured = self.event_types.get(spelled)
         if configured is not None:
             return configured
-        if spelled in self.meanings or spelled in self.value_names:
-            return EventType.MISC
-        return EventType.UNKNOWN
+        return EventType.MISC if self.value_of(spelled) else EventType.UNKNOWN
 
     @property
     def encoded(self) -> Mapping[str, str]:
         """`{normalized spelling: wire value}`, derived from what is stored."""
-        return self._codecs()[0]
+        return encodings_of(self.enumerated)[0]
 
     @property
     def decoded(self) -> Mapping[str, str]:
         """`{wire value: normalized name}`, derived from what is stored."""
-        return self._codecs()[1]
-
-    def _codecs(self) -> tuple[Mapping[str, str], Mapping[str, str]]:
-        """`(spelling -> value, value -> name)`, derived from what is stored."""
-        return encodings_of(self.meanings, self.value_names)
+        return decodings_of(self.enumerated)
 
 
 class IcebergMetadata(ProtocolMetadata):

@@ -37,33 +37,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Automatic",
-   "2": "Guarantor",
-   "3": "Manual"
-  },
-  "value_names": {
-   "1": "AUTOMATIC",
-   "2": "GUARANTOR",
-   "3": "MANUAL",
-   "4": "BROKER_ASSIGNED"
-  },
-  "encoded": {
-   "automatic": "1",
-   "guarantor": "2",
-   "manual": "3",
-   "brokerassigned": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "automatic",
-   "2": "guarantor",
-   "3": "manual",
-   "4": "brokerassigned"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Automatic",
+    "aliases": [
+     "AUTOMATIC"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Guarantor",
+    "aliases": [
+     "GUARANTOR"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Manual",
+    "aliases": [
+     "MANUAL"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BROKER_ASSIGNED"
+    ]
+   }
+  ],
   "components": [
    "AllocGrp",
    "TrdAllocGrp"
@@ -145,56 +148,52 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "CMTA",
-   "1": "Internal Transfer",
-   "2": "External Transfer",
-   "3": "Reject for Submitting Trade",
-   "4": "Advisory for Contra Side",
-   "5": "Offset due to an allocation",
-   "6": "Onset due to an allocation",
-   "7": "Differential Spread",
-   "8": "Implied Spread leg executed against an outright",
-   "9": "Transaction from Exercise",
-   "10": "Transaction from Assignment"
-  },
-  "encoded": {
-   "cmta": "0",
-   "internaltransfer": "1",
-   "externaltransfer": "2",
-   "rejectforsubmittingtrade": "3",
-   "advisoryforcontraside": "4",
-   "offsetduetoanallocation": "5",
-   "onsetduetoanallocation": "6",
-   "differentialspread": "7",
-   "impliedspreadlegexecutedagainstanoutright": "8",
-   "transactionfromexercise": "9",
-   "transactionfromassignment": "10",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "0": "cmta",
-   "1": "internaltransfer",
-   "2": "externaltransfer",
-   "3": "rejectforsubmittingtrade",
-   "4": "advisoryforcontraside",
-   "5": "offsetduetoanallocation",
-   "6": "onsetduetoanallocation",
-   "7": "differentialspread",
-   "8": "impliedspreadlegexecutedagainstanoutright",
-   "9": "transactionfromexercise",
-   "10": "transactionfromassignment"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "CMTA"
+   },
+   {
+    "value": "1",
+    "meaning": "Internal Transfer"
+   },
+   {
+    "value": "2",
+    "meaning": "External Transfer"
+   },
+   {
+    "value": "3",
+    "meaning": "Reject for Submitting Trade"
+   },
+   {
+    "value": "4",
+    "meaning": "Advisory for Contra Side"
+   },
+   {
+    "value": "5",
+    "meaning": "Offset due to an allocation"
+   },
+   {
+    "value": "6",
+    "meaning": "Onset due to an allocation"
+   },
+   {
+    "value": "7",
+    "meaning": "Differential Spread"
+   },
+   {
+    "value": "8",
+    "meaning": "Implied Spread leg executed against an outright"
+   },
+   {
+    "value": "9",
+    "meaning": "Transaction from Exercise"
+   },
+   {
+    "value": "10",
+    "meaning": "Transaction from Assignment"
+   }
+  ],
   "components": [
    "TrdCapRptAckSideGrp",
    "TrdCapRptSideGrp"
@@ -295,26 +294,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "false - trade is not an AsOf trade",
-   "1": "true - trade is an AsOf trade"
-  },
-  "value_names": {
-   "0": "FALSE",
-   "1": "TRUE"
-  },
-  "encoded": {
-   "falsetradeisnotanasoftrade": "0",
-   "truetradeisanasoftrade": "1",
-   "false": "0",
-   "true": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "false",
-   "1": "true"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "false - trade is not an AsOf trade",
+    "aliases": [
+     "FALSE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "true - trade is an AsOf trade",
+    "aliases": [
+     "TRUE"
+    ]
+   }
+  ],
   "used_in": [
    "TradeCaptureReport",
    "TradeCaptureReportAck"
@@ -402,29 +397,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Top of Book",
-   "2": "Price Depth",
-   "3": "Order Depth"
-  },
-  "value_names": {
-   "1": "TOP_OF_BOOK",
-   "2": "PRICE_DEPTH",
-   "3": "ORDER_DEPTH"
-  },
-  "encoded": {
-   "topofbook": "1",
-   "pricedepth": "2",
-   "orderdepth": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "topofbook",
-   "2": "pricedepth",
-   "3": "orderdepth"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Top of Book",
+    "aliases": [
+     "TOP_OF_BOOK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Price Depth",
+    "aliases": [
+     "PRICE_DEPTH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Order Depth",
+    "aliases": [
+     "ORDER_DEPTH"
+    ]
+   }
+  ],
   "used_in": [
    "SecurityStatus",
    "MarketDataSnapshotFullRefresh",
@@ -477,53 +472,71 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Book",
-   "1": "Off-Book",
-   "2": "Cross"
-  },
-  "value_names": {
-   "0": "BOOK",
-   "1": "OFF_BOOK",
-   "2": "CROSS",
-   "3": "QUOTE_DRIVEN_MARKET",
-   "4": "DARK_ORDER_BOOK",
-   "5": "AUCTION_DRIVEN_MARKET",
-   "6": "QUOTE_NEGOTIATION",
-   "7": "VOICE_NEGOTIATION",
-   "8": "HYBRID_MARKET"
-  },
-  "encoded": {
-   "book": "0",
-   "offbook": "1",
-   "cross": "2",
-   "quotedrivenmarket": "3",
-   "darkorderbook": "4",
-   "auctiondrivenmarket": "5",
-   "quotenegotiation": "6",
-   "voicenegotiation": "7",
-   "hybridmarket": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "book",
-   "1": "offbook",
-   "2": "cross",
-   "3": "quotedrivenmarket",
-   "4": "darkorderbook",
-   "5": "auctiondrivenmarket",
-   "6": "quotenegotiation",
-   "7": "voicenegotiation",
-   "8": "hybridmarket"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Book",
+    "aliases": [
+     "BOOK"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Off-Book",
+    "aliases": [
+     "OFF_BOOK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Cross",
+    "aliases": [
+     "CROSS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_DRIVEN_MARKET"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DARK_ORDER_BOOK"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "AUCTION_DRIVEN_MARKET"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_NEGOTIATION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "VOICE_NEGOTIATION"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "HYBRID_MARKET"
+    ]
+   }
+  ],
   "components": [
    "MDFullGrp",
    "MDIncGrp"
@@ -635,344 +648,554 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "ADD": "Add-on Order",
-   "AON": "All or None",
-   "CNH": "Cash Not Held",
-   "DIR": "Directed Order",
-   "E.W": "Exchange for Physical Transaction",
-   "FOK": "Fill or Kill",
-   "IO": "Imbalance Only",
-   "IOC": "Immediate or Cancel",
-   "LOO": "Limit On Open",
-   "LOC": "Limit on Close",
-   "MAO": "Market at Open",
-   "MAC": "Market at Close",
-   "MOO": "Market on Open",
-   "MOC": "Market On Close",
-   "MQT": "Minimum Quantity",
-   "NH": "Not Held",
-   "OVD": "Over the Day",
-   "PEG": "Pegged",
-   "RSV": "Reserve Size Order",
-   "S.W": "Stop Stock Transaction",
-   "SCL": "Scale",
-   "TMO": "Time Order",
-   "TS": "Trailing Stop",
-   "WRK": "Work"
-  },
-  "value_names": {
-   "ADD": "ADD_ON_ORDER",
-   "AON": "ALL_OR_NONE",
-   "CNH": "CASH_NOT_HELD",
-   "DIR": "DIRECTED_ORDER",
-   "E.W": "EXCHANGE_FOR_PHYSICAL_TRANSACTION",
-   "FOK": "FILL_OR_KILL",
-   "IO": "IMBALANCE_ONLY",
-   "IOC": "IMMEDIATE_OR_CANCEL",
-   "LOO": "LIMIT_ON_OPEN",
-   "LOC": "LIMIT_ON_CLOSE",
-   "MAO": "MARKET_AT_OPEN",
-   "MAC": "MARKET_AT_CLOSE",
-   "MOO": "MARKET_ON_OPEN",
-   "MOC": "MARKET_ON_CLOSE",
-   "MQT": "MINIMUM_QUANTITY",
-   "NH": "NOT_HELD",
-   "OVD": "OVER_THE_DAY",
-   "PEG": "PEGGED",
-   "RSV": "RESERVE_SIZE_ORDER",
-   "S.W": "STOP_STOCK_TRANSACTION",
-   "SCL": "SCALE",
-   "TMO": "TIME_ORDER",
-   "TS": "TRAILING_STOP",
-   "WRK": "WORK",
-   "A": "PHONE_SIMPLE",
-   "B": "PHONE_COMPLEX",
-   "C": "FCM_PROVIDED_SCREEN",
-   "D": "OTHER_PROVIDED_SCREEN",
-   "E": "CLIENT_PROVIDED_PLATFORM_CONTROLLED_BY_FCM",
-   "F": "CLIENT_PROVIDED_PLATFORM_DIRECT_TO_EXCHANGE",
-   "H": "ALGO_ENGINE",
-   "J": "PRICE_AT_EXECUTION",
-   "W": "DESK_ELECTRONIC",
-   "X": "DESK_PIT",
-   "Y": "CLIENT_ELECTRONIC",
-   "Z": "CLIENT_PIT",
-   "CND": "CONDITIONAL_ORDER",
-   "CSH": "DELIVERY_INSTRUCTIONS_CASH",
-   "DLO": "DISCRETIONARY_LIMIT_ORDER",
-   "IDX": "INTRA_DAY_CROSS",
-   "ISO": "INTERMARKET_SWEEP_ORDER",
-   "MPT": "MERGER_RELATED_TRANSFER_POSITION",
-   "MTL": "MARKET_TO_LIMIT",
-   "ND": "DELIVERY_INSTRUCTIONS_NEXT_DAY",
-   "OPT": "OPTIONS_RELATED_TRANSACTION",
-   "SLR": "DELIVERY_INSTRUCTIONS_SELLERS_OPTION",
-   "F0": "STAY_ON_OFFERSIDE",
-   "F3": "GO_ALONG",
-   "F6": "PARTICIPATE_DO_NOT_INITIATE",
-   "F7": "STRICT_SCALE",
-   "F8": "TRY_TO_SCALE",
-   "F9": "STAY_ON_BIDSIDE",
-   "FA": "NO_CROSS",
-   "FB": "OK_TO_CROSS",
-   "FC": "CALL_FIRST",
-   "FD": "PERCENT_OF_VOLUME",
-   "FH": "REINSTATE_ON_SYSTEM_FAILURE",
-   "FI": "INSTITUTION_ONLY",
-   "FJ": "REINSTATE_ON_TRADING_HALT",
-   "FK": "CANCEL_ON_TRADING_HALF",
-   "FL": "LAST_PEG",
-   "FM": "MID_PRICE_PEG",
-   "FN": "NON_NEGOTIABLE",
-   "FO": "OPENING_PEG",
-   "FP": "MARKET_PEG",
-   "FQ": "CANCEL_ON_SYSTEM_FAILURE",
-   "FR": "PRIMARY_PEG",
-   "FS": "SUSPEND",
-   "FT": "FIXED_PEG_TO_LOCAL_BBO",
-   "FW": "PEG_TO_VWAP",
-   "FX": "TRADE_ALONG",
-   "FY": "TRY_TO_STOP",
-   "FZ": "CANCEL_IF_NOT_BEST",
-   "Fb": "STRICT_LIMIT",
-   "Fc": "IGNORE_PRICE_VALIDITY_CHECKS",
-   "Fd": "PEG_TO_LIMIT_PRICE",
-   "Fe": "WORK_TO_TARGET_STRATEGY",
-   "G": "G_ORDER_AND_FCMAP_IOR_FIX"
-  },
-  "encoded": {
-   "addonorder": "ADD",
-   "allornone": "AON",
-   "cashnotheld": "CNH",
-   "directedorder": "DIR",
-   "exchangeforphysicaltransaction": "E.W",
-   "fillorkill": "FOK",
-   "imbalanceonly": "IO",
-   "immediateorcancel": "IOC",
-   "limitonopen": "LOO",
-   "limitonclose": "LOC",
-   "marketatopen": "MAO",
-   "marketatclose": "MAC",
-   "marketonopen": "MOO",
-   "marketonclose": "MOC",
-   "minimumquantity": "MQT",
-   "notheld": "NH",
-   "overtheday": "OVD",
-   "pegged": "PEG",
-   "reservesizeorder": "RSV",
-   "stopstocktransaction": "S.W",
-   "scale": "SCL",
-   "timeorder": "TMO",
-   "trailingstop": "TS",
-   "work": "WRK",
-   "phonesimple": "A",
-   "phonecomplex": "B",
-   "fcmprovidedscreen": "C",
-   "otherprovidedscreen": "D",
-   "clientprovidedplatformcontrolledbyfcm": "E",
-   "clientprovidedplatformdirecttoexchange": "F",
-   "algoengine": "H",
-   "priceatexecution": "J",
-   "deskelectronic": "W",
-   "deskpit": "X",
-   "clientelectronic": "Y",
-   "clientpit": "Z",
-   "conditionalorder": "CND",
-   "deliveryinstructionscash": "CSH",
-   "discretionarylimitorder": "DLO",
-   "intradaycross": "IDX",
-   "intermarketsweeporder": "ISO",
-   "mergerrelatedtransferposition": "MPT",
-   "markettolimit": "MTL",
-   "deliveryinstructionsnextday": "ND",
-   "optionsrelatedtransaction": "OPT",
-   "deliveryinstructionssellersoption": "SLR",
-   "stayonofferside": "F0",
-   "goalong": "F3",
-   "participatedonotinitiate": "F6",
-   "strictscale": "F7",
-   "trytoscale": "F8",
-   "stayonbidside": "F9",
-   "nocross": "FA",
-   "oktocross": "FB",
-   "callfirst": "FC",
-   "percentofvolume": "FD",
-   "reinstateonsystemfailure": "FH",
-   "institutiononly": "FI",
-   "reinstateontradinghalt": "FJ",
-   "cancelontradinghalf": "FK",
-   "lastpeg": "FL",
-   "midpricepeg": "FM",
-   "nonnegotiable": "FN",
-   "openingpeg": "FO",
-   "marketpeg": "FP",
-   "cancelonsystemfailure": "FQ",
-   "primarypeg": "FR",
-   "suspend": "FS",
-   "fixedpegtolocalbbo": "FT",
-   "pegtovwap": "FW",
-   "tradealong": "FX",
-   "trytostop": "FY",
-   "cancelifnotbest": "FZ",
-   "strictlimit": "Fb",
-   "ignorepricevaliditychecks": "Fc",
-   "pegtolimitprice": "Fd",
-   "worktotargetstrategy": "Fe",
-   "gorderandfcmapiorfix": "G",
-   "add": "ADD",
-   "aon": "AON",
-   "cnh": "CNH",
-   "dir": "DIR",
-   "ew": "E.W",
-   "fok": "FOK",
-   "io": "IO",
-   "ioc": "IOC",
-   "loo": "LOO",
-   "loc": "LOC",
-   "mao": "MAO",
-   "mac": "MAC",
-   "moo": "MOO",
-   "moc": "MOC",
-   "mqt": "MQT",
-   "nh": "NH",
-   "ovd": "OVD",
-   "peg": "PEG",
-   "rsv": "RSV",
-   "sw": "S.W",
-   "scl": "SCL",
-   "tmo": "TMO",
-   "ts": "TS",
-   "wrk": "WRK",
-   "a": "A",
-   "b": "B",
-   "c": "C",
-   "d": "D",
-   "e": "E",
-   "f": "F",
-   "h": "H",
-   "j": "J",
-   "w": "W",
-   "x": "X",
-   "y": "Y",
-   "z": "Z",
-   "cnd": "CND",
-   "csh": "CSH",
-   "dlo": "DLO",
-   "idx": "IDX",
-   "iso": "ISO",
-   "mpt": "MPT",
-   "mtl": "MTL",
-   "nd": "ND",
-   "opt": "OPT",
-   "slr": "SLR",
-   "f0": "F0",
-   "f3": "F3",
-   "f6": "F6",
-   "f7": "F7",
-   "f8": "F8",
-   "f9": "F9",
-   "fa": "FA",
-   "fh": "FH",
-   "fi": "FI",
-   "fj": "FJ",
-   "fk": "FK",
-   "fl": "FL",
-   "fm": "FM",
-   "fn": "FN",
-   "fo": "FO",
-   "fp": "FP",
-   "fq": "FQ",
-   "fr": "FR",
-   "fs": "FS",
-   "ft": "FT",
-   "fw": "FW",
-   "fx": "FX",
-   "fy": "FY",
-   "fz": "FZ",
-   "fe": "Fe",
-   "g": "G"
-  },
-  "decoded": {
-   "ADD": "addonorder",
-   "AON": "allornone",
-   "CNH": "cashnotheld",
-   "DIR": "directedorder",
-   "E.W": "exchangeforphysicaltransaction",
-   "FOK": "fillorkill",
-   "IO": "imbalanceonly",
-   "IOC": "immediateorcancel",
-   "LOO": "limitonopen",
-   "LOC": "limitonclose",
-   "MAO": "marketatopen",
-   "MAC": "marketatclose",
-   "MOO": "marketonopen",
-   "MOC": "marketonclose",
-   "MQT": "minimumquantity",
-   "NH": "notheld",
-   "OVD": "overtheday",
-   "PEG": "pegged",
-   "RSV": "reservesizeorder",
-   "S.W": "stopstocktransaction",
-   "SCL": "scale",
-   "TMO": "timeorder",
-   "TS": "trailingstop",
-   "WRK": "work",
-   "A": "phonesimple",
-   "B": "phonecomplex",
-   "C": "fcmprovidedscreen",
-   "D": "otherprovidedscreen",
-   "E": "clientprovidedplatformcontrolledbyfcm",
-   "F": "clientprovidedplatformdirecttoexchange",
-   "H": "algoengine",
-   "J": "priceatexecution",
-   "W": "deskelectronic",
-   "X": "deskpit",
-   "Y": "clientelectronic",
-   "Z": "clientpit",
-   "CND": "conditionalorder",
-   "CSH": "deliveryinstructionscash",
-   "DLO": "discretionarylimitorder",
-   "IDX": "intradaycross",
-   "ISO": "intermarketsweeporder",
-   "MPT": "mergerrelatedtransferposition",
-   "MTL": "markettolimit",
-   "ND": "deliveryinstructionsnextday",
-   "OPT": "optionsrelatedtransaction",
-   "SLR": "deliveryinstructionssellersoption",
-   "F0": "stayonofferside",
-   "F3": "goalong",
-   "F6": "participatedonotinitiate",
-   "F7": "strictscale",
-   "F8": "trytoscale",
-   "F9": "stayonbidside",
-   "FA": "nocross",
-   "FB": "oktocross",
-   "FC": "callfirst",
-   "FD": "percentofvolume",
-   "FH": "reinstateonsystemfailure",
-   "FI": "institutiononly",
-   "FJ": "reinstateontradinghalt",
-   "FK": "cancelontradinghalf",
-   "FL": "lastpeg",
-   "FM": "midpricepeg",
-   "FN": "nonnegotiable",
-   "FO": "openingpeg",
-   "FP": "marketpeg",
-   "FQ": "cancelonsystemfailure",
-   "FR": "primarypeg",
-   "FS": "suspend",
-   "FT": "fixedpegtolocalbbo",
-   "FW": "pegtovwap",
-   "FX": "tradealong",
-   "FY": "trytostop",
-   "FZ": "cancelifnotbest",
-   "Fb": "strictlimit",
-   "Fc": "ignorepricevaliditychecks",
-   "Fd": "pegtolimitprice",
-   "Fe": "worktotargetstrategy",
-   "G": "gorderandfcmapiorfix"
-  },
+  "values": [
+   {
+    "value": "ADD",
+    "meaning": "Add-on Order",
+    "aliases": [
+     "ADD_ON_ORDER"
+    ]
+   },
+   {
+    "value": "AON",
+    "meaning": "All or None",
+    "aliases": [
+     "ALL_OR_NONE"
+    ]
+   },
+   {
+    "value": "CNH",
+    "meaning": "Cash Not Held",
+    "aliases": [
+     "CASH_NOT_HELD"
+    ]
+   },
+   {
+    "value": "DIR",
+    "meaning": "Directed Order",
+    "aliases": [
+     "DIRECTED_ORDER"
+    ]
+   },
+   {
+    "value": "E.W",
+    "meaning": "Exchange for Physical Transaction",
+    "aliases": [
+     "EXCHANGE_FOR_PHYSICAL_TRANSACTION"
+    ]
+   },
+   {
+    "value": "FOK",
+    "meaning": "Fill or Kill",
+    "aliases": [
+     "FILL_OR_KILL"
+    ]
+   },
+   {
+    "value": "IO",
+    "meaning": "Imbalance Only",
+    "aliases": [
+     "IMBALANCE_ONLY"
+    ]
+   },
+   {
+    "value": "IOC",
+    "meaning": "Immediate or Cancel",
+    "aliases": [
+     "IMMEDIATE_OR_CANCEL"
+    ]
+   },
+   {
+    "value": "LOO",
+    "meaning": "Limit On Open",
+    "aliases": [
+     "LIMIT_ON_OPEN"
+    ]
+   },
+   {
+    "value": "LOC",
+    "meaning": "Limit on Close",
+    "aliases": [
+     "LIMIT_ON_CLOSE"
+    ]
+   },
+   {
+    "value": "MAO",
+    "meaning": "Market at Open",
+    "aliases": [
+     "MARKET_AT_OPEN"
+    ]
+   },
+   {
+    "value": "MAC",
+    "meaning": "Market at Close",
+    "aliases": [
+     "MARKET_AT_CLOSE"
+    ]
+   },
+   {
+    "value": "MOO",
+    "meaning": "Market on Open",
+    "aliases": [
+     "MARKET_ON_OPEN"
+    ]
+   },
+   {
+    "value": "MOC",
+    "meaning": "Market On Close",
+    "aliases": [
+     "MARKET_ON_CLOSE"
+    ]
+   },
+   {
+    "value": "MQT",
+    "meaning": "Minimum Quantity",
+    "aliases": [
+     "MINIMUM_QUANTITY"
+    ]
+   },
+   {
+    "value": "NH",
+    "meaning": "Not Held",
+    "aliases": [
+     "NOT_HELD"
+    ]
+   },
+   {
+    "value": "OVD",
+    "meaning": "Over the Day",
+    "aliases": [
+     "OVER_THE_DAY"
+    ]
+   },
+   {
+    "value": "PEG",
+    "meaning": "Pegged",
+    "aliases": [
+     "PEGGED"
+    ]
+   },
+   {
+    "value": "RSV",
+    "meaning": "Reserve Size Order",
+    "aliases": [
+     "RESERVE_SIZE_ORDER"
+    ]
+   },
+   {
+    "value": "S.W",
+    "meaning": "Stop Stock Transaction",
+    "aliases": [
+     "STOP_STOCK_TRANSACTION"
+    ]
+   },
+   {
+    "value": "SCL",
+    "meaning": "Scale",
+    "aliases": [
+     "SCALE"
+    ]
+   },
+   {
+    "value": "TMO",
+    "meaning": "Time Order",
+    "aliases": [
+     "TIME_ORDER"
+    ]
+   },
+   {
+    "value": "TS",
+    "meaning": "Trailing Stop",
+    "aliases": [
+     "TRAILING_STOP"
+    ]
+   },
+   {
+    "value": "WRK",
+    "meaning": "Work",
+    "aliases": [
+     "WORK"
+    ]
+   },
+   {
+    "value": "A",
+    "meaning": "",
+    "aliases": [
+     "PHONE_SIMPLE"
+    ]
+   },
+   {
+    "value": "B",
+    "meaning": "",
+    "aliases": [
+     "PHONE_COMPLEX"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "",
+    "aliases": [
+     "FCM_PROVIDED_SCREEN"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "OTHER_PROVIDED_SCREEN"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "",
+    "aliases": [
+     "CLIENT_PROVIDED_PLATFORM_CONTROLLED_BY_FCM"
+    ]
+   },
+   {
+    "value": "F",
+    "meaning": "",
+    "aliases": [
+     "CLIENT_PROVIDED_PLATFORM_DIRECT_TO_EXCHANGE"
+    ]
+   },
+   {
+    "value": "H",
+    "meaning": "",
+    "aliases": [
+     "ALGO_ENGINE"
+    ]
+   },
+   {
+    "value": "J",
+    "meaning": "",
+    "aliases": [
+     "PRICE_AT_EXECUTION"
+    ]
+   },
+   {
+    "value": "W",
+    "meaning": "",
+    "aliases": [
+     "DESK_ELECTRONIC"
+    ]
+   },
+   {
+    "value": "X",
+    "meaning": "",
+    "aliases": [
+     "DESK_PIT"
+    ]
+   },
+   {
+    "value": "Y",
+    "meaning": "",
+    "aliases": [
+     "CLIENT_ELECTRONIC"
+    ]
+   },
+   {
+    "value": "Z",
+    "meaning": "",
+    "aliases": [
+     "CLIENT_PIT"
+    ]
+   },
+   {
+    "value": "CND",
+    "meaning": "",
+    "aliases": [
+     "CONDITIONAL_ORDER"
+    ]
+   },
+   {
+    "value": "CSH",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_INSTRUCTIONS_CASH"
+    ]
+   },
+   {
+    "value": "DLO",
+    "meaning": "",
+    "aliases": [
+     "DISCRETIONARY_LIMIT_ORDER"
+    ]
+   },
+   {
+    "value": "IDX",
+    "meaning": "",
+    "aliases": [
+     "INTRA_DAY_CROSS"
+    ]
+   },
+   {
+    "value": "ISO",
+    "meaning": "",
+    "aliases": [
+     "INTERMARKET_SWEEP_ORDER"
+    ]
+   },
+   {
+    "value": "MPT",
+    "meaning": "",
+    "aliases": [
+     "MERGER_RELATED_TRANSFER_POSITION"
+    ]
+   },
+   {
+    "value": "MTL",
+    "meaning": "",
+    "aliases": [
+     "MARKET_TO_LIMIT"
+    ]
+   },
+   {
+    "value": "ND",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_INSTRUCTIONS_NEXT_DAY"
+    ]
+   },
+   {
+    "value": "OPT",
+    "meaning": "",
+    "aliases": [
+     "OPTIONS_RELATED_TRANSACTION"
+    ]
+   },
+   {
+    "value": "SLR",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_INSTRUCTIONS_SELLERS_OPTION"
+    ]
+   },
+   {
+    "value": "F0",
+    "meaning": "",
+    "aliases": [
+     "STAY_ON_OFFERSIDE"
+    ]
+   },
+   {
+    "value": "F3",
+    "meaning": "",
+    "aliases": [
+     "GO_ALONG"
+    ]
+   },
+   {
+    "value": "F6",
+    "meaning": "",
+    "aliases": [
+     "PARTICIPATE_DO_NOT_INITIATE"
+    ]
+   },
+   {
+    "value": "F7",
+    "meaning": "",
+    "aliases": [
+     "STRICT_SCALE"
+    ]
+   },
+   {
+    "value": "F8",
+    "meaning": "",
+    "aliases": [
+     "TRY_TO_SCALE"
+    ]
+   },
+   {
+    "value": "F9",
+    "meaning": "",
+    "aliases": [
+     "STAY_ON_BIDSIDE"
+    ]
+   },
+   {
+    "value": "FA",
+    "meaning": "",
+    "aliases": [
+     "NO_CROSS"
+    ]
+   },
+   {
+    "value": "FB",
+    "meaning": "",
+    "aliases": [
+     "OK_TO_CROSS"
+    ]
+   },
+   {
+    "value": "FC",
+    "meaning": "",
+    "aliases": [
+     "CALL_FIRST"
+    ]
+   },
+   {
+    "value": "FD",
+    "meaning": "",
+    "aliases": [
+     "PERCENT_OF_VOLUME"
+    ]
+   },
+   {
+    "value": "FH",
+    "meaning": "",
+    "aliases": [
+     "REINSTATE_ON_SYSTEM_FAILURE"
+    ]
+   },
+   {
+    "value": "FI",
+    "meaning": "",
+    "aliases": [
+     "INSTITUTION_ONLY"
+    ]
+   },
+   {
+    "value": "FJ",
+    "meaning": "",
+    "aliases": [
+     "REINSTATE_ON_TRADING_HALT"
+    ]
+   },
+   {
+    "value": "FK",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_ON_TRADING_HALF"
+    ]
+   },
+   {
+    "value": "FL",
+    "meaning": "",
+    "aliases": [
+     "LAST_PEG"
+    ]
+   },
+   {
+    "value": "FM",
+    "meaning": "",
+    "aliases": [
+     "MID_PRICE_PEG"
+    ]
+   },
+   {
+    "value": "FN",
+    "meaning": "",
+    "aliases": [
+     "NON_NEGOTIABLE"
+    ]
+   },
+   {
+    "value": "FO",
+    "meaning": "",
+    "aliases": [
+     "OPENING_PEG"
+    ]
+   },
+   {
+    "value": "FP",
+    "meaning": "",
+    "aliases": [
+     "MARKET_PEG"
+    ]
+   },
+   {
+    "value": "FQ",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_ON_SYSTEM_FAILURE"
+    ]
+   },
+   {
+    "value": "FR",
+    "meaning": "",
+    "aliases": [
+     "PRIMARY_PEG"
+    ]
+   },
+   {
+    "value": "FS",
+    "meaning": "",
+    "aliases": [
+     "SUSPEND"
+    ]
+   },
+   {
+    "value": "FT",
+    "meaning": "",
+    "aliases": [
+     "FIXED_PEG_TO_LOCAL_BBO"
+    ]
+   },
+   {
+    "value": "FW",
+    "meaning": "",
+    "aliases": [
+     "PEG_TO_VWAP"
+    ]
+   },
+   {
+    "value": "FX",
+    "meaning": "",
+    "aliases": [
+     "TRADE_ALONG"
+    ]
+   },
+   {
+    "value": "FY",
+    "meaning": "",
+    "aliases": [
+     "TRY_TO_STOP"
+    ]
+   },
+   {
+    "value": "FZ",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_IF_NOT_BEST"
+    ]
+   },
+   {
+    "value": "Fb",
+    "meaning": "",
+    "aliases": [
+     "STRICT_LIMIT"
+    ]
+   },
+   {
+    "value": "Fc",
+    "meaning": "",
+    "aliases": [
+     "IGNORE_PRICE_VALIDITY_CHECKS"
+    ]
+   },
+   {
+    "value": "Fd",
+    "meaning": "",
+    "aliases": [
+     "PEG_TO_LIMIT_PRICE"
+    ]
+   },
+   {
+    "value": "Fe",
+    "meaning": "",
+    "aliases": [
+     "WORK_TO_TARGET_STRATEGY"
+    ]
+   },
+   {
+    "value": "G",
+    "meaning": "",
+    "aliases": [
+     "G_ORDER_AND_FCMAP_IOR_FIX"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport",
    "NewOrderSingle",
@@ -989,25 +1212,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "FINRA OATS / NASD OATS",
-   "2": "FIA Execution Source Code"
-  },
-  "value_names": {
-   "1": "FINRAOATS",
-   "2": "FIA_EXECUTION_SOURCE_CODE"
-  },
-  "encoded": {
-   "finraoatsnasdoats": "1",
-   "fiaexecutionsourcecode": "2",
-   "finraoats": "1",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "finraoats",
-   "2": "fiaexecutionsourcecode"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "FINRA OATS / NASD OATS",
+    "aliases": [
+     "FINRAOATS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "FIA Execution Source Code",
+    "aliases": [
+     "FIA_EXECUTION_SOURCE_CODE"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport",
    "NewOrderSingle",
@@ -1024,98 +1244,134 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "A": "Agency",
-   "AR": "Arbitrage",
-   "D": "Derivatives",
-   "IN": "International",
-   "IS": "Institutional",
-   "O": "Other",
-   "PF": "Preferred Trading",
-   "PR": "Proprietary",
-   "PT": "Program Trading",
-   "S": "Sales",
-   "T": "Trading"
-  },
-  "value_names": {
-   "A": "AGENCY",
-   "AR": "ARBITRAGE",
-   "D": "DERIVATIVES",
-   "IN": "INTERNATIONAL",
-   "IS": "INSTITUTIONAL",
-   "O": "OTHER",
-   "PF": "PREFERRED_TRADING",
-   "PR": "PROPRIETARY",
-   "PT": "PROGRAM_TRADING",
-   "S": "SALES",
-   "T": "TRADING_DESK_SYSTEM",
-   "B": "BLOCK_TRADING",
-   "C": "CONVERTIBLE_DESK",
-   "CR": "CENTRAL_RISK_BOOKS",
-   "EC": "EQUITY_CAPITAL_MARKETS",
-   "SW": "SWAPS",
-   "TR": "TREASURY",
-   "FB": "FLOOR_BROKER"
-  },
-  "encoded": {
-   "agency": "A",
-   "arbitrage": "AR",
-   "derivatives": "D",
-   "international": "IN",
-   "institutional": "IS",
-   "other": "O",
-   "preferredtrading": "PF",
-   "proprietary": "PR",
-   "programtrading": "PT",
-   "sales": "S",
-   "trading": "T",
-   "tradingdesksystem": "T",
-   "blocktrading": "B",
-   "convertibledesk": "C",
-   "centralriskbooks": "CR",
-   "equitycapitalmarkets": "EC",
-   "swaps": "SW",
-   "treasury": "TR",
-   "floorbroker": "FB",
-   "a": "A",
-   "ar": "AR",
-   "d": "D",
-   "in": "IN",
-   "is": "IS",
-   "o": "O",
-   "pf": "PF",
-   "pr": "PR",
-   "pt": "PT",
-   "s": "S",
-   "t": "T",
-   "b": "B",
-   "c": "C",
-   "cr": "CR",
-   "ec": "EC",
-   "sw": "SW",
-   "tr": "TR",
-   "fb": "FB"
-  },
-  "decoded": {
-   "A": "agency",
-   "AR": "arbitrage",
-   "D": "derivatives",
-   "IN": "international",
-   "IS": "institutional",
-   "O": "other",
-   "PF": "preferredtrading",
-   "PR": "proprietary",
-   "PT": "programtrading",
-   "S": "sales",
-   "T": "tradingdesksystem",
-   "B": "blocktrading",
-   "C": "convertibledesk",
-   "CR": "centralriskbooks",
-   "EC": "equitycapitalmarkets",
-   "SW": "swaps",
-   "TR": "treasury",
-   "FB": "floorbroker"
-  },
+  "values": [
+   {
+    "value": "A",
+    "meaning": "Agency",
+    "aliases": [
+     "AGENCY"
+    ]
+   },
+   {
+    "value": "AR",
+    "meaning": "Arbitrage",
+    "aliases": [
+     "ARBITRAGE"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Derivatives",
+    "aliases": [
+     "DERIVATIVES"
+    ]
+   },
+   {
+    "value": "IN",
+    "meaning": "International",
+    "aliases": [
+     "INTERNATIONAL"
+    ]
+   },
+   {
+    "value": "IS",
+    "meaning": "Institutional",
+    "aliases": [
+     "INSTITUTIONAL"
+    ]
+   },
+   {
+    "value": "O",
+    "meaning": "Other",
+    "aliases": [
+     "OTHER"
+    ]
+   },
+   {
+    "value": "PF",
+    "meaning": "Preferred Trading",
+    "aliases": [
+     "PREFERRED_TRADING"
+    ]
+   },
+   {
+    "value": "PR",
+    "meaning": "Proprietary",
+    "aliases": [
+     "PROPRIETARY"
+    ]
+   },
+   {
+    "value": "PT",
+    "meaning": "Program Trading",
+    "aliases": [
+     "PROGRAM_TRADING"
+    ]
+   },
+   {
+    "value": "S",
+    "meaning": "Sales",
+    "aliases": [
+     "SALES"
+    ]
+   },
+   {
+    "value": "T",
+    "meaning": "Trading",
+    "aliases": [
+     "TRADING_DESK_SYSTEM"
+    ]
+   },
+   {
+    "value": "B",
+    "meaning": "",
+    "aliases": [
+     "BLOCK_TRADING"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "",
+    "aliases": [
+     "CONVERTIBLE_DESK"
+    ]
+   },
+   {
+    "value": "CR",
+    "meaning": "",
+    "aliases": [
+     "CENTRAL_RISK_BOOKS"
+    ]
+   },
+   {
+    "value": "EC",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_CAPITAL_MARKETS"
+    ]
+   },
+   {
+    "value": "SW",
+    "meaning": "",
+    "aliases": [
+     "SWAPS"
+    ]
+   },
+   {
+    "value": "TR",
+    "meaning": "",
+    "aliases": [
+     "TREASURY"
+    ]
+   },
+   {
+    "value": "FB",
+    "meaning": "",
+    "aliases": [
+     "FLOOR_BROKER"
+    ]
+   }
+  ],
   "components": [
    "TrdRegTimestamps"
   ]
@@ -1130,20 +1386,15 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "FINRA OATS / NASD OATS"
-  },
-  "value_names": {
-   "1": "FINRAOATS"
-  },
-  "encoded": {
-   "finraoatsnasdoats": "1",
-   "finraoats": "1",
-   "1": "1"
-  },
-  "decoded": {
-   "1": "finraoats"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "FINRA OATS / NASD OATS",
+    "aliases": [
+     "FINRAOATS"
+    ]
+   }
+  ],
   "components": [
    "TrdRegTimestamps"
   ]
@@ -1158,108 +1409,176 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "value_names": {
-   "ADD": "ADD_ON_ORDER",
-   "AON": "ALL_OR_NONE",
-   "CNH": "CASH_NOT_HELD",
-   "DIR": "DIRECTED_ORDER",
-   "E.W": "EXCHANGE_FOR_PHYSICAL_TRANSACTION",
-   "FOK": "FILL_OR_KILL",
-   "IO": "IMBALANCE_ONLY",
-   "IOC": "IMMEDIATE_OR_CANCEL",
-   "LOO": "LIMIT_ON_OPEN",
-   "LOC": "LIMIT_ON_CLOSE",
-   "MAO": "MARKET_AT_OPEN",
-   "MAC": "MARKET_AT_CLOSE",
-   "MOO": "MARKET_ON_OPEN",
-   "MOC": "MARKET_ON_CLOSE",
-   "MQT": "MINIMUM_QUANTITY",
-   "NH": "NOT_HELD",
-   "OVD": "OVER_THE_DAY",
-   "PEG": "PEGGED",
-   "RSV": "RESERVE_SIZE_ORDER",
-   "S.W": "STOP_STOCK_TRANSACTION",
-   "SCL": "SCALE",
-   "TMO": "TIME_ORDER",
-   "TS": "TRAILING_STOP",
-   "WRK": "WORK"
-  },
-  "encoded": {
-   "addonorder": "ADD",
-   "allornone": "AON",
-   "cashnotheld": "CNH",
-   "directedorder": "DIR",
-   "exchangeforphysicaltransaction": "E.W",
-   "fillorkill": "FOK",
-   "imbalanceonly": "IO",
-   "immediateorcancel": "IOC",
-   "limitonopen": "LOO",
-   "limitonclose": "LOC",
-   "marketatopen": "MAO",
-   "marketatclose": "MAC",
-   "marketonopen": "MOO",
-   "marketonclose": "MOC",
-   "minimumquantity": "MQT",
-   "notheld": "NH",
-   "overtheday": "OVD",
-   "pegged": "PEG",
-   "reservesizeorder": "RSV",
-   "stopstocktransaction": "S.W",
-   "scale": "SCL",
-   "timeorder": "TMO",
-   "trailingstop": "TS",
-   "work": "WRK",
-   "add": "ADD",
-   "aon": "AON",
-   "cnh": "CNH",
-   "dir": "DIR",
-   "ew": "E.W",
-   "fok": "FOK",
-   "io": "IO",
-   "ioc": "IOC",
-   "loo": "LOO",
-   "loc": "LOC",
-   "mao": "MAO",
-   "mac": "MAC",
-   "moo": "MOO",
-   "moc": "MOC",
-   "mqt": "MQT",
-   "nh": "NH",
-   "ovd": "OVD",
-   "peg": "PEG",
-   "rsv": "RSV",
-   "sw": "S.W",
-   "scl": "SCL",
-   "tmo": "TMO",
-   "ts": "TS",
-   "wrk": "WRK"
-  },
-  "decoded": {
-   "ADD": "addonorder",
-   "AON": "allornone",
-   "CNH": "cashnotheld",
-   "DIR": "directedorder",
-   "E.W": "exchangeforphysicaltransaction",
-   "FOK": "fillorkill",
-   "IO": "imbalanceonly",
-   "IOC": "immediateorcancel",
-   "LOO": "limitonopen",
-   "LOC": "limitonclose",
-   "MAO": "marketatopen",
-   "MAC": "marketatclose",
-   "MOO": "marketonopen",
-   "MOC": "marketonclose",
-   "MQT": "minimumquantity",
-   "NH": "notheld",
-   "OVD": "overtheday",
-   "PEG": "pegged",
-   "RSV": "reservesizeorder",
-   "S.W": "stopstocktransaction",
-   "SCL": "scale",
-   "TMO": "timeorder",
-   "TS": "trailingstop",
-   "WRK": "work"
-  },
+  "values": [
+   {
+    "value": "ADD",
+    "meaning": "",
+    "aliases": [
+     "ADD_ON_ORDER"
+    ]
+   },
+   {
+    "value": "AON",
+    "meaning": "",
+    "aliases": [
+     "ALL_OR_NONE"
+    ]
+   },
+   {
+    "value": "CNH",
+    "meaning": "",
+    "aliases": [
+     "CASH_NOT_HELD"
+    ]
+   },
+   {
+    "value": "DIR",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED_ORDER"
+    ]
+   },
+   {
+    "value": "E.W",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_FOR_PHYSICAL_TRANSACTION"
+    ]
+   },
+   {
+    "value": "FOK",
+    "meaning": "",
+    "aliases": [
+     "FILL_OR_KILL"
+    ]
+   },
+   {
+    "value": "IO",
+    "meaning": "",
+    "aliases": [
+     "IMBALANCE_ONLY"
+    ]
+   },
+   {
+    "value": "IOC",
+    "meaning": "",
+    "aliases": [
+     "IMMEDIATE_OR_CANCEL"
+    ]
+   },
+   {
+    "value": "LOO",
+    "meaning": "",
+    "aliases": [
+     "LIMIT_ON_OPEN"
+    ]
+   },
+   {
+    "value": "LOC",
+    "meaning": "",
+    "aliases": [
+     "LIMIT_ON_CLOSE"
+    ]
+   },
+   {
+    "value": "MAO",
+    "meaning": "",
+    "aliases": [
+     "MARKET_AT_OPEN"
+    ]
+   },
+   {
+    "value": "MAC",
+    "meaning": "",
+    "aliases": [
+     "MARKET_AT_CLOSE"
+    ]
+   },
+   {
+    "value": "MOO",
+    "meaning": "",
+    "aliases": [
+     "MARKET_ON_OPEN"
+    ]
+   },
+   {
+    "value": "MOC",
+    "meaning": "",
+    "aliases": [
+     "MARKET_ON_CLOSE"
+    ]
+   },
+   {
+    "value": "MQT",
+    "meaning": "",
+    "aliases": [
+     "MINIMUM_QUANTITY"
+    ]
+   },
+   {
+    "value": "NH",
+    "meaning": "",
+    "aliases": [
+     "NOT_HELD"
+    ]
+   },
+   {
+    "value": "OVD",
+    "meaning": "",
+    "aliases": [
+     "OVER_THE_DAY"
+    ]
+   },
+   {
+    "value": "PEG",
+    "meaning": "",
+    "aliases": [
+     "PEGGED"
+    ]
+   },
+   {
+    "value": "RSV",
+    "meaning": "",
+    "aliases": [
+     "RESERVE_SIZE_ORDER"
+    ]
+   },
+   {
+    "value": "S.W",
+    "meaning": "",
+    "aliases": [
+     "STOP_STOCK_TRANSACTION"
+    ]
+   },
+   {
+    "value": "SCL",
+    "meaning": "",
+    "aliases": [
+     "SCALE"
+    ]
+   },
+   {
+    "value": "TMO",
+    "meaning": "",
+    "aliases": [
+     "TIME_ORDER"
+    ]
+   },
+   {
+    "value": "TS",
+    "meaning": "",
+    "aliases": [
+     "TRAILING_STOP"
+    ]
+   },
+   {
+    "value": "WRK",
+    "meaning": "",
+    "aliases": [
+     "WORK"
+    ]
+   }
+  ],
   "components": [
    "TrdRegTimestamps"
   ]
@@ -1274,31 +1593,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Received, not yet processed",
-   "1": "Accepted",
-   "2": "Don't know / Rejected"
-  },
-  "value_names": {
-   "0": "RECEIVED",
-   "1": "ACCEPTED",
-   "2": "DONT_KNOW"
-  },
-  "encoded": {
-   "receivednotyetprocessed": "0",
-   "accepted": "1",
-   "dontknowrejected": "2",
-   "received": "0",
-   "dontknow": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "received",
-   "1": "accepted",
-   "2": "dontknow"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Received, not yet processed",
+    "aliases": [
+     "RECEIVED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Accepted",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Don't know / Rejected",
+    "aliases": [
+     "DONT_KNOW"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionAcknowledgement"
   ]
@@ -1409,24 +1726,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Specific Deposit",
-   "1": "General"
-  },
-  "value_names": {
-   "0": "SPECIFIC_DEPOSIT",
-   "1": "GENERAL"
-  },
-  "encoded": {
-   "specificdeposit": "0",
-   "general": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "specificdeposit",
-   "1": "general"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Specific Deposit",
+    "aliases": [
+     "SPECIFIC_DEPOSIT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "General",
+    "aliases": [
+     "GENERAL"
+    ]
+   }
+  ],
   "used_in": [
    "CollateralResponse",
    "CollateralReport"
@@ -1470,24 +1785,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "M": "Multiply",
-   "D": "Divide"
-  },
-  "value_names": {
-   "D": "DIVIDE",
-   "M": "MULTIPLY"
-  },
-  "encoded": {
-   "multiply": "M",
-   "divide": "D",
-   "m": "M",
-   "d": "D"
-  },
-  "decoded": {
-   "M": "multiply",
-   "D": "divide"
-  },
+  "values": [
+   {
+    "value": "M",
+    "meaning": "Multiply",
+    "aliases": [
+     "MULTIPLY"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Divide",
+    "aliases": [
+     "DIVIDE"
+    ]
+   }
+  ],
   "components": [
    "UnderlyingInstrument"
   ]
@@ -1502,34 +1815,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "O": "Open",
-   "C": "Close",
-   "R": "Rolled",
-   "F": "FIFO"
-  },
-  "value_names": {
-   "O": "OPEN",
-   "C": "CLOSE",
-   "R": "ROLLED",
-   "F": "FIFO"
-  },
-  "encoded": {
-   "open": "O",
-   "close": "C",
-   "rolled": "R",
-   "fifo": "F",
-   "o": "O",
-   "c": "C",
-   "r": "R",
-   "f": "F"
-  },
-  "decoded": {
-   "O": "open",
-   "C": "close",
-   "R": "rolled",
-   "F": "fifo"
-  },
+  "values": [
+   {
+    "value": "O",
+    "meaning": "Open",
+    "aliases": [
+     "OPEN"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "Close",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "R",
+    "meaning": "Rolled",
+    "aliases": [
+     "ROLLED"
+    ]
+   },
+   {
+    "value": "F",
+    "meaning": "FIFO",
+    "aliases": [
+     "FIFO"
+    ]
+   }
+  ],
   "components": [
    "AllocAckGrp",
    "AllocGrp"
@@ -1545,29 +1860,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "A": "Agent",
-   "P": "Principal",
-   "R": "Riskless Principal"
-  },
-  "value_names": {
-   "A": "AGENT",
-   "P": "PRINCIPAL",
-   "R": "RISKLESS_PRINCIPAL"
-  },
-  "encoded": {
-   "agent": "A",
-   "principal": "P",
-   "risklessprincipal": "R",
-   "a": "A",
-   "p": "P",
-   "r": "R"
-  },
-  "decoded": {
-   "A": "agent",
-   "P": "principal",
-   "R": "risklessprincipal"
-  },
+  "values": [
+   {
+    "value": "A",
+    "meaning": "Agent",
+    "aliases": [
+     "AGENT"
+    ]
+   },
+   {
+    "value": "P",
+    "meaning": "Principal",
+    "aliases": [
+     "PRINCIPAL"
+    ]
+   },
+   {
+    "value": "R",
+    "meaning": "Riskless Principal",
+    "aliases": [
+     "RISKLESS_PRINCIPAL"
+    ]
+   }
+  ],
   "components": [
    "MDFullGrp",
    "MDIncGrp"
@@ -1583,24 +1898,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "R": "Random",
-   "P": "ProRata"
-  },
-  "value_names": {
-   "R": "RANDOM",
-   "P": "PRO_RATA"
-  },
-  "encoded": {
-   "random": "R",
-   "prorata": "P",
-   "r": "R",
-   "p": "P"
-  },
-  "decoded": {
-   "R": "random",
-   "P": "prorata"
-  },
+  "values": [
+   {
+    "value": "R",
+    "meaning": "Random",
+    "aliases": [
+     "RANDOM"
+    ]
+   },
+   {
+    "value": "P",
+    "meaning": "ProRata",
+    "aliases": [
+     "PRO_RATA"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -1715,26 +2028,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "Y": "Order initiator is aggressor",
-   "N": "Order initiator is passive"
-  },
-  "value_names": {
-   "Y": "YES",
-   "N": "NO"
-  },
-  "encoded": {
-   "orderinitiatorisaggressor": "Y",
-   "orderinitiatorispassive": "N",
-   "yes": "Y",
-   "no": "N",
-   "y": "Y",
-   "n": "N"
-  },
-  "decoded": {
-   "Y": "yes",
-   "N": "no"
-  },
+  "values": [
+   {
+    "value": "Y",
+    "meaning": "Order initiator is aggressor",
+    "aliases": [
+     "YES"
+    ]
+   },
+   {
+    "value": "N",
+    "meaning": "Order initiator is passive",
+    "aliases": [
+     "NO"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport"
   ],
@@ -1957,39 +2266,43 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Indicative",
-   "1": "Tradeable",
-   "2": "Restricted Tradeable",
-   "3": "Counter",
-   "4": "Indicative and Tradeable"
-  },
-  "value_names": {
-   "0": "INDICATIVE",
-   "1": "TRADEABLE",
-   "2": "RESTRICTED_TRADEABLE",
-   "3": "COUNTER",
-   "4": "INDICATIVE_AND_TRADEABLE"
-  },
-  "encoded": {
-   "indicative": "0",
-   "tradeable": "1",
-   "restrictedtradeable": "2",
-   "counter": "3",
-   "indicativeandtradeable": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "indicative",
-   "1": "tradeable",
-   "2": "restrictedtradeable",
-   "3": "counter",
-   "4": "indicativeandtradeable"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Indicative",
+    "aliases": [
+     "INDICATIVE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Tradeable",
+    "aliases": [
+     "TRADEABLE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Restricted Tradeable",
+    "aliases": [
+     "RESTRICTED_TRADEABLE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Counter",
+    "aliases": [
+     "COUNTER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Indicative and Tradeable",
+    "aliases": [
+     "INDICATIVE_AND_TRADEABLE"
+    ]
+   }
+  ],
   "used_in": [
    "MarketDataRequest"
   ],
@@ -2117,67 +2430,85 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "SecondaryOrderID <198>",
-   "1": "OrderID <37>",
-   "2": "MDEntryID <278>",
-   "3": "QuoteEntryID <299>",
-   "4": "Original order ID"
-  },
-  "value_names": {
-   "0": "SECONDARY_ORDER_ID",
-   "1": "ORDER_ID",
-   "2": "MD_ENTRY_ID",
-   "3": "QUOTE_ENTRY_ID",
-   "4": "ORIGINAL_ORDER_ID",
-   "5": "QUOTE_ID",
-   "6": "QUOTE_REQ_ID",
-   "7": "PREVIOUS_ORDER_IDENTIFIER",
-   "8": "PREVIOUS_QUOTE_IDENTIFIER",
-   "9": "PARENT_ORDER_IDENTIFIER",
-   "A": "MANUAL_ORDER_IDENTIFIER"
-  },
-  "encoded": {
-   "secondaryorderid198": "0",
-   "orderid37": "1",
-   "mdentryid278": "2",
-   "quoteentryid299": "3",
-   "originalorderid": "4",
-   "secondaryorderid": "0",
-   "orderid": "1",
-   "mdentryid": "2",
-   "quoteentryid": "3",
-   "quoteid": "5",
-   "quotereqid": "6",
-   "previousorderidentifier": "7",
-   "previousquoteidentifier": "8",
-   "parentorderidentifier": "9",
-   "manualorderidentifier": "A",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "a": "A"
-  },
-  "decoded": {
-   "0": "secondaryorderid",
-   "1": "orderid",
-   "2": "mdentryid",
-   "3": "quoteentryid",
-   "4": "originalorderid",
-   "5": "quoteid",
-   "6": "quotereqid",
-   "7": "previousorderidentifier",
-   "8": "previousquoteidentifier",
-   "9": "parentorderidentifier",
-   "A": "manualorderidentifier"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "SecondaryOrderID <198>",
+    "aliases": [
+     "SECONDARY_ORDER_ID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "OrderID <37>",
+    "aliases": [
+     "ORDER_ID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "MDEntryID <278>",
+    "aliases": [
+     "MD_ENTRY_ID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "QuoteEntryID <299>",
+    "aliases": [
+     "QUOTE_ENTRY_ID"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Original order ID",
+    "aliases": [
+     "ORIGINAL_ORDER_ID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_ID"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_REQ_ID"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS_ORDER_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS_QUOTE_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "PARENT_ORDER_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "A",
+    "meaning": "",
+    "aliases": [
+     "MANUAL_ORDER_IDENTIFIER"
+    ]
+   }
+  ],
   "used_in": [
    "NewOrderMultileg",
    "NewOrderSingle"
@@ -2211,26 +2542,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Immediate (after each fill)",
-   "2": "Exhaust (when DisplayQty <1138> = 0)"
-  },
-  "value_names": {
-   "1": "IMMEDIATE",
-   "2": "EXHAUST"
-  },
-  "encoded": {
-   "immediateaftereachfill": "1",
-   "exhaustwhendisplayqty11380": "2",
-   "immediate": "1",
-   "exhaust": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "immediate",
-   "2": "exhaust"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Immediate (after each fill)",
+    "aliases": [
+     "IMMEDIATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Exhaust (when DisplayQty <1138> = 0)",
+    "aliases": [
+     "EXHAUST"
+    ]
+   }
+  ],
   "components": [
    "DisplayInstruction"
   ]
@@ -2245,38 +2572,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Initial (use original DisplayQty <1138> )",
-   "2": "New (use RefreshQty <1088> )",
-   "3": "Random (randomize value)",
-   "4": "Undisclosed (invisible order)"
-  },
-  "value_names": {
-   "1": "INITIAL",
-   "2": "NEW",
-   "3": "RANDOM",
-   "4": "UNDISCLOSED"
-  },
-  "encoded": {
-   "initialuseoriginaldisplayqty1138": "1",
-   "newuserefreshqty1088": "2",
-   "randomrandomizevalue": "3",
-   "undisclosedinvisibleorder": "4",
-   "initial": "1",
-   "new": "2",
-   "random": "3",
-   "undisclosed": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "initial",
-   "2": "new",
-   "3": "random",
-   "4": "undisclosed"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Initial (use original DisplayQty <1138> )",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "New (use RefreshQty <1088> )",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Random (randomize value)",
+    "aliases": [
+     "RANDOM"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Undisclosed (invisible order)",
+    "aliases": [
+     "UNDISCLOSED"
+    ]
+   }
+  ],
   "components": [
    "DisplayInstruction"
   ]
@@ -2418,37 +2743,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "None",
-   "1": "Local (Exchange, ECN, ATS)",
-   "2": "National (Across all national markets)",
-   "3": "Global (Across all markets)"
-  },
-  "value_names": {
-   "0": "NONE",
-   "1": "LOCAL",
-   "2": "NATIONAL",
-   "3": "GLOBAL"
-  },
-  "encoded": {
-   "none": "0",
-   "localexchangeecnats": "1",
-   "nationalacrossallnationalmarkets": "2",
-   "globalacrossallmarkets": "3",
-   "local": "1",
-   "national": "2",
-   "global": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "local",
-   "2": "national",
-   "3": "global"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "None",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Local (Exchange, ECN, ATS)",
+    "aliases": [
+     "LOCAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "National (Across all national markets)",
+    "aliases": [
+     "NATIONAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Global (Across all markets)",
+    "aliases": [
+     "GLOBAL"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport",
    "NewOrderMultileg",
@@ -2472,35 +2796,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Odd Lot",
-   "2": "Round Lot",
-   "3": "Block Lot",
-   "4": "Round lot based upon UnitOfMeasure <996>"
-  },
-  "value_names": {
-   "1": "ODD_LOT",
-   "2": "ROUND_LOT",
-   "3": "BLOCK_LOT",
-   "4": "ROUND_LOT_BASED_UPON"
-  },
-  "encoded": {
-   "oddlot": "1",
-   "roundlot": "2",
-   "blocklot": "3",
-   "roundlotbaseduponunitofmeasure996": "4",
-   "roundlotbasedupon": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "oddlot",
-   "2": "roundlot",
-   "3": "blocklot",
-   "4": "roundlotbasedupon"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Odd Lot",
+    "aliases": [
+     "ODD_LOT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Round Lot",
+    "aliases": [
+     "ROUND_LOT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Block Lot",
+    "aliases": [
+     "BLOCK_LOT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Round lot based upon UnitOfMeasure <996>",
+    "aliases": [
+     "ROUND_LOT_BASED_UPON"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport"
   ],
@@ -2523,66 +2848,78 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Last peg (last sale)",
-   "2": "Mid-price peg (midprice of inside quote)",
-   "3": "Opening peg",
-   "4": "Market peg",
-   "5": "Primary peg (primary market - buy at bid or sell at offer)",
-   "6": "Fixed Peg to Local best bid or offer at time of order",
-   "7": "Peg to VWAP",
-   "8": "Trailing Stop Peg",
-   "9": "Peg to Limit Price"
-  },
-  "value_names": {
-   "1": "LAST_PEG",
-   "2": "MID_PRICE_PEG",
-   "3": "OPENING_PEG",
-   "4": "MARKET_PEG",
-   "5": "PRIMARY_PEG",
-   "6": "FIXED_PEG_TO_LOCAL_BEST_BID_OR_OFFER_AT_TIME_OF_ORDER",
-   "7": "PEG_TO_VWAP",
-   "8": "TRAILING_STOP_PEG",
-   "9": "PEG_TO_LIMIT_PRICE",
-   "10": "SHORT_SALE_MIN_PRICE_PEG"
-  },
-  "encoded": {
-   "lastpeglastsale": "1",
-   "midpricepegmidpriceofinsidequote": "2",
-   "openingpeg": "3",
-   "marketpeg": "4",
-   "primarypegprimarymarketbuyatbidorsellatoffer": "5",
-   "fixedpegtolocalbestbidorofferattimeoforder": "6",
-   "pegtovwap": "7",
-   "trailingstoppeg": "8",
-   "pegtolimitprice": "9",
-   "lastpeg": "1",
-   "midpricepeg": "2",
-   "primarypeg": "5",
-   "shortsaleminpricepeg": "10",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "1": "lastpeg",
-   "2": "midpricepeg",
-   "3": "openingpeg",
-   "4": "marketpeg",
-   "5": "primarypeg",
-   "6": "fixedpegtolocalbestbidorofferattimeoforder",
-   "7": "pegtovwap",
-   "8": "trailingstoppeg",
-   "9": "pegtolimitprice",
-   "10": "shortsaleminpricepeg"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Last peg (last sale)",
+    "aliases": [
+     "LAST_PEG"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Mid-price peg (midprice of inside quote)",
+    "aliases": [
+     "MID_PRICE_PEG"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Opening peg",
+    "aliases": [
+     "OPENING_PEG"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Market peg",
+    "aliases": [
+     "MARKET_PEG"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Primary peg (primary market - buy at bid or sell at offer)",
+    "aliases": [
+     "PRIMARY_PEG"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Fixed Peg to Local best bid or offer at time of order",
+    "aliases": [
+     "FIXED_PEG_TO_LOCAL_BEST_BID_OR_OFFER_AT_TIME_OF_ORDER"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Peg to VWAP",
+    "aliases": [
+     "PEG_TO_VWAP"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Trailing Stop Peg",
+    "aliases": [
+     "TRAILING_STOP_PEG"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "Peg to Limit Price",
+    "aliases": [
+     "PEG_TO_LIMIT_PRICE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "SHORT_SALE_MIN_PRICE_PEG"
+    ]
+   }
+  ],
   "components": [
    "PegInstructions"
   ]
@@ -2667,38 +3004,43 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Partial Execution",
-   "2": "Specified Trading Session",
-   "3": "Next Auction",
-   "4": "Price Movement"
-  },
-  "value_names": {
-   "1": "PARTIAL_EXECUTION",
-   "2": "SPECIFIED_TRADING_SESSION",
-   "3": "NEXT_AUCTION",
-   "4": "PRICE_MOVEMENT",
-   "5": "ON_ORDER_ENTRY_OR_MODIFICATION"
-  },
-  "encoded": {
-   "partialexecution": "1",
-   "specifiedtradingsession": "2",
-   "nextauction": "3",
-   "pricemovement": "4",
-   "onorderentryormodification": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "partialexecution",
-   "2": "specifiedtradingsession",
-   "3": "nextauction",
-   "4": "pricemovement",
-   "5": "onorderentryormodification"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Partial Execution",
+    "aliases": [
+     "PARTIAL_EXECUTION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Specified Trading Session",
+    "aliases": [
+     "SPECIFIED_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Next Auction",
+    "aliases": [
+     "NEXT_AUCTION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Price Movement",
+    "aliases": [
+     "PRICE_MOVEMENT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ON_ORDER_ENTRY_OR_MODIFICATION"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -2713,29 +3055,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Activate",
-   "2": "Modify",
-   "3": "Cancel"
-  },
-  "value_names": {
-   "1": "ACTIVATE",
-   "2": "MODIFY",
-   "3": "CANCEL"
-  },
-  "encoded": {
-   "activate": "1",
-   "modify": "2",
-   "cancel": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "activate",
-   "2": "modify",
-   "3": "cancel"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Activate",
+    "aliases": [
+     "ACTIVATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Modify",
+    "aliases": [
+     "MODIFY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Cancel",
+    "aliases": [
+     "CANCEL"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -2820,44 +3162,50 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Best Offer",
-   "2": "Last Trade",
-   "3": "Best Bid",
-   "4": "Best Bid or Last Trade",
-   "5": "Best Offer or Last Trade",
-   "6": "Best Mid"
-  },
-  "value_names": {
-   "1": "BEST_OFFER",
-   "2": "LAST_TRADE",
-   "3": "BEST_BID",
-   "4": "BEST_BID_OR_LAST_TRADE",
-   "5": "BEST_OFFER_OR_LAST_TRADE",
-   "6": "BEST_MID"
-  },
-  "encoded": {
-   "bestoffer": "1",
-   "lasttrade": "2",
-   "bestbid": "3",
-   "bestbidorlasttrade": "4",
-   "bestofferorlasttrade": "5",
-   "bestmid": "6",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "1": "bestoffer",
-   "2": "lasttrade",
-   "3": "bestbid",
-   "4": "bestbidorlasttrade",
-   "5": "bestofferorlasttrade",
-   "6": "bestmid"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Best Offer",
+    "aliases": [
+     "BEST_OFFER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Last Trade",
+    "aliases": [
+     "LAST_TRADE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Best Bid",
+    "aliases": [
+     "BEST_BID"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Best Bid or Last Trade",
+    "aliases": [
+     "BEST_BID_OR_LAST_TRADE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Best Offer or Last Trade",
+    "aliases": [
+     "BEST_OFFER_OR_LAST_TRADE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Best Mid",
+    "aliases": [
+     "BEST_MID"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -2872,37 +3220,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "None",
-   "1": "Local (Exchange, ECN, ATS)",
-   "2": "National (Across all national markets)",
-   "3": "Global (Across all markets)"
-  },
-  "value_names": {
-   "0": "NONE",
-   "1": "LOCAL",
-   "2": "NATIONAL",
-   "3": "GLOBAL"
-  },
-  "encoded": {
-   "none": "0",
-   "localexchangeecnats": "1",
-   "nationalacrossallnationalmarkets": "2",
-   "globalacrossallmarkets": "3",
-   "local": "1",
-   "national": "2",
-   "global": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "local",
-   "2": "national",
-   "3": "global"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "None",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Local (Exchange, ECN, ATS)",
+    "aliases": [
+     "LOCAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "National (Across all national markets)",
+    "aliases": [
+     "NATIONAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Global (Across all markets)",
+    "aliases": [
+     "GLOBAL"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -2917,26 +3264,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "U": "Trigger if the price of the specified type goes UP to or through the specified Trigger Price.",
-   "D": "Trigger if the price of the specified type goes DOWN to or through the specified Trigger Price."
-  },
-  "value_names": {
-   "U": "UP",
-   "D": "DOWN"
-  },
-  "encoded": {
-   "triggerifthepriceofthespecifiedtypegoesuptoorthroughthespecifiedtriggerprice": "U",
-   "triggerifthepriceofthespecifiedtypegoesdowntoorthroughthespecifiedtriggerprice": "D",
-   "up": "U",
-   "down": "D",
-   "u": "U",
-   "d": "D"
-  },
-  "decoded": {
-   "U": "up",
-   "D": "down"
-  },
+  "values": [
+   {
+    "value": "U",
+    "meaning": "Trigger if the price of the specified type goes UP to or through the specified Trigger Price.",
+    "aliases": [
+     "UP"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Trigger if the price of the specified type goes DOWN to or through the specified Trigger Price.",
+    "aliases": [
+     "DOWN"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -2965,24 +3308,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Market",
-   "2": "Limit"
-  },
-  "value_names": {
-   "1": "MARKET",
-   "2": "LIMIT"
-  },
-  "encoded": {
-   "market": "1",
-   "limit": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "market",
-   "2": "limit"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Market",
+    "aliases": [
+     "MARKET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Limit",
+    "aliases": [
+     "LIMIT"
+    ]
+   }
+  ],
   "components": [
    "TriggeringInstruction"
   ]
@@ -3039,64 +3380,78 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Order",
-   "2": "Quote",
-   "3": "Privately Negotiated Trade",
-   "4": "Multileg order",
-   "5": "Linked order",
-   "6": "Quote Request",
-   "7": "Implied Order",
-   "8": "Cross Order",
-   "9": "Streaming price (quote)"
-  },
-  "value_names": {
-   "1": "ORDER",
-   "2": "QUOTE",
-   "3": "PRIVATELY_NEGOTIATED_TRADE",
-   "4": "MULTILEG_ORDER",
-   "5": "LINKED_ORDER",
-   "6": "QUOTE_REQUEST",
-   "7": "IMPLIED_ORDER",
-   "8": "CROSS_ORDER",
-   "9": "STREAMING_PRICE",
-   "A": "INTERNAL_CROSS_ORDER"
-  },
-  "encoded": {
-   "order": "1",
-   "quote": "2",
-   "privatelynegotiatedtrade": "3",
-   "multilegorder": "4",
-   "linkedorder": "5",
-   "quoterequest": "6",
-   "impliedorder": "7",
-   "crossorder": "8",
-   "streamingpricequote": "9",
-   "streamingprice": "9",
-   "internalcrossorder": "A",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "a": "A"
-  },
-  "decoded": {
-   "1": "order",
-   "2": "quote",
-   "3": "privatelynegotiatedtrade",
-   "4": "multilegorder",
-   "5": "linkedorder",
-   "6": "quoterequest",
-   "7": "impliedorder",
-   "8": "crossorder",
-   "9": "streamingprice",
-   "A": "internalcrossorder"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Order",
+    "aliases": [
+     "ORDER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Quote",
+    "aliases": [
+     "QUOTE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Privately Negotiated Trade",
+    "aliases": [
+     "PRIVATELY_NEGOTIATED_TRADE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Multileg order",
+    "aliases": [
+     "MULTILEG_ORDER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Linked order",
+    "aliases": [
+     "LINKED_ORDER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Quote Request",
+    "aliases": [
+     "QUOTE_REQUEST"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Implied Order",
+    "aliases": [
+     "IMPLIED_ORDER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Cross Order",
+    "aliases": [
+     "CROSS_ORDER"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "Streaming price (quote)",
+    "aliases": [
+     "STREAMING_PRICE"
+    ]
+   },
+   {
+    "value": "A",
+    "meaning": "",
+    "aliases": [
+     "INTERNAL_CROSS_ORDER"
+    ]
+   }
+  ],
   "used_in": [
    "ExecutionReport",
    "TradeCaptureReport"
@@ -3214,56 +3569,71 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Trade Confirmation",
-   "1": "Two-Party Report",
-   "2": "One-Party Report for Matching",
-   "3": "One-Party Report for Pass Through",
-   "4": "Automated Floor Order Routing",
-   "5": "Two Party Report for Claim"
-  },
-  "value_names": {
-   "0": "TRADE_CONFIRMATION",
-   "1": "TWO_PARTY_REPORT",
-   "2": "ONE_PARTY_REPORT_FOR_MATCHING",
-   "3": "ONE_PARTY_REPORT_FOR_PASS_THROUGH",
-   "4": "AUTOMATED_FLOOR_ORDER_ROUTING",
-   "5": "TWO_PARTY_REPORT_FOR_CLAIM",
-   "6": "ONE_PARTY_REPORT",
-   "7": "THIRD_PTY_RPT_FOR_PASS_THROUGH",
-   "8": "ONE_PARTY_REPORT_AUTO_MATCH"
-  },
-  "encoded": {
-   "tradeconfirmation": "0",
-   "twopartyreport": "1",
-   "onepartyreportformatching": "2",
-   "onepartyreportforpassthrough": "3",
-   "automatedfloororderrouting": "4",
-   "twopartyreportforclaim": "5",
-   "onepartyreport": "6",
-   "thirdptyrptforpassthrough": "7",
-   "onepartyreportautomatch": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "tradeconfirmation",
-   "1": "twopartyreport",
-   "2": "onepartyreportformatching",
-   "3": "onepartyreportforpassthrough",
-   "4": "automatedfloororderrouting",
-   "5": "twopartyreportforclaim",
-   "6": "onepartyreport",
-   "7": "thirdptyrptforpassthrough",
-   "8": "onepartyreportautomatch"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Trade Confirmation",
+    "aliases": [
+     "TRADE_CONFIRMATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Two-Party Report",
+    "aliases": [
+     "TWO_PARTY_REPORT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "One-Party Report for Matching",
+    "aliases": [
+     "ONE_PARTY_REPORT_FOR_MATCHING"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "One-Party Report for Pass Through",
+    "aliases": [
+     "ONE_PARTY_REPORT_FOR_PASS_THROUGH"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Automated Floor Order Routing",
+    "aliases": [
+     "AUTOMATED_FLOOR_ORDER_ROUTING"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Two Party Report for Claim",
+    "aliases": [
+     "TWO_PARTY_REPORT_FOR_CLAIM"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ONE_PARTY_REPORT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "THIRD_PTY_RPT_FOR_PASS_THROUGH"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "ONE_PARTY_REPORT_AUTO_MATCH"
+    ]
+   }
+  ],
   "used_in": [
    "TradeCaptureReportRequest",
    "TradeCaptureReport",
@@ -3341,68 +3711,85 @@
    "5.0.SP2",
    "FIXT1.1"
   ],
-  "values": {
-   "0": "FIX27",
-   "1": "FIX30",
-   "2": "FIX40",
-   "3": "FIX41",
-   "4": "FIX42",
-   "5": "FIX43",
-   "6": "FIX44",
-   "7": "FIX50",
-   "8": "FIX50SP1",
-   "9": "FIX50SP2"
-  },
-  "value_names": {
-   "0": "FIX27",
-   "1": "FIX30",
-   "2": "FIX40",
-   "3": "FIX41",
-   "4": "FIX42",
-   "5": "FIX43",
-   "6": "FIX44",
-   "7": "FIX50",
-   "8": "FIX50_SP1",
-   "9": "FIX50_SP2",
-   "10": "FIX_LATEST"
-  },
-  "encoded": {
-   "fix27": "0",
-   "fix30": "1",
-   "fix40": "2",
-   "fix41": "3",
-   "fix42": "4",
-   "fix43": "5",
-   "fix44": "6",
-   "fix50": "7",
-   "fix50sp1": "8",
-   "fix50sp2": "9",
-   "fixlatest": "10",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "0": "fix27",
-   "1": "fix30",
-   "2": "fix40",
-   "3": "fix41",
-   "4": "fix42",
-   "5": "fix43",
-   "6": "fix44",
-   "7": "fix50",
-   "8": "fix50sp1",
-   "9": "fix50sp2",
-   "10": "fixlatest"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "FIX27",
+    "aliases": [
+     "FIX27"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "FIX30",
+    "aliases": [
+     "FIX30"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "FIX40",
+    "aliases": [
+     "FIX40"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "FIX41",
+    "aliases": [
+     "FIX41"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "FIX42",
+    "aliases": [
+     "FIX42"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "FIX43",
+    "aliases": [
+     "FIX43"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "FIX44",
+    "aliases": [
+     "FIX44"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "FIX50",
+    "aliases": [
+     "FIX50"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "FIX50SP1",
+    "aliases": [
+     "FIX50_SP1"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "FIX50SP2",
+    "aliases": [
+     "FIX50_SP2"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "FIX_LATEST"
+    ]
+   }
+  ],
   "components": [
    "StandardHeader"
   ]
@@ -3484,43 +3871,43 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "B": "BIC (Bank Identification Code) (ISO 9362)",
-   "C": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
-   "D": "Proprietary / Custom code",
-   "E": "ISO Country Code",
-   "G": "MIC (ISO 10383 - Market Identifier Code)"
-  },
-  "value_names": {
-   "B": "BIC",
-   "C": "GENERAL_IDENTIFIER",
-   "D": "PROPRIETARY",
-   "E": "ISO_COUNTRY_CODE",
-   "G": "MIC"
-  },
-  "encoded": {
-   "bicbankidentificationcodeiso9362": "B",
-   "generallyacceptedmarketparticipantidentifieregnasdmnemonic": "C",
-   "proprietarycustomcode": "D",
-   "isocountrycode": "E",
-   "miciso10383marketidentifiercode": "G",
-   "bic": "B",
-   "generalidentifier": "C",
-   "proprietary": "D",
-   "mic": "G",
-   "b": "B",
-   "c": "C",
-   "d": "D",
-   "e": "E",
-   "g": "G"
-  },
-  "decoded": {
-   "B": "bic",
-   "C": "generalidentifier",
-   "D": "proprietary",
-   "E": "isocountrycode",
-   "G": "mic"
-  },
+  "values": [
+   {
+    "value": "B",
+    "meaning": "BIC (Bank Identification Code) (ISO 9362)",
+    "aliases": [
+     "BIC"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
+    "aliases": [
+     "GENERAL_IDENTIFIER"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Proprietary / Custom code",
+    "aliases": [
+     "PROPRIETARY"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "ISO Country Code",
+    "aliases": [
+     "ISO_COUNTRY_CODE"
+    ]
+   },
+   {
+    "value": "G",
+    "meaning": "MIC (ISO 10383 - Market Identifier Code)",
+    "aliases": [
+     "MIC"
+    ]
+   }
+  ],
   "used_in": [
    "NewOrderMultileg",
    "MultilegOrderCancelReplace",
@@ -3682,36 +4069,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Not implied",
-   "1": "Implied-in - The existence of a multi-leg instrument is implied by the legs of that instrument",
-   "2": "Implied-out - The existence of the underlying legs are implied by the multi-leg instrument",
-   "3": "Both Implied-in and Implied-out"
-  },
-  "value_names": {
-   "0": "NOT_IMPLIED",
-   "1": "IMPLIED_IN",
-   "2": "IMPLIED_OUT",
-   "3": "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
-  },
-  "encoded": {
-   "notimplied": "0",
-   "impliedintheexistenceofamultileginstrumentisimpliedbythelegsofthatinstrument": "1",
-   "impliedouttheexistenceoftheunderlyinglegsareimpliedbythemultileginstrument": "2",
-   "bothimpliedinandimpliedout": "3",
-   "impliedin": "1",
-   "impliedout": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "notimplied",
-   "1": "impliedin",
-   "2": "impliedout",
-   "3": "bothimpliedinandimpliedout"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Not implied",
+    "aliases": [
+     "NOT_IMPLIED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Implied-in - The existence of a multi-leg instrument is implied by the legs of that instrument",
+    "aliases": [
+     "IMPLIED_IN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Implied-out - The existence of the underlying legs are implied by the multi-leg instrument",
+    "aliases": [
+     "IMPLIED_OUT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Both Implied-in and Implied-out",
+    "aliases": [
+     "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
+    ]
+   }
+  ],
   "components": [
    "BaseTradingRules"
   ]
@@ -3910,24 +4297,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Preliminary",
-   "2": "Final"
-  },
-  "value_names": {
-   "1": "PRELIMINARY",
-   "2": "FINAL"
-  },
-  "encoded": {
-   "preliminary": "1",
-   "final": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "preliminary",
-   "2": "final"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Preliminary",
+    "aliases": [
+     "PRELIMINARY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Final",
+    "aliases": [
+     "FINAL"
+    ]
+   }
+  ],
   "used_in": [
    "SettlementObligationReport"
   ]
@@ -3967,34 +4352,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "C": "Cancel",
-   "N": "New",
-   "R": "Replace",
-   "T": "Restate"
-  },
-  "value_names": {
-   "C": "CANCEL",
-   "N": "NEW",
-   "R": "REPLACE",
-   "T": "RESTATE"
-  },
-  "encoded": {
-   "cancel": "C",
-   "new": "N",
-   "replace": "R",
-   "restate": "T",
-   "c": "C",
-   "n": "N",
-   "r": "R",
-   "t": "T"
-  },
-  "decoded": {
-   "C": "cancel",
-   "N": "new",
-   "R": "replace",
-   "T": "restate"
-  },
+  "values": [
+   {
+    "value": "C",
+    "meaning": "Cancel",
+    "aliases": [
+     "CANCEL"
+    ]
+   },
+   {
+    "value": "N",
+    "meaning": "New",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "R",
+    "meaning": "Replace",
+    "aliases": [
+     "REPLACE"
+    ]
+   },
+   {
+    "value": "T",
+    "meaning": "Restate",
+    "aliases": [
+     "RESTATE"
+    ]
+   }
+  ],
   "components": [
    "SettlObligationInstructions"
   ]
@@ -4021,37 +4408,43 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Instructions of Broker",
-   "2": "Instructions for Institution",
-   "3": "Investor"
-  },
-  "value_names": {
-   "1": "INSTRUCTIONS_OF_BROKER",
-   "2": "INSTRUCTIONS_FOR_INSTITUTION",
-   "3": "INVESTOR",
-   "4": "BUYERS_SETTLEMENT_INSTRUCTIONS",
-   "5": "SELLERS_SETTLEMENT_INSTRUCTIONS"
-  },
-  "encoded": {
-   "instructionsofbroker": "1",
-   "instructionsforinstitution": "2",
-   "investor": "3",
-   "buyerssettlementinstructions": "4",
-   "sellerssettlementinstructions": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "instructionsofbroker",
-   "2": "instructionsforinstitution",
-   "3": "investor",
-   "4": "buyerssettlementinstructions",
-   "5": "sellerssettlementinstructions"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Instructions of Broker",
+    "aliases": [
+     "INSTRUCTIONS_OF_BROKER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Instructions for Institution",
+    "aliases": [
+     "INSTRUCTIONS_FOR_INSTITUTION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Investor",
+    "aliases": [
+     "INVESTOR"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BUYERS_SETTLEMENT_INSTRUCTIONS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SELLERS_SETTLEMENT_INSTRUCTIONS"
+    ]
+   }
+  ],
   "components": [
    "SettlDetails"
   ]
@@ -4094,59 +4487,71 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Accepted",
-   "5": "Rejected",
-   "6": "Removed from Market",
-   "7": "Expired",
-   "12": "Locked Market Warning",
-   "13": "Cross Market Warning",
-   "14": "Canceled due to Lock Market",
-   "15": "Canceled due to Cross Market",
-   "16": "Active"
-  },
-  "value_names": {
-   "0": "ACCEPTED",
-   "5": "REJECTED",
-   "6": "REMOVED_FROM_MARKET",
-   "7": "EXPIRED",
-   "12": "LOCKED_MARKET_WARNING",
-   "13": "CROSS_MARKET_WARNING",
-   "14": "CANCELED_DUE_TO_LOCK_MARKET",
-   "15": "CANCELED_DUE_TO_CROSS_MARKET",
-   "16": "ACTIVE"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "5",
-   "removedfrommarket": "6",
-   "expired": "7",
-   "lockedmarketwarning": "12",
-   "crossmarketwarning": "13",
-   "canceledduetolockmarket": "14",
-   "canceledduetocrossmarket": "15",
-   "active": "16",
-   "0": "0",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16"
-  },
-  "decoded": {
-   "0": "accepted",
-   "5": "rejected",
-   "6": "removedfrommarket",
-   "7": "expired",
-   "12": "lockedmarketwarning",
-   "13": "crossmarketwarning",
-   "14": "canceledduetolockmarket",
-   "15": "canceledduetocrossmarket",
-   "16": "active"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Accepted",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Rejected",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Removed from Market",
+    "aliases": [
+     "REMOVED_FROM_MARKET"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Expired",
+    "aliases": [
+     "EXPIRED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "Locked Market Warning",
+    "aliases": [
+     "LOCKED_MARKET_WARNING"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "Cross Market Warning",
+    "aliases": [
+     "CROSS_MARKET_WARNING"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "Canceled due to Lock Market",
+    "aliases": [
+     "CANCELED_DUE_TO_LOCK_MARKET"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "Canceled due to Cross Market",
+    "aliases": [
+     "CANCELED_DUE_TO_CROSS_MARKET"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "Active",
+    "aliases": [
+     "ACTIVE"
+    ]
+   }
+  ],
   "components": [
    "QuotEntryAckGrp"
   ]
@@ -4199,26 +4604,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "Y": "Private Quote",
-   "N": "Public Quote"
-  },
-  "value_names": {
-   "Y": "YES",
-   "N": "NO"
-  },
-  "encoded": {
-   "privatequote": "Y",
-   "publicquote": "N",
-   "yes": "Y",
-   "no": "N",
-   "y": "Y",
-   "n": "N"
-  },
-  "decoded": {
-   "Y": "yes",
-   "N": "no"
-  },
+  "values": [
+   {
+    "value": "Y",
+    "meaning": "Private Quote",
+    "aliases": [
+     "YES"
+    ]
+   },
+   {
+    "value": "N",
+    "meaning": "Public Quote",
+    "aliases": [
+     "NO"
+    ]
+   }
+  ],
   "used_in": [
    "QuoteRequestReject",
    "RFQRequest",
@@ -4235,35 +4636,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "All market participants",
-   "2": "Specified market participants",
-   "3": "All Market Makers",
-   "4": "Primary Market Maker(s)"
-  },
-  "value_names": {
-   "1": "ALL_MARKET_PARTICIPANTS",
-   "2": "SPECIFIED_MARKET_PARTICIPANTS",
-   "3": "ALL_MARKET_MAKERS",
-   "4": "PRIMARY_MARKET_MAKER"
-  },
-  "encoded": {
-   "allmarketparticipants": "1",
-   "specifiedmarketparticipants": "2",
-   "allmarketmakers": "3",
-   "primarymarketmakers": "4",
-   "primarymarketmaker": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "allmarketparticipants",
-   "2": "specifiedmarketparticipants",
-   "3": "allmarketmakers",
-   "4": "primarymarketmaker"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "All market participants",
+    "aliases": [
+     "ALL_MARKET_PARTICIPANTS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Specified market participants",
+    "aliases": [
+     "SPECIFIED_MARKET_PARTICIPANTS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "All Market Makers",
+    "aliases": [
+     "ALL_MARKET_MAKERS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Primary Market Maker(s)",
+    "aliases": [
+     "PRIMARY_MARKET_MAKER"
+    ]
+   }
+  ],
   "used_in": [
    "QuoteRequestReject",
    "QuoteRequest"
@@ -4294,60 +4696,71 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Order imbalance, auction is extended",
-   "2": "Trading resumes (after Halt)",
-   "3": "Price Volatility Interruption",
-   "4": "Change of Trading Session",
-   "5": "Change of Trading Subsession",
-   "6": "Change of Security Trading Status",
-   "7": "Change of Book Type",
-   "8": "Change of Market Depth"
-  },
-  "value_names": {
-   "1": "ORDER_IMBALANCE",
-   "2": "TRADING_RESUMES",
-   "3": "PRICE_VOLATILITY_INTERRUPTION",
-   "4": "CHANGE_OF_TRADING_SESSION",
-   "5": "CHANGE_OF_TRADING_SUBSESSION",
-   "6": "CHANGE_OF_SECURITY_TRADING_STATUS",
-   "7": "CHANGE_OF_BOOK_TYPE",
-   "8": "CHANGE_OF_MARKET_DEPTH",
-   "9": "CORPORATE_ACTION"
-  },
-  "encoded": {
-   "orderimbalanceauctionisextended": "1",
-   "tradingresumesafterhalt": "2",
-   "pricevolatilityinterruption": "3",
-   "changeoftradingsession": "4",
-   "changeoftradingsubsession": "5",
-   "changeofsecuritytradingstatus": "6",
-   "changeofbooktype": "7",
-   "changeofmarketdepth": "8",
-   "orderimbalance": "1",
-   "tradingresumes": "2",
-   "corporateaction": "9",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9"
-  },
-  "decoded": {
-   "1": "orderimbalance",
-   "2": "tradingresumes",
-   "3": "pricevolatilityinterruption",
-   "4": "changeoftradingsession",
-   "5": "changeoftradingsubsession",
-   "6": "changeofsecuritytradingstatus",
-   "7": "changeofbooktype",
-   "8": "changeofmarketdepth",
-   "9": "corporateaction"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Order imbalance, auction is extended",
+    "aliases": [
+     "ORDER_IMBALANCE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Trading resumes (after Halt)",
+    "aliases": [
+     "TRADING_RESUMES"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Price Volatility Interruption",
+    "aliases": [
+     "PRICE_VOLATILITY_INTERRUPTION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Change of Trading Session",
+    "aliases": [
+     "CHANGE_OF_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Change of Trading Subsession",
+    "aliases": [
+     "CHANGE_OF_TRADING_SUBSESSION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Change of Security Trading Status",
+    "aliases": [
+     "CHANGE_OF_SECURITY_TRADING_STATUS"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Change of Book Type",
+    "aliases": [
+     "CHANGE_OF_BOOK_TYPE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Change of Market Depth",
+    "aliases": [
+     "CHANGE_OF_MARKET_DEPTH"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "CORPORATE_ACTION"
+    ]
+   }
+  ],
   "used_in": [
    "SecurityStatus"
   ]
@@ -4374,37 +4787,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Exchange Last",
-   "2": "High / Low Price",
-   "3": "Average Price (VWAP, TWAP ...)",
-   "4": "Turnover (Price * Qty)"
-  },
-  "value_names": {
-   "1": "EXCHANGE_LAST",
-   "2": "HIGH",
-   "3": "AVERAGE_PRICE",
-   "4": "TURNOVER"
-  },
-  "encoded": {
-   "exchangelast": "1",
-   "highlowprice": "2",
-   "averagepricevwaptwap": "3",
-   "turnoverpriceqty": "4",
-   "high": "2",
-   "averageprice": "3",
-   "turnover": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "exchangelast",
-   "2": "high",
-   "3": "averageprice",
-   "4": "turnover"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Exchange Last",
+    "aliases": [
+     "EXCHANGE_LAST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "High / Low Price",
+    "aliases": [
+     "HIGH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Average Price (VWAP, TWAP ...)",
+    "aliases": [
+     "AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Turnover (Price * Qty)",
+    "aliases": [
+     "TURNOVER"
+    ]
+   }
+  ],
   "components": [
    "StatsIndGrp"
   ]
@@ -4431,27 +4843,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Customer"
-  },
-  "value_names": {
-   "1": "CUSTOMER",
-   "2": "CUSTOMER_PROFESSIONAL",
-   "3": "DO_NOT_TRADE_THROUGH"
-  },
-  "encoded": {
-   "customer": "1",
-   "customerprofessional": "2",
-   "donottradethrough": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "customer",
-   "2": "customerprofessional",
-   "3": "donottradethrough"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Customer",
+    "aliases": [
+     "CUSTOMER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER_PROFESSIONAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_TRADE_THROUGH"
+    ]
+   }
+  ],
   "components": [
    "SecSizesGrp"
   ]
@@ -4653,28 +5067,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "C": "Cash settlement required",
-   "P": "Physical settlement required"
-  },
-  "value_names": {
-   "C": "CASH_SETTLEMENT_REQUIRED",
-   "P": "PHYSICAL_SETTLEMENT_REQUIRED",
-   "E": "ELECTION"
-  },
-  "encoded": {
-   "cashsettlementrequired": "C",
-   "physicalsettlementrequired": "P",
-   "election": "E",
-   "c": "C",
-   "p": "P",
-   "e": "E"
-  },
-  "decoded": {
-   "C": "cashsettlementrequired",
-   "P": "physicalsettlementrequired",
-   "E": "election"
-  },
+  "values": [
+   {
+    "value": "C",
+    "meaning": "Cash settlement required",
+    "aliases": [
+     "CASH_SETTLEMENT_REQUIRED"
+    ]
+   },
+   {
+    "value": "P",
+    "meaning": "Physical settlement required",
+    "aliases": [
+     "PHYSICAL_SETTLEMENT_REQUIRED"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "",
+    "aliases": [
+     "ELECTION"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -4688,33 +5103,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "European",
-   "1": "American",
-   "2": "Bermuda"
-  },
-  "value_names": {
-   "0": "EUROPEAN",
-   "1": "AMERICAN",
-   "2": "BERMUDA",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "european": "0",
-   "american": "1",
-   "bermuda": "2",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "european",
-   "1": "american",
-   "2": "bermuda",
-   "99": "other"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "European",
+    "aliases": [
+     "EUROPEAN"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "American",
+    "aliases": [
+     "AMERICAN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Bermuda",
+    "aliases": [
+     "BERMUDA"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -4748,35 +5166,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "STD": "Standard, money per unit of a physical",
-   "INX": "Index",
-   "INT": "Interest rate Index",
-   "PCTPAR": "Percent of Par"
-  },
-  "value_names": {
-   "STD": "STANDARD",
-   "INX": "INDEX",
-   "INT": "INTEREST_RATE_INDEX",
-   "PCTPAR": "PERCENT_OF_PAR"
-  },
-  "encoded": {
-   "standardmoneyperunitofaphysical": "STD",
-   "index": "INX",
-   "interestrateindex": "INT",
-   "percentofpar": "PCTPAR",
-   "standard": "STD",
-   "std": "STD",
-   "inx": "INX",
-   "int": "INT",
-   "pctpar": "PCTPAR"
-  },
-  "decoded": {
-   "STD": "standard",
-   "INX": "index",
-   "INT": "interestrateindex",
-   "PCTPAR": "percentofpar"
-  },
+  "values": [
+   {
+    "value": "STD",
+    "meaning": "Standard, money per unit of a physical",
+    "aliases": [
+     "STANDARD"
+    ]
+   },
+   {
+    "value": "INX",
+    "meaning": "Index",
+    "aliases": [
+     "INDEX"
+    ]
+   },
+   {
+    "value": "INT",
+    "meaning": "Interest rate Index",
+    "aliases": [
+     "INTEREST_RATE_INDEX"
+    ]
+   },
+   {
+    "value": "PCTPAR",
+    "meaning": "Percent of Par",
+    "aliases": [
+     "PERCENT_OF_PAR"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -4790,41 +5209,43 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "EQTY": "premium style",
-   "FUT": "futures style mark-to-market",
-   "FUTDA": "futures style with an attached cash adjustment",
-   "CDS": "CDS style collateralization of market to market and coupon",
-   "CDSD": "CDS in delivery - use recovery rate to calculate obligation"
-  },
-  "value_names": {
-   "EQTY": "PREMIUM_STYLE",
-   "FUT": "FUTURES_STYLE_MARK_TO_MARKET",
-   "FUTDA": "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT",
-   "CDS": "CDS_STYLE_COLLATERALIZATION",
-   "CDSD": "CDS_IN_DELIVERY_USE_RECOVERY_RATE_TO_CALCULATE"
-  },
-  "encoded": {
-   "premiumstyle": "EQTY",
-   "futuresstylemarktomarket": "FUT",
-   "futuresstylewithanattachedcashadjustment": "FUTDA",
-   "cdsstylecollateralizationofmarkettomarketandcoupon": "CDS",
-   "cdsindeliveryuserecoveryratetocalculateobligation": "CDSD",
-   "cdsstylecollateralization": "CDS",
-   "cdsindeliveryuserecoveryratetocalculate": "CDSD",
-   "eqty": "EQTY",
-   "fut": "FUT",
-   "futda": "FUTDA",
-   "cds": "CDS",
-   "cdsd": "CDSD"
-  },
-  "decoded": {
-   "EQTY": "premiumstyle",
-   "FUT": "futuresstylemarktomarket",
-   "FUTDA": "futuresstylewithanattachedcashadjustment",
-   "CDS": "cdsstylecollateralization",
-   "CDSD": "cdsindeliveryuserecoveryratetocalculate"
-  },
+  "values": [
+   {
+    "value": "EQTY",
+    "meaning": "premium style",
+    "aliases": [
+     "PREMIUM_STYLE"
+    ]
+   },
+   {
+    "value": "FUT",
+    "meaning": "futures style mark-to-market",
+    "aliases": [
+     "FUTURES_STYLE_MARK_TO_MARKET"
+    ]
+   },
+   {
+    "value": "FUTDA",
+    "meaning": "futures style with an attached cash adjustment",
+    "aliases": [
+     "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT"
+    ]
+   },
+   {
+    "value": "CDS",
+    "meaning": "CDS style collateralization of market to market and coupon",
+    "aliases": [
+     "CDS_STYLE_COLLATERALIZATION"
+    ]
+   },
+   {
+    "value": "CDSD",
+    "meaning": "CDS in delivery - use recovery rate to calculate obligation",
+    "aliases": [
+     "CDS_IN_DELIVERY_USE_RECOVERY_RATE_TO_CALCULATE"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ],
@@ -4845,24 +5266,22 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "pre-listed only",
-   "1": "user requested"
-  },
-  "value_names": {
-   "0": "PRE_LISTED_ONLY",
-   "1": "USER_REQUESTED"
-  },
-  "encoded": {
-   "prelistedonly": "0",
-   "userrequested": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "prelistedonly",
-   "1": "userrequested"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "pre-listed only",
+    "aliases": [
+     "PRE_LISTED_ONLY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "user requested",
+    "aliases": [
+     "USER_REQUESTED"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -5006,46 +5425,50 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Regular",
-   "1": "Variable",
-   "2": "Fixed",
-   "3": "Traded as a spread leg",
-   "4": "Settled as a spread leg"
-  },
-  "value_names": {
-   "0": "REGULAR_TRADING",
-   "1": "VARIABLE_CABINET",
-   "2": "FIXED_CABINET",
-   "3": "TRADED_AS_A_SPREAD_LEG",
-   "4": "SETTLED_AS_A_SPREAD_LEG",
-   "5": "TRADED_AS_SPREAD"
-  },
-  "encoded": {
-   "regular": "0",
-   "variable": "1",
-   "fixed": "2",
-   "tradedasaspreadleg": "3",
-   "settledasaspreadleg": "4",
-   "regulartrading": "0",
-   "variablecabinet": "1",
-   "fixedcabinet": "2",
-   "tradedasspread": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "regulartrading",
-   "1": "variablecabinet",
-   "2": "fixedcabinet",
-   "3": "tradedasaspreadleg",
-   "4": "settledasaspreadleg",
-   "5": "tradedasspread"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Regular",
+    "aliases": [
+     "REGULAR_TRADING"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Variable",
+    "aliases": [
+     "VARIABLE_CABINET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Fixed",
+    "aliases": [
+     "FIXED_CABINET"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Traded as a spread leg",
+    "aliases": [
+     "TRADED_AS_A_SPREAD_LEG"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Settled as a spread leg",
+    "aliases": [
+     "SETTLED_AS_A_SPREAD_LEG"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "TRADED_AS_SPREAD"
+    ]
+   }
+  ],
   "components": [
    "TickRules"
   ]
@@ -6259,34 +6682,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Months",
-   "1": "Days",
-   "2": "Weeks",
-   "3": "Years"
-  },
-  "value_names": {
-   "0": "MONTHS",
-   "1": "DAYS",
-   "2": "WEEKS",
-   "3": "YEARS"
-  },
-  "encoded": {
-   "months": "0",
-   "days": "1",
-   "weeks": "2",
-   "years": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "months",
-   "1": "days",
-   "2": "weeks",
-   "3": "years"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Months",
+    "aliases": [
+     "MONTHS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Days",
+    "aliases": [
+     "DAYS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Weeks",
+    "aliases": [
+     "WEEKS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Years",
+    "aliases": [
+     "YEARS"
+    ]
+   }
+  ],
   "components": [
    "MaturityRules"
   ]
@@ -6300,30 +6725,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "YearMonth Only (default)",
-   "1": "YearMonthDay",
-   "2": "YearMonthWeek"
-  },
-  "value_names": {
-   "0": "YEAR_MONTH_ONLY",
-   "1": "YEAR_MONTH_DAY",
-   "2": "YEAR_MONTH_WEEK"
-  },
-  "encoded": {
-   "yearmonthonlydefault": "0",
-   "yearmonthday": "1",
-   "yearmonthweek": "2",
-   "yearmonthonly": "0",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "yearmonthonly",
-   "1": "yearmonthday",
-   "2": "yearmonthweek"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "YearMonth Only (default)",
+    "aliases": [
+     "YEAR_MONTH_ONLY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "YearMonthDay",
+    "aliases": [
+     "YEAR_MONTH_DAY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "YearMonthWeek",
+    "aliases": [
+     "YEAR_MONTH_WEEK"
+    ]
+   }
+  ],
   "components": [
    "MaturityRules"
   ]
@@ -6363,29 +6787,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Price",
-   "1": "Ticks",
-   "2": "Percentage"
-  },
-  "value_names": {
-   "0": "PRICE",
-   "1": "TICKS",
-   "2": "PERCENTAGE"
-  },
-  "encoded": {
-   "price": "0",
-   "ticks": "1",
-   "percentage": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "price",
-   "1": "ticks",
-   "2": "percentage"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Price",
+    "aliases": [
+     "PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Ticks",
+    "aliases": [
+     "TICKS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Percentage",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ],
   "components": [
    "PriceLimits"
   ]
@@ -6399,48 +6823,44 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Symbol",
-   "1": "SecurityType and/or CFICode",
-   "2": "Product",
-   "3": "TradingSessionID",
-   "4": "All Securities",
-   "5": "UndelyingSymbol",
-   "6": "Underlying SecurityType and/or CFICode",
-   "7": "Underlying Product",
-   "8": "MarketID or MarketID + MarketSegmentID"
-  },
-  "encoded": {
-   "symbol": "0",
-   "securitytypeandorcficode": "1",
-   "product": "2",
-   "tradingsessionid": "3",
-   "allsecurities": "4",
-   "undelyingsymbol": "5",
-   "underlyingsecuritytypeandorcficode": "6",
-   "underlyingproduct": "7",
-   "marketidormarketidmarketsegmentid": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "symbol",
-   "1": "securitytypeandorcficode",
-   "2": "product",
-   "3": "tradingsessionid",
-   "4": "allsecurities",
-   "5": "undelyingsymbol",
-   "6": "underlyingsecuritytypeandorcficode",
-   "7": "underlyingproduct",
-   "8": "marketidormarketidmarketsegmentid"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Symbol"
+   },
+   {
+    "value": "1",
+    "meaning": "SecurityType and/or CFICode"
+   },
+   {
+    "value": "2",
+    "meaning": "Product"
+   },
+   {
+    "value": "3",
+    "meaning": "TradingSessionID"
+   },
+   {
+    "value": "4",
+    "meaning": "All Securities"
+   },
+   {
+    "value": "5",
+    "meaning": "UndelyingSymbol"
+   },
+   {
+    "value": "6",
+    "meaning": "Underlying SecurityType and/or CFICode"
+   },
+   {
+    "value": "7",
+    "meaning": "Underlying Product"
+   },
+   {
+    "value": "8",
+    "meaning": "MarketID or MarketID + MarketSegmentID"
+   }
+  ]
  },
  "1308": {
   "name": "ExecInstValue",
@@ -6664,33 +7084,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "A": "Add",
-   "D": "Delete",
-   "M": "Modify"
-  },
-  "value_names": {
-   "A": "ADD",
-   "D": "DELETE",
-   "M": "MODIFY",
-   "S": "SNAPSHOT"
-  },
-  "encoded": {
-   "add": "A",
-   "delete": "D",
-   "modify": "M",
-   "snapshot": "S",
-   "a": "A",
-   "d": "D",
-   "m": "M",
-   "s": "S"
-  },
-  "decoded": {
-   "A": "add",
-   "D": "delete",
-   "M": "modify",
-   "S": "snapshot"
-  },
+  "values": [
+   {
+    "value": "A",
+    "meaning": "Add",
+    "aliases": [
+     "ADD"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Delete",
+    "aliases": [
+     "DELETE"
+    ]
+   },
+   {
+    "value": "M",
+    "meaning": "Modify",
+    "aliases": [
+     "MODIFY"
+    ]
+   },
+   {
+    "value": "S",
+    "meaning": "",
+    "aliases": [
+     "SNAPSHOT"
+    ]
+   }
+  ],
   "components": [
    "RelSymDerivSecUpdGrp",
    "SecLstUpdRelSymGrp"
@@ -6999,55 +7422,57 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Retransmission of application messages for the specified Applications",
-   "1": "Subscription to the specified Applications",
-   "2": "Request for the last ApplLastSeqNum <1350> published for the specified Applications",
-   "3": "Request valid set of Applications",
-   "4": "Unsubscribe to the specified Applications",
-   "5": "Cancel retransmission",
-   "6": "Cancel retransmission and unsubscribe to the specified applications"
-  },
-  "value_names": {
-   "0": "RETRANSMISSION",
-   "1": "SUBSCRIPTION",
-   "2": "REQUEST_LAST_SEQ_NUM",
-   "3": "REQUEST_APPLICATIONS",
-   "4": "UNSUBSCRIBE",
-   "5": "CANCEL_RETRANSMISSION",
-   "6": "CANCEL_RETRANSMISSION_UNSUBSCRIBE"
-  },
-  "encoded": {
-   "retransmissionofapplicationmessagesforthespecifiedapplications": "0",
-   "subscriptiontothespecifiedapplications": "1",
-   "requestforthelastappllastseqnum1350publishedforthespecifiedapplications": "2",
-   "requestvalidsetofapplications": "3",
-   "unsubscribetothespecifiedapplications": "4",
-   "cancelretransmission": "5",
-   "cancelretransmissionandunsubscribetothespecifiedapplications": "6",
-   "retransmission": "0",
-   "subscription": "1",
-   "requestlastseqnum": "2",
-   "requestapplications": "3",
-   "unsubscribe": "4",
-   "cancelretransmissionunsubscribe": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "retransmission",
-   "1": "subscription",
-   "2": "requestlastseqnum",
-   "3": "requestapplications",
-   "4": "unsubscribe",
-   "5": "cancelretransmission",
-   "6": "cancelretransmissionunsubscribe"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Retransmission of application messages for the specified Applications",
+    "aliases": [
+     "RETRANSMISSION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Subscription to the specified Applications",
+    "aliases": [
+     "SUBSCRIPTION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Request for the last ApplLastSeqNum <1350> published for the specified Applications",
+    "aliases": [
+     "REQUEST_LAST_SEQ_NUM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Request valid set of Applications",
+    "aliases": [
+     "REQUEST_APPLICATIONS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Unsubscribe to the specified Applications",
+    "aliases": [
+     "UNSUBSCRIBE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Cancel retransmission",
+    "aliases": [
+     "CANCEL_RETRANSMISSION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Cancel retransmission and unsubscribe to the specified applications",
+    "aliases": [
+     "CANCEL_RETRANSMISSION_UNSUBSCRIBE"
+    ]
+   }
+  ],
   "used_in": [
    "ApplicationMessageRequest",
    "ApplicationMessageRequestAck"
@@ -7062,29 +7487,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Request successfully processed",
-   "1": "Application does not exist",
-   "2": "Messages not available"
-  },
-  "value_names": {
-   "0": "REQUEST_SUCCESSFULLY_PROCESSED",
-   "1": "APPLICATION_DOES_NOT_EXIST",
-   "2": "MESSAGES_NOT_AVAILABLE"
-  },
-  "encoded": {
-   "requestsuccessfullyprocessed": "0",
-   "applicationdoesnotexist": "1",
-   "messagesnotavailable": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "requestsuccessfullyprocessed",
-   "1": "applicationdoesnotexist",
-   "2": "messagesnotavailable"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Request successfully processed",
+    "aliases": [
+     "REQUEST_SUCCESSFULLY_PROCESSED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Application does not exist",
+    "aliases": [
+     "APPLICATION_DOES_NOT_EXIST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Messages not available",
+    "aliases": [
+     "MESSAGES_NOT_AVAILABLE"
+    ]
+   }
+  ],
   "used_in": [
    "ApplicationMessageRequestAck"
   ]
@@ -7165,29 +7590,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Application does not exist",
-   "1": "Messages requested are not available",
-   "2": "User not authorized for application"
-  },
-  "value_names": {
-   "0": "APPLICATION_DOES_NOT_EXIST",
-   "1": "MESSAGES_REQUESTED_ARE_NOT_AVAILABLE",
-   "2": "USER_NOT_AUTHORIZED_FOR_APPLICATION"
-  },
-  "encoded": {
-   "applicationdoesnotexist": "0",
-   "messagesrequestedarenotavailable": "1",
-   "usernotauthorizedforapplication": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "applicationdoesnotexist",
-   "1": "messagesrequestedarenotavailable",
-   "2": "usernotauthorizedforapplication"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Application does not exist",
+    "aliases": [
+     "APPLICATION_DOES_NOT_EXIST"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Messages requested are not available",
+    "aliases": [
+     "MESSAGES_REQUESTED_ARE_NOT_AVAILABLE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "User not authorized for application",
+    "aliases": [
+     "USER_NOT_AUTHORIZED_FOR_APPLICATION"
+    ]
+   }
+  ],
   "components": [
    "ApplIDRequestAckGrp"
   ]
@@ -7368,35 +7793,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Trading resumes (after Halt)",
-   "1": "Change of Trading Session",
-   "2": "Change of Trading Subsession",
-   "3": "Change of Trading Status"
-  },
-  "value_names": {
-   "0": "TRADING_RESUMES",
-   "1": "CHANGE_OF_TRADING_SESSION",
-   "2": "CHANGE_OF_TRADING_SUBSESSION",
-   "3": "CHANGE_OF_TRADING_STATUS"
-  },
-  "encoded": {
-   "tradingresumesafterhalt": "0",
-   "changeoftradingsession": "1",
-   "changeoftradingsubsession": "2",
-   "changeoftradingstatus": "3",
-   "tradingresumes": "0",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "tradingresumes",
-   "1": "changeoftradingsession",
-   "2": "changeoftradingsubsession",
-   "3": "changeoftradingstatus"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Trading resumes (after Halt)",
+    "aliases": [
+     "TRADING_RESUMES"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Change of Trading Session",
+    "aliases": [
+     "CHANGE_OF_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Change of Trading Subsession",
+    "aliases": [
+     "CHANGE_OF_TRADING_SUBSESSION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Change of Trading Status",
+    "aliases": [
+     "CHANGE_OF_TRADING_STATUS"
+    ]
+   }
+  ],
   "used_in": [
    "TradingSessionStatus"
   ]
@@ -7463,29 +7889,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Suspend orders",
-   "2": "Release orders from suspension",
-   "3": "Cancel orders"
-  },
-  "value_names": {
-   "1": "SUSPEND_ORDERS",
-   "2": "RELEASE_ORDERS_FROM_SUSPENSION",
-   "3": "CANCEL_ORDERS"
-  },
-  "encoded": {
-   "suspendorders": "1",
-   "releaseordersfromsuspension": "2",
-   "cancelorders": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "suspendorders",
-   "2": "releaseordersfromsuspension",
-   "3": "cancelorders"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Suspend orders",
+    "aliases": [
+     "SUSPEND_ORDERS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Release orders from suspension",
+    "aliases": [
+     "RELEASE_ORDERS_FROM_SUSPENSION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Cancel orders",
+    "aliases": [
+     "CANCEL_ORDERS"
+    ]
+   }
+  ],
   "used_in": [
    "OrderMassActionReport",
    "OrderMassActionRequest"
@@ -7500,74 +7926,92 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "All orders for a security",
-   "2": "All orders for an underlying security",
-   "3": "All orders for a Product",
-   "4": "All orders for a CFICode",
-   "5": "All orders for a SecurityType",
-   "6": "All orders for a trading session",
-   "7": "All orders",
-   "8": "All orders for a Market",
-   "9": "All orders for a Market Segment",
-   "10": "All orders for a Security Group",
-   "11": "Cancel for Security Issuer",
-   "12": "Cancel for Issuer of Underlying Security"
-  },
-  "value_names": {
-   "1": "ALL_ORDERS_FOR_A_SECURITY",
-   "2": "ALL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
-   "3": "ALL_ORDERS_FOR_A_PRODUCT",
-   "4": "ALL_ORDERS_FOR_ACFI_CODE",
-   "5": "ALL_ORDERS_FOR_A_SECURITY_TYPE",
-   "6": "ALL_ORDERS_FOR_A_TRADING_SESSION",
-   "7": "ALL_ORDERS",
-   "8": "ALL_ORDERS_FOR_A_MARKET",
-   "9": "ALL_ORDERS_FOR_A_MARKET_SEGMENT",
-   "10": "ALL_ORDERS_FOR_A_SECURITY_GROUP",
-   "11": "CANCEL_FOR_SECURITY_ISSUER",
-   "12": "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
-  },
-  "encoded": {
-   "allordersforasecurity": "1",
-   "allordersforanunderlyingsecurity": "2",
-   "allordersforaproduct": "3",
-   "allordersforacficode": "4",
-   "allordersforasecuritytype": "5",
-   "allordersforatradingsession": "6",
-   "allorders": "7",
-   "allordersforamarket": "8",
-   "allordersforamarketsegment": "9",
-   "allordersforasecuritygroup": "10",
-   "cancelforsecurityissuer": "11",
-   "cancelforissuerofunderlyingsecurity": "12",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12"
-  },
-  "decoded": {
-   "1": "allordersforasecurity",
-   "2": "allordersforanunderlyingsecurity",
-   "3": "allordersforaproduct",
-   "4": "allordersforacficode",
-   "5": "allordersforasecuritytype",
-   "6": "allordersforatradingsession",
-   "7": "allorders",
-   "8": "allordersforamarket",
-   "9": "allordersforamarketsegment",
-   "10": "allordersforasecuritygroup",
-   "11": "cancelforsecurityissuer",
-   "12": "cancelforissuerofunderlyingsecurity"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "All orders for a security",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_SECURITY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "All orders for an underlying security",
+    "aliases": [
+     "ALL_ORDERS_FOR_AN_UNDERLYING_SECURITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "All orders for a Product",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_PRODUCT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "All orders for a CFICode",
+    "aliases": [
+     "ALL_ORDERS_FOR_ACFI_CODE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "All orders for a SecurityType",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_SECURITY_TYPE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "All orders for a trading session",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "All orders",
+    "aliases": [
+     "ALL_ORDERS"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "All orders for a Market",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_MARKET"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "All orders for a Market Segment",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_MARKET_SEGMENT"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "All orders for a Security Group",
+    "aliases": [
+     "ALL_ORDERS_FOR_A_SECURITY_GROUP"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "Cancel for Security Issuer",
+    "aliases": [
+     "CANCEL_FOR_SECURITY_ISSUER"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "Cancel for Issuer of Underlying Security",
+    "aliases": [
+     "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
+    ]
+   }
+  ],
   "used_in": [
    "OrderMassActionReport",
    "OrderMassActionRequest"
@@ -7582,29 +8026,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Rejected - See MassActionRejectReason <1376>",
-   "1": "Accepted"
-  },
-  "value_names": {
-   "0": "REJECTED",
-   "1": "ACCEPTED",
-   "2": "COMPLETED"
-  },
-  "encoded": {
-   "rejectedseemassactionrejectreason1376": "0",
-   "accepted": "1",
-   "rejected": "0",
-   "completed": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "rejected",
-   "1": "accepted",
-   "2": "completed"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Rejected - See MassActionRejectReason <1376>",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Accepted",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMPLETED"
+    ]
+   }
+  ],
   "used_in": [
    "OrderMassActionReport"
   ]
@@ -7618,79 +8062,99 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Mass Action Not Supported",
-   "1": "Invalid or unknown security",
-   "2": "Invalid or unknown underlying security",
-   "3": "Invalid or unknown Product",
-   "4": "Invalid or unknown CFICode",
-   "5": "Invalid or unknown SecurityType",
-   "6": "Invalid or unknown trading session",
-   "7": "Invalid or unknown Market",
-   "8": "Invalid or unknown Market Segment",
-   "9": "Invalid or unknown Security Group",
-   "99": "Other",
-   "10": "Invalid or unknown Security Issuer",
-   "11": "Invalid or unknown Issuer of Underlying Security"
-  },
-  "value_names": {
-   "0": "MASS_ACTION_NOT_SUPPORTED",
-   "1": "INVALID_OR_UNKNOWN_SECURITY",
-   "2": "INVALID_OR_UNKNOWN_UNDERLYING_SECURITY",
-   "3": "INVALID_OR_UNKNOWN_PRODUCT",
-   "4": "INVALID_OR_UNKNOWN_CFI_CODE",
-   "5": "INVALID_OR_UNKNOWN_SECURITY_TYPE",
-   "6": "INVALID_OR_UNKNOWN_TRADING_SESSION",
-   "7": "INVALID_OR_UNKNOWN_MARKET",
-   "8": "INVALID_OR_UNKNOWN_MARKET_SEGMENT",
-   "9": "INVALID_OR_UNKNOWN_SECURITY_GROUP",
-   "99": "OTHER",
-   "10": "INVALID_OR_UNKNOWN_SECURITY_ISSUER",
-   "11": "INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY"
-  },
-  "encoded": {
-   "massactionnotsupported": "0",
-   "invalidorunknownsecurity": "1",
-   "invalidorunknownunderlyingsecurity": "2",
-   "invalidorunknownproduct": "3",
-   "invalidorunknowncficode": "4",
-   "invalidorunknownsecuritytype": "5",
-   "invalidorunknowntradingsession": "6",
-   "invalidorunknownmarket": "7",
-   "invalidorunknownmarketsegment": "8",
-   "invalidorunknownsecuritygroup": "9",
-   "other": "99",
-   "invalidorunknownsecurityissuer": "10",
-   "invalidorunknownissuerofunderlyingsecurity": "11",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "99": "99",
-   "10": "10",
-   "11": "11"
-  },
-  "decoded": {
-   "0": "massactionnotsupported",
-   "1": "invalidorunknownsecurity",
-   "2": "invalidorunknownunderlyingsecurity",
-   "3": "invalidorunknownproduct",
-   "4": "invalidorunknowncficode",
-   "5": "invalidorunknownsecuritytype",
-   "6": "invalidorunknowntradingsession",
-   "7": "invalidorunknownmarket",
-   "8": "invalidorunknownmarketsegment",
-   "9": "invalidorunknownsecuritygroup",
-   "99": "other",
-   "10": "invalidorunknownsecurityissuer",
-   "11": "invalidorunknownissuerofunderlyingsecurity"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Mass Action Not Supported",
+    "aliases": [
+     "MASS_ACTION_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Invalid or unknown security",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_SECURITY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Invalid or unknown underlying security",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_UNDERLYING_SECURITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Invalid or unknown Product",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_PRODUCT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Invalid or unknown CFICode",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_CFI_CODE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Invalid or unknown SecurityType",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_SECURITY_TYPE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Invalid or unknown trading session",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Invalid or unknown Market",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_MARKET"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Invalid or unknown Market Segment",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_MARKET_SEGMENT"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "Invalid or unknown Security Group",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_SECURITY_GROUP"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "Other",
+    "aliases": [
+     "OTHER"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "Invalid or unknown Security Issuer",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_SECURITY_ISSUER"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "Invalid or unknown Issuer of Underlying Security",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY"
+    ]
+   }
+  ],
   "used_in": [
    "OrderMassActionReport"
   ]
@@ -7704,31 +8168,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Predefined Multileg Security",
-   "1": "User-defined Multleg Security",
-   "2": "User-defined, Non-Securitized, Multileg"
-  },
-  "value_names": {
-   "0": "PREDEFINED_MULTILEG_SECURITY",
-   "1": "USER_DEFINED_MULTILEG_SECURITY",
-   "2": "USER_DEFINED"
-  },
-  "encoded": {
-   "predefinedmultilegsecurity": "0",
-   "userdefinedmultlegsecurity": "1",
-   "userdefinednonsecuritizedmultileg": "2",
-   "userdefinedmultilegsecurity": "1",
-   "userdefined": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "predefinedmultilegsecurity",
-   "1": "userdefinedmultilegsecurity",
-   "2": "userdefined"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Predefined Multileg Security",
+    "aliases": [
+     "PREDEFINED_MULTILEG_SECURITY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "User-defined Multleg Security",
+    "aliases": [
+     "USER_DEFINED_MULTILEG_SECURITY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "User-defined, Non-Securitized, Multileg",
+    "aliases": [
+     "USER_DEFINED"
+    ]
+   }
+  ],
   "used_in": [
    "NewOrderMultileg",
    "MultilegOrderCancelReplace"
@@ -7746,44 +8208,50 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Net Price",
-   "1": "Reversed Net Price",
-   "2": "Yield Difference",
-   "3": "Individual",
-   "4": "Contract Weighted Average Price",
-   "5": "Multiplied Price"
-  },
-  "value_names": {
-   "0": "NET_PRICE",
-   "1": "REVERSED_NET_PRICE",
-   "2": "YIELD_DIFFERENCE",
-   "3": "INDIVIDUAL",
-   "4": "CONTRACT_WEIGHTED_AVERAGE_PRICE",
-   "5": "MULTIPLIED_PRICE"
-  },
-  "encoded": {
-   "netprice": "0",
-   "reversednetprice": "1",
-   "yielddifference": "2",
-   "individual": "3",
-   "contractweightedaverageprice": "4",
-   "multipliedprice": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "netprice",
-   "1": "reversednetprice",
-   "2": "yielddifference",
-   "3": "individual",
-   "4": "contractweightedaverageprice",
-   "5": "multipliedprice"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Net Price",
+    "aliases": [
+     "NET_PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Reversed Net Price",
+    "aliases": [
+     "REVERSED_NET_PRICE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Yield Difference",
+    "aliases": [
+     "YIELD_DIFFERENCE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Individual",
+    "aliases": [
+     "INDIVIDUAL"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Contract Weighted Average Price",
+    "aliases": [
+     "CONTRACT_WEIGHTED_AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Multiplied Price",
+    "aliases": [
+     "MULTIPLIED_PRICE"
+    ]
+   }
+  ],
   "used_in": [
    "NewOrderMultileg",
    "MultilegOrderCancelReplace"
@@ -7888,46 +8356,50 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "1": "One Cancels the Other (OCO)",
-   "2": "One Triggers the Other (OTO)",
-   "3": "One Updates the Other (OUO) - Absolute Quantity Reduction",
-   "4": "One Updates the Other (OUO) - Proportional Quantity Reduction"
-  },
-  "value_names": {
-   "1": "ONE_CANCELS_THE_OTHER",
-   "2": "ONE_TRIGGERS_THE_OTHER",
-   "3": "ONE_UPDATES_THE_OTHER_ABSOLUTE",
-   "4": "ONE_UPDATES_THE_OTHER_PROPORTIONAL",
-   "5": "BID_AND_OFFER",
-   "6": "BID_AND_OFFER_OCO"
-  },
-  "encoded": {
-   "onecancelstheotheroco": "1",
-   "onetriggerstheotheroto": "2",
-   "oneupdatestheotherouoabsolutequantityreduction": "3",
-   "oneupdatestheotherouoproportionalquantityreduction": "4",
-   "onecancelstheother": "1",
-   "onetriggerstheother": "2",
-   "oneupdatestheotherabsolute": "3",
-   "oneupdatestheotherproportional": "4",
-   "bidandoffer": "5",
-   "bidandofferoco": "6",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "1": "onecancelstheother",
-   "2": "onetriggerstheother",
-   "3": "oneupdatestheotherabsolute",
-   "4": "oneupdatestheotherproportional",
-   "5": "bidandoffer",
-   "6": "bidandofferoco"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "One Cancels the Other (OCO)",
+    "aliases": [
+     "ONE_CANCELS_THE_OTHER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "One Triggers the Other (OTO)",
+    "aliases": [
+     "ONE_TRIGGERS_THE_OTHER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "One Updates the Other (OUO) - Absolute Quantity Reduction",
+    "aliases": [
+     "ONE_UPDATES_THE_OTHER_ABSOLUTE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "One Updates the Other (OUO) - Proportional Quantity Reduction",
+    "aliases": [
+     "ONE_UPDATES_THE_OTHER_PROPORTIONAL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "BID_AND_OFFER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "BID_AND_OFFER_OCO"
+    ]
+   }
+  ],
   "used_in": [
    "NewOrderList",
    "ListStatus"
@@ -7942,51 +8414,57 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Broker / Exchange option",
-   "2": "Exchange closed",
-   "4": "Too late to enter",
-   "5": "Unknown order",
-   "6": "Duplicate Order (e.g. dupe ClOrdID <11> )",
-   "11": "Unsupported order characteristic",
-   "99": "Other"
-  },
-  "value_names": {
-   "0": "BROKER_CREDIT",
-   "2": "EXCHANGE_CLOSED",
-   "4": "TOO_LATE_TO_ENTER",
-   "5": "UNKNOWN_ORDER",
-   "6": "DUPLICATE_ORDER",
-   "11": "UNSUPPORTED_ORDER_CHARACTERISTIC",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "brokerexchangeoption": "0",
-   "exchangeclosed": "2",
-   "toolatetoenter": "4",
-   "unknownorder": "5",
-   "duplicateorderegdupeclordid11": "6",
-   "unsupportedordercharacteristic": "11",
-   "other": "99",
-   "brokercredit": "0",
-   "duplicateorder": "6",
-   "0": "0",
-   "2": "2",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "11": "11",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "brokercredit",
-   "2": "exchangeclosed",
-   "4": "toolatetoenter",
-   "5": "unknownorder",
-   "6": "duplicateorder",
-   "11": "unsupportedordercharacteristic",
-   "99": "other"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Broker / Exchange option",
+    "aliases": [
+     "BROKER_CREDIT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Exchange closed",
+    "aliases": [
+     "EXCHANGE_CLOSED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Too late to enter",
+    "aliases": [
+     "TOO_LATE_TO_ENTER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Unknown order",
+    "aliases": [
+     "UNKNOWN_ORDER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Duplicate Order (e.g. dupe ClOrdID <11> )",
+    "aliases": [
+     "DUPLICATE_ORDER"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "Unsupported order characteristic",
+    "aliases": [
+     "UNSUPPORTED_ORDER_CHARACTERISTIC"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "Other",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ],
   "used_in": [
    "ListStatus"
   ]
@@ -8039,33 +8517,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Do Not Publish Trade",
-   "1": "Publish Trade",
-   "2": "Deferred Publication"
-  },
-  "value_names": {
-   "0": "DO_NOT_PUBLISH_TRADE",
-   "1": "PUBLISH_TRADE",
-   "2": "DEFERRED_PUBLICATION",
-   "3": "PUBLISHED"
-  },
-  "encoded": {
-   "donotpublishtrade": "0",
-   "publishtrade": "1",
-   "deferredpublication": "2",
-   "published": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "donotpublishtrade",
-   "1": "publishtrade",
-   "2": "deferredpublication",
-   "3": "published"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Do Not Publish Trade",
+    "aliases": [
+     "DO_NOT_PUBLISH_TRADE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Publish Trade",
+    "aliases": [
+     "PUBLISH_TRADE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Deferred Publication",
+    "aliases": [
+     "DEFERRED_PUBLICATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PUBLISHED"
+    ]
+   }
+  ],
   "used_in": [
    "TradeCaptureReport",
    "TradeCaptureReportAck"
@@ -8135,29 +8616,29 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "A": "Add",
-   "D": "Delete",
-   "M": "Modify"
-  },
-  "value_names": {
-   "A": "ADD",
-   "D": "DELETE",
-   "M": "MODIFY"
-  },
-  "encoded": {
-   "add": "A",
-   "delete": "D",
-   "modify": "M",
-   "a": "A",
-   "d": "D",
-   "m": "M"
-  },
-  "decoded": {
-   "A": "add",
-   "D": "delete",
-   "M": "modify"
-  },
+  "values": [
+   {
+    "value": "A",
+    "meaning": "Add",
+    "aliases": [
+     "ADD"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "Delete",
+    "aliases": [
+     "DELETE"
+    ]
+   },
+   {
+    "value": "M",
+    "meaning": "Modify",
+    "aliases": [
+     "MODIFY"
+    ]
+   }
+  ],
   "used_in": [
    "MarketDefinitionUpdateReport"
   ]
@@ -8361,67 +8842,85 @@
    "5.0.SP2",
    "FIXT1.1"
   ],
-  "values": {
-   "0": "Session active",
-   "1": "Session password changed",
-   "2": "Session password due to expire",
-   "3": "New session password does not comply with policy",
-   "4": "Session logout complete",
-   "5": "Invalid username or password",
-   "6": "Account locked",
-   "7": "Logons are not allowed at this time",
-   "8": "Password expired"
-  },
-  "value_names": {
-   "0": "SESSION_ACTIVE",
-   "1": "SESSION_PASSWORD_CHANGED",
-   "2": "SESSION_PASSWORD_DUE_TO_EXPIRE",
-   "3": "NEW_SESSION_PASSWORD_DOES_NOT_COMPLY_WITH_POLICY",
-   "4": "SESSION_LOGOUT_COMPLETE",
-   "5": "INVALID_USERNAME_OR_PASSWORD",
-   "6": "ACCOUNT_LOCKED",
-   "7": "LOGONS_ARE_NOT_ALLOWED_AT_THIS_TIME",
-   "8": "PASSWORD_EXPIRED",
-   "9": "RECEIVED_MSG_SEQ_NUM_TOO_LOW",
-   "10": "RECEIVED_NEXT_EXPECTED_MSG_SEQ_NUM_TOO_HIGH"
-  },
-  "encoded": {
-   "sessionactive": "0",
-   "sessionpasswordchanged": "1",
-   "sessionpasswordduetoexpire": "2",
-   "newsessionpassworddoesnotcomplywithpolicy": "3",
-   "sessionlogoutcomplete": "4",
-   "invalidusernameorpassword": "5",
-   "accountlocked": "6",
-   "logonsarenotallowedatthistime": "7",
-   "passwordexpired": "8",
-   "receivedmsgseqnumtoolow": "9",
-   "receivednextexpectedmsgseqnumtoohigh": "10",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "0": "sessionactive",
-   "1": "sessionpasswordchanged",
-   "2": "sessionpasswordduetoexpire",
-   "3": "newsessionpassworddoesnotcomplywithpolicy",
-   "4": "sessionlogoutcomplete",
-   "5": "invalidusernameorpassword",
-   "6": "accountlocked",
-   "7": "logonsarenotallowedatthistime",
-   "8": "passwordexpired",
-   "9": "receivedmsgseqnumtoolow",
-   "10": "receivednextexpectedmsgseqnumtoohigh"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Session active",
+    "aliases": [
+     "SESSION_ACTIVE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Session password changed",
+    "aliases": [
+     "SESSION_PASSWORD_CHANGED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Session password due to expire",
+    "aliases": [
+     "SESSION_PASSWORD_DUE_TO_EXPIRE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "New session password does not comply with policy",
+    "aliases": [
+     "NEW_SESSION_PASSWORD_DOES_NOT_COMPLY_WITH_POLICY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Session logout complete",
+    "aliases": [
+     "SESSION_LOGOUT_COMPLETE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Invalid username or password",
+    "aliases": [
+     "INVALID_USERNAME_OR_PASSWORD"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Account locked",
+    "aliases": [
+     "ACCOUNT_LOCKED"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Logons are not allowed at this time",
+    "aliases": [
+     "LOGONS_ARE_NOT_ALLOWED_AT_THIS_TIME"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Password expired",
+    "aliases": [
+     "PASSWORD_EXPIRED"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED_MSG_SEQ_NUM_TOO_LOW"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED_NEXT_EXPECTED_MSG_SEQ_NUM_TOO_HIGH"
+    ]
+   }
+  ],
   "used_in": [
    "Logout",
    "Logon"
@@ -8646,38 +9145,36 @@
    "5.0.SP1",
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Reset ApplSeqNum <1181> to new value specified in ApplNewSeqNum <1399>",
-   "1": "Reports that the last message has been sent for the ApplIDs Refer to RefApplLastSeqNum <1357> for the application sequence number of the last message.",
-   "2": "Heartbeat message indicating that Application identified by RefApplID <1355> is still alive. Refer to RefApplLastSeqNum <1357> for the application sequence number of the previous message.",
-   "3": "Application message re-send completed."
-  },
-  "value_names": {
-   "0": "APPL_SEQ_NUM_RESET",
-   "1": "LAST_MESSAGE_SENT",
-   "2": "APPLICATION_ALIVE",
-   "3": "RESEND_COMPLETE"
-  },
-  "encoded": {
-   "resetapplseqnum1181tonewvaluespecifiedinapplnewseqnum1399": "0",
-   "reportsthatthelastmessagehasbeensentfortheapplidsrefertorefappllastseqnum1357fortheapplicationsequencenumberofthelastmessage": "1",
-   "heartbeatmessageindicatingthatapplicationidentifiedbyrefapplid1355isstillaliverefertorefappllastseqnum1357fortheapplicationsequencenumberofthepreviousmessage": "2",
-   "applicationmessageresendcompleted": "3",
-   "applseqnumreset": "0",
-   "lastmessagesent": "1",
-   "applicationalive": "2",
-   "resendcomplete": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "applseqnumreset",
-   "1": "lastmessagesent",
-   "2": "applicationalive",
-   "3": "resendcomplete"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Reset ApplSeqNum <1181> to new value specified in ApplNewSeqNum <1399>",
+    "aliases": [
+     "APPL_SEQ_NUM_RESET"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Reports that the last message has been sent for the ApplIDs Refer to RefApplLastSeqNum <1357> for the application sequence number of the last message.",
+    "aliases": [
+     "LAST_MESSAGE_SENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Heartbeat message indicating that Application identified by RefApplID <1355> is still alive. Refer to RefApplLastSeqNum <1357> for the application sequence number of the previous message.",
+    "aliases": [
+     "APPLICATION_ALIVE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Application message re-send completed.",
+    "aliases": [
+     "RESEND_COMPLETE"
+    ]
+   }
+  ],
   "used_in": [
    "ApplicationMessageReport"
   ]
@@ -8716,75 +9213,92 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Seconds (default if not specified)",
-   "1": "Tenths of a second",
-   "2": "Hundredths of a second",
-   "3": "milliseconds",
-   "4": "microseconds",
-   "5": "nanoseconds",
-   "10": "minutes",
-   "11": "hours",
-   "12": "days",
-   "13": "weeks",
-   "14": "months",
-   "15": "years"
-  },
-  "value_names": {
-   "0": "SECONDS",
-   "1": "TENTHS_OF_A_SECOND",
-   "2": "HUNDREDTHS_OF_A_SECOND",
-   "3": "MILLISECONDS",
-   "4": "MICROSECONDS",
-   "5": "NANOSECONDS",
-   "10": "MINUTES",
-   "11": "HOURS",
-   "12": "DAYS",
-   "13": "WEEKS",
-   "14": "MONTHS",
-   "15": "YEARS"
-  },
-  "encoded": {
-   "secondsdefaultifnotspecified": "0",
-   "tenthsofasecond": "1",
-   "hundredthsofasecond": "2",
-   "milliseconds": "3",
-   "microseconds": "4",
-   "nanoseconds": "5",
-   "minutes": "10",
-   "hours": "11",
-   "days": "12",
-   "weeks": "13",
-   "months": "14",
-   "years": "15",
-   "seconds": "0",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15"
-  },
-  "decoded": {
-   "0": "seconds",
-   "1": "tenthsofasecond",
-   "2": "hundredthsofasecond",
-   "3": "milliseconds",
-   "4": "microseconds",
-   "5": "nanoseconds",
-   "10": "minutes",
-   "11": "hours",
-   "12": "days",
-   "13": "weeks",
-   "14": "months",
-   "15": "years"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Seconds (default if not specified)",
+    "aliases": [
+     "SECONDS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Tenths of a second",
+    "aliases": [
+     "TENTHS_OF_A_SECOND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Hundredths of a second",
+    "aliases": [
+     "HUNDREDTHS_OF_A_SECOND"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "milliseconds",
+    "aliases": [
+     "MILLISECONDS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "microseconds",
+    "aliases": [
+     "MICROSECONDS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "nanoseconds",
+    "aliases": [
+     "NANOSECONDS"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "minutes",
+    "aliases": [
+     "MINUTES"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "hours",
+    "aliases": [
+     "HOURS"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "days",
+    "aliases": [
+     "DAYS"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "weeks",
+    "aliases": [
+     "WEEKS"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "months",
+    "aliases": [
+     "MONTHS"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "years",
+    "aliases": [
+     "YEARS"
+    ]
+   }
+  ],
   "components": [
    "TrdCapRptAckSideGrp",
    "TrdCapRptSideGrp"
@@ -8798,73 +9312,106 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "E": "Electronic",
-   "P": "Pit",
-   "X": "Ex-Pit"
-  },
-  "value_names": {
-   "E": "ELECTRONIC",
-   "P": "PIT",
-   "X": "EX_PIT",
-   "C": "CLEARING_HOUSE",
-   "R": "REGISTERED_MARKET",
-   "O": "OFF_MARKET",
-   "B": "CENTRAL_LIMIT_ORDER_BOOK",
-   "Q": "QUOTE_DRIVEN_MARKET",
-   "D": "DARK_ORDER_BOOK",
-   "A": "AUCTION_DRIVEN_MARKET",
-   "N": "QUOTE_NEGOTIATION",
-   "V": "VOICE_NEGOTIATION",
-   "H": "HYBRID_MARKET",
-   "z": "OTHER_MARKET"
-  },
-  "encoded": {
-   "electronic": "E",
-   "pit": "P",
-   "expit": "X",
-   "clearinghouse": "C",
-   "registeredmarket": "R",
-   "offmarket": "O",
-   "centrallimitorderbook": "B",
-   "quotedrivenmarket": "Q",
-   "darkorderbook": "D",
-   "auctiondrivenmarket": "A",
-   "quotenegotiation": "N",
-   "voicenegotiation": "V",
-   "hybridmarket": "H",
-   "othermarket": "z",
-   "e": "E",
-   "p": "P",
-   "x": "X",
-   "c": "C",
-   "r": "R",
-   "o": "O",
-   "b": "B",
-   "q": "Q",
-   "d": "D",
-   "a": "A",
-   "n": "N",
-   "v": "V",
-   "h": "H",
-   "z": "z"
-  },
-  "decoded": {
-   "E": "electronic",
-   "P": "pit",
-   "X": "expit",
-   "C": "clearinghouse",
-   "R": "registeredmarket",
-   "O": "offmarket",
-   "B": "centrallimitorderbook",
-   "Q": "quotedrivenmarket",
-   "D": "darkorderbook",
-   "A": "auctiondrivenmarket",
-   "N": "quotenegotiation",
-   "V": "voicenegotiation",
-   "H": "hybridmarket",
-   "z": "othermarket"
-  },
+  "values": [
+   {
+    "value": "E",
+    "meaning": "Electronic",
+    "aliases": [
+     "ELECTRONIC"
+    ]
+   },
+   {
+    "value": "P",
+    "meaning": "Pit",
+    "aliases": [
+     "PIT"
+    ]
+   },
+   {
+    "value": "X",
+    "meaning": "Ex-Pit",
+    "aliases": [
+     "EX_PIT"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "",
+    "aliases": [
+     "CLEARING_HOUSE"
+    ]
+   },
+   {
+    "value": "R",
+    "meaning": "",
+    "aliases": [
+     "REGISTERED_MARKET"
+    ]
+   },
+   {
+    "value": "O",
+    "meaning": "",
+    "aliases": [
+     "OFF_MARKET"
+    ]
+   },
+   {
+    "value": "B",
+    "meaning": "",
+    "aliases": [
+     "CENTRAL_LIMIT_ORDER_BOOK"
+    ]
+   },
+   {
+    "value": "Q",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_DRIVEN_MARKET"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DARK_ORDER_BOOK"
+    ]
+   },
+   {
+    "value": "A",
+    "meaning": "",
+    "aliases": [
+     "AUCTION_DRIVEN_MARKET"
+    ]
+   },
+   {
+    "value": "N",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_NEGOTIATION"
+    ]
+   },
+   {
+    "value": "V",
+    "meaning": "",
+    "aliases": [
+     "VOICE_NEGOTIATION"
+    ]
+   },
+   {
+    "value": "H",
+    "meaning": "",
+    "aliases": [
+     "HYBRID_MARKET"
+    ]
+   },
+   {
+    "value": "z",
+    "meaning": "",
+    "aliases": [
+     "OTHER_MARKET"
+    ]
+   }
+  ],
   "used_in": [
    "TradeCaptureReport",
    "TradeCaptureReportAck"
@@ -8878,29 +9425,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "GTC from previous day",
-   "1": "Partial Fill Remaining",
-   "2": "Order Changed"
-  },
-  "value_names": {
-   "0": "GTC_FROM_PREVIOUS_DAY",
-   "1": "PARTIAL_FILL_REMAINING",
-   "2": "ORDER_CHANGED"
-  },
-  "encoded": {
-   "gtcfrompreviousday": "0",
-   "partialfillremaining": "1",
-   "orderchanged": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "gtcfrompreviousday",
-   "1": "partialfillremaining",
-   "2": "orderchanged"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "GTC from previous day",
+    "aliases": [
+     "GTC_FROM_PREVIOUS_DAY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Partial Fill Remaining",
+    "aliases": [
+     "PARTIAL_FILL_REMAINING"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Order Changed",
+    "aliases": [
+     "ORDER_CHANGED"
+    ]
+   }
+  ],
   "components": [
    "TradeReportOrderDetail"
   ]
@@ -8913,34 +9460,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Member trading for their own account",
-   "2": "Clearing Firm trading for its proprietary account",
-   "3": "Member trading for another member",
-   "4": "All other"
-  },
-  "value_names": {
-   "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
-   "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
-   "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
-   "4": "ALL_OTHER"
-  },
-  "encoded": {
-   "membertradingfortheirownaccount": "1",
-   "clearingfirmtradingforitsproprietaryaccount": "2",
-   "membertradingforanothermember": "3",
-   "allother": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "membertradingfortheirownaccount",
-   "2": "clearingfirmtradingforitsproprietaryaccount",
-   "3": "membertradingforanothermember",
-   "4": "allother"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Member trading for their own account",
+    "aliases": [
+     "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Clearing Firm trading for its proprietary account",
+    "aliases": [
+     "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Member trading for another member",
+    "aliases": [
+     "MEMBER_TRADING_FOR_ANOTHER_MEMBER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "All other",
+    "aliases": [
+     "ALL_OTHER"
+    ]
+   }
+  ],
   "components": [
    "TradeReportOrderDetail"
   ]
@@ -8966,25 +9515,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Utility provided standard model",
-   "1": "Proprietary (user supplied) model"
-  },
-  "value_names": {
-   "0": "UTILITY_PROVIDED_STANDARD_MODEL",
-   "1": "PROPRIETARY_MODEL"
-  },
-  "encoded": {
-   "utilityprovidedstandardmodel": "0",
-   "proprietaryusersuppliedmodel": "1",
-   "proprietarymodel": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "utilityprovidedstandardmodel",
-   "1": "proprietarymodel"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Utility provided standard model",
+    "aliases": [
+     "UTILITY_PROVIDED_STANDARD_MODEL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Proprietary (user supplied) model",
+    "aliases": [
+     "PROPRIETARY_MODEL"
+    ]
+   }
+  ],
   "used_in": [
    "PositionReport"
   ]
@@ -8997,29 +9543,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Shares",
-   "1": "Hours",
-   "2": "Days"
-  },
-  "value_names": {
-   "0": "SHARES",
-   "1": "HOURS",
-   "2": "DAYS"
-  },
-  "encoded": {
-   "shares": "0",
-   "hours": "1",
-   "days": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "shares",
-   "1": "hours",
-   "2": "days"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Shares",
+    "aliases": [
+     "SHARES"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Hours",
+    "aliases": [
+     "HOURS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Days",
+    "aliases": [
+     "DAYS"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9068,63 +9614,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "NERC Eastern Off-Peak",
-   "1": "NERC Western Off-Peak",
-   "2": "NERC Calendar-All Days in month",
-   "3": "NERC Eastern Peak",
-   "4": "NERC Western Peak"
-  },
-  "value_names": {
-   "0": "NERC_EASTERN_OFF_PEAK",
-   "1": "NERC_WESTERN_OFF_PEAK",
-   "2": "NERC_CALENDAR_ALL_DAYS_IN_MONTH",
-   "3": "NERC_EASTERN_PEAK",
-   "4": "NERC_WESTERN_PEAK",
-   "5": "ALL_TIMES",
-   "6": "ON_PEAK",
-   "7": "OFF_PEAK",
-   "8": "BASE",
-   "9": "BLOCK",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "nerceasternoffpeak": "0",
-   "nercwesternoffpeak": "1",
-   "nerccalendaralldaysinmonth": "2",
-   "nerceasternpeak": "3",
-   "nercwesternpeak": "4",
-   "alltimes": "5",
-   "onpeak": "6",
-   "offpeak": "7",
-   "base": "8",
-   "block": "9",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "nerceasternoffpeak",
-   "1": "nercwesternoffpeak",
-   "2": "nerccalendaralldaysinmonth",
-   "3": "nerceasternpeak",
-   "4": "nercwesternpeak",
-   "5": "alltimes",
-   "6": "onpeak",
-   "7": "offpeak",
-   "8": "base",
-   "9": "block",
-   "99": "other"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "NERC Eastern Off-Peak",
+    "aliases": [
+     "NERC_EASTERN_OFF_PEAK"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "NERC Western Off-Peak",
+    "aliases": [
+     "NERC_WESTERN_OFF_PEAK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "NERC Calendar-All Days in month",
+    "aliases": [
+     "NERC_CALENDAR_ALL_DAYS_IN_MONTH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "NERC Eastern Peak",
+    "aliases": [
+     "NERC_EASTERN_PEAK"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "NERC Western Peak",
+    "aliases": [
+     "NERC_WESTERN_PEAK"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ALL_TIMES"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ON_PEAK"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "OFF_PEAK"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "BASE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "BLOCK"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9209,38 +9777,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Bloomberg",
-   "1": "Reuters",
-   "2": "Telerate",
-   "99": "Other"
-  },
-  "value_names": {
-   "0": "BLOOMBERG",
-   "1": "REUTERS",
-   "2": "TELERATE",
-   "3": "ISDA_RATE_OPTION",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "bloomberg": "0",
-   "reuters": "1",
-   "telerate": "2",
-   "other": "99",
-   "isdarateoption": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "99": "99",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "bloomberg",
-   "1": "reuters",
-   "2": "telerate",
-   "99": "other",
-   "3": "isdarateoption"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Bloomberg",
+    "aliases": [
+     "BLOOMBERG"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Reuters",
+    "aliases": [
+     "REUTERS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Telerate",
+    "aliases": [
+     "TELERATE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "Other",
+    "aliases": [
+     "OTHER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ISDA_RATE_OPTION"
+    ]
+   }
+  ],
   "components": [
    "RateSource"
   ]
@@ -9253,24 +9826,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Primary",
-   "1": "Secondary"
-  },
-  "value_names": {
-   "0": "PRIMARY",
-   "1": "SECONDARY"
-  },
-  "encoded": {
-   "primary": "0",
-   "secondary": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "primary",
-   "1": "secondary"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Primary",
+    "aliases": [
+     "PRIMARY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Secondary",
+    "aliases": [
+     "SECONDARY"
+    ]
+   }
+  ],
   "components": [
    "RateSource"
   ]
@@ -9295,34 +9866,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "FR": "Full Restructuring",
-   "MR": "Modified Restructuring",
-   "MM": "Modified Mod Restructuring",
-   "XR": "No Restructuring specified"
-  },
-  "value_names": {
-   "FR": "FULL_RESTRUCTURING",
-   "MR": "MODIFIED_RESTRUCTURING",
-   "MM": "MODIFIED_MOD_RESTRUCTURING",
-   "XR": "NO_RESTRUCTURING_SPECIFIED"
-  },
-  "encoded": {
-   "fullrestructuring": "FR",
-   "modifiedrestructuring": "MR",
-   "modifiedmodrestructuring": "MM",
-   "norestructuringspecified": "XR",
-   "fr": "FR",
-   "mr": "MR",
-   "mm": "MM",
-   "xr": "XR"
-  },
-  "decoded": {
-   "FR": "fullrestructuring",
-   "MR": "modifiedrestructuring",
-   "MM": "modifiedmodrestructuring",
-   "XR": "norestructuringspecified"
-  },
+  "values": [
+   {
+    "value": "FR",
+    "meaning": "Full Restructuring",
+    "aliases": [
+     "FULL_RESTRUCTURING"
+    ]
+   },
+   {
+    "value": "MR",
+    "meaning": "Modified Restructuring",
+    "aliases": [
+     "MODIFIED_RESTRUCTURING"
+    ]
+   },
+   {
+    "value": "MM",
+    "meaning": "Modified Mod Restructuring",
+    "aliases": [
+     "MODIFIED_MOD_RESTRUCTURING"
+    ]
+   },
+   {
+    "value": "XR",
+    "meaning": "No Restructuring specified",
+    "aliases": [
+     "NO_RESTRUCTURING_SPECIFIED"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9335,41 +9908,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "SD": "Senior Secured",
-   "SR": "Senior",
-   "SB": "Subordinated"
-  },
-  "value_names": {
-   "SD": "SENIOR_SECURED",
-   "SR": "SENIOR",
-   "SB": "SUBORDINATED",
-   "JR": "JUNIOR",
-   "MZ": "MEZZANINE",
-   "SN": "SENIOR_NON_PREFERRED"
-  },
-  "encoded": {
-   "seniorsecured": "SD",
-   "senior": "SR",
-   "subordinated": "SB",
-   "junior": "JR",
-   "mezzanine": "MZ",
-   "seniornonpreferred": "SN",
-   "sd": "SD",
-   "sr": "SR",
-   "sb": "SB",
-   "jr": "JR",
-   "mz": "MZ",
-   "sn": "SN"
-  },
-  "decoded": {
-   "SD": "seniorsecured",
-   "SR": "senior",
-   "SB": "subordinated",
-   "JR": "junior",
-   "MZ": "mezzanine",
-   "SN": "seniornonpreferred"
-  },
+  "values": [
+   {
+    "value": "SD",
+    "meaning": "Senior Secured",
+    "aliases": [
+     "SENIOR_SECURED"
+    ]
+   },
+   {
+    "value": "SR",
+    "meaning": "Senior",
+    "aliases": [
+     "SENIOR"
+    ]
+   },
+   {
+    "value": "SB",
+    "meaning": "Subordinated",
+    "aliases": [
+     "SUBORDINATED"
+    ]
+   },
+   {
+    "value": "JR",
+    "meaning": "",
+    "aliases": [
+     "JUNIOR"
+    ]
+   },
+   {
+    "value": "MZ",
+    "meaning": "",
+    "aliases": [
+     "MEZZANINE"
+    ]
+   },
+   {
+    "value": "SN",
+    "meaning": "",
+    "aliases": [
+     "SENIOR_NON_PREFERRED"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9616,35 +10198,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Industry Classification",
-   "2": "Trading List",
-   "3": "Market / Market Segment List",
-   "4": "Newspaper List"
-  },
-  "value_names": {
-   "1": "INDUSTRY_CLASSIFICATION",
-   "2": "TRADING_LIST",
-   "3": "MARKET",
-   "4": "NEWSPAPER_LIST"
-  },
-  "encoded": {
-   "industryclassification": "1",
-   "tradinglist": "2",
-   "marketmarketsegmentlist": "3",
-   "newspaperlist": "4",
-   "market": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "industryclassification",
-   "2": "tradinglist",
-   "3": "market",
-   "4": "newspaperlist"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Industry Classification",
+    "aliases": [
+     "INDUSTRY_CLASSIFICATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Trading List",
+    "aliases": [
+     "TRADING_LIST"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Market / Market Segment List",
+    "aliases": [
+     "MARKET"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Newspaper List",
+    "aliases": [
+     "NEWSPAPER_LIST"
+    ]
+   }
+  ],
   "used_in": [
    "SecurityListUpdateReport",
    "SecurityListRequest",
@@ -9659,32 +10242,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "ICB (Industry Classification Benchmark) published by Dow Jones and FTSE - www.icbenchmark.com",
-   "2": "NAICS (North American Industry Classification System). Replaced SIC (Standard Industry Classification) www.census.gov/naics or www.naics.com.",
-   "3": "GICS (Global Industry Classification Standard) published by Standards &amp; Poor"
-  },
-  "value_names": {
-   "1": "ICB",
-   "2": "NAICS",
-   "3": "GICS"
-  },
-  "encoded": {
-   "icbindustryclassificationbenchmarkpublishedbydowjonesandftsewwwicbenchmarkcom": "1",
-   "naicsnorthamericanindustryclassificationsystemreplacedsicstandardindustryclassificationwwwcensusgovnaicsorwwwnaicscom": "2",
-   "gicsglobalindustryclassificationstandardpublishedbystandardsamppoor": "3",
-   "icb": "1",
-   "naics": "2",
-   "gics": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "icb",
-   "2": "naics",
-   "3": "gics"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "ICB (Industry Classification Benchmark) published by Dow Jones and FTSE - www.icbenchmark.com",
+    "aliases": [
+     "ICB"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "NAICS (North American Industry Classification System). Replaced SIC (Standard Industry Classification) www.census.gov/naics or www.naics.com.",
+    "aliases": [
+     "NAICS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "GICS (Global Industry Classification Standard) published by Standards &amp; Poor",
+    "aliases": [
+     "GICS"
+    ]
+   }
+  ],
   "used_in": [
    "SecurityListUpdateReport",
    "SecurityListRequest",
@@ -9711,39 +10291,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Company News",
-   "1": "Marketplace News",
-   "2": "Financial Market News",
-   "3": "Technical News",
-   "99": "Other News"
-  },
-  "value_names": {
-   "0": "COMPANY_NEWS",
-   "1": "MARKETPLACE_NEWS",
-   "2": "FINANCIAL_MARKET_NEWS",
-   "3": "TECHNICAL_NEWS",
-   "99": "OTHER_NEWS"
-  },
-  "encoded": {
-   "companynews": "0",
-   "marketplacenews": "1",
-   "financialmarketnews": "2",
-   "technicalnews": "3",
-   "othernews": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "companynews",
-   "1": "marketplacenews",
-   "2": "financialmarketnews",
-   "3": "technicalnews",
-   "99": "othernews"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Company News",
+    "aliases": [
+     "COMPANY_NEWS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Marketplace News",
+    "aliases": [
+     "MARKETPLACE_NEWS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Financial Market News",
+    "aliases": [
+     "FINANCIAL_MARKET_NEWS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Technical News",
+    "aliases": [
+     "TECHNICAL_NEWS"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "Other News",
+    "aliases": [
+     "OTHER_NEWS"
+    ]
+   }
+  ],
   "used_in": [
    "News"
   ]
@@ -9792,33 +10376,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Replacement",
-   "1": "Other Language",
-   "2": "Complimentary"
-  },
-  "value_names": {
-   "0": "REPLACEMENT",
-   "1": "OTHER_LANGUAGE",
-   "2": "COMPLIMENTARY",
-   "3": "WITHDRAWAL"
-  },
-  "encoded": {
-   "replacement": "0",
-   "otherlanguage": "1",
-   "complimentary": "2",
-   "withdrawal": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "replacement",
-   "1": "otherlanguage",
-   "2": "complimentary",
-   "3": "withdrawal"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Replacement",
+    "aliases": [
+     "REPLACEMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Other Language",
+    "aliases": [
+     "OTHER_LANGUAGE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Complimentary",
+    "aliases": [
+     "COMPLIMENTARY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WITHDRAWAL"
+    ]
+   }
+  ],
   "components": [
    "NewsRefGrp"
   ]
@@ -9831,36 +10418,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Fixed Strike",
-   "2": "Strike set at expiration to underlying or other value (lookback floating)",
-   "3": "Strike set to average of underlying settlement price across the life of the option",
-   "4": "Strike set to optimal value"
-  },
-  "value_names": {
-   "1": "FIXED_STRIKE",
-   "2": "STRIKE_SET_AT_EXPIRATION",
-   "3": "STRIKE_SET_TO_AVERAGE_ACROSS_LIFE",
-   "4": "STRIKE_SET_TO_OPTIMAL_VALUE"
-  },
-  "encoded": {
-   "fixedstrike": "1",
-   "strikesetatexpirationtounderlyingorothervaluelookbackfloating": "2",
-   "strikesettoaverageofunderlyingsettlementpriceacrossthelifeoftheoption": "3",
-   "strikesettooptimalvalue": "4",
-   "strikesetatexpiration": "2",
-   "strikesettoaverageacrosslife": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "fixedstrike",
-   "2": "strikesetatexpiration",
-   "3": "strikesettoaverageacrosslife",
-   "4": "strikesettooptimalvalue"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Fixed Strike",
+    "aliases": [
+     "FIXED_STRIKE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Strike set at expiration to underlying or other value (lookback floating)",
+    "aliases": [
+     "STRIKE_SET_AT_EXPIRATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Strike set to average of underlying settlement price across the life of the option",
+    "aliases": [
+     "STRIKE_SET_TO_AVERAGE_ACROSS_LIFE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Strike set to optimal value",
+    "aliases": [
+     "STRIKE_SET_TO_OPTIMAL_VALUE"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9873,44 +10460,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Less than underlying price is in-the-money (ITM)",
-   "2": "Less than or equal to the underlying price is in-the-money(ITM)",
-   "3": "Equal to the underlying price is in-the-money(ITM)",
-   "4": "Greater than or equal to underlying price is in-the-money(ITM)",
-   "5": "Greater than underlying is in-the-money(ITM)"
-  },
-  "value_names": {
-   "1": "LESS_THAN",
-   "2": "LESS_THAN_OR_EQUAL",
-   "3": "EQUAL",
-   "4": "GREATER_THAN_OR_EQUAL",
-   "5": "GREATER_THAN"
-  },
-  "encoded": {
-   "lessthanunderlyingpriceisinthemoneyitm": "1",
-   "lessthanorequaltotheunderlyingpriceisinthemoneyitm": "2",
-   "equaltotheunderlyingpriceisinthemoneyitm": "3",
-   "greaterthanorequaltounderlyingpriceisinthemoneyitm": "4",
-   "greaterthanunderlyingisinthemoneyitm": "5",
-   "lessthan": "1",
-   "lessthanorequal": "2",
-   "equal": "3",
-   "greaterthanorequal": "4",
-   "greaterthan": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "lessthan",
-   "2": "lessthanorequal",
-   "3": "equal",
-   "4": "greaterthanorequal",
-   "5": "greaterthan"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Less than underlying price is in-the-money (ITM)",
+    "aliases": [
+     "LESS_THAN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Less than or equal to the underlying price is in-the-money(ITM)",
+    "aliases": [
+     "LESS_THAN_OR_EQUAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Equal to the underlying price is in-the-money(ITM)",
+    "aliases": [
+     "EQUAL"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Greater than or equal to underlying price is in-the-money(ITM)",
+    "aliases": [
+     "GREATER_THAN_OR_EQUAL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Greater than underlying is in-the-money(ITM)",
+    "aliases": [
+     "GREATER_THAN"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9935,36 +10521,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Regular",
-   "2": "Special reference",
-   "3": "Optimal value (Lookback)",
-   "4": "Average value (Asian option)"
-  },
-  "value_names": {
-   "1": "REGULAR",
-   "2": "SPECIAL_REFERENCE",
-   "3": "OPTIMAL_VALUE",
-   "4": "AVERAGE_VALUE"
-  },
-  "encoded": {
-   "regular": "1",
-   "specialreference": "2",
-   "optimalvaluelookback": "3",
-   "averagevalueasianoption": "4",
-   "optimalvalue": "3",
-   "averagevalue": "4",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "1": "regular",
-   "2": "specialreference",
-   "3": "optimalvalue",
-   "4": "averagevalue"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Regular",
+    "aliases": [
+     "REGULAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Special reference",
+    "aliases": [
+     "SPECIAL_REFERENCE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Optimal value (Lookback)",
+    "aliases": [
+     "OPTIMAL_VALUE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Average value (Asian option)",
+    "aliases": [
+     "AVERAGE_VALUE"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -9977,53 +10563,71 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Vanilla",
-   "2": "Capped",
-   "3": "Binary"
-  },
-  "value_names": {
-   "1": "VANILLA",
-   "2": "CAPPED",
-   "3": "BINARY",
-   "4": "ASIAN",
-   "5": "BARRIER",
-   "6": "DIGITAL_BARRIER",
-   "7": "LOOKBACK",
-   "8": "OTHER_PATH_DEPENDENT",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "vanilla": "1",
-   "capped": "2",
-   "binary": "3",
-   "asian": "4",
-   "barrier": "5",
-   "digitalbarrier": "6",
-   "lookback": "7",
-   "otherpathdependent": "8",
-   "other": "99",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "99": "99"
-  },
-  "decoded": {
-   "1": "vanilla",
-   "2": "capped",
-   "3": "binary",
-   "4": "asian",
-   "5": "barrier",
-   "6": "digitalbarrier",
-   "7": "lookback",
-   "8": "otherpathdependent",
-   "99": "other"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Vanilla",
+    "aliases": [
+     "VANILLA"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Capped",
+    "aliases": [
+     "CAPPED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Binary",
+    "aliases": [
+     "BINARY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ASIAN"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "BARRIER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "DIGITAL_BARRIER"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "LOOKBACK"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "OTHER_PATH_DEPENDENT"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ],
   "components": [
    "Instrument"
   ]
@@ -10048,116 +10652,169 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Capped",
-   "2": "Trigger",
-   "3": "Knock-in up",
-   "4": "Kock-in down",
-   "5": "Knock-out up",
-   "6": "Knock-out down",
-   "7": "Underlying",
-   "8": "Reset Barrier",
-   "9": "Rolling Barrier"
-  },
-  "value_names": {
-   "1": "CAPPED",
-   "2": "TRIGGER",
-   "3": "KNOCK_IN_UP",
-   "4": "KNOCK_IN_DOWN",
-   "5": "KNOCK_OUT_UP",
-   "6": "KNOCK_OUT_DOWN",
-   "7": "UNDERLYING",
-   "8": "RESET_BARRIER",
-   "9": "ROLLING_BARRIER",
-   "10": "ONE_TOUCH",
-   "11": "NO_TOUCH",
-   "12": "DBL_ONE_TOUCH",
-   "13": "DBL_NO_TOUCH",
-   "14": "FX_COMPOSITE",
-   "15": "FX_QUANTO",
-   "16": "FX_CRSS_CCY",
-   "17": "STRK_SPREAD",
-   "18": "CLNDR_SPREAD",
-   "19": "PX_OBSVTN",
-   "20": "PASS_THROUGH",
-   "21": "STRK_SCHED",
-   "22": "EQUITY_VALUATION",
-   "23": "DIVIDEND_VALUATION"
-  },
-  "encoded": {
-   "capped": "1",
-   "trigger": "2",
-   "knockinup": "3",
-   "kockindown": "4",
-   "knockoutup": "5",
-   "knockoutdown": "6",
-   "underlying": "7",
-   "resetbarrier": "8",
-   "rollingbarrier": "9",
-   "knockindown": "4",
-   "onetouch": "10",
-   "notouch": "11",
-   "dblonetouch": "12",
-   "dblnotouch": "13",
-   "fxcomposite": "14",
-   "fxquanto": "15",
-   "fxcrssccy": "16",
-   "strkspread": "17",
-   "clndrspread": "18",
-   "pxobsvtn": "19",
-   "passthrough": "20",
-   "strksched": "21",
-   "equityvaluation": "22",
-   "dividendvaluation": "23",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23"
-  },
-  "decoded": {
-   "1": "capped",
-   "2": "trigger",
-   "3": "knockinup",
-   "4": "knockindown",
-   "5": "knockoutup",
-   "6": "knockoutdown",
-   "7": "underlying",
-   "8": "resetbarrier",
-   "9": "rollingbarrier",
-   "10": "onetouch",
-   "11": "notouch",
-   "12": "dblonetouch",
-   "13": "dblnotouch",
-   "14": "fxcomposite",
-   "15": "fxquanto",
-   "16": "fxcrssccy",
-   "17": "strkspread",
-   "18": "clndrspread",
-   "19": "pxobsvtn",
-   "20": "passthrough",
-   "21": "strksched",
-   "22": "equityvaluation",
-   "23": "dividendvaluation"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Capped",
+    "aliases": [
+     "CAPPED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Trigger",
+    "aliases": [
+     "TRIGGER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Knock-in up",
+    "aliases": [
+     "KNOCK_IN_UP"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Kock-in down",
+    "aliases": [
+     "KNOCK_IN_DOWN"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Knock-out up",
+    "aliases": [
+     "KNOCK_OUT_UP"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "Knock-out down",
+    "aliases": [
+     "KNOCK_OUT_DOWN"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "Underlying",
+    "aliases": [
+     "UNDERLYING"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "Reset Barrier",
+    "aliases": [
+     "RESET_BARRIER"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "Rolling Barrier",
+    "aliases": [
+     "ROLLING_BARRIER"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ONE_TOUCH"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "NO_TOUCH"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "DBL_ONE_TOUCH"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "DBL_NO_TOUCH"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "FX_COMPOSITE"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "FX_QUANTO"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "FX_CRSS_CCY"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "STRK_SPREAD"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "CLNDR_SPREAD"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "PX_OBSVTN"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "PASS_THROUGH"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "STRK_SCHED"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_VALUATION"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_VALUATION"
+    ]
+   }
+  ],
   "components": [
    "ComplexEvents"
   ]
@@ -10194,40 +10851,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Less than ComplexEventPrice <1486>",
-   "2": "Less than or equal to ComplexEventPrice",
-   "3": "Equal to ComplexEventPrice",
-   "4": "Greater than or equal to ComplexEventPrice",
-   "5": "Greater than ComplexEventPrice"
-  },
-  "value_names": {
-   "1": "LESS_THAN_COMPLEX_EVENT_PRICE",
-   "2": "LESS_THAN_OR_EQUAL_TO_COMPLEX_EVENT_PRICE",
-   "3": "EQUAL_TO_COMPLEX_EVENT_PRICE",
-   "4": "GREATER_THAN_OR_EQUAL_TO_COMPLEX_EVENT_PRICE",
-   "5": "GREATER_THAN_COMPLEX_EVENT_PRICE"
-  },
-  "encoded": {
-   "lessthancomplexeventprice1486": "1",
-   "lessthanorequaltocomplexeventprice": "2",
-   "equaltocomplexeventprice": "3",
-   "greaterthanorequaltocomplexeventprice": "4",
-   "greaterthancomplexeventprice": "5",
-   "lessthancomplexeventprice": "1",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "lessthancomplexeventprice",
-   "2": "lessthanorequaltocomplexeventprice",
-   "3": "equaltocomplexeventprice",
-   "4": "greaterthanorequaltocomplexeventprice",
-   "5": "greaterthancomplexeventprice"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Less than ComplexEventPrice <1486>",
+    "aliases": [
+     "LESS_THAN_COMPLEX_EVENT_PRICE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Less than or equal to ComplexEventPrice",
+    "aliases": [
+     "LESS_THAN_OR_EQUAL_TO_COMPLEX_EVENT_PRICE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Equal to ComplexEventPrice",
+    "aliases": [
+     "EQUAL_TO_COMPLEX_EVENT_PRICE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "Greater than or equal to ComplexEventPrice",
+    "aliases": [
+     "GREATER_THAN_OR_EQUAL_TO_COMPLEX_EVENT_PRICE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "Greater than ComplexEventPrice",
+    "aliases": [
+     "GREATER_THAN_COMPLEX_EVENT_PRICE"
+    ]
+   }
+  ],
   "components": [
    "ComplexEvents"
   ]
@@ -10252,51 +10912,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Expiration",
-   "2": "Immediate (At Any Time)",
-   "3": "Specified Date/Time"
-  },
-  "value_names": {
-   "1": "EXPIRATION",
-   "2": "IMMEDIATE",
-   "3": "SPECIFIED_DATE",
-   "4": "CLOSE",
-   "5": "OPEN",
-   "6": "OFFICIAL_SETTL_PRICE",
-   "7": "DERIVATIVES_CLOSE",
-   "8": "AS_SPECIFIED_MASTER_CONFIRMATION"
-  },
-  "encoded": {
-   "expiration": "1",
-   "immediateatanytime": "2",
-   "specifieddatetime": "3",
-   "immediate": "2",
-   "specifieddate": "3",
-   "close": "4",
-   "open": "5",
-   "officialsettlprice": "6",
-   "derivativesclose": "7",
-   "asspecifiedmasterconfirmation": "8",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "1": "expiration",
-   "2": "immediate",
-   "3": "specifieddate",
-   "4": "close",
-   "5": "open",
-   "6": "officialsettlprice",
-   "7": "derivativesclose",
-   "8": "asspecifiedmasterconfirmation"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Expiration",
+    "aliases": [
+     "EXPIRATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Immediate (At Any Time)",
+    "aliases": [
+     "IMMEDIATE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Specified Date/Time",
+    "aliases": [
+     "SPECIFIED_DATE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "OPEN"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "OFFICIAL_SETTL_PRICE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "DERIVATIVES_CLOSE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "AS_SPECIFIED_MASTER_CONFIRMATION"
+    ]
+   }
+  ],
   "components": [
    "ComplexEvents"
   ]
@@ -10309,24 +10982,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "And",
-   "2": "Or"
-  },
-  "value_names": {
-   "1": "AND",
-   "2": "OR"
-  },
-  "encoded": {
-   "and": "1",
-   "or": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "and",
-   "2": "or"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "And",
+    "aliases": [
+     "AND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Or",
+    "aliases": [
+     "OR"
+    ]
+   }
+  ],
   "components": [
    "ComplexEvents"
   ]
@@ -10424,26 +11095,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Stream assignment for new customer(s)",
-   "2": "Stream assignment for existing customer(s)"
-  },
-  "value_names": {
-   "1": "STREAM_ASSIGNMENT_FOR_NEW_CUSTOMER",
-   "2": "STREAM_ASSIGNMENT_FOR_EXISTING_CUSTOMER"
-  },
-  "encoded": {
-   "streamassignmentfornewcustomers": "1",
-   "streamassignmentforexistingcustomers": "2",
-   "streamassignmentfornewcustomer": "1",
-   "streamassignmentforexistingcustomer": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "streamassignmentfornewcustomer",
-   "2": "streamassignmentforexistingcustomer"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Stream assignment for new customer(s)",
+    "aliases": [
+     "STREAM_ASSIGNMENT_FOR_NEW_CUSTOMER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Stream assignment for existing customer(s)",
+    "aliases": [
+     "STREAM_ASSIGNMENT_FOR_EXISTING_CUSTOMER"
+    ]
+   }
+  ],
   "used_in": [
    "StreamAssignmentRequest",
    "StreamAssignmentReport"

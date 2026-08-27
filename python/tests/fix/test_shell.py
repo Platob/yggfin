@@ -15,7 +15,7 @@ import pytest
 
 from rekep.console import Console
 from rekep.fields import Field
-from rekep.fix.entries import FieldEntry
+from rekep.fix.entries import FieldEntry, values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 from rekep.fix.registry import FixRegistry
@@ -200,7 +200,7 @@ def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_p
         values={"A": "Alpha"},
     ).into_json(str(declaration))
     assert "added FAKE.VENUE.CODE" in _run(store, f"add-field {declaration}", "y", "quit")
-    assert store.resolve("FAKE.VENUE.CODE").values == {"A": "Alpha"}
+    assert store.resolve("FAKE.VENUE.CODE").values == values_of({"A": "Alpha"})
 
     assert "updated FAKE.VENUE.CODE" in _run(store, f"update-field {declaration}", "y", "quit")
 

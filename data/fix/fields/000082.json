@@ -94,36 +94,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ASIAN_OUT",
-   "1": "ASIAN_IN",
-   "2": "BARRIER_CAP",
-   "3": "BARRIER_FLOOR",
-   "4": "KNOCK_OUT",
-   "5": "KNOCK_IN"
-  },
-  "encoded": {
-   "asianout": "0",
-   "asianin": "1",
-   "barriercap": "2",
-   "barrierfloor": "3",
-   "knockout": "4",
-   "knockin": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "asianout",
-   "1": "asianin",
-   "2": "barriercap",
-   "3": "barrierfloor",
-   "4": "knockout",
-   "5": "knockin"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ASIAN_OUT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ASIAN_IN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BARRIER_CAP"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BARRIER_FLOOR"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "KNOCK_OUT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "KNOCK_IN"
+    ]
+   }
+  ]
  },
  "41012": {
   "name": "ComplexEventBusinessCenter",
@@ -228,36 +242,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUSINESS",
-   "1": "CALENDAR",
-   "2": "COMMODITY_BUSINESS",
-   "3": "CURRENCY_BUSINESS",
-   "4": "EXCHANGE_BUSINESS",
-   "5": "SCHEDULED_TRADING_DAY"
-  },
-  "encoded": {
-   "business": "0",
-   "calendar": "1",
-   "commoditybusiness": "2",
-   "currencybusiness": "3",
-   "exchangebusiness": "4",
-   "scheduledtradingday": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "business",
-   "1": "calendar",
-   "2": "commoditybusiness",
-   "3": "currencybusiness",
-   "4": "exchangebusiness",
-   "5": "scheduledtradingday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUSINESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALENDAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY_BUSINESS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY_BUSINESS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BUSINESS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED_TRADING_DAY"
+    ]
+   }
+  ]
  },
  "41025": {
   "name": "ComplexEventDateBusinessDayConvention",
@@ -370,24 +398,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOTIONAL",
-   "1": "DELIVERY",
-   "2": "PHYSICAL_SETTL_PERIODS"
-  },
-  "encoded": {
-   "notional": "0",
-   "delivery": "1",
-   "physicalsettlperiods": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "notional",
-   "1": "delivery",
-   "2": "physicalsettlperiods"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOTIONAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PHYSICAL_SETTL_PERIODS"
+    ]
+   }
+  ]
  },
  "41039": {
   "name": "DeliveryScheduleXID",
@@ -452,20 +485,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ABSOLUTE",
-   "1": "PERCENTAGE"
-  },
-  "encoded": {
-   "absolute": "0",
-   "percentage": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "absolute",
-   "1": "percentage"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ABSOLUTE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ]
  },
  "41047": {
   "name": "DeliveryScheduleSettlCountry",
@@ -490,36 +525,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ALL_TIMES",
-   "1": "ON_PEAK",
-   "2": "OFF_PEAK",
-   "3": "BASE",
-   "4": "BLOCK_HOURS",
-   "5": "OTHER"
-  },
-  "encoded": {
-   "alltimes": "0",
-   "onpeak": "1",
-   "offpeak": "2",
-   "base": "3",
-   "blockhours": "4",
-   "other": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "alltimes",
-   "1": "onpeak",
-   "2": "offpeak",
-   "3": "base",
-   "4": "blockhours",
-   "5": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ALL_TIMES"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ON_PEAK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFF_PEAK"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BASE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BLOCK_HOURS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "41050": {
   "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
@@ -528,20 +577,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DO_NOT_INCLUDE_HOLIDAYS",
-   "1": "INCLUDE_HOLIDAYS"
-  },
-  "encoded": {
-   "donotincludeholidays": "0",
-   "includeholidays": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "donotincludeholidays",
-   "1": "includeholidays"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_INCLUDE_HOLIDAYS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INCLUDE_HOLIDAYS"
+    ]
+   }
+  ]
  },
  "41051": {
   "name": "NoDeliveryScheduleSettlDays",
@@ -558,52 +609,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "MONDAY",
-   "2": "TUESDAY",
-   "3": "WEDNESDAY",
-   "4": "THURSDAY",
-   "5": "FRIDAY",
-   "6": "SATURDAY",
-   "7": "SUNDAY",
-   "8": "ALL_WEEKDAYS",
-   "9": "ALL_DAYS",
-   "10": "ALL_WEEKENDS"
-  },
-  "encoded": {
-   "monday": "1",
-   "tuesday": "2",
-   "wednesday": "3",
-   "thursday": "4",
-   "friday": "5",
-   "saturday": "6",
-   "sunday": "7",
-   "allweekdays": "8",
-   "alldays": "9",
-   "allweekends": "10",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "1": "monday",
-   "2": "tuesday",
-   "3": "wednesday",
-   "4": "thursday",
-   "5": "friday",
-   "6": "saturday",
-   "7": "sunday",
-   "8": "allweekdays",
-   "9": "alldays",
-   "10": "allweekends"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MONDAY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TUESDAY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WEDNESDAY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "THURSDAY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "FRIDAY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SATURDAY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SUNDAY"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "ALL_WEEKDAYS"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "ALL_DAYS"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ALL_WEEKENDS"
+    ]
+   }
+  ]
  },
  "41053": {
   "name": "DeliveryScheduleSettlTotalHours",
@@ -644,20 +721,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "HOUR",
-   "1": "TIMESTAMP"
-  },
-  "encoded": {
-   "hour": "0",
-   "timestamp": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "hour",
-   "1": "timestamp"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "HOUR"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TIMESTAMP"
+    ]
+   }
+  ]
  },
  "41058": {
   "name": "DeliveryStreamType",
@@ -666,24 +745,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PERIODIC",
-   "1": "INITIAL",
-   "2": "SINGLE"
-  },
-  "encoded": {
-   "periodic": "0",
-   "initial": "1",
-   "single": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "periodic",
-   "1": "initial",
-   "2": "single"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PERIODIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INITIAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SINGLE"
+    ]
+   }
+  ]
  },
  "41059": {
   "name": "DeliveryStreamPipeline",
@@ -724,32 +808,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "FIRM",
-   "2": "NON_FIRM",
-   "3": "FORCE_MAJEURE",
-   "4": "SYSTEM_FIRM",
-   "5": "UNIT_FIRM"
-  },
-  "encoded": {
-   "firm": "1",
-   "nonfirm": "2",
-   "forcemajeure": "3",
-   "systemfirm": "4",
-   "unitfirm": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "firm",
-   "2": "nonfirm",
-   "3": "forcemajeure",
-   "4": "systemfirm",
-   "5": "unitfirm"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIRM"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NON_FIRM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FORCE_MAJEURE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SYSTEM_FIRM"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "UNIT_FIRM"
+    ]
+   }
+  ]
  },
  "41064": {
   "name": "DeliveryStreamDeliveryContingency",
@@ -798,20 +893,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TRANSFERS",
-   "1": "DOES_NOT_TRANSFER"
-  },
-  "encoded": {
-   "transfers": "0",
-   "doesnottransfer": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "transfers",
-   "1": "doesnottransfer"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TRANSFERS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DOES_NOT_TRANSFER"
+    ]
+   }
+  ]
  },
  "41070": {
   "name": "DeliveryStreamImporterOfRecord",
@@ -860,20 +957,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUYER",
-   "2": "SELLER"
-  },
-  "encoded": {
-   "buyer": "1",
-   "seller": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "buyer",
-   "2": "seller"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUYER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELLER"
+    ]
+   }
+  ]
  },
  "41076": {
   "name": "DeliveryStreamTotalPositiveTolerance",
@@ -914,20 +1013,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUYER",
-   "1": "SELLER"
-  },
-  "encoded": {
-   "buyer": "0",
-   "seller": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "buyer",
-   "1": "seller"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUYER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SELLER"
+    ]
+   }
+  ]
  },
  "41081": {
   "name": "NoDeliveryStreamCycles",
@@ -984,28 +1085,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_APPLICABLE",
-   "1": "APPLICABLE",
-   "2": "AS_IN_MASTER_AGREEMENT",
-   "3": "AS_IN_CONFIRMATION"
-  },
-  "encoded": {
-   "notapplicable": "0",
-   "applicable": "1",
-   "asinmasteragreement": "2",
-   "asinconfirmation": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "notapplicable",
-   "1": "applicable",
-   "2": "asinmasteragreement",
-   "3": "asinconfirmation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_APPLICABLE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "APPLICABLE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AS_IN_MASTER_AGREEMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "AS_IN_CONFIRMATION"
+    ]
+   }
+  ]
  },
  "41088": {
   "name": "MarketDisruptionFallbackProvision",
@@ -1014,20 +1123,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "MASTER_AGREEMENT",
-   "1": "CONFIRMATION"
-  },
-  "encoded": {
-   "masteragreement": "0",
-   "confirmation": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "masteragreement",
-   "1": "confirmation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "MASTER_AGREEMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CONFIRMATION"
+    ]
+   }
+  ]
  },
  "41089": {
   "name": "MarketDisruptionMaximumDays",
@@ -1100,60 +1211,92 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BASKET",
-   "1": "BOND",
-   "2": "CASH",
-   "3": "COMMODITY",
-   "4": "CONVERTIBLE_BOND",
-   "5": "EQUITY",
-   "6": "EXCHANGE_TRADED_FUND",
-   "7": "FUTURE",
-   "8": "INDEX",
-   "9": "LOAN",
-   "10": "MORTGAGE",
-   "11": "MUTUAL_FUND"
-  },
-  "encoded": {
-   "basket": "0",
-   "bond": "1",
-   "cash": "2",
-   "commodity": "3",
-   "convertiblebond": "4",
-   "equity": "5",
-   "exchangetradedfund": "6",
-   "future": "7",
-   "index": "8",
-   "loan": "9",
-   "mortgage": "10",
-   "mutualfund": "11",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11"
-  },
-  "decoded": {
-   "0": "basket",
-   "1": "bond",
-   "2": "cash",
-   "3": "commodity",
-   "4": "convertiblebond",
-   "5": "equity",
-   "6": "exchangetradedfund",
-   "7": "future",
-   "8": "index",
-   "9": "loan",
-   "10": "mortgage",
-   "11": "mutualfund"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BASKET"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BOND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CASH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "CONVERTIBLE_BOND"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "EQUITY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_TRADED_FUND"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "FUTURE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "INDEX"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "LOAN"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "MORTGAGE"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "MUTUAL_FUND"
+    ]
+   }
+  ]
  },
  "41098": {
   "name": "MarketDisruptionFallbackUnderlierSecurityID",
@@ -1266,28 +1409,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_REQUIRED",
-   "1": "NON_ELECTRONIC",
-   "2": "ELECTRONIC",
-   "3": "UNKNOWN"
-  },
-  "encoded": {
-   "notrequired": "0",
-   "nonelectronic": "1",
-   "electronic": "2",
-   "unknown": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "notrequired",
-   "1": "nonelectronic",
-   "2": "electronic",
-   "3": "unknown"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_REQUIRED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NON_ELECTRONIC"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ELECTRONIC"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN"
+    ]
+   }
+  ]
  },
  "41112": {
   "name": "ManualNoticeBusinessCenter",
@@ -1512,20 +1663,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNADJUSTED",
-   "1": "ADJUSTED"
-  },
-  "encoded": {
-   "unadjusted": "0",
-   "adjusted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "unadjusted",
-   "1": "adjusted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNADJUSTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADJUSTED"
+    ]
+   }
+  ]
  },
  "41140": {
   "name": "NoOptionExerciseExpirationDateBusinessCenters",
@@ -1686,36 +1839,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUSINESS",
-   "1": "CALENDAR",
-   "2": "COMMODITY",
-   "3": "CURRENCY",
-   "4": "EXCHANGE",
-   "5": "SCHEDULED"
-  },
-  "encoded": {
-   "business": "0",
-   "calendar": "1",
-   "commodity": "2",
-   "currency": "3",
-   "exchange": "4",
-   "scheduled": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "business",
-   "1": "calendar",
-   "2": "commodity",
-   "3": "currency",
-   "4": "exchange",
-   "5": "scheduled"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUSINESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALENDAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED"
+    ]
+   }
+  ]
  },
  "41160": {
   "name": "PaymentForwardStartType",
@@ -1724,28 +1891,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PREPAID",
-   "1": "POSTPAID",
-   "2": "VARIABLE",
-   "3": "FIXED"
-  },
-  "encoded": {
-   "prepaid": "0",
-   "postpaid": "1",
-   "variable": "2",
-   "fixed": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "prepaid",
-   "1": "postpaid",
-   "2": "variable",
-   "3": "fixed"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PREPAID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "POSTPAID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "VARIABLE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FIXED"
+    ]
+   }
+  ]
  },
  "41161": {
   "name": "NoPaymentScheduleFixingDays",
@@ -2058,28 +2233,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AVERAGE",
-   "1": "MAXIMUM",
-   "2": "MINIMUM",
-   "3": "CUMULATIVE"
-  },
-  "encoded": {
-   "average": "0",
-   "maximum": "1",
-   "minimum": "2",
-   "cumulative": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "average",
-   "1": "maximum",
-   "2": "minimum",
-   "3": "cumulative"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MAXIMUM"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MINIMUM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CUMULATIVE"
+    ]
+   }
+  ]
  },
  "41200": {
   "name": "PaymentStreamReferenceLevel",
@@ -2136,20 +2319,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ABSOLUTE",
-   "1": "PERCENTAGE"
-  },
-  "encoded": {
-   "absolute": "0",
-   "percentage": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "absolute",
-   "1": "percentage"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ABSOLUTE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ]
  },
  "41207": {
   "name": "PaymentStreamLastResetRate",
@@ -2214,28 +2399,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ALL",
-   "1": "FIRST",
-   "2": "LAST",
-   "3": "PENULTIMATE"
-  },
-  "encoded": {
-   "all": "0",
-   "first": "1",
-   "last": "2",
-   "penultimate": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "all",
-   "1": "first",
-   "2": "last",
-   "3": "penultimate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ALL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIRST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "LAST"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PENULTIMATE"
+    ]
+   }
+  ]
  },
  "41215": {
   "name": "PaymentStreamPricingDayCount",
@@ -2348,44 +2541,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EVERY_DAY",
-   "1": "MONDAY",
-   "2": "TUESDAY",
-   "3": "WEDNESDAY",
-   "4": "THURSDAY",
-   "5": "FRIDAY",
-   "6": "SATURDAY",
-   "7": "SUNDAY"
-  },
-  "encoded": {
-   "everyday": "0",
-   "monday": "1",
-   "tuesday": "2",
-   "wednesday": "3",
-   "thursday": "4",
-   "friday": "5",
-   "saturday": "6",
-   "sunday": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "everyday",
-   "1": "monday",
-   "2": "tuesday",
-   "3": "wednesday",
-   "4": "thursday",
-   "5": "friday",
-   "6": "saturday",
-   "7": "sunday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EVERY_DAY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MONDAY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TUESDAY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WEDNESDAY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "THURSDAY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "FRIDAY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SATURDAY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SUNDAY"
+    ]
+   }
+  ]
  },
  "41229": {
   "name": "PaymentStreamPricingDayNumber",
@@ -2698,20 +2911,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "Wk": "WEEK",
-   "Mo": "MONTH"
-  },
-  "encoded": {
-   "week": "Wk",
-   "month": "Mo",
-   "wk": "Wk",
-   "mo": "Mo"
-  },
-  "decoded": {
-   "Wk": "week",
-   "Mo": "month"
-  }
+  "values": [
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   }
+  ]
  },
  "41268": {
   "name": "StreamCommoditySettlDateUnadjusted",
@@ -2760,16 +2975,15 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY"
-  },
-  "encoded": {
-   "day": "D",
-   "d": "D"
-  },
-  "decoded": {
-   "D": "day"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   }
+  ]
  },
  "41274": {
   "name": "StreamCommoditySettlDayType",
@@ -2842,28 +3056,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CITY",
-   "1": "AIRPORT",
-   "2": "WEATHER_STATION",
-   "3": "WEATHER_INDEX"
-  },
-  "encoded": {
-   "city": "0",
-   "airport": "1",
-   "weatherstation": "2",
-   "weatherindex": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "city",
-   "1": "airport",
-   "2": "weatherstation",
-   "3": "weatherindex"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CITY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "AIRPORT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "WEATHER_STATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "WEATHER_INDEX"
+    ]
+   }
+  ]
  },
  "41283": {
   "name": "NoStreamCommoditySettlDays",
@@ -3072,40 +3294,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TERM",
-   "1": "PER_BUSINESS_DAY",
-   "2": "PER_CALCULATION_PERIOD",
-   "3": "PER_SETTL_PERIOD",
-   "4": "PER_CALENDAR_DAY",
-   "5": "PER_HOUR",
-   "6": "PER_MONTH"
-  },
-  "encoded": {
-   "term": "0",
-   "perbusinessday": "1",
-   "percalculationperiod": "2",
-   "persettlperiod": "3",
-   "percalendarday": "4",
-   "perhour": "5",
-   "permonth": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "term",
-   "1": "perbusinessday",
-   "2": "percalculationperiod",
-   "3": "persettlperiod",
-   "4": "percalendarday",
-   "5": "perhour",
-   "6": "permonth"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TERM"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PER_BUSINESS_DAY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PER_CALCULATION_PERIOD"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PER_SETTL_PERIOD"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PER_CALENDAR_DAY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PER_HOUR"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PER_MONTH"
+    ]
+   }
+  ]
  },
  "41309": {
   "name": "StreamNotionalUnitOfMeasure",

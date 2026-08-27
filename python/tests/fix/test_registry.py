@@ -27,7 +27,7 @@ import pytest
 from rekep.enums import EventType
 from rekep.fields import Field
 from rekep.fix import FixRegistry
-from rekep.fix.entries import newest_rank
+from rekep.fix.entries import newest_rank, values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
 
@@ -209,7 +209,7 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
     assert side.nullable
     assert side.description == "Side of order."
     assert side.fix["type"] == "char"
-    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert side.fix.value_of("1").meaning == "Buy"
     assert "ExecutionReport" in json.loads(side.fix["msgtypes"])
 
 
@@ -246,14 +246,16 @@ def test_a_captured_page_fills_description_and_paragraph_values(
     side = captured[54]
     assert side.name == "Side"
     assert side.description == "Side of order."
-    assert json.loads(side.fix["values"]) == {
-        "1": "Buy",
-        "2": "Sell",
-        "3": "Buy minus",
-        "4": "Sell plus",
-        "5": "Sell short",
-        "6": "Sell short exempt",
-    }
+    assert side.fix.enumerated == values_of(
+        {
+            "1": "Buy",
+            "2": "Sell",
+            "3": "Buy minus",
+            "4": "Sell plus",
+            "5": "Sell short",
+            "6": "Sell short exempt",
+        }
+    )
     assert json.loads(side.fix["msgtypes"])[:2] == ["IndicationofInterest", "ExecutionReport"]
 
 
@@ -272,9 +274,8 @@ def test_message_links_that_are_values_are_not_read_as_messages(
 ) -> None:
     """MsgType lists its messages *as values*, and its own Used In is empty."""
     msg_type = captured[35]
-    values = json.loads(msg_type.fix["values"])
-    assert values["0"] == "Heartbeat"
-    assert values["D"] == "NewOrderSingle"
+    assert msg_type.fix.value_of("0").meaning == "Heartbeat"
+    assert msg_type.fix.value_of("D").meaning == "NewOrderSingle"
     assert "msgtypes" not in msg_type.fix, "the value links belong to the enumeration"
 
 
@@ -770,8 +771,8 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
     assert begin.fix["version"] == "5.0.SP2"
 
     side = registry.scalar("Side")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["H"] == "SELL_UNDISCLOSED"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("H").aliases == ("SELL_UNDISCLOSED",)
     assert "Quote" in json.loads(side.fix["msgtypes"])
 
 
@@ -843,8 +844,8 @@ def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
     """
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     side = next(field for field in registry.fields("4.4") if field.fix["tag"] == "54")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["1"] == "BUY"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("1").aliases == ("BUY",)
     assert side.description, "and the description the site alone has is still there"
 
 
@@ -858,10 +859,11 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     assert not by_tag["828"].description, "and with no prose, because there is none"
 
 
-def test_a_field_with_no_enumeration_gains_no_symbols(tmp_path: Path) -> None:
+def test_a_field_the_spec_does_not_enumerate_gains_no_symbols(tmp_path: Path) -> None:
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     listed = {field.fix["tag"]: field for field in registry.fields("4.4")}
-    assert "value_names" not in listed["103"].fix
+    assert listed["103"].fix.enumerated, "the site wrote the values up"
+    assert not any(one.aliases for one in listed["103"].fix.enumerated), "the spec did not"
 
 
 def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
@@ -877,7 +879,7 @@ def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
 
     fields = NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
     assert len(fields) == EXPECTED_LISTED, "every field the site listed is still here"
-    assert all("value_names" not in field.fix for field in fields)
+    assert all(not any(one.aliases for one in field.fix.enumerated) for field in fields)
 
 
 # -- reusable components ----------------------------------------------------
@@ -971,13 +973,14 @@ def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Pat
     """
     plain = FixRegistry(cache_dir=tmp_path / "fix")
     plain._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
-    assert "value_names" not in plain.field(54, "4.4").fix
+    assert not any(one.aliases for one in plain.field(54, "4.4").fix.enumerated)
 
     enriched = FixtureRegistry(cache_dir=tmp_path / "fix")
     assert enriched.enrich("4.4") == {"4.4": 1}, "the one stored field that enumerates"
     after = OfflineRegistry(cache_dir=tmp_path / "fix")
-    assert json.loads(after.field(54, "4.4").fix["value_names"])["1"] == "BUY"
-    assert json.loads(after.field(54, "4.4").fix["values"])["1"] == "Buy", "prose untouched"
+    stored = after.field(54, "4.4").fix.value_of("1")
+    assert stored.aliases == ("BUY",)
+    assert stored.meaning == "Buy", "prose untouched"
     assert after.session("4.4"), "and the session layer lands with it"
     assert after.component("Parties", "4.4").members[0].name == "NoPartyIDs"
 
