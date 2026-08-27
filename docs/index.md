@@ -119,7 +119,7 @@ source = TextFiles.from_folder(
     msg_type_event_types=registry.msg_type_event_types(),
 )
 for messages in source.read_arrow_reader():
-    parsed = FixMsg.from_message_arrow_batch(messages, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(messages, FixCodec(registry=registry))
 ```
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices

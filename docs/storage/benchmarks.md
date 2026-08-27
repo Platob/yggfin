@@ -96,7 +96,7 @@ pending exactly this measurement:
   not against this fixture.
 
 Reproduce with `bench_text_file.capture` and `cProfile` over
-`Message.parse_arrow` and `FixMsg.from_message_arrow_batch` separately, warm.
+`Message.parse_arrow` and `FixMsg.from_message_batch` separately, warm.
 
 Collapsing each rule's pattern list into one alternation nearly doubled
 classification on its own: 1.9x on `Rules.into_arrow_protocol_array` over the

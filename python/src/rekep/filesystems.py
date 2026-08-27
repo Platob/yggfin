@@ -44,12 +44,12 @@ class _ArrowFile:
         return info.size
 
 
-class ArrowFileIO:
+class ArrowFile:
     """A lazily opened Arrow file that owns any temporary local materialization.
 
     This PyArrow-only owner keeps text parsing independent of the optional
-    Iceberg dependency. The Iceberg FileIO subclasses it so both paths share
-    one open, spill, and close lifecycle.
+    Iceberg dependency. `ArrowFileIO` -- the one Iceberg FileIO -- subclasses
+    it, so both paths share one open, spill, and close lifecycle.
     """
 
     opened: Any | None
@@ -130,7 +130,7 @@ class ArrowFileIO:
     def open(self, *, seekable: bool = True, compression: str | None = None) -> pyarrow.NativeFile:
         """Open the bound file once, optionally decoding it as a stream."""
         if self.opened is None:
-            raise ValueError("ArrowFileIO is not bound to a file")
+            raise ValueError("ArrowFile is not bound to a file")
         self._close_stream()
         parts = _openable_parts(self.opened)
         if parts is None and not hasattr(self.opened, "open"):
@@ -161,7 +161,7 @@ class ArrowFileIO:
         """
         parts = _openable_parts(self.opened)
         if parts is None:
-            raise ValueError("ArrowFileIO is not bound to an Arrow-backed file")
+            raise ValueError("ArrowFile is not bound to an Arrow-backed file")
         filesystem, path = parts
         if is_local_filesystem(filesystem):
             return self

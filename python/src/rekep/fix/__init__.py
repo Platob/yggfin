@@ -127,7 +127,6 @@ __all__ = [
     "FixCodec",
     "FixRegistry",
     "ENTRIES",
-    "Entry",
     "KeyCount",
     "KeyCounts",
     "KeyReport",

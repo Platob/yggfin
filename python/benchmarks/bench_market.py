@@ -1028,7 +1028,7 @@ def log_stream(rows: int) -> list[object]:
     if not built:
         return []
     raw = next(iter(Message.into_arrow_reader(built, batch_row_size=rows)))
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=FixRegistry.from_builtin()))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=FixRegistry.from_builtin()))
     return list(FixMsg.from_arrow_reader([parsed]))
 
 
@@ -1130,7 +1130,7 @@ def _pipeline_batches(
 ) -> Iterator[pyarrow.RecordBatch]:
     """Parse-fix batches with the raw payload projected out before conversion."""
     for batch in messages:
-        yield FixMsg.from_message_arrow_batch(batch.drop_columns(["message"]), codec)
+        yield FixMsg.from_message_batch(batch.drop_columns(["message"]), codec)
 
 
 def bench_pipeline(rows: int) -> None:

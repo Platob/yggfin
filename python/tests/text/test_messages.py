@@ -888,7 +888,7 @@ def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow
 def _parsed(messages: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     """Convert raw Message batches through the public FixMsg boundary."""
     return pyarrow.Table.from_batches(
-        [FixMsg.from_message_arrow_batch(batch, codec) for batch in messages.to_batches()]
+        [FixMsg.from_message_batch(batch, codec) for batch in messages.to_batches()]
     )
 
 

@@ -6,7 +6,7 @@ import pyarrow.fs
 import pytest
 
 from rekep import Dataset, Field, FixRegistry, Message, TextFile, TextFiles
-from rekep.filesystems import ArrowFileIO
+from rekep.filesystems import ArrowFile
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
 
@@ -549,7 +549,7 @@ def test_closing_a_partial_file_set_reader_purges_the_current_spill(
         with store.open_output_stream(f"captures/{name}", compression=None) as stream:
             stream.write(gzip.compress(SAMPLE_BYTES))
     spilled: list[Path] = []
-    original = ArrowFileIO.spill
+    original = ArrowFile.spill
 
     def into_test_cache(self, local=None, *, temporary=False):  # noqa: ANN001, ANN202
         materialized = original(self, tmp_path / "spill", temporary=temporary)
@@ -557,7 +557,7 @@ def test_closing_a_partial_file_set_reader_purges_the_current_spill(
         spilled.append(Path(materialized.location))
         return materialized
 
-    monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
+    monkeypatch.setattr(ArrowFile, "spill", into_test_cache)
     files = TextFiles.from_folder("captures", filesystem=store, pattern="*.gz", spill=True)
     reader = files.into_arrow_reader(batch_row_size=1)
 

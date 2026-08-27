@@ -97,11 +97,29 @@ class Entry(Convertible, Mapping[str, Any]):
         self.key = spelling
         self.value = "" if self.value is None else str(self.value)
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        object.__setattr__(self, name, value)
+        if name in ENTRY_PARTS:
+            # A stored member changed: the cached views re-derive.
+            object.__setattr__(self, "_Entry__views", None)
+            object.__setattr__(self, "_Entry__folded", None)
+            object.__setattr__(self, "_Entry__folded_lead", None)
+
     @classmethod
     def from_stored(cls, entry: Any) -> Entry:
         """Normalize a scalar, mapping, or pair into one entry."""
         if isinstance(entry, cls):
-            return entry
+            if isinstance(entry.value, str):
+                return entry
+            # A ready view built beside typed columns: storage takes the
+            # normalized text, never a Python object Arrow cannot hold.
+            return cls(
+                tag=entry.tag,
+                key=entry.key,
+                value=entry.value,
+                namespace=entry.namespace,
+                comp=entry.comp,
+            )
         if isinstance(entry, Mapping):
             value = entry.get("value")
             return cls(
@@ -165,7 +183,7 @@ class Entry(Convertible, Mapping[str, Any]):
     @property
     def spelling(self) -> str:
         """The verbatim spelling this entry renders under."""
-        lead = self.namespace if self.namespace is not None else self.comp
+        lead = self.namespace or self.comp
         if lead:
             return f"{lead}.{self.key}"
         if "[" in self.key:
@@ -175,22 +193,40 @@ class Entry(Convertible, Mapping[str, Any]):
         return self.key
 
     def _view(self) -> tuple[str, int | None, str | None, bool]:
-        """`(name, index, lead, entry lead)` split once from the spelling."""
+        """`(name, index, lead, entry lead)`: the stored split, held apart.
+
+        The stored members are already the split, so they answer directly --
+        `comp` asserts group-entry semantics whatever its spelling, and the
+        key parts only an index away from the name. Only a spelling the
+        stored split cannot re-render byte for byte -- a dotted key under an
+        explicit lead, a zero-padded index, a double lead -- re-splits whole
+        under `KEY_VIEW`, which is how the parser reads such a key off a
+        wire pair.
+        """
         found = self.__views
         if found is None:
-            lead = self.namespace if self.namespace is not None else self.comp
-            full = f"{lead}.{self.key}" if lead else self.key
-            match = KEY_VIEW.match(full)
-            if match is None:
-                found = (full, None, None, False)
+            lead = self.comp if self.comp else self.namespace
+            name, index = self.key, None
+            match = KEY_VIEW.match(self.key)
+            if match is not None and match.group("index") is not None:
+                name, index = match.group("name"), int(match.group("index"))
+            spelled = name if index is None else f"{name}[{index}]"
+            joined = self.namespace or self.comp
+            full = f"{joined}.{self.key}" if joined else self.key
+            if (f"{lead}.{spelled}" if lead else spelled) == full:
+                found = (name, index, lead, bool(self.comp))
             else:
-                split_lead, name, index = match.group("lead", "name", "index")
-                found = (
-                    name or full,
-                    None if index is None else int(index),
-                    split_lead,
-                    bool(split_lead) and ENTRY_LEAD.search(split_lead) is not None,
-                )
+                match = KEY_VIEW.match(full)
+                if match is None:
+                    found = (full, None, None, False)
+                else:
+                    split_lead, name, spelled_index = match.group("lead", "name", "index")
+                    found = (
+                        name or full,
+                        None if spelled_index is None else int(spelled_index),
+                        split_lead,
+                        bool(split_lead) and ENTRY_LEAD.search(split_lead) is not None,
+                    )
             self.__views = found
         return found
 

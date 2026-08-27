@@ -13,7 +13,7 @@ from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 import rekep.text.text_file as text_file_module
 from rekep import Dataset, Entry, Field, FixRegistry, Message
 from rekep.enums import EventType
-from rekep.filesystems import ArrowFileIO
+from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
 from rekep.text import HEADER_PATTERN, TextFile
 from rekep.text.text_file import _local_micros
@@ -357,7 +357,7 @@ def test_local_compressed_and_remote_plain_reads_do_not_spill(
     def forbidden(*_args: object, **_kwargs: object) -> None:
         pytest.fail("a remote plain source must stream directly")
 
-    monkeypatch.setattr(ArrowFileIO, "spill", forbidden)
+    monkeypatch.setattr(ArrowFile, "spill", forbidden)
     store = pyarrow.fs._MockFileSystem()
     store.create_dir("captures")
     with store.open_output_stream("captures/app.txt", compression=None) as stream:
@@ -401,7 +401,7 @@ def test_remote_compressed_logs_stream_in_bounded_reads_without_spilling(
         pytest.fail("the default compressed path must not spill")
 
     monkeypatch.setattr(MemoryFile, "read", tracked_read)
-    monkeypatch.setattr(ArrowFileIO, "spill", forbidden)
+    monkeypatch.setattr(ArrowFile, "spill", forbidden)
     with TextFile(url=path, filesystem=filesystem) as log:
         batches = list(
             log.into_arrow_batches(
@@ -441,7 +441,7 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
         stream.write(first_payload)
 
     spilled: list[str] = []
-    original = ArrowFileIO.spill
+    original = ArrowFile.spill
 
     def into_test_cache(self, local=None, *, temporary=False):  # noqa: ANN001, ANN202
         materialized = original(self, tmp_path / "spill", temporary=temporary)
@@ -449,7 +449,7 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
         spilled.append(materialized.location)
         return materialized
 
-    monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
+    monkeypatch.setattr(ArrowFile, "spill", into_test_cache)
     log = TextFile(url=remote, filesystem=store, spill=True)
     first = log.read_arrow_table()
 
@@ -476,14 +476,14 @@ def test_a_missing_remote_compressed_log_is_lazy_and_never_materialized(
 ) -> None:
     store = pyarrow.fs._MockFileSystem()
     calls = 0
-    original = ArrowFileIO.spill
+    original = ArrowFile.spill
 
     def into_test_cache(self, local=None, *, temporary=False):  # noqa: ANN001, ANN202
         nonlocal calls
         calls += 1
         return original(self, tmp_path / "spill", temporary=temporary)
 
-    monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
+    monkeypatch.setattr(ArrowFile, "spill", into_test_cache)
     log = TextFile(url="captures/missing.txt.gz", filesystem=store, spill=True)
 
     assert calls == 0
@@ -1284,7 +1284,7 @@ def test_nothing_is_opened_until_first_read(plain: Path) -> None:
 
 
 def test_text_file_owns_an_injected_arrow_fileio_without_serializing_it() -> None:
-    fileio = ArrowFileIO(opened=pyarrow.BufferReader(SAMPLE_BYTES))
+    fileio = ArrowFile(opened=pyarrow.BufferReader(SAMPLE_BYTES))
     log = TextFile(url="memory.txt", fileio=fileio)
 
     assert log.fileio is fileio
@@ -1300,12 +1300,12 @@ def test_closing_a_partial_remote_compressed_reader_purges_only_raw_bytes(
     payload = gzip.compress(SAMPLE_BYTES)
     with store.open_output_stream("captures/app.txt.gz", compression=None) as stream:
         stream.write(payload)
-    original = ArrowFileIO.spill
+    original = ArrowFile.spill
 
     def into_test_cache(self, local=None, *, temporary=False):  # noqa: ANN001, ANN202
         return original(self, tmp_path / "spill", temporary=temporary)
 
-    monkeypatch.setattr(ArrowFileIO, "spill", into_test_cache)
+    monkeypatch.setattr(ArrowFile, "spill", into_test_cache)
     log = TextFile(url="captures/app.txt.gz", filesystem=store, spill=True)
     reader = log.into_arrow_reader(batch_row_size=1)
     assert reader.read_next_batch().num_rows == 1

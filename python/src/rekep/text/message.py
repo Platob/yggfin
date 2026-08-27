@@ -97,10 +97,10 @@ class Message(Event):
     def __post_init__(self) -> None:
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)
-        implicit_kwargs = self.entries is None
-        if implicit_kwargs:
+        implicit_entries = self.entries is None
+        if implicit_entries:
             self.entries = []
-        if implicit_kwargs and self.message:
+        if implicit_entries and self.message:
             parsed = self.parse_arrow(pyarrow.array([self.message]))
             self.entries = parsed["entries"][0].as_py()
             if self.protocol_code == _NO_PROTOCOL:

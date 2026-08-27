@@ -761,7 +761,7 @@ def test_parsed_fixmsg_keeps_raw_unused_values_in_scalar_and_arrow_metadata() ->
     )
     raw = next(iter(Message.into_arrow_reader([Message(message=line)])))
     registry = FixRegistry.from_builtin()
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     message = next(FixMsg.from_arrow_reader([parsed]))
     scalar = list(message.into_market_events(registry=registry))

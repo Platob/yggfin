@@ -21,7 +21,7 @@ from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
-from rekep.filesystems import ArrowFileIO, resolve
+from rekep.filesystems import ArrowFile, resolve
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.message import Message
@@ -200,15 +200,15 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: Runtime owner for the input handle. An InitVar keeps native handles and
     #: temporary paths out of Dataset serialization; __post_init__ publishes
     #: the normalized owner as `self.fileio`.
-    fileio: InitVar[ArrowFileIO | None] = None
+    fileio: InitVar[ArrowFile | None] = None
 
-    def __post_init__(self, fileio: ArrowFileIO | None) -> None:
+    def __post_init__(self, fileio: ArrowFile | None) -> None:
         """Compile the header and bind one lazy Arrow input owner."""
         self.header_pattern = compiled_header(self.header_pattern)
         if fileio is None and self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
         if fileio is None:
-            fileio = ArrowFileIO.from_location(self.url, self.filesystem)
+            fileio = ArrowFile.from_location(self.url, self.filesystem)
         elif fileio.opened is None:
             fileio = fileio.at(self.url, self.filesystem)
         if self.filesystem is None:
@@ -226,7 +226,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        fileio: ArrowFileIO | None = None,
+        fileio: ArrowFile | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a URI, or from a path when `filesystem` is given.
@@ -243,7 +243,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        fileio: ArrowFileIO | None = None,
+        fileio: ArrowFile | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a local path, absolute or relative.
@@ -731,7 +731,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 # A reader closed by its caller has already closed this
                 # wrapper and the underlying TextFile together.
                 pass
-            # The decoder closes before the owning temporary ArrowFileIO, so
+            # The decoder closes before the owning temporary ArrowFile, so
             # Windows can remove the raw compressed spill immediately.
             self._close_stream()
 

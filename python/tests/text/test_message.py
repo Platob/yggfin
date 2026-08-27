@@ -71,6 +71,33 @@ def test_one_entry_shape_serves_storage_and_reading_alike() -> None:
     assert (typed.spelling, typed.folded) == ("44", "44")
 
 
+def test_the_stored_split_answers_before_any_respelling() -> None:
+    """The stored members are already the split: `comp` asserts group
+    semantics whatever its spelling, a trailing-dot key keeps its stored
+    name, and an empty namespace defers to the comp beside it."""
+    indexless = Entry(key="PartyID", comp="NoPartyIDs", value="P")
+    assert (indexless.lead, indexless.entry_lead) == ("NoPartyIDs", True)
+
+    dotted = Entry(key="A.", value="v")
+    assert (dotted.namespace, dotted.name, dotted.lead) == ("A", "A.", "A")
+
+    beside = Entry(key="PartyID", namespace="", comp="NoPartyIDs[0]", value="P")
+    assert (beside.spelling, beside.entry_lead) == ("NoPartyIDs[0].PartyID", True)
+
+
+def test_a_ready_view_normalizes_into_storage_and_caches_reset() -> None:
+    """`of` keeps a typed value for reading; storage takes the text -- and a
+    mutated stored member re-derives every cached view."""
+    typed = Entry.of(tag=44, key="44", value=9.5)
+    assert typed.value == 9.5
+    assert Entry.from_stored(typed).value == "9.5"
+
+    entry = Entry(key="Symbol", tag=55, value="IBM")
+    assert entry.name == "Symbol"
+    entry.key = "Side[0]"
+    assert (entry.name, entry.index) == ("Side", 0)
+
+
 def test_a_direct_entry_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
     plain = Entry(key="#SIDE", value=None)  # type: ignore[arg-type]
     nested = Entry(key="#NoPartyIDs[0].PartyID", value="ABC")

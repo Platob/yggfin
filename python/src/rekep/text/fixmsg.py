@@ -662,7 +662,7 @@ class FixMsg(Message):
     @classmethod
     def from_message(
         cls,
-        message: Message,
+        source: Message,
         *,
         registry: FixRegistry | None = None,
         **declared: Any,
@@ -675,25 +675,25 @@ class FixMsg(Message):
         where the raw stage left it unknown, and identity resets: a parsed
         row hashes over its parsed values, not the raw line's digest.
         """
-        if not isinstance(message, Message):
-            raise TypeError(f"message must be Message, got {type(message).__name__}")
+        if not isinstance(source, Message):
+            raise TypeError(f"source must be Message, got {type(source).__name__}")
         values = {
-            member.name: getattr(message, member.name) for member in dataclasses.fields(Message)
+            member.name: getattr(source, member.name) for member in dataclasses.fields(Message)
         }
         values.update(
             {
-                "message": message.message or None,
-                "entries": list(message.entries or ()),
-                "linked_events": list(message.linked_events),
-                "codes": dict(message.codes),
-                "parent_hash": None if message.parent_hash is None else list(message.parent_hash),
+                "message": source.message or None,
+                "entries": list(source.entries or ()),
+                "linked_events": list(source.linked_events),
+                "codes": dict(source.codes),
+                "parent_hash": None if source.parent_hash is None else list(source.parent_hash),
                 "hash": NIL,
                 "xhash": NIL,
             }
         )
         values.update(declared)
         msg_type = values.get("MsgType")
-        if "etype" not in declared and msg_type is not None and message.etype == EventType.UNKNOWN:
+        if "etype" not in declared and msg_type is not None and source.etype == EventType.UNKNOWN:
             values["etype"] = (
                 (registry or cls.into_registry())
                 .msg_type_event_types()
@@ -709,33 +709,33 @@ class FixMsg(Message):
         if not isinstance(instrument, Instrument):
             raise TypeError(f"instrument must be Instrument, got {type(instrument).__name__}")
         known = instrument if instrument.hash else dataclasses.replace(instrument).identify()
-        values = {member.name: getattr(known, member.name) for member in dataclasses.fields(Event)}
-        values.update(
-            {
-                "etype": EventType.INSTRUMENT,
-                "source_url": "",
-                "source_rownum": 0,
-                "thread_name": "",
-                "plugin_code": cls.into_instrument_plugin(),
-                # Null for the same reason a market row's is: `entries` below
-                # carries every fact this row states, so a raw line beside it
-                # would be the same content twice -- and there was no line.
-                "message": None,
-                "protocol_code": cls.into_instrument_protocol(),
-                "MsgType": cls.into_instrument_msg_type(),
-                "Symbol": known.symbol or None,
-                "SecurityID": known.security_id,
-                "SecurityIDSource": known.security_id_source,
-                "ISINCODE": known.isin_code,
-                "SecurityType": known.security_type,
-                "CFICode": known.cfi,
-                "SecurityExchange": known.exchange,
-                "Currency": None if known.currency is None else known.currency.into_fix(),
-                "entries": _stored_entries(_instrument_pairs(known)),
-            }
+        staged = Message(
+            **{member.name: getattr(known, member.name) for member in dataclasses.fields(Event)},
+            plugin_code=cls.into_instrument_plugin(),
+            protocol_code=cls.into_instrument_protocol(),
+            MsgType=cls.into_instrument_msg_type(),
+            entries=_stored_entries(_instrument_pairs(known)) or [],
         )
-        values.update(declared)
-        return cls(**values)
+        return cls.from_message(
+            staged,
+            # A synthesized row keeps the identified instrument's identity --
+            # `from_message` resets identity only because a parsed row earns
+            # its own -- and carries no raw line: `entries` states every fact,
+            # so text beside them would be the same content twice.
+            hash=known.hash,
+            xhash=known.xhash,
+            message=None,
+            etype=declared.pop("etype", EventType.INSTRUMENT),
+            Symbol=known.symbol or None,
+            SecurityID=known.security_id,
+            SecurityIDSource=known.security_id_source,
+            ISINCODE=known.isin_code,
+            SecurityType=known.security_type,
+            CFICode=known.cfi,
+            SecurityExchange=known.exchange,
+            Currency=None if known.currency is None else known.currency.into_fix(),
+            **declared,
+        )
 
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
@@ -1049,7 +1049,7 @@ class FixMsg(Message):
         """
         selected = codec if isinstance(codec, FixCodec) else cls.into_codec(codec)
         if isinstance(source, pyarrow.RecordBatch):
-            return cls.from_message_arrow_batch(source, selected)
+            return cls._from_message_batch(source, selected)
         rows = list(source)
         for row in rows:
             if not isinstance(row, Message):
@@ -1062,12 +1062,10 @@ class FixMsg(Message):
                 Message.into_arrow_reader(rows, batch_row_size=len(rows)), schema=schema
             ).combine_chunks()
             staged = table.to_batches(max_chunksize=table.num_rows)[0]
-        return cls.from_message_arrow_batch(staged, selected)
+        return cls._from_message_batch(staged, selected)
 
     @classmethod
-    def from_message_arrow_batch(
-        cls, batch: pyarrow.RecordBatch, codec: Any
-    ) -> pyarrow.RecordBatch:
+    def _from_message_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
         """Transcribe one classified raw `Message` batch under a FIX codec."""
         if not isinstance(batch, pyarrow.RecordBatch):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
@@ -1154,7 +1152,7 @@ class FixMsg(Message):
                 fallback = _take_record_batch(batch, fallback_at)
                 fallback_columns = {name: fallback.column(name) for name in fallback.schema.names}
                 fast_parts.append(
-                    cls._from_message_arrow_batch_reference(
+                    cls._from_message_batch_reference(
                         fallback,
                         codec,
                         fallback_columns,
@@ -1163,10 +1161,10 @@ class FixMsg(Message):
                 )
                 fast_positions.append(fallback_at)
             return _scatter_record_batches(fast_parts, fast_positions)
-        return cls._from_message_arrow_batch_reference(batch, codec, columns, protocols)
+        return cls._from_message_batch_reference(batch, codec, columns, protocols)
 
     @classmethod
-    def _from_message_arrow_batch_reference(
+    def _from_message_batch_reference(
         cls,
         batch: pyarrow.RecordBatch,
         codec: Any,

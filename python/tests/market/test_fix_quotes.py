@@ -150,7 +150,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
             )
         )
     )
-    batch = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    batch = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line)
 

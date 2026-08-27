@@ -17,20 +17,21 @@ source = TextFiles.from_folder(
 codec = FixCodec(registry=registry)
 
 for batch in source.read_arrow_reader(batch_row_size=65_536):
-    parsed = FixMsg.from_message_arrow_batch(batch, codec)
+    parsed = FixMsg.from_message_batch(batch, codec)
 ```
 
 One conversion path, in two spellings: raw `Message` to `FixMsg` to typed
-market events. `FixMsg.from_message_batch` is the vectorized half -- it takes
-one raw-contract RecordBatch or an iterable of scalar `Message` rows, and a
-feed's `FixRegistry` is all it needs: the codec derives from the registry, the
-packaged one by default. A full `FixCodec` is for the feeds whose rules or
-field declarations differ, and `from_message_arrow_batch` is the same
-transcription with such an explicit codec. Row by row, `Message.from_text`
-tokenizes one payload and promotes its discriminator, and
-`FixMsg.from_message` transcribes that staged row -- `FixMsg.from_text` is
-exactly that pair. Market events then come from `into_market_events` (scalar)
-or `into_market_arrow_batches` (vectorized).
+market events -- a `FixMsg` is built from a `Message` and nothing else.
+`FixMsg.from_message_batch` is the vectorized builder: one raw-contract
+RecordBatch or an iterable of scalar `Message` rows, and a feed's
+`FixRegistry` is all it needs -- the codec derives from the registry, the
+packaged one by default, and a full `FixCodec` serves only the feeds whose
+rules or field declarations differ. Row by row, `Message.from_text` tokenizes
+one payload and promotes its discriminator, and `FixMsg.from_message`
+transcribes that staged row -- `FixMsg.from_text` is exactly that pair, and
+`from_instrument` stages a synthesized `Message` through the same seam.
+Market events then come from `into_market_events` (scalar) or
+`into_market_arrow_batches` (vectorized).
 
 `TextFile` and `TextFiles` extract the log header, retain the raw payload, and
 split structured key/value syntax once into ordered `Entry` values. They assign

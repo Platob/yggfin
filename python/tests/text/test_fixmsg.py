@@ -296,6 +296,11 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
         ("TECH.PartyID", "P"),
     ]
     assert row.get("X.a.b[0]").raw == "2"
+    trailing = FixMsg(
+        entries=[("A.", "v1"), {"key": "PartyID", "value": "P", "comp": "NoPartyIDs"}]
+    )
+    assert trailing.get("A.").raw == "v1", "a trailing-dot key stays readable"
+    assert trailing.get("PartyID").raw == "P", "an index-less comp still reaches through"
     assert [reading.raw for reading in row.readings("Side")] == ["1"]
 
 
@@ -388,7 +393,7 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
         "448=GROUP|447=D|452=1|11=C1|55=AAPL|54=1|38=1|"
         "60=20260821-10:00:00|10=000"
     )
-    party_batch = FixMsg.from_message_arrow_batch(
+    party_batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=party_line)), FixCodec(registry=registry)
     )
     party = FixMsg.from_dict(party_batch.to_pylist()[0])
@@ -399,7 +404,7 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
     depth_line = (
         "8=FIX.4.4|35=UL|#MSGTYPE=X|#SYMBOL=HEADER|268=1|279=0|269=0|55=ENTRY|270=100|271=1|10=000"
     )
-    depth_batch = FixMsg.from_message_arrow_batch(
+    depth_batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=depth_line)), FixCodec(registry=registry)
     )
     depth = FixMsg.from_dict(depth_batch.to_pylist()[0])
@@ -420,7 +425,7 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
         "600=MSFT|624=2|623=2|556=USD|687=9|10=000"
     )
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
@@ -468,7 +473,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
         f"#NOLEGS=2|#NOLEGS[0]=LEGSYMBOL=AAPL{member}LEGSIDE=1{member}LEGRATIOQTY=1{member}|"
         f"#NOLEGS[1]=LEGSYMBOL=MSFT{member}LEGSIDE=2{member}LEGRATIOQTY=2{member}"
     )
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
@@ -506,7 +511,7 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
         "279=0|269=0|55=BTC-USD|270=100.0|271=5|"
         "279=0|269=0|55=ETH-USD|48=ETH-ID|454=1|455=US0378331005|456=4|270=99.0|271=1|10=000"
     )
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
@@ -531,7 +536,7 @@ def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
         "299=E1|55=AAA|132=1|133=2|"
         "299=E2|55=BBB|454=1|455=037833100|456=1|132=3|133=4|10=000"
     )
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
@@ -555,7 +560,7 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
         "8=FIX.4.3|35=d|55=SPREAD|454=1|455=US0378331005|456=4|"
         "555=2|600=AAPL|624=1|623=1|600=MSFT|624=2|623=2|10=000"
     )
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
@@ -584,7 +589,7 @@ def test_typed_timestamps_keep_direct_and_stored_book_outputs_equal(
         "60=20260821-10:01:00|10=000"
     )
     direct = FixMsg.from_text(line)
-    stored_batch = FixMsg.from_message_arrow_batch(
+    stored_batch = FixMsg.from_message_batch(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
     stored = FixMsg.from_dict(stored_batch.to_pylist()[0])
@@ -793,7 +798,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
     assert raw.column("protocol_code").to_pylist() == ["FIX", "UL", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("etype").to_pylist() == [
         int(EventType.ORDER),
@@ -830,7 +835,7 @@ def test_fixmsg_preserves_the_message_stage_type_and_event_code(
         )
     )
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("MsgType").to_pylist() == ["D"]
     assert parsed.column("etype").to_pylist() == [int(EventType.QUOTE)]
@@ -843,8 +848,8 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
     )
     codec = FixCodec(registry=registry)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(
         raw.select([name for name in raw.schema.names if name != "message"]), codec
     )
 
@@ -869,8 +874,8 @@ def test_staged_protocol_matching_the_codec_survives_projection(
     staged = codec.categorise(raw.column("message"), raw.column("plugin_code"))
     raw = raw.set_column(at, raw.schema.field(at), staged)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert whole.column("protocol_code").to_pylist() == ["UL"]
     assert whole.column("ClOrdID").to_pylist() == ["A"]
@@ -886,8 +891,8 @@ def test_wire_discriminator_without_begin_string_survives_projection(
     raw = _raw_batch(Message(message="35=D|11=A|"))
     codec = FixCodec(registry=registry)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert raw.column("protocol_code").to_pylist() == ["FIX"]
     assert [(entry["key"], entry["value"]) for entry in whole.column("entries")[0].as_py()] == [
@@ -906,8 +911,8 @@ def test_unread_message_identity_survives_raw_message_projection(
     )
     codec = FixCodec(registry=registry)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert whole.column("entries").null_count == 2
     assert whole.column("hash").equals(projected.column("hash"))
@@ -920,8 +925,8 @@ def test_fixmsg_projection_preserves_the_configured_message_mic(
     raw = _raw_batch(Message(message="8=FIX.4.4|35=D|11=A|10=000|", mic=MIC.from_str("XPAR")))
     codec = FixCodec(registry=registry)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert whole.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))]
     assert projected.column("mic").equals(whole.column("mic"))
@@ -953,9 +958,9 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
         return translated
 
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", observed)
-    translated = FixMsg.from_message_arrow_batch(source, codec)
+    translated = FixMsg.from_message_batch(source, codec)
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", lambda *args, **kwargs: None)
-    reference = FixMsg.from_message_arrow_batch(source, codec)
+    reference = FixMsg.from_message_batch(source, codec)
 
     assert activated == [True]
     assert translated.equals(reference, check_metadata=True)
@@ -973,9 +978,9 @@ def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
         Message(message="8=FIX.4.4|35=8|6=10.5|10=000|"),
     ).drop_columns(["message"])
     codec = FixCodec(registry=registry)
-    fast = FixMsg.from_message_arrow_batch(source, codec)
+    fast = FixMsg.from_message_batch(source, codec)
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", lambda *args, **kwargs: None)
-    reference = FixMsg.from_message_arrow_batch(source, codec)
+    reference = FixMsg.from_message_batch(source, codec)
 
     assert fast.equals(reference, check_metadata=True)
     assert fast.column("AvgPx").to_pylist() == [10.5, 10.5]
@@ -1004,7 +1009,7 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
         return translated
 
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", observed)
-    translated = FixMsg.from_message_arrow_batch(source, FixCodec(registry=registry))
+    translated = FixMsg.from_message_batch(source, FixCodec(registry=registry))
 
     assert activated == [False, True]
     assert translated.column("ClOrdID").to_pylist() == ["A", None]
@@ -1038,9 +1043,9 @@ def test_mixed_fixmsg_batch_keeps_flat_rows_fast_and_scatters_exactly(
         return translated
 
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", observed)
-    translated = FixMsg.from_message_arrow_batch(source, codec)
+    translated = FixMsg.from_message_batch(source, codec)
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", lambda *args, **kwargs: None)
-    reference = FixMsg.from_message_arrow_batch(source, codec)
+    reference = FixMsg.from_message_batch(source, codec)
 
     assert activated == [False, True]
     assert translated.equals(reference, check_metadata=True)
@@ -1060,8 +1065,8 @@ def test_raw_direction_words_do_not_change_projected_mic(registry: FixRegistry) 
     raw = _raw_batch(Message(message="received 8=FIX.4.4|35=D|49=XPAR|56=XNAS|11=A|10=000|"))
     codec = FixCodec(registry=registry)
 
-    whole = FixMsg.from_message_arrow_batch(raw, codec)
-    projected = FixMsg.from_message_arrow_batch(raw.drop_columns(["message"]), codec)
+    whole = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert whole.column("mic").to_pylist() == [int(MIC.from_str("XNAS"))]
     assert projected.column("mic").equals(whole.column("mic"))
@@ -1079,7 +1084,7 @@ def test_fixmsg_conversion_preserves_static_extra_columns(
     )
     raw = raw.append_column(static, pyarrow.array(["day-1"]))
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.schema.names == [*FixMsg.into_field().names, "capture_id"]
     assert parsed.schema.field("capture_id") == static
@@ -1092,7 +1097,7 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
     raw = _raw_batch(Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"))
     assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("Symbol").to_pylist() == [None]
     assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
@@ -1101,7 +1106,7 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
 def test_fixmsg_consumes_a_hash_delimited_wire_message(registry: FixRegistry) -> None:
     raw = _raw_batch(Message(message="8=FIX.4.4#35=D#55=TTF#10=000"))
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("MsgType").to_pylist() == ["D"]
     assert parsed.column("Symbol").to_pylist() == ["TTF"]
@@ -1117,7 +1122,7 @@ def test_hybrid_named_fields_shadow_numeric_copies(registry: FixRegistry) -> Non
         )
     )
 
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     residual = parsed.column("entries")[0].as_py()
 
     assert parsed.column("MsgType").to_pylist() == ["D"]
@@ -1163,7 +1168,7 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
         codec.into_pairs(pyarrow.array(lines), "FIX"), "4.2"
     )
 
-    parsed = FixMsg.from_message_arrow_batch(raw, codec)
+    parsed = FixMsg.from_message_batch(raw, codec)
 
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
         "8",
@@ -1189,13 +1194,13 @@ def test_an_extra_column_cannot_shadow_a_fix_only_field(registry: FixRegistry) -
     )
 
     with pytest.raises(ValueError, match="collide.*OrigClOrdID"):
-        FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+        FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
 
 def test_fixmsg_conversion_keeps_the_empty_contract(
     registry: FixRegistry,
 ) -> None:
-    parsed = FixMsg.from_message_arrow_batch(
+    parsed = FixMsg.from_message_batch(
         _raw_batch(),
         FixCodec(registry=registry),
     )
@@ -1336,7 +1341,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
     assert wrapped.protocol_code == "FIX", "the probe reads only the envelope"
 
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(echo, heartbeat, wrapped), FixCodec(registry=registry)
     )
     assert batch.column("protocol_code").to_pylist() == ["UL", "MISC", "UL"]
@@ -1351,7 +1356,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     # simply null while the row read as OTHER.
     bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
     assert bare.protocol_code == "UL"
-    lone = FixMsg.from_message_arrow_batch(_raw_batch(bare), FixCodec(registry=registry))
+    lone = FixMsg.from_message_batch(_raw_batch(bare), FixCodec(registry=registry))
     assert lone.column("protocol_code").to_pylist() == ["UL"]
     assert [(entry["key"], entry["value"]) for entry in lone.column("entries").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
@@ -1377,7 +1382,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
         "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
         "just some heartbeat prose",
     ]
-    batch = FixMsg.from_message_arrow_batch(
+    batch = FixMsg.from_message_batch(
         _raw_batch(*(Message(message=line) for line in lines)), FixCodec(registry=registry)
     )
 
@@ -1397,7 +1402,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     # rendered row falls back, and both slices must carry the answer.
     raw = _raw_batch(*(Message(message=line) for line in lines[:2] + [lines[3]]))
     legacy = raw.remove_column(raw.schema.get_field_index("direction"))
-    relived = FixMsg.from_message_arrow_batch(legacy, FixCodec(registry=registry))
+    relived = FixMsg.from_message_batch(legacy, FixCodec(registry=registry))
     assert relived.column("direction").to_pylist() == [False, True, True]
 
     # A rescued row -- stored UL, no rule pattern in its text -- has no
@@ -1405,7 +1410,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     # answering from anywhere.
     rescued = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
     assert rescued.protocol_code == "UL"
-    anchorless = FixMsg.from_message_arrow_batch(_raw_batch(rescued), FixCodec(registry=registry))
+    anchorless = FixMsg.from_message_batch(_raw_batch(rescued), FixCodec(registry=registry))
     assert anchorless.column("protocol_code").to_pylist() == ["UL"]
     assert anchorless.column("direction").to_pylist() == [None]
 
@@ -1415,7 +1420,7 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     projected = Message(message="", protocol_code="FIX", direction=True).into_dict()
     projected["message"] = None
     projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
-    again = FixMsg.from_message_arrow_batch(
+    again = FixMsg.from_message_batch(
         pyarrow.RecordBatch.from_pylist(
             [projected], schema=Message.into_field().into_arrow_schema()
         ),
