@@ -577,6 +577,8 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         url = Url.from_string(location)
         if url.scheme not in S3 or (url.endpoint is None and url.user is None):
             return None
+        # Everything but the key, so one filesystem serves every file on a
+        # store rather than one being built per file.
         key = self.content_identity(location).rsplit("\0", 1)[0]
         filesystem = self._described.get(key)
         if filesystem is None:
@@ -590,7 +592,12 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         filesystem = self._described_filesystem(location)
         if filesystem is None:
             return None
-        return PyArrowFile(fs=filesystem, location=location, path=self.parse_location(location)[2])
+        bucket, key = spelled_parts(location)
+        return PyArrowFile(
+            fs=filesystem,
+            location=location,
+            path="/".join(part for part in (bucket, key) if part),
+        )
 
     def new_input(self, location: str) -> InputFile:
         # `is None`, not `or`: an input file's truthiness is its length, and
