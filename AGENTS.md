@@ -149,8 +149,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Events are immutable versions. `hash` identifies a version; `xhash` a
   lifecycle; `linked_events` relates lifecycles with their event times.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
-  little-endian `int64` lengths, `-1` for null, typed payload bytes, XXH3-64,
-  and two's-complement `int64` storage. Numbers are never formatted as text.
+  little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
+  Every identity is stored as sixteen big-endian bytes -- `fixed_size_binary(16)`
+  in Arrow -- so a content digest and a time-anchored one share a width, and the
+  column sorts as its values do. Numbers are never formatted as text.
 - Store market notions as ASCII codes packed into one integer, left-justified
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
@@ -213,14 +215,15 @@ tables.
 python/src/rekep/
   fields/       declarations and recursive Arrow casts
   fix/          messages, registry, components, protocol rules, and the shell
-  enums/        one persisted market enum per file
+  enums/        every persisted market code, over two ASCII bases
   market/       event, instrument, order, execution, and book logic
-  iceberg/      catalog, dataset, schema bridge, and Arrow FileIO
+  iceberg/      catalog, dataset, and the schema bridge
   text/         FixMsg plus streamed text files
   tasks/        notebook configuration only
+  arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
   console.py    terminal styling: colour, boxes, tables, spinners
   times.py      one reading of "an instant", whatever spelled it
-schemas/rekep/  the five persisted output contracts
+schemas/rekep/  the six persisted output contracts
 data/fix/       the FIX dictionary: tag-range shards, components, messages
 tasks/          notebooks, adjacent YAML, and Airflow DAG
 ```

@@ -54,8 +54,9 @@ Producers cast before writing; consumers load the same contract and may use
 
 `Message` alone is at 3. Version 3 lifts `BeginString`, `BodyLength`,
 `MsgType`, `MsgSeqNum`, `SenderCompID`, `TargetCompID` and `SendingTime` out of
-`entries` into columns of their own; every reader here falls back to the list
-where a column is absent, so a table written under 2 still reads.
+`entries` into columns of their own. A table written under 2 must be rebuilt:
+`parse_fix` refuses a source missing `MsgType`, `entries` or `protocol_code`
+rather than reporting an empty successful run.
 
 ### Version 2: codes are mnemonics
 

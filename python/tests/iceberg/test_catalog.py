@@ -3,7 +3,9 @@
 from pathlib import Path
 from typing import Annotated
 
+import pyarrow.fs
 import pytest
+from pyiceberg.io.pyarrow import PyArrowFile
 
 from rekep import Convertible, Field, scalar
 from rekep.arrow_file_io import ArrowFileIO
@@ -556,3 +558,69 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:
     rebuilt = IcebergCatalog.from_yaml(catalog.into_yaml())
     assert (rebuilt.name, rebuilt.properties) == (catalog.name, catalog.properties)
+
+
+def test_maintenance_reaches_the_store_the_catalog_was_configured_with() -> None:
+    """`resolve` reads the location and the environment, and a canonical
+    location has had the endpoint and the credentials taken out of it -- so a
+    sweep resolved that way looks on AWS for a bucket that is on MinIO."""
+    from rekep.iceberg.dataset import _store_of
+
+    configured = pyarrow.fs.SubTreeFileSystem("/warehouse", pyarrow.fs.LocalFileSystem())
+
+    class Io:
+        @staticmethod
+        def new_input(location: str) -> PyArrowFile:
+            return PyArrowFile(location=location, path="wh/db/t/data", fs=configured)
+
+    class Table:
+        io = Io()
+
+    filesystem, base = _store_of(Table(), "s3://bucket/wh/db/t/data")
+
+    assert filesystem is configured
+    assert base == "wh/db/t/data"
+
+    # A FileIO with no Arrow filesystem behind it leaves the location as all
+    # there is to go on.
+    class Bare:
+        @staticmethod
+        def new_input(location: str) -> object:
+            return object()
+
+    class Unbacked:
+        io = Bare()
+
+    assert _store_of(Unbacked(), "s3://bucket/wh")[1] == "bucket/wh"
+
+
+def test_the_sweep_evicts_by_the_key_the_file_io_stored_under() -> None:
+    """On an object store that key is not the location: the endpoint, the
+    access key and the region tell two stores serving one path apart."""
+    from rekep.arrow_file_io import CONTENT_CACHE
+    from rekep.iceberg.dataset import IcebergDataset
+
+    io = ArrowFileIO({"s3.endpoint": "http://minio:9000", "s3.region": "eu-west-1"})
+    location = "s3://bucket/wh/db/t/metadata/x.avro"
+    identity = io.content_identity(location)
+    assert identity != location
+    CONTENT_CACHE.put(identity, b"stale")
+
+    deleted: list[str] = []
+
+    class FileSystem:
+        @staticmethod
+        def delete_file(path: str) -> None:
+            deleted.append(path)
+
+    class Table:
+        pass
+
+    table = Table()
+    table.io = io
+    dataset = object.__new__(IcebergDataset)
+    dataset.__dict__["iceberg_table"] = table
+    dataset._sweep([(FileSystem(), "bucket/wh/db/t/metadata/x.avro", location, 1)])
+
+    assert deleted == ["bucket/wh/db/t/metadata/x.avro"]
+    assert CONTENT_CACHE.peek(identity) is None

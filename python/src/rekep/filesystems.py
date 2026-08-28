@@ -91,13 +91,13 @@ class ArrowFile:
     @property
     def filesystem(self) -> pyarrow.fs.FileSystem | None:
         """The bound Arrow filesystem, without resolving or opening anything."""
-        parts = _openable_parts(self.opened)
+        parts = openable_parts(self.opened)
         return None if parts is None else parts[0]
 
     @property
     def path(self) -> str | None:
         """The bound path as its Arrow filesystem addresses it."""
-        parts = _openable_parts(self.opened)
+        parts = openable_parts(self.opened)
         return None if parts is None else parts[1]
 
     def at(
@@ -108,7 +108,7 @@ class ArrowFile:
         """Return this owner when already bound there, otherwise a bound peer."""
         spelling = os.fspath(location)
         if self.opened is not None:
-            parts = _openable_parts(self.opened)
+            parts = openable_parts(self.opened)
             if (
                 parts is not None
                 and parts[1] == spelling
@@ -132,7 +132,7 @@ class ArrowFile:
         if self.opened is None:
             raise ValueError("ArrowFile is not bound to a file")
         self._close_stream()
-        parts = _openable_parts(self.opened)
+        parts = openable_parts(self.opened)
         if parts is None and not hasattr(self.opened, "open"):
             raw = self.opened
             stream = raw if compression is None else pyarrow.CompressedInputStream(raw, compression)
@@ -159,7 +159,7 @@ class ArrowFile:
         Temporary spills use a uniquely owned path so closing one reader cannot
         delete a file another reader is still decoding.
         """
-        parts = _openable_parts(self.opened)
+        parts = openable_parts(self.opened)
         if parts is None:
             raise ValueError("ArrowFile is not bound to an Arrow-backed file")
         filesystem, path = parts
@@ -193,7 +193,7 @@ class ArrowFile:
         self._close_stream()
         if not self.temporary or self._temporary_deleted:
             return
-        parts = _openable_parts(self.opened)
+        parts = openable_parts(self.opened)
         if parts is not None:
             filesystem, path = parts
             try:
@@ -333,8 +333,12 @@ def spill_path(
     return os.fspath(target)
 
 
-def _openable_parts(opened: Any | None) -> tuple[pyarrow.fs.FileSystem, str] | None:
-    """The Arrow filesystem and path behind a core or PyIceberg input file."""
+def openable_parts(opened: Any | None) -> tuple[pyarrow.fs.FileSystem, str] | None:
+    """The Arrow filesystem and path behind a core or PyIceberg input file.
+
+    How a caller holding a FileIO's own input file reaches the store *that*
+    FileIO is configured for, rather than resolving the location again.
+    """
     while opened is not None and hasattr(opened, "_inner"):
         opened = opened._inner
     filesystem = getattr(opened, "_filesystem", None)

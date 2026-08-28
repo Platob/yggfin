@@ -31,7 +31,7 @@ from rekep.dataset import (
     semi_join,
 )
 from rekep.fields import Field, StructField, arrays
-from rekep.filesystems import resolve
+from rekep.filesystems import openable_parts, resolve
 from rekep.iceberg.catalog import IcebergCatalog
 from rekep.iceberg.fields import metrics_for
 from rekep.urls import S3, Url
@@ -1767,7 +1767,7 @@ class IcebergDataset(Dataset):
 
         found: dict[str, tuple[Any, str, str, int]] = {}
         for directory in directories:
-            filesystem, base = resolve(directory)
+            filesystem, base = _store_of(table, directory)
             bases = (directory.rstrip("/"), base.rstrip("/"), _path_of(directory).rstrip("/"))
             # Reduced against *these* bases, which is what makes a live file in
             # another directory comparable at all: a metadata location under a
@@ -1825,8 +1825,12 @@ class IcebergDataset(Dataset):
         # module has to import without the extra installed.
         from rekep.arrow_file_io import CONTENT_CACHE
 
+        # Evicted by the key the FileIO stored under, which on an object store
+        # is not the location: a cached copy of a file the sweep just deleted
+        # is the copy that lies about the file still being there.
+        identity = getattr(self.iceberg_table.io, "content_identity", None)
         for filesystem, path, location, _ in orphans:
-            CONTENT_CACHE.evict(location)
+            CONTENT_CACHE.evict(identity(location) if identity else location)
             try:
                 filesystem.delete_file(path)
             except FileNotFoundError:
@@ -3763,6 +3767,24 @@ def _always_true() -> Any:
     from pyiceberg.expressions import AlwaysTrue
 
     return AlwaysTrue()
+
+
+def _store_of(table: Any, directory: str) -> tuple[Any, str]:
+    """The store the table's own FileIO reaches, and the directory on it.
+
+    Not `resolve`: that reads the location and the process environment, and a
+    location this package canonicalized has had the endpoint and the
+    credentials taken out of it -- so a maintenance sweep resolved that way
+    looks on AWS for a bucket that lives on the store the catalog was
+    configured with. A FileIO that is not Arrow-backed has nothing to read
+    here, and the location is then all there is.
+    """
+    file_io = getattr(table, "io", None)
+    if file_io is not None:
+        parts = openable_parts(file_io.new_input(directory))
+        if parts is not None:
+            return parts
+    return resolve(directory)
 
 
 def _path_of(location: str) -> str:

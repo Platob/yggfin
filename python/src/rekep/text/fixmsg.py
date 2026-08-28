@@ -1135,7 +1135,7 @@ class FixMsg(Message):
             protocols = columns.get("protocol_code")
             if protocols is None:
                 raise ValueError(
-                    "a projected Message batch needs protocol_code; reparse the v4 message "
+                    "a projected Message batch needs protocol_code; reparse the v3 message "
                     "contract before dropping message"
                 )
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch

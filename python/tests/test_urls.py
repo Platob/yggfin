@@ -639,6 +639,9 @@ def test_a_location_translates_into_the_properties_that_say_the_same() -> None:
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
+        # Named because the location did not, and PyIceberg with no region
+        # asks AWS which one hosts a bucket called `warehouse`.
+        "s3.region": "us-east-1",
     }
 
 
@@ -655,7 +658,8 @@ def test_an_aws_location_tells_a_catalog_its_region_and_not_its_endpoint() -> No
 
 def test_a_hosted_endpoint_reaches_a_catalog_with_the_scheme_it_is_served_on() -> None:
     assert properties_of(Url.from_string("s3://minio.corp.com/warehouse")) == {
-        "s3.endpoint": "https://minio.corp.com"
+        "s3.endpoint": "https://minio.corp.com",
+        "s3.region": "us-east-1",
     }
 
 
@@ -704,6 +708,7 @@ def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> Non
         "s3.access-key-id": "k",
         "s3.secret-access-key": "s",
         "s3.force-virtual-addressing": "true",
+        "s3.region": "us-east-1",
     }
     filesystem, path = url.into_filesystem()
     assert isinstance(filesystem, pyarrow.fs.S3FileSystem)
@@ -713,6 +718,7 @@ def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> Non
     assert dict(properties_of(public)) == {
         "s3.endpoint": "https://s3.example.net",
         "s3.anonymous": "true",
+        "s3.region": "us-east-1",
     }
     assert isinstance(public.into_filesystem()[0], pyarrow.fs.S3FileSystem)
 
@@ -761,7 +767,10 @@ def test_an_endpoint_override_carrying_its_own_transport_is_split_like_any_other
     url = Url.from_string(f"s3://bucket/key?endpoint_override={endpoint}")
     scheme, host = expected
 
-    assert dict(properties_of(url)) == {"s3.endpoint": f"{scheme}://{host}"}
+    assert dict(properties_of(url)) == {
+        "s3.endpoint": f"{scheme}://{host}",
+        "s3.region": "us-east-1",
+    }
     settings = settings_of(url.into_filesystem()[0])
     assert (settings["scheme"], settings["endpoint_override"]) == (scheme, host)
 
@@ -818,6 +827,7 @@ def test_one_location_reads_the_same_flag_on_both_paths() -> None:
         "s3.endpoint": "https://s3.example.net",
         "s3.anonymous": "false",
         "s3.force-virtual-addressing": "true",
+        "s3.region": "us-east-1",
     }
     settings = settings_of(url.into_filesystem()[0])
     assert settings["force_virtual_addressing"] is True

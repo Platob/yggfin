@@ -83,6 +83,14 @@ S3_ENVIRONMENT = (
 #: Endpoint defaults, from the store-specific spelling to AWS's global one.
 S3_ENDPOINT_ENVIRONMENT = ("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")
 
+#: What a store that does not care about the region is signed for. Arrow's own
+#: default, and every compatible store's. Named where an endpoint is configured
+#: and nothing says otherwise, because PyIceberg with no region asks *AWS*
+#: which region hosts a bucket of that name -- a blocking call that discloses
+#: the name, and one that answers for a stranger's bucket when an AWS bucket
+#: happens to share it, signing every request to the real store for its region.
+S3_DEFAULT_REGION = "us-east-1"
+
 #: Last labels that are not a public suffix: IANA's special-use names and
 #: ICANN's private-use `internal`. A netloc ending in one of them was never
 #: registered, so it names something on a private network -- or a bucket.
@@ -724,6 +732,8 @@ def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
     region = url.region
     if region:
         settings[f"{prefix}.region"] = region
+    elif f"{prefix}.endpoint" in settings:
+        settings[f"{prefix}.region"] = S3_DEFAULT_REGION
     # The two switches pyiceberg spells the same way this does, so one location
     # configures the catalog's filesystem and direct Arrow access alike.
     # Normalized here, because pyiceberg reads them with `strtobool` -- which

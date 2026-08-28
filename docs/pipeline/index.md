@@ -74,8 +74,8 @@ boundaries.
 
 `tasks/airflow/market_pipeline.py` uses
 `apache-airflow-providers-papermill`. Airflow injects its half-open data
-interval and one `branch` DAG parameter into each notebook. `root`, `main`, and
-`master` all select Iceberg's root ref.
+interval and its two DAG parameters, `branch` and `books`, into each notebook.
+`root`, `main`, and `master` all select Iceberg's root ref.
 
 Each notebook publishes its result through Scrapbook. Branch tasks inspect
 attempted/read counts from that result: an empty capture skips `parse_fix`, a

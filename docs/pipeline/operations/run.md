@@ -3,7 +3,9 @@
 Measured on 2026-08-23, this run executed the code cells from all six task
 notebooks against a fresh local Iceberg warehouse, then replayed the same
 interval. It is a correctness fixture; the larger focused measurements remain
-on [Benchmarks](../../storage/benchmarks.md).
+on [Benchmarks](../../storage/benchmarks.md). The stage table below covers the
+five downstream notebooks; `parse_messages` read the 13 generated rows and
+wrote all of them.
 
 ![End-to-end execution architecture](../../assets/workflow-run.svg)
 

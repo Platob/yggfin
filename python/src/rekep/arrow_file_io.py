@@ -7,6 +7,7 @@ import itertools
 import os
 import re
 import threading
+import urllib.parse
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Set
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
@@ -410,13 +411,24 @@ def canonical_location(location: str) -> str:
     url = Url.from_string(location)
     if url.scheme not in S3:
         return location
-    clean = url.copy()
-    clean.user = clean.password = None
-    clean.host = url.bucket
-    clean.port = None
-    clean.path = url.key
-    clean.query.clear()
-    return clean.into_string()
+    bucket, key = spelled_parts(location, url)
+    return f"{url.scheme}://{bucket}/{key}"
+
+
+def spelled_parts(location: str, url: Url | None = None) -> tuple[str, str]:
+    """`(bucket, key)` exactly as an S3 location spells them, escapes kept.
+
+    Iceberg escapes a partition value into the path -- `v=a%2Fb` -- and that
+    escape *is* the object key rather than a spelling of `a/b`. `Url` decodes,
+    because for everything else a URL is transport and the value is not; here
+    it would name a different object, one carrying a directory level no
+    manifest ever recorded, so a read misses it and the orphan sweep deletes
+    the live file it could not match.
+    """
+    url = url or Url.from_string(location)
+    spelled = url.copy()
+    spelled.path = urllib.parse.urlsplit(location, allow_fragments=False).path.lstrip("/")
+    return spelled.bucket, spelled.key
 
 
 def _location_properties(locations: Iterable[str]) -> tuple[dict[str, str], bool, bool]:
@@ -507,7 +519,8 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         if _WINDOWS and url.scheme == "file":
             return "file", "", url.path
         if url.scheme in S3:
-            return url.scheme, url.bucket, url.store_path
+            bucket, key = spelled_parts(location, url)
+            return url.scheme, bucket, "/".join(part for part in (bucket, key) if part)
         return PyArrowFileIO.parse_location(location, properties)
 
     def _new_openable(
@@ -535,7 +548,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
                 return "\0".join((canonical_scheme, endpoint, url.bucket, path))
         return None
 
-    def _content_identity(self, location: str) -> str:
+    def content_identity(self, location: str) -> str:
         """A cache key scoped to the S3-compatible store serving a location."""
         url = Url.from_string(location)
         if url.scheme not in S3:
@@ -549,14 +562,14 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         inner = super().new_input(location)
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedInputFile(inner, self._content_cache, self._content_identity(location))
+        return CachedInputFile(inner, self._content_cache, self.content_identity(location))
 
     def new_output(self, location: str) -> OutputFile:
         _record_output(location)
         inner = super().new_output(location)
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedOutputFile(inner, self._content_cache, self._content_identity(location))
+        return CachedOutputFile(inner, self._content_cache, self.content_identity(location))
 
     def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
         """Copy one local file to a location through this configured Arrow filesystem."""
@@ -600,5 +613,5 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         # Evicted first, whether or not the store's delete then fails: a
         # cached copy of a file the caller wants gone is the copy that lies.
         name = location.location if isinstance(location, (InputFile, OutputFile)) else location
-        CONTENT_CACHE.evict(self._content_identity(name))
+        CONTENT_CACHE.evict(self.content_identity(name))
         super().delete(location)

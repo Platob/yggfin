@@ -167,8 +167,8 @@ value. The dropped keys are counted with the conflict report.
 
 ```python
 field = registry.resolve("TrdRegTimestampType")
-field.encode("Order Submission Time")  # '10'
-field.meaning("10")                     # 'Order Submission Time'
+field.fix.encode("ORDER_SUBMISSION_TIME")  # '10'
+field.fix.meaning("10")                    # 'ORDER_SUBMISSION_TIME'
 ```
 
 ### Resolving a name
@@ -299,8 +299,8 @@ a day stale parses every message, and one that raises parses none.
 
 `merged_fields()` and `component_records()` hand over the whole unified table
 in one call, where `scalar()` answers one key at a time. A component record is
-one record rather than one tree: `paths(version)`, `delimiters(version)` and
-`diff()` are the questions worth asking of it.
+one record rather than one tree: `paths()` and `delimiters()` are the questions
+worth asking of it.
 
 Protocol-specific code should normalize values, not duplicate registry tables.
 
@@ -341,7 +341,7 @@ through 4.2 and `AllocationInstruction` after).
 single = registry.merged_component("D")
 single.msg_type                        # 'D'
 [member.name for member in single.members][:3]
-# ['ClOrdID', 'SecondaryClOrdID', 'ClOrdLinkID']
+# ['ClOrdID', 'OrderRequestID', 'SecondaryClOrdID']
 registry.component_field("D", "4.4")   # the whole message as one Arrow field
 ```
 
@@ -387,10 +387,11 @@ whether a message must carry it, there is nothing left to write by hand:
 
 ```python
 Parties = registry.component_scalar("Parties", "4.4")
-Parties(no_party_ids=[Parties.NoPartyIds(party_id="BUY-A", party_role=3)])
+Parties(no_party_ids=[Parties.PartyId(party_id="BUY-A", party_role=3)])
 ```
 
-Group entries are classes named after the group they repeat, they hang off the
+Group entries are classes named after the entry a group repeats -- `NoPartyIDs`
+yields `Parties.PartyId` -- they hang off the
 class that declares them so a caller can build one, and a dictionary refresh
 moves all of it. A column Python cannot spell keeps its own name: FIX tag 236
 is `Yield`, and `yield` is a statement, so the attribute is `yield_` while the

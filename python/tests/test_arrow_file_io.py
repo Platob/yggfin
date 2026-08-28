@@ -61,6 +61,25 @@ def test_s3_locations_store_only_the_bucket_and_key(scheme: str) -> None:
     assert canonical_location(location) == f"{scheme}://bucket/table"
 
 
+@pytest.mark.parametrize("scheme", ("s3", "s3a", "s3n"))
+def test_an_escaped_partition_value_names_the_object_iceberg_wrote(scheme: str) -> None:
+    """Iceberg escapes a partition value into the path, and the escape is the key.
+
+    `quote_plus(value, safe="")` writes `v=a%2Fb` so the value's own slash does
+    not become a directory. Decoding it names `v=a/b/...` -- an object the
+    manifest never recorded, which a read misses and the orphan sweep deletes
+    the live file for.
+    """
+    location = f"{scheme}://bucket/wh/db/t/data/v=a%2Fb/x.parquet"
+    key = "wh/db/t/data/v=a%2Fb/x.parquet"
+
+    assert ArrowFileIO.parse_location(location) == (scheme, "bucket", f"bucket/{key}")
+    assert canonical_location(location) == f"{scheme}://bucket/{key}"
+    assert canonical_location(f"{scheme}://k:s@minio:9000/bucket/{key}") == (
+        f"{scheme}://bucket/{key}"
+    )
+
+
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
     assert ArrowFileIO.parse_location("file:///C:/warehouse/t") == ("file", "", "/C:/warehouse/t")
 
@@ -109,6 +128,7 @@ def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> 
         "s3.endpoint": "https://minio.corp.com",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
+        "s3.region": "us-east-1",
     }
 
 
@@ -121,6 +141,10 @@ def test_a_warehouse_url_configures_the_filesystem_it_names(scheme: str) -> None
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "sec:ret",
+        # A store reached by an endpoint is signed for the region every
+        # compatible one defaults to, rather than the one AWS answers with
+        # for a bucket that is not on it.
+        "s3.region": "us-east-1",
     }
 
 

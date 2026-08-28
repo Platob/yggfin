@@ -3730,8 +3730,12 @@ def test_optimize_can_skip_the_sweep(
     from rekep.iceberg import dataset as module
 
     listed: list[str] = []
-    original = module.resolve
-    monkeypatch.setattr(module, "resolve", lambda url: (listed.append(url), original(url))[1])
+    original = module._store_of
+    monkeypatch.setattr(
+        module,
+        "_store_of",
+        lambda table, directory: (listed.append(directory), original(table, directory))[1],
+    )
     for index in range(4):
         dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
     report = dataset.optimize(min_files=2, remove_orphans=False)

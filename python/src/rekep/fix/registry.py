@@ -178,7 +178,8 @@ _NO_TAG = 1 << 31
 
 
 def builtin_projection() -> str:
-    """Where the packaged projection lives: 900 entries against the whole 6802.
+    """Where the packaged projection lives: 180 of the dictionary's 6,074 field
+    records, and every one of its 900 components.
 
     `rekep.fix.publish` calls it a projection because that is what it is -- it
     parses common traffic and misses the long tail -- and nothing here ever
@@ -1314,7 +1315,7 @@ class FixRegistry(Convertible):
     def resolve(self, name: str) -> Field | None:
         """The identity a rendered name means, or None when nothing here is it.
 
-        Deterministic, in three tiers, and the tiers are the whole rule:
+        Deterministic, in the two tiers `TIERS` names, and they are the whole rule:
 
         1. the canonical name of an identity;
         2. a name some version spells for it (tag 64 is `FutSettDate` through

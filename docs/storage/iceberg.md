@@ -132,8 +132,20 @@ contract that already carries ids keeps them.
 Local and object-store locations resolve through `pyarrow.fs`. Credentials,
 endpoint, bucket, and path are parsed once by `Url`; explicit catalog
 properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
-same Arrow S3 filesystem as `s3://`. Recorded and listed paths are compared
-only after the same resolver normalizes them.
+same Arrow S3 filesystem as `s3://`.
+
+Maintenance lists through the table's own FileIO rather than resolving the
+location again, because a location this package canonicalized has had its
+endpoint and credentials taken out of it -- resolved afresh, a sweep of a MinIO
+warehouse would look for the bucket on AWS. Recorded locations are then reduced
+against the table's data and metadata directories; one that no spelling reduces
+is matched by base name instead, which is weaker in the safe direction -- every
+name Iceberg mints carries a UUID, so a false match leaves a file behind rather
+than deleting a live one.
+
+An object key keeps the escapes the location spells. Iceberg writes a partition
+value as `v=a%2Fb` so the value's own slash does not become a directory, and
+that escape is the key: decoded, it would name an object no manifest recorded.
 
 ### What an `s3://` netloc names
 
@@ -194,6 +206,11 @@ the spill identity.
 | `anonymous` | `anonymous` | `s3.anonymous` |
 | `allow_bucket_creation` | `allow_bucket_creation` | -- |
 
+Two catalog properties are this package's own: `rekep.io.cache-bytes` sizes the
+immutable-content cache below, and `rekep.io.delegate-file-io` names a FileIO
+to wrap when `py-io-impl` is not this one, so a failed commit still owns every
+output it created.
+
 ```python
 from rekep.urls import Url, properties_of
 
@@ -205,6 +222,17 @@ print(dict(properties_of(Url.from_string(warehouse))))
 {'s3.endpoint': 'https://minio.example.net', 's3.access-key-id': 'key',
  's3.secret-access-key': 'secret', 's3.force-virtual-addressing': 'true'}
 ```
+
+A secret is read from the userinfo and percent-decoded, so one containing
+`:`, `/` or `@` has to arrive percent-encoded -- `wJalrXUtnFEMI%2FK7MDENG` --
+and an unencoded `/` is refused with the location's secret taken out of the
+message.
+
+The region is resolved in order: `?region=`, then a region label inside
+`?endpoint_override=`'s hostname, then one in the netloc. So
+`s3://bucket.s3.eu-west-1.amazonaws.com/key` yields `s3.region: eu-west-1` and
+no `s3.endpoint` -- overriding AWS with AWS only forces path-style addressing,
+while the region is the half of that hostname that has to travel.
 
 A flag is on only where it is spelled `true`, so a typo reads as off, on the
 catalog path as well as Arrow's. The two that decide whether a store answers at
@@ -219,12 +247,37 @@ as one URL. Without a transport, a hostname with no dot -- a container or a
 laptop -- is read as plaintext and anything else as TLS; `scheme` says it
 outright.
 
-Name `region` wherever the store signs with one. Without it PyIceberg asks AWS
-which region hosts a bucket of that name, which a bucket on another store is
-not, and falls back to the SDK default.
+A location naming an endpoint and no region is signed for `us-east-1`, which
+is what Arrow and every S3-compatible store default to. Name `region` wherever
+the store signs with a real one -- Wasabi and Backblaze do. The default is not
+a convenience: PyIceberg with no region asks *AWS* which region hosts a bucket
+of that name, which blocks on the first touch of each bucket, discloses the
+name, and answers for a stranger's bucket when a real AWS bucket happens to
+share it -- signing every request to your store for that bucket's region.
 
 PyIceberg is configured with the package-level
 `rekep.arrow_file_io.ArrowFileIO` implementation.
+
+### Immutable content cache
+
+`ArrowFileIO` serves the files Iceberg promises never to rewrite -- `.avro`
+manifests and manifest lists, and a `metadata.json` whose name carries a UUID --
+out of memory, so a plan that reads the same manifest twice pays one GET. A
+Hadoop-style `v3.metadata.json` is never cached: two racing writers can both
+produce that name with different bytes.
+
+```yaml
+catalog_properties:
+  rekep.io.cache-bytes: "0"        # opt this process out
+```
+
+The budget is process-wide, not per catalog, because the files are shared too:
+setting `rekep.io.cache-bytes` on one catalog resizes the cache for every
+catalog in the process. It defaults to 64 MiB, and one file larger than an
+eighth of the budget is never stored. Entries are keyed by the store serving
+them -- scheme, endpoint, access key, region, bucket and key -- so two stores
+carrying one path are never confused, and deleting a file evicts it under that
+same key.
 
 Partition staging uses that same instance to copy local Parquet files to the
 final path produced by Iceberg's location provider. Local warehouses and
@@ -237,11 +290,20 @@ use a deterministic name, are pulled again when the remote byte size changes,
 and never serve stale bytes after the remote disappears. Temporary spills are
 uniquely owned and deleted on `close`, after their open stream is closed.
 
-`TextFile` holds that owner directly. A compressed remote log is copied as raw
-compressed bytes in 4 MiB chunks, decoded incrementally by Arrow, and purged
-when the reader finishes. Its disk use is the compressed object size and its
-memory use stays bounded by the copy/read chunk and one parsed record batch;
-the expanded capture is never materialized as a file or Arrow table.
+`TextFile` holds that owner directly, and uses it only where a caller opts in
+with `spill=True`: a compressed remote log is then copied as raw compressed
+bytes in 4 MiB chunks, decoded incrementally by Arrow, and purged when the
+reader finishes, so its disk use is the compressed object size. `spill=False`,
+the default, leaves Arrow decoding the object-store stream directly and writes
+nothing. Either way memory stays bounded by the copy/read chunk and one parsed
+record batch; the expanded capture is never materialized as a file or Arrow
+table.
+
+A log is written by appending, which an object store cannot do: `append_arrow_*`
+works on a local path and is refused on S3 and GCS, which have only a
+whole-object put. `overwrite_arrow_*` is refused everywhere -- a log is a
+sequence of lines with no key to replace one by. Write locally and upload, or
+write to a dataset that owns its own files.
 
 Exhausting the reader closes that owner. A partial consumer closes the
 surrounding `TextFile` context to release the decoder and temporary spill.
@@ -288,8 +350,10 @@ physical files during that operation.
 `cleanup` follows the metadata commit with rekep's reachability sweep: only
 files unreferenced by every retained snapshot, branch, tag, statistics entry,
 and current metadata version are eligible -- obsolete Parquet data,
-manifest-list Avro, manifest Avro, and untracked metadata JSON. The orphan age
-is a grace period for files an in-flight writer produced but never committed.
+manifest-list Avro, manifest Avro, and untracked metadata JSON. A live file
+whose recorded spelling the sweep cannot reduce against the table's directories
+is kept, never deleted. The orphan age is a grace period for files an in-flight
+writer produced but never committed.
 
 `optimize` compacts, then cleans, returning counts for each action. It also
 supplies absent manifest merging and metadata JSON retention properties to
