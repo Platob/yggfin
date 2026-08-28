@@ -1178,6 +1178,71 @@ def test_large_payloads_stop_a_batch_before_the_row_limit(tmp_path: Path) -> Non
     assert [batch.column("message")[0].as_py() for batch in batches] == ["x" * 100] * 4
 
 
+def test_a_row_is_bounded_by_max_row_byte_size_and_says_what_it_dropped(
+    tmp_path: Path,
+) -> None:
+    """A writer that never closes a line must not decide how much memory is held."""
+    path = tmp_path / "runaway.txt"
+    header = "2026-08-14 00:05:00.000 [t] [M] (INFO) "
+    path.write_text(
+        f"{header}{'x' * 10_000}\n{header}short\n",
+        encoding="utf-8",
+    )
+    bound = len(header) + 100
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table(max_row_byte_size=bound, read_byte_size=64)
+
+    messages = table.column("message").to_pylist()
+    assert messages == ["x" * 100, "short"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 9900",
+        None,
+    ]
+    assert table.column("source_rownum").to_pylist() == [1, 2]
+
+
+def test_folded_continuations_stop_at_the_same_bound(tmp_path: Path) -> None:
+    """A stack trace is folded into its row, so it is bounded by the same rule."""
+    path = tmp_path / "trace.txt"
+    header = "2026-08-14 00:05:00.000 [t] [M] (INFO) "
+    path.write_text(f"{header}head\n" + "y" * 40 + "\n" + "z" * 40 + "\n", encoding="utf-8")
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table(max_row_byte_size=len(header) + 10)
+
+    # "head", the newline the fold puts back, and the five bytes left of the
+    # first continuation; the second one has no room at all.
+    assert table.column("message").to_pylist() == ["head\nyyyyy"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 76"
+    ]
+
+
+def test_a_row_that_exactly_fills_the_bound_is_not_reported_as_truncated(
+    tmp_path: Path,
+) -> None:
+    """The terminator is not content, so a line the bound fits precisely is whole."""
+    header = "2026-08-14 00:05:00.000 [t] [M] (INFO) "
+    bound = len(header) + 10
+    for name, ending in (("lf.txt", "\n"), ("crlf.txt", "\r\n"), ("bare.txt", "")):
+        path = tmp_path / name
+        path.write_bytes(f"{header}{'x' * 10}{ending}".encode())
+        with TextFile.from_path(path) as log:
+            table = log.into_arrow_table(max_row_byte_size=bound)
+        assert table.column("message").to_pylist() == ["x" * 10], name
+        assert table.column("reason").to_pylist() == [None], name
+
+
+def test_the_row_bound_is_validated_before_the_source_is_read(tmp_path: Path) -> None:
+    log = _timed_log(tmp_path / "messages.txt", ("2026-08-14 00:05:01.000", "row"))
+
+    with pytest.raises(ValueError, match="max_row_byte_size must be a positive integer"):
+        log.into_arrow_batches(max_row_byte_size=0)
+    with pytest.raises(ValueError, match="max_row_byte_size must be at most"):
+        log.into_arrow_batches(max_row_byte_size=1 << 31)
+
+
 def test_one_long_compressed_line_streams_across_tiny_reads(tmp_path: Path) -> None:
     """A physical line is accumulated once, not recopied for every compressed read."""
     payload = "diagnostic " + "x" * (1 << 18)

@@ -23,6 +23,7 @@ from rekep.filesystems import resolve
 from rekep.text.text_file import (
     DEFAULT_BATCH_BYTE_SIZE,
     DEFAULT_BATCH_ROW_SIZE,
+    DEFAULT_MAX_ROW_BYTE_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
@@ -420,6 +421,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         fold_continuations: bool = True,
         *,
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
@@ -434,12 +436,13 @@ class TextFiles(Dataset, io.BufferedIOBase):
         excludes = _regexes("exclude_regexes", exclude_regexes)
         included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
         excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
-        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
+        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size, max_row_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
             batch_row_size,
             read_byte_size,
             batch_byte_size,
+            max_row_byte_size,
             fold_continuations,
             includes,
             excludes,
@@ -478,6 +481,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batch_row_size: int,
         read_byte_size: int,
         batch_byte_size: int,
+        max_row_byte_size: int,
         fold_continuations: bool,
         include_regexes: Sequence[str],
         exclude_regexes: Sequence[str],
@@ -493,6 +497,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                     batch_row_size,
                     read_byte_size,
                     batch_byte_size,
+                    max_row_byte_size,
                     fold_continuations,
                     include_regexes,
                     exclude_regexes,

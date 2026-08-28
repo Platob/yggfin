@@ -54,7 +54,12 @@ parameters:
   target: logs.messages
   merge_by: true
   batch_row_size: 65536
-  # Also bounds batches between records; one logical record is never split.
+  # Also bounds batches between records; a record is cut only at the row bound.
   batch_byte_size: 67108864
+  # Retained bytes per record, including folded continuations. A capture
+  # truncated mid-write has no next newline, so without this a single record
+  # would hold the rest of the file. What is past it is dropped and counted in
+  # `reason`.
+  max_row_byte_size: 67108864
   commit_row_size: 250000
   limit: null

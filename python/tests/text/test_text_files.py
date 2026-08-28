@@ -781,3 +781,19 @@ def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> 
     assert files.create_with(narrow) is files
     assert files.into_struct_field() == narrow
     assert not (tmp_path / "nothing-here").exists()
+
+
+def test_the_row_bound_reaches_every_file_in_the_set(tmp_path: Path) -> None:
+    """One set is one shape, so a runaway line in any of its logs is bounded."""
+    header = "2026-08-14 00:05:0%d.000 [t] [M] (INFO) "
+    (tmp_path / "one.txt").write_text(f"{header % 1}{'x' * 500}\n", encoding="utf-8")
+    (tmp_path / "two.txt").write_text(f"{header % 2}short\n", encoding="utf-8")
+
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+    table = files.into_arrow_table(max_row_byte_size=len(header % 1) + 20)
+
+    assert table.column("message").to_pylist() == ["x" * 20, "short"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 480",
+        None,
+    ]

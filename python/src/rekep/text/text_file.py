@@ -110,6 +110,14 @@ DEFAULT_BATCH_BYTE_SIZE = 1 << 26
 #: S3-like and local reads.
 DEFAULT_READ_BYTE_SIZE = 1 << 22
 
+#: Retained bytes per parsed row -- one physical line plus everything folded
+#: into it. A newline is a writer's promise, and a capture truncated mid-write,
+#: a binary blob logged by accident or a runaway diagnostic breaks it: without
+#: this bound `readline` holds the whole run, and past 2 GiB Arrow's 32-bit
+#: binary offsets cannot hold the row at all. Bytes past it are dropped and
+#: counted, never read into memory, and the row says so in `reason`.
+DEFAULT_MAX_ROW_BYTE_SIZE = 1 << 26
+
 # Columns a line physically carries; the rest of the parsed row is derived.
 _RENDERED = ("unix", "thread_name", "plugin_code", "message")
 
@@ -437,6 +445,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_row_size: int = DEFAULT_BATCH_ROW_SIZE,
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE,
         fold_continuations: bool = True,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
@@ -454,6 +463,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             read_byte_size,
             fold_continuations,
             batch_byte_size=batch_byte_size,
+            max_row_byte_size=max_row_byte_size,
             include_regexes=include_regexes,
             exclude_regexes=exclude_regexes,
             include_msgtypes=include_msgtypes,
@@ -475,6 +485,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         fold_continuations: bool = True,
         *,
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
@@ -495,12 +506,13 @@ class TextFile(Dataset, io.BufferedIOBase):
         excludes = _regexes("exclude_regexes", exclude_regexes)
         included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
         excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
-        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
+        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size, max_row_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
             batch_row_size,
             read_byte_size,
             batch_byte_size,
+            max_row_byte_size,
             fold_continuations,
             includes,
             excludes,
@@ -524,6 +536,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch_row_size: int,
         read_byte_size: int,
         batch_byte_size: int,
+        max_row_byte_size: int,
         fold_continuations: bool,
         include_regexes: Sequence[str],
         exclude_regexes: Sequence[str],
@@ -539,6 +552,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | bytearray | None]] = []
         row_byte_sizes: list[int] = []
+        # Bytes of each row the reader saw and did not keep, so a truncated row
+        # says how much of itself is missing instead of looking whole.
+        dropped_byte_sizes: list[int] = []
         held_bytes = 0
         # Physical lines, not parsed rows: a folded continuation must not shift
         # the number every row after it reports.
@@ -546,25 +562,32 @@ class TextFile(Dataset, io.BufferedIOBase):
         rownum = 0
         match_header = self.header_pattern.match
 
-        for line in self._iter_lines(read_byte_size):
+        for line, dropped in self._iter_lines(read_byte_size, max_row_byte_size):
             rownum += 1
             match = match_header(line)
             if match is None:
                 if fold_continuations and rows:
-                    timestamp, thread, plugin, message = rows[-1]
-                    if not isinstance(message, bytearray):
-                        message = bytearray(message or b"")
-                    message.extend(b"\n")
-                    message.extend(line)
-                    rows[-1] = (timestamp, thread, plugin, message)
+                    # The newline the fold puts back counts against the bound
+                    # with the line it separates, so a row can never exceed it.
+                    room = max_row_byte_size - row_byte_sizes[-1]
                     added = len(line) + 1
-                    row_byte_sizes[-1] += added
-                    held_bytes += added
+                    kept = added if added <= room else max(room, 0)
+                    if kept:
+                        timestamp, thread, plugin, message = rows[-1]
+                        if not isinstance(message, bytearray):
+                            message = bytearray(message or b"")
+                        message.extend(b"\n")
+                        message.extend(line if kept == added else line[: kept - 1])
+                        rows[-1] = (timestamp, thread, plugin, message)
+                        row_byte_sizes[-1] += kept
+                        held_bytes += kept
+                    dropped_byte_sizes[-1] += added - kept + dropped
                 continue
             found = match.group(*indices)
             rows.append(found)
             rownums.append(rownum)
             row_byte_sizes.append(len(line))
+            dropped_byte_sizes.append(dropped)
             held_bytes += len(line)
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
@@ -580,6 +603,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 batch = self._batch(
                     rows[:cut],
                     rownums[:cut],
+                    dropped_byte_sizes[:cut],
                     include_regexes,
                     exclude_regexes,
                     include_msgtypes,
@@ -590,11 +614,12 @@ class TextFile(Dataset, io.BufferedIOBase):
                 if batch.num_rows:
                     yield batch
                 held_bytes -= sum(row_byte_sizes[:cut])
-                del rows[:cut], rownums[:cut], row_byte_sizes[:cut]
+                del rows[:cut], rownums[:cut], row_byte_sizes[:cut], dropped_byte_sizes[:cut]
         if rows:
             batch = self._batch(
                 rows,
                 rownums,
+                dropped_byte_sizes,
                 include_regexes,
                 exclude_regexes,
                 include_msgtypes,
@@ -609,6 +634,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         self,
         rows: list[tuple],
         rownums: list[int],
+        dropped_byte_sizes: Sequence[int] = (),
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
@@ -628,14 +654,15 @@ class TextFile(Dataset, io.BufferedIOBase):
             pyarrow.array(values, type=pyarrow.binary()) for values in zip(*rows, strict=True)
         )
         rownums_array = pyarrow.array(rownums, type=pyarrow.int64())
+        reasons = _truncated_reasons(dropped_byte_sizes, len(rows))
 
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
         selected = _unix_mask(unix, start_unix, end_unix)
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array = (
+            unix, threads, plugins, messages, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array)
+                for values in (unix, threads, plugins, messages, rownums_array, reasons)
             )
         if not len(unix):
             return _empty_batch(schema)
@@ -643,9 +670,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         messages = pyarrow.compute.fill_null(_utf8(messages), "")
         selected = _message_mask(messages, include_regexes, exclude_regexes)
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array = (
+            unix, threads, plugins, messages, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array)
+                for values in (unix, threads, plugins, messages, rownums_array, reasons)
             )
         count = len(unix)
         if not count:
@@ -655,9 +682,9 @@ class TextFile(Dataset, io.BufferedIOBase):
             Message.msg_types_arrow(messages), include_msgtypes, exclude_msgtypes
         )
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array = (
+            unix, threads, plugins, messages, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array)
+                for values in (unix, threads, plugins, messages, rownums_array, reasons)
             )
         count = len(unix)
         if not count:
@@ -677,7 +704,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
             "parent_hash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
-            "reason": pyarrow.nulls(count, pyarrow.string()),
+            "reason": reasons,
             "source_url": pyarrow.repeat(self.url, count),
             "source_rownum": rownums_array,
             "thread_name": pyarrow.compute.fill_null(_utf8(threads), ""),
@@ -712,16 +739,33 @@ class TextFile(Dataset, io.BufferedIOBase):
                 columns[field.name] = pyarrow.nulls(count, field.type)
         return self.into_row().identified(columns, schema, count)
 
-    def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
-        """Stream newline-delimited lines through one bounded native buffer.
+    def _iter_lines(
+        self, read_byte_size: int, max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE
+    ) -> Iterator[tuple[bytes, int]]:
+        """`(line, bytes past the bound)` for every newline-delimited line.
 
         One trailing carriage return is dropped per line, so a CRLF log parses
         identically to an LF one; a carriage return anywhere else is payload.
+
+        `readline` with no bound holds a whole line, and a line is only as long
+        as the writer's next newline -- which a truncated capture, a logged
+        binary blob or a runaway diagnostic never writes. The bound is passed
+        to `readline` rather than checked after it, so the bytes past it are
+        read in `read_byte_size` pieces and dropped instead of held.
         """
         buffered = io.BufferedReader(self, buffer_size=read_byte_size)
         try:
-            while line := buffered.readline():
-                yield line.removesuffix(b"\n").removesuffix(b"\r")
+            while line := buffered.readline(max_row_byte_size):
+                dropped = 0
+                # A line that fills the bound may or may not be the whole line;
+                # what says which is the newline, and only EOF ends one without.
+                # The terminator is not content, so draining exactly it -- a
+                # line the bound fits precisely -- drops nothing.
+                while not line.endswith(b"\n") and (rest := buffered.readline(read_byte_size)):
+                    dropped += len(rest.removesuffix(b"\n").removesuffix(b"\r"))
+                    if rest.endswith(b"\n"):
+                        break
+                yield line.removesuffix(b"\n").removesuffix(b"\r"), dropped
         finally:
             # Detaching keeps the reusable TextFile open while discarding the
             # line buffer; `_close_stream` owns the Arrow decoder underneath.
@@ -1015,16 +1059,48 @@ def _validate_window(start_unix: int | None, end_unix: int | None, duration_ns: 
 
 
 def _validate_read_sizes(
-    batch_row_size: int, read_byte_size: int, batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE
+    batch_row_size: int,
+    read_byte_size: int,
+    batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+    max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE,
 ) -> None:
     """Keep every parser buffer bounded by positive explicit units."""
     for name, value, unit in (
         ("batch_row_size", batch_row_size, "rows"),
         ("read_byte_size", read_byte_size, "bytes"),
         ("batch_byte_size", batch_byte_size, "bytes"),
+        ("max_row_byte_size", max_row_byte_size, "bytes"),
     ):
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             raise ValueError(f"{name} must be a positive integer number of {unit}")
+    # An int32 offset addresses the bytes of one binary array, and one row is
+    # one value in it: a bound above that is a bound Arrow cannot build.
+    if max_row_byte_size > _BINARY_OFFSET_MAX:
+        raise ValueError(
+            f"max_row_byte_size must be at most {_BINARY_OFFSET_MAX} bytes, which is what an "
+            "Arrow binary offset addresses"
+        )
+
+
+#: What one 32-bit binary offset reaches, and so the longest row Arrow can hold.
+_BINARY_OFFSET_MAX = (1 << 31) - 1
+
+
+def _truncated_reasons(dropped_byte_sizes: Sequence[int], rows: int) -> pyarrow.Array:
+    """`reason` for each row: what it lost to `max_row_byte_size`, or null."""
+    if not any(dropped_byte_sizes):
+        return pyarrow.nulls(rows, pyarrow.string())
+    dropped = pyarrow.array(dropped_byte_sizes, type=pyarrow.int64())
+    compute = pyarrow.compute
+    return compute.if_else(
+        compute.greater(dropped, 0),
+        compute.binary_join_element_wise(
+            "row truncated at max_row_byte_size; dropped bytes: ",
+            dropped.cast(pyarrow.string()),
+            "",
+        ),
+        pyarrow.scalar(None, pyarrow.string()),
+    )
 
 
 def _windowed_batches(

@@ -73,8 +73,8 @@ owning `TextFile` performs that release immediately.
 
 Physical lines are scanned through a fixed-size native buffer. A long line or
 folded continuation grows one mutable record buffer instead of recopying its
-entire prefix on every compressed read; row and byte bounds limit the other
-records held beside it.
+entire prefix on every compressed read; `max_row_byte_size` bounds that buffer,
+and the row and byte bounds limit the other records held beside it.
 
 ## Configuration
 
@@ -106,17 +106,41 @@ is truncated to the duration. A busy window can still produce multiple
 `batch_row_size` batches, and `batch_byte_size` closes a batch around
 unusually large diagnostics.
 
-One logical record is never split, so that record and its parsed arguments may
-exceed the byte target. Gaps do not produce empty batches, and input must be
+One logical record is never split across batches, so a batch holding one is as
+large as that record. Gaps do not produce empty batches, and input must be
 ordered by these windows.
+
+`max_row_byte_size` bounds one record: the header line plus every continuation
+folded into it. A newline is the writer's promise that a record ended, and a
+capture cut mid-write, a binary blob logged by accident or a runaway diagnostic
+never makes it -- so without the bound one record holds the rest of the file,
+and past 2 GiB Arrow's 32-bit binary offsets cannot hold the record at all.
+Bytes past the bound are read in `read_byte_size` pieces and dropped rather
+than held, and the row says how many it lost:
+
+```python
+from rekep import TextFile
+
+log = TextFile.from_path("app.log")
+table = log.into_arrow_table(max_row_byte_size=1 << 20)
+table.filter(table.column("reason").is_valid()).select(["source_rownum", "reason"])
+```
+
+```text
+source_rownum  reason
+1              row truncated at max_row_byte_size; dropped bytes: 66060331
+```
 
 Only payloads with a discriminator, a FIX BeginString, or at least two
 pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic key/value
 splitter. A piped bridge without MsgType keeps its arguments and is `MISC`; an
 ordinary long log message with an incidental `A=1` skips the allocation.
 
-Message contract version 1 includes `protocol_code`, `MsgType`, and the early
-`etype`. Rebuild an existing `logs.messages` table when any is absent;
+Message contract version 3 lifts the standard header -- `BeginString`,
+`BodyLength`, `MsgType`, `MsgSeqNum`, `SenderCompID`, `TargetCompID`,
+`SendingTime` -- out of `entries` into columns of its own, beside the
+`protocol_code` and early `etype` version 2 added. Rebuild an existing
+`logs.messages` table when `MsgType`, `entries` or `protocol_code` is absent;
 `parse_fix` refuses that older physical schema rather than reporting an empty
 successful run.
 
