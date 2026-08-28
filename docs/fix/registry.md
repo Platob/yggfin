@@ -1,9 +1,29 @@
 # FIX registry browser
 
-Search the repository's FIX components and fields. Field results show their
-registry descriptions; component details resolve every available member tag
-and description. The catalog is rebuilt from `data/fix/` with every
-documentation deployment.
+Search the repository's FIX components and fields. The catalog is rebuilt from
+`data/fix/` with every deployment.
+
+A query answers by identity first -- a tag, a MsgType, a name, part of one --
+and reaches the record's prose only when nothing named it. `54` is one field,
+not the ten whose descriptions mention 54:
+
+```bash
+rekep fix registry find --store data/fix 54 | jq -r '.[].name'
+rekep fix registry find --store data/fix "order qty" | jq -r '.[].name'
+```
+
+```text
+Side
+---
+OrderQty          CashOrderQty      OrderQty2         DayOrderQty
+LegOrderQty       OrderBookingQty   OrderCapacityQty  OrderEventQty
+RelatedOrderQty
+```
+
+Several words are every one of them, so `order qty` reaches `OrderQty` by its
+name. The browser below ranks by the same rule as
+[`FixRegistry.search`](index.md#resolving-a-name); a result set that fell back
+to the prose says so beside its count.
 
 <div class="fix-registry" data-fix-registry data-source="../../assets/fix-registry.json"
      data-repository="https://github.com/Platob/yggfin/blob/main/data/fix">

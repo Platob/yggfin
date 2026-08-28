@@ -1199,6 +1199,10 @@ class FixRegistry(Convertible):
                             (100 + distance, order, int(member.fix.get("tag") or _NO_TAG), member)
                         )
         ranked.sort(key=lambda entry: entry[:3])
+        if ranked and ranked[0][0] < _BY_DESCRIPTION:
+            # Something answered the query by name or by tag, so nothing that
+            # only mentions it in prose is an answer to the same question.
+            ranked = [entry for entry in ranked if entry[0] < _BY_DESCRIPTION]
         found: list[Field] = []
         seen: set[int | str] = set()
         for *_, member in ranked:
@@ -2343,17 +2347,32 @@ def _is_tag(key: Any) -> bool:
     return isinstance(key, int) or str(key).strip().isdigit()
 
 
+#: The rank a match by *description* gets, and so the first rank that is not a
+#: match on the identity itself. A query that named something -- a tag, a name,
+#: part of one -- has been answered, and padding the answer with fields whose
+#: prose happens to contain it buries what was asked for: `54` named `Side`,
+#: and nine fields whose descriptions mention 54 followed it.
+_BY_DESCRIPTION = 3
+
+
 def _rank(member: Field, wanted: str) -> int | None:
-    """How well one field matches a lowercased query; None is not at all."""
+    """How well one field matches a lowercased query; None is not at all.
+
+    A query of several words is every one of them, so `settlement date` reaches
+    `UnderlyingSettlementDate` by its name rather than by prose that happens to
+    spell the two together. The browser's registry ranks by this same rule.
+    """
     name = member.name.lower()
     if wanted == member.fix.get("tag") or wanted == name:
         return 0
     if name.startswith(wanted):
         return 1
-    if wanted in name:
+    parts = wanted.split()
+    if all(part in name for part in parts):
         return 2
-    if wanted in member.description.lower():
-        return 3
+    described = member.description.lower()
+    if all(part in described for part in parts):
+        return _BY_DESCRIPTION
     return None
 
 

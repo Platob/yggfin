@@ -811,6 +811,26 @@ def test_search_matches_name_tag_and_description_case_insensitively(
     assert "OrdRejReason" in [f.name for f in registry.search("REJECTION")]
 
 
+def test_a_query_answered_by_an_identity_is_not_padded_with_prose() -> None:
+    """`54` names `Side`; nine fields whose descriptions mention 54 followed it."""
+    registry = FixRegistry.from_builtin()
+
+    assert [field.name for field in registry.search(54)] == ["Side"]
+    assert [field.name for field in registry.search("side")][0] == "Side"
+    # A name tier still keeps its neighbours -- they are the same question.
+    assert "AdvSide" in [field.name for field in registry.search("side", limit=20)]
+    # Prose is the answer only when nothing else is.
+    assert "OrdRejReason" in [field.name for field in registry.search("REJECTION")]
+
+
+def test_a_query_of_several_words_is_every_one_of_them() -> None:
+    """So a spelling nobody writes without a space still reaches its name."""
+    registry = FixRegistry.from_builtin()
+
+    assert [field.name for field in registry.search("order qty", limit=3)][0] == "OrderQty"
+    assert [field.name for field in registry.search("cl ord id", limit=3)][0] == "ClOrdID"
+
+
 def test_search_limits_distinct_identities_across_versions() -> None:
     registry = FixRegistry.from_builtin()
     found = registry.search("Side", limit=20)
