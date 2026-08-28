@@ -119,21 +119,10 @@ rows and `0` groups the whole ordered stream into one transaction. The same
 setting caps each staged Parquet file, so an individual partition may exceed
 it without having to fit in memory.
 
-The market-contract cutover is not an additive Iceberg evolution. It renames
-Book payloads, types `linked_events`, requires collections, removes event
-fields, requires the generic `Message.entries` and nested argument values,
-renames the FixMsg sequence, and renames `unix_hour` to `unix_partition` while
-rescaling its epoch-nanosecond `long` values to epoch-second `int`.
-
-All of that needs an explicit table migration or recreation. Recreate or
-rewrite every table using one of the six pipeline contracts, on every retained
-branch, before appending: an ordinary merge cannot migrate the renamed,
-rescaled, narrowed partition field. Dataset writes do not guess missing
-lineage or keep retired columns alive.
-
-Rebuild `logs.messages` as part of that cutover: its `hash` now identifies
-only the exact message payload, so it cannot be mixed with rows written by the
-previous provenance-framed identity.
+Renaming, retyping or narrowing a column is not an additive Iceberg
+evolution and no merge migrates one: recreate or rewrite the table, on every
+retained branch, before appending. Dataset writes do not guess missing lineage
+or keep dropped columns alive.
 
 Every data verb accepts `branch`; reads also accept `snapshot_id`. `root`,
 `main`, and `master` are aliases for Iceberg's physical `main` ref, so task

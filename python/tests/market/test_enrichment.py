@@ -10,7 +10,8 @@ import datetime
 
 import pytest
 
-from rekep.market import AssetKind, Currency, FixEvents, IdSource, Instrument, Leg, OptionKind, Side
+from rekep.fix.columns import ISIN_SCHEME, id_scheme
+from rekep.market import AssetKind, Currency, FixEvents, Instrument, Leg, OptionKind, Side
 from rekep.market.fix import SECURITY_TYPES, _classified, _month_year
 
 
@@ -47,15 +48,20 @@ def test_an_identifier_in_no_scheme_is_not_an_isin() -> None:
 
 
 def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() -> None:
-    """Keyed by the name, because `alt_ids["ISIN"]` is a question and
-    `alt_ids["4"]` is a lookup table away from being one."""
+    """Keyed by the name, because `alt_ids[ISIN_SCHEME]` is a question and
+    `alt_ids["4"]` is a lookup table away from being one.
+
+    The name is the dictionary's own symbol for the scheme, not a spelling
+    this package chose: it used to compile twenty-two of them as an enum, and
+    the dictionary already enumerates thirty-three.
+    """
     found = instrument_of(
         f"{HEAD}|55=AAPL|454=3|455=US0378331005|456=4|455=037833100|456=1|455=AAPL.OQ|456=5"
     )
     assert found.alt_ids == {
-        "ISIN": "US0378331005",
+        "ISIN_NUMBER": "US0378331005",
         "CUSIP": "037833100",
-        "RIC": "AAPL.OQ",
+        "RIC_CODE": "AAPL.OQ",
     }
 
 
@@ -71,10 +77,18 @@ def test_an_instrument_with_no_alternatives_carries_a_null_rather_than_an_empty_
 
 
 def test_the_two_identifier_source_tags_share_one_enumeration() -> None:
-    """Which is what lets one reading serve both."""
-    assert IdSource.from_fix("4") is IdSource.ISIN
-    assert IdSource.ISIN.is_registered and not IdSource.from_fix("A").is_registered
-    assert IdSource.from_fix("8") is IdSource.EXCHANGE
+    """Which is what lets one reading serve both -- and the dictionary names them.
+
+    `SecurityIDSource <22>` enumerates every scheme there is, so this package
+    compiles none of them: a scheme is stored under the name the dictionary
+    gives it, and only the one this package asks a question about -- which
+    instrument carries an ISIN -- is named in code.
+    """
+    assert id_scheme("4") == ISIN_SCHEME == "ISIN_NUMBER"
+    assert id_scheme("8") == "EXCHANGE_SYMBOL"
+    assert id_scheme("A") == "BLOOMBERG_SYMBOL"
+    assert id_scheme(ISIN_SCHEME) == ISIN_SCHEME, "by its name as well as its code"
+    assert id_scheme("") == "" and id_scheme(None) == ""
 
 
 # -- what it settles as ------------------------------------------------------

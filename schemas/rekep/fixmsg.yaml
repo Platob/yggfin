@@ -1,7 +1,7 @@
 name: FixMsg
 type: struct
 description: One raw message transcribed under the FIX registry.
-metadata: {namespace: rekep.text.fixmsg, version: '2'}
+metadata: {namespace: rekep.text.fixmsg, version: '1'}
 fields:
 - name: unix
   type: int64

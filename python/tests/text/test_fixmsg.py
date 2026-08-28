@@ -138,9 +138,9 @@ def test_a_log_line_is_an_event() -> None:
 
 
 def test_a_logs_cached_contract_metadata_is_immutable() -> None:
-    assert FixMsg.into_field_metadata() == {"version": "2"}
+    assert FixMsg.into_field_metadata() == {"version": "1"}
     with pytest.raises(TypeError):
-        FixMsg.into_field_metadata()["version"] = "3"
+        FixMsg.into_field_metadata()["version"] = "9"
 
 
 def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
@@ -554,7 +554,7 @@ def test_instrument_groups_resolve_into_their_structured_columns(
 
     instrument = next(iter(stored.into_fix_events().into_instruments()))
     direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
-    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isin_code == "XS123", "the primary ISIN outranks the alternative"
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
@@ -593,7 +593,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005"}
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
@@ -626,7 +626,7 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
     assert found == [
         (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
     ]
-    assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN": "US0378331005"})]
+    assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN_NUMBER": "US0378331005"})]
 
 
 def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
@@ -675,7 +675,7 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.alt_ids == {"ISIN": "US0378331005"}
+    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005"}
     assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
         ("AAPL", "BUY"),
         ("MSFT", "SELL"),
@@ -1287,15 +1287,13 @@ def test_a_header_field_spelled_two_ways_stays_where_a_reader_can_see_it(
     ]
 
 
-def test_a_batch_written_before_the_header_columns_still_reads(
+def test_a_header_column_that_is_empty_is_read_back_out_of_the_entries(
     registry: FixRegistry,
 ) -> None:
-    """The raw contract kept the whole header in `entries` before it lifted it,
-    and a table written that way is still read: every reader here falls back to
-    the list, whether the column is null or the stored batch never had it."""
-    assert Message.into_field_metadata() == {"version": "3"}, (
-        "the version that lifted the header out of the list it is read back from"
-    )
+    """One rule, not a fallback for an older shape: a lifted column is filled
+    from the list it was lifted out of wherever it is empty, and a column that
+    is not in the batch at all is empty in exactly that sense. So a projection
+    that dropped it and a row that never carried it read the same."""
     stored = Message(message="8=FIX.4.4|35=D|11=C1|10=000|").into_row()
     stored["message"] = None
     stored["entries"] = [

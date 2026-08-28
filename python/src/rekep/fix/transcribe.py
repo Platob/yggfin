@@ -21,6 +21,7 @@ from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
+    DECLARED,
     NAMESPACE_COLUMNS,
     QUOTE_GROUP_COUNTS,
     QUOTE_GROUP_STRUCTURE,
@@ -54,8 +55,8 @@ from rekep.fix.rules import NO_PROTOCOL, Rules
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
 _XML_DATA_KEY = "XmlData"
-_XML_DATA_NAME = pyarrow.scalar("xmldata")
-_XML_DATA_TAG = pyarrow.scalar("213")
+_XML_DATA_NAME = pyarrow.scalar(_XML_DATA_KEY.casefold())
+_XML_DATA_TAG = pyarrow.scalar(str(DECLARED[_XML_DATA_KEY].fix.tag))
 
 #: What makes a payload a message rather than a document: two `name=` tokens.
 #: The same "two and not one" `BRIDGE` uses, and for the same reason -- one
@@ -624,7 +625,7 @@ class FixCodec(Convertible):
         """
         return Entry.structure_arrow(keys, values)
 
-    def versions_of_entries(self, entries: Any, begin_strings: Any = None) -> tuple[Any, Any]:
+    def versions_of_entries(self, entries: Any, begin_strings: Any) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
         Off `entries` rather than off the message, because by this point the
@@ -632,9 +633,11 @@ class FixCodec(Convertible):
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
 
-        `begin_strings` is the column the raw stage already lifted `BeginString`
-        into, where a batch carries one; a batch that predates the column
-        still has the tag in `entries` and is read from there.
+        `begin_strings` is the column the raw stage lifted `BeginString` into.
+        It leads and `entries` fills it, which is the one rule every lifted
+        column is read under: a null column and a column a projection dropped
+        are the same absence, and the tag is still in the list either way.
+        Stated rather than defaulted, so a caller says which it is handing over.
         """
         from rekep.fix.access import FieldAccess
 

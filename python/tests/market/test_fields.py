@@ -189,7 +189,7 @@ def test_the_builder_is_not_a_dataclass_member() -> None:
 
 def test_contract_metadata_cannot_be_changed_through_the_hook() -> None:
     with pytest.raises(TypeError):
-        Event.into_field_metadata()["version"] = "2"
+        Event.into_field_metadata()["version"] = "9"
 
 
 # -- what an enum means, in the schema ---------------------------------------

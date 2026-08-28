@@ -296,9 +296,7 @@ def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
         ("55", "IBM"),
         (UNLIFTED_TRAILER, "000"),
     ]
-    assert Message.into_field_metadata() == {"version": "3"}, (
-        "lifting the header is a new reading of the row, and says so"
-    )
+    assert Message.into_field_metadata() == {"version": "1"}
 
 
 def test_a_header_field_stated_twice_two_ways_is_lifted_by_neither() -> None:

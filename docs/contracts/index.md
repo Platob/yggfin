@@ -9,12 +9,12 @@ table](../assets/compatibility-tree-light.svg#only-light)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 3 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
-| `fixmsg.yaml` | 2 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
-| `instrument.yaml` | 2 | Versioned and hourly instrument state. |
-| `book.yaml` | 2 | Book deltas, executions, and recovery state. |
-| `order.yaml` | 2 | Flattened auditable order events. |
-| `execution.yaml` | 2 | Flattened auditable executions. |
+| `message.yaml` | 1 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
+| `fixmsg.yaml` | 1 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
+| `instrument.yaml` | 1 | Versioned and hourly instrument state. |
+| `book.yaml` | 1 | Book deltas, executions, and recovery state. |
+| `order.yaml` | 1 | Flattened auditable order events. |
+| `execution.yaml` | 1 | Flattened auditable executions. |
 
 ```python
 from rekep import Field
@@ -56,24 +56,19 @@ nullable. Dropping or retyping a field requires a new contract version.
 Producers cast before writing; consumers load the same contract and may use
 `merge_schema=True` to retain additive fields from a newer producer.
 
-### Version 3: the standard header is columns
+**Every contract is at 1.** The numbers used to count the shapes each one had
+been through, which was a history no reader could act on: nothing in the
+package reads a stored version, nothing branches on one, and there is no
+migration path -- a store, a registry document or an Iceberg table written by
+an earlier release is rebuilt rather than read or appended to. So the counters
+were reset to where they are useful, which is the first number a consumer of
+*this* shape will see change.
 
-`Message` alone is at 3. Version 3 lifts `BeginString`, `BodyLength`,
-`MsgType`, `MsgSeqNum`, `SenderCompID`, `TargetCompID` and `SendingTime` out of
-`entries` into columns of their own. A table written under 2 must be rebuilt:
-`parse_fix` refuses a source missing `MsgType`, `entries` or `protocol_code`
-rather than reporting an empty successful run.
-
-### Version 2: codes are mnemonics
-
-Version 2 recodes every stable code. A code is now the ASCII mnemonic it
-reads as, packed left-justified into its column, so `state` holds `41FILLED`
-rather than `410`; `etype`, `state` and both `kind` flavours widened from
-`int` to `long` to hold eight bytes.
-
-There is no in-package migration. `from_int` reads version 2 values and
-nothing else, so a store, a registry document or an Iceberg table written by
-an earlier version must be rebuilt rather than read or appended to.
+The version is not part of a table's identity either: PyIceberg carries no
+schema-level metadata, so it never survives the round trip and no write is
+refused over it. What a reader actually depends on is the columns, and
+`parse_fix` says so directly -- it refuses a source missing `MsgType`,
+`entries` or `protocol_code` rather than reporting an empty successful run.
 
 ## Publishing
 

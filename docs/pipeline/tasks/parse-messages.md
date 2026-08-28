@@ -142,16 +142,15 @@ key/value splitter. A piped bridge without MsgType keeps its arguments and is
 `MISC`; an ordinary long log message with an incidental `A=1` skips the
 allocation.
 
-`Message` version 3 lifts the standard header — `BeginString`, `BodyLength`,
-`MsgType`, `MsgSeqNum`, `SenderCompID`, `TargetCompID`, `SendingTime` — out of
-`entries` into columns of its own, beside the `protocol_code` and early `etype`
-version 2 added.
+The standard header — `BeginString`, `BodyLength`, `MsgType`, `MsgSeqNum`,
+`SenderCompID`, `TargetCompID`, `SendingTime` — is lifted out of `entries`
+into columns of its own, beside `protocol_code` and the early `etype`. A
+lifted column is read back out of `entries` wherever it is empty, so a row
+that carried the field only in the list still answers.
 
-Rebuild an existing table when `MsgType`, `entries` or `protocol_code` is
-absent; `parse_fix` refuses that older physical schema rather than reporting an
-empty successful run. Tables created from the former task-level `static_values`
-declaration also need those required columns removed, or a fresh table, before
-the narrower task contract can write them.
+`parse_fix` refuses a source missing `MsgType`, `entries` or `protocol_code`
+rather than reporting an empty successful run. There is no migration: a table
+without those columns is rebuilt.
 
 Keep custom `protocols` aligned with `parse_fix.yml`; null uses the shipped
 default rules in both stages.

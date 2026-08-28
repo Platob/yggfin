@@ -19,7 +19,6 @@ from rekep.enums import (
     AssetKind,
     Currency,
     EventType,
-    IdSource,
     MarketKind,
     OptionKind,
     Side,
@@ -35,7 +34,6 @@ BANDED = (
     MarketKind,
     AssetKind,
     OptionKind,
-    IdSource,
     EventType,
 )
 
@@ -49,7 +47,6 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         AssetKind,
         Currency,
         EventType,
-        IdSource,
         MarketKind,
         OptionKind,
         Side,
@@ -284,23 +281,58 @@ def test_no_two_members_share_a_fix_character(declared: type) -> None:
     assert len(codes) == len(set(codes)), sorted(codes)
 
 
-#: The enums that are a FIX field read as a code. `EventType` is ours -- no FIX
-#: field says whether a row is an order or a book -- so it is not in here, and
-#: the test below would otherwise pass on it by iterating over nothing.
-FIX_CODED = (
-    Side,
-    TimeInForce,
-    *(banded for banded in BANDED if banded not in (EventType, State, MarketKind)),
+#: The enums that are one FIX field read as a code, and the field each one is.
+#: They declare no codes of their own: the dictionary enumerates that field's
+#: values and the codes are read from it.
+#:
+#: `EventType`, `State` and `MarketKind` are not here. The first is ours -- no
+#: FIX field says whether a row is an order or a book -- and the other two are
+#: read from several tags at once. `AssetKind` is not here either: its letters
+#: are ISO 10962's, and `CFICode <461>` enumerates nothing.
+FIX_CODED = ((Side, "Side"), (TimeInForce, "TimeInForce"), (OptionKind, "PutOrCall"))
+
+
+@pytest.mark.parametrize(
+    ("declared", "field"), FIX_CODED, ids=lambda one: getattr(one, "__name__", one)
 )
-
-
-@pytest.mark.parametrize("declared", FIX_CODED, ids=lambda cls: cls.__name__)
-def test_every_fix_character_round_trips(declared: type) -> None:
+def test_every_fix_character_round_trips(declared: type, field: str) -> None:
     """`from_fix` is the exact inverse of `into_fix`, for every member that has one."""
     coded = [member for member in declared if member.into_fix()]
     assert coded, f"{declared.__name__} declares no FIX characters"
     for member in coded:
         assert declared.from_fix(member.into_fix()) is member
+
+
+@pytest.mark.parametrize(
+    ("declared", "field"), FIX_CODED, ids=lambda one: getattr(one, "__name__", one)
+)
+def test_the_codes_are_the_dictionary_s_and_are_not_written_down_here(
+    declared: type, field: str
+) -> None:
+    """Each of these used to carry its wire code beside its spelling, which made
+    the enum a second copy of one field's enumerated values -- and two copies
+    can disagree in the direction that mis-parses a message."""
+    from rekep.fix import FixRegistry
+
+    entry = FixRegistry.from_builtin().scalar(field)
+    assert declared.FIX_FIELD == field
+    assert entry.fix.tag, f"{field} is in the packaged projection"
+    for code, member in declared._fix_codes().items():
+        assert entry.fix.value_of(code) is not None, f"{code} is one the dictionary declares"
+        assert member.into_fix() == code
+
+
+def test_an_iso_category_letter_is_not_a_fix_value() -> None:
+    """`AssetKind` is coded on ISO 10962, which `CFICode <461>` carries as an
+    unenumerated string -- so the dictionary cannot answer for it and the ten
+    letters stay written down, under a name that says which standard they are."""
+    from rekep.fix import FixRegistry
+
+    assert AssetKind.from_cfi("E") is AssetKind.EQUITY
+    assert AssetKind.EQUITY.cfi_category == "E"
+    assert AssetKind.from_cfi("") is AssetKind.UNKNOWN
+    assert AssetKind.FIX_FIELD == "", "it codes no FIX field"
+    assert not FixRegistry.from_builtin().scalar("CFICode").fix.enumerated
 
 
 def test_market_kind_fix_values_are_tag_scoped() -> None:

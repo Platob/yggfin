@@ -12,16 +12,14 @@ CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
 #: What each contract's stored shape is on, so a bump is a deliberate edit
-#: here and not a number that drifted with a declaration.
-VERSIONS = {
-    "fixmsg.yaml": "2",
-    # 3 lifts the standard header out of `entries` into columns of its own.
-    "message.yaml": "3",
-    "instrument.yaml": "2",
-    "book.yaml": "2",
-    "order.yaml": "2",
-    "execution.yaml": "2",
-}
+#: here and not a number that drifted with a declaration. All six sit at 1:
+#: nothing reads a stored version and there is no migration path, so the
+#: numbers were a history of shapes nobody can still read rather than a fact
+#: about the shape being published.
+VERSIONS = dict.fromkeys(
+    ("fixmsg.yaml", "message.yaml", "instrument.yaml", "book.yaml", "order.yaml", "execution.yaml"),
+    "1",
+)
 
 PUBLISHED = {
     "fixmsg.yaml": FixMsg,

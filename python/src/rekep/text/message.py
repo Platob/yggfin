@@ -19,10 +19,10 @@ from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
-#: Version 3 lifts the standard header out of `entries` into columns of its
-#: own; a table written under 2 still reads, because every reader here falls
-#: back to the list when the column is not there.
-_CONTRACT_METADATA = MappingProxyType({"version": "3"})
+#: The standard header is lifted out of `entries` into columns of its own,
+#: and a lifted column is read back out of the list wherever it is empty --
+#: a null column and a column a projection dropped being the same absence.
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
 # Every separator `fix.message.SEPARATORS` declares, in that order: a

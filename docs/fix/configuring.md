@@ -48,9 +48,8 @@ declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
 lets a specific rule sit in front of a general one.
 
 A rule carries one `pattern`; alternatives join with `|`, and
-`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its own
-flags (a document from the retired `patterns` list shape still reads, folded
-into the one alternation). A rule's regex must work in Python `re` *and* in
+`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its
+own flags. A rule's regex must work in Python `re` *and* in
 Arrow's RE2, because the scalar reading and the columnar one are one rule.
 
 ```yaml
@@ -97,8 +96,7 @@ Enum members are stored by **name**. The value each name stands for is its
 ASCII mnemonic packed big-endian into an `int64` (`EXECUTION`, `ORDER`,
 `BOOK`), which is a nineteen-digit integer and unreadable in a file people
 edit. A name this release does not declare is refused on load rather than
-read as a degraded `UNKNOWN`, so a registry written by an earlier release is
-rewritten, not migrated.
+read as a degraded `UNKNOWN`.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent

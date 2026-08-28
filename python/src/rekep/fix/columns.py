@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
@@ -256,6 +258,14 @@ if len(FIXMSG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry i
 DECLARATIONS: Mapping[int, Field] = MappingProxyType(
     {tag: _declaration(member) for tag, member in FIXMSG_FIELDS.items()}
 )
+#: The same declarations under the FIX name each one carries, which is how a
+#: model annotates its column: a member called `MsgType` says `DECLARED
+#: ["MsgType"]` and the tag stays in the dictionary, where it is stated once.
+#: A name this registry has not got raises here, at import, rather than
+#: annotating a column with the wrong field the way a mistyped tag did.
+DECLARED: Mapping[str, Field] = MappingProxyType(
+    {member.name: member for member in DECLARATIONS.values()}
+)
 
 _TAGS_BY_NAME = {member.name: member.fix.tag for member in _FIELDS}
 STAMPS: frozenset[int] = frozenset(_TAGS_BY_NAME[name] for name in _STAMP_FIELDS)
@@ -353,6 +363,47 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
         if tail not in found and len(owners) == 1:
             found[tail] = columns[next(iter(owners))]
     return MappingProxyType(found)
+
+
+# -- the schemes an identifier may be issued under ---------------------------
+#
+# `SecurityIDSource <22>` enumerates thirty-three of them and this package used
+# to compile its own copy as an enum, banded by issuer. The dictionary already
+# names every one, so the copy is gone and a scheme is stored under the name
+# the dictionary gives it.
+
+#: The scheme `Instrument.isin_code` is read from, by the dictionary's own
+#: symbol for it. One scheme is named here because "this instrument's ISIN" is
+#: this package's question and not the dictionary's -- it enumerates the
+#: schemes and ranks none -- while the wire value beside it is still read from
+#: the dictionary rather than written down.
+ISIN_SCHEME = "ISIN_NUMBER"
+
+#: What an identifier carried under no stated scheme is filed under.
+UNKNOWN_SCHEME = "UNKNOWN"
+
+
+@functools.cache
+def _schemes() -> Field:
+    return _REGISTRY.scalar("SecurityIDSource")
+
+
+def id_schemes() -> Mapping[str, str]:
+    """`{wire value: the scheme it names}` for `SecurityIDSource <22>`."""
+    return _schemes().fix.symbols
+
+
+def id_scheme(value: Any) -> str:
+    """The scheme a stored value names, by its wire code or by its own name.
+
+    Empty where nothing names one, so a caller keeps whatever the message
+    wrote rather than filing it under a scheme the dictionary never declared.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    declared = _schemes().fix
+    return declared.symbols.get(text) or declared.symbols.get(declared.encode(text), "")
 
 
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)

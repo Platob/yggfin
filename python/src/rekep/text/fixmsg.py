@@ -13,7 +13,7 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.enums import MIC, AssetKind, Currency, EventType, IdSource, OptionKind, Side
+from rekep.enums import MIC, AssetKind, Currency, EventType, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -26,12 +26,16 @@ from rekep.fields.arrays import (
 )
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import (
-    DECLARATIONS,
+    DECLARED,
     ENTRIES,
     IDENTIFIER_FIELDS,
     ISIN_CODE,
+    ISIN_SCHEME,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
+    UNKNOWN_SCHEME,
+    id_scheme,
+    id_schemes,
 )
 from rekep.fix.components import (
     LEGS,
@@ -66,7 +70,7 @@ from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
 from rekep.text.message import SESSION_FIELDS, Message
 
 _EVENT_CODE = pyarrow.int64()
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 
@@ -295,7 +299,7 @@ class FixMsg(Message):
     protocol_version_source: str = NO_SOURCE
     """What resolved `protocol_version`: a BeginString, an application version, or nothing."""
 
-    MsgSeqNum: Annotated[int | None, DECLARATIONS[34]] = None
+    MsgSeqNum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
     # A list preserves repeated keys and wire order. Null means no parsed
@@ -346,261 +350,263 @@ class FixMsg(Message):
 
     # The envelope itself.
 
-    BeginString: Annotated[str | None, DECLARATIONS[8]] = None
+    BeginString: Annotated[str | None, DECLARED["BeginString"]] = None
     """`BeginString <8>`: which FIX version the message says it is."""
 
-    BodyLength: Annotated[int | None, DECLARATIONS[9]] = None
+    BodyLength: Annotated[int | None, DECLARED["BodyLength"]] = None
     """`BodyLength <9>`, as the message counted it."""
 
-    MsgType: Annotated[str | None, DECLARATIONS[35]] = None
+    MsgType: Annotated[str | None, DECLARED["MsgType"]] = None
     """`MsgType <35>`: what the message is, on the wire."""
 
-    CheckSum: Annotated[str | None, DECLARATIONS[10]] = None
+    CheckSum: Annotated[str | None, DECLARED["CheckSum"]] = None
     """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
 
     # Who sent it, and to whom.
 
-    SenderCompID: Annotated[str | None, DECLARATIONS[49]] = None
+    SenderCompID: Annotated[str | None, DECLARED["SenderCompID"]] = None
     """`SenderCompID <49>`: who sent it."""
 
-    SenderSubID: Annotated[str | None, DECLARATIONS[50]] = None
+    SenderSubID: Annotated[str | None, DECLARED["SenderSubID"]] = None
     """`SenderSubID <50>`: which desk of theirs."""
 
-    SenderLocationID: Annotated[str | None, DECLARATIONS[142]] = None
+    SenderLocationID: Annotated[str | None, DECLARED["SenderLocationID"]] = None
     """`SenderLocationID <142>`."""
 
-    TargetCompID: Annotated[str | None, DECLARATIONS[56]] = None
+    TargetCompID: Annotated[str | None, DECLARED["TargetCompID"]] = None
     """`TargetCompID <56>`: who it was sent to."""
 
-    TargetSubID: Annotated[str | None, DECLARATIONS[57]] = None
+    TargetSubID: Annotated[str | None, DECLARED["TargetSubID"]] = None
     """`TargetSubID <57>`."""
 
-    TargetLocationID: Annotated[str | None, DECLARATIONS[143]] = None
+    TargetLocationID: Annotated[str | None, DECLARED["TargetLocationID"]] = None
     """`TargetLocationID <143>`."""
 
     # And on whose behalf, when a hub relayed it.
 
-    OnBehalfOfCompID: Annotated[str | None, DECLARATIONS[115]] = None
+    OnBehalfOfCompID: Annotated[str | None, DECLARED["OnBehalfOfCompID"]] = None
     """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
 
-    OnBehalfOfSubID: Annotated[str | None, DECLARATIONS[116]] = None
+    OnBehalfOfSubID: Annotated[str | None, DECLARED["OnBehalfOfSubID"]] = None
     """`OnBehalfOfSubID <116>`."""
 
-    OnBehalfOfLocationID: Annotated[str | None, DECLARATIONS[144]] = None
+    OnBehalfOfLocationID: Annotated[str | None, DECLARED["OnBehalfOfLocationID"]] = None
     """`OnBehalfOfLocationID <144>`."""
 
-    DeliverToCompID: Annotated[str | None, DECLARATIONS[128]] = None
+    DeliverToCompID: Annotated[str | None, DECLARED["DeliverToCompID"]] = None
     """`DeliverToCompID <128>`: who it is ultimately for."""
 
-    DeliverToSubID: Annotated[str | None, DECLARATIONS[129]] = None
+    DeliverToSubID: Annotated[str | None, DECLARED["DeliverToSubID"]] = None
     """`DeliverToSubID <129>`."""
 
-    DeliverToLocationID: Annotated[str | None, DECLARATIONS[145]] = None
+    DeliverToLocationID: Annotated[str | None, DECLARED["DeliverToLocationID"]] = None
     """`DeliverToLocationID <145>`."""
 
     # Where it sits in the session's stream, and whether it is a repeat.
 
-    LastMsgSeqNumProcessed: Annotated[int | None, DECLARATIONS[369]] = None
+    LastMsgSeqNumProcessed: Annotated[int | None, DECLARED["LastMsgSeqNumProcessed"]] = None
     """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
 
-    PossDupFlag: Annotated[bool | None, DECLARATIONS[43]] = None
+    PossDupFlag: Annotated[bool | None, DECLARED["PossDupFlag"]] = None
     """`PossDupFlag <43>`: a retransmission of a message already sent."""
 
-    PossResend: Annotated[bool | None, DECLARATIONS[97]] = None
+    PossResend: Annotated[bool | None, DECLARED["PossResend"]] = None
     """`PossResend <97>`: the same business content under a new sequence."""
 
     # FIX documents these instants as UTC; microseconds are Iceberg-compatible.
 
-    SendingTime: Annotated[datetime.datetime | None, DECLARATIONS[52]] = None
+    SendingTime: Annotated[datetime.datetime | None, DECLARED["SendingTime"]] = None
     """`SendingTime <52>`: when it was transmitted."""
 
-    OrigSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[122]] = None
+    OrigSendingTime: Annotated[datetime.datetime | None, DECLARED["OrigSendingTime"]] = None
     """`OrigSendingTime <122>`: the original transmission, on a resend."""
 
-    OnBehalfOfSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[370]] = None
+    OnBehalfOfSendingTime: Annotated[
+        datetime.datetime | None, DECLARED["OnBehalfOfSendingTime"]
+    ] = None
     """`OnBehalfOfSendingTime <370>`."""
 
     # Which application version speaks, under FIXT.
 
-    ApplVerID: Annotated[str | None, DECLARATIONS[1128]] = None
+    ApplVerID: Annotated[str | None, DECLARED["ApplVerID"]] = None
     """`ApplVerID <1128>`."""
 
-    CstmApplVerID: Annotated[str | None, DECLARATIONS[1129]] = None
+    CstmApplVerID: Annotated[str | None, DECLARED["CstmApplVerID"]] = None
     """`CstmApplVerID <1129>`."""
 
-    ApplExtID: Annotated[int | None, DECLARATIONS[1156]] = None
+    ApplExtID: Annotated[int | None, DECLARED["ApplExtID"]] = None
     """`ApplExtID <1156>`."""
 
     # How the payload is written, when it is not plain ASCII.
 
-    MessageEncoding: Annotated[str | None, DECLARATIONS[347]] = None
+    MessageEncoding: Annotated[str | None, DECLARED["MessageEncoding"]] = None
     """`MessageEncoding <347>`."""
 
-    XmlDataLen: Annotated[int | None, DECLARATIONS[212]] = None
+    XmlDataLen: Annotated[int | None, DECLARED["XmlDataLen"]] = None
     """`XmlDataLen <212>`."""
 
-    XmlData: Annotated[bytes | None, DECLARATIONS[213]] = None
+    XmlData: Annotated[bytes | None, DECLARED["XmlData"]] = None
     """`XmlData <213>`, as the bytes it is."""
 
     # And how it is sealed.
 
-    SecureDataLen: Annotated[int | None, DECLARATIONS[90]] = None
+    SecureDataLen: Annotated[int | None, DECLARED["SecureDataLen"]] = None
     """`SecureDataLen <90>`."""
 
-    SecureData: Annotated[bytes | None, DECLARATIONS[91]] = None
+    SecureData: Annotated[bytes | None, DECLARED["SecureData"]] = None
     """`SecureData <91>`, as the bytes it is."""
 
-    SignatureLength: Annotated[int | None, DECLARATIONS[93]] = None
+    SignatureLength: Annotated[int | None, DECLARED["SignatureLength"]] = None
     """`SignatureLength <93>`."""
 
-    Signature: Annotated[bytes | None, DECLARATIONS[89]] = None
+    Signature: Annotated[bytes | None, DECLARED["Signature"]] = None
     """`Signature <89>`, as the bytes it is."""
 
     # What was traded.
 
-    Symbol: Annotated[str | None, DECLARATIONS[55]] = None
+    Symbol: Annotated[str | None, DECLARED["Symbol"]] = None
     """`Symbol <55>`: ticker symbol."""
 
-    SecurityID: Annotated[str | None, DECLARATIONS[48]] = None
+    SecurityID: Annotated[str | None, DECLARED["SecurityID"]] = None
     """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
 
-    SecurityIDSource: Annotated[str | None, DECLARATIONS[22]] = None
+    SecurityIDSource: Annotated[str | None, DECLARED["SecurityIDSource"]] = None
     """`SecurityIDSource <22>`: which scheme `SecurityID` is in -- `4` is ISIN."""
 
-    SecurityType: Annotated[str | None, DECLARATIONS[167]] = None
+    SecurityType: Annotated[str | None, DECLARED["SecurityType"]] = None
     """`SecurityType <167>`."""
 
-    CFICode: Annotated[str | None, DECLARATIONS[461]] = None
+    CFICode: Annotated[str | None, DECLARED["CFICode"]] = None
     """`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells it."""
 
-    SecurityExchange: Annotated[str | None, DECLARATIONS[207]] = None
+    SecurityExchange: Annotated[str | None, DECLARED["SecurityExchange"]] = None
     """`SecurityExchange <207>`: the market the instrument is listed on."""
 
-    Currency: Annotated[str | None, DECLARATIONS[15]] = None
+    Currency: Annotated[str | None, DECLARED["Currency"]] = None
     """`Currency <15>`, which is what the prices below are in."""
 
     # Who asked, and under which identifiers.
 
-    Account: Annotated[str | None, DECLARATIONS[1]] = None
+    Account: Annotated[str | None, DECLARED["Account"]] = None
     """`Account <1>`."""
 
-    ClOrdID: Annotated[str | None, DECLARATIONS[11]] = None
+    ClOrdID: Annotated[str | None, DECLARED["ClOrdID"]] = None
     """`ClOrdID <11>`: the client's own identifier for the order."""
 
-    OrigClOrdID: Annotated[str | None, DECLARATIONS[41]] = None
+    OrigClOrdID: Annotated[str | None, DECLARED["OrigClOrdID"]] = None
     """`OrigClOrdID <41>`: which order an amendment or cancel is about."""
 
-    OrderID: Annotated[str | None, DECLARATIONS[37]] = None
+    OrderID: Annotated[str | None, DECLARED["OrderID"]] = None
     """`OrderID <37>`: the venue's identifier for it."""
 
-    ExecID: Annotated[str | None, DECLARATIONS[17]] = None
+    ExecID: Annotated[str | None, DECLARED["ExecID"]] = None
     """`ExecID <17>`: the venue's identifier for this execution report."""
 
     # On what terms.
 
-    Side: Annotated[str | None, DECLARATIONS[54]] = None
+    Side: Annotated[str | None, DECLARED["Side"]] = None
     """`Side <54>`: `1` buy, `2` sell, and the rest of the standard's codes."""
 
-    OrdType: Annotated[str | None, DECLARATIONS[40]] = None
+    OrdType: Annotated[str | None, DECLARED["OrdType"]] = None
     """`OrdType <40>`: `1` market, `2` limit, ..."""
 
-    TimeInForce: Annotated[str | None, DECLARATIONS[59]] = None
+    TimeInForce: Annotated[str | None, DECLARED["TimeInForce"]] = None
     """`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ..."""
 
     # Where it stands.
 
-    OrdStatus: Annotated[str | None, DECLARATIONS[39]] = None
+    OrdStatus: Annotated[str | None, DECLARED["OrdStatus"]] = None
     """`OrdStatus <39>`: where the order stands."""
 
-    ExecType: Annotated[str | None, DECLARATIONS[150]] = None
+    ExecType: Annotated[str | None, DECLARED["ExecType"]] = None
     """`ExecType <150>`: what this report is reporting."""
 
     # For how much, at what price.
 
-    OrderQty: Annotated[float | None, DECLARATIONS[38]] = None
+    OrderQty: Annotated[float | None, DECLARED["OrderQty"]] = None
     """`OrderQty <38>`: how much was asked for."""
 
-    Price: Annotated[float | None, DECLARATIONS[44]] = None
+    Price: Annotated[float | None, DECLARED["Price"]] = None
     """`Price <44>`: the limit, when there is one."""
 
-    AvgPx: Annotated[float | None, DECLARATIONS[6]] = None
+    AvgPx: Annotated[float | None, DECLARED["AvgPx"]] = None
     """`AvgPx <6>`: the average of what has filled so far."""
 
-    CumQty: Annotated[float | None, DECLARATIONS[14]] = None
+    CumQty: Annotated[float | None, DECLARED["CumQty"]] = None
     """`CumQty <14>`: how much has filled."""
 
-    LeavesQty: Annotated[float | None, DECLARATIONS[151]] = None
+    LeavesQty: Annotated[float | None, DECLARED["LeavesQty"]] = None
     """`LeavesQty <151>`: how much is still working."""
 
-    LastPx: Annotated[float | None, DECLARATIONS[31]] = None
+    LastPx: Annotated[float | None, DECLARED["LastPx"]] = None
     """`LastPx <31>`: the price of this fill."""
 
-    LastQty: Annotated[float | None, DECLARATIONS[32]] = None
+    LastQty: Annotated[float | None, DECLARED["LastQty"]] = None
     """`LastQty <32>`: the size of this fill."""
 
     # When it happened, and whatever was said about it.
 
-    TransactTime: Annotated[datetime.datetime | None, DECLARATIONS[60]] = None
+    TransactTime: Annotated[datetime.datetime | None, DECLARED["TransactTime"]] = None
     """`TransactTime <60>`: when the business event happened, in UTC."""
 
-    Text: Annotated[str | None, DECLARATIONS[58]] = None
+    Text: Annotated[str | None, DECLARED["Text"]] = None
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
     # in `entries`; a value is lifted only when it occurs once on the line.
 
-    QuoteID: Annotated[str | None, DECLARATIONS[117]] = None
+    QuoteID: Annotated[str | None, DECLARED["QuoteID"]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
 
-    QuoteReqID: Annotated[str | None, DECLARATIONS[131]] = None
+    QuoteReqID: Annotated[str | None, DECLARED["QuoteReqID"]] = None
     """`QuoteReqID <131>`: request this quote answers."""
 
-    QuoteType: Annotated[int | None, DECLARATIONS[537]] = None
+    QuoteType: Annotated[int | None, DECLARED["QuoteType"]] = None
     """`QuoteType <537>`: indicative, tradeable or restricted quote kind."""
 
-    QuoteStatus: Annotated[int | None, DECLARATIONS[297]] = None
+    QuoteStatus: Annotated[int | None, DECLARED["QuoteStatus"]] = None
     """`QuoteStatus <297>`: quote acknowledgement state."""
 
-    QuoteRejectReason: Annotated[int | None, DECLARATIONS[300]] = None
+    QuoteRejectReason: Annotated[int | None, DECLARED["QuoteRejectReason"]] = None
     """`QuoteRejectReason <300>` when a quote is rejected."""
 
-    QuoteRespType: Annotated[int | None, DECLARATIONS[694]] = None
+    QuoteRespType: Annotated[int | None, DECLARED["QuoteRespType"]] = None
     """`QuoteRespType <694>`: quote response action."""
 
-    QuoteCancelType: Annotated[int | None, DECLARATIONS[298]] = None
+    QuoteCancelType: Annotated[int | None, DECLARED["QuoteCancelType"]] = None
     """`QuoteCancelType <298>`: scope of a quote cancellation."""
 
-    BidPx: Annotated[float | None, DECLARATIONS[132]] = None
+    BidPx: Annotated[float | None, DECLARED["BidPx"]] = None
     """`BidPx <132>`: quoted bid price."""
 
-    OfferPx: Annotated[float | None, DECLARATIONS[133]] = None
+    OfferPx: Annotated[float | None, DECLARED["OfferPx"]] = None
     """`OfferPx <133>`: quoted offer price."""
 
-    BidSize: Annotated[float | None, DECLARATIONS[134]] = None
+    BidSize: Annotated[float | None, DECLARED["BidSize"]] = None
     """`BidSize <134>`: quoted bid quantity."""
 
-    OfferSize: Annotated[float | None, DECLARATIONS[135]] = None
+    OfferSize: Annotated[float | None, DECLARED["OfferSize"]] = None
     """`OfferSize <135>`: quoted offer quantity."""
 
-    DefBidSize: Annotated[float | None, DECLARATIONS[293]] = None
+    DefBidSize: Annotated[float | None, DECLARED["DefBidSize"]] = None
     """`DefBidSize <293>`: default bid quantity for a quote set."""
 
-    DefOfferSize: Annotated[float | None, DECLARATIONS[294]] = None
+    DefOfferSize: Annotated[float | None, DECLARED["DefOfferSize"]] = None
     """`DefOfferSize <294>`: default offer quantity for a quote set."""
 
-    ValidUntilTime: Annotated[datetime.datetime | None, DECLARATIONS[62]] = None
+    ValidUntilTime: Annotated[datetime.datetime | None, DECLARED["ValidUntilTime"]] = None
     """`ValidUntilTime <62>`: quote expiry in UTC."""
 
-    NoQuoteSets: Annotated[int | None, DECLARATIONS[296]] = None
+    NoQuoteSets: Annotated[int | None, DECLARED["NoQuoteSets"]] = None
     """`NoQuoteSets <296>`: quote-set group count."""
 
-    NoQuoteEntries: Annotated[int | None, DECLARATIONS[295]] = None
+    NoQuoteEntries: Annotated[int | None, DECLARED["NoQuoteEntries"]] = None
     """`NoQuoteEntries <295>`: quote-entry group count."""
 
-    QuoteSetID: Annotated[str | None, DECLARATIONS[302]] = None
+    QuoteSetID: Annotated[str | None, DECLARED["QuoteSetID"]] = None
     """`QuoteSetID <302>`: quote-set identifier."""
 
-    QuoteEntryID: Annotated[str | None, DECLARATIONS[299]] = None
+    QuoteEntryID: Annotated[str | None, DECLARED["QuoteEntryID"]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
     # Last, and lists: what the instrument's two repeating groups carry. Last
@@ -1113,8 +1119,8 @@ class FixMsg(Message):
             # Direction reads the verb before the payload, so it is resolved
             # here, where the classification saying which token opens the
             # payload was just computed -- and written back onto the batch,
-            # appended where a stored batch predates the column, so the
-            # partial fast path's slices carry it too. Only a row that
+            # appended where the batch has no such column, so the partial
+            # fast path's slices carry it too. Only a row that
             # still has its text answers fresh: a projected row dropped the
             # message, and the stored answer is the only one there is.
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
@@ -1135,8 +1141,8 @@ class FixMsg(Message):
             protocols = columns.get("protocol_code")
             if protocols is None:
                 raise ValueError(
-                    "a projected Message batch needs protocol_code; reparse the v3 message "
-                    "contract before dropping message"
+                    "a projected Message batch needs protocol_code; reparse the "
+                    "messages before dropping message"
                 )
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
 
@@ -2130,10 +2136,10 @@ def _fix_enum_arrow(values: pyarrow.Array, enum_type: type[Any]) -> pyarrow.Arra
 
 @functools.cache
 def _id_source_arrays() -> tuple[pyarrow.Array, pyarrow.Array]:
-    """FIX identifier-source spellings and their persisted names."""
-    declared = {spelling: member.name for member in IdSource if (spelling := member.into_fix())}
-    return pyarrow.array(declared, pyarrow.string()), pyarrow.array(
-        declared.values(), pyarrow.string()
+    """Identifier-scheme wire values and the names the dictionary gives them."""
+    declared = id_schemes()
+    return pyarrow.array(list(declared), pyarrow.string()), pyarrow.array(
+        list(declared.values()), pyarrow.string()
     )
 
 
@@ -2146,7 +2152,7 @@ def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
     fallback = compute.if_else(
         compute.fill_null(compute.greater(compute.binary_length(values), 0), False),
         values,
-        pyarrow.scalar(IdSource.UNKNOWN.name),
+        pyarrow.scalar(UNKNOWN_SCHEME),
     )
     return compute.coalesce(known, fallback)
 
@@ -2200,9 +2206,9 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
     alternatives = dict(instrument.alt_ids or {})
     if instrument.isin_code and not (
         instrument.security_id == instrument.isin_code
-        and _id_source(instrument.security_id_source) == "4"
+        and id_scheme(instrument.security_id_source) == ISIN_SCHEME
     ):
-        alternatives.setdefault("ISIN", instrument.isin_code)
+        alternatives.setdefault(ISIN_SCHEME, instrument.isin_code)
     if alternatives:
         pairs.append(("NoSecurityAltID", str(len(alternatives))))
         for index, (source, value) in enumerate(sorted(alternatives.items())):
@@ -2251,7 +2257,7 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 @functools.cache
 def _tags_by_name() -> Mapping[str, int]:
     """Canonical FIX names to the tags declared by this parsed-row contract."""
-    return MappingProxyType({member.name.casefold(): tag for tag, member in DECLARATIONS.items()})
+    return MappingProxyType({name.casefold(): member.fix.tag for name, member in DECLARED.items()})
 
 
 def _tag_of(name: str) -> int:
@@ -2317,12 +2323,20 @@ def _pair_identity(key: Any) -> tuple[str, int | str]:
 
 
 def _id_source(value: Any) -> str:
-    """An identifier scheme name or wire character as its FIX value."""
-    from rekep.enums import IdSource
+    """An identifier scheme, as the wire value the dictionary gives it.
 
+    A value the dictionary already spells as a wire code comes back unchanged,
+    so this is safe on either spelling.
+    """
     text = "" if value is None else str(value)
-    named = IdSource.__members__.get(text.strip().upper())
-    return named.into_fix() if named is not None and named.into_fix() else text
+    scheme = id_scheme(text)
+    return _scheme_values().get(scheme, text) if scheme else text
+
+
+@functools.cache
+def _scheme_values() -> Mapping[str, str]:
+    """`{scheme name: its wire value}` -- the inverse of `id_schemes()`."""
+    return MappingProxyType({name: value for value, name in id_schemes().items()})
 
 
 @functools.cache

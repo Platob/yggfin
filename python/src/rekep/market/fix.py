@@ -15,7 +15,6 @@ from rekep.enums import (
     AssetKind,
     Currency,
     EventType,
-    IdSource,
     MarketKind,
     OptionKind,
     Side,
@@ -24,7 +23,7 @@ from rekep.enums import (
 )
 from rekep.fields import StructField, encoded_key
 from rekep.fix.access import FieldAccess
-from rekep.fix.columns import IDENTIFIER_FIELDS
+from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
@@ -234,6 +233,15 @@ _STATE_FIELDS = ("OrdStatus", "ExecType", "MDUpdateAction", "QuoteStatus", "Quot
 #: Folded wherever the dictionary's own spellings are folded, never over an
 #: explicit code.
 _SPELLING_SHORTHAND: Mapping[str, str] = types.MappingProxyType({"cancel": "canceled"})
+
+
+@functools.cache
+def _tag_of(name: str) -> int:
+    """One field's tag, from the dictionary. `MarketKind.fix_mapping()` is keyed
+    by tag and the call site already names the field, so the number is spare."""
+    return int(FixRegistry.from_builtin().scalar(name).fix.tag)
+
+
 RAW_METADATA_FIELDS = frozenset(_STATE_FIELDS) | {
     "OrdType",
     "CxlQty",
@@ -378,14 +386,14 @@ class MarketTags:
     def order_kinds(self) -> Mapping[str, MarketKind]:
         """`OrdType <40>` codes and dictionary spellings, as the kind each means."""
         return types.MappingProxyType(
-            _worded_values(self.registry, "OrdType", MarketKind.fix_mapping()[40])
+            _worded_values(self.registry, "OrdType", MarketKind.fix_mapping()[_tag_of("OrdType")])
         )
 
     @functools.cached_property
     def execution_kinds(self) -> Mapping[str, MarketKind]:
         """`ExecType <150>` codes and dictionary spellings, as the kind each means."""
         return types.MappingProxyType(
-            _worded_values(self.registry, "ExecType", MarketKind.fix_mapping()[150])
+            _worded_values(self.registry, "ExecType", MarketKind.fix_mapping()[_tag_of("ExecType")])
         )
 
     @functools.cached_property
@@ -1234,12 +1242,13 @@ class FixEvents(Convertible):
         found: dict[str, str] = {}
         for entry in entries:
             named = entry.get("SecurityAltID")
-            raw_scheme = entry.get("SecurityAltIDSource")
-            scheme = IdSource.from_fix(raw_scheme, IdSource.UNKNOWN)
             if not named:
                 continue
-            key = scheme.name if scheme is not IdSource.UNKNOWN else (raw_scheme or "")
-            found.setdefault(key or IdSource.UNKNOWN.name, named)
+            raw_scheme = entry.get("SecurityAltIDSource")
+            # The dictionary's own name for the scheme, the raw value where it
+            # declares none, and one name for "the message did not say".
+            key = id_scheme(raw_scheme) or str(raw_scheme or "")
+            found.setdefault(key or UNKNOWN_SCHEME, named)
         return found
 
     def into_legs(self) -> list[Leg]:
@@ -1541,7 +1550,7 @@ def _classified(cfi: str | None, security_type: str | None) -> AssetKind:
     and a reading that stopped at the CFI left every one of those `UNKNOWN`.
     """
     if cfi:
-        found = AssetKind.from_fix(cfi[:1], AssetKind.UNKNOWN)
+        found = AssetKind.from_cfi(cfi[:1])
         if found is not AssetKind.UNKNOWN:
             return found
     if security_type:

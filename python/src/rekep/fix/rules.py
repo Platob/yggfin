@@ -128,22 +128,6 @@ class Rule(Convertible):
         else:
             self.extra_entry_separators = tuple(self.extra_entry_separators)
 
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> Rule:
-        """Read a rule document, folding the retired `patterns` list.
-
-        A rule used to carry additional regexes in a `patterns` list beside
-        `pattern`. The two spellings collapsed into the one alternation, and a
-        stored document from that shape must keep classifying the same lines
-        rather than silently losing every pattern past the first.
-        """
-        spelled = dict(mapping)
-        legacy = spelled.pop("patterns", None)
-        if legacy:
-            plural = [legacy] if isinstance(legacy, str) else list(legacy)
-            spelled["pattern"] = joined_pattern(str(spelled.get("pattern") or ""), *plural)
-        return super().from_dict(spelled)
-
     @property
     def named(self) -> bool | None:
         """What `parse_arrow_array`'s `named` is for this rule; None is "no message"."""

@@ -107,7 +107,7 @@ regulatory stamp lands behind rows already read — so:
   reorder window is needed, because the sort is the storage engine's and not
   the stream's.
 - `hash` changes for every row whose `unix` moved, since `unix` is part of a
-  version's identity. Existing tables are rebuilt, not appended to.
+  version's identity.
 
 ## Layout
 

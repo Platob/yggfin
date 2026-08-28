@@ -112,6 +112,9 @@ def refuse_record(record: Field) -> Field:
         raise ValueError("a FIX field record has no name")
     if not fix.versions:
         raise ValueError(f"FIX field {name!r} is declared for no version")
+    # The one tag written down rather than asked for. This runs while the
+    # store is being read, and asking the registry which tag `MsgType` is
+    # would re-enter the read that is calling it.
     if fix.event_types and fix.tag != 35:
         raise ValueError("FIX event types belong to MsgType <35>")
     return record

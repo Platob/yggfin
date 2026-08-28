@@ -14,12 +14,12 @@ from rekep.enums import (
     AssetKind,
     Currency,
     EventType,
-    IdSource,
     OptionKind,
     Side,
     State,
 )
 from rekep.fields import Field, scalar
+from rekep.fix.columns import ISIN_SCHEME, id_scheme
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import HOUR, Event
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -130,7 +130,7 @@ class Instrument(Event):
     # instruments carry no alternative at all, and a null says that where an
     # empty map says "it sent an empty list of them".
     alt_ids: dict[str, str] | None = None
-    """Every other identifier the message carried, keyed by `IdSource`'s name."""
+    """Every other identifier the message carried, keyed by its scheme's name."""
 
     security_type: Annotated[str | None, fix_tag("SecurityType")] = None
     """What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`, `MLEG`."""
@@ -197,9 +197,9 @@ class Instrument(Event):
 
     def into_isin(self) -> str | None:
         """The ISO 6166 identifier this instrument carries, from either place."""
-        if self.security_id and IdSource.from_fix(self.security_id_source) is IdSource.ISIN:
+        if self.security_id and id_scheme(self.security_id_source) == ISIN_SCHEME:
             return self.security_id
-        return (self.alt_ids or {}).get(IdSource.ISIN.name)
+        return (self.alt_ids or {}).get(ISIN_SCHEME)
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
         """This instrument plus whatever `other` knows and it does not, or None."""

@@ -149,7 +149,7 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
         kind=AssetKind.MULTILEG,
         security_id="FR0000000001",
         security_id_source="4",
-        alt_ids={"RIC": "CAL.N"},
+        alt_ids={"RIC_CODE": "CAL.N"},
         security_type="MLEG",
         exchange="XPAR",
         currency=Currency.EUR,
@@ -203,7 +203,7 @@ def test_normalized_instrument_batches_decode_without_python_rows(
             kind=AssetKind.MULTILEG,
             security_id="FR0000000001",
             security_id_source="4",
-            alt_ids={"ISIN": "FR0000000001", "RIC": "CAL.N", "Z": "vendor"},
+            alt_ids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N", "Z": "vendor"},
             security_type="MLEG",
             exchange="XPAR",
             currency=Currency.EUR,
@@ -295,13 +295,13 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
     first = Instrument(
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        alt_ids={"RIC": "CAL.N", "ISIN": "FR0000000001"},
+        alt_ids={"RIC_CODE": "CAL.N", "ISIN_NUMBER": "FR0000000001"},
         maturity=maturity,
         legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturity=maturity)],
     )
     reordered = dataclasses.replace(
         first,
-        alt_ids={"ISIN": "FR0000000001", "RIC": "CAL.N"},
+        alt_ids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N"},
     )
 
     one = dataclasses.replace(first, unix=1).with_previous(None)

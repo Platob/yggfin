@@ -226,13 +226,15 @@ def _versions(
     tags: pyarrow.Array,
     values: pyarrow.Array,
     rows: int,
-    begin_strings: pyarrow.Array | None = None,
+    begin_strings: pyarrow.Array | None,
 ) -> tuple[pyarrow.Array, pyarrow.Array]:
     """Resolve one common non-transport BeginString once for the whole batch.
 
-    `begin_strings` is the column the raw stage lifted the tag into; a batch
-    written before it existed still carries the tag in `entries`, so both are
-    read and the column leads.
+    `begin_strings` is the column the raw stage lifted the tag into. It leads
+    and `entries` fills it, which is the one rule every lifted column is read
+    under: a column that is null and a column a projection dropped are the
+    same absence, and the tag is still in the list either way. Stated rather
+    than defaulted, so a caller says which of the two it is handing over.
     """
     spelled = _begin_strings(entries, tags, values, rows, begin_strings)
     if spelled is not None and spelled.null_count == 0:

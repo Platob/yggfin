@@ -1,7 +1,7 @@
 name: Message
 type: struct
 description: One log header, its provenance, and its protocol-neutral payload.
-metadata: {namespace: rekep.text.message, version: '3'}
+metadata: {namespace: rekep.text.message, version: '1'}
 fields:
 - name: unix
   type: int64

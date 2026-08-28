@@ -86,5 +86,5 @@ changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
 The projected conversion requires the `MsgType`, `entries` and
-`protocol_code` columns of [Message contract 3](../../contracts/index.md), and
-refuses an older source table with a rebuild instruction.
+`protocol_code` columns of the [Message contract](../../contracts/index.md),
+and refuses a source without them rather than reporting an empty run.

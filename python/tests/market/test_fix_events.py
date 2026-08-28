@@ -1059,7 +1059,7 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     for one in found:
         instrument = one.into_instrument()
         assert instrument is reader.instrument, "one message, one instrument"
-        assert instrument.alt_ids == {"ISIN": "US0378331005"}
+        assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005"}
         assert instrument.isin_code == "US0378331005"
 
 
@@ -1144,7 +1144,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
     reader = FixEvents(message=stored)
     instrument = reader.instrument
 
-    assert instrument.alt_ids == {"ISIN": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isin_code == "US0378331005"
     assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", Side.BUY, 1.0),

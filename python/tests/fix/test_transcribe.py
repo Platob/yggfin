@@ -493,12 +493,12 @@ def test_entries_version_inference_matches_scalar_without_materialising_rows(
     whole = _entries_array(rows)
     chunked = pyarrow.chunked_array([whole.slice(0, 5), whole.slice(5)], type=ENTRIES)
     for entries in (whole, chunked):
-        versions, sources = codec.versions_of_entries(entries)
+        versions, sources = codec.versions_of_entries(entries, None)
         assert list(zip(versions.to_pylist(), sources.to_pylist(), strict=True)) == expected
 
 
 def test_entries_version_inference_keeps_empty_columns_typed(codec: FixCodec) -> None:
-    versions, sources = codec.versions_of_entries(pyarrow.array([], type=ENTRIES))
+    versions, sources = codec.versions_of_entries(pyarrow.array([], type=ENTRIES), None)
     assert versions.type == sources.type == pyarrow.string()
     assert len(versions) == len(sources) == 0
 
