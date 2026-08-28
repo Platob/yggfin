@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateUnadjusted",
-   "required": false,
-   "tag": 42790
+ "declaration": {
+  "name": "UnderlyingCashSettlDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingCashSettlDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateBusinessDayConvention",
-   "required": false,
-   "tag": 42791
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingCashSettlDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateRelativeTo",
-   "required": false,
-   "tag": 42792
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateOffsetPeriod",
-   "required": false,
-   "tag": 42793
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateOffsetUnit",
-   "required": false,
-   "tag": 42794
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateOffsetDayType",
-   "required": false,
-   "tag": 42795
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashSettlDateAdjusted",
-   "required": false,
-   "tag": 42796
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingCashSettlDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42790"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42791"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingCashSettlDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingCashSettlDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42792"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42793"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42794"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42795"
+    }
+   },
+   {
+    "name": "UnderlyingCashSettlDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42796"
+    }
+   }
+  ]
+ }
 }

@@ -9,12 +9,14 @@ assert side.sign == 1
 assert side.opposite is Side.SELL
 ```
 
-Side packs a readable mnemonic as four NUL-padded ASCII bytes in one `int32`.
-`BID` and `ASK` are aliases of `BUY` and `SELL`.
+Side packs a readable mnemonic as big-endian ASCII in one `int32`,
+left-justified with trailing NULs like every other ASCII code, so the stored
+integer orders exactly as the mnemonic does. `BID` and `ASK` are aliases of
+`BUY` and `SELL`.
 
 | Key | Mnemonic | Stored value | FIX code | Meaning |
 | --- | --- | ---: | --- | --- |
-| `UNKNOWN` | | 0 | | No side stated. |
+| `UNKNOWN` |  | 0 |  | No side stated. |
 | `BUY` | `BUY` | 1,112,889,600 | `1` | Buying and book bid. |
 | `BID` | `BUY` | 1,112,889,600 | `1` | Alias of `BUY`. |
 | `BUY_MINUS` | `BYMN` | 1,113,148,750 | `3` | Buy not above the last differing price. |

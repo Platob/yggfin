@@ -9,144 +9,142 @@ from __future__ import annotations
 
 import enum
 import functools
-import json
 import re
-from collections import OrderedDict
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from rekep.enums.ranged import (
-    _ASCII_ALIASES,
-    _ASCII_REGISTERED,
-    _ASCII_REGISTERED_LIMIT,
-    Ranged,
-    _AsciiInt32,
-    _FixedAsciiInt32,
-)
+from rekep.enums.ascii_codes import Ascii32, Ascii64
 
 
-class AssetKind(Ranged):
-    """Tradable asset kind banded by settlement."""
+class AssetKind(Ascii64):
+    """Tradable asset kind, banded by settlement."""
 
     UNKNOWN = 0
-    CASH = 100
-    EQUITY = 110, "E"
-    DEBT = 120, "D"
-    FUND = 130, "C"
-    CURRENCY = 140, "T"
-    COMMODITY = 150, "J"
-    INDEX = 160, "M"
-    DERIVATIVE = 200
-    FUTURE = 210, "F"
-    OPTION = 220, "O"
-    SWAP = 230, "S"
-    WARRANT = 240, "R"
-    FORWARD = 250
-    STRUCTURED = 300
-    SPREAD = 310
-    MULTILEG = 320
-    BASKET = 330
-    FINANCING = 400
-    REPO = 410
-    LOAN = 420
+    CASH = "CASH", "", 100
+    EQUITY = "EQUITY", "E", 110
+    DEBT = "DEBT", "D", 120
+    FUND = "FUND", "C", 130
+    CURRENCY = "CURRENCY", "T", 140
+    COMMODITY = "COMMDTY", "J", 150
+    INDEX = "INDEX", "M", 160
+    DERIVATIVE = "DERIV", "", 200
+    FUTURE = "FUTURE", "F", 210
+    OPTION = "OPTION", "O", 220
+    SWAP = "SWAP", "S", 230
+    WARRANT = "WARRANT", "R", 240
+    FORWARD = "FORWARD", "", 250
+    STRUCTURED = "STRUCTD", "", 300
+    SPREAD = "SPREAD", "", 310
+    MULTILEG = "MULTILEG", "", 320
+    BASKET = "BASKET", "", 330
+    FINANCING = "FINANCE", "", 400
+    REPO = "REPO", "", 410
+    LOAN = "LOAN", "", 420
 
     @property
     def is_derivative(self) -> bool:
         """Whether derivative-specific instrument fields apply."""
-        return self >= AssetKind.DERIVATIVE
+        return self.rank >= AssetKind.DERIVATIVE.rank
 
 
-class EventType(Ranged):
-    """Event kind banded by what the row asserts."""
+class EventType(Ascii64):
+    """Event kind stored as an eight-byte ASCII mnemonic, banded by rank.
+
+    Eight bytes buy explicit spellings -- `ORDER`, `QUOTE`, `EXECUTED` --
+    where four forced abbreviations. The stored value is the readable
+    mnemonic; the band order the row predicates reason over rides in each
+    member's rank, so a kind question compares ranks and a storage scan
+    filters on the finite code sets `ranked_at_least`/`ranked_below` spell.
+    """
 
     UNKNOWN = 0
-    MISC = 10
-    INTENT = 100
-    ORDER = 110
-    QUOTE = 120
-    FACT = 200
-    EXECUTION = 210
-    STATE = 300
-    BOOK = 320
-    INSTRUMENT_STATE = 400
-    INSTRUMENT = 410
+    MISC = "MISC", "", 10
+    INTENT = "INTENT", "", 100
+    ORDER = "ORDER", "", 110
+    QUOTE = "QUOTE", "", 120
+    FACT = "FACT", "", 200
+    EXECUTION = "EXECUTED", "", 210
+    STATE = "STATE", "", 300
+    BOOK = "BOOK", "", 320
+    INSTRUMENT_STATE = "ISTATE", "", 400
+    INSTRUMENT = "INSTRMT", "", 410
 
     @property
     def is_snapshot(self) -> bool:
         """Whether the row is a state rather than an occurrence."""
-        return self >= EventType.STATE
+        return self._rank >= EventType.STATE._rank
 
 
-class IdSource(Ranged):
-    """Instrument identifier scheme banded by issuer."""
+class IdSource(Ascii64):
+    """Instrument identifier scheme, banded by issuer."""
 
     UNKNOWN = 0
-    REGISTERED = 100
-    ISIN = 110, "4"
-    CUSIP = 120, "1"
-    SEDOL = 130, "2"
-    COMMON = 140, "G"
-    VENDOR = 200
-    RIC = 210, "5"
-    BLOOMBERG = 220, "A"
-    LOCAL = 300
-    WERTPAPIER = 310, "B"
-    DUTCH = 320, "C"
-    VALOREN = 330, "D"
-    SICOVAM = 340, "E"
-    BELGIAN = 350, "F"
-    QUIK = 360, "3"
-    VENUE = 400
-    EXCHANGE = 410, "8"
-    CTA = 420, "9"
-    OPRA = 430, "J"
-    CLEARING = 440, "H"
-    MARKETPLACE = 450, "M"
-    OTHER = 500
-    CURRENCY = 510, "6"
-    COUNTRY = 520, "7"
-    ISDA_SPEC = 530, "I"
-    ISDA_URL = 540, "K"
-    CREDIT_LETTER = 550, "L"
+    REGISTERED = "REGISTRD", "", 100
+    ISIN = "ISIN", "4", 110
+    CUSIP = "CUSIP", "1", 120
+    SEDOL = "SEDOL", "2", 130
+    COMMON = "COMMON", "G", 140
+    VENDOR = "VENDOR", "", 200
+    RIC = "RIC", "5", 210
+    BLOOMBERG = "BLOOMBRG", "A", 220
+    LOCAL = "LOCAL", "", 300
+    WERTPAPIER = "WERTPAPR", "B", 310
+    DUTCH = "DUTCH", "C", 320
+    VALOREN = "VALOREN", "D", 330
+    SICOVAM = "SICOVAM", "E", 340
+    BELGIAN = "BELGIAN", "F", 350
+    QUIK = "QUIK", "3", 360
+    VENUE = "VENUE", "", 400
+    EXCHANGE = "EXCHANGE", "8", 410
+    CTA = "CTA", "9", 420
+    OPRA = "OPRA", "J", 430
+    CLEARING = "CLEARING", "H", 440
+    MARKETPLACE = "MKTPLACE", "M", 450
+    OTHER = "OTHER", "", 500
+    CURRENCY = "CURRENCY", "6", 510
+    COUNTRY = "COUNTRY", "7", 520
+    ISDA_SPEC = "ISDASPEC", "I", 530
+    ISDA_URL = "ISDAURL", "K", 540
+    CREDIT_LETTER = "CRDTLTTR", "L", 550
 
     @property
     def is_registered(self) -> bool:
         """Whether identifiers in this scheme are globally issued."""
-        return self.band == IdSource.REGISTERED
+        return self.band is IdSource.REGISTERED
 
 
-class MarketKind(Ranged):
-    """Order pricing and execution semantics in stable bands."""
+class MarketKind(Ascii64):
+    """Order pricing and execution semantics, in stable bands."""
 
     UNKNOWN = 0
-    MARKET = 100
-    MARKET_ORDER = 110
-    MARKET_IF_TOUCHED = 120
-    MARKET_TO_LIMIT = 130
-    LIMIT = 200
-    LIMIT_ORDER = 210
-    LIMIT_ON_CLOSE = 220
-    LIMIT_OR_BETTER = 230
-    STOP = 300
-    STOP_ORDER = 310
-    STOP_LIMIT = 320
-    PEGGED = 400
-    PEGGED_ORDER = 410
-    PREVIOUSLY_QUOTED = 420
-    PREVIOUSLY_INDICATED = 430
-    EXECUTION = 500
-    ORDER_STATUS = 510
-    TRADE = 520
-    TRADE_CORRECT = 530
-    TRADE_CANCEL = 540
-    LOCKED = 550
-    RELEASED = 560
-    CLEARING = 600
-    CLEARING_HOLD = 610
-    RELEASED_TO_CLEARING = 620
-    ACTIVATION = 700
-    TRIGGERED = 710
+    MARKET = "MARKET", "", 100
+    MARKET_ORDER = "MKTORDER", "", 110
+    MARKET_IF_TOUCHED = "MKTIFTCH", "", 120
+    MARKET_TO_LIMIT = "MKTTOLMT", "", 130
+    LIMIT = "LIMIT", "", 200
+    LIMIT_ORDER = "LMTORDER", "", 210
+    LIMIT_ON_CLOSE = "LMTCLOSE", "", 220
+    LIMIT_OR_BETTER = "LMTBETTR", "", 230
+    STOP = "STOP", "", 300
+    STOP_ORDER = "STPORDER", "", 310
+    STOP_LIMIT = "STOPLMT", "", 320
+    PEGGED = "PEGGED", "", 400
+    PEGGED_ORDER = "PEGORDER", "", 410
+    PREVIOUSLY_QUOTED = "PREVQUOT", "", 420
+    PREVIOUSLY_INDICATED = "PREVINDC", "", 430
+    EXECUTION = "EXEC", "", 500
+    ORDER_STATUS = "ORDSTAT", "", 510
+    TRADE = "TRADE", "", 520
+    TRADE_CORRECT = "TRDCORRC", "", 530
+    TRADE_CANCEL = "TRDCANCL", "", 540
+    LOCKED = "LOCKED", "", 550
+    RELEASED = "RELEASED", "", 560
+    CLEARING = "CLEARING", "", 600
+    CLEARING_HOLD = "CLRHOLD", "", 610
+    RELEASED_TO_CLEARING = "RELTOCLR", "", 620
+    ACTIVATION = "ACTIVATN", "", 700
+    TRIGGERED = "TRIGGERD", "", 710
 
     @classmethod
     def fix_mapping(cls) -> dict[int, dict[str, MarketKind]]:
@@ -256,66 +254,75 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 }
 
 
-class OptionKind(Ranged):
+class OptionKind(Ascii64):
     """Option direction read from FIX `PutOrCall <201>`."""
 
     UNKNOWN = 0
-    PUT = 100, "0"
-    CALL = 200, "1"
+    PUT = "PUT", "0", 100
+    CALL = "CALL", "1", 200
 
 
-class State(Ranged):
-    """Event lifecycle ordered by completion."""
+class State(Ascii64):
+    """Event lifecycle, ordered by completion.
 
+    Each code carries its rank as a two-digit prefix, so the stored value
+    sorts exactly as the lifecycle does: `21NEW` before `41FILLED`, every
+    live state below every terminal one. "Still live" and "finished" are
+    rank questions, and a storage scan filters on the code sets
+    `ranked_at_least`, `ranked_below` and `ranked_between` spell -- or on a
+    range, which the ordering now makes honest.
+    """
+
+    #: The rank the terminal states begin at.
     TERMINAL = enum.nonmember(400)
 
     UNKNOWN = 0
     """Nothing has been stated."""
-    PENDING = 100
+    PENDING = "10PENDNG", "", 100
     """Band floor: requested but not acknowledged."""
-    PENDING_NEW = 110
+    PENDING_NEW = "11PNDNEW", "", 110
     """Awaiting first venue acknowledgement."""
-    OPEN = 200
+    OPEN = "20OPEN", "", 200
     """Band floor: live at the venue."""
-    NEW = 210
+    NEW = "21NEW", "", 210
     """Acknowledged and working."""
-    ACCEPTED = 220
+    ACCEPTED = "22ACCEPT", "", 220
     """Accepted but not yet working."""
-    PENDING_REPLACE = 230
+    PENDING_REPLACE = "23PNDRPL", "", 230
     """Amendment pending while the original remains live."""
-    PENDING_CANCEL = 240
+    PENDING_CANCEL = "24PNDCNL", "", 240
     """Cancellation pending while the order remains live."""
-    SUSPENDED = 250
+    SUSPENDED = "25SUSPND", "", 250
     """Held by the venue and resumable."""
-    STOPPED = 260
+    STOPPED = "26STOPPD", "", 260
     """Stopped at a price awaiting a trade."""
-    PARTIAL = 300
+    PARTIAL = "30PARTL", "", 300
     """Band floor: live and partly complete."""
-    PARTIALLY_FILLED = 310
+    PARTIALLY_FILLED = "31PRTFIL", "", 310
     """Some quantity traded; the rest remains live."""
-    DONE = 400
+    DONE = "40DONE", "", 400
     """Band floor and first terminal state."""
-    FILLED = 410
+    FILLED = "41FILLED", "", 410
     """Every share traded."""
-    DONE_FOR_DAY = 420
+    DONE_FOR_DAY = "42DONEDY", "", 420
     """Over for the session."""
-    CALCULATED = 430
+    CALCULATED = "43CALCD", "", 430
     """Priced and closed by the venue."""
-    CLOSED = 500
+    CLOSED = "50CLOSED", "", 500
     """Band floor: over without completion."""
-    CANCELLED = 510
+    CANCELLED = "51CANCLD", "", 510
     """Withdrawn before completion."""
-    REPLACED = 520
+    REPLACED = "52REPLCD", "", 520
     """Superseded by an amendment."""
-    EXPIRED = 530
+    EXPIRED = "53EXPIRD", "", 530
     """Reached expiry while live."""
-    INTERNAL_EXPIRED = 540
+    INTERNAL_EXPIRED = "54INTEXP", "", 540
     """Expired locally after one day without a newer observation."""
-    FAILED = 600
+    FAILED = "60FAILED", "", 600
     """Band floor: refused."""
-    REJECTED = 610
+    REJECTED = "61REJCTD", "", 610
     """Refused; reason fields explain why."""
-    INTERNAL_REJECTED = 620
+    INTERNAL_REJECTED = "62INTREJ", "", 620
     """Refused by this pipeline before it could change market state."""
 
     @classmethod
@@ -417,15 +424,25 @@ class State(Ranged):
     @property
     def is_live(self) -> bool:
         """Whether the event is working at the venue."""
-        return State.OPEN <= self < State.TERMINAL
+        return State.OPEN.rank <= self.rank < State.TERMINAL
 
     @property
     def is_terminal(self) -> bool:
         """Whether no further lifecycle transition is expected."""
-        return self >= State.TERMINAL
+        return self.rank >= State.TERMINAL
+
+    @classmethod
+    def live_codes(cls) -> tuple[int, ...]:
+        """Stored codes of the live states, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member.is_live)
+
+    @classmethod
+    def terminal_codes(cls) -> tuple[int, ...]:
+        """Stored codes of the terminal states, for a pushed scan filter."""
+        return tuple(int(member) for member in cls if member.is_terminal)
 
 
-class MIC(_AsciiInt32):
+class MIC(Ascii32):
     """ISO 10383 code stored as four ASCII bytes in one `int32`."""
 
     _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9]{4}$"))
@@ -442,6 +459,10 @@ class MIC(_AsciiInt32):
     @classmethod
     def _valid(cls, text: str) -> bool:
         return bool(cls._PATTERN.fullmatch(text))
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
@@ -478,142 +499,37 @@ class MIC(_AsciiInt32):
         return compute.coalesce(*encoded)
 
 
-class Currency(_AsciiInt32):
-    """Three uppercase letters plus one ASCII decimal-count digit."""
+class Currency(Ascii32):
+    """ISO 4217 alphabetic code stored as three ASCII letters.
 
-    _PATTERN = enum.nonmember(re.compile(r"^[A-Z]{3}[0-9]$"))
+    Packed like every other ASCII code -- NUL-padded to the storage width --
+    so the fourth byte is simply zero. No decimal count rides in the value:
+    a minor-unit convention is venue data, not part of the code.
+    """
 
-    def __new__(cls, value: int | str, decimals: int = 0) -> Self:
-        if not isinstance(value, str):
-            member = int.__new__(cls, int(value))
-            member._value_ = int(value)
-            member._code = ""
-            member._packed_code = ""
-            member._decimals = 0
-            member._fix_code = ""
-            member._rank = int(value)
-            return member
-        raw = value.strip().upper()
-        code = raw[:3]
-        count = int(raw[3]) if len(raw) == 4 and raw[3].isdigit() else int(decimals)
-        text = f"{code}{count}"
-        packed = cls._pack(text)
-        member = int.__new__(cls, packed)
-        member._value_ = packed
-        member._code = code
-        member._packed_code = text
-        member._decimals = count
-        member._fix_code = code
-        member._rank = packed
-        return member
-
-    @property
-    def decimals(self) -> int:
-        """Decimal count encoded by the fourth ASCII digit."""
-        return self._decimals
-
-    @property
-    def packed_code(self) -> str:
-        """Four ASCII characters written into the `int32`."""
-        return self._packed_code
+    _PATTERN = enum.nonmember(re.compile(r"^[A-Z]{3}$"))
 
     @classmethod
-    def from_str(cls, value: Any, decimals: int | None = None) -> Self:
-        """Parse `CCC`/`CCCn`; an omitted decimal count is zero."""
-        if isinstance(value, cls):
-            return value
-        if isinstance(value, int):
-            return cls.from_code(value)
-        raw = str(value) if value is not None else ""
-        return cls._from_text(raw) if decimals is None else cls.register(raw, decimals=decimals)
+    def _valid(cls, text: str) -> bool:
+        return bool(cls._PATTERN.fullmatch(text))
 
     @classmethod
-    @functools.lru_cache(maxsize=4_096)
-    def _from_text(cls, raw: str) -> Self:
-        return cls.register(raw)
-
-    @classmethod
-    def register(
-        cls, value: str, *, decimals: int | None = None, aliases: Iterable[str] = ()
-    ) -> Self:
-        """Register one `CCCn` value and optional source aliases."""
-        raw = cls._normalise(value)
-        alias_map = {**cls._built_in_aliases(), **_ASCII_ALIASES.get(cls, {})}
-        raw = alias_map.get(raw, raw)
-        named = cls.__members__.get(raw)
-        if named is not None:
-            raw = named.packed_code
-        if len(raw) == 3:
-            count = 0 if decimals is None else decimals
-            text = f"{raw}{count}"
-        elif len(raw) == 4 and raw[3].isdigit():
-            count = int(raw[3]) if decimals is None else decimals
-            text = f"{raw[:3]}{count}"
-        else:
-            return cls.UNKNOWN
-        if not isinstance(count, int) or not 0 <= count <= 9 or not cls._PATTERN.fullmatch(text):
-            return cls.UNKNOWN
-        packed = cls._pack(text)
-        registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
-        known = cls._value2member_map_.get(packed) or registered.get(packed)
-        if known is None:
-            known = int.__new__(cls, packed)
-            known._name_ = text
-            known._value_ = packed
-            known._code = text[:3]
-            known._packed_code = text
-            known._decimals = count
-            known._fix_code = text[:3]
-            known._rank = packed
-            registered[packed] = known
-            registered.move_to_end(packed)
-            if len(registered) > _ASCII_REGISTERED_LIMIT:
-                registered.popitem(last=False)
-        if aliases:
-            configured = _ASCII_ALIASES.setdefault(cls, {})
-            configured.update({cls._normalise(alias): text for alias in aliases})
-            cls._from_text.cache_clear()
-        return known
-
-    @classmethod
-    def from_code(cls, value: Any, default: Self | None = None) -> Self:
-        """Decode `CCCn`, returning `UNKNOWN` for malformed values."""
-        try:
-            packed = int(value)
-        except (TypeError, ValueError):
-            return default if default is not None else cls.UNKNOWN
-        registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
-        known = cls._value2member_map_.get(packed) or registered.get(packed)
-        if known is not None:
-            return known
-        if packed < 0 or packed >= 1 << 31:
-            return default if default is not None else cls.UNKNOWN
-        try:
-            text = packed.to_bytes(4, "big").decode("ascii")
-        except (OverflowError, UnicodeDecodeError):
-            return default if default is not None else cls.UNKNOWN
-        parsed = cls.register(text)
-        return default if parsed is cls.UNKNOWN and default is not None else parsed
+    def _registers_unknown(cls) -> bool:
+        return True
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:
         return {
-            "$": "USD0",
-            "US$": "USD0",
-            "\u20ac": "EUR0",
-            "\u00a3": "GBP0",
-            "\u00a5": "JPY0",
+            "$": "USD",
+            "US$": "USD",
+            "\u20ac": "EUR",
+            "\u00a3": "GBP",
+            "\u00a5": "JPY",
         }
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
-        return {
-            "encoding": "ascii-currency-decimals",
-            "byte_width": "4",
-            "layout": "CCCn",
-            "decimal_byte": "ascii-digit",
-            "aliases": json.dumps(cls._built_in_aliases(), separators=(",", ":"), sort_keys=True),
-        }
+        return {**super().schema_metadata(), "pattern": "[A-Z]{3}"}
 
     UNKNOWN = 0, ""
     """No currency was present."""
@@ -649,7 +565,7 @@ class Currency(_AsciiInt32):
     XXX = "XXX"
 
 
-class Side(_FixedAsciiInt32):
+class Side(Ascii32):
     """Direction stored as a four-byte ASCII mnemonic."""
 
     UNKNOWN = 0
@@ -721,7 +637,7 @@ class Side(_FixedAsciiInt32):
         return self
 
 
-class TimeInForce(_FixedAsciiInt32):
+class TimeInForce(Ascii32):
     """Order lifetime stored as a ranked four-byte ASCII mnemonic."""
 
     UNKNOWN = 0, "", 0

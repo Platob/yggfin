@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMarginReqmtInqQualifier",
-   "required": false,
-   "tag": 1636,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "MarginReqmtInqQualGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarginReqmtInqQualGrp",
+   "msgtypes": "[\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMarginReqmtInqQualifier",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1636"
+    },
+    "item": {
      "name": "MarginReqmtInqQualifier",
-     "required": false,
-     "tag": 1637
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarginReqmtInqQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1637"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

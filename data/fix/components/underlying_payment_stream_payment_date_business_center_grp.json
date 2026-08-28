@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentStreamPaymentDateBusinessCenters",
-   "required": false,
-   "tag": 40969,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "UnderlyingPaymentStreamPaymentDateBusinessCenterGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamPaymentDateBusinessCenterGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentStreamPaymentDateBusinessCenters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40969"
+    },
+    "item": {
      "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
-     "required": false,
-     "tag": 40582
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40582"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

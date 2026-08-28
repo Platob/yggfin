@@ -1,0 +1,168 @@
+{
+ "name": "QuoteRequest",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "QuoteRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuoteRequest",
+   "msgtype": "R"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "RFQReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "644"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "BookingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "775"
+    }
+   },
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "528"
+    }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   },
+   {
+    "name": "PrivateQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1171"
+    }
+   },
+   {
+    "name": "RespondentType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1172"
+    }
+   },
+   {
+    "name": "PreTradeAnonymity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1091"
+    }
+   },
+   {
+    "name": "RootParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RootParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "QuotReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "QuotReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "ComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2404"
+    }
+   },
+   {
+    "name": "EncodedComplianceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2351"
+    }
+   },
+   {
+    "name": "EncodedComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2352"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

@@ -3,111 +3,162 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationPeriodDatesXID",
-   "required": false,
-   "tag": 41957
+ "declaration": {
+  "name": "UnderlyingStreamCalculationPeriodDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStreamCalculationPeriodDates",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
-   "required": false,
-   "tag": 41958
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationPeriodBusinessDayConvention",
-   "required": false,
-   "tag": 40556
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCalculationPeriodBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamCalculationPeriodDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
-   "required": false,
-   "tag": 40558
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamFirstPeriodStartDateBusinessDayConvention",
-   "required": false,
-   "tag": 40559
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",
-   "required": false,
-   "tag": 40561
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
-   "required": false,
-   "tag": 40562
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamFirstCompoundingPeriodEndDateUnadjusted",
-   "required": false,
-   "tag": 40563
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamLastRegularPeriodEndDateUnadjusted",
-   "required": false,
-   "tag": 40564
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationFrequencyPeriod",
-   "required": false,
-   "tag": 40565
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationFrequencyUnit",
-   "required": false,
-   "tag": 40566
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationRollConvention",
-   "required": false,
-   "tag": 40567
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationBalanceOfFirstPeriod",
-   "required": false,
-   "tag": 41959
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationCorrectionPeriod",
-   "required": false,
-   "tag": 41960
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamCalculationCorrectionUnit",
-   "required": false,
-   "tag": 41961
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingStreamCalculationPeriodDatesXID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41957"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41958"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationPeriodBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40556"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationPeriodBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCalculationPeriodBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamCalculationPeriodDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamCalculationPeriodDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40558"
+    }
+   },
+   {
+    "name": "UnderlyingStreamFirstPeriodStartDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40559"
+    }
+   },
+   {
+    "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40561"
+    }
+   },
+   {
+    "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40562"
+    }
+   },
+   {
+    "name": "UnderlyingStreamFirstCompoundingPeriodEndDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40563"
+    }
+   },
+   {
+    "name": "UnderlyingStreamLastRegularPeriodEndDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40564"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40565"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40566"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40567"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationBalanceOfFirstPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41959"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationCorrectionPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41960"
+    }
+   },
+   {
+    "name": "UnderlyingStreamCalculationCorrectionUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41961"
+    }
+   }
+  ]
+ }
 }

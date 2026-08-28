@@ -1,0 +1,183 @@
+{
+ "name": "SecurityList",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SecurityList",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityList",
+   "msgtype": "y"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecurityReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "964"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SecurityListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1465"
+    }
+   },
+   {
+    "name": "SecurityListRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1466"
+    }
+   },
+   {
+    "name": "SecurityListDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1467"
+    }
+   },
+   {
+    "name": "EncodedSecurityListDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1468"
+    }
+   },
+   {
+    "name": "EncodedSecurityListDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1469"
+    }
+   },
+   {
+    "name": "SecurityListType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1470"
+    }
+   },
+   {
+    "name": "SecurityListTypeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1471"
+    }
+   },
+   {
+    "name": "SecurityReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "320"
+    }
+   },
+   {
+    "name": "SecurityResponseID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "322"
+    }
+   },
+   {
+    "name": "SecurityRequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "560"
+    }
+   },
+   {
+    "name": "SecurityRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1607"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TotNoRelatedSym",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "393"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "SecListGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecListGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

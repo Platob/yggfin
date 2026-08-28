@@ -3,92 +3,147 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+ "declaration": {
+  "name": "SecMassStatGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecMassStatGrp",
+   "msgtypes": "[\"SecurityMassStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "InstrumentExtension",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "InstrmtLegGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RelatedInstrumentGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SecurityTradingStatus",
-     "required": false,
-     "tag": 326
-    },
-    {
-     "kind": "field",
-     "name": "SecurityTradingEvent",
-     "required": false,
-     "tag": 1174
-    },
-    {
-     "kind": "field",
-     "name": "HaltReasonInt",
-     "required": false,
-     "tag": 327
-    },
-    {
-     "kind": "field",
-     "name": "FinancialStatus",
-     "required": false,
-     "tag": 291
-    },
-    {
-     "kind": "field",
-     "name": "CorporateAction",
-     "required": false,
-     "tag": 292
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedInstrumentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedInstrumentGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecurityTradingStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "326"
+       }
+      },
+      {
+       "name": "SecurityTradingEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1174"
+       }
+      },
+      {
+       "name": "HaltReasonInt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "327"
+       }
+      },
+      {
+       "name": "FinancialStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "291"
+       }
+      },
+      {
+       "name": "CorporateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "292"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

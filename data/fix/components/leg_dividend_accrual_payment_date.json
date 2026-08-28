@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateRelativeTo",
-   "required": false,
-   "tag": 42330
+ "declaration": {
+  "name": "LegDividendAccrualPaymentDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDividendAccrualPaymentDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 42331
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 42332
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 42333
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateUnadjusted",
-   "required": false,
-   "tag": 42334
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateBusinessDayConvention",
-   "required": false,
-   "tag": 42335
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendAccrualPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAccrualPaymentDateAdjusted",
-   "required": false,
-   "tag": 42336
-  }
- ]
+  "fields": [
+   {
+    "name": "LegDividendAccrualPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42330"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42331"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42332"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42333"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42334"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42335"
+    }
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendAccrualPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDividendAccrualPaymentDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42336"
+    }
+   }
+  ]
+ }
 }

@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSettlementAmounts",
-   "required": false,
-   "tag": 1700,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "SettlementAmountGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlementAmountGrp",
+   "msgtypes": "[\"AccountSummaryReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSettlementAmounts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1700"
+    },
+    "item": {
      "name": "SettlementAmount",
-     "required": false,
-     "tag": 1701
-    },
-    {
-     "kind": "field",
-     "name": "SettlementAmountCurrency",
-     "required": false,
-     "tag": 1702
-    },
-    {
-     "kind": "field",
-     "name": "SettlementAmountCurrencyCodeSource",
-     "required": false,
-     "tag": 2903
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlementAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1701"
+       }
+      },
+      {
+       "name": "SettlementAmountCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1702"
+       }
+      },
+      {
+       "name": "SettlementAmountCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2903"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

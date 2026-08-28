@@ -3,74 +3,109 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingEvents",
-   "required": false,
-   "tag": 1981,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingEventType",
-     "required": false,
-     "tag": 1982
+ "declaration": {
+  "name": "UnderlyingEvntGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingEvntGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1981"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventDate",
-     "required": false,
-     "tag": 1983
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventTime",
-     "required": false,
-     "tag": 1984
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventTimeUnit",
-     "required": false,
-     "tag": 1985
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventTimePeriod",
-     "required": false,
-     "tag": 1986
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventMonthYear",
-     "required": false,
-     "tag": 2342
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventPx",
-     "required": false,
-     "tag": 1987
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingEventText",
-     "required": false,
-     "tag": 2071
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingEventTextLen",
-     "required": false,
-     "tag": 2072
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingEventText",
-     "required": false,
-     "tag": 2073
+    "item": {
+     "name": "UnderlyingEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1982"
+       }
+      },
+      {
+       "name": "UnderlyingEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1983"
+       }
+      },
+      {
+       "name": "UnderlyingEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1984"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1985"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1986"
+       }
+      },
+      {
+       "name": "UnderlyingEventMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2342"
+       }
+      },
+      {
+       "name": "UnderlyingEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1987"
+       }
+      },
+      {
+       "name": "UnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2071"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2072"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2073"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

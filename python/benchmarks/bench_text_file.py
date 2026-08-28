@@ -577,7 +577,7 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
                     msg_type_event_types=codec.registry.msg_type_event_types(),
                 ) as log:
                     for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-                        parsed = FixMsg.from_message_arrow_batch(batch, codec)
+                        parsed = FixMsg.from_message_batch(batch, codec)
                         seen += parsed.num_rows
                 elapsed = time.perf_counter() - started
             assert seen == rows, f"{seen} rows parsed out of {rows}"

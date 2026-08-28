@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTargetMarketSegments",
-   "required": false,
-   "tag": 1789,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TargetMarketSegmentID",
-     "required": false,
-     "tag": 1790
+ "declaration": {
+  "name": "TargetMarketSegmentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TargetMarketSegmentGrp",
+   "msgtypes": "[\"OrderMassActionReport\",\"OrderMassActionRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTargetMarketSegments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1789"
+    },
+    "item": {
+     "name": "TargetMarketSegment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1790"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

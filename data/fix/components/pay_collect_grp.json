@@ -3,68 +3,101 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPayCollects",
-   "required": false,
-   "tag": 1707,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PayCollectType",
-     "required": false,
-     "tag": 1708
+ "declaration": {
+  "name": "PayCollectGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PayCollectGrp",
+   "msgtypes": "[\"AccountSummaryReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPayCollects",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1707"
     },
-    {
-     "kind": "field",
-     "name": "PayCollectCurrency",
-     "required": false,
-     "tag": 1709
-    },
-    {
-     "kind": "field",
-     "name": "PayCollectCurrencyCodeSource",
-     "required": false,
-     "tag": 2955
-    },
-    {
-     "kind": "field",
-     "name": "PayCollectFXRate",
-     "required": false,
-     "tag": 2094
-    },
-    {
-     "kind": "field",
-     "name": "PayCollectFXRateCalc",
-     "required": false,
-     "tag": 2095
-    },
-    {
-     "kind": "field",
-     "name": "PayAmount",
-     "required": false,
-     "tag": 1710
-    },
-    {
-     "kind": "field",
-     "name": "CollectAmount",
-     "required": false,
-     "tag": 1711
-    },
-    {
-     "kind": "field",
-     "name": "PayCollectMarketSegmentID",
-     "required": false,
-     "tag": 1712
-    },
-    {
-     "kind": "field",
-     "name": "PayCollectMarketID",
-     "required": false,
-     "tag": 1713
+    "item": {
+     "name": "PayCollect",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PayCollectType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1708"
+       }
+      },
+      {
+       "name": "PayCollectCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1709"
+       }
+      },
+      {
+       "name": "PayCollectCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2955"
+       }
+      },
+      {
+       "name": "PayCollectFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2094"
+       }
+      },
+      {
+       "name": "PayCollectFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2095"
+       }
+      },
+      {
+       "name": "PayAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1710"
+       }
+      },
+      {
+       "name": "CollectAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1711"
+       }
+      },
+      {
+       "name": "PayCollectMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1712"
+       }
+      },
+      {
+       "name": "PayCollectMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1713"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

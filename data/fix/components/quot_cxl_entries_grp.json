@@ -6,34 +6,65 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoQuoteEntries",
-   "required": false,
-   "tag": 295,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
+ "declaration": {
+  "name": "QuotCxlEntriesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuotCxlEntriesGrp",
+   "msgtypes": "[\"QuoteCancel\"]"
+  },
+  "fields": [
+   {
+    "name": "NoQuoteEntries",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "295"
     },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "InstrmtLegGrp",
-     "required": false
+    "item": {
+     "name": "QuoteEntry",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

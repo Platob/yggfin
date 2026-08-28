@@ -8,6 +8,7 @@ store the session left behind rather than about the escapes it printed.
 from __future__ import annotations
 
 import io
+import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -15,9 +16,15 @@ import pytest
 
 from rekep.console import Console
 from rekep.fields import Field
-from rekep.fix.entries import FieldEntry
+from rekep.fix.entries import (
+    ComponentRecord,
+    record_document,
+    record_kind,
+    record_of,
+    values_of,
+)
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import Shell, terminal_reader
 
@@ -42,13 +49,13 @@ def store(tmp_path: Path) -> Offline:
         "9.1",
         [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
         components=[
-            SpecComponent(
+            block(
                 "FakeParties",
-                (
-                    SpecGroup(
-                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
-                    ),
-                ),
+                [
+                    group_member(
+                        "NoFakeParties", 90003, [field_member("FakeRole", 90001, required=True)]
+                    )
+                ],
             )
         ],
     )
@@ -162,7 +169,9 @@ def test_an_unknown_verb_is_reported_rather_than_ignored(store: Offline) -> None
 
 
 def test_components_and_component_read_the_declaration(store: Offline) -> None:
-    assert "FakeParties" in _run(store, "components", "quit")
+    listed = _run(store, "components", "quit")
+    assert "FakeParties" in listed
+    assert "msgtype" in listed, "a message is listed here too, and the code says which"
     printed = _run(store, "component FakeParties", "quit")
     assert "NoFakeParties" in printed
     assert "required" in printed, "the spec's own rule, which is what nullability reads"
@@ -172,14 +181,11 @@ def test_component_declarations_are_added_updated_and_removed(
     store: Offline, tmp_path: Path
 ) -> None:
     declaration = tmp_path / "legs.json"
-    declaration.write_text(
-        """{
-  "name": "FakeLegs",
-  "versions": ["9.1"],
-  "members": [{"kind": "field", "name": "FakeCode", "tag": 90002}]
-}
-"""
-    )
+    ComponentRecord(
+        name="FakeLegs",
+        versions=("9.1",),
+        declaration=block("FakeLegs", [field_member("FakeCode", 90002)]),
+    ).into_json(str(declaration))
     assert "added FakeLegs" in _run(store, f"add-component {declaration}", "y", "quit")
     assert store.merged_component("FakeLegs").members[0].name == "FakeCode"
 
@@ -192,15 +198,18 @@ def test_component_declarations_are_added_updated_and_removed(
 
 def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_path: Path) -> None:
     declaration = tmp_path / "venue.json"
-    FieldEntry(
-        name="FAKE.VENUE.CODE",
-        kind="namespace",
-        versions=("*",),
-        type="String",
-        values={"A": "Alpha"},
-    ).into_json(str(declaration))
+    record = record_of(
+        {
+            "name": "FAKE.VENUE.CODE",
+            "kind": "namespace",
+            "versions": ["*"],
+            "type": "String",
+            "values": {"A": "Alpha"},
+        }
+    )
+    declaration.write_text(json.dumps(record_document(record)))
     assert "added FAKE.VENUE.CODE" in _run(store, f"add-field {declaration}", "y", "quit")
-    assert store.resolve("FAKE.VENUE.CODE").values == {"A": "Alpha"}
+    assert store.resolve("FAKE.VENUE.CODE").fix.enumerated == values_of({"A": "Alpha"})
 
     assert "updated FAKE.VENUE.CODE" in _run(store, f"update-field {declaration}", "y", "quit")
 
@@ -223,14 +232,14 @@ def test_add_builds_one_identity_from_answered_questions(store: Offline) -> None
     )
     assert "added FakeVenue" in printed
     entry = store.resolve("FakeVenue")
-    assert (entry.tag, entry.column) == (90004, "fake_venue")
-    assert entry.description == "A venue of ours." and entry.versions == ("9.1",)
+    assert (entry.fix.tag, entry.fix.column) == (90004, "fake_venue")
+    assert entry.description == "A venue of ours." and entry.fix.versions == ("9.1",)
 
 
 def test_a_field_fix_never_numbered_is_added_by_leaving_the_tag_blank(store: Offline) -> None:
     _run(store, "add", "TECH.CLIENTID", "", "*", "String", "", "tech_client_id", "y", "quit")
     entry = store.resolve("TECH.CLIENTID")
-    assert entry.tag is None and entry.kind == "namespace"
+    assert entry.fix.tag is None and record_kind(entry) == "namespace"
 
 
 def test_nothing_is_written_until_the_whole_entry_has_been_shown_back(store: Offline) -> None:
@@ -243,8 +252,12 @@ def test_edit_keeps_every_part_left_unanswered(store: Offline) -> None:
     """A bare Enter is "as it was", which is what makes editing one field one answer."""
     _run(store, "edit FakeRole", "", "", "", "", "", "renamed_column", "y", "quit")
     entry = store.resolve("FakeRole")
-    assert (entry.name, entry.tag, entry.column) == ("FakeRole", 90001, "renamed_column")
-    assert entry.type == "int", "and the type it already had"
+    assert (entry.fix.canonical, entry.fix.tag, entry.fix.column) == (
+        "FakeRole",
+        90001,
+        "renamed_column",
+    )
+    assert entry.fix.type == "int", "and the type it already had"
 
 
 def test_a_tag_that_is_not_a_number_is_refused_before_anything_is_written(
@@ -265,18 +278,18 @@ def test_a_duplicate_tag_is_refused_with_the_reason(store: Offline) -> None:
 def test_alias_records_a_spelling_with_where_it_was_counted(store: Offline) -> None:
     printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "y", "quit")
     assert "answers to" in printed
-    (alias,) = store.resolve("FakeRole").aliases
+    (alias,) = store.resolve("FakeRole").fix.named_aliases
     assert (alias.name, alias.source, alias.occurrences) == ("FAKEROLLE", "brk", 41)
 
 
 def test_alias_previews_and_refuses_invalid_or_unconfirmed_counts(store: Offline) -> None:
     printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "n", "quit")
     assert "nothing was written" in printed
-    assert store.resolve("FakeRole").aliases == ()
+    assert store.resolve("FakeRole").fix.named_aliases == ()
 
     printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "-1", "quit")
     assert "non-negative whole number" in printed
-    assert store.resolve("FakeRole").aliases == ()
+    assert store.resolve("FakeRole").fix.named_aliases == ()
 
 
 def test_remove_asks_first_and_keeps_it_when_the_answer_is_no(store: Offline) -> None:

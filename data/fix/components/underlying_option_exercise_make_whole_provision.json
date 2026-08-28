@@ -3,48 +3,71 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeDate",
-   "required": false,
-   "tag": 42888
+ "declaration": {
+  "name": "UnderlyingOptionExerciseMakeWholeProvision",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingOptionExerciseMakeWholeProvision",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeAmount",
-   "required": false,
-   "tag": 42889
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeBenchmarkCurveName",
-   "required": false,
-   "tag": 42890
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeBenchmarkCurvePoint",
-   "required": false,
-   "tag": 42891
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeRecallSpread",
-   "required": false,
-   "tag": 42892
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeBenchmarkQuote",
-   "required": false,
-   "tag": 42893
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMakeWholeInterpolationMethod",
-   "required": false,
-   "tag": 42894
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingMakeWholeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42888"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42889"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeBenchmarkCurveName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42890"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeBenchmarkCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42891"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeRecallSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42892"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeBenchmarkQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42893"
+    }
+   },
+   {
+    "name": "UnderlyingMakeWholeInterpolationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42894"
+    }
+   }
+  ]
+ }
 }

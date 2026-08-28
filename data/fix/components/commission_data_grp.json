@@ -3,110 +3,157 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoCommissions",
-   "required": false,
-   "tag": 2639,
-   "members": [
-    {
-     "kind": "field",
-     "name": "CommissionAmount",
-     "required": false,
-     "tag": 2640
+ "declaration": {
+  "name": "CommissionDataGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CommissionDataGrp",
+   "msgtypes": "[\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoCommissions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2639"
     },
-    {
-     "kind": "field",
-     "name": "CommissionAmountType",
-     "required": false,
-     "tag": 2641
-    },
-    {
-     "kind": "field",
-     "name": "CommissionAmountSubType",
-     "required": false,
-     "tag": 2725
-    },
-    {
-     "kind": "field",
-     "name": "CommissionBasis",
-     "required": false,
-     "tag": 2642
-    },
-    {
-     "kind": "field",
-     "name": "CommissionCurrency",
-     "required": false,
-     "tag": 2643
-    },
-    {
-     "kind": "field",
-     "name": "CommissionCurrencyCodeSource",
-     "required": false,
-     "tag": 2923
-    },
-    {
-     "kind": "field",
-     "name": "CommissionUnitOfMeasure",
-     "required": false,
-     "tag": 2644
-    },
-    {
-     "kind": "field",
-     "name": "CommissionUnitOfMeasureCurrency",
-     "required": false,
-     "tag": 2645
-    },
-    {
-     "kind": "field",
-     "name": "CommissionUnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2924
-    },
-    {
-     "kind": "field",
-     "name": "CommissionRate",
-     "required": false,
-     "tag": 2646
-    },
-    {
-     "kind": "field",
-     "name": "CommissionSharedIndicator",
-     "required": false,
-     "tag": 2647
-    },
-    {
-     "kind": "field",
-     "name": "CommissionAmountShared",
-     "required": false,
-     "tag": 2648
-    },
-    {
-     "kind": "field",
-     "name": "CommissionLegRefID",
-     "required": false,
-     "tag": 2649
-    },
-    {
-     "kind": "field",
-     "name": "CommissionDesc",
-     "required": false,
-     "tag": 2650
-    },
-    {
-     "kind": "field",
-     "name": "EncodedCommissionDescLen",
-     "required": false,
-     "tag": 2651
-    },
-    {
-     "kind": "field",
-     "name": "EncodedCommissionDesc",
-     "required": false,
-     "tag": 2652
+    "item": {
+     "name": "Commission",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2640"
+       }
+      },
+      {
+       "name": "CommissionAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2641"
+       }
+      },
+      {
+       "name": "CommissionAmountSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2725"
+       }
+      },
+      {
+       "name": "CommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2642"
+       }
+      },
+      {
+       "name": "CommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2643"
+       }
+      },
+      {
+       "name": "CommissionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2923"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2644"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasureCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2645"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2924"
+       }
+      },
+      {
+       "name": "CommissionRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2646"
+       }
+      },
+      {
+       "name": "CommissionSharedIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2647"
+       }
+      },
+      {
+       "name": "CommissionAmountShared",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2648"
+       }
+      },
+      {
+       "name": "CommissionLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2649"
+       }
+      },
+      {
+       "name": "CommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2650"
+       }
+      },
+      {
+       "name": "EncodedCommissionDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2651"
+       }
+      },
+      {
+       "name": "EncodedCommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2652"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

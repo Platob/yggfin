@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMatchingDataPoints",
-   "required": false,
-   "tag": 2781,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MatchingDataPointIndicator",
-     "required": false,
-     "tag": 2782
+ "declaration": {
+  "name": "MatchingDataPointGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MatchingDataPointGrp",
+   "msgtypes": "[\"Confirmation\",\"ConfirmationAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMatchingDataPoints",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2781"
     },
-    {
-     "kind": "field",
-     "name": "MatchingDataPointValue",
-     "required": false,
-     "tag": 2783
-    },
-    {
-     "kind": "field",
-     "name": "MatchingDataPointType",
-     "required": false,
-     "tag": 2784
-    },
-    {
-     "kind": "field",
-     "name": "MatchingDataPointName",
-     "required": false,
-     "tag": 2785
+    "item": {
+     "name": "MatchingDataPoint",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchingDataPointIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2782"
+       }
+      },
+      {
+       "name": "MatchingDataPointValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2783"
+       }
+      },
+      {
+       "name": "MatchingDataPointType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2784"
+       }
+      },
+      {
+       "name": "MatchingDataPointName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2785"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

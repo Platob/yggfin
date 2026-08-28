@@ -1,0 +1,245 @@
+{
+ "name": "OrderCancelReject",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "OrderCancelReject",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderCancelReject",
+   "msgtype": "9"
+  },
+  "fields": [
+   {
+    "name": "OrderID",
+    "type": "string",
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "OrderRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2422"
+    }
+   },
+   {
+    "name": "SecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "198"
+    }
+   },
+   {
+    "name": "SecondaryClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "526"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "ClOrdLinkID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "583"
+    }
+   },
+   {
+    "name": "OrigClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41"
+    }
+   },
+   {
+    "name": "OrdStatus",
+    "type": "string",
+    "fix": {
+     "tag": "39"
+    }
+   },
+   {
+    "name": "WorkingIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "636"
+    }
+   },
+   {
+    "name": "OrigOrdModTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "586"
+    }
+   },
+   {
+    "name": "ListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "TradeOriginationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "229"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "CxlRejResponseTo",
+    "type": "string",
+    "fix": {
+     "tag": "434"
+    }
+   },
+   {
+    "name": "CxlRejReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "102"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "ExDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "100"
+    }
+   },
+   {
+    "name": "ExDestinationIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1133"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

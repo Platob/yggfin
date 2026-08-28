@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingDividendPayments",
-   "required": false,
-   "tag": 42855,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendPaymentDate",
-     "required": false,
-     "tag": 42856
+ "declaration": {
+  "name": "UnderlyingDividendPaymentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendPaymentGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingDividendPayments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42855"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendPaymentAmount",
-     "required": false,
-     "tag": 42857
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendPaymentCurrency",
-     "required": false,
-     "tag": 42858
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendAccruedInterest",
-     "required": false,
-     "tag": 42859
+    "item": {
+     "name": "UnderlyingDividendPayment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDividendPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42856"
+       }
+      },
+      {
+       "name": "UnderlyingDividendPaymentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42857"
+       }
+      },
+      {
+       "name": "UnderlyingDividendPaymentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42858"
+       }
+      },
+      {
+       "name": "UnderlyingDividendAccruedInterest",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42859"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

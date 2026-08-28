@@ -3,34 +3,57 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaCurrency",
-   "required": false,
-   "tag": 42978
+ "declaration": {
+  "name": "UnderlyingPaymentStreamFormula",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamFormula",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaCurrencyDeterminationMethod",
-   "required": false,
-   "tag": 42979
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamFormulaReferenceAmount",
-   "required": false,
-   "tag": 42980
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFormulaMathGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamFormulaImage",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamFormulaCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42978"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaCurrencyDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42979"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaReferenceAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42980"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaMathGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFormulaMathGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamFormulaImage",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamFormulaImage"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

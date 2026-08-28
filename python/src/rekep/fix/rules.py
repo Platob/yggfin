@@ -242,9 +242,10 @@ class Rules(Convertible):
 
     def category_of(self, protocol: str | None, etype: int | EventType | None) -> str:
         """Target category for one parsed row."""
-        if etype is not None and int(etype) >= int(EventType.INTENT):
+        kind = EventType.from_int(etype) if etype is not None else None
+        if kind is not None and kind.rank >= EventType.INTENT.rank:
             return MARKET_CATEGORY
-        if etype is not None and int(etype) == int(EventType.MISC):
+        if kind is EventType.MISC:
             return MISC_CATEGORY
         if protocol in self.protocols:
             return MISC_CATEGORY
@@ -330,8 +331,16 @@ class Rules(Convertible):
         if not rows:
             return pyarrow.array([], pyarrow.string())
 
-        event_codes = compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0)
-        market = compute.greater_equal(event_codes, int(EventType.INTENT))
+        event_codes = compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0)
+        market = compute.fill_null(
+            compute.is_in(
+                event_codes,
+                value_set=pyarrow.array(
+                    sorted(EventType.ranked_at_least(EventType.INTENT)), pyarrow.int64()
+                ),
+            ),
+            False,
+        )
         known = compute.fill_null(
             compute.is_in(
                 protocols.cast(pyarrow.string(), safe=False),

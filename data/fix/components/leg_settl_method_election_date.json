@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateUnadjusted",
-   "required": false,
-   "tag": 42574
+ "declaration": {
+  "name": "LegSettlMethodElectionDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSettlMethodElectionDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateBusinessDayConvention",
-   "required": false,
-   "tag": 42575
-  },
-  {
-   "kind": "component",
-   "name": "LegSettlMethodElectionDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateRelativeTo",
-   "required": false,
-   "tag": 42576
-  },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateOffsetPeriod",
-   "required": false,
-   "tag": 42577
-  },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateOffsetUnit",
-   "required": false,
-   "tag": 42578
-  },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateOffsetDayType",
-   "required": false,
-   "tag": 42579
-  },
-  {
-   "kind": "field",
-   "name": "LegSettlMethodElectionDateAdjusted",
-   "required": false,
-   "tag": 42580
-  }
- ]
+  "fields": [
+   {
+    "name": "LegSettlMethodElectionDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42574"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42575"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegSettlMethodElectionDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegSettlMethodElectionDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42576"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42577"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42578"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42579"
+    }
+   },
+   {
+    "name": "LegSettlMethodElectionDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42580"
+    }
+   }
+  ]
+ }
 }

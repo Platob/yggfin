@@ -3,37 +3,62 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegSettlRateFallbacks",
-   "required": false,
-   "tag": 40902,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegSettlRatePostponementMaximumDays",
-     "required": false,
-     "tag": 40903
+ "declaration": {
+  "name": "LegSettlRateDisruptionFallbackGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSettlRateDisruptionFallbackGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegSettlRateFallbacks",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40902"
     },
-    {
-     "kind": "component",
-     "name": "LegSettlRateFallbackRateSource",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlRatePostponementSurvey",
-     "required": false,
-     "tag": 40905
-    },
-    {
-     "kind": "field",
-     "name": "LegSettlRatePostponementCalculationAgent",
-     "required": false,
-     "tag": 40906
+    "item": {
+     "name": "LegSettlRateFallback",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegSettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40903"
+       }
+      },
+      {
+       "name": "LegSettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegSettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegSettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40905"
+       }
+      },
+      {
+       "name": "LegSettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40906"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

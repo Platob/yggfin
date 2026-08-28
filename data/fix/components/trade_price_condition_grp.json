@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradePriceConditions",
-   "required": false,
-   "tag": 1838,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "TradePriceConditionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradePriceConditionGrp",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ExecutionReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTradePriceConditions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1838"
+    },
+    "item": {
      "name": "TradePriceCondition",
-     "required": false,
-     "tag": 1839
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradePriceCondition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1839"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

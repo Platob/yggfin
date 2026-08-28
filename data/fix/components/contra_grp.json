@@ -6,44 +6,69 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoContraBrokers",
-   "required": false,
-   "tag": 382,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "ContraGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ContraGrp",
+   "msgtypes": "[\"ExecutionReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoContraBrokers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "382"
+    },
+    "item": {
      "name": "ContraBroker",
-     "required": false,
-     "tag": 375
-    },
-    {
-     "kind": "field",
-     "name": "ContraTrader",
-     "required": false,
-     "tag": 337
-    },
-    {
-     "kind": "field",
-     "name": "ContraTradeQty",
-     "required": false,
-     "tag": 437
-    },
-    {
-     "kind": "field",
-     "name": "ContraTradeTime",
-     "required": false,
-     "tag": 438
-    },
-    {
-     "kind": "field",
-     "name": "ContraLegRefID",
-     "required": false,
-     "tag": 655
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContraBroker",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "375"
+       }
+      },
+      {
+       "name": "ContraTrader",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "337"
+       }
+      },
+      {
+       "name": "ContraTradeQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "437"
+       }
+      },
+      {
+       "name": "ContraTradeTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "438"
+       }
+      },
+      {
+       "name": "ContraLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "655"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,48 +3,71 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegMakeWholeDate",
-   "required": false,
-   "tag": 42392
+ "declaration": {
+  "name": "LegOptionExerciseMakeWholeProvision",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegOptionExerciseMakeWholeProvision",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeAmount",
-   "required": false,
-   "tag": 42393
-  },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeBenchmarkCurveName",
-   "required": false,
-   "tag": 42394
-  },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeBenchmarkCurvePoint",
-   "required": false,
-   "tag": 42395
-  },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeRecallSpread",
-   "required": false,
-   "tag": 42396
-  },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeBenchmarkQuote",
-   "required": false,
-   "tag": 42397
-  },
-  {
-   "kind": "field",
-   "name": "LegMakeWholeInterpolationMethod",
-   "required": false,
-   "tag": 42398
-  }
- ]
+  "fields": [
+   {
+    "name": "LegMakeWholeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42392"
+    }
+   },
+   {
+    "name": "LegMakeWholeAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42393"
+    }
+   },
+   {
+    "name": "LegMakeWholeBenchmarkCurveName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42394"
+    }
+   },
+   {
+    "name": "LegMakeWholeBenchmarkCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42395"
+    }
+   },
+   {
+    "name": "LegMakeWholeRecallSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42396"
+    }
+   },
+   {
+    "name": "LegMakeWholeBenchmarkQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42397"
+    }
+   },
+   {
+    "name": "LegMakeWholeInterpolationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42398"
+    }
+   }
+  ]
+ }
 }

@@ -78,3 +78,23 @@ def parser(
     parsed.add_argument("--repeat", type=int, default=repeat)
     parsed.add_argument("--quick", action="store_true")
     return parsed
+
+
+def identical(left: Any, right: Any) -> bool:
+    """Whether two batches or tables hold the same bytes, NaN included.
+
+    `RecordBatch.equals` compares values, and a NaN price is not equal to
+    itself -- so two projections of the same rows read as different where a
+    feed sent one. Serialising both settles it exactly: same schema, same
+    buffers, same bytes.
+    """
+    import pyarrow
+    import pyarrow.ipc
+
+    def written(batch: Any) -> bytes:
+        sink = pyarrow.BufferOutputStream()
+        with pyarrow.ipc.new_stream(sink, batch.schema) as writer:
+            writer.write(batch)
+        return sink.getvalue().to_pybytes()
+
+    return written(left) == written(right)

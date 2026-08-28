@@ -1,0 +1,98 @@
+{
+ "name": "AdjustedPositionReport",
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AdjustedPositionReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AdjustedPositionReport",
+   "msgtype": "BL"
+  },
+  "fields": [
+   {
+    "name": "PosMaintRptID",
+    "type": "string",
+    "fix": {
+     "tag": "721"
+    }
+   },
+   {
+    "name": "PosReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "724"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "SettlSessID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "716"
+    }
+   },
+   {
+    "name": "PosMaintRptRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "714"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "730"
+    }
+   },
+   {
+    "name": "PriorSettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "734"
+    }
+   }
+  ]
+ }
+}

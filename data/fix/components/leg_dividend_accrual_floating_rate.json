@@ -3,114 +3,159 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateIndex",
-   "required": false,
-   "tag": 42312
+ "declaration": {
+  "name": "LegDividendAccrualFloatingRate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDividendAccrualFloatingRate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateIndexCurvePeriod",
-   "required": false,
-   "tag": 42313
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateIndexCurveUnit",
-   "required": false,
-   "tag": 42314
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateMultiplier",
-   "required": false,
-   "tag": 42315
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateSpread",
-   "required": false,
-   "tag": 42316
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateSpreadPositionType",
-   "required": false,
-   "tag": 42317
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloatingRateTreatment",
-   "required": false,
-   "tag": 42318
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCapRate",
-   "required": false,
-   "tag": 42319
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCapRateBuySide",
-   "required": false,
-   "tag": 42320
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendCapRateSellSide",
-   "required": false,
-   "tag": 42321
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloorRate",
-   "required": false,
-   "tag": 42322
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloorRateBuySide",
-   "required": false,
-   "tag": 42323
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFloorRateSellSide",
-   "required": false,
-   "tag": 42324
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendInitialRate",
-   "required": false,
-   "tag": 42325
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFinalRateRoundingDirection",
-   "required": false,
-   "tag": 42326
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFinalRatePrecision",
-   "required": false,
-   "tag": 42327
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendAveragingMethod",
-   "required": false,
-   "tag": 42328
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendNegativeRateTreatment",
-   "required": false,
-   "tag": 42329
-  }
- ]
+  "fields": [
+   {
+    "name": "LegDividendFloatingRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42312"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42313"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42314"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42315"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42316"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateSpreadPositionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42317"
+    }
+   },
+   {
+    "name": "LegDividendFloatingRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42318"
+    }
+   },
+   {
+    "name": "LegDividendCapRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42319"
+    }
+   },
+   {
+    "name": "LegDividendCapRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42320"
+    }
+   },
+   {
+    "name": "LegDividendCapRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42321"
+    }
+   },
+   {
+    "name": "LegDividendFloorRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42322"
+    }
+   },
+   {
+    "name": "LegDividendFloorRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42323"
+    }
+   },
+   {
+    "name": "LegDividendFloorRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42324"
+    }
+   },
+   {
+    "name": "LegDividendInitialRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42325"
+    }
+   },
+   {
+    "name": "LegDividendFinalRateRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42326"
+    }
+   },
+   {
+    "name": "LegDividendFinalRatePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42327"
+    }
+   },
+   {
+    "name": "LegDividendAveragingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42328"
+    }
+   },
+   {
+    "name": "LegDividendNegativeRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42329"
+    }
+   }
+  ]
+ }
 }

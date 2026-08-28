@@ -6,114 +6,164 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSides",
-   "required": false,
-   "tag": 552,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "SideCrossOrdCxlGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SideCrossOrdCxlGrp",
+   "msgtypes": "[\"CrossOrderCancelRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSides",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "552"
+    },
+    "item": {
      "name": "Side",
-     "required": true,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "OrigClOrdID",
-     "required": false,
-     "tag": 41
-    },
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": true,
-     "tag": 11
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryClOrdID",
-     "required": false,
-     "tag": 526
-    },
-    {
-     "kind": "field",
-     "name": "ClOrdLinkID",
-     "required": false,
-     "tag": 583
-    },
-    {
-     "kind": "field",
-     "name": "OrigOrdModTime",
-     "required": false,
-     "tag": 586
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TradeOriginationDate",
-     "required": false,
-     "tag": 229
-    },
-    {
-     "kind": "field",
-     "name": "TradeDate",
-     "required": false,
-     "tag": 75
-    },
-    {
-     "kind": "component",
-     "name": "OrderQtyData",
-     "required": true
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceID",
-     "required": false,
-     "tag": 376
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceText",
-     "required": false,
-     "tag": 2404
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceTextLen",
-     "required": false,
-     "tag": 2351
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceText",
-     "required": false,
-     "tag": 2352
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Side",
+       "type": "string",
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "OrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "ClOrdLinkID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "583"
+       }
+      },
+      {
+       "name": "OrigOrdModTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "586"
+       }
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradeOriginationDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "229"
+       }
+      },
+      {
+       "name": "TradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "75"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "ComplianceID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "376"
+       }
+      },
+      {
+       "name": "ComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2404"
+       }
+      },
+      {
+       "name": "EncodedComplianceTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2351"
+       }
+      },
+      {
+       "name": "EncodedComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2352"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

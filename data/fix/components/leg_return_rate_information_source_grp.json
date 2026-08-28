@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegReturnRateInformationSources",
-   "required": false,
-   "tag": 42560,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegReturnRateInformationSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegReturnRateInformationSourceGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegReturnRateInformationSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42560"
+    },
+    "item": {
      "name": "LegReturnRateInformationSource",
-     "required": false,
-     "tag": 42561
-    },
-    {
-     "kind": "field",
-     "name": "LegReturnRateReferencePage",
-     "required": false,
-     "tag": 42562
-    },
-    {
-     "kind": "field",
-     "name": "LegReturnRateReferencePageHeading",
-     "required": false,
-     "tag": 42563
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRateInformationSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42561"
+       }
+      },
+      {
+       "name": "LegReturnRateReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42562"
+       }
+      },
+      {
+       "name": "LegReturnRateReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42563"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

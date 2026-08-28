@@ -1,0 +1,381 @@
+{
+ "name": "SecurityStatus",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SecurityStatus",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityStatus",
+   "msgtype": "f"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecurityStatusReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "324"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "UnsolicitedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "325"
+    }
+   },
+   {
+    "name": "SecurityTradingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "326"
+    }
+   },
+   {
+    "name": "MarketMakerActivity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1655"
+    }
+   },
+   {
+    "name": "FastMarketIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2447"
+    }
+   },
+   {
+    "name": "SecurityTradingEvent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1174"
+    }
+   },
+   {
+    "name": "NextAuctionTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2116"
+    }
+   },
+   {
+    "name": "FinancialStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "291"
+    }
+   },
+   {
+    "name": "CorporateAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "292"
+    }
+   },
+   {
+    "name": "HaltReasonInt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "327"
+    }
+   },
+   {
+    "name": "InViewOfCommon",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "328"
+    }
+   },
+   {
+    "name": "DueToRelated",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "329"
+    }
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1021"
+    }
+   },
+   {
+    "name": "MarketDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "264"
+    }
+   },
+   {
+    "name": "BuyVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "330"
+    }
+   },
+   {
+    "name": "SellVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "331"
+    }
+   },
+   {
+    "name": "HighPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "332"
+    }
+   },
+   {
+    "name": "LowPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "333"
+    }
+   },
+   {
+    "name": "LastPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "31"
+    }
+   },
+   {
+    "name": "ClearingPriceParametersGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ClearingPriceParametersGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "730"
+    }
+   },
+   {
+    "name": "SettlPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "731"
+    }
+   },
+   {
+    "name": "SettlPriceDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2451"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Adjustment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "334"
+    }
+   },
+   {
+    "name": "FirstPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1025"
+    }
+   },
+   {
+    "name": "LinkageHandlingIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2448"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

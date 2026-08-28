@@ -1,0 +1,65 @@
+{
+ "name": "PartyDetailsDefinitionRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyDetailsDefinitionRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailsDefinitionRequest",
+   "msgtype": "CX"
+  },
+  "fields": [
+   {
+    "name": "PartyDetailsListRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1505"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyDetailsUpdateGrp",
+    "type": "struct",
+    "fix": {
+     "component": "PartyDetailsUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

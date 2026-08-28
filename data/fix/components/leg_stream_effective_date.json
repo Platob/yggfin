@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateUnadjusted",
-   "required": false,
-   "tag": 40249
+ "declaration": {
+  "name": "LegStreamEffectiveDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegStreamEffectiveDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateBusinessDayConvention",
-   "required": false,
-   "tag": 40250
-  },
-  {
-   "kind": "component",
-   "name": "LegStreamEffectiveDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateRelativeTo",
-   "required": false,
-   "tag": 40252
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateOffsetPeriod",
-   "required": false,
-   "tag": 40253
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateOffsetUnit",
-   "required": false,
-   "tag": 40254
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateOffsetDayType",
-   "required": false,
-   "tag": 40255
-  },
-  {
-   "kind": "field",
-   "name": "LegStreamEffectiveDateAdjusted",
-   "required": false,
-   "tag": 40256
-  }
- ]
+  "fields": [
+   {
+    "name": "LegStreamEffectiveDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40249"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40250"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegStreamEffectiveDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegStreamEffectiveDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40252"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40253"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40254"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40255"
+    }
+   },
+   {
+    "name": "LegStreamEffectiveDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40256"
+    }
+   }
+  ]
+ }
 }

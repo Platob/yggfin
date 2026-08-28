@@ -3,24 +3,47 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRiskLimits",
-   "required": false,
-   "tag": 1669,
-   "members": [
-    {
-     "kind": "component",
-     "name": "RiskLimitTypesGrp",
-     "required": false
+ "declaration": {
+  "name": "RiskLimitsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RiskLimitsGrp",
+   "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRiskLimits",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1669"
     },
-    {
-     "kind": "component",
-     "name": "RiskInstrumentScopeGrp",
-     "required": false
+    "item": {
+     "name": "RiskLimit",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RiskLimitTypesGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RiskLimitTypesGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RiskInstrumentScopeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RiskInstrumentScopeGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

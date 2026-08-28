@@ -21,8 +21,8 @@ for event in FixMsg.from_text(line).into_market_events(fix_version="4.4"):
 
 ## State
 
-`State` is one ordered integer vocabulary. Pending, live, partial, terminal,
-closed, and failed bands support range predicates. Venue rejection/expiry uses
+`State` is one ranked vocabulary. Pending, live, partial, terminal, closed
+and failed bands answer what a detailed state broadly means. Venue rejection/expiry uses
 `REJECTED`/`EXPIRED`; records rejected or expired by this pipeline use
 `INTERNAL_REJECTED`/`INTERNAL_EXPIRED` so audit queries can separate them.
 
@@ -34,10 +34,11 @@ otherwise `unix`.
 
 `Instrument` is both the persisted instrument record and the source of its
 identity. `xhash` and `code` derive only from the exact symbol; security ids,
-ISINs, and venues remain reference facts. The same spelling therefore shares
-one lifecycle across venues, while different spellings never alias through an
-identifier. An exact `AAA/BBB` symbol is classified as currency when no kind is
-declared and supplies `BBB` as the price currency when that is absent.
+ISINs, and venues remain reference facts, so one spelling shares one lifecycle
+across venues while different spellings never alias through an identifier.
+
+An exact `AAA/BBB` symbol is classified as currency when no kind is declared,
+and supplies `BBB` as the price currency when that is absent.
 
 A new market log symbol creates a synthetic minimal instrument; later facts
 enrich that symbol's lifecycle. Changed versions and hourly snapshots first
@@ -49,9 +50,10 @@ There is no separate reference model or contract.
 ```python
 from rekep.enums import State
 
-# Bands make "still live" and "finished" range predicates rather than lists:
-# every open state sorts inside `OPEN`, every finished one inside `DONE`.
-resting = State.OPEN <= state < State.DONE
+# Ranks make "still live" and "finished" one question each, and the finite
+# code sets they name are what a storage scan pushes down.
+resting = state.is_live
+scanned = State.live_codes()
 ```
 
 ## When it happened
@@ -99,9 +101,11 @@ once, keyed by `EventType`:
 An execution happened when it executed; an order happened when it arrived.
 One group on two kinds of row therefore gives two answers, which is what the
 table exists for -- reading either as "the group's first entry" would stamp
-one of them with the other's instant. A group carrying none of the preferred
-types still answers, with its first entry: a regulatory stamp nobody ranked
-is still nearer the transaction than a transmission clock.
+one of them with the other's instant.
+
+A group carrying none of the preferred types still answers, with its first
+entry: a regulatory stamp nobody ranked is still nearer the transaction than
+a transmission clock.
 
 `9` and `10` are later extension-pack codes the packaged dictionary does not
 enumerate. They are ranked anyway, because a venue that sends one is not
@@ -125,14 +129,15 @@ regulatory stamp lands behind rows already read -- so:
 
 ## How market rows are laid out
 
-`unix_partition` is the only partition. It is the hour boundary in whole epoch
+`unix_partition` is the only partition: the hour boundary in whole epoch
 seconds stored as a signed `int32`, while `unix` keeps the event instant in
-nanoseconds; the shorter identity value avoids nine meaningless zeroes in
-partition paths without changing hourly partition cardinality. Its supported
-instant range is 1901-12-13 21:00 UTC inclusive through 2038-01-19 04:00 UTC
-exclusive. `instrument_code` is deliberately not a second partition. The case
-for bucketing it is real -- the hour prunes time and not instrument, so a scan
-for one instrument across a week opens every hour's files -- so it was measured
+nanoseconds. The shorter identity value avoids nine meaningless zeroes in
+partition paths without changing hourly cardinality, and supports instants
+from 1901-12-13 21:00 UTC inclusive to 2038-01-19 04:00 UTC exclusive.
+
+`instrument_code` is deliberately not a second partition. The case for
+bucketing it is real -- the hour prunes time and not instrument, so a scan for
+one instrument across a week opens every hour's files -- so it was measured
 rather than argued.
 
 144,000 rows across 72 hours and 40 instruments, one instrument's whole week
@@ -166,9 +171,10 @@ useful source quantities without changing that meaning.
 An execution report that changes an order produces both the `Execution`
 evidence and the resulting `Order` state transition. The order is authoritative
 for the remaining quantity, so the execution is not subtracted a second time.
-Both rows retain their source identifiers and relate through `linked_events`.
-Missing identifiers may resolve against indexed live order names.
-Pending replace/cancel requests leave acknowledged interest resting; a replace
+
+Both rows retain their source identifiers and relate through `linked_events`,
+and missing identifiers may resolve against indexed live order names. Pending
+replace/cancel requests leave acknowledged interest resting; a replace
 confirmation publishes the amended live quantity and price.
 
 Invalid book inputs are retained with `INTERNAL_REJECTED` and a generic `reason`.
@@ -193,9 +199,11 @@ Three settings bound what stays alive, and they answer different questions.
 `max_order_age_ns` expires an order nothing has touched for that long;
 `max_side_alive` evicts past that many per side by price-time priority; and
 `purge_alive` decides what happens to whatever is still resting when the
-*stream* ends. A window ending is not an order ageing out, and a reader of the
-last book cannot otherwise tell a resting order from one nobody cancelled --
-so `purge_alive=True` ends each of them as its own `INTERNAL_EXPIRED` version,
+*stream* ends.
+
+A window ending is not an order ageing out, and a reader of the last book
+cannot otherwise tell a resting order from one nobody cancelled -- so
+`purge_alive=True` ends each of them as its own `INTERNAL_EXPIRED` version,
 linked to the book that closed it. It is off by default, which is what a run
 that will be resumed from its snapshots wants.
 
@@ -207,37 +215,43 @@ changed while the level lists contain only changed levels. `bid_alive` and
 On recovery snapshots, `deltas` and `executions` are empty; the level lists and
 the two alive lists contain the complete living state. `sunix`, not a nullable
 list, distinguishes that picture from a delta: an empty delta list means
-nothing changed, while an empty snapshot list means the side is empty. All six
-collections and both depth columns are non-null; zero depth means no live
-levels. A per-side bound emits synthetic internal expiry deltas for removed
-orders.
+nothing changed, while an empty snapshot list means the side is empty.
 
-Top-level best prices, quantities, spread, midpoint, top-of-book `vwap`, latest
-filled `exec_px`, and imbalance stay flat for Iceberg pruning. A Book version
-hash frames `(unix, instrument_xhash)` followed by the ordered live bid and ask
-Order version hashes. The fold retains those identity inputs privately on
-deltas; recovery snapshots persist the complete live orders. When only one
-side changes, the iterator recomputes that side and carries the other side's
-flat summary before deriving cross-side values. `prev_bid_px`, `prev_bid_qty`,
-`prev_ask_px`, `prev_ask_qty`, and `prev_exec_px` retain preceding values on
-deltas and clear on snapshots. There is no separate `BookSide` schema.
+All six collections and both depth columns are non-null; zero depth means no
+live levels. A per-side bound emits synthetic internal expiry deltas for
+removed orders.
+
+Top-level best prices, quantities, spread, midpoint, top-of-book `vwap`,
+latest filled `exec_px`, and imbalance stay flat for Iceberg pruning. A Book
+version hash frames `(unix, instrument_xhash)` followed by the ordered live
+bid and ask Order version hashes. The fold retains those identity inputs
+privately on deltas; recovery snapshots persist the complete live orders.
+
+When only one side changes, the iterator recomputes that side and carries the
+other side's flat summary before deriving cross-side values. `prev_bid_px`,
+`prev_bid_qty`, `prev_ask_px`, `prev_ask_qty`, and `prev_exec_px` retain
+preceding values on deltas and clear on snapshots. There is no separate
+`BookSide` schema.
 
 Live orders, names, expiry deadlines, and level quantities stay indexed.
 Mutation therefore probes dictionaries and a lazy deadline heap; full Order
-copying belongs only to requested snapshots. Fully repeated orders stop before
-completion and emit no Book, same-price amendments update their existing level,
-expiry scans start only when the heap's first deadline is due, and
-single-instrument streams skip cross-book sweeps.
+copying belongs only to requested snapshots.
+
+Fully repeated orders stop before completion and emit no Book, same-price
+amendments update their existing level, expiry scans start only when the
+heap's first deadline is due, and single-instrument streams skip cross-book
+sweeps.
 
 Book identity still reads the ordered live Order hashes its contract requires,
 but reads them per level and not per book: each level caches the order its
 members settled into and their hashes, and forgets both whenever anything about
-them moves -- a member joining or leaving, a quantity revised, or a new version
-of an order that stands exactly where the old one did. A book with a hundred
-live levels therefore pays for the one an event touched, and the frame those
-hashes go into is written a run of integers at a time rather than one at a
-time. Both leave the identity bytes exactly as they were; together they are
-most of a 3.7x fold on a thousand-order book.
+them moves -- a member joining or leaving, a quantity revised, or a new
+version of an order that stands exactly where the old one did.
+
+A book with a hundred live levels therefore pays for the one an event touched,
+and the frame those hashes go into is written a run of integers at a time
+rather than one at a time. Both leave the identity bytes exactly as they were;
+together they are most of a 3.7x fold on a thousand-order book.
 
 Translating a parsed row back into market events is the other half of the
 generator, and on a real feed the larger half. Which columns carry a FIX tag,

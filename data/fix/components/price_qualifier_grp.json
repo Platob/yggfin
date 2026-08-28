@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPriceQualifiers",
-   "required": false,
-   "tag": 2709,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "PriceQualifierGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PriceQualifierGrp",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ExecutionAck\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPriceQualifiers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2709"
+    },
+    "item": {
      "name": "PriceQualifier",
-     "required": false,
-     "tag": 2710
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2710"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

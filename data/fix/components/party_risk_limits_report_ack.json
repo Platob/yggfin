@@ -1,0 +1,112 @@
+{
+ "name": "PartyRiskLimitsReportAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyRiskLimitsReportAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitsReportAck",
+   "msgtype": "DE"
+  },
+  "fields": [
+   {
+    "name": "RiskLimitReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1667"
+    }
+   },
+   {
+    "name": "RiskLimitRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1666"
+    }
+   },
+   {
+    "name": "RiskLimitReportStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2316"
+    }
+   },
+   {
+    "name": "RiskLimitReportRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2317"
+    }
+   },
+   {
+    "name": "PartyRiskLimitsUpdateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyRiskLimitsUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

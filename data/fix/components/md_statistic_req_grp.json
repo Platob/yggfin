@@ -3,25 +3,46 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMDStatistics",
-   "required": false,
-   "tag": 2474,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MDStatisticID",
-     "required": false,
-     "tag": 2475
+ "declaration": {
+  "name": "MDStatisticReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MDStatisticReqGrp",
+   "msgtypes": "[\"MarketDataStatisticsRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMDStatistics",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2474"
     },
-    {
-     "kind": "component",
-     "name": "MDStatisticParameters",
-     "required": false
+    "item": {
+     "name": "MDStatistic",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDStatisticID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2475"
+       }
+      },
+      {
+       "name": "MDStatisticParameters",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MDStatisticParameters"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

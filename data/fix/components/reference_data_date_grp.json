@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReferenceDataDates",
-   "required": false,
-   "tag": 2746,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReferenceDataDate",
-     "required": false,
-     "tag": 2747
+ "declaration": {
+  "name": "ReferenceDataDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReferenceDataDateGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"Email\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"News\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoReferenceDataDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2746"
     },
-    {
-     "kind": "field",
-     "name": "ReferenceDataDateType",
-     "required": false,
-     "tag": 2748
+    "item": {
+     "name": "ReferenceDataDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReferenceDataDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2747"
+       }
+      },
+      {
+       "name": "ReferenceDataDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2748"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

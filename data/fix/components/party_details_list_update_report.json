@@ -1,0 +1,107 @@
+{
+ "name": "PartyDetailsListUpdateReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyDetailsListUpdateReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailsListUpdateReport",
+   "msgtype": "CK"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyDetailsListReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1510"
+    }
+   },
+   {
+    "name": "PartyDetailsListRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1505"
+    }
+   },
+   {
+    "name": "TotNoParties",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1512"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyDetailsUpdateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyDetailsUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

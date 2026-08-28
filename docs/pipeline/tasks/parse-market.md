@@ -29,13 +29,16 @@ uv run --project python --with papermill rekep task run \
 With `books: false`, it does not construct or write Books.
 `FixMsg.into_market_arrow_batches()` adapts the input stream into bounded,
 typed Order and Execution batches for `order_target` and `execution_target`.
+Either direct target may be null, but at least one is required.
+
 Flat messages use the selected FIX dictionary's dispatch, field tags, and
 lifecycle mappings through Arrow kernels. Repeating groups and uncommon or
 custom shapes fall back to the same scalar translator without changing output.
-Either direct target may be null, but at least one is required.
+
 Direct rows are exactly the events carried by FIX: the mode does not create
 book snapshots, book-generated expiry or rejection rows, lifecycle completion
 from resting state, or a carrying `Book.hash` parent.
+
 Use empty direct targets, or targets dedicated to this mode, when switching an
 existing deployment: merge-by cannot remove older book-normalized rows whose
 hashes differ from their raw FIX versions.
@@ -48,11 +51,12 @@ to restore live orders.
 
 `parse_market` never reads `market.instruments`. Normalized instrument
 lifecycle rows already share the sorted `fix.market` input; `BookIterator`
-indexes them by `etype` and folds the remaining rows. Snapshot generation,
-terminal-state handling, one-day inactivity expiry, and internal rejection
-reasons belong to the shared event and book models rather than the notebook.
-Direct mode skips normalized Instrument rows and keeps the instrument facts
-carried by each translated FIX message.
+indexes them by `etype` and folds the remaining rows.
+
+Snapshot generation, terminal-state handling, one-day inactivity expiry, and
+internal rejection reasons belong to the shared event and book models rather
+than the notebook. Direct mode skips normalized Instrument rows and keeps the
+instrument facts carried by each translated FIX message.
 
 The adjacent `parse_market.yml` sets the FIX dictionary, mode, all three
 targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
@@ -61,9 +65,10 @@ Switching only `books` to `false` selects the configured direct targets.
 
 The result's `read` mapping reports every attempted Book, Order, and Execution.
 In book mode the Order and Execution counts come from the selected Books'
-nested deltas; in direct mode they are the translated rows written here. The
-separate `flatten` mapping is downstream work: it carries those nested counts
-in book mode and stays zero in direct mode, where no flatten task is needed.
-A positive `commit_row_size` bounds direct-event Arrow batches. Zero retains
-the explicit whole-stream atomic-commit behavior and drains each event type
-only at the end.
+nested deltas; in direct mode they are the translated rows written here.
+
+The separate `flatten` mapping is downstream work: it carries those nested
+counts in book mode and stays zero in direct mode, where no flatten task is
+needed. A positive `commit_row_size` bounds direct-event Arrow batches; zero
+retains the explicit whole-stream atomic-commit behavior and drains each event
+type only at the end.

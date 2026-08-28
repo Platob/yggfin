@@ -3,44 +3,69 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoComplexEventSchedules",
-   "required": false,
-   "tag": 41031,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ComplexEventScheduleStartDate",
-     "required": false,
-     "tag": 41032
+ "declaration": {
+  "name": "ComplexEventScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ComplexEventScheduleGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoComplexEventSchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41031"
     },
-    {
-     "kind": "field",
-     "name": "ComplexEventScheduleEndDate",
-     "required": false,
-     "tag": 41033
-    },
-    {
-     "kind": "field",
-     "name": "ComplexEventScheduleFrequencyPeriod",
-     "required": false,
-     "tag": 41034
-    },
-    {
-     "kind": "field",
-     "name": "ComplexEventScheduleFrequencyUnit",
-     "required": false,
-     "tag": 41035
-    },
-    {
-     "kind": "field",
-     "name": "ComplexEventScheduleRollConvention",
-     "required": false,
-     "tag": 41036
+    "item": {
+     "name": "ComplexEventSchedule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventScheduleStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41032"
+       }
+      },
+      {
+       "name": "ComplexEventScheduleEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41033"
+       }
+      },
+      {
+       "name": "ComplexEventScheduleFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41034"
+       }
+      },
+      {
+       "name": "ComplexEventScheduleFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41035"
+       }
+      },
+      {
+       "name": "ComplexEventScheduleRollConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41036"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

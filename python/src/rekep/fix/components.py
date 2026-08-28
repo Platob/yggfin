@@ -11,17 +11,11 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.fields import scalar
+from rekep.fields import Field, scalar
 from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
-from rekep.fix.columns import DECLARATIONS, KWARGS
+from rekep.fix.columns import DECLARATIONS, ENTRIES
 from rekep.fix.fields import cast_arrow_fix
-from rekep.fix.quickfix import (
-    SpecComponent,
-    SpecComponentRef,
-    SpecFieldRef,
-    SpecGroup,
-    SpecMember,
-)
+from rekep.fix.quickfix import entry_of, is_group, is_reference, members_of
 
 
 @scalar
@@ -154,7 +148,7 @@ class Leg:
 
 def _entries_type(row: type) -> pyarrow.DataType:
     """The list one component's entries land in: never a null entry, ever."""
-    return pyarrow.list_(pyarrow.field("item", row.into_field().arrow_type, nullable=False))
+    return pyarrow.list_(pyarrow.field("item", row.into_field().dtype, nullable=False))
 
 
 PARTIES: pyarrow.DataType = _entries_type(Party)
@@ -186,7 +180,7 @@ class ComponentGroup:
     their own rather than a place in `buffer`.
     """
 
-    components: Mapping[str, SpecComponent] | Sequence[SpecComponent] | None = None
+    components: Mapping[str, Field] | Sequence[Field] | None = None
     names: Mapping[str, int] | None = None
 
     #: Which component to read, and which repeating group inside it.
@@ -244,11 +238,11 @@ class ComponentGroup:
             parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
             return (
                 pyarrow.chunked_array([found for found, _ in parts], type=entries_type),
-                pyarrow.chunked_array([rest for _, rest in parts], type=KWARGS),
+                pyarrow.chunked_array([rest for _, rest in parts], type=ENTRIES),
             )
-        if not isinstance(tags, pyarrow.Array) or tags.type != KWARGS:
+        if not isinstance(tags, pyarrow.Array) or tags.type != ENTRIES:
             actual = getattr(tags, "type", type(tags).__name__)
-            raise TypeError(f"{type(self).__name__} needs {KWARGS}, got {actual}")
+            raise TypeError(f"{type(self).__name__} needs {ENTRIES}, got {actual}")
         return self._extract(tags)
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -374,7 +368,7 @@ class ComponentGroup:
                 else compute.and_(members, compute.is_in(keys, value_set=self._tags_named(member)))
             )
             text, at = _first_for_party(values, positions, party_group, matched, party_groups)
-            target = row_field.field(column).arrow_type
+            target = row_field.field(column).dtype
             readable = _readable(text, target)
             lifted.append(
                 cast_arrow_fix(
@@ -396,7 +390,7 @@ class ComponentGroup:
         buffered = compute.and_(buffered, bufferable)
         buffered_party = compute.filter(party_index, buffered).cast(pyarrow.int64())
         buffer_sizes = dense_counts(buffered_party, len(party_groups))
-        buffer_type = row_field.field("buffer").arrow_type
+        buffer_type = row_field.field("buffer").dtype
         assert buffer_type is not None
         buffers = build_map(
             buffer_type,
@@ -423,7 +417,7 @@ class ComponentGroup:
         keep = compute.invert(remove)
         residual_sizes = dense_counts(compute.filter(parents, keep), rows)
         residual = build_list(
-            KWARGS,
+            ENTRIES,
             residual_sizes,
             _kept(entries, keep),
             mask=compute.is_null(tags) if tags.null_count else None,
@@ -529,9 +523,9 @@ class ComponentGroup:
         group_delimiters: dict[tuple[str, ...], set[int]] = {}
         name_tags = {str(name).lower(): int(tag) for name, tag in self.names.items()}
 
-        def member_tags(member: SpecMember) -> tuple[int, ...]:
+        def member_tags(member: Field) -> tuple[int, ...]:
             found: list[int] = []
-            declared = getattr(member, "tag", 0)
+            declared = member.fix.tag
             if declared:
                 found.append(int(declared))
             mapped = name_tags.get(member.name.lower())
@@ -539,76 +533,70 @@ class ComponentGroup:
                 found.append(mapped)
             return tuple(found)
 
-        def add(member: SpecMember, path: tuple[str, ...]) -> None:
+        def add(member: Field, path: tuple[str, ...]) -> None:
             for tag in member_tags(member):
                 members.setdefault(tag, member.name)
                 paths.setdefault(tag, path)
 
-        def first_tags(declared: Sequence[SpecMember], seen: frozenset[str]) -> tuple[int, ...]:
-            for member in declared:
-                if isinstance(member, SpecFieldRef | SpecGroup):
+        def first_tags(declared: Field, seen: frozenset[str]) -> tuple[int, ...]:
+            for member in members_of(declared):
+                if not is_reference(member):
                     tags = member_tags(member)
                     if tags:
                         return tags
-                elif isinstance(member, SpecComponentRef):
+                else:
                     key = member.name.lower()
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
-                        tags = first_tags(nested.members, seen | {key})
+                        tags = first_tags(nested, seen | {key})
                         if tags:
                             return tags
             return ()
 
-        def visit(
-            declared: Sequence[SpecMember], seen: frozenset[str], path: tuple[str, ...] = ()
-        ) -> None:
-            for member in declared:
-                if isinstance(member, SpecFieldRef):
-                    add(member, path)
-                elif isinstance(member, SpecGroup):
+        def visit(declared: Field, seen: frozenset[str], path: tuple[str, ...] = ()) -> None:
+            for member in members_of(declared):
+                if is_group(member):
                     add(member, path)
                     nested_path = (*path, member.name)
-                    group_delimiters.setdefault(nested_path, set()).update(
-                        first_tags(member.members, seen)
-                    )
-                    visit(member.members, seen, nested_path)
-                elif isinstance(member, SpecComponentRef):
+                    entry = entry_of(member)
+                    group_delimiters.setdefault(nested_path, set()).update(first_tags(entry, seen))
+                    visit(entry, seen, nested_path)
+                elif is_reference(member):
                     key = member.name.lower()
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
-                        visit(nested.members, seen | {key}, path)
+                        visit(nested, seen | {key}, path)
+                else:
+                    add(member, path)
 
-        def find(declared: Sequence[SpecMember], seen: frozenset[str]) -> None:
-            for member in declared:
-                if isinstance(member, SpecGroup) and member.name.lower() == grouped:
+        def find(declared: Field, seen: frozenset[str]) -> None:
+            for member in members_of(declared):
+                if is_group(member) and member.name.lower() == grouped:
                     counts.update(member_tags(member))
                     # The group's own delimiter, which the standard fixes as
                     # its first member: read off the declaration rather than
                     # named here, so a group whose entries open with something
                     # other than `PartyID` splits at the right tag.
-                    group_delimiters.setdefault((), set()).update(first_tags(member.members, seen))
-                    visit(member.members, seen)
-                elif isinstance(member, SpecComponentRef):
+                    entry = entry_of(member)
+                    group_delimiters.setdefault((), set()).update(first_tags(entry, seen))
+                    visit(entry, seen)
+                elif is_reference(member):
                     key = member.name.lower()
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
-                        find(nested.members, seen | {key})
+                        find(nested, seen | {key})
 
         for component in self.components:
             key = component.name.lower()
             if key == wanted:
-                find(component.members, frozenset({key}))
+                find(component, frozenset({key}))
                 # Hand-written declarations sometimes omit the outer group.
                 visit(
-                    tuple(
-                        member
-                        for member in component.members
-                        if not (isinstance(member, SpecGroup) and member.name.lower() == grouped)
-                    ),
+                    _without(component, lambda one: is_group(one) and one.name.lower() == grouped),
                     frozenset({key}),
                 )
             else:
-                find(component.members, frozenset({key}))
+                find(component, frozenset({key}))
         return counts, members, paths, group_delimiters
 
     @cached_property
@@ -667,45 +655,52 @@ class ComponentGroup:
         by_name = {component.name.lower(): component for component in self.components}
         name_tags = {str(name).lower(): int(tag) for name, tag in (self.names or {}).items()}
 
-        def contains(declared: Sequence[SpecMember], seen: frozenset[str]) -> bool:
-            for member in declared:
-                if isinstance(member, SpecGroup):
-                    if member.name.lower() == grouped or contains(member.members, seen):
+        def contains(declared: Field, seen: frozenset[str]) -> bool:
+            for member in members_of(declared):
+                if is_group(member):
+                    if member.name.lower() == grouped or contains(entry_of(member), seen):
                         return True
-                elif isinstance(member, SpecComponentRef):
+                elif is_reference(member):
                     key = member.name.lower()
                     nested = by_name.get(key)
                     if nested is None or key in seen:
                         continue
-                    if contains(nested.members, seen | {key}):
+                    if contains(nested, seen | {key}):
                         return True
             return False
 
         found: set[int] = set()
 
-        def visit(declared: Sequence[SpecMember], seen: frozenset[str]) -> None:
-            for member in declared:
-                if isinstance(member, SpecGroup):
-                    if member.name.lower() != grouped and contains(member.members, seen):
-                        declared_tag = getattr(member, "tag", 0)
+        def visit(declared: Field, seen: frozenset[str]) -> None:
+            for member in members_of(declared):
+                if is_group(member):
+                    entry = entry_of(member)
+                    if member.name.lower() != grouped and contains(entry, seen):
+                        declared_tag = member.fix.tag
                         if declared_tag:
                             found.add(int(declared_tag))
                         mapped = name_tags.get(member.name.lower())
                         if mapped is not None:
                             found.add(mapped)
-                    visit(member.members, seen)
-                elif isinstance(member, SpecComponentRef):
+                    visit(entry, seen)
+                elif is_reference(member):
                     key = member.name.lower()
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
-                        visit(nested.members, seen | {key})
+                        visit(nested, seen | {key})
 
         for component in self.components:
-            visit(component.members, frozenset({component.name.lower()}))
+            visit(component, frozenset({component.name.lower()}))
         return pyarrow.array(sorted(found), pyarrow.int32())
 
 
-def _readable(text: Any, arrow_type: pyarrow.DataType) -> Any:
+def _without(declared: Field, drop: Any) -> Field:
+    """One block with the members `drop` names taken out of it."""
+    kept = [member.into_arrow_field() for member in members_of(declared) if not drop(member)]
+    return Field(name=declared.name, dtype=pyarrow.struct(kept), nullable=declared.nullable)
+
+
+def _readable(text: Any, dtype: pyarrow.DataType) -> Any:
     """Which values a column of this type can hold, as a mask over `text`.
 
     The mask and not the cast: `cast_arrow_fix` already nulls what it cannot
@@ -714,17 +709,17 @@ def _readable(text: Any, arrow_type: pyarrow.DataType) -> Any:
     """
     compute = pyarrow.compute
     kinds = pyarrow.types
-    if kinds.is_integer(arrow_type):
+    if kinds.is_integer(dtype):
         pattern = _SIGNED
-    elif kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
+    elif kinds.is_floating(dtype) or kinds.is_decimal(dtype):
         pattern = _DECIMAL
-    elif kinds.is_temporal(arrow_type):
+    elif kinds.is_temporal(dtype):
         # The cast itself, not its pattern: the reader range-checks what the
         # shape alone admits -- an absurd clock, an impossible zone -- and a
         # gate that answered from the shape would mark such text readable,
         # project the null the cast makes of it, and drop the text nobody
         # can then explain.
-        return compute.is_valid(cast_arrow_fix(text, arrow_type))
+        return compute.is_valid(cast_arrow_fix(text, dtype))
     else:
         return compute.is_valid(text)
     return compute.fill_null(compute.match_substring_regex(text, pattern), False)
@@ -893,7 +888,7 @@ class Legs(ComponentGroup):
 def _kept(entries: Any, keep: Any) -> pyarrow.StructArray:
     """The entries a mask keeps, rebuilt with every part they carry."""
     compute = pyarrow.compute
-    fields = [KWARGS.value_type.field(index) for index in range(KWARGS.value_type.num_fields)]
+    fields = [ENTRIES.value_type.field(index) for index in range(ENTRIES.value_type.num_fields)]
     return pyarrow.StructArray.from_arrays(
         [compute.filter(compute.struct_field(entries, field.name), keep) for field in fields],
         fields=fields,

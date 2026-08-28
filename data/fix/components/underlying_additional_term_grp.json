@@ -3,31 +3,54 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingAdditionalTerms",
-   "required": false,
-   "tag": 42036,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
-     "required": false,
-     "tag": 42037
+ "declaration": {
+  "name": "UnderlyingAdditionalTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingAdditionalTermGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingAdditionalTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42036"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
-     "required": false,
-     "tag": 42038
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingAdditionalTermBondRefGrp",
-     "required": false
+    "item": {
+     "name": "UnderlyingAdditionalTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42037"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42038"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondRefGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingAdditionalTermBondRefGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

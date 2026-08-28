@@ -6,43 +6,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSettlPartyIDs",
-   "required": false,
-   "tag": 781,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "SettlParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlParties",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"Confirmation\",\"PayManagementReport\",\"PayManagementRequest\",\"SettlementInstructions\",\"SettlementObligationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSettlPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "781"
+    },
+    "item": {
      "name": "SettlPartyID",
-     "required": false,
-     "tag": 782
-    },
-    {
-     "kind": "field",
-     "name": "SettlPartyIDSource",
-     "required": false,
-     "tag": 783
-    },
-    {
-     "kind": "field",
-     "name": "SettlPartyRole",
-     "required": false,
-     "tag": 784
-    },
-    {
-     "kind": "field",
-     "name": "SettlPartyRoleQualifier",
-     "required": false,
-     "tag": 2389
-    },
-    {
-     "kind": "component",
-     "name": "SettlPtysSubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "782"
+       }
+      },
+      {
+       "name": "SettlPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "783"
+       }
+      },
+      {
+       "name": "SettlPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "784"
+       }
+      },
+      {
+       "name": "SettlPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2389"
+       }
+      },
+      {
+       "name": "SettlPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

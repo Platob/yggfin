@@ -1,0 +1,43 @@
+{
+ "name": "TradingSessionListUpdateReport",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradingSessionListUpdateReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradingSessionListUpdateReport",
+   "msgtype": "BS"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradSesReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "335"
+    }
+   },
+   {
+    "name": "TrdSessLstGrp",
+    "type": "struct",
+    "fix": {
+     "component": "TrdSessLstGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

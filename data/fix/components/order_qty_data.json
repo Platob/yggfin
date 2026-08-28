@@ -7,36 +7,55 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "OrderQty",
-   "required": false,
-   "tag": 38
+ "declaration": {
+  "name": "OrderQtyData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrderQtyData",
+   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DontKnowTrade\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MassOrder\",\"MassOrderAck\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "CashOrderQty",
-   "required": false,
-   "tag": 152
-  },
-  {
-   "kind": "field",
-   "name": "OrderPercent",
-   "required": false,
-   "tag": 516
-  },
-  {
-   "kind": "field",
-   "name": "RoundingDirection",
-   "required": false,
-   "tag": 468
-  },
-  {
-   "kind": "field",
-   "name": "RoundingModulus",
-   "required": false,
-   "tag": 469
-  }
- ]
+  "fields": [
+   {
+    "name": "OrderQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "38"
+    }
+   },
+   {
+    "name": "CashOrderQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "152"
+    }
+   },
+   {
+    "name": "OrderPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "516"
+    }
+   },
+   {
+    "name": "RoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "468"
+    }
+   },
+   {
+    "name": "RoundingModulus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "469"
+    }
+   }
+  ]
+ }
 }

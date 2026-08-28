@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoFundingSources",
-   "required": false,
-   "tag": 2849,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "FundingSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FundingSourceGrp",
+   "msgtypes": "[\"CollateralReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoFundingSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2849"
+    },
+    "item": {
      "name": "FundingSource",
-     "required": false,
-     "tag": 2846
-    },
-    {
-     "kind": "field",
-     "name": "FundingSourceMarketValue",
-     "required": false,
-     "tag": 2848
-    },
-    {
-     "kind": "field",
-     "name": "FundingSourceCurrency",
-     "required": false,
-     "tag": 2847
-    },
-    {
-     "kind": "field",
-     "name": "FundingSourceCurrencyCodeSource",
-     "required": false,
-     "tag": 2954
+     "type": "struct",
+     "fields": [
+      {
+       "name": "FundingSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2846"
+       }
+      },
+      {
+       "name": "FundingSourceMarketValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2848"
+       }
+      },
+      {
+       "name": "FundingSourceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2847"
+       }
+      },
+      {
+       "name": "FundingSourceCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2954"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,110 +3,157 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAllocCommissions",
-   "required": false,
-   "tag": 2653,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AllocCommissionAmount",
-     "required": false,
-     "tag": 2654
+ "declaration": {
+  "name": "AllocCommissionDataGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AllocCommissionDataGrp",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoAllocCommissions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2653"
     },
-    {
-     "kind": "field",
-     "name": "AllocCommissionAmountType",
-     "required": false,
-     "tag": 2655
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionAmountSubType",
-     "required": false,
-     "tag": 2726
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionBasis",
-     "required": false,
-     "tag": 2656
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionCurrency",
-     "required": false,
-     "tag": 2657
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionCurrencyCodeSource",
-     "required": false,
-     "tag": 2925
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionUnitOfMeasure",
-     "required": false,
-     "tag": 2658
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionUnitOfMeasureCurrency",
-     "required": false,
-     "tag": 2659
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionUnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2926
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionRate",
-     "required": false,
-     "tag": 2660
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionSharedIndicator",
-     "required": false,
-     "tag": 2661
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionAmountShared",
-     "required": false,
-     "tag": 2662
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionLegRefID",
-     "required": false,
-     "tag": 2663
-    },
-    {
-     "kind": "field",
-     "name": "AllocCommissionDesc",
-     "required": false,
-     "tag": 2664
-    },
-    {
-     "kind": "field",
-     "name": "EncodedAllocCommissionDescLen",
-     "required": false,
-     "tag": 2665
-    },
-    {
-     "kind": "field",
-     "name": "EncodedAllocCommissionDesc",
-     "required": false,
-     "tag": 2666
+    "item": {
+     "name": "AllocCommission",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2654"
+       }
+      },
+      {
+       "name": "AllocCommissionAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2655"
+       }
+      },
+      {
+       "name": "AllocCommissionAmountSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2726"
+       }
+      },
+      {
+       "name": "AllocCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2656"
+       }
+      },
+      {
+       "name": "AllocCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2657"
+       }
+      },
+      {
+       "name": "AllocCommissionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2925"
+       }
+      },
+      {
+       "name": "AllocCommissionUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2658"
+       }
+      },
+      {
+       "name": "AllocCommissionUnitOfMeasureCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2659"
+       }
+      },
+      {
+       "name": "AllocCommissionUnitOfMeasureCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2926"
+       }
+      },
+      {
+       "name": "AllocCommissionRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2660"
+       }
+      },
+      {
+       "name": "AllocCommissionSharedIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2661"
+       }
+      },
+      {
+       "name": "AllocCommissionAmountShared",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2662"
+       }
+      },
+      {
+       "name": "AllocCommissionLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2663"
+       }
+      },
+      {
+       "name": "AllocCommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2664"
+       }
+      },
+      {
+       "name": "EncodedAllocCommissionDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2665"
+       }
+      },
+      {
+       "name": "EncodedAllocCommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2666"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

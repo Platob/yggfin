@@ -44,6 +44,7 @@ extra_css:
   - stylesheets/fix-transcribe.css
 
 extra_javascript:
+  - javascripts/fix-declaration.js
   - javascripts/fix-registry.js
   - javascripts/fix-transcribe.js
 
@@ -62,6 +63,7 @@ nav:
           - Schema contracts: contracts/index.md
       - Identity:
           - Binary identities: contracts/identity.md
+          - Time-anchored hashes: contracts/txhash.md
   - Enums:
       - Overview: enums/index.md
       - Events:
@@ -77,7 +79,7 @@ nav:
           - Side: enums/side.md
           - Market kind: enums/market-kind.md
           - Time in force: enums/time-in-force.md
-  - FIX and market:
+  - FIX:
       - Messages:
           - FixMsg: fix/fixmsg.md
           - Transcribe: fix/transcribe.md
@@ -86,8 +88,8 @@ nav:
           - Registry CLI: fix/shell.md
           - Registry internals: fix/index.md
           - Parse configuration: fix/configuring.md
-      - Market:
-          - Lifecycle: market/index.md
+  - Market:
+      - Lifecycle: market/index.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md

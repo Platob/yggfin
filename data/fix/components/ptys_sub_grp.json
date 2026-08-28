@@ -6,26 +6,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartySubIDs",
-   "required": false,
-   "tag": 802,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartySubID",
-     "required": false,
-     "tag": 523
+ "declaration": {
+  "name": "PtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PtysSubGrp",
+   "msgtypes": "[\"AccountSummaryReport\",\"AdjustedPositionReport\",\"Allocation\",\"AllocationAck\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationInstructionAlertRequest\",\"AllocationReport\",\"AllocationReportAck\",\"ApplicationMessageRequest\",\"ApplicationMessageRequestAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralReportAck\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"ExecutionReport\",\"IOI\",\"ListCancelRequest\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataRequestReject\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReject\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsListRequest\",\"PartyEntitlementsRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsRequest\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"Quote\",\"QuoteAck\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RegistrationInstructions\",\"RegistrationInstructionsResponse\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SettlementInstructionRequest\",\"SettlementInstructions\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "802"
     },
-    {
-     "kind": "field",
-     "name": "PartySubIDType",
-     "required": false,
-     "tag": 803
+    "item": {
+     "name": "PartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "523"
+       }
+      },
+      {
+       "name": "PartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "803"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

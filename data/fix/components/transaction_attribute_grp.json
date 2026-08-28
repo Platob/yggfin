@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTransactionAttributes",
-   "required": false,
-   "tag": 2871,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TransactionAttributeType",
-     "required": false,
-     "tag": 2872
+ "declaration": {
+  "name": "TransactionAttributeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TransactionAttributeGrp",
+   "msgtypes": "[\"CollateralReport\",\"PositionReport\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTransactionAttributes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2871"
     },
-    {
-     "kind": "field",
-     "name": "TransactionAttributeValue",
-     "required": false,
-     "tag": 2873
+    "item": {
+     "name": "TransactionAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TransactionAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2872"
+       }
+      },
+      {
+       "name": "TransactionAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2873"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

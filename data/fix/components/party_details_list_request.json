@@ -1,0 +1,92 @@
+{
+ "name": "PartyDetailsListRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyDetailsListRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailsListRequest",
+   "msgtype": "CF"
+  },
+  "fields": [
+   {
+    "name": "PartyDetailsListRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1505"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "RequestedPartyRoleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestedPartyRoleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyRelationshipGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyRelationshipGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

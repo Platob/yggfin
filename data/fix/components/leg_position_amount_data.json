@@ -3,44 +3,69 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPosAmt",
-   "required": false,
-   "tag": 1586,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegPositionAmountData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPositionAmountData",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegPosAmt",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1586"
+    },
+    "item": {
      "name": "LegPosAmt",
-     "required": false,
-     "tag": 1587
-    },
-    {
-     "kind": "field",
-     "name": "LegPosAmtType",
-     "required": false,
-     "tag": 1588
-    },
-    {
-     "kind": "field",
-     "name": "LegPosCurrency",
-     "required": false,
-     "tag": 1589
-    },
-    {
-     "kind": "field",
-     "name": "LegPosCurrencyCodeSource",
-     "required": false,
-     "tag": 2938
-    },
-    {
-     "kind": "field",
-     "name": "LegPosAmtReason",
-     "required": false,
-     "tag": 1590
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPosAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1587"
+       }
+      },
+      {
+       "name": "LegPosAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1588"
+       }
+      },
+      {
+       "name": "LegPosCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1589"
+       }
+      },
+      {
+       "name": "LegPosCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2938"
+       }
+      },
+      {
+       "name": "LegPosAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1590"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

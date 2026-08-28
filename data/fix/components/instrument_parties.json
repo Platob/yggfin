@@ -5,43 +5,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoInstrumentParties",
-   "required": false,
-   "tag": 1018,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentPartyID",
-     "required": false,
-     "tag": 1019
+ "declaration": {
+  "name": "InstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentParties",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1018"
     },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyIDSource",
-     "required": false,
-     "tag": 1050
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyRole",
-     "required": false,
-     "tag": 1051
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2378
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentPtysSubGrp",
-     "required": false
+    "item": {
+     "name": "InstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1019"
+       }
+      },
+      {
+       "name": "InstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1050"
+       }
+      },
+      {
+       "name": "InstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1051"
+       }
+      },
+      {
+       "name": "InstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2378"
+       }
+      },
+      {
+       "name": "InstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

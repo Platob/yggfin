@@ -1,0 +1,136 @@
+{
+ "name": "TradeAggregationReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeAggregationReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeAggregationReport",
+   "msgtype": "DX"
+  },
+  "fields": [
+   {
+    "name": "TradeAggregationReportID",
+    "type": "string",
+    "fix": {
+     "tag": "2792"
+    }
+   },
+   {
+    "name": "TradeAggregationRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2786"
+    }
+   },
+   {
+    "name": "TradeAggregationRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2790"
+    }
+   },
+   {
+    "name": "TradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1003"
+    }
+   },
+   {
+    "name": "TradeAggregationRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2791"
+    }
+   },
+   {
+    "name": "AggregatedQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2789"
+    }
+   },
+   {
+    "name": "AvgPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6"
+    }
+   },
+   {
+    "name": "AvgSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2793"
+    }
+   },
+   {
+    "name": "AvgForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2794"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   }
+  ]
+ }
+}

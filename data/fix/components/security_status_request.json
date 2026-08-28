@@ -1,0 +1,137 @@
+{
+ "name": "SecurityStatusRequest",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SecurityStatusRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityStatusRequest",
+   "msgtype": "e"
+  },
+  "fields": [
+   {
+    "name": "SecurityStatusReqID",
+    "type": "string",
+    "fix": {
+     "tag": "324"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   }
+  ]
+ }
+}

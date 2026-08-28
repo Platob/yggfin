@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoThrottleMsgType",
-   "required": false,
-   "tag": 1618,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "ThrottleMsgTypeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ThrottleMsgTypeGrp",
+   "msgtypes": "[\"UserNotification\",\"UserResponse\"]"
+  },
+  "fields": [
+   {
+    "name": "NoThrottleMsgType",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1618"
+    },
+    "item": {
      "name": "ThrottleMsgType",
-     "required": false,
-     "tag": 1619
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ThrottleMsgType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1619"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

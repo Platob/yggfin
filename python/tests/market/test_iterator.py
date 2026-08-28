@@ -10,7 +10,7 @@ import pyarrow
 import pytest
 
 from rekep import FixCodec, Message
-from rekep.fix import FixRegistry
+from rekep.fix import FixFieldValue, FixRegistry, record_copy
 from rekep.market import (
     MIC,
     AssetKind,
@@ -29,7 +29,7 @@ from rekep.market import (
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.fix_arrow import into_flat_market_batches
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, hash_bytes_of
 from rekep.text import FixMsg
 
 DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -169,9 +169,9 @@ def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
     ]
 
 
-def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
+def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
     log = FixMsg(
-        kwargs=[
+        entries=[
             (198, "ORD-SECONDARY"),
             (526, "CL-SECONDARY"),
             (527, "EXEC-SECONDARY"),
@@ -183,10 +183,10 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
         ]
     )
     batch = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
+        [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -204,16 +204,16 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_kwargs() -> None:
 
 def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
     log = FixMsg(
-        kwargs=[
+        entries=[
             ("SecondaryExecID", "EXEC-NAMED"),
             ("MDEntryRefID", "MD-NAMED"),
         ]
     )
     batch = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=FixMsg.into_field().into_arrow_schema()
+        [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"kwargs": batch.column("kwargs")}, 1).to_pylist(
+    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
@@ -225,11 +225,11 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
 
 def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
     logs = [
-        FixMsg(kwargs=[(37, "ORDER-RESIDUAL")]),
-        FixMsg(OrderID="ORDER-PROMOTED", kwargs=[(37, "ORDER-IGNORED")]),
+        FixMsg(entries=[(37, "ORDER-RESIDUAL")]),
+        FixMsg(OrderID="ORDER-PROMOTED", entries=[(37, "ORDER-IGNORED")]),
     ]
     table = pyarrow.Table.from_pylist(
-        [log.into_dict() for log in logs],
+        [log.into_row() for log in logs],
         schema=FixMsg.into_field().into_arrow_schema(),
     )
     columns = {name: table.column(name) for name in table.schema.names}
@@ -263,7 +263,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             OrdType="2",
             OrderQty=5.0,
             Price=100.0,
-            kwargs=[(9999, "order-meta")],
+            entries=[(9999, "order-meta")],
             reason="order reason",
         ),
         message(
@@ -283,7 +283,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             CumQty=2.0,
             LeavesQty=3.0,
             AvgPx=100.5,
-            kwargs=[(1003, "TRADE-1"), (9998, "report-meta")],
+            entries=[(1003, "TRADE-1"), (9998, "report-meta")],
         ),
         message(
             3,
@@ -292,13 +292,13 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             Side="2",
             LastPx=101.0,
             LastQty=1.0,
-            kwargs=[(1003, "TRADE-2")],
+            entries=[(1003, "TRADE-2")],
         ),
         message(4, "0"),
         message(
             5,
             "W",
-            kwargs=[
+            entries=[
                 (268, "4"),
                 (269, "0"),
                 (278, "BID-1"),
@@ -328,7 +328,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             7,
             "i",
-            kwargs=[
+            entries=[
                 (296, "1"),
                 (302, "SET-1"),
                 (295, "2"),
@@ -346,7 +346,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         ),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
-    source = pyarrow.Table.from_pylist([log.into_dict() for log in logs], schema=schema)
+    source = pyarrow.Table.from_pylist([log.into_row() for log in logs], schema=schema)
     source_batches = source.to_batches(max_chunksize=2)
     stored = list(FixMsg.from_arrow_reader(source_batches))
     expected = {Order: [], Execution: []}
@@ -449,7 +449,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             CumQty=2.0,
             LeavesQty=10.0,
             AvgPx=99.25,
-            kwargs=[(1057, "Y"), (9998, "audit")],
+            entries=[(1057, "Y"), (9998, "audit")],
         ),
         message(
             5,
@@ -459,7 +459,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             Side="2",
             LastPx=99.75,
             LastQty=3.0,
-            kwargs=[(1003, "T-2")],
+            entries=[(1003, "T-2")],
         ),
         message(
             6,
@@ -488,11 +488,11 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             CumQty=5.0,
             LeavesQty=0.0,
             AvgPx=99.6,
-            kwargs=[(19, "E-2")],
+            entries=[(19, "E-2")],
         ),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
     registry = FixRegistry(cache_dir=DATA, offline=True)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
@@ -539,7 +539,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 
     logs = [
         message(1, "D", ClOrdID="C-1", Side="1", OrdType="2", OrderQty=10.0),
-        message(2, "W", kwargs=[(268, "0")]),
+        message(2, "W", entries=[(268, "0")]),
         message(3, "AE", ExecID="E-1", ExecType="F", Side="2", LastPx=99.0, LastQty=1.0),
         message(4, "S", QuoteID="Q-1", BidPx=98.0, OfferPx=100.0),
         message(
@@ -562,7 +562,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
         message(7, "F", OrigClOrdID="C-1", ClOrdID="C-2", Side="1"),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
     registry = FixRegistry(cache_dir=DATA, offline=True)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
@@ -597,29 +597,23 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     builtin = FixRegistry.from_builtin()
-    msg_type = builtin.entry("MsgType")
-    ord_status = builtin.entry("OrdStatus")
-    exec_type = builtin.entry("ExecType")
+    msg_type = builtin.field("MsgType")
+    ord_status = builtin.field("OrdStatus")
+    exec_type = builtin.field("ExecType")
     assert msg_type is not None and ord_status is not None and exec_type is not None
     configured = {
-        "MsgType": dataclasses.replace(
-            msg_type,
-            values={"Q": "NewOrderSingle", "R": "ExecutionReport"},
-            value_names={"Q": "NEW_ORDER_SINGLE", "R": "EXECUTION_REPORT"},
-            event_types={"Q": EventType.ORDER, "R": EventType.EXECUTION},
-            states={"Q": State.PENDING_NEW},
-            encoded={},
-            decoded={},
-        ),
-        "OrdStatus": dataclasses.replace(
-            ord_status,
-            states={**ord_status.states, "Z": State.PARTIALLY_FILLED},
-        ),
-        "ExecType": dataclasses.replace(
-            exec_type,
-            states={**exec_type.states, "T": State.FILLED},
-        ),
+        "MsgType": record_copy(msg_type),
+        "OrdStatus": record_copy(ord_status),
+        "ExecType": record_copy(exec_type),
     }
+    configured["MsgType"].fix.enumerated = [
+        FixFieldValue(value="Q", meaning="NewOrderSingle", aliases=("NEW_ORDER_SINGLE",)),
+        FixFieldValue(value="R", meaning="ExecutionReport", aliases=("EXECUTION_REPORT",)),
+    ]
+    configured["MsgType"].fix.event_types = {"Q": EventType.ORDER, "R": EventType.EXECUTION}
+    configured["MsgType"].fix.states = {"Q": State.PENDING_NEW}
+    configured["OrdStatus"].fix.states = {**ord_status.fix.states, "Z": State.PARTIALLY_FILLED}
+    configured["ExecType"].fix.states = {**exec_type.fix.states, "T": State.FILLED}
     fields = (
         "MsgType",
         "Symbol",
@@ -640,19 +634,20 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     )
     wire_tags: dict[str, int] = {}
     for index, name in enumerate(fields):
-        entry = configured.get(name) or builtin.entry(name)
+        entry = configured.get(name) or builtin.field(name)
         assert entry is not None
         if name != "MsgType":
-            entry = dataclasses.replace(entry, tag=9000 + index)
-        assert entry.tag is not None
-        wire_tags[name] = entry.tag
+            entry = record_copy(entry)
+            entry.fix.tag = 9000 + index
+        assert entry.fix.tag is not None
+        wire_tags[name] = entry.fix.tag
         registry.add_field(entry)
     logs = [
         FixMsg(
             unix=BASE + 1,
             protocol_version="4.4",
             MsgType="Q",
-            kwargs=[
+            entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["ClOrdID"], "CUSTOM-1"),
                 (wire_tags["Side"], "1"),
@@ -665,7 +660,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
             unix=BASE + 2,
             protocol_version="4.4",
             MsgType="R",
-            kwargs=[
+            entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["OrderID"], "ORDER-1"),
                 (wire_tags["ClOrdID"], "CUSTOM-1"),
@@ -685,7 +680,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         ),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pylist([message.into_dict() for message in logs], schema)
+    batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
         for event in message.into_market_events(registry=registry):
@@ -743,7 +738,7 @@ def test_flat_fix_arrow_keeps_trade_revision_order_state_unknown(
         AvgPx=100.25,
     )
     schema = FixMsg.into_field().into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pylist([message.into_dict()], schema)
+    batch = pyarrow.RecordBatch.from_pylist([message.into_row()], schema)
 
     translated = into_flat_market_batches(batch, {"registry": FixRegistry.from_builtin()})
     assert translated is not None
@@ -761,7 +756,7 @@ def test_parsed_fixmsg_keeps_raw_unused_values_in_scalar_and_arrow_metadata() ->
     )
     raw = next(iter(Message.into_arrow_reader([Message(message=line)])))
     registry = FixRegistry.from_builtin()
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     message = next(FixMsg.from_arrow_reader([parsed]))
     scalar = list(message.into_market_events(registry=registry))
@@ -1199,7 +1194,9 @@ def test_an_exact_boundary_keeps_one_book_identity() -> None:
     books = list(BookIterator.from_events(events).books)
 
     assert len({(book.unix, book.instrument_xhash) for book in books}) == len(books)
-    assert [book.hash for book in books] == [Book.hash_of(*book.version_parts()) for book in books]
+    assert [book.hash for book in books] == [
+        book.txhash_of(*book.version_parts()) for book in books
+    ]
 
 
 def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
@@ -1464,16 +1461,16 @@ def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold()
     )[-1]
     expected = (
         after.unix,
-        BTC.xhash,
+        hash_bytes_of(BTC.xhash),
         2,
-        placed.hash,
-        after.hash,
+        hash_bytes_of(placed.hash),
+        hash_bytes_of(after.hash),
         1,
-        clock.hash,
+        hash_bytes_of(clock.hash),
     )
 
     assert uninterrupted.version_parts() == recovered.version_parts() == expected
-    assert uninterrupted.hash == recovered.hash == Book.hash_of(*expected)
+    assert uninterrupted.hash == recovered.hash == uninterrupted.txhash_of(*expected)
 
 
 def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None:
@@ -1753,7 +1750,9 @@ def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity
     (nested,) = book.deltas
     assert instrument.xhash == book.instrument_xhash == nested.instrument_xhash
     assert book.instrument_xhash == canonical.xhash
-    assert nested.xhash == Order.hash_of(canonical.xhash, nested.mic, "B1", nested.side)
+    assert nested.xhash == Order.hash_of(
+        hash_bytes_of(canonical.xhash), nested.mic, "B1", nested.side
+    )
 
 
 def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
@@ -2124,7 +2123,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     """A row whose legs or alt-ids live in resolved columns skips the flat path.
 
     Before componentization these rows carried `NoSecurityAltID <454>` or
-    `NoLegs <555>` in `kwargs`, which is what `_COMPLEX_FIELDS` read to send
+    `NoLegs <555>` in `entries`, which is what `_COMPLEX_FIELDS` read to send
     them to the scalar translator. The groups are lifted with their count tags
     now, so the resolved column is the only remaining evidence -- and the
     routing must not quietly change with the storage. The batch still
@@ -2153,16 +2152,16 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         ClOrdID="C-2",
         SecurityAltID=[SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4")],
     )
-    # A refused extraction -- the count lies -- leaves the group in `kwargs`
-    # and the column null, so this row rides the pre-existing kwargs check.
+    # A refused extraction -- the count lies -- leaves the group in `entries`
+    # and the column null, so this row rides the pre-existing entries check.
     refused = dataclasses.replace(
         plain,
         ClOrdID="C-3",
-        kwargs=[(555, "9"), (600, "AAPL"), (624, "1")],
+        entries=[(555, "9"), (600, "AAPL"), (624, "1")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
-        [plain.into_dict(), identified.into_dict(), refused.into_dict()], schema
+        [plain.into_row(), identified.into_row(), refused.into_row()], schema
     )
 
     assert into_flat_market_batches(batch, {"registry": registry}) is None
@@ -2206,7 +2205,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         Price=100.0,
         ParentClOrdID="P-1",
         ParentOrderID="V-9",
-        kwargs=[(583, "LINK-1")],
+        entries=[(583, "LINK-1")],
     )
     rejected = dataclasses.replace(
         linked,
@@ -2216,7 +2215,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         OrdStatus="2",
         ParentClOrdID=None,
         ParentOrderID=None,
-        kwargs=None,
+        entries=None,
     )
     settled = FixMsg(
         unix=BASE + 3,
@@ -2229,11 +2228,11 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         Side="2",
         LastPx=99.5,
         LastQty=3.0,
-        kwargs=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
+        entries=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
-        [linked.into_dict(), rejected.into_dict(), settled.into_dict()], schema
+        [linked.into_row(), rejected.into_row(), settled.into_row()], schema
     )
 
     translated = into_flat_market_batches(batch, {"registry": registry})
@@ -2258,15 +2257,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
                 expected[type(event)].append(event)
     expected_orders = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected[Order])))
     assert pyarrow.Table.from_batches([orders]).equals(expected_orders)
-    # The execution row compares attribute-wise: a scalar event carrying a
-    # date cannot ride `into_arrow_reader` yet (a pre-existing limit its
-    # Instrument.maturity shares), and the identity hashes are the strong
-    # half of the parity anyway.
-    (scalar_execution,) = expected[Execution]
-    (row,) = executions.to_pylist()
-    assert row["hash"] == scalar_execution.hash
-    assert row["xhash"] == scalar_execution.xhash
-    for name in ("exec_id", "px", "qty", "settl_type", "settl_currency"):
-        assert row[name] == getattr(scalar_execution, name), name
-    assert row["settl_date"] == scalar_execution.settl_date
-    assert row["settl_curr_fx_rate_calc"] == scalar_execution.settl_curr_fx_rate_calc
+    expected_executions = pyarrow.Table.from_batches(
+        list(Execution.into_arrow_reader(expected[Execution]))
+    )
+    assert pyarrow.Table.from_batches([executions]).equals(expected_executions)

@@ -182,7 +182,7 @@ def test_the_accessor_reads_what_the_codec_transcribed(registry: FixRegistry) ->
     four spellings of that same answer.
     """
     codec = FixCodec(registry=registry)
-    stored = codec.into_kwargs(
+    stored = codec.into_entries(
         codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
     ).to_pylist()[0]
     access = FieldAccess.of(registry, "4.4")
@@ -205,10 +205,10 @@ def test_a_wire_row_answers_a_name_and_a_rendered_row_answers_a_tag(
     """
     codec = FixCodec(registry=registry)
     access = FieldAccess.of(registry, "4.4")
-    wire = codec.into_kwargs(
+    wire = codec.into_entries(
         codec.into_pairs(pyarrow.array([WIRE], pyarrow.string()), "FIX"), "4.4"
     ).to_pylist()[0]
-    rendered = codec.into_kwargs(
+    rendered = codec.into_entries(
         codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
     ).to_pylist()[0]
     for named in (54, "Side", "OrderQty", "PartyID"):
@@ -218,7 +218,7 @@ def test_a_wire_row_answers_a_name_and_a_rendered_row_answers_a_tag(
 def test_pairs_and_stored_entries_read_alike(registry: FixRegistry) -> None:
     """A row addressed as pairs and the same row stored answer the same asks."""
     codec = FixCodec(registry=registry)
-    stored = codec.into_kwargs(
+    stored = codec.into_entries(
         codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
     ).to_pylist()[0]
     pairs = FixMsg.from_text(RENDERED).pairs
@@ -256,7 +256,7 @@ def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None
         hash=1,
         Side="1",
         OrderQty=125.0,
-        kwargs=[
+        entries=[
             {
                 "tag": 448,
                 "key": "PartyID",
@@ -301,7 +301,7 @@ def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
         True,
         "A",
     )
-    ready = Entry(tag=54, name="Side", value="1")
+    ready = Entry(tag=54, key="Side", value="1")
     assert next(FieldAccess.entries_of([ready])) is ready
 
 

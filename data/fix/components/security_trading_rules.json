@@ -4,21 +4,42 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "component",
-   "name": "BaseTradingRules",
-   "required": false
+ "declaration": {
+  "name": "SecurityTradingRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityTradingRules",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
-  {
-   "kind": "component",
-   "name": "TradingSessionRulesGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "NestedInstrumentAttribute",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "BaseTradingRules",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "BaseTradingRules"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradingSessionRulesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TradingSessionRulesGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "NestedInstrumentAttribute",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "NestedInstrumentAttribute"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

@@ -1,0 +1,52 @@
+{
+ "name": "ListStrikePrice",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ListStrikePrice",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ListStrikePrice",
+   "msgtype": "m"
+  },
+  "fields": [
+   {
+    "name": "ListID",
+    "type": "string",
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "TotNoStrikes",
+    "type": "string",
+    "fix": {
+     "tag": "422"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "InstrmtStrkPxGrp",
+    "type": "struct",
+    "fix": {
+     "component": "InstrmtStrkPxGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

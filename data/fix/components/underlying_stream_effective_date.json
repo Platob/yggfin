@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateUnadjusted",
-   "required": false,
-   "tag": 40057
+ "declaration": {
+  "name": "UnderlyingStreamEffectiveDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingStreamEffectiveDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateBusinessDayConvention",
-   "required": false,
-   "tag": 40058
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamEffectiveDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateRelativeTo",
-   "required": false,
-   "tag": 40060
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateOffsetPeriod",
-   "required": false,
-   "tag": 40061
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateOffsetUnit",
-   "required": false,
-   "tag": 40062
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateOffsetDayType",
-   "required": false,
-   "tag": 40063
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStreamEffectiveDateAdjusted",
-   "required": false,
-   "tag": 40064
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingStreamEffectiveDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40057"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40058"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamEffectiveDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40060"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40061"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40062"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40063"
+    }
+   },
+   {
+    "name": "UnderlyingStreamEffectiveDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40064"
+    }
+   }
+  ]
+ }
 }

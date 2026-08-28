@@ -1,0 +1,378 @@
+{
+ "name": "TradeCaptureReportRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeCaptureReportRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeCaptureReportRequest",
+   "msgtype": "AD"
+  },
+  "fields": [
+   {
+    "name": "TradeRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "568"
+    }
+   },
+   {
+    "name": "TradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1003"
+    }
+   },
+   {
+    "name": "SecondaryTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1040"
+    }
+   },
+   {
+    "name": "FirmTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1041"
+    }
+   },
+   {
+    "name": "SecondaryFirmTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1042"
+    }
+   },
+   {
+    "name": "TradeRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "569"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "TradeReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "571"
+    }
+   },
+   {
+    "name": "SecondaryTradeReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "818"
+    }
+   },
+   {
+    "name": "SecondaryExecID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "527"
+    }
+   },
+   {
+    "name": "ExecID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "17"
+    }
+   },
+   {
+    "name": "ExecType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "150"
+    }
+   },
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "MatchStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "573"
+    }
+   },
+   {
+    "name": "TrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "828"
+    }
+   },
+   {
+    "name": "TrdSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "829"
+    }
+   },
+   {
+    "name": "OffsetInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1849"
+    }
+   },
+   {
+    "name": "TradeHandlingInstr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1123"
+    }
+   },
+   {
+    "name": "TransferReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "830"
+    }
+   },
+   {
+    "name": "SecondaryTrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "855"
+    }
+   },
+   {
+    "name": "TradeLinkID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "820"
+    }
+   },
+   {
+    "name": "TrdMatchID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "880"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdCapDtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdCapDtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "TimeBracket",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "943"
+    }
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "MultiLegReportingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "442"
+    }
+   },
+   {
+    "name": "TradeInputSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "578"
+    }
+   },
+   {
+    "name": "TradeInputDevice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "579"
+    }
+   },
+   {
+    "name": "ResponseTransportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "725"
+    }
+   },
+   {
+    "name": "ResponseDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "726"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "MessageEventSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1011"
+    }
+   }
+  ]
+ }
+}

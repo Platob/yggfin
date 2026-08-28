@@ -4,10 +4,31 @@ from pathlib import Path
 
 import pyarrow
 
-import rekep.text.kwargs as kwargs_module
-from rekep import FixRegistry, Kwarg, Message, TextFile
+import rekep.text.entries as entries_module
+from rekep import Entry, FixRegistry, Message, TextFile
 from rekep.enums import EventType
 from rekep.market import Event, hash_bytes
+from rekep.market.identity import hash_int_of
+
+#: The standard header this stage lifts out of `entries` into columns of its
+#: own, in the order `Message` declares them, with the FIX tag each answers to.
+#: Spelled out rather than imported from `rekep.text.message.SESSION_FIELDS`, so
+#: a field quietly leaving that tuple cannot move both sides of an assertion
+#: together.
+LIFTED_HEADER = {
+    "BeginString": "8",
+    "BodyLength": "9",
+    "MsgType": "35",
+    "MsgSeqNum": "34",
+    "SenderCompID": "49",
+    "TargetCompID": "56",
+    "SendingTime": "52",
+}
+
+#: `CheckSum <10>` is the boundary every lift is measured against -- a field is
+#: eligible only where it stands in front of it -- so it is deliberately not
+#: among the lifted and stays in `entries` for the FIX stage to read.
+UNLIFTED_TRAILER = "10"
 
 
 def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
@@ -20,34 +41,105 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "plugin_code",
         "message",
         "protocol_code",
-        "MsgType",
-        "kwargs",
+        *LIFTED_HEADER,
+        "entries",
         "direction",
     ]
+    assert UNLIFTED_TRAILER not in LIFTED_HEADER.values()
+    assert "CheckSum" not in Message.into_field().names, (
+        "the boundary the lift is measured against is not one of the lifted"
+    )
+    # Protocol-neutral columns: this stage reads no numbers and names no zone,
+    # so each of the seven keeps the text the payload spelled, and none of them
+    # carries the `fix:` metadata a dictionary-typed column would.
+    for name in LIFTED_HEADER:
+        field = Message.into_field().field(name)
+        assert field.dtype == pyarrow.string(), name
+        assert field.nullable is True, name
     assert all(
         not any(key.startswith("fix:") for key in field.metadata)
         for field in Message.into_field().fields
     )
 
 
-def test_kwarg_is_the_required_ordered_argument_shape() -> None:
-    field = Kwarg.into_field()
+def test_entry_is_the_required_ordered_argument_shape() -> None:
+    field = Entry.into_field()
     assert field.names == ["tag", "key", "value", "namespace", "comp"]
     assert field.field("key").nullable is False
     assert field.field("value").nullable is False
-    assert Message.into_field().field("kwargs").item.arrow_type == field.arrow_type
+    assert Message.into_field().field("entries").item.dtype == field.dtype
 
 
-def test_a_direct_kwarg_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
-    plain = Kwarg(key="#SIDE", value=None)  # type: ignore[arg-type]
-    nested = Kwarg(key="#NoPartyIDs[0].PartyID", value="ABC")
+def test_one_entry_shape_serves_storage_and_reading_alike() -> None:
+    """The stored struct and the accessor's view are one class: the read
+    views derive lazily from the stored spelling, so nothing renders a key
+    to text and re-splits it on the way to an answer."""
+    from rekep.fix import Entry as fix_entry
+    from rekep.fix.access import Entry as access_entry
+
+    assert Entry is fix_entry is access_entry
+
+    stored = Entry(tag=448, key="PartyID", comp="NoPartyIDs[0]", value="A")
+    assert (stored.name, stored.index, stored.lead, stored.entry_lead) == (
+        "PartyID",
+        None,
+        "NoPartyIDs[0]",
+        True,
+    )
+    assert stored.spelling == "NoPartyIDs[0].PartyID"
+
+    indexed = Entry(key="Side[0]", value="1")
+    assert (indexed.name, indexed.index, indexed.spelling) == ("Side", 0, "Side[0]")
+
+    namespaced = Entry(key="TECH.CLIENTID", value="x")
+    assert (namespaced.namespace, namespaced.name, namespaced.entry_lead) == (
+        "TECH",
+        "CLIENTID",
+        False,
+    )
+
+    typed = Entry.of(tag=44, key="44", value=9.5)
+    assert typed.value == 9.5, "a ready view keeps its typed value"
+    assert (typed.spelling, typed.folded) == ("44", "44")
+
+
+def test_the_stored_split_answers_before_any_respelling() -> None:
+    """The stored members are already the split: `comp` asserts group
+    semantics whatever its spelling, a trailing-dot key keeps its stored
+    name, and an empty namespace defers to the comp beside it."""
+    indexless = Entry(key="PartyID", comp="NoPartyIDs", value="P")
+    assert (indexless.lead, indexless.entry_lead) == ("NoPartyIDs", True)
+
+    dotted = Entry(key="A.", value="v")
+    assert (dotted.namespace, dotted.name, dotted.lead) == ("A", "A.", "A")
+
+    beside = Entry(key="PartyID", namespace="", comp="NoPartyIDs[0]", value="P")
+    assert (beside.spelling, beside.entry_lead) == ("NoPartyIDs[0].PartyID", True)
+
+
+def test_a_ready_view_normalizes_into_storage_and_caches_reset() -> None:
+    """`of` keeps a typed value for reading; storage takes the text -- and a
+    mutated stored member re-derives every cached view."""
+    typed = Entry.of(tag=44, key="44", value=9.5)
+    assert typed.value == 9.5
+    assert Entry.from_stored(typed).value == "9.5"
+
+    entry = Entry(key="Symbol", tag=55, value="IBM")
+    assert entry.name == "Symbol"
+    entry.key = "Side[0]"
+    assert (entry.name, entry.index) == ("Side", 0)
+
+
+def test_a_direct_entry_drops_a_leading_marker_and_normalizes_the_required_value() -> None:
+    plain = Entry(key="#SIDE", value=None)  # type: ignore[arg-type]
+    nested = Entry(key="#NoPartyIDs[0].PartyID", value="ABC")
 
     assert (plain.key, plain.value) == ("SIDE", "")
     assert (nested.key, nested.comp) == ("PartyID", "NoPartyIDs[0]")
     message = Message(  # type: ignore[list-item]
-        kwargs=[plain, nested, ("#PAIR", "1"), {"key": "#MAP", "value": "2"}]
+        entries=[plain, nested, ("#PAIR", "1"), {"key": "#MAP", "value": "2"}]
     )
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("SIDE", ""),
         ("PartyID", "ABC"),
         ("PAIR", "1"),
@@ -81,16 +173,35 @@ def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
 
 
 def test_a_message_always_has_a_non_null_argument_list() -> None:
-    field = Message.into_field().field("kwargs")
+    field = Message.into_field().field("entries")
 
     assert field.nullable is False
-    assert Message().kwargs == []
-    assert Message(kwargs=None).kwargs == []  # type: ignore[arg-type]
+    assert Message().entries == []
+    assert Message(entries=None).entries == []  # type: ignore[arg-type]
+
+
+def test_a_payload_parses_scalar_like_the_column_path() -> None:
+    """`from_text` is the scalar spelling of `parse_arrow`: same promotion,
+    same residual arguments -- the raw text kept only when declared."""
+    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", runix=7)
+    column = Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01")
+
+    assert staged.MsgType == column.MsgType == "D"
+    assert staged.BeginString == column.BeginString == "FIX.4.4"
+    assert staged.runix == 7
+    assert staged.message == ""
+    # `8` and `35` are standard header and leave for columns of their own; `11`
+    # is body and `10` is the boundary, so both stay exactly where they were.
+    assert (
+        [(entry.tag, entry.value) for entry in staged.entries]
+        == [(entry.tag, entry.value) for entry in column.entries]
+        == [(11, "C1"), (10, "000")]
+    )
 
 
 def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> None:
     message = Message(
-        kwargs=[
+        entries=[
             ("35", "D"),
             ("Symbol", "IBM"),
             ("#MSGTYPE", "G"),
@@ -99,17 +210,17 @@ def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> N
     )
 
     assert message.MsgType == "D"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("Symbol", "IBM"),
         ("msg_type", "not-the-fix-name"),
     ]
 
 
 def test_an_explicit_message_type_still_strips_it_from_generic_arguments() -> None:
-    message = Message(MsgType="8", kwargs=[("MsgType", "D"), ("Text", "kept")])
+    message = Message(MsgType="8", entries=[("MsgType", "D"), ("Text", "kept")])
 
     assert message.MsgType == "8"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [("Text", "kept")]
+    assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
 
 
 def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_arguments() -> None:
@@ -117,51 +228,204 @@ def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_argument
 
     assert message.etype is EventType.MISC
     assert message.MsgType is None
-    assert message.kwargs == []
+    assert message.entries == []
 
 
 def test_a_piped_message_without_a_discriminator_keeps_generic_arguments() -> None:
     message = Message(message="toBridge #SYMBOL=TTF|#SIDE=1")
 
     assert message.etype is EventType.MISC
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
+    assert [(entry.key, entry.value) for entry in message.entries] == [
         ("SYMBOL", "TTF"),
         ("SIDE", "1"),
     ]
 
 
 def test_an_explicit_empty_argument_list_is_authoritative() -> None:
-    message = Message(message="35=D|Text=not-parsed|", kwargs=[])
+    message = Message(message="35=D|Text=not-parsed|", entries=[])
 
     assert message.MsgType is None
-    assert message.kwargs == []
+    assert message.entries == []
 
 
 def test_a_user_wrapper_promotes_its_named_message_kind() -> None:
     message = Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert message.MsgType == "D"
-    assert [(entry.key, entry.value) for entry in message.kwargs] == [
-        ("8", "FIX.4.4"),
-        ("SIDE", "1"),
-    ]
+    assert message.BeginString == "FIX.4.4"
+    # Both spellings of the discriminator leave together: the wrapper `35=UL`
+    # is what the rendered name was read to correct, so neither is left behind
+    # to be read again.
+    assert [(entry.key, entry.value) for entry in message.entries] == [("SIDE", "1")]
 
 
 def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> None:
-    lower = Message(kwargs=[("35", "uL"), ("MsgType", "D")])
-    after_checksum = Message(kwargs=[("10", "000"), ("35", "D")])
+    lower = Message(entries=[("35", "uL"), ("MsgType", "D")])
+    after_checksum = Message(entries=[("10", "000"), ("35", "D")])
 
     assert lower.MsgType == "uL"
-    assert lower.kwargs == []
+    assert lower.entries == []
     assert after_checksum.MsgType is None
-    assert [(entry.key, entry.value) for entry in after_checksum.kwargs] == [
+    assert [(entry.key, entry.value) for entry in after_checksum.entries] == [
         ("10", "000"),
         ("35", "D"),
     ]
 
 
+def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
+    """Seven columns; `entries` keeps the body and the boundary.
+
+    Every one of them is the text the payload spelled -- `9=176` is the three
+    characters, not a number -- because this stage reads no dictionary.
+    """
+    message = Message(
+        message="8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|"
+        "52=20260814-09:30:00.000|55=IBM|10=000"
+    )
+
+    assert {name: getattr(message, name) for name in LIFTED_HEADER} == {
+        "BeginString": "FIX.4.4",
+        "BodyLength": "176",
+        "MsgType": "D",
+        "MsgSeqNum": "1092",
+        "SenderCompID": "BUYSIDE",
+        "TargetCompID": "XPAR",
+        "SendingTime": "20260814-09:30:00.000",
+    }
+    assert [(entry.key, entry.value) for entry in message.entries] == [
+        ("55", "IBM"),
+        (UNLIFTED_TRAILER, "000"),
+    ]
+    assert Message.into_field_metadata() == {"version": "3"}, (
+        "lifting the header is a new reading of the row, and says so"
+    )
+
+
+def test_a_header_field_stated_twice_two_ways_is_lifted_by_neither() -> None:
+    """Two readings of one fact is not one statement of it.
+
+    A bridge writing one field twice on purpose is telling the reader
+    something a first-wins pop would throw away, so both stay in `entries` and
+    the column says nothing -- while the fields beside it are lifted as usual.
+    """
+    torn = Message(message="8=FIX.4.4|49=A|49=B|55=IBM|10=000")
+
+    assert torn.SenderCompID is None
+    assert [(entry.key, entry.value) for entry in torn.entries] == [
+        ("49", "A"),
+        ("49", "B"),
+        ("55", "IBM"),
+        ("10", "000"),
+    ]
+
+    repeated = Message(message="8=FIX.4.4|49=A|49=A|55=IBM|10=000")
+
+    assert repeated.SenderCompID == "A", "one fact stated twice is still stated once"
+    assert [(entry.key, entry.value) for entry in repeated.entries] == [
+        ("55", "IBM"),
+        ("10", "000"),
+    ], "and every occurrence of it leaves"
+    assert repeated.BeginString == torn.BeginString == "FIX.4.4", (
+        "one torn field is not the six beside it"
+    )
+
+    scalar = Message.from_text("8=FIX.4.4|49=A|49=B|55=IBM|10=000")
+
+    assert scalar.SenderCompID is None
+    assert [(entry.key, entry.value) for entry in scalar.entries] == [
+        (entry.key, entry.value) for entry in torn.entries
+    ], "the rule is the tokenizer's, not the column kernel's"
+
+
+def test_the_header_lift_stops_at_the_checksum() -> None:
+    """`CheckSum` is the boundary, under the tag or under its rendered name."""
+    tagged = Message(entries=[("8", "FIX.4.4"), ("10", "000"), ("49", "AFTER"), ("52", "LATE")])
+    rendered = Message(entries=[("CheckSum", "000"), ("52", "LATE")])
+
+    assert tagged.BeginString == "FIX.4.4"
+    assert (tagged.SenderCompID, tagged.SendingTime) == (None, None)
+    assert [(entry.key, entry.value) for entry in tagged.entries] == [
+        ("10", "000"),
+        ("49", "AFTER"),
+        ("52", "LATE"),
+    ], "the trailer stays, and so does everything the row wrote behind it"
+    assert rendered.SendingTime is None
+    assert [(entry.key, entry.value) for entry in rendered.entries] == [
+        ("CheckSum", "000"),
+        ("52", "LATE"),
+    ]
+
+
+def test_only_the_discriminator_value_is_constrained_to_letters_and_digits() -> None:
+    """The standard constrains `MsgType` alone; the rest carry punctuation."""
+    message = Message(entries=[("8", "FIX.4.4"), ("35", "D-1"), ("52", "20260814-09:30:00.000")])
+
+    assert message.MsgType is None
+    assert (message.BeginString, message.SendingTime) == (
+        "FIX.4.4",
+        "20260814-09:30:00.000",
+    )
+    assert [(entry.key, entry.value) for entry in message.entries] == [("35", "D-1")], (
+        "a value no discriminator can be is left where a reader can see it"
+    )
+
+
+def test_only_the_discriminator_answers_to_a_rendered_name() -> None:
+    """A bridge that renders its header writes its own names, and this stage
+    keeps them: which name a feed uses is data. `MsgType` is the exception it
+    has always been -- a `35=U1` wrapper naming its real type beside it is the
+    whole reason the rendered spelling is read at all."""
+    message = Message(
+        message="#BeginString=FIX.4.4|#SendingTime=20260814-09:30:00.000|#MsgType=D|#Side=1"
+    )
+
+    assert message.MsgType == "D"
+    assert (message.BeginString, message.SendingTime) == (None, None)
+    assert [(entry.key, entry.value) for entry in message.entries] == [
+        ("BeginString", "FIX.4.4"),
+        ("SendingTime", "20260814-09:30:00.000"),
+        ("Side", "1"),
+    ]
+
+
+def test_an_explicit_header_column_still_strips_its_entry() -> None:
+    """What a caller declares stands, and the payload's own copy still leaves --
+    the same rule the discriminator has always followed."""
+    message = Message(BeginString="FIX.4.2", entries=[("8", "FIX.4.4"), ("Text", "kept")])
+
+    assert message.BeginString == "FIX.4.2"
+    assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
+
+
+def test_the_column_path_and_the_scalar_row_lift_the_same_header() -> None:
+    """`parse_arrow` and `__post_init__` are one rule spelled twice: same seven
+    columns, same residual arguments, row for row."""
+    lines = [
+        "8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|52=20260814-09:30:00.000|55=IBM|10=000",
+        "8=FIX.4.4|49=A|49=B|10=000",
+        "8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|",
+        "#BeginString=FIX.4.4|#MsgType=D|#Side=1",
+        "8=FIX.4.4|35=D|10=000|49=AFTER",
+        "just some heartbeat prose",
+    ]
+    parsed = Message.parse_arrow(pyarrow.array(lines))
+
+    assert all(parsed[name].type == pyarrow.string() for name in LIFTED_HEADER)
+    for index, line in enumerate(lines):
+        row = Message(message=line)
+        assert {name: parsed[name][index].as_py() for name in LIFTED_HEADER} == {
+            name: getattr(row, name) for name in LIFTED_HEADER
+        }, line
+        assert [(entry["key"], entry["value"]) for entry in parsed["entries"][index].as_py()] == [
+            (entry.key, entry.value) for entry in row.entries
+        ], line
+    assert {name: parsed[name][-1].as_py() for name in LIFTED_HEADER} == dict.fromkeys(
+        LIFTED_HEADER
+    ), "a prose row states no header, and every column says so"
+
+
 def test_generic_arguments_keep_mixed_separators_repeats_and_spelling() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "8=FIX.4.4|55=A|55=B|10=000|",
@@ -196,10 +460,10 @@ def test_pipe_and_soh_fast_paths_equal_complete_separator_inference() -> None:
         ]
     )
 
-    expected = kwargs_module._parse_generic(messages).to_pylist()
+    expected = entries_module._parse_generic(messages).to_pylist()
 
-    assert Kwarg.parse_arrow(messages).to_pylist() == expected
-    assert kwargs_module._common_separators(messages).to_pylist() == [
+    assert Entry.parse_arrow(messages).to_pylist() == expected
+    assert entries_module._common_separators(messages).to_pylist() == [
         "|",
         "\x01",
         None,
@@ -209,18 +473,18 @@ def test_pipe_and_soh_fast_paths_equal_complete_separator_inference() -> None:
 
 def test_a_long_common_separator_row_bypasses_generic_inference(monkeypatch) -> None:
     messages = pyarrow.array(["A=" + "x" * (1 << 18) + "|B=2"])
-    expected = kwargs_module._parse_generic(messages).to_pylist()
+    expected = entries_module._parse_generic(messages).to_pylist()
 
     def unexpected(_messages):
         raise AssertionError("common separator used generic inference")
 
-    monkeypatch.setattr(kwargs_module, "_parse_generic", unexpected)
+    monkeypatch.setattr(entries_module, "_parse_generic", unexpected)
 
-    assert Kwarg.parse_arrow(messages).to_pylist() == expected
+    assert Entry.parse_arrow(messages).to_pylist() == expected
 
 
 def test_generic_arguments_keep_prefixes_whitespace_and_empty_values() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "prefix ACCOUNT=A CLIENTID=B",
@@ -237,7 +501,7 @@ def test_generic_arguments_keep_prefixes_whitespace_and_empty_values() -> None:
 
 
 def test_an_indexed_group_can_be_the_first_argument() -> None:
-    (parsed,) = Kwarg.parse_arrow(
+    (parsed,) = Entry.parse_arrow(
         pyarrow.array(["#NoPartyIDs[0]=PartyID=A\x01PartyRole=1|#B=2"])
     ).to_pylist()
 
@@ -248,20 +512,20 @@ def test_an_indexed_group_can_be_the_first_argument() -> None:
 
 
 def test_a_single_argument_does_not_keep_its_trailing_delimiter() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["Only=one|"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["Only=one|"])).to_pylist()
 
     assert [(entry["key"], entry["value"]) for entry in parsed] == [("Only", "one")]
 
 
 def test_hash_separators_distinguish_wire_delimiters_from_marked_keys() -> None:
-    parsed = Kwarg.parse_arrow(pyarrow.array(["8=FIX.4.4#35=D#10=000", "#A=1#B=2"])).to_pylist()
+    parsed = Entry.parse_arrow(pyarrow.array(["8=FIX.4.4#35=D#10=000", "#A=1#B=2"])).to_pylist()
 
     assert [entry["key"] for entry in parsed[0]] == ["8", "35", "10"]
     assert [entry["key"] for entry in parsed[1]] == ["A", "B"]
 
 
 def test_a_numeric_key_too_wide_for_a_tag_remains_a_key() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["1234567890=wide|Other=kept|"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["1234567890=wide|Other=kept|"])).to_pylist()
 
     assert [(entry["key"], entry["value"]) for entry in parsed] == [
         ("1234567890", "wide"),
@@ -270,7 +534,7 @@ def test_a_numeric_key_too_wide_for_a_tag_remains_a_key() -> None:
 
 
 def test_generic_arguments_preserve_numeric_dotted_members() -> None:
-    (parsed,) = Kwarg.parse_arrow(pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|Side=1"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|Side=1"])).to_pylist()
 
     assert [(entry["namespace"], entry["comp"], entry["key"]) for entry in parsed] == [
         ("54", None, "5"),
@@ -280,7 +544,7 @@ def test_generic_arguments_preserve_numeric_dotted_members() -> None:
 
 
 def test_fix_whitespace_around_equals_is_not_a_field_separator() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(["Side\x0b=1|Price=2", "N[0]=\x0bM=v|Side=1"])
     ).to_pylist()
 
@@ -291,7 +555,7 @@ def test_fix_whitespace_around_equals_is_not_a_field_separator() -> None:
 
 
 def test_separator_padding_is_ascii_and_does_not_strip_unicode_text() -> None:
-    parsed = Kwarg.parse_arrow(
+    parsed = Entry.parse_arrow(
         pyarrow.array(
             [
                 "8=FIX.4.4| 54=1|55=X|10=000|",
@@ -311,7 +575,7 @@ def test_separator_padding_is_ascii_and_does_not_strip_unicode_text() -> None:
 
 
 def test_generic_arguments_do_not_apply_fix_checksum_semantics() -> None:
-    (parsed,) = Kwarg.parse_arrow(
+    (parsed,) = Entry.parse_arrow(
         pyarrow.array(["8=FIX.4.4|10=000|55=AFTER-CHECKSUM|"])
     ).to_pylist()
     assert [(entry["key"], entry["value"]) for entry in parsed] == [
@@ -330,7 +594,7 @@ def test_raw_identity_depends_only_on_the_payload() -> None:
     assert changed.hash != first.hash
 
 
-def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Path) -> None:
+def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: Path) -> None:
     path = tmp_path / "capture.log"
     payload = "8=FIX.4.4|35=D|49=XPAR|56=BUY|55=IBM|10=000"
     path.write_text(f"2026-08-14 09:30:00.123 [thread] [bridge] (INFO) {payload}\n")
@@ -343,15 +607,20 @@ def test_a_text_file_promotes_only_message_type_before_fix_parsing(tmp_path: Pat
 
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == [payload]
-    assert table.column("MsgType").to_pylist() == ["D"]
-    assert [(entry["key"], entry["value"]) for entry in table.column("kwargs")[0].as_py()] == [
-        ("8", "FIX.4.4"),
-        ("49", "XPAR"),
-        ("56", "BUY"),
+    assert [table.column(name).to_pylist() for name in LIFTED_HEADER] == [
+        ["FIX.4.4"],
+        [None],
+        ["D"],
+        [None],
+        ["XPAR"],
+        ["BUY"],
+        [None],
+    ], "the four this payload states, and null for the three it does not"
+    assert [(entry["key"], entry["value"]) for entry in table.column("entries")[0].as_py()] == [
         ("55", "IBM"),
         ("10", "000"),
-    ]
+    ], "the body and the boundary, and nothing the header already answers"
     assert table.column("etype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert table.column("hash")[0].as_py() == hash_bytes(payload.encode("utf-8"))
+    assert hash_int_of(table.column("hash")[0].as_py()) == hash_bytes(payload.encode("utf-8"))

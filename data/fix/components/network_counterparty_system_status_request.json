@@ -1,0 +1,43 @@
+{
+ "name": "NetworkCounterpartySystemStatusRequest",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "NetworkCounterpartySystemStatusRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NetworkCounterpartySystemStatusRequest",
+   "msgtype": "BC"
+  },
+  "fields": [
+   {
+    "name": "NetworkRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "935"
+    }
+   },
+   {
+    "name": "NetworkRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "933"
+    }
+   },
+   {
+    "name": "CompIDReqGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CompIDReqGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

@@ -6,20 +6,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoClearingInstructions",
-   "required": false,
-   "tag": 576,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "ClrInstGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ClrInstGrp",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoClearingInstructions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "576"
+    },
+    "item": {
      "name": "ClearingInstruction",
-     "required": false,
-     "tag": 577
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClearingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "577"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

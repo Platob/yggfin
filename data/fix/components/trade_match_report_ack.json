@@ -1,0 +1,96 @@
+{
+ "name": "TradeMatchReportAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeMatchReportAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeMatchReportAck",
+   "msgtype": "DD"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdMatchID",
+    "type": "string",
+    "fix": {
+     "tag": "880"
+    }
+   },
+   {
+    "name": "TradeMatchAckStatus",
+    "type": "string",
+    "fix": {
+     "tag": "1896"
+    }
+   },
+   {
+    "name": "TradeMatchRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1897"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

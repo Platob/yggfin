@@ -3,114 +3,159 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateIndex",
-   "required": false,
-   "tag": 42801
+ "declaration": {
+  "name": "UnderlyingDividendAccrualFloatingRate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingDividendAccrualFloatingRate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateIndexCurvePeriod",
-   "required": false,
-   "tag": 42802
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateIndexCurveUnit",
-   "required": false,
-   "tag": 42803
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateMultiplier",
-   "required": false,
-   "tag": 42804
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateSpread",
-   "required": false,
-   "tag": 42805
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateSpreadPositionType",
-   "required": false,
-   "tag": 42806
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloatingRateTreatment",
-   "required": false,
-   "tag": 42807
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendCapRate",
-   "required": false,
-   "tag": 42808
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendCapRateBuySide",
-   "required": false,
-   "tag": 42809
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendCapRateSellSide",
-   "required": false,
-   "tag": 42810
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloorRate",
-   "required": false,
-   "tag": 42811
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloorRateBuySide",
-   "required": false,
-   "tag": 42812
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFloorRateSellSide",
-   "required": false,
-   "tag": 42813
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendInitialRate",
-   "required": false,
-   "tag": 42814
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFinalRateRoundingDirection",
-   "required": false,
-   "tag": 42815
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendFinalRatePrecision",
-   "required": false,
-   "tag": 42816
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendAveragingMethod",
-   "required": false,
-   "tag": 42817
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDividendNegativeRateTreatment",
-   "required": false,
-   "tag": 42818
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingDividendFloatingRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42801"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42802"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42803"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42804"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42805"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateSpreadPositionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42806"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloatingRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42807"
+    }
+   },
+   {
+    "name": "UnderlyingDividendCapRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42808"
+    }
+   },
+   {
+    "name": "UnderlyingDividendCapRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42809"
+    }
+   },
+   {
+    "name": "UnderlyingDividendCapRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42810"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloorRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42811"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloorRateBuySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42812"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFloorRateSellSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42813"
+    }
+   },
+   {
+    "name": "UnderlyingDividendInitialRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42814"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFinalRateRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42815"
+    }
+   },
+   {
+    "name": "UnderlyingDividendFinalRatePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42816"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAveragingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42817"
+    }
+   },
+   {
+    "name": "UnderlyingDividendNegativeRateTreatment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42818"
+    }
+   }
+  ]
+ }
 }

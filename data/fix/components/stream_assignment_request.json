@@ -1,0 +1,39 @@
+{
+ "name": "StreamAssignmentRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "StreamAssignmentRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StreamAssignmentRequest",
+   "msgtype": "CC"
+  },
+  "fields": [
+   {
+    "name": "StreamAsgnReqID",
+    "type": "string",
+    "fix": {
+     "tag": "1497"
+    }
+   },
+   {
+    "name": "StreamAsgnReqType",
+    "type": "string",
+    "fix": {
+     "tag": "1498"
+    }
+   },
+   {
+    "name": "StrmAsgnReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "StrmAsgnReqGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

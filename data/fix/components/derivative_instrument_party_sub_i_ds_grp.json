@@ -4,26 +4,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDerivativeInstrumentPartySubIDs",
-   "required": false,
-   "tag": 1296,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartySubID",
-     "required": false,
-     "tag": 1297
+ "declaration": {
+  "name": "DerivativeInstrumentPartySubIDsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeInstrumentPartySubIDsGrp",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoDerivativeInstrumentPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1296"
     },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrumentPartySubIDType",
-     "required": false,
-     "tag": 1298
+    "item": {
+     "name": "DerivativeInstrumentPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1297"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1298"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

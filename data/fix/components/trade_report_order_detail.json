@@ -3,229 +3,324 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "OrderID",
-   "required": false,
-   "tag": 37
+ "declaration": {
+  "name": "TradeReportOrderDetail",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeReportOrderDetail",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "SecondaryOrderID",
-   "required": false,
-   "tag": 198
-  },
-  {
-   "kind": "field",
-   "name": "ClOrdID",
-   "required": false,
-   "tag": 11
-  },
-  {
-   "kind": "field",
-   "name": "SecondaryClOrdID",
-   "required": false,
-   "tag": 526
-  },
-  {
-   "kind": "field",
-   "name": "ListID",
-   "required": false,
-   "tag": 66
-  },
-  {
-   "kind": "field",
-   "name": "RefOrderID",
-   "required": false,
-   "tag": 1080
-  },
-  {
-   "kind": "field",
-   "name": "RefOrderIDSource",
-   "required": false,
-   "tag": 1081
-  },
-  {
-   "kind": "field",
-   "name": "RefOrdIDReason",
-   "required": false,
-   "tag": 1431
-  },
-  {
-   "kind": "component",
-   "name": "RelatedOrderGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PreTradeAnonymity",
-   "required": false,
-   "tag": 1091
-  },
-  {
-   "kind": "field",
-   "name": "OrdType",
-   "required": false,
-   "tag": 40
-  },
-  {
-   "kind": "field",
-   "name": "Price",
-   "required": false,
-   "tag": 44
-  },
-  {
-   "kind": "field",
-   "name": "StopPx",
-   "required": false,
-   "tag": 99
-  },
-  {
-   "kind": "field",
-   "name": "ExecInst",
-   "required": false,
-   "tag": 18
-  },
-  {
-   "kind": "field",
-   "name": "OrdStatus",
-   "required": false,
-   "tag": 39
-  },
-  {
-   "kind": "component",
-   "name": "OrderQtyData",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LeavesQty",
-   "required": false,
-   "tag": 151
-  },
-  {
-   "kind": "field",
-   "name": "CumQty",
-   "required": false,
-   "tag": 14
-  },
-  {
-   "kind": "field",
-   "name": "TimeInForce",
-   "required": false,
-   "tag": 59
-  },
-  {
-   "kind": "field",
-   "name": "ExpireTime",
-   "required": false,
-   "tag": 126
-  },
-  {
-   "kind": "component",
-   "name": "MatchingInstructions",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "SelfMatchPreventionID",
-   "required": false,
-   "tag": 2362
-  },
-  {
-   "kind": "field",
-   "name": "SelfMatchPreventionInstruction",
-   "required": false,
-   "tag": 2964
-  },
-  {
-   "kind": "field",
-   "name": "ExposureDuration",
-   "required": false,
-   "tag": 1629
-  },
-  {
-   "kind": "field",
-   "name": "ExposureDurationUnit",
-   "required": false,
-   "tag": 1916
-  },
-  {
-   "kind": "component",
-   "name": "DisplayInstruction",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "OrderCapacity",
-   "required": false,
-   "tag": 528
-  },
-  {
-   "kind": "field",
-   "name": "OrderRestrictions",
-   "required": false,
-   "tag": 529
-  },
-  {
-   "kind": "field",
-   "name": "BookingType",
-   "required": false,
-   "tag": 775
-  },
-  {
-   "kind": "field",
-   "name": "OrigCustOrderCapacity",
-   "required": false,
-   "tag": 1432
-  },
-  {
-   "kind": "field",
-   "name": "OrderOrigination",
-   "required": false,
-   "tag": 1724
-  },
-  {
-   "kind": "component",
-   "name": "OrderAttributeGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "ExDestinationType",
-   "required": false,
-   "tag": 2704
-  },
-  {
-   "kind": "field",
-   "name": "OrderInputDevice",
-   "required": false,
-   "tag": 821
-  },
-  {
-   "kind": "field",
-   "name": "LotType",
-   "required": false,
-   "tag": 1093
-  },
-  {
-   "kind": "field",
-   "name": "TransBkdTime",
-   "required": false,
-   "tag": 483
-  },
-  {
-   "kind": "field",
-   "name": "OrigOrdModTime",
-   "required": false,
-   "tag": 586
-  },
-  {
-   "kind": "field",
-   "name": "OrderPercentOfTotalVolume",
-   "required": false,
-   "tag": 2766
-  }
- ]
+  "fields": [
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "SecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "198"
+    }
+   },
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
+    }
+   },
+   {
+    "name": "SecondaryClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "526"
+    }
+   },
+   {
+    "name": "ListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "RefOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1080"
+    }
+   },
+   {
+    "name": "RefOrderIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1081"
+    }
+   },
+   {
+    "name": "RefOrdIDReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1431"
+    }
+   },
+   {
+    "name": "RelatedOrderGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedOrderGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PreTradeAnonymity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1091"
+    }
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40"
+    }
+   },
+   {
+    "name": "Price",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "44"
+    }
+   },
+   {
+    "name": "StopPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "99"
+    }
+   },
+   {
+    "name": "ExecInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "18"
+    }
+   },
+   {
+    "name": "OrdStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "39"
+    }
+   },
+   {
+    "name": "OrderQtyData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderQtyData"
+    },
+    "fields": []
+   },
+   {
+    "name": "LeavesQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "151"
+    }
+   },
+   {
+    "name": "CumQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "14"
+    }
+   },
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "59"
+    }
+   },
+   {
+    "name": "ExpireTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "126"
+    }
+   },
+   {
+    "name": "MatchingInstructions",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MatchingInstructions"
+    },
+    "fields": []
+   },
+   {
+    "name": "SelfMatchPreventionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2362"
+    }
+   },
+   {
+    "name": "SelfMatchPreventionInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2964"
+    }
+   },
+   {
+    "name": "ExposureDuration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1629"
+    }
+   },
+   {
+    "name": "ExposureDurationUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1916"
+    }
+   },
+   {
+    "name": "DisplayInstruction",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DisplayInstruction"
+    },
+    "fields": []
+   },
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "528"
+    }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   },
+   {
+    "name": "BookingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "775"
+    }
+   },
+   {
+    "name": "OrigCustOrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1432"
+    }
+   },
+   {
+    "name": "OrderOrigination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1724"
+    }
+   },
+   {
+    "name": "OrderAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExDestinationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2704"
+    }
+   },
+   {
+    "name": "OrderInputDevice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "821"
+    }
+   },
+   {
+    "name": "LotType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1093"
+    }
+   },
+   {
+    "name": "TransBkdTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "483"
+    }
+   },
+   {
+    "name": "OrigOrdModTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "586"
+    }
+   },
+   {
+    "name": "OrderPercentOfTotalVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2766"
+    }
+   }
+  ]
+ }
 }

@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradeQtys",
-   "required": false,
-   "tag": 1841,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradeQtyType",
-     "required": false,
-     "tag": 1842
+ "declaration": {
+  "name": "TradeQtyGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeQtyGrp",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTradeQtys",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1841"
     },
-    {
-     "kind": "field",
+    "item": {
      "name": "TradeQty",
-     "required": false,
-     "tag": 1843
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradeQtyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1842"
+       }
+      },
+      {
+       "name": "TradeQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1843"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

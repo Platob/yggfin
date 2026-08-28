@@ -4,20 +4,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUsernames",
-   "required": false,
-   "tag": 809,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "UsernameGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UsernameGrp",
+   "msgtypes": "[\"UserNotification\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUsernames",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "809"
+    },
+    "item": {
      "name": "Username",
-     "required": false,
-     "tag": 553
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Username",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "553"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

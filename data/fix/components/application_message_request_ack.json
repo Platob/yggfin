@@ -1,0 +1,99 @@
+{
+ "name": "ApplicationMessageRequestAck",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ApplicationMessageRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplicationMessageRequestAck",
+   "msgtype": "BX"
+  },
+  "fields": [
+   {
+    "name": "ApplResponseID",
+    "type": "string",
+    "fix": {
+     "tag": "1353"
+    }
+   },
+   {
+    "name": "ApplReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1346"
+    }
+   },
+   {
+    "name": "ApplReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1347"
+    }
+   },
+   {
+    "name": "ApplResponseType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1348"
+    }
+   },
+   {
+    "name": "ApplTotalMessageCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1349"
+    }
+   },
+   {
+    "name": "ApplIDRequestAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplIDRequestAckGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

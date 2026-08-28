@@ -3,65 +3,96 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateUnadjusted",
-   "required": false,
-   "tag": 41739
+ "declaration": {
+  "name": "UnderlyingComplexEventRelativeDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingComplexEventRelativeDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateRelativeTo",
-   "required": false,
-   "tag": 41740
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateOffsetPeriod",
-   "required": false,
-   "tag": 41741
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateOffsetUnit",
-   "required": false,
-   "tag": 41742
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateOffsetDayType",
-   "required": false,
-   "tag": 41743
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateBusinessDayConvention",
-   "required": false,
-   "tag": 41744
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingComplexEventDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventDateAdjusted",
-   "required": false,
-   "tag": 41745
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventFixingTime",
-   "required": false,
-   "tag": 41746
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
-   "required": false,
-   "tag": 41747
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingComplexEventDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41739"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41740"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41741"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41742"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41743"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41744"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingComplexEventDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingComplexEventDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41745"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventFixingTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41746"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41747"
+    }
+   }
+  ]
+ }
 }

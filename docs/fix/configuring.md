@@ -45,13 +45,13 @@ declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
 
 `Rules` is a list of protocol rules, first match wins -- the first
 *configured* rule, wherever in the line its pattern matches, which is what
-lets a specific rule sit in front of a general one. A rule carries one
-`pattern`; alternatives join with `|`, and
-`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its
-own flags (a document from the retired `patterns` list shape still reads,
-folded into the one alternation). A rule's regex must work in Python `re`
-*and* in Arrow's RE2, because the scalar reading and the columnar one are
-the same rule.
+lets a specific rule sit in front of a general one.
+
+A rule carries one `pattern`; alternatives join with `|`, and
+`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its own
+flags (a document from the retired `patterns` list shape still reads, folded
+into the one alternation). A rule's regex must work in Python `re` *and* in
+Arrow's RE2, because the scalar reading and the columnar one are one rule.
 
 ```yaml
 protocols:
@@ -82,27 +82,36 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
 {
   "name": "MsgType",
   "tag": 35,
-  "values": {"8": "ExecutionReport", "D": "NewOrderSingle", "W": "MarketDataSnapshotFullRefresh"},
+  "values": [
+    {"value": "8", "meaning": "ExecutionReport"},
+    {"value": "D", "meaning": "NewOrderSingle"},
+    {"value": "W", "meaning": "MarketDataSnapshotFullRefresh"}
+  ],
   "event_types": {
-    "8": {"name": "EXECUTION", "id": 210},
-    "D": {"name": "ORDER", "id": 110},
-    "W": {"name": "BOOK", "id": 320}
+    "8": {"name": "EXECUTION", "id": 4996819942064276804},
+    "D": {"name": "ORDER", "id": 5715705941605744640},
+    "W": {"name": "BOOK", "id": 4778124913204527104}
   },
-  "states": {"D": {"name": "PENDING_NEW", "id": 110}},
-  "encoded": {"newordersingle": "D"},
-  "decoded": {"D": "newordersingle"}
+  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}}
 }
 ```
+
+The `id` is the member's stored `int64` -- its ASCII mnemonic packed
+big-endian and left-justified (`EXECUTED`, `ORDER`, `BOOK`). The name and the
+id must agree on load; a document carrying an id this release does not store
+is refused, so a registry written by an earlier release is rewritten, not
+migrated.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent
 from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
 these terminal values cannot enter `fix.market` accidentally.
 
-The normalized `decoded` values are also the market dispatch names:
-`D` is `newordersingle` and `W` is `marketdatasnapshotfullrefresh`. The market
-layer owns which of those standard names it implements; the registry carries
-no second handler vocabulary. Operational MsgTypes are source policy configured
+The market layer owns which message shapes it implements, under the standard's
+own name for each, and asks the dictionary what this feed spells them as:
+`newordersingle` encodes to `D` here and to whatever a venue writes instead.
+The registry carries no second handler vocabulary and nothing converts a
+MsgType back into a name. Operational MsgTypes are source policy configured
 through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
@@ -114,11 +123,11 @@ use `State` members; registry documents store both their names and integer ids.
   "name": "ExecType",
   "tag": 150,
   "states": {
-    "0": {"name": "NEW", "id": 210},
-    "1": {"name": "PARTIALLY_FILLED", "id": 310},
-    "2": {"name": "FILLED", "id": 410},
-    "G": {"name": "REPLACED", "id": 520},
-    "H": {"name": "CANCELLED", "id": 510}
+    "0": {"name": "NEW", "id": 3616758035474546688},
+    "1": {"name": "PARTIALLY_FILLED", "id": 3688817884324579660},
+    "2": {"name": "FILLED", "id": 3760864444457698628},
+    "G": {"name": "REPLACED", "id": 3833216690499109700},
+    "H": {"name": "CANCELLED", "id": 3832918705633971268}
   }
 }
 ```
@@ -151,9 +160,12 @@ fields:
 - `field` names its field however the log does: a tag, a canonical name, or a
   rendered key. It resolves through the same index a parsed key resolves
   through.
-- `type` is an Arrow type as Arrow spells one. A FIX datatype (`UTCDateOnly`)
-  is accepted and normalizes to it, so a rule read back always states its unit
-  and its zone -- `type: date` comes back `date32[day]`.
+- `type` is an Arrow type as Arrow spells one. A FIX datatype (`UTCDateOnly`,
+  `date`) is accepted and normalizes to what the dictionary projects it to, so
+  a rule read back always states its unit and its zone -- and every FIX
+  temporal projects to an instant, so both of those come back `timestamp[ns]`.
+  A rule that wants the day says `date32[day]`, which is exactly what the
+  `MaturityDate` rule above is for.
 - `values` maps what a feed writes to what it means, and wins the dictionary's
   own translation for that field.
 

@@ -3,50 +3,77 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedTrades",
-   "required": false,
-   "tag": 1855,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RelatedTradeID",
-     "required": false,
-     "tag": 1856
+ "declaration": {
+  "name": "RelatedTradeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelatedTradeGrp",
+   "msgtypes": "[\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedTrades",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1855"
     },
-    {
-     "kind": "field",
-     "name": "RelatedTradeIDSource",
-     "required": false,
-     "tag": 1857
-    },
-    {
-     "kind": "field",
-     "name": "RelatedRegulatoryTradeIDSource",
-     "required": false,
-     "tag": 2103
-    },
-    {
-     "kind": "field",
-     "name": "RelatedTradeDate",
-     "required": false,
-     "tag": 1858
-    },
-    {
-     "kind": "field",
-     "name": "RelatedTradeMarketID",
-     "required": false,
-     "tag": 1859
-    },
-    {
-     "kind": "field",
-     "name": "RelatedTradeQuantity",
-     "required": false,
-     "tag": 1860
+    "item": {
+     "name": "RelatedTrade",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1856"
+       }
+      },
+      {
+       "name": "RelatedTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1857"
+       }
+      },
+      {
+       "name": "RelatedRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2103"
+       }
+      },
+      {
+       "name": "RelatedTradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1858"
+       }
+      },
+      {
+       "name": "RelatedTradeMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1859"
+       }
+      },
+      {
+       "name": "RelatedTradeQuantity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1860"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

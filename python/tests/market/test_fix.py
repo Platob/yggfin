@@ -27,11 +27,21 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 SHAPES = (MarketEvent, Order, Execution, Book, Instrument, Level)
 
-#: FIX datatypes this package deliberately stores as a narrower or different
-#: Arrow type. A `char` enumeration becomes a banded `int32` code, and a FIX
-#: `int` that is a code or a count becomes `int32`; Currency packs its short
-#: UTF-8 code into the same width. Each remains lossless for its domain.
-NARROWED = {"char": pyarrow.int32(), "currency": pyarrow.int32(), "int": pyarrow.int32()}
+#: FIX datatypes this package deliberately stores as a different Arrow type.
+#: An enumerated `char` or `int` becomes a packed ASCII code, as wide as the
+#: enum that declares it -- four bytes for `Side`, eight for `State` -- and
+#: Currency packs its short code the same way. Each remains lossless for its
+#: domain.
+NARROWED = {
+    "char": (pyarrow.int32(), pyarrow.int64()),
+    "currency": (pyarrow.int32(),),
+    "int": (pyarrow.int32(), pyarrow.int64()),
+    # A maturity and a settlement date are calendar days, and the market
+    # shapes say so. FIX reads every temporal as the instant it spells --
+    # which is what keeps a zone applicable later -- and narrowing one back to
+    # the day it names is this package's own statement about what the value is.
+    "localmktdate": (pyarrow.date32(),),
+}
 
 
 def dictionary() -> dict[str, dict[str, Any]]:
@@ -152,22 +162,22 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     """The other half of a mislabel: the right tag on a column of the wrong type."""
     if member.fix.get("kind") == "namespace":
         declared = NAMESPACE_FIELDS[member.fix["name"]]
-        assert member.arrow_type == declared.arrow_type, path
+        assert member.dtype == declared.dtype, path
         return
     datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "")
     expected = arrow_type_of(datatype)
-    if member.arrow_type == expected:
+    if member.dtype == expected:
         return
-    narrowed = NARROWED.get(datatype.lower())
-    assert narrowed is not None and member.arrow_type == narrowed, (
-        f"{path} is {member.arrow_type} where FIX {datatype!r} is {expected}"
+    narrowed = NARROWED.get(datatype.lower(), ())
+    assert member.dtype in narrowed, (
+        f"{path} is {member.dtype} where FIX {datatype!r} is {expected}"
     )
 
 
 def test_an_int32_narrowing_is_explicit_for_its_fix_datatype() -> None:
     """Every narrowed protocol value must be named in the compatibility table."""
     for path, member in DECLARED:
-        if member.arrow_type != pyarrow.int32():
+        if member.dtype != pyarrow.int32():
             continue
         datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "").lower()
         assert datatype in NARROWED, f"{path} narrowed a FIX {datatype!r}"
@@ -192,7 +202,7 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
     """`ClOrdID` on an order and on an execution must be one column, not two."""
     by_name: dict[str, set[tuple[str, Any]]] = {}
     for _, member in DECLARED:
-        by_name.setdefault(member.fix["name"], set()).add((member.name, member.arrow_type))
+        by_name.setdefault(member.fix["name"], set()).add((member.name, member.dtype))
     for name, spellings in by_name.items():
         if name == "Symbol":
             assert spellings == {("symbol", pyarrow.string())}, (

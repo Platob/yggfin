@@ -7,42 +7,63 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "YieldType",
-   "required": false,
-   "tag": 235
+ "declaration": {
+  "name": "YieldData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "YieldData",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradeCaptureReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "Yield",
-   "required": false,
-   "tag": 236
-  },
-  {
-   "kind": "field",
-   "name": "YieldCalcDate",
-   "required": false,
-   "tag": 701
-  },
-  {
-   "kind": "field",
-   "name": "YieldRedemptionDate",
-   "required": false,
-   "tag": 696
-  },
-  {
-   "kind": "field",
-   "name": "YieldRedemptionPrice",
-   "required": false,
-   "tag": 697
-  },
-  {
-   "kind": "field",
-   "name": "YieldRedemptionPriceType",
-   "required": false,
-   "tag": 698
-  }
- ]
+  "fields": [
+   {
+    "name": "YieldType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "235"
+    }
+   },
+   {
+    "name": "Yield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "236"
+    }
+   },
+   {
+    "name": "YieldCalcDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "701"
+    }
+   },
+   {
+    "name": "YieldRedemptionDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "696"
+    }
+   },
+   {
+    "name": "YieldRedemptionPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "697"
+    }
+   },
+   {
+    "name": "YieldRedemptionPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "698"
+    }
+   }
+  ]
+ }
 }

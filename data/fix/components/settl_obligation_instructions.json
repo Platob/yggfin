@@ -4,119 +4,176 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSettlOblig",
-   "required": false,
-   "tag": 1165,
-   "members": [
-    {
-     "kind": "field",
-     "name": "NetGrossInd",
-     "required": false,
-     "tag": 430
+ "declaration": {
+  "name": "SettlObligationInstructions",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlObligationInstructions",
+   "msgtypes": "[\"SettlementObligationReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSettlOblig",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1165"
     },
-    {
-     "kind": "field",
-     "name": "SettlObligID",
-     "required": false,
-     "tag": 1161
-    },
-    {
-     "kind": "field",
-     "name": "SettlObligTransType",
-     "required": false,
-     "tag": 1162
-    },
-    {
-     "kind": "field",
-     "name": "SettlObligRefID",
-     "required": false,
-     "tag": 1163
-    },
-    {
-     "kind": "field",
-     "name": "CcyAmt",
-     "required": false,
-     "tag": 1157
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrAmt",
-     "required": false,
-     "tag": 119
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrency",
-     "required": false,
-     "tag": 120
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2899
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrFxRate",
-     "required": false,
-     "tag": 155
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate",
-     "required": false,
-     "tag": 64
-    },
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "EffectiveTime",
-     "required": false,
-     "tag": 168
-    },
-    {
-     "kind": "field",
-     "name": "ExpireTime",
-     "required": false,
-     "tag": 126
-    },
-    {
-     "kind": "field",
-     "name": "LastUpdateTime",
-     "required": false,
-     "tag": 779
-    },
-    {
-     "kind": "component",
-     "name": "SettlDetails",
-     "required": false
+    "item": {
+     "name": "SettlOblig",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NetGrossInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "430"
+       }
+      },
+      {
+       "name": "SettlObligID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1161"
+       }
+      },
+      {
+       "name": "SettlObligTransType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1162"
+       }
+      },
+      {
+       "name": "SettlObligRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1163"
+       }
+      },
+      {
+       "name": "CcyAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1157"
+       }
+      },
+      {
+       "name": "SettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "119"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "SettlCurrFxRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "155"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "EffectiveTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "168"
+       }
+      },
+      {
+       "name": "ExpireTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "126"
+       }
+      },
+      {
+       "name": "LastUpdateTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "779"
+       }
+      },
+      {
+       "name": "SettlDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlDetails"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

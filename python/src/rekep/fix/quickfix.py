@@ -1,15 +1,28 @@
-"""The QuickFIX spec as a second source: what the standard says, machine-readable."""
+"""The QuickFIX spec as a second source: what the standard says, machine-readable.
+
+A component, a message and a repeating group are all one shape here: a
+`Field`. A block is a struct, a repeating group is a list of one, and a
+reference to another block is a struct with no members yet and the block's
+name in `fix:component` -- expanded by whoever reads it, because expanding
+the published dictionary in place turns three thousand members into a
+hundred and twenty thousand.
+
+Names are FIX's own throughout. The Arrow projection snakes them when it
+builds columns; the declaration says what the standard says.
+"""
 
 from __future__ import annotations
 
 import dataclasses
-import functools
 import re
-from collections.abc import Mapping
+import types
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 from xml.etree import ElementTree
 
-from rekep.convert import Convertible
+import pyarrow
+
+from rekep.fields import Field
 
 #: Where the spec files live. Override to point at a fork or a mirror.
 QUICKFIX_URL = "https://raw.githubusercontent.com/quickfix/quickfix/master/spec"
@@ -44,144 +57,159 @@ class SpecField:
     values: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
-@dataclasses.dataclass(frozen=True)
-class SpecMember(Convertible):
-    """One ordered member of a QuickFIX component declaration."""
+#: What an unexpanded reference is: a block whose members live elsewhere.
+#: A concrete dtype is required, and an empty struct is the honest one --
+#: this says nothing about the members, which is exactly the state it is in.
+REFERENCE: pyarrow.DataType = pyarrow.struct([])
 
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Stored member kind; empty on the base."""
-        return ""
+#: Plurals no rule below reaches. Measured rather than imagined: over the 507
+#: repeating groups the published dictionary declares, this is the only one.
+IRREGULAR_PLURALS: Mapping[str, str] = types.MappingProxyType({"Matrices": "Matrix"})
 
-    name: str
-    required: bool = False
-
-    def into_dict(self) -> dict[str, Any]:
-        """The member as a declaration that names its concrete kind."""
-        return {"kind": type(self).into_kind(), "name": self.name, "required": self.required}
-
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> SpecMember:
-        """Build the concrete member named by a stored declaration."""
-        kind = str(mapping.get("kind") or "")
-        member = _MEMBER_KINDS.get(kind)
-        if member is None:
-            raise ValueError(f"unknown FIX component member kind {kind!r}")
-        if cls is not SpecMember and member is not cls:
-            raise ValueError(f"{cls.__name__} cannot read a {kind!r} member")
-        return member._from_dict(mapping)
-
-    @classmethod
-    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecMember:
-        return cls(name=_stored_name(mapping), required=bool(mapping.get("required", False)))
+#: Endings that take `es` because the stem hisses. `zes` is deliberately absent:
+#: `Sizes` is `Size` plus an `s`, not `Siz` plus an `es`.
+_SIBILANT_PLURALS: tuple[str, ...] = ("sses", "xes", "ches", "shes")
 
 
-@dataclasses.dataclass(frozen=True)
-class SpecFieldRef(SpecMember):
-    """A field used by a component, resolved to its FIX tag."""
+def entry_name(group: str) -> str:
+    """`NoPartyIDs` -> `PartyID`: what one row of a repeating group is.
 
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Stored member kind."""
-        return "field"
+    A FIX group is named for the field that counts it, and a count is plural:
+    every one of the 507 the dictionary declares is `No` and a plural stem.
+    Dropping the count and singularizing the stem is therefore the group's own
+    answer to what it repeats -- and it lands on a real dictionary name for
+    269 of them (`PartyID`, `MDEntry`, `Leg`), on a component for four more,
+    and on the plain singular for the rest.
 
-    tag: int = 0
-
-    def into_dict(self) -> dict[str, Any]:
-        return {**super().into_dict(), "tag": self.tag}
-
-    @classmethod
-    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecFieldRef:
-        return cls(
-            name=_stored_name(mapping),
-            required=bool(mapping.get("required", False)),
-            tag=_stored_tag(mapping),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class SpecComponentRef(SpecMember):
-    """A reference to another component, expanded only by its consumer."""
-
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Stored member kind."""
-        return "component"
-
-
-@dataclasses.dataclass(frozen=True)
-class SpecGroup(SpecMember):
-    """A repeating group: its count field and ordered entry declaration."""
-
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Stored member kind."""
-        return "group"
-
-    tag: int = 0
-    members: tuple[SpecMember, ...] = ()
-
-    def into_dict(self) -> dict[str, Any]:
-        return {
-            **super().into_dict(),
-            "tag": self.tag,
-            "members": [member.into_dict() for member in self.members],
-        }
-
-    @classmethod
-    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecGroup:
-        members = mapping.get("members", ())
-        if not isinstance(members, list | tuple):
-            raise TypeError("a FIX group declaration's members must be a sequence")
-        return cls(
-            name=_stored_name(mapping),
-            required=bool(mapping.get("required", False)),
-            tag=_stored_tag(mapping),
-            members=tuple(SpecMember.from_dict(member) for member in members),
-        )
-
-
-_MEMBER_KINDS: dict[str, type[SpecMember]] = {
-    SpecFieldRef.into_kind(): SpecFieldRef,
-    SpecComponentRef.into_kind(): SpecComponentRef,
-    SpecGroup.into_kind(): SpecGroup,
-}
-
-
-@dataclasses.dataclass(frozen=True)
-class SpecComponent(Convertible):
-    """One reusable FIX component, with its members in wire order.
-
-    `msg_type` is the message type a declaration defines where it defines one
-    -- `"D"`, `"8"` -- and empty for a reusable block, which is what every
-    `<components>` entry is.
+    The alternative -- naming the entry after the tag that opens it -- was
+    measured and rejected: it makes `NoOrders` an entry called `ClOrdID`.
     """
+    stem = group[2:] if group.startswith("No") and len(group) > 2 else group
+    for plural, singular in IRREGULAR_PLURALS.items():
+        if stem.endswith(plural):
+            return f"{stem[: -len(plural)]}{singular}"
+    if stem.endswith("ies") and len(stem) > 4:
+        return f"{stem[:-3]}y"
+    if stem.endswith(_SIBILANT_PLURALS):
+        return stem[:-2]
+    if stem.endswith("s") and not stem.endswith("ss"):
+        return stem[:-1]
+    return stem
 
-    name: str
-    members: tuple[SpecMember, ...] = ()
-    msg_type: str = ""
 
-    def into_dict(self) -> dict[str, Any]:
-        declared: dict[str, Any] = {"name": self.name}
-        if self.msg_type:
-            declared["msg_type"] = self.msg_type
-        declared["members"] = [member.into_dict() for member in self.members]
-        return declared
+def field_member(name: str, tag: int, *, required: bool = False) -> Field:
+    """One plain field of a declaration, at the tag the spec gives it."""
+    return Field(
+        name=name, dtype=pyarrow.string(), nullable=not required, metadata={"fix:tag": str(tag)}
+    )
 
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> SpecComponent:
-        members = mapping.get("members", ())
-        if not isinstance(members, list | tuple):
-            raise TypeError("a FIX component declaration's members must be a sequence")
-        return cls(
-            name=_stored_name(mapping),
-            members=tuple(SpecMember.from_dict(member) for member in members),
-            msg_type=str(mapping.get("msg_type") or ""),
-        )
+
+def group_member(name: str, tag: int, members: Sequence[Field], *, required: bool = False) -> Field:
+    """One repeating group: a list of the entry its members describe.
+
+    The entry is named, because it is a thing: `NoPartyIDs` repeats a
+    `PartyID`. Arrow would call it `item` and every group would repeat the
+    same anonymous shape.
+    """
+    return Field(
+        name=name,
+        dtype=pyarrow.list_(pyarrow.field(entry_name(name), _struct(members), nullable=False)),
+        nullable=not required,
+        metadata={"fix:tag": str(tag)},
+    )
+
+
+def reference_member(name: str, *, required: bool = False) -> Field:
+    """A reference to another block, left for its consumer to expand."""
+    return Field(
+        name=name, dtype=REFERENCE, nullable=not required, metadata={"fix:component": name}
+    )
+
+
+def block(name: str, members: Sequence[Field], msg_type: str = "") -> Field:
+    """One component or message declaration: its members, in wire order."""
+    declared = Field(
+        name=name, dtype=_struct(members), nullable=True, metadata={"fix:component": name}
+    )
+    if msg_type:
+        declared.fix.msgtype = msg_type
+    return declared
+
+
+def _struct(members: Sequence[Field]) -> pyarrow.DataType:
+    return pyarrow.struct([member.into_arrow_field() for member in members])
+
+
+def is_group(member: Field) -> bool:
+    """Whether one member is a repeating group rather than a value."""
+    return pyarrow.types.is_list(member.dtype)
+
+
+def is_reference(member: Field) -> bool:
+    """Whether one member defers to a block declared elsewhere."""
+    return member.dtype == REFERENCE
+
+
+def entry_of(member: Field) -> Field:
+    """The entry a repeating group repeats, as a block of its own."""
+    return Field.from_arrow_field(member.dtype.field(0))
+
+
+def members_of(declared: Field) -> tuple[Field, ...]:
+    """One block's members in wire order, or nothing for a leaf."""
+    return tuple(declared.fields) if pyarrow.types.is_struct(declared.dtype) else ()
+
+
+def walk(declared: Field, path: tuple[str, ...] = ()) -> Iterator[tuple[Field, tuple[str, ...]]]:
+    """Every member under one block, with the groups it sits under."""
+    for member in members_of(declared):
+        yield member, path
+        if is_group(member):
+            yield from walk(entry_of(member), (*path, member.name))
+
+
+def component_refs(declared: Field) -> tuple[str, ...]:
+    """Every block this one defers to, however deeply a group nests it."""
+    return tuple(member.name for member, _ in walk(declared) if is_reference(member))
+
+
+def declared_group(
+    declared: Field,
+    wanted: str,
+    components: Mapping[str, Field],
+    seen: frozenset[str] = frozenset(),
+) -> Field | None:
+    """Find a nested repeating group through references without cycles."""
+    for member in members_of(declared):
+        if is_group(member):
+            if member.name.lower() == wanted.lower():
+                return member
+            if found := declared_group(entry_of(member), wanted, components, seen):
+                return found
+        elif is_reference(member):
+            key = member.name.lower()
+            block = components.get(key)
+            if block is not None and key not in seen:
+                if found := declared_group(block, wanted, components, seen | {key}):
+                    return found
+    return None
+
+
+def first_declared_name(
+    declared: Field,
+    components: Mapping[str, Field],
+    seen: frozenset[str] = frozenset(),
+) -> str | None:
+    """The first physical field after recursive reference expansion."""
+    for member in members_of(declared):
+        if not is_reference(member):
+            return member.name
+        key = member.name.lower()
+        block = components.get(key)
+        if block is not None and key not in seen:
+            if found := first_declared_name(block, components, seen | {key}):
+                return found
+    return None
 
 
 def spec_name(version: str) -> str:
@@ -222,26 +250,35 @@ def parse_spec(document: str) -> dict[int, SpecField]:
     return found
 
 
-def parse_components(document: str) -> dict[str, SpecComponent]:
-    """Reusable components in one QuickFIX document, preserving their tree.
+def parse_declarations(document: str) -> dict[str, Field]:
+    """Every block one QuickFIX document declares, preserving its tree.
 
-    A declaration that names a message type carries it; `<components>` entries
-    never do, so the published dictionary's components all leave it empty.
+    Both sections, because a message *is* a component: `<components>` are the
+    reusable blocks and `<messages>` are the blocks that arrive on the wire,
+    and the only difference between the two declarations is that a message
+    carries the `msgtype` naming it. Reading them apart meant a message's
+    member tree was the one shape this package could not be asked about, and
+    two merges to keep in step where the versions disagree.
+
+    The two namespaces do not overlap in any published version -- checked
+    here rather than assumed, because a message shadowing a component would
+    silently answer for it.
     """
     root = _root(document)
     if root is None:
         return {}
     tags = {field.name: field.tag for field in parse_spec(document).values()}
-    found: dict[str, SpecComponent] = {}
-    for element in root.findall("./components/component"):
-        name = _element_name(element, "component")
-        if name in found:
-            raise ValueError(f"FIX component {name!r} is declared twice")
-        found[name] = SpecComponent(
-            name,
-            _component_members(element, tags, (name,)),
-            str(element.get("msgtype") or ""),
-        )
+    found: dict[str, Field] = {}
+    for owner, path in (("component", "./components/component"), ("message", "./messages/message")):
+        for element in root.findall(path):
+            name = _element_name(element, owner)
+            if name in found:
+                raise ValueError(f"FIX {owner} {name!r} is declared twice")
+            found[name] = block(
+                name,
+                _component_members(element, tags, (name,)),
+                str(element.get("msgtype") or ""),
+            )
     _check_component_refs(found)
     return found
 
@@ -279,24 +316,24 @@ def _root(document: str) -> Any:
 
 def _component_members(
     element: Any, tags: Mapping[str, int], path: tuple[str, ...]
-) -> tuple[SpecMember, ...]:
+) -> tuple[Field, ...]:
     """The ordered declaration directly inside one component or group."""
-    members: list[SpecMember] = []
+    members: list[Field] = []
     for child in element:
         kind = str(child.tag)
         name = _element_name(child, ".".join(path))
         required = child.get("required") == "Y"
-        if kind == SpecFieldRef.into_kind():
-            members.append(SpecFieldRef(name, required, _field_tag(name, tags, path)))
-        elif kind == SpecComponentRef.into_kind():
-            members.append(SpecComponentRef(name, required))
-        elif kind == SpecGroup.into_kind():
+        if kind == "field":
+            members.append(field_member(name, _field_tag(name, tags, path), required=required))
+        elif kind == "component":
+            members.append(reference_member(name, required=required))
+        elif kind == "group":
             members.append(
-                SpecGroup(
+                group_member(
                     name,
-                    required,
                     _field_tag(name, tags, path),
                     _component_members(child, tags, (*path, name)),
+                    required=required,
                 )
             )
         else:
@@ -322,7 +359,7 @@ def _field_tag(name: str, tags: Mapping[str, int], path: tuple[str, ...]) -> int
     return tag
 
 
-def _check_component_refs(components: Mapping[str, SpecComponent]) -> None:
+def _check_component_refs(components: Mapping[str, Field]) -> None:
     """Refuse missing and recursive component references by their full path."""
     done: set[str] = set()
 
@@ -336,36 +373,9 @@ def _check_component_refs(components: Mapping[str, SpecComponent]) -> None:
         if component is None:
             owner = " -> ".join(path) or "component declaration"
             raise ValueError(f"FIX component {owner} references unknown component {name!r}")
-        for reference in _component_refs(component.members):
+        for reference in component_refs(component):
             visit(reference, (*path, name))
         done.add(name)
 
     for name in components:
         visit(name, ())
-
-
-def _component_refs(members: tuple[SpecMember, ...]) -> tuple[str, ...]:
-    """Component names referenced anywhere under `members`."""
-    found: list[str] = []
-    for member in members:
-        if isinstance(member, SpecComponentRef):
-            found.append(member.name)
-        elif isinstance(member, SpecGroup):
-            found.extend(_component_refs(member.members))
-    return tuple(found)
-
-
-def _stored_name(mapping: Mapping[str, Any]) -> str:
-    """A stored declaration's non-empty name."""
-    name = str(mapping.get("name") or "").strip()
-    if not name:
-        raise ValueError("a stored FIX component declaration has no name")
-    return name
-
-
-def _stored_tag(mapping: Mapping[str, Any]) -> int:
-    """A stored field reference's positive FIX tag."""
-    tag = int(mapping.get("tag") or 0)
-    if tag <= 0:
-        raise ValueError(f"a stored FIX component member has invalid tag {tag!r}")
-    return tag

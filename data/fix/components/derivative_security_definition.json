@@ -4,26 +4,51 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "component",
-   "name": "DerivativeInstrument",
-   "required": false
+ "declaration": {
+  "name": "DerivativeSecurityDefinition",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeSecurityDefinition",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\"]"
   },
-  {
-   "kind": "component",
-   "name": "DerivativeInstrumentAttribute",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "MarketSegmentGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "SecurityClassificationGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "DerivativeInstrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DerivativeInstrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "DerivativeInstrumentAttribute",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DerivativeInstrumentAttribute"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketSegmentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketSegmentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecurityClassificationGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecurityClassificationGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

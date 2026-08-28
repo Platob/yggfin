@@ -3,31 +3,54 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPaymentSettls",
-   "required": false,
-   "tag": 40230,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentSettlAmount",
-     "required": false,
-     "tag": 40231
+ "declaration": {
+  "name": "PaymentSettlGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentSettlGrp",
+   "msgtypes": "[\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPaymentSettls",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40230"
     },
-    {
-     "kind": "field",
-     "name": "PaymentSettlCurrency",
-     "required": false,
-     "tag": 40232
-    },
-    {
-     "kind": "component",
-     "name": "PaymentSettlParties",
-     "required": false
+    "item": {
+     "name": "PaymentSettl",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentSettlAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40231"
+       }
+      },
+      {
+       "name": "PaymentSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40232"
+       }
+      },
+      {
+       "name": "PaymentSettlParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentSettlParties"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

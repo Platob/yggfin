@@ -1,0 +1,888 @@
+{
+ "name": "Quote",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "Quote",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Quote",
+   "msgtype": "S"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "BidID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "390"
+    }
+   },
+   {
+    "name": "OfferID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1867"
+    }
+   },
+   {
+    "name": "SecondaryQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1751"
+    }
+   },
+   {
+    "name": "QuoteMsgID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1166"
+    }
+   },
+   {
+    "name": "QuoteRespID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "693"
+    }
+   },
+   {
+    "name": "RefOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1080"
+    }
+   },
+   {
+    "name": "RefOrderIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1081"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteModelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2403"
+    }
+   },
+   {
+    "name": "PrivateQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1171"
+    }
+   },
+   {
+    "name": "SingleQuoteIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2837"
+    }
+   },
+   {
+    "name": "QuotQualGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuotQualGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "828"
+    }
+   },
+   {
+    "name": "NegotiationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2115"
+    }
+   },
+   {
+    "name": "QuoteResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "301"
+    }
+   },
+   {
+    "name": "QuoteAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuoteAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ValueChecksGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ValueChecksGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "OrderQtyData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OrderQtyData"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "63"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "SettlDate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "193"
+    }
+   },
+   {
+    "name": "OrderQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "192"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "SettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "120"
+    }
+   },
+   {
+    "name": "SettlCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2899"
+    }
+   },
+   {
+    "name": "RateSource",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RateSource"
+    },
+    "fields": []
+   },
+   {
+    "name": "Stipulations",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Stipulations"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "OwnerType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "522"
+    }
+   },
+   {
+    "name": "SolicitedFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "377"
+    }
+   },
+   {
+    "name": "LegQuotGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegQuotGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "BidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "132"
+    }
+   },
+   {
+    "name": "OfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "133"
+    }
+   },
+   {
+    "name": "MktBidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "645"
+    }
+   },
+   {
+    "name": "MktOfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "646"
+    }
+   },
+   {
+    "name": "MinBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "647"
+    }
+   },
+   {
+    "name": "BidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "134"
+    }
+   },
+   {
+    "name": "TotalBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1749"
+    }
+   },
+   {
+    "name": "MinOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "648"
+    }
+   },
+   {
+    "name": "OfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "135"
+    }
+   },
+   {
+    "name": "TotalOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1750"
+    }
+   },
+   {
+    "name": "MinQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "110"
+    }
+   },
+   {
+    "name": "ExposureDuration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1629"
+    }
+   },
+   {
+    "name": "ExposureDurationUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1916"
+    }
+   },
+   {
+    "name": "ValidUntilTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "62"
+    }
+   },
+   {
+    "name": "BidSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "188"
+    }
+   },
+   {
+    "name": "OfferSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "190"
+    }
+   },
+   {
+    "name": "BidForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "189"
+    }
+   },
+   {
+    "name": "OfferForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "191"
+    }
+   },
+   {
+    "name": "BidSwapPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1065"
+    }
+   },
+   {
+    "name": "OfferSwapPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1066"
+    }
+   },
+   {
+    "name": "MidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "631"
+    }
+   },
+   {
+    "name": "BidYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "632"
+    }
+   },
+   {
+    "name": "MidYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "633"
+    }
+   },
+   {
+    "name": "OfferYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "634"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TrdRegTimestamps",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TrdRegTimestamps"
+    },
+    "fields": []
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40"
+    }
+   },
+   {
+    "name": "BidForwardPoints2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "642"
+    }
+   },
+   {
+    "name": "OfferForwardPoints2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "643"
+    }
+   },
+   {
+    "name": "SettlCurrBidFxRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "656"
+    }
+   },
+   {
+    "name": "SettlCurrOfferFxRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "657"
+    }
+   },
+   {
+    "name": "SettlCurrFxRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "156"
+    }
+   },
+   {
+    "name": "CommissionData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CommissionData"
+    },
+    "fields": []
+   },
+   {
+    "name": "CustOrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "582"
+    }
+   },
+   {
+    "name": "ExDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "100"
+    }
+   },
+   {
+    "name": "ExDestinationIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1133"
+    }
+   },
+   {
+    "name": "BookingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "775"
+    }
+   },
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "528"
+    }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   },
+   {
+    "name": "RegulatoryReportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1934"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "PriceQualifierGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PriceQualifierGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "BidSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2533"
+    }
+   },
+   {
+    "name": "OfferSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2534"
+    }
+   },
+   {
+    "name": "SpreadOrBenchmarkCurveData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SpreadOrBenchmarkCurveData"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelativeValueGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelativeValueGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "YieldData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "YieldData"
+    },
+    "fields": []
+   },
+   {
+    "name": "RoutingGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RoutingGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradeContinuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1937"
+    }
+   },
+   {
+    "name": "TradeContinuationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2374"
+    }
+   },
+   {
+    "name": "EncodedTradeContinuationTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2372"
+    }
+   },
+   {
+    "name": "EncodedTradeContinuationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2371"
+    }
+   },
+   {
+    "name": "SelfMatchPreventionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2362"
+    }
+   },
+   {
+    "name": "SelfMatchPreventionInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2964"
+    }
+   },
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "ComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2404"
+    }
+   },
+   {
+    "name": "EncodedComplianceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2351"
+    }
+   },
+   {
+    "name": "EncodedComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2352"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "StrikeTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "443"
+    }
+   }
+  ]
+ }
+}

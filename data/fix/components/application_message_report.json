@@ -1,0 +1,73 @@
+{
+ "name": "ApplicationMessageReport",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ApplicationMessageReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplicationMessageReport",
+   "msgtype": "BY"
+  },
+  "fields": [
+   {
+    "name": "ApplReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1356"
+    }
+   },
+   {
+    "name": "ApplReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1346"
+    }
+   },
+   {
+    "name": "ApplReportType",
+    "type": "string",
+    "fix": {
+     "tag": "1426"
+    }
+   },
+   {
+    "name": "ApplIDReportGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplIDReportGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

@@ -26,9 +26,8 @@ from rekep.fix.classify import (
     classify,
     count_files,
     count_reader,
-    report_document,
 )
-from rekep.fix.entries import ANY_VERSION, Alias, FieldEntry
+from rekep.fix.entries import ANY_VERSION, Alias, record_kind, record_of
 from rekep.fix.registry import FixRegistry
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -257,15 +256,16 @@ def test_the_report_is_ordered_by_how_much_traffic_each_name_is(report: KeyRepor
 def test_the_report_round_trips_through_the_document_a_review_reads(
     report: KeyReport,
 ) -> None:
-    read = KeyReport.from_dict(json.loads(report_document(report)))
+    read = KeyReport.from_json(report.into_json())
     assert read.rows == report.rows
     assert (read.lines, read.messages) == (report.lines, report.messages)
 
 
-def test_the_report_reads_as_lines_before_it_reads_as_json(report: KeyReport) -> None:
-    written = report.into_text()
-    assert f"{EXPECTED_LINES} lines" in written
-    assert "PARTYROLLE ~ PartyRole" in written
+def test_the_report_is_json_and_carries_names_and_counts_only(report: KeyReport) -> None:
+    """One serialization, and never a value out of a capture."""
+    written = report.into_json().decode()
+    assert json.loads(written)["lines"] == EXPECTED_LINES
+    assert "PARTYROLLE" in written
     assert "ORD-TEST-01" not in written, "names and counts, never a value"
 
 
@@ -292,8 +292,8 @@ def test_a_near_miss_becomes_an_alias_with_the_capture_that_earned_it(
     applied = apply_report(editable, report, aliases=True)
     assert any("PARTYROLLE -> PartyRole" in line for line in applied)
     entry = editable.resolve("PARTYROLLE")
-    assert entry.name == "PartyRole"
-    (alias,) = [found for found in entry.aliases if found.name == "PARTYROLLE"]
+    assert entry.fix.canonical == "PartyRole"
+    (alias,) = [found for found in entry.fix.named_aliases if found.name == "PARTYROLLE"]
     assert alias.source == "bridge_keys.txt" and alias.occurrences == 1
 
 
@@ -301,9 +301,9 @@ def test_a_vendor_name_becomes_a_declared_field(editable: FixRegistry, report: K
     applied = apply_report(editable, report, namespace=True)
     assert any("TECH.CLIENTID" in line for line in applied)
     entry = editable.resolve("TECH.CLIENTID")
-    assert entry.kind == NAMESPACE and entry.tag is None
-    assert entry.versions == (ANY_VERSION,)
-    assert not entry.column, "a column is a change to a published contract, not to a dictionary"
+    assert record_kind(entry) == NAMESPACE and entry.fix.tag is None
+    assert entry.fix.versions == (ANY_VERSION,)
+    assert not entry.fix.column, "a column is a change to a published contract, not to a dictionary"
     assert editable.check() == []
 
 
@@ -347,8 +347,8 @@ def test_a_report_read_back_from_disk_applies_the_same(
 ) -> None:
     """Counting and deciding are separable: a run produces a file a person reviews."""
     written = tmp_path / "report.json"
-    written.write_text(report_document(report))
-    read = KeyReport.from_dict(json.loads(written.read_text()))
+    report.into_json(written)
+    read = KeyReport.from_json(written)
     assert apply_report(editable, read, aliases=True) == apply_report(
         FixRegistry(cache_dir=editable.into_zip(tmp_path / "again.zip"), offline=True),
         report,
@@ -360,10 +360,15 @@ def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     """The bridge between a count and a registry verb, on its own."""
     count = KeyCount(name="FAKE.VENDOR.CODE", marked=7, sources=("brk",))
     row = Classified(count, NAMESPACE)
-    assert row.into_entry() == FieldEntry(
-        name="FAKE.VENDOR.CODE", kind=NAMESPACE, versions=(ANY_VERSION,), type="String"
+    assert row.into_entry() == record_of(
+        {
+            "name": "FAKE.VENDOR.CODE",
+            "kind": NAMESPACE,
+            "versions": [ANY_VERSION],
+            "type": "String",
+        }
     )
-    assert row.into_entry(column="fake_vendor_code").column == "fake_vendor_code", (
+    assert row.into_entry(column="fake_vendor_code").fix.column == "fake_vendor_code", (
         "a caller that already knows the column declares it in the same record"
     )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(

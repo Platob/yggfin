@@ -1,0 +1,115 @@
+{
+ "name": "PartyRiskLimitsUpdateReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyRiskLimitsUpdateReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitsUpdateReport",
+   "msgtype": "CR"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "RiskLimitReportID",
+    "type": "string",
+    "fix": {
+     "tag": "1667"
+    }
+   },
+   {
+    "name": "RiskLimitRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1666"
+    }
+   },
+   {
+    "name": "RiskLimitRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1760"
+    }
+   },
+   {
+    "name": "TotNoParties",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1512"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyRiskLimitsUpdateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyRiskLimitsUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

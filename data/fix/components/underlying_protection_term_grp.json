@@ -3,77 +3,120 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProtectionTerms",
-   "required": false,
-   "tag": 42068,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermNotional",
-     "required": false,
-     "tag": 42069
+ "declaration": {
+  "name": "UnderlyingProtectionTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProtectionTermGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProtectionTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42068"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermCurrency",
-     "required": false,
-     "tag": 42070
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermSellerNotifies",
-     "required": false,
-     "tag": 42071
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermBuyerNotifies",
-     "required": false,
-     "tag": 42072
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventBusinessCenter",
-     "required": false,
-     "tag": 42073
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermStandardSources",
-     "required": false,
-     "tag": 42074
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermEventMinimumSources",
-     "required": false,
-     "tag": 42075
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProtectionTermEventNewsSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProtectionTermEventGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProtectionTermObligationGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProtectionTermXID",
-     "required": false,
-     "tag": 42076
+    "item": {
+     "name": "UnderlyingProtectionTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42069"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42070"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermSellerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42071"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermBuyerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42072"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42073"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42074"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42075"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventNewsSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermEventNewsSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermEventGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermEventGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42076"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

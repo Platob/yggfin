@@ -359,7 +359,7 @@ def test_polars_export_uses_the_newest_layout_when_the_contract_keeps_it() -> No
 
 
 @pytest.mark.parametrize(
-    ("data_type", "compatible"),
+    ("dtype", "compatible"),
     [
         (pyarrow.int64(), False),
         (pyarrow.list_(pyarrow.int64()), False),
@@ -371,9 +371,9 @@ def test_polars_export_uses_the_newest_layout_when_the_contract_keeps_it() -> No
     ],
 )
 def test_polars_compatibility_follows_nested_arrow_types(
-    data_type: pyarrow.DataType, compatible: bool
+    dtype: pyarrow.DataType, compatible: bool
 ) -> None:
-    assert _needs_compatible_polars_arrow(data_type) is compatible
+    assert _needs_compatible_polars_arrow(dtype) is compatible
 
 
 def test_polars_cannot_fill_a_missing_required_column(dataset: MemoryDataset) -> None:

@@ -3,184 +3,265 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingReturnRates",
-   "required": false,
-   "tag": 43034,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRatePriceSequence",
-     "required": false,
-     "tag": 43035
+ "declaration": {
+  "name": "UnderlyingReturnRateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingReturnRateGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingReturnRates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43034"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateCommissionBasis",
-     "required": false,
-     "tag": 43036
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateCommissionAmount",
-     "required": false,
-     "tag": 43037
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateCommissionCurrency",
-     "required": false,
-     "tag": 43038
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateTotalCommissionPerTrade",
-     "required": false,
-     "tag": 43039
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateDeterminationMethod",
-     "required": false,
-     "tag": 43040
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingReturnRatePriceGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingReturnRateFXConversionGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateAmountRelativeTo",
-     "required": false,
-     "tag": 43041
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteMeasureType",
-     "required": false,
-     "tag": 43042
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteUnits",
-     "required": false,
-     "tag": 43043
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteMethod",
-     "required": false,
-     "tag": 43044
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteCurrency",
-     "required": false,
-     "tag": 43045
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteCurrencyType",
-     "required": false,
-     "tag": 43046
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteTimeType",
-     "required": false,
-     "tag": 43047
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteTime",
-     "required": false,
-     "tag": 43048
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteDate",
-     "required": false,
-     "tag": 43049
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteExpirationTime",
-     "required": false,
-     "tag": 43050
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteBusinessCenter",
-     "required": false,
-     "tag": 43051
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuoteExchange",
-     "required": false,
-     "tag": 43052
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingReturnRateInformationSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateQuotePricingModel",
-     "required": false,
-     "tag": 43053
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateCashFlowType",
-     "required": false,
-     "tag": 43054
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingReturnRateDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateValuationTimeType",
-     "required": false,
-     "tag": 43055
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateValuationTime",
-     "required": false,
-     "tag": 43056
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateValuationTimeBusinessCenter",
-     "required": false,
-     "tag": 43057
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateValuationPriceOption",
-     "required": false,
-     "tag": 43058
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateFinalPriceFallback",
-     "required": false,
-     "tag": 43059
+    "item": {
+     "name": "UnderlyingReturnRate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRatePriceSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43035"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43036"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43037"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43038"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateTotalCommissionPerTrade",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43039"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43040"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePriceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingReturnRatePriceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingReturnRateFXConversionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingReturnRateFXConversionGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingReturnRateAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43041"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteMeasureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43042"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43043"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43044"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43045"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteCurrencyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43046"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43047"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43048"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43049"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteExpirationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43050"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43051"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43052"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateInformationSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingReturnRateInformationSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingReturnRateQuotePricingModel",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43053"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCashFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43054"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingReturnRateDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43055"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43056"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43057"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationPriceOption",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43058"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateFinalPriceFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43059"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

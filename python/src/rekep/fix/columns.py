@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from types import MappingProxyType
 
 import pyarrow
 import pyarrow.compute
 
+from rekep.entries import ENTRIES as ENTRIES
+from rekep.entries import TAG as TAG
+from rekep.entries import Entry as Entry
 from rekep.fields import Field
+from rekep.fix.fields import UTC_DATATYPES
 from rekep.fix.registry import FixRegistry
-from rekep.kwargs import KWARGS as KWARGS
-from rekep.kwargs import TAG as TAG
-from rekep.kwargs import Kwarg as Kwarg
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
 # declared a second time in code.
@@ -103,7 +103,7 @@ _QUOTE_FIELDS: tuple[str, ...] = (
     "QuoteEntryID",
 )
 
-# These four delimit quote groups. On grouped rows they remain in `kwargs`
+# These four delimit quote groups. On grouped rows they remain in `entries`
 # even when also lifted, so a later market reader can reconstruct one-entry
 # groups without reparsing the raw message.
 _QUOTE_GROUP_COUNTS: tuple[str, ...] = ("NoQuoteSets", "NoQuoteEntries")
@@ -176,15 +176,15 @@ _STAMP_FIELDS: tuple[str, ...] = (
 
 def _physical_type(member: Field) -> pyarrow.DataType:
     """Registry type at Iceberg width, zoned only when FIX documents UTC."""
-    arrow_type = member.arrow_type
-    if arrow_type is None:  # pragma: no cover - generated registry invariant
+    dtype = member.dtype
+    if dtype is None:  # pragma: no cover - generated registry invariant
         raise ValueError(f"FIX field {member.name!r} has no Arrow type")
-    if not pyarrow.types.is_timestamp(arrow_type):
-        return arrow_type
+    if not pyarrow.types.is_timestamp(dtype):
+        return dtype
     datatype = member.fix.get("type", "").strip().lower()
     documented = (member.description or "").lower()
-    timezone = "UTC" if datatype.startswith("utc") or "expressed in utc" in documented else None
-    return pyarrow.timestamp("us", tz=timezone)
+    zoned = datatype in UTC_DATATYPES or "expressed in utc" in documented
+    return pyarrow.timestamp("us", tz="UTC" if zoned else None)
 
 
 def _declaration(member: Field) -> Field:
@@ -193,7 +193,7 @@ def _declaration(member: Field) -> Field:
     metadata["fix:name"] = member.name
     return Field(
         name=member.name,
-        arrow_type=_physical_type(member),
+        dtype=_physical_type(member),
         nullable=True,
         metadata=metadata,
     )
@@ -228,8 +228,8 @@ _IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
 def _identifier_tag(name: str) -> int:
     """Registry tag, plus FIX's omitted `MDEntryRefID <280>` declaration."""
     member = _MERGED_FIELDS.get(name)
-    if member is not None and (tag := member.fix.get("tag")):
-        return int(tag)
+    if member is not None and (tag := member.fix.tag) is not None:
+        return tag
     if name == "MDEntryRefID":
         return 280
     raise ValueError(f"FIX identifier {name!r} has no tag")
@@ -249,7 +249,7 @@ _ORDER = (
 )
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
 FIXMSG_FIELDS: Mapping[int, Field] = MappingProxyType(
-    {int(member.fix["tag"]): member for member in _FIELDS}
+    {member.fix.tag: member for member in _FIELDS}
 )
 if len(FIXMSG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
     raise ValueError("the bundled FIX fields do not have unique tags")
@@ -257,7 +257,7 @@ DECLARATIONS: Mapping[int, Field] = MappingProxyType(
     {tag: _declaration(member) for tag, member in FIXMSG_FIELDS.items()}
 )
 
-_TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
+_TAGS_BY_NAME = {member.name: member.fix.tag for member in _FIELDS}
 STAMPS: frozenset[int] = frozenset(_TAGS_BY_NAME[name] for name in _STAMP_FIELDS)
 SESSION: tuple[tuple[int, str], ...] = tuple(
     (tag, DECLARATIONS[tag].name) for name in _SESSION_FIELDS if (tag := _TAGS_BY_NAME[name])
@@ -271,7 +271,7 @@ QUOTE: tuple[tuple[int, str], ...] = tuple(
 FLAT: tuple[tuple[int, str], ...] = SESSION + COMMON + QUOTE
 COLUMNS: Mapping[int, str] = MappingProxyType(dict(FLAT))
 TYPES: Mapping[int, pyarrow.DataType] = MappingProxyType(
-    {tag: DECLARATIONS[tag].arrow_type for tag in COLUMNS}
+    {tag: DECLARATIONS[tag].dtype for tag in COLUMNS}
 )
 TAGS: pyarrow.Array = pyarrow.array(sorted(COLUMNS), pyarrow.int32())
 QUOTE_GROUP_COUNTS: pyarrow.Array = pyarrow.array(
@@ -296,17 +296,9 @@ QUOTE_GROUP_STRUCTURE: pyarrow.Array = pyarrow.array(
 
 def _named(entry: Field) -> tuple[str, ...]:
     """Every spelling a rendered key may carry for one namespaced field, whole."""
-    spellings = [entry.fix["name"], *_json_list(entry.fix.get("aliases"))]
+    aliased = [str(alias.get("name", "")) for alias in entry.fix.aliases if alias.get("name")]
+    spellings = [entry.fix.name, *aliased]
     return tuple(dict.fromkeys(name.strip().lower() for name in spellings if name.strip()))
-
-
-def _json_list(value: str | None) -> list[str]:
-    """The alias names a merged declaration carries, provenance dropped."""
-    try:
-        decoded = json.loads(value or "[]")
-    except ValueError:  # pragma: no cover - the registry writes these itself
-        return []
-    return [str(alias.get("name", "")) for alias in decoded if alias.get("name")]
 
 
 #: What a lifted namespaced field carries into the log contract. Deliberately not
@@ -320,8 +312,8 @@ _NAMESPACE_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
 def _namespace_column(entry: Field) -> Field:
     """One namespaced field as the log column it is lifted into."""
     return Field(
-        name=entry.fix["column"],
-        arrow_type=entry.arrow_type,
+        name=entry.fix.column,
+        dtype=entry.dtype,
         nullable=True,
         metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
     )
@@ -331,9 +323,9 @@ def namespace_columns(registry: FixRegistry) -> Mapping[str, Field]:
     """`{canonical name: the log column it is lifted into}` for one dictionary."""
     return MappingProxyType(
         {
-            entry.fix["name"]: _namespace_column(entry)
+            entry.fix.name: _namespace_column(entry)
             for entry in registry.merged_fields().values()
-            if entry.fix.get("column")
+            if entry.fix.column
         }
     )
 

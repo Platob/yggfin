@@ -1,0 +1,134 @@
+{
+ "name": "DontKnowTrade",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "DontKnowTrade",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DontKnowTrade",
+   "msgtype": "Q"
+  },
+  "fields": [
+   {
+    "name": "OrderID",
+    "type": "string",
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "SecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "198"
+    }
+   },
+   {
+    "name": "ExecID",
+    "type": "string",
+    "fix": {
+     "tag": "17"
+    }
+   },
+   {
+    "name": "DKReason",
+    "type": "string",
+    "fix": {
+     "tag": "127"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "OrderQtyData",
+    "type": "struct",
+    "fix": {
+     "component": "OrderQtyData"
+    },
+    "fields": []
+   },
+   {
+    "name": "LastQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "32"
+    }
+   },
+   {
+    "name": "LastPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "31"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

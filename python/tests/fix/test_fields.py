@@ -39,8 +39,6 @@ def test_char_is_a_string_not_one_character() -> None:
         ("Currency", pyarrow.string()),
         ("UTCTimestamp", pyarrow.timestamp("ns")),
         ("datetime", pyarrow.timestamp("ns")),
-        ("LocalMktDate", pyarrow.date32()),
-        ("UTCTimeOnly", pyarrow.time64("ns")),
         ("data", pyarrow.binary()),
     ],
 )
@@ -61,17 +59,40 @@ def test_a_python_int_hint_remains_int64() -> None:
     class Example:
         value: int
 
-    assert Example.into_field().field("value").arrow_type == pyarrow.int64()
-
-
-def test_the_timezone_carrying_types_stay_text() -> None:
-    """A naive Arrow type would drop the offset that is part of the value."""
-    assert arrow_type_of("TZTimestamp") == pyarrow.string()
-    assert arrow_type_of("TZTimeOnly") == pyarrow.string()
+    assert Example.into_field().field("value").dtype == pyarrow.int64()
 
 
 @pytest.mark.parametrize(
-    "arrow_type",
+    "datatype",
+    [
+        "UTCTimestamp",
+        "UTCDateOnly",
+        "UTCTimeOnly",
+        "LocalMktDate",
+        "LocalMktTime",
+        "TZTimestamp",
+        "TZTimeOnly",
+        "date",
+        "time",
+    ],
+)
+def test_every_point_in_time_is_a_timestamp(datatype: str) -> None:
+    """A date is midnight and a clock is that clock on the epoch's day.
+
+    The reader normalises all three to the same epoch nanoseconds, and a
+    timestamp is the one temporal type a zone can still be applied to.
+    """
+    assert arrow_type_of(datatype) == pyarrow.timestamp("ns")
+
+
+def test_a_period_is_not_an_instant_and_stays_text() -> None:
+    """`202608` is a month and `202608w2` a week; neither is a point in time."""
+    assert arrow_type_of("MonthYear") == pyarrow.string()
+    assert arrow_type_of("Tenor") == pyarrow.string()
+
+
+@pytest.mark.parametrize(
+    "dtype",
     [
         pyarrow.timestamp("ns"),
         pyarrow.timestamp("us"),
@@ -94,16 +115,16 @@ def test_the_timezone_carrying_types_stay_text() -> None:
     ],
 )
 def test_the_scalar_temporal_reader_matches_the_arrow_boundary(
-    arrow_type: pyarrow.DataType, text: str
+    dtype: pyarrow.DataType, text: str
 ) -> None:
-    vector = cast_arrow_fix(pyarrow.array([text]), arrow_type)
-    if getattr(arrow_type, "unit", None) == "ns":
+    vector = cast_arrow_fix(pyarrow.array([text]), dtype)
+    if getattr(dtype, "unit", None) == "ns":
         vector = pyarrow.compute.floor_temporal(vector, unit="microsecond")
         vector = vector.cast(
-            pyarrow.time64("us") if pyarrow.types.is_time(arrow_type) else pyarrow.timestamp("us")
+            pyarrow.time64("us") if pyarrow.types.is_time(dtype) else pyarrow.timestamp("us")
         )
     vector_value = vector[0].as_py()
-    scalar = scalar_fix_temporal(text, arrow_type)
+    scalar = scalar_fix_temporal(text, dtype)
 
     expected = text if vector_value is None else render_fix_value(vector_value)
     actual = text if scalar is None else render_fix_value(scalar)
@@ -123,13 +144,13 @@ def test_a_fix_field_is_a_generic_field_with_fix_metadata() -> None:
         values={"1": "Buy", "2": "Sell"},
     )
     assert built.name == "Side"
-    assert built.arrow_type == pyarrow.string()
+    assert built.dtype == pyarrow.string()
     assert built.nullable, "required-ness belongs to messages, not to the field"
     assert built.description == "Side of order."
     assert built.fix["tag"] == "54"
     assert built.fix["type"] == "char"
     assert built.fix["version"] == "4.4"
-    assert '"1":"Buy"' in built.fix["values"]
+    assert built.fix.value_of("1").meaning == "Buy"
 
 
 # -- booleans ----------------------------------------------------------------
@@ -286,7 +307,7 @@ def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
 
 
 @pytest.mark.parametrize(
-    "arrow_type",
+    "dtype",
     [
         pyarrow.timestamp("ns"),
         pyarrow.timestamp("us"),
@@ -297,7 +318,7 @@ def test_a_bad_civil_time_nulls_only_its_row_without_scalar_reading(
     ],
 )
 def test_canonical_full_stamps_match_the_general_temporal_reader(
-    arrow_type: pyarrow.DataType,
+    dtype: pyarrow.DataType,
 ) -> None:
     canonical = [
         "19700101-00:00:00",
@@ -313,10 +334,10 @@ def test_canonical_full_stamps_match_the_general_temporal_reader(
         "20260821-23:59:61",
         None,
     ]
-    fast = cast_arrow_fix(pyarrow.array(canonical), arrow_type)
+    fast = cast_arrow_fix(pyarrow.array(canonical), dtype)
     # One admitted noncanonical spelling selects the general reader for its
     # whole batch, giving an independent boundary for the canonical prefix.
-    general = cast_arrow_fix(pyarrow.array([*canonical, "20260821T10:30:00"]), arrow_type)
+    general = cast_arrow_fix(pyarrow.array([*canonical, "20260821T10:30:00"]), dtype)
     assert fast.equals(general.slice(0, len(canonical)))
 
 
@@ -351,10 +372,10 @@ def test_a_valid_date_uses_the_destination_temporal_range() -> None:
 
 
 @pytest.mark.parametrize(
-    "arrow_type", [pyarrow.date32(), pyarrow.timestamp("s"), pyarrow.timestamp("us")]
+    "dtype", [pyarrow.date32(), pyarrow.timestamp("s"), pyarrow.timestamp("us")]
 )
-def test_year_zero_is_not_a_valid_fix_date(arrow_type: pyarrow.DataType) -> None:
-    read = cast_arrow_fix(pyarrow.array(["00000101", "00000101-00:00:00"]), arrow_type)
+def test_year_zero_is_not_a_valid_fix_date(dtype: pyarrow.DataType) -> None:
+    read = cast_arrow_fix(pyarrow.array(["00000101", "00000101-00:00:00"]), dtype)
     assert read.null_count == 2
 
 

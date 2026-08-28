@@ -20,7 +20,7 @@ parameters:
   spill: false
   timezone: Europe/Paris
   # Arrow RE2 payload patterns: any include admits, while any exclude rejects.
-  # Filtering happens before kwargs and message identities are built.
+  # Filtering happens before entries and message identities are built.
   include_regexes: []
   exclude_regexes: []
   # Exact FIX MsgTypes retained or dropped before key/value parsing.

@@ -151,8 +151,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes, XXH3-64,
   and two's-complement `int64` storage. Numbers are never formatted as text.
-- Store market notions as integer enums. Ordered state bands make live and
-  terminal checks range predicates; unknown codes degrade to their band.
+- Store market notions as ASCII codes packed into one integer, left-justified
+  and padded with trailing NULs, so the value orders as its text does. Ranks
+  carry the band order, so live and terminal checks compare ranks and a storage
+  scan pushes the finite code set `ranked_at_least` names.
 - Nest nothing a reader filters on. Keep instrument identity and book summary
   values flat.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.
@@ -219,7 +221,7 @@ python/src/rekep/
   console.py    terminal styling: colour, boxes, tables, spinners
   times.py      one reading of "an instant", whatever spelled it
 schemas/rekep/  the five persisted output contracts
-data/fix/       the FIX dictionary: tag-range shards, and components
+data/fix/       the FIX dictionary: tag-range shards, components, messages
 tasks/          notebooks, adjacent YAML, and Airflow DAG
 ```
 

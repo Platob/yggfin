@@ -19,9 +19,9 @@ import pyarrow.fs
 
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset, arrow_chunks
-from rekep.fields import Field, StructField
+from rekep.fields import Field, StructField, TimestampField
 from rekep.fields.arrays import groups_of, scattered
-from rekep.filesystems import ArrowFileIO, resolve
+from rekep.filesystems import ArrowFile, resolve
 from rekep.market.event import CODES_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.message import Message
@@ -200,15 +200,15 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: Runtime owner for the input handle. An InitVar keeps native handles and
     #: temporary paths out of Dataset serialization; __post_init__ publishes
     #: the normalized owner as `self.fileio`.
-    fileio: InitVar[ArrowFileIO | None] = None
+    fileio: InitVar[ArrowFile | None] = None
 
-    def __post_init__(self, fileio: ArrowFileIO | None) -> None:
+    def __post_init__(self, fileio: ArrowFile | None) -> None:
         """Compile the header and bind one lazy Arrow input owner."""
         self.header_pattern = compiled_header(self.header_pattern)
         if fileio is None and self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
         if fileio is None:
-            fileio = ArrowFileIO.from_location(self.url, self.filesystem)
+            fileio = ArrowFile.from_location(self.url, self.filesystem)
         elif fileio.opened is None:
             fileio = fileio.at(self.url, self.filesystem)
         if self.filesystem is None:
@@ -226,7 +226,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        fileio: ArrowFileIO | None = None,
+        fileio: ArrowFile | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a URI, or from a path when `filesystem` is given.
@@ -243,7 +243,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        fileio: ArrowFileIO | None = None,
+        fileio: ArrowFile | None = None,
         **declared: Any,
     ) -> TextFile:
         """Build from a local path, absolute or relative.
@@ -671,7 +671,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
             "sunix": pyarrow.nulls(count, pyarrow.int64()),
             "version": _zeros(count, pyarrow.int64()),
-            "state": _zeros(count, pyarrow.int32()),
+            "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
             "codes": pyarrow.repeat(pyarrow.scalar({}, CODES_TYPE), count),
             "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
@@ -731,7 +731,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 # A reader closed by its caller has already closed this
                 # wrapper and the underlying TextFile together.
                 pass
-            # The decoder closes before the owning temporary ArrowFileIO, so
+            # The decoder closes before the owning temporary ArrowFile, so
             # Windows can remove the raw compressed spill immediately.
             self._close_stream()
 
@@ -824,11 +824,13 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
-    micros = compute.divide(rows.column("unix"), 1000).cast(pyarrow.int64())
+    micros = compute.divide(rows.column("unix"), TimestampField.factor_of("us")).cast(
+        pyarrow.int64()
+    )
     if timezone and os.name == "nt":
         stamps = _windows_local_micros(micros, timezone).cast(pyarrow.timestamp("us"))
     else:
-        stamps = micros.cast(pyarrow.timestamp("us"))
+        stamps = TimestampField.of("us").from_unix_arrow(micros, unit="us")
     if timezone and os.name != "nt":
         stamps = stamps.cast(pyarrow.timestamp("us", "UTC")).cast(pyarrow.timestamp("us", timezone))
     stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
@@ -1268,12 +1270,13 @@ def _run(
 def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
     """The wall clock as an instant: int64 nanoseconds since the epoch."""
     if timezone and os.name == "nt":
-        return pyarrow.compute.multiply(_windows_utc_micros(local, timezone), 1000)
+        micros = _windows_utc_micros(local, timezone)
+        return pyarrow.compute.multiply(micros, TimestampField.factor_of("us"))
     if timezone:
         local = pyarrow.compute.assume_timezone(
             local, timezone, ambiguous="earliest", nonexistent="latest"
         )
-    return pyarrow.compute.multiply(local.cast(pyarrow.int64()), 1000)
+    return TimestampField.into_unix_arrow(local)
 
 
 @cache
@@ -1379,11 +1382,11 @@ def _datetime_micros(value: datetime.datetime) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000 + delta.microseconds
 
 
-def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
+def _zeros(count: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     """A column of `count` zeros -- the envelope members a parsed line leaves unset.
 
     Zero and not null, because they are NOT NULL columns: what a log line does
     not have is stated, so a store never has to widen a column for it later,
     and a value repeated down a whole file encodes away to nothing on disk.
     """
-    return pyarrow.repeat(pyarrow.scalar(0, arrow_type), count)
+    return pyarrow.repeat(pyarrow.scalar(0, dtype), count)

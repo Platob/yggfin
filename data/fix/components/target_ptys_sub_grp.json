@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTargetPartySubIDs",
-   "required": false,
-   "tag": 2433,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TargetPartySubID",
-     "required": false,
-     "tag": 2434
+ "declaration": {
+  "name": "TargetPtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TargetPtysSubGrp",
+   "msgtypes": "[\"ExecutionReport\",\"MassQuoteAck\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"QuoteCancel\",\"QuoteStatusReport\",\"QuoteStatusRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTargetPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2433"
     },
-    {
-     "kind": "field",
-     "name": "TargetPartySubIDType",
-     "required": false,
-     "tag": 2435
+    "item": {
+     "name": "TargetPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2434"
+       }
+      },
+      {
+       "name": "TargetPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2435"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

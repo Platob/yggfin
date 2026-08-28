@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyDetailSubIDs",
-   "required": false,
-   "tag": 1694,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PartyDetailSubID",
-     "required": false,
-     "tag": 1695
+ "declaration": {
+  "name": "PartyDetailSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailSubGrp",
+   "msgtypes": "[\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListReport\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartyDetailSubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1694"
     },
-    {
-     "kind": "field",
-     "name": "PartyDetailSubIDType",
-     "required": false,
-     "tag": 1696
+    "item": {
+     "name": "PartyDetailSubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1695"
+       }
+      },
+      {
+       "name": "PartyDetailSubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1696"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

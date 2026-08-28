@@ -4,38 +4,61 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMatchRules",
-   "required": false,
-   "tag": 1235,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MatchAlgorithm",
-     "required": false,
-     "tag": 1142
+ "declaration": {
+  "name": "MatchRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MatchRules",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMatchRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1235"
     },
-    {
-     "kind": "field",
-     "name": "MatchType",
-     "required": false,
-     "tag": 574
-    },
-    {
-     "kind": "field",
-     "name": "MatchRuleProductComplex",
-     "required": false,
-     "tag": 2569
-    },
-    {
-     "kind": "field",
-     "name": "CustomerPriority",
-     "required": false,
-     "tag": 2570
+    "item": {
+     "name": "MatchRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchAlgorithm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1142"
+       }
+      },
+      {
+       "name": "MatchType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "574"
+       }
+      },
+      {
+       "name": "MatchRuleProductComplex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2569"
+       }
+      },
+      {
+       "name": "CustomerPriority",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2570"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

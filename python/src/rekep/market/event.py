@@ -13,10 +13,19 @@ from typing import TYPE_CHECKING, Annotated, Any, Self
 import pyarrow
 import pyarrow.compute
 
+from rekep import txhash
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL, hash_arrow, hash_of
+from rekep.market.identity import (
+    HASH,
+    NIL,
+    frame,
+    framed_arrow,
+    hash_arrow,
+    hash_bytes_of,
+    hash_of,
+)
 
 if TYPE_CHECKING:
     from rekep.market.instrument import Instrument
@@ -32,6 +41,9 @@ UNIX: dict[str, str] = {"unit": "ns", "epoch": "1970-01-01"}
 #: partitions remain portable between Arrow and Iceberg engines.
 UNIX_PARTITION: dict[str, str] = {"unit": "second", "epoch": "1970-01-01"}
 
+#: Nanoseconds in a microsecond, the resolution an identity is anchored at.
+MICROSECOND = 1_000
+
 #: Nanoseconds in a second.
 SECOND = 1_000_000_000
 
@@ -41,7 +53,7 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, used to locate `unix`'s partition boundary.
 HOUR = 3_600_000_000_000
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 
 #: What `codes` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
 #: and `exec_id`. Instrument identity has `instrument_xhash` and
@@ -50,18 +62,13 @@ CODES_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
 
-_LINKED_EVENTS_TYPE = pyarrow.list_(
-    pyarrow.field(
-        "item",
-        pyarrow.struct(
-            [
-                pyarrow.field("unix", pyarrow.int64(), nullable=False),
-                pyarrow.field("xhash", pyarrow.int64(), nullable=False),
-            ]
-        ),
-        nullable=False,
-    )
-)
+#: A link is one identifier, not a pair of them: the wide hash carries the
+#: related event's instant in its high bits and its lifecycle in the low, so
+#: the two facts the struct spelled ride in one value.
+_LINKED_EVENTS_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
+
+#: The list a `parent_hash` is, at the width an identifier is stored in.
+_PARENT_HASH_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 
 
 @scalar(slots=True, weakref_slot=True)
@@ -107,9 +114,7 @@ class Event(MarketConvertible):
     # against 93 over 168 hourly partitions, 27 against 164 over 336.
     unix_partition: Annotated[
         int,
-        Field.partition_key(
-            arrow_type=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION
-        ),
+        Field.partition_key(dtype=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION),
     ] = 0
     """`unix`'s hour boundary in whole epoch seconds; the partition value."""
 
@@ -137,13 +142,13 @@ class Event(MarketConvertible):
     sunix: Annotated[int | None, Field(metadata=UNIX)] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
-    hash: Annotated[int, Field.primary_key()] = NIL
+    hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
     """Digest of this version's content: the same version, twice, is one row."""
 
-    xhash: int = NIL
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linked_events: Annotated[list[tuple[int, int]], Field(arrow_type=_LINKED_EVENTS_TYPE)] = (
+    linked_events: Annotated[list[tuple[int, int]], Field(dtype=_LINKED_EVENTS_TYPE)] = (
         dataclasses.field(default_factory=list)
     )
     """Related event times and lifecycle identities, primary match first."""
@@ -152,12 +157,12 @@ class Event(MarketConvertible):
     """Which version of `xhash` this is, counting up from the first."""
 
     state: State = State.UNKNOWN
-    """Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over."""
+    """Where the lifecycle stands, as a ranked code: `is_terminal` is over."""
 
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    codes: Annotated[dict[str, str], Field(arrow_type=CODES_TYPE)] = dataclasses.field(
+    codes: Annotated[dict[str, str], Field(dtype=CODES_TYPE)] = dataclasses.field(
         default_factory=dict
     )
     """Every other identifier the source spelled, by the name that carried it."""
@@ -166,7 +171,7 @@ class Event(MarketConvertible):
     """When the previous version happened, so dwell time is a subtraction."""
 
     # Version digests are distinct from `linked_events` lifecycle relations.
-    parent_hash: list[int] | None = None
+    parent_hash: Annotated[list[int] | None, Field(dtype=_PARENT_HASH_TYPE)] = None
     """Every event this one was built from, in the order they were combined."""
 
     mic: MIC | None = None
@@ -198,26 +203,6 @@ class Event(MarketConvertible):
         self._drop_self_link()
 
     @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
-        """Rebuild named Arrow link structs as the public tuple representation."""
-        values = dict(mapping)
-        links = values.get("linked_events")
-        if links is not None:
-            values["linked_events"] = [
-                (link["unix"], link["xhash"]) if isinstance(link, Mapping) else tuple(link)
-                for link in links
-            ]
-        return MarketConvertible.from_dict.__func__(cls, values)
-
-    def into_dict(self) -> dict[str, Any]:
-        """Spell tuple links as named structs at the Arrow boundary."""
-        values = MarketConvertible.into_dict(self)
-        values["linked_events"] = [
-            {"unix": unix, "xhash": xhash} for unix, xhash in self.linked_events
-        ]
-        return values
-
-    @classmethod
     def from_arrow_reader(
         cls, source: pyarrow.RecordBatchReader | Iterable[pyarrow.RecordBatch]
     ) -> Iterator[Self]:
@@ -236,14 +221,14 @@ class Event(MarketConvertible):
         schema = cls.into_field().into_arrow_schema()
 
         def batches() -> Iterator[pyarrow.RecordBatch]:
-            held: list[dict[str, Any]] = []
+            held: list[Self] = []
             for event in events:
-                held.append(event.into_dict())
+                held.append(event)
                 if len(held) >= batch_row_size:
-                    yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                    yield cls.into_arrow_batch(held)
                     held.clear()
             if held:
-                yield pyarrow.RecordBatch.from_pylist(held, schema=schema)
+                yield cls.into_arrow_batch(held)
 
         return pyarrow.RecordBatchReader.from_batches(schema, batches())
 
@@ -258,7 +243,7 @@ class Event(MarketConvertible):
         without a caller knowing which it was handed.
         """
         declared = cls.into_event_type()
-        return declared == kind or (kind == EventType.band_of(kind) and declared.band == kind)
+        return declared == kind or (kind.band is kind and declared.band is kind)
 
     @classmethod
     def is_order(cls) -> bool:
@@ -298,13 +283,54 @@ class Event(MarketConvertible):
         """`hash_of` over whole columns: one identifier per row, in kernels."""
         return hash_arrow(cls.__name__, *columns)
 
+    def txhash_of(self, *parts: Any) -> int:
+        """This version's identity: its instant over the digest of `parts`.
+
+        A version is a thing that happened at a time, so the identifier says
+        when: the epoch microseconds ride above an XXH64 of the same framed
+        bytes `hash_of` digests. A column of them sorts by time and still
+        spreads rows inside one microsecond.
+        """
+        return self.txhash_framed(frame((type(self).__name__, *parts)))
+
+    def txhash_framed(self, framed: bytes) -> int:
+        """This version's identity from an already framed payload.
+
+        The one place the anchor is chosen, so a shape that caches its frame
+        -- a book keeps one per live level -- anchors it exactly as
+        `txhash_of` anchors the frame it builds.
+        """
+        return txhash.h128(self.unix // MICROSECOND, framed)
+
+    @classmethod
+    def txhash_arrow(cls, clock: Any, *columns: Any) -> pyarrow.Array:
+        """`txhash_of` over whole columns, anchored to the `clock` column.
+
+        An event's clock is epoch nanoseconds, so an integer column is read
+        as those and floored to whole microseconds exactly as the scalar does.
+        """
+        payload = framed_arrow(cls.__name__, *columns)
+        return txhash.h128_arrow(cls._clock_micros(clock), payload)
+
+    @staticmethod
+    def _clock_micros(clock: Any) -> pyarrow.Array:
+        """One clock column as whole epoch microseconds, flooring like `//` does."""
+        if not pyarrow.types.is_integer(getattr(clock, "type", None)):
+            return txhash.epoch_micros_arrow(clock)
+        compute = pyarrow.compute
+        nanos = clock.cast(pyarrow.int64(), safe=False)
+        carry = compute.if_else(
+            compute.less(nanos, 0), pyarrow.scalar(MICROSECOND - 1, pyarrow.int64()), 0
+        )
+        return compute.divide(compute.subtract(nanos, carry), MICROSECOND).cast(pyarrow.int64())
+
     def identify(self) -> Self:
         """Give the event the identity its own content earns, where it has none."""
         self._materialize_life_code()
         self.xhash = self.xhash or self.life_hash()
         self._drop_self_link()
         if not self.hash:
-            self.hash = self.hash_of(*self.version_parts())
+            self.hash = self.txhash_of(*self.version_parts())
         return self
 
     def with_previous(self, previous: Event | None) -> Self | None:
@@ -361,7 +387,7 @@ class Event(MarketConvertible):
         floating = tuple(
             member.name
             for member in cls.into_field().fields
-            if member.name in names and pyarrow.types.is_floating(member.arrow_type)
+            if member.name in names and pyarrow.types.is_floating(member.dtype)
         )
         return operator.attrgetter(*names), operator.attrgetter(*floating) if floating else None
 
@@ -598,13 +624,13 @@ class Event(MarketConvertible):
         """
         links = tuple(self.linked_events)
         return (
-            self.xhash,
+            hash_bytes_of(self.xhash),
             self.version,
             self.unix,
             self.state,
             self.mic,
             len(links),
-            *(part for link in links for part in link),
+            *(part for unix, xhash in links for part in (unix, hash_bytes_of(xhash))),
             self.reason,
         )
 
@@ -624,7 +650,7 @@ class MarketEvent(Event):
     # Not a partition, deliberately. The value is a hash, so bucketing it split
     # every hour into as many files as buckets while the hour itself already
     # prunes the read -- more small files for a filter that was already exact.
-    instrument_xhash: int = NIL
+    instrument_xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Instrument lifecycle identity used to join market rows."""
 
     # Beside the hash rather than only inside `codes`: a hash joins, and a
@@ -790,9 +816,9 @@ class MarketEvent(Event):
         if multiplier is None:
             # A cash instrument really does trade one for one, and it is the
             # only class where the multiplier can be assumed rather than read.
-            # `band` is the floor as an `int`, which is what a range predicate
-            # compares against -- so this is `==` and never `is`.
-            if instrument.kind.band != AssetKind.CASH:
+            # `band` answers with the band-floor member itself, not a number,
+            # so this is `is` and never `==`.
+            if instrument.kind.band is not AssetKind.CASH:
                 return None
             multiplier = 1.0
         return self.px * self.qty * multiplier
@@ -815,7 +841,7 @@ class MarketEvent(Event):
         code = self.life_code()
         if not self.instrument_xhash and not code:
             return ()
-        return (self.instrument_xhash, code, self.side)
+        return (hash_bytes_of(self.instrument_xhash), code, self.side)
 
     def life_code(self) -> str:
         """The lifecycle identifier, and the instrument symbol when there is none.
@@ -859,7 +885,7 @@ class MarketEvent(Event):
         field = cls.into_field()
         if not len(events):
             return pyarrow.RecordBatch.from_arrays(
-                [pyarrow.array([], type=member.arrow_type) for member in field.fields],
+                [pyarrow.array([], type=member.dtype) for member in field.fields],
                 schema=field.into_arrow_schema(),
             )
         projected = struct_columns(events)

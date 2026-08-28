@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegPaymentScheduleRateSources",
-   "required": false,
-   "tag": 40414,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegPaymentScheduleRateSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentScheduleRateSourceGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegPaymentScheduleRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40414"
+    },
+    "item": {
      "name": "LegPaymentScheduleRateSource",
-     "required": false,
-     "tag": 40415
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentScheduleRateSourceType",
-     "required": false,
-     "tag": 40416
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentScheduleReferencePage",
-     "required": false,
-     "tag": 40417
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentScheduleRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40415"
+       }
+      },
+      {
+       "name": "LegPaymentScheduleRateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40416"
+       }
+      },
+      {
+       "name": "LegPaymentScheduleReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40417"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

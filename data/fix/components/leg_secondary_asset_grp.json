@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegSecondaryAssetClasses",
-   "required": false,
-   "tag": 2076,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegSecondaryAssetGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSecondaryAssetGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegSecondaryAssetClasses",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2076"
+    },
+    "item": {
      "name": "LegSecondaryAssetClass",
-     "required": false,
-     "tag": 2077
-    },
-    {
-     "kind": "field",
-     "name": "LegSecondaryAssetSubClass",
-     "required": false,
-     "tag": 2078
-    },
-    {
-     "kind": "field",
-     "name": "LegSecondaryAssetType",
-     "required": false,
-     "tag": 2079
-    },
-    {
-     "kind": "field",
-     "name": "LegSecondaryAssetSubType",
-     "required": false,
-     "tag": 2743
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegSecondaryAssetClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2077"
+       }
+      },
+      {
+       "name": "LegSecondaryAssetSubClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2078"
+       }
+      },
+      {
+       "name": "LegSecondaryAssetType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2079"
+       }
+      },
+      {
+       "name": "LegSecondaryAssetSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2743"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

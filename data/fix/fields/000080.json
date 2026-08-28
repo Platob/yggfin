@@ -222,24 +222,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BID",
-   "1": "MID",
-   "2": "OFFER"
-  },
-  "encoded": {
-   "bid": "0",
-   "mid": "1",
-   "offer": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "bid",
-   "1": "mid",
-   "2": "offer"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFFER"
+    ]
+   }
+  ]
  },
  "40028": {
   "name": "CashSettlQuoteAmount",
@@ -328,44 +333,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "MARKET",
-   "1": "HIGHEST",
-   "2": "AVERAGE_MARKET",
-   "3": "AVERAGE_HIGHEST",
-   "4": "BLENDED_MARKET",
-   "5": "BLENDED_HIGHEST",
-   "6": "AVERAGE_BLENDED_MARKET",
-   "7": "AVERAGE_BLENDED_HIGHEST"
-  },
-  "encoded": {
-   "market": "0",
-   "highest": "1",
-   "averagemarket": "2",
-   "averagehighest": "3",
-   "blendedmarket": "4",
-   "blendedhighest": "5",
-   "averageblendedmarket": "6",
-   "averageblendedhighest": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "market",
-   "1": "highest",
-   "2": "averagemarket",
-   "3": "averagehighest",
-   "4": "blendedmarket",
-   "5": "blendedhighest",
-   "6": "averageblendedmarket",
-   "7": "averageblendedhighest"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "MARKET"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "HIGHEST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_MARKET"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_HIGHEST"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BLENDED_MARKET"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "BLENDED_HIGHEST"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_BLENDED_MARKET"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_BLENDED_HIGHEST"
+    ]
+   }
+  ]
  },
  "40039": {
   "name": "CashSettlTermXID",
@@ -462,20 +487,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PAYMENT_CASH_SETTLEMENT",
-   "1": "PHYSICAL_DELIVERY"
-  },
-  "encoded": {
-   "paymentcashsettlement": "0",
-   "physicaldelivery": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "paymentcashsettlement",
-   "1": "physicaldelivery"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PAYMENT_CASH_SETTLEMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PHYSICAL_DELIVERY"
+    ]
+   }
+  ]
  },
  "40051": {
   "name": "StreamDesc",
@@ -804,44 +831,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "MANDATORY_EARLY_TERMINATION",
-   "1": "OPTIONAL_EARLY_TERMINATION",
-   "2": "CANCELABLE",
-   "3": "EXTENDABLE",
-   "4": "MUTUAL_EARLY_TERMINATION",
-   "5": "EVERGREEN",
-   "6": "CALLABLE",
-   "7": "PUTTABLE"
-  },
-  "encoded": {
-   "mandatoryearlytermination": "0",
-   "optionalearlytermination": "1",
-   "cancelable": "2",
-   "extendable": "3",
-   "mutualearlytermination": "4",
-   "evergreen": "5",
-   "callable": "6",
-   "puttable": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "mandatoryearlytermination",
-   "1": "optionalearlytermination",
-   "2": "cancelable",
-   "3": "extendable",
-   "4": "mutualearlytermination",
-   "5": "evergreen",
-   "6": "callable",
-   "7": "puttable"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "MANDATORY_EARLY_TERMINATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OPTIONAL_EARLY_TERMINATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CANCELABLE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EXTENDABLE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "MUTUAL_EARLY_TERMINATION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "EVERGREEN"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CALLABLE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PUTTABLE"
+    ]
+   }
+  ]
  },
  "40092": {
   "name": "ProvisionDateUnadjusted",
@@ -890,28 +937,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40098": {
   "name": "ProvisionCalculationAgent",
@@ -920,28 +975,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EXERCISING_PARTY",
-   "1": "NON_EXERCISING_PARTY",
-   "2": "MASTER_AGREEENT",
-   "3": "SUPPLEMENT"
-  },
-  "encoded": {
-   "exercisingparty": "0",
-   "nonexercisingparty": "1",
-   "masteragreeent": "2",
-   "supplement": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "exercisingparty",
-   "1": "nonexercisingparty",
-   "2": "masteragreeent",
-   "3": "supplement"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EXERCISING_PARTY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NON_EXERCISING_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MASTER_AGREEENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SUPPLEMENT"
+    ]
+   }
+  ]
  },
  "40099": {
   "name": "ProvisionOptionSinglePartyBuyerSide",
@@ -950,20 +1013,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUY",
-   "2": "SELL"
-  },
-  "encoded": {
-   "buy": "1",
-   "sell": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "buy",
-   "2": "sell"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELL"
+    ]
+   }
+  ]
  },
  "40100": {
   "name": "ProvisionOptionSinglePartySellerSide",
@@ -1036,40 +1101,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CASH_PRICE",
-   "1": "CASH_PRICE_ALTERNATE",
-   "2": "PAR_YIELD_CURVE_ADJUSTED",
-   "3": "ZERO_COUPON_YIELD_CURVE_ADJUSTED",
-   "4": "PAR_YIELD_CURVE_UNADJUSTED",
-   "5": "CROSS_CURRENCY",
-   "6": "COLLATERALIZED_PRICE"
-  },
-  "encoded": {
-   "cashprice": "0",
-   "cashpricealternate": "1",
-   "paryieldcurveadjusted": "2",
-   "zerocouponyieldcurveadjusted": "3",
-   "paryieldcurveunadjusted": "4",
-   "crosscurrency": "5",
-   "collateralizedprice": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "cashprice",
-   "1": "cashpricealternate",
-   "2": "paryieldcurveadjusted",
-   "3": "zerocouponyieldcurveadjusted",
-   "4": "paryieldcurveunadjusted",
-   "5": "crosscurrency",
-   "6": "collateralizedprice"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CASH_PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CASH_PRICE_ALTERNATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PAR_YIELD_CURVE_ADJUSTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ZERO_COUPON_YIELD_CURVE_ADJUSTED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PAR_YIELD_CURVE_UNADJUSTED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CROSS_CURRENCY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "COLLATERALIZED_PRICE"
+    ]
+   }
+  ]
  },
  "40109": {
   "name": "ProvisionCashSettlCurrency",
@@ -1094,28 +1176,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BID",
-   "1": "MID",
-   "2": "OFFER",
-   "3": "EXERCISING_PARTY_PAYS"
-  },
-  "encoded": {
-   "bid": "0",
-   "mid": "1",
-   "offer": "2",
-   "exercisingpartypays": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "bid",
-   "1": "mid",
-   "2": "offer",
-   "3": "exercisingpartypays"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFFER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EXERCISING_PARTY_PAYS"
+    ]
+   }
+  ]
  },
  "40112": {
   "name": "ProvisionCashSettlQuoteSource",
@@ -1236,28 +1326,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40127": {
   "name": "ProvisionOptionExerciseFrequencyPeriod",
@@ -1402,20 +1500,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNADJUSTED",
-   "1": "ADJUSTED"
-  },
-  "encoded": {
-   "unadjusted": "0",
-   "adjusted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "unadjusted",
-   "1": "adjusted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNADJUSTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADJUSTED"
+    ]
+   }
+  ]
  },
  "40145": {
   "name": "ProvisionOptionExpirationDateUnadjusted",
@@ -1648,20 +1748,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNADJUSTED",
-   "1": "ADJUSTED"
-  },
-  "encoded": {
-   "unadjusted": "0",
-   "adjusted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "unadjusted",
-   "1": "adjusted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNADJUSTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADJUSTED"
+    ]
+   }
+  ]
  },
  "40174": {
   "name": "NoProvisionPartyIDs",
@@ -1846,28 +1948,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "40197": {
   "name": "ProtectionTermEventDayType",
@@ -1876,36 +1986,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BUSINESS",
-   "1": "CALENDAR",
-   "2": "COMMODITY_BUSINESS",
-   "3": "CURRENCY_BUSINESS",
-   "4": "EXCHANGE_BUSINESS",
-   "5": "SCHEDULED_TRADING_DAY"
-  },
-  "encoded": {
-   "business": "0",
-   "calendar": "1",
-   "commoditybusiness": "2",
-   "currencybusiness": "3",
-   "exchangebusiness": "4",
-   "scheduledtradingday": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "business",
-   "1": "calendar",
-   "2": "commoditybusiness",
-   "3": "currencybusiness",
-   "4": "exchangebusiness",
-   "5": "scheduledtradingday"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BUSINESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALENDAR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY_BUSINESS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY_BUSINESS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BUSINESS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED_TRADING_DAY"
+    ]
+   }
+  ]
  },
  "40198": {
   "name": "ProtectionTermEventRateSource",
@@ -1930,24 +2054,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "H": "RESTRUCTURING_MULTIPLE_HOLDING_OBLIGATIONS",
-   "E": "RESTRUCTURING_MULTIPLE_CREDIT_EVENT_NOTICES",
-   "C": "FLOATING_RATE_INTEREST_SHORTFALL"
-  },
-  "encoded": {
-   "restructuringmultipleholdingobligations": "H",
-   "restructuringmultiplecrediteventnotices": "E",
-   "floatingrateinterestshortfall": "C",
-   "h": "H",
-   "e": "E",
-   "c": "C"
-  },
-  "decoded": {
-   "H": "restructuringmultipleholdingobligations",
-   "E": "restructuringmultiplecrediteventnotices",
-   "C": "floatingrateinterestshortfall"
-  }
+  "values": [
+   {
+    "value": "H",
+    "meaning": "",
+    "aliases": [
+     "RESTRUCTURING_MULTIPLE_HOLDING_OBLIGATIONS"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "",
+    "aliases": [
+     "RESTRUCTURING_MULTIPLE_CREDIT_EVENT_NOTICES"
+    ]
+   },
+   {
+    "value": "C",
+    "meaning": "",
+    "aliases": [
+     "FLOATING_RATE_INTEREST_SHORTFALL"
+    ]
+   }
+  ]
  },
  "40201": {
   "name": "NoProtectionTermObligations",
@@ -2052,76 +2181,120 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BROKERAGE",
-   "1": "UPFRONT_FEE",
-   "2": "INDEPENDENT_AMOUNT_COLLATERAL",
-   "3": "PRINCIPAL_EXCHANGE",
-   "4": "NOVATION_TERMINATION",
-   "5": "EARLY_TERMINATION_PROVISION",
-   "6": "CANCELABLE_PROVISION",
-   "7": "EXTENDIBLE_PROVISION",
-   "8": "CAP_RATE_PROVISION",
-   "9": "FLOOR_RATE_PROVISION",
-   "10": "OPTION_PREMIUM",
-   "11": "SETTLEMENT_PAYMENT",
-   "12": "CASH_SETTL",
-   "13": "SECURITY_LENDING",
-   "14": "REBATE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "brokerage": "0",
-   "upfrontfee": "1",
-   "independentamountcollateral": "2",
-   "principalexchange": "3",
-   "novationtermination": "4",
-   "earlyterminationprovision": "5",
-   "cancelableprovision": "6",
-   "extendibleprovision": "7",
-   "caprateprovision": "8",
-   "floorrateprovision": "9",
-   "optionpremium": "10",
-   "settlementpayment": "11",
-   "cashsettl": "12",
-   "securitylending": "13",
-   "rebate": "14",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "brokerage",
-   "1": "upfrontfee",
-   "2": "independentamountcollateral",
-   "3": "principalexchange",
-   "4": "novationtermination",
-   "5": "earlyterminationprovision",
-   "6": "cancelableprovision",
-   "7": "extendibleprovision",
-   "8": "caprateprovision",
-   "9": "floorrateprovision",
-   "10": "optionpremium",
-   "11": "settlementpayment",
-   "12": "cashsettl",
-   "13": "securitylending",
-   "14": "rebate",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BROKERAGE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UPFRONT_FEE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INDEPENDENT_AMOUNT_COLLATERAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PRINCIPAL_EXCHANGE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NOVATION_TERMINATION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "EARLY_TERMINATION_PROVISION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CANCELABLE_PROVISION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "EXTENDIBLE_PROVISION"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "CAP_RATE_PROVISION"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "FLOOR_RATE_PROVISION"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "OPTION_PREMIUM"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "SETTLEMENT_PAYMENT"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "CASH_SETTL"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_LENDING"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "REBATE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "40214": {
   "name": "PaymentPaySide",
@@ -2130,20 +2303,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUY",
-   "2": "SELL"
-  },
-  "encoded": {
-   "buy": "1",
-   "sell": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "buy",
-   "2": "sell"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELL"
+    ]
+   }
+  ]
  },
  "40215": {
   "name": "PaymentReceiveSide",
@@ -2248,24 +2423,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "STANDARD",
-   "1": "NET",
-   "2": "STANDARDF_NET"
-  },
-  "encoded": {
-   "standard": "0",
-   "net": "1",
-   "standardfnet": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "standard",
-   "1": "net",
-   "2": "standardfnet"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "STANDARD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STANDARDF_NET"
+    ]
+   }
+  ]
  },
  "40228": {
   "name": "LegPaymentStreamNonDeliverableSettlReferencePage",

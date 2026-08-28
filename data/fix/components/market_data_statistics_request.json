@@ -1,0 +1,190 @@
+{
+ "name": "MarketDataStatisticsRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDataStatisticsRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataStatisticsRequest",
+   "msgtype": "DO"
+  },
+  "fields": [
+   {
+    "name": "MDStatisticReqID",
+    "type": "string",
+    "fix": {
+     "tag": "2452"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "MarketSegmentDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1396"
+    }
+   },
+   {
+    "name": "EncodedMktSegmDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1397"
+    }
+   },
+   {
+    "name": "EncodedMktSegmDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1398"
+    }
+   },
+   {
+    "name": "SecurityListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1465"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MDStatisticReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "MDStatisticReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

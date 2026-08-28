@@ -3,65 +3,96 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateUnadjusted",
-   "required": false,
-   "tag": 42133
+ "declaration": {
+  "name": "UnderlyingProvisionOptionExpirationDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionOptionExpirationDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateBusinessDayConvention",
-   "required": false,
-   "tag": 42134
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionOptionExpirationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateRelativeTo",
-   "required": false,
-   "tag": 42135
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateOffsetPeriod",
-   "required": false,
-   "tag": 42136
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateOffsetUnit",
-   "required": false,
-   "tag": 42137
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateOffsetDayType",
-   "required": false,
-   "tag": 42138
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationDateAdjusted",
-   "required": false,
-   "tag": 42139
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationTime",
-   "required": false,
-   "tag": 42140
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionExpirationTimeBusinessCenter",
-   "required": false,
-   "tag": 42141
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42133"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42134"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionOptionExpirationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42135"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42136"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42137"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42138"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42139"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42140"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExpirationTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42141"
+    }
+   }
+  ]
+ }
 }

@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateRelativeTo",
-   "required": false,
-   "tag": 42357
+ "declaration": {
+  "name": "LegDividendFXTriggerDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDividendFXTriggerDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateOffsetPeriod",
-   "required": false,
-   "tag": 42358
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateOffsetUnit",
-   "required": false,
-   "tag": 42359
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateOffsetDayType",
-   "required": false,
-   "tag": 42360
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateUnadjusted",
-   "required": false,
-   "tag": 42361
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateBusinessDayConvention",
-   "required": false,
-   "tag": 42362
-  },
-  {
-   "kind": "component",
-   "name": "LegDividendFXTriggerDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDividendFXTriggerDateAdjusted",
-   "required": false,
-   "tag": 42363
-  }
- ]
+  "fields": [
+   {
+    "name": "LegDividendFXTriggerDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42357"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42358"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42359"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42360"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42361"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42362"
+    }
+   },
+   {
+    "name": "LegDividendFXTriggerDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDividendFXTriggerDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDividendFXTriggerDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42363"
+    }
+   }
+  ]
+ }
 }

@@ -75,7 +75,7 @@ class FieldBuilder:
             metadata[DESCRIPTION] = summary
         return Field(
             name=name or cls.__qualname__,
-            arrow_type=self.struct(cls),
+            dtype=self.struct(cls),
             nullable=False,
             metadata=metadata,
         )
@@ -86,16 +86,29 @@ class FieldBuilder:
             raise TypeError(f"{cls.__name__} must be a dataclass to be projected onto Arrow")
         hints = get_type_hints(cls, include_extras=True)
         described = docstring_attributes(cls)
+        # A class may spell a column its attribute cannot: FIX tag 236 is
+        # `Yield`, and `yield` is a statement. Everything else is itself.
+        columns_of = getattr(cls, "into_field_columns", None)
+        columns = dict(columns_of()) if callable(columns_of) else {}
         return [
-            self.field(member.name, hints[member.name], description=described.get(member.name))
+            self.field(
+                columns.get(member.name, member.name),
+                hints[member.name],
+                description=described.get(member.name),
+            )
             for member in dataclasses.fields(cls)
         ]
 
     def struct(self, cls: type) -> pyarrow.DataType:
-        """Struct type for `cls`."""
-        if cls in self._building:
-            cycle = " -> ".join(c.__name__ for c in (*self._building, cls))
-            raise TypeError(f"Arrow has no recursive types, but the fields cycle: {cycle}")
+        """Struct type for `cls`, one recursive level deep.
+
+        Arrow has no recursive types, so a class reached again inside its own
+        build expands exactly once more and then stores as binary: one nested
+        level keeps the shape readable, and whatever sits below it serializes
+        whole into the default binary leaf.
+        """
+        if self._building.count(cls) >= 2:
+            return pyarrow.binary()
         self._building.append(cls)
         try:
             return pyarrow.struct([member.into_arrow_field() for member in self.fields(cls)])
@@ -112,11 +125,7 @@ class FieldBuilder:
             declared = Field(metadata={DESCRIPTION: description}).merge(declared)
         built = Field(
             name=name,
-            arrow_type=(
-                declared.arrow_type
-                if declared.arrow_type is not None
-                else self.data_type(annotation)
-            ),
+            dtype=(declared.dtype if declared.dtype is not None else self.arrow_type(annotation)),
             nullable=optional if declared.nullable is None else declared.nullable,
             metadata=declared.metadata,
         )
@@ -127,11 +136,11 @@ class FieldBuilder:
             )
         return built
 
-    def data_type(self, annotation: Any) -> pyarrow.DataType:
+    def arrow_type(self, annotation: Any) -> pyarrow.DataType:
         """Arrow type for `annotation`, recursing through containers."""
         declared, annotation = Field.unwrap(annotation)
-        if declared.arrow_type is not None:
-            return declared.arrow_type
+        if declared.dtype is not None:
+            return declared.dtype
 
         origin = get_origin(annotation)
         if origin in SEQUENCE_ORIGINS or origin in SET_ORIGINS:
@@ -140,7 +149,7 @@ class FieldBuilder:
             return self._tuple(get_args(annotation))
         if origin in MAPPING_ORIGINS:
             key, value = (get_args(annotation) or (str, Any))[:2]
-            return pyarrow.map_(self.data_type(key), self.field("value", value).into_arrow_field())
+            return pyarrow.map_(self.arrow_type(key), self.field("value", value).into_arrow_field())
         if origin in (Union, types.UnionType):
             named = ", ".join(getattr(a, "__name__", str(a)) for a in get_args(annotation))
             raise TypeError(f"Arrow cannot infer a type for the union of {named}")
@@ -150,9 +159,7 @@ class FieldBuilder:
 
         inferred = self.scalar(annotation)
         if inferred is None:
-            raise TypeError(
-                f"no Arrow type for {annotation!r}; declare it with Field(arrow_type=...)"
-            )
+            raise TypeError(f"no Arrow type for {annotation!r}; declare it with Field(dtype=...)")
         return inferred
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
@@ -164,9 +171,9 @@ class FieldBuilder:
             return scalars[annotation]
         if issubclass(annotation, enum.Enum):
             return self._enum(annotation)
-        for python_type, arrow_type in scalars.items():
+        for python_type, dtype in scalars.items():
             if issubclass(annotation, python_type):
-                return arrow_type
+                return dtype
         return None
 
     def _tuple(self, args: tuple[Any, ...]) -> pyarrow.DataType:

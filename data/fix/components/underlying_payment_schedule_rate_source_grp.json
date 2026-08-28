@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPaymentScheduleRateSources",
-   "required": false,
-   "tag": 40704,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "UnderlyingPaymentScheduleRateSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentScheduleRateSourceGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPaymentScheduleRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40704"
+    },
+    "item": {
      "name": "UnderlyingPaymentScheduleRateSource",
-     "required": false,
-     "tag": 40705
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleRateSourceType",
-     "required": false,
-     "tag": 40706
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentScheduleReferencePage",
-     "required": false,
-     "tag": 40707
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentScheduleRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40705"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleRateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40706"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentScheduleReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40707"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

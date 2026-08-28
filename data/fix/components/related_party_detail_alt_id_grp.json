@@ -3,31 +3,54 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedPartyDetailAltID",
-   "required": false,
-   "tag": 1569,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "RelatedPartyDetailAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelatedPartyDetailAltIDGrp",
+   "msgtypes": "[\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListReport\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedPartyDetailAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1569"
+    },
+    "item": {
      "name": "RelatedPartyDetailAltID",
-     "required": false,
-     "tag": 1570
-    },
-    {
-     "kind": "field",
-     "name": "RelatedPartyDetailAltIDSource",
-     "required": false,
-     "tag": 1571
-    },
-    {
-     "kind": "component",
-     "name": "RelatedPartyDetailAltSubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedPartyDetailAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1570"
+       }
+      },
+      {
+       "name": "RelatedPartyDetailAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1571"
+       }
+      },
+      {
+       "name": "RelatedPartyDetailAltSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedPartyDetailAltSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

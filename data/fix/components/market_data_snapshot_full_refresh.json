@@ -1,0 +1,276 @@
+{
+ "name": "MarketDataSnapshotFullRefresh",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MarketDataSnapshotFullRefresh",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDataSnapshotFullRefresh",
+   "msgtype": "W"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "TotNumReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "911"
+    }
+   },
+   {
+    "name": "MDReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "963"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1021"
+    }
+   },
+   {
+    "name": "MDSubBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1173"
+    }
+   },
+   {
+    "name": "MarketDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "264"
+    }
+   },
+   {
+    "name": "MDFeedType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1022"
+    }
+   },
+   {
+    "name": "MDSubFeedType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1683"
+    }
+   },
+   {
+    "name": "RefreshIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1187"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "MDReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "262"
+    }
+   },
+   {
+    "name": "MDStreamID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1500"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedInstrumentGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedInstrumentGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LastUpdateTime",
+    "type": "string",
+    "fix": {
+     "tag": "779"
+    }
+   },
+   {
+    "name": "FinancialStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "291"
+    }
+   },
+   {
+    "name": "CorporateAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "292"
+    }
+   },
+   {
+    "name": "NetChgPrevDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "451"
+    }
+   },
+   {
+    "name": "MDSecurityTradingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1682"
+    }
+   },
+   {
+    "name": "MDHaltReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1684"
+    }
+   },
+   {
+    "name": "MDFullGrp",
+    "type": "struct",
+    "fix": {
+     "component": "MDFullGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ApplQueueDepth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "813"
+    }
+   },
+   {
+    "name": "ApplQueueResolution",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "814"
+    }
+   },
+   {
+    "name": "RoutingGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RoutingGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

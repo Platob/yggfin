@@ -3,50 +3,77 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSideRegulatoryTradeIDs",
-   "required": false,
-   "tag": 1971,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "SideRegulatoryTradeIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SideRegulatoryTradeIDGrp",
+   "msgtypes": "[\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSideRegulatoryTradeIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1971"
+    },
+    "item": {
      "name": "SideRegulatoryTradeID",
-     "required": false,
-     "tag": 1972
-    },
-    {
-     "kind": "field",
-     "name": "SideRegulatoryTradeIDSource",
-     "required": false,
-     "tag": 1973
-    },
-    {
-     "kind": "field",
-     "name": "SideRegulatoryTradeIDEvent",
-     "required": false,
-     "tag": 1974
-    },
-    {
-     "kind": "field",
-     "name": "SideRegulatoryTradeIDType",
-     "required": false,
-     "tag": 1975
-    },
-    {
-     "kind": "field",
-     "name": "SideRegulatoryLegRefID",
-     "required": false,
-     "tag": 2416
-    },
-    {
-     "kind": "field",
-     "name": "SideRegulatoryTradeIDScope",
-     "required": false,
-     "tag": 2398
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideRegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1972"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1973"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1974"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1975"
+       }
+      },
+      {
+       "name": "SideRegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2416"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2398"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

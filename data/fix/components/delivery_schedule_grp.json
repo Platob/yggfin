@@ -3,97 +3,142 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDeliverySchedules",
-   "required": false,
-   "tag": 41037,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleType",
-     "required": false,
-     "tag": 41038
+ "declaration": {
+  "name": "DeliveryScheduleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DeliveryScheduleGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoDeliverySchedules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41037"
     },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleXID",
-     "required": false,
-     "tag": 41039
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleNotional",
-     "required": false,
-     "tag": 41040
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleNotionalUnitOfMeasure",
-     "required": false,
-     "tag": 41041
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleNotionalCommodityFrequency",
-     "required": false,
-     "tag": 41042
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleNegativeTolerance",
-     "required": false,
-     "tag": 41043
-    },
-    {
-     "kind": "field",
-     "name": "DeliverySchedulePositiveTolerance",
-     "required": false,
-     "tag": 41044
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleToleranceUnitOfMeasure",
-     "required": false,
-     "tag": 41045
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleToleranceType",
-     "required": false,
-     "tag": 41046
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlCountry",
-     "required": false,
-     "tag": 41047
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlTimeZone",
-     "required": false,
-     "tag": 41048
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlFlowType",
-     "required": false,
-     "tag": 41049
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
-     "required": false,
-     "tag": 41050
-    },
-    {
-     "kind": "component",
-     "name": "DeliveryScheduleSettlDayGrp",
-     "required": false
+    "item": {
+     "name": "DeliverySchedule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryScheduleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41038"
+       }
+      },
+      {
+       "name": "DeliveryScheduleXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41039"
+       }
+      },
+      {
+       "name": "DeliveryScheduleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41040"
+       }
+      },
+      {
+       "name": "DeliveryScheduleNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41041"
+       }
+      },
+      {
+       "name": "DeliveryScheduleNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41042"
+       }
+      },
+      {
+       "name": "DeliveryScheduleNegativeTolerance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41043"
+       }
+      },
+      {
+       "name": "DeliverySchedulePositiveTolerance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41044"
+       }
+      },
+      {
+       "name": "DeliveryScheduleToleranceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41045"
+       }
+      },
+      {
+       "name": "DeliveryScheduleToleranceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41046"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlCountry",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41047"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlTimeZone",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41048"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41049"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41050"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DeliveryScheduleSettlDayGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

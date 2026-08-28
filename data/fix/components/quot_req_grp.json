@@ -6,343 +6,497 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedSym",
-   "required": false,
-   "tag": 146,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": true
+ "declaration": {
+  "name": "QuotReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuotReqGrp",
+   "msgtypes": "[\"QuoteRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedSym",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "146"
     },
-    {
-     "kind": "component",
-     "name": "FinancingDetails",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PrevClosePx",
-     "required": false,
-     "tag": 140
-    },
-    {
-     "kind": "field",
-     "name": "QuoteRequestType",
-     "required": false,
-     "tag": 303
-    },
-    {
-     "kind": "field",
-     "name": "QuoteID",
-     "required": false,
-     "tag": 117
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryQuoteID",
-     "required": false,
-     "tag": 1751
-    },
-    {
-     "kind": "field",
-     "name": "QuoteType",
-     "required": false,
-     "tag": 537
-    },
-    {
-     "kind": "field",
-     "name": "TradingSessionID",
-     "required": false,
-     "tag": 336
-    },
-    {
-     "kind": "field",
-     "name": "TradingSessionSubID",
-     "required": false,
-     "tag": 625
-    },
-    {
-     "kind": "field",
-     "name": "TradeOriginationDate",
-     "required": false,
-     "tag": 229
-    },
-    {
-     "kind": "field",
-     "name": "NumOfCompetitors",
-     "required": false,
-     "tag": 1913
-    },
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": false,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "QtyType",
-     "required": false,
-     "tag": 854
-    },
-    {
-     "kind": "component",
-     "name": "OrderQtyData",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "MinQty",
-     "required": false,
-     "tag": 110
-    },
-    {
-     "kind": "field",
-     "name": "SettlType",
-     "required": false,
-     "tag": 63
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate",
-     "required": false,
-     "tag": 64
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate2",
-     "required": false,
-     "tag": 193
-    },
-    {
-     "kind": "field",
-     "name": "OrderQty2",
-     "required": false,
-     "tag": 192
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrency",
-     "required": false,
-     "tag": 120
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2899
-    },
-    {
-     "kind": "component",
-     "name": "RateSource",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "Stipulations",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Account",
-     "required": false,
-     "tag": 1
-    },
-    {
-     "kind": "field",
-     "name": "AcctIDSource",
-     "required": false,
-     "tag": 660
-    },
-    {
-     "kind": "field",
-     "name": "AccountType",
-     "required": false,
-     "tag": 581
-    },
-    {
-     "kind": "component",
-     "name": "QuotReqLegsGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "QuotQualGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TrdType",
-     "required": false,
-     "tag": 828
-    },
-    {
-     "kind": "field",
-     "name": "RegulatoryTransactionType",
-     "required": false,
-     "tag": 2347
-    },
-    {
-     "kind": "component",
-     "name": "RegulatoryTradeIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "NegotiationMethod",
-     "required": false,
-     "tag": 2115
-    },
-    {
-     "kind": "field",
-     "name": "QuotePriceType",
-     "required": false,
-     "tag": 692
-    },
-    {
-     "kind": "component",
-     "name": "PriceQualifierGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "OrdType",
-     "required": false,
-     "tag": 40
-    },
-    {
-     "kind": "field",
-     "name": "ValidUntilTime",
-     "required": false,
-     "tag": 62
-    },
-    {
-     "kind": "field",
-     "name": "ExpireTime",
-     "required": false,
-     "tag": 126
-    },
-    {
-     "kind": "field",
-     "name": "ResponseTime",
-     "required": false,
-     "tag": 1914
-    },
-    {
-     "kind": "field",
-     "name": "QuoteDisplayTime",
-     "required": false,
-     "tag": 1915
-    },
-    {
-     "kind": "field",
-     "name": "ExposureDuration",
-     "required": false,
-     "tag": 1629
-    },
-    {
-     "kind": "field",
-     "name": "ExposureDurationUnit",
-     "required": false,
-     "tag": 1916
-    },
-    {
-     "kind": "field",
-     "name": "TransactTime",
-     "required": false,
-     "tag": 60
-    },
-    {
-     "kind": "component",
-     "name": "SpreadOrBenchmarkCurveData",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PriceType",
-     "required": false,
-     "tag": 423
-    },
-    {
-     "kind": "field",
-     "name": "Price",
-     "required": false,
-     "tag": 44
-    },
-    {
-     "kind": "field",
-     "name": "MidPx",
-     "required": false,
-     "tag": 631
-    },
-    {
-     "kind": "field",
-     "name": "Price2",
-     "required": false,
-     "tag": 640
-    },
-    {
-     "kind": "component",
-     "name": "YieldData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TradeContinuation",
-     "required": false,
-     "tag": 1937
-    },
-    {
-     "kind": "field",
-     "name": "TradeContinuationText",
-     "required": false,
-     "tag": 2374
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTradeContinuationTextLen",
-     "required": false,
-     "tag": 2372
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTradeContinuationText",
-     "required": false,
-     "tag": 2371
-    },
-    {
-     "kind": "field",
-     "name": "StrikeTime",
-     "required": false,
-     "tag": 443
+    "item": {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "QuoteRequestType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "303"
+       }
+      },
+      {
+       "name": "QuoteID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "117"
+       }
+      },
+      {
+       "name": "SecondaryQuoteID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1751"
+       }
+      },
+      {
+       "name": "QuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "537"
+       }
+      },
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      },
+      {
+       "name": "TradeOriginationDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "229"
+       }
+      },
+      {
+       "name": "NumOfCompetitors",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1913"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "QtyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "854"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "MinQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "110"
+       }
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "SettlDate2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "193"
+       }
+      },
+      {
+       "name": "OrderQty2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "192"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "RateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "Stipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Stipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "Account",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1"
+       }
+      },
+      {
+       "name": "AcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "660"
+       }
+      },
+      {
+       "name": "AccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "581"
+       }
+      },
+      {
+       "name": "QuotReqLegsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "QuotReqLegsGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "QuotQualGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "QuotQualGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "TrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "828"
+       }
+      },
+      {
+       "name": "RegulatoryTransactionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2347"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RegulatoryTradeIDGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "NegotiationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2115"
+       }
+      },
+      {
+       "name": "QuotePriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "692"
+       }
+      },
+      {
+       "name": "PriceQualifierGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PriceQualifierGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      },
+      {
+       "name": "ValidUntilTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "62"
+       }
+      },
+      {
+       "name": "ExpireTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "126"
+       }
+      },
+      {
+       "name": "ResponseTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1914"
+       }
+      },
+      {
+       "name": "QuoteDisplayTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1915"
+       }
+      },
+      {
+       "name": "ExposureDuration",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1629"
+       }
+      },
+      {
+       "name": "ExposureDurationUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1916"
+       }
+      },
+      {
+       "name": "TransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "60"
+       }
+      },
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "PriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "423"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "MidPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "631"
+       }
+      },
+      {
+       "name": "Price2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "640"
+       }
+      },
+      {
+       "name": "YieldData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "YieldData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradeContinuation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1937"
+       }
+      },
+      {
+       "name": "TradeContinuationText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2374"
+       }
+      },
+      {
+       "name": "EncodedTradeContinuationTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2372"
+       }
+      },
+      {
+       "name": "EncodedTradeContinuationText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2371"
+       }
+      },
+      {
+       "name": "StrikeTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "443"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

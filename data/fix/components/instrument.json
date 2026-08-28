@@ -7,1020 +7,1409 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "Symbol",
-   "required": false,
-   "tag": 55
-  },
-  {
-   "kind": "field",
-   "name": "SymbolSfx",
-   "required": false,
-   "tag": 65
-  },
-  {
-   "kind": "field",
-   "name": "SecurityID",
-   "required": false,
-   "tag": 48
-  },
-  {
-   "kind": "field",
-   "name": "SecurityIDSource",
-   "required": false,
-   "tag": 22
-  },
-  {
-   "kind": "component",
-   "name": "SecAltIDGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "Product",
-   "required": false,
-   "tag": 460
-  },
-  {
-   "kind": "field",
-   "name": "ProductComplex",
-   "required": false,
-   "tag": 1227
-  },
-  {
-   "kind": "field",
-   "name": "SecurityGroup",
-   "required": false,
-   "tag": 1151
-  },
-  {
-   "kind": "field",
-   "name": "CFICode",
-   "required": false,
-   "tag": 461
-  },
-  {
-   "kind": "field",
-   "name": "UPICode",
-   "required": false,
-   "tag": 2891
-  },
-  {
-   "kind": "field",
-   "name": "SecurityType",
-   "required": false,
-   "tag": 167
-  },
-  {
-   "kind": "field",
-   "name": "SecuritySubType",
-   "required": false,
-   "tag": 762
-  },
-  {
-   "kind": "field",
-   "name": "MaturityMonthYear",
-   "required": false,
-   "tag": 200
-  },
-  {
-   "kind": "field",
-   "name": "MaturityDate",
-   "required": false,
-   "tag": 541
-  },
-  {
-   "kind": "field",
-   "name": "MaturityTime",
-   "required": false,
-   "tag": 1079
-  },
-  {
-   "kind": "field",
-   "name": "SettleOnOpenFlag",
-   "required": false,
-   "tag": 966
-  },
-  {
-   "kind": "field",
-   "name": "InstrmtAssignmentMethod",
-   "required": false,
-   "tag": 1049
-  },
-  {
-   "kind": "field",
-   "name": "SecurityStatus",
-   "required": false,
-   "tag": 965
-  },
-  {
-   "kind": "field",
-   "name": "CouponPaymentDate",
-   "required": false,
-   "tag": 224
-  },
-  {
-   "kind": "field",
-   "name": "RestructuringType",
-   "required": false,
-   "tag": 1449
-  },
-  {
-   "kind": "field",
-   "name": "Seniority",
-   "required": false,
-   "tag": 1450
-  },
-  {
-   "kind": "field",
-   "name": "NotionalPercentageOutstanding",
-   "required": false,
-   "tag": 1451
-  },
-  {
-   "kind": "field",
-   "name": "OriginalNotionalPercentageOutstanding",
-   "required": false,
-   "tag": 1452
-  },
-  {
-   "kind": "field",
-   "name": "AttachmentPoint",
-   "required": false,
-   "tag": 1457
-  },
-  {
-   "kind": "field",
-   "name": "DetachmentPoint",
-   "required": false,
-   "tag": 1458
-  },
-  {
-   "kind": "field",
-   "name": "ObligationType",
-   "required": false,
-   "tag": 1739
-  },
-  {
-   "kind": "field",
-   "name": "AssetGroup",
-   "required": false,
-   "tag": 2210
-  },
-  {
-   "kind": "field",
-   "name": "AssetClass",
-   "required": false,
-   "tag": 1938
-  },
-  {
-   "kind": "field",
-   "name": "AssetSubClass",
-   "required": false,
-   "tag": 1939
-  },
-  {
-   "kind": "field",
-   "name": "AssetType",
-   "required": false,
-   "tag": 1940
-  },
-  {
-   "kind": "field",
-   "name": "AssetSubType",
-   "required": false,
-   "tag": 2735
-  },
-  {
-   "kind": "component",
-   "name": "SecondaryAssetGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "AssetAttributeGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "SwapClass",
-   "required": false,
-   "tag": 1941
-  },
-  {
-   "kind": "field",
-   "name": "SwapSubClass",
-   "required": false,
-   "tag": 1575
-  },
-  {
-   "kind": "field",
-   "name": "NthToDefault",
-   "required": false,
-   "tag": 1942
-  },
-  {
-   "kind": "field",
-   "name": "MthToDefault",
-   "required": false,
-   "tag": 1943
-  },
-  {
-   "kind": "field",
-   "name": "SettledEntityMatrixSource",
-   "required": false,
-   "tag": 1944
-  },
-  {
-   "kind": "field",
-   "name": "SettledEntityMatrixPublicationDate",
-   "required": false,
-   "tag": 1945
-  },
-  {
-   "kind": "field",
-   "name": "CouponType",
-   "required": false,
-   "tag": 1946
-  },
-  {
-   "kind": "field",
-   "name": "TotalIssuedAmount",
-   "required": false,
-   "tag": 1947
-  },
-  {
-   "kind": "field",
-   "name": "CouponFrequencyPeriod",
-   "required": false,
-   "tag": 1948
-  },
-  {
-   "kind": "field",
-   "name": "CouponFrequencyUnit",
-   "required": false,
-   "tag": 1949
-  },
-  {
-   "kind": "field",
-   "name": "CouponDayCount",
-   "required": false,
-   "tag": 1950
-  },
-  {
-   "kind": "field",
-   "name": "CouponOtherDayCount",
-   "required": false,
-   "tag": 2879
-  },
-  {
-   "kind": "field",
-   "name": "ConvertibleBondEquityID",
-   "required": false,
-   "tag": 1951
-  },
-  {
-   "kind": "field",
-   "name": "ConvertibleBondEquityIDSource",
-   "required": false,
-   "tag": 1952
-  },
-  {
-   "kind": "field",
-   "name": "ContractPriceRefMonth",
-   "required": false,
-   "tag": 1953
-  },
-  {
-   "kind": "field",
-   "name": "LienSeniority",
-   "required": false,
-   "tag": 1954
-  },
-  {
-   "kind": "field",
-   "name": "LoanFacility",
-   "required": false,
-   "tag": 1955
-  },
-  {
-   "kind": "field",
-   "name": "ReferenceEntityType",
-   "required": false,
-   "tag": 1956
-  },
-  {
-   "kind": "field",
-   "name": "IndexSeries",
-   "required": false,
-   "tag": 1957
-  },
-  {
-   "kind": "field",
-   "name": "IndexAnnexVersion",
-   "required": false,
-   "tag": 1958
-  },
-  {
-   "kind": "field",
-   "name": "IndexAnnexDate",
-   "required": false,
-   "tag": 1959
-  },
-  {
-   "kind": "field",
-   "name": "IndexAnnexSource",
-   "required": false,
-   "tag": 1960
-  },
-  {
-   "kind": "field",
-   "name": "SettlRateIndex",
-   "required": false,
-   "tag": 1577
-  },
-  {
-   "kind": "field",
-   "name": "SettlRateIndexLocation",
-   "required": false,
-   "tag": 1580
-  },
-  {
-   "kind": "field",
-   "name": "OptionExpirationDesc",
-   "required": false,
-   "tag": 1581
-  },
-  {
-   "kind": "field",
-   "name": "EncodedOptionExpirationDescLen",
-   "required": false,
-   "tag": 1678
-  },
-  {
-   "kind": "field",
-   "name": "EncodedOptionExpirationDesc",
-   "required": false,
-   "tag": 1697
-  },
-  {
-   "kind": "field",
-   "name": "IssueDate",
-   "required": false,
-   "tag": 225
-  },
-  {
-   "kind": "field",
-   "name": "RepoCollateralSecurityType",
-   "required": false,
-   "tag": 239
-  },
-  {
-   "kind": "field",
-   "name": "RepurchaseTerm",
-   "required": false,
-   "tag": 226
-  },
-  {
-   "kind": "field",
-   "name": "RepurchaseRate",
-   "required": false,
-   "tag": 227
-  },
-  {
-   "kind": "field",
-   "name": "Factor",
-   "required": false,
-   "tag": 228
-  },
-  {
-   "kind": "field",
-   "name": "CreditRating",
-   "required": false,
-   "tag": 255
-  },
-  {
-   "kind": "field",
-   "name": "InstrRegistry",
-   "required": false,
-   "tag": 543
-  },
-  {
-   "kind": "field",
-   "name": "CountryOfIssue",
-   "required": false,
-   "tag": 470
-  },
-  {
-   "kind": "field",
-   "name": "StateOrProvinceOfIssue",
-   "required": false,
-   "tag": 471
-  },
-  {
-   "kind": "field",
-   "name": "LocaleOfIssue",
-   "required": false,
-   "tag": 472
-  },
-  {
-   "kind": "field",
-   "name": "RedemptionDate",
-   "required": false,
-   "tag": 240
-  },
-  {
-   "kind": "field",
-   "name": "StrikePrice",
-   "required": false,
-   "tag": 202
-  },
-  {
-   "kind": "field",
-   "name": "OrigStrikePrice",
-   "required": false,
-   "tag": 2578
-  },
-  {
-   "kind": "field",
-   "name": "StrikePricePrecision",
-   "required": false,
-   "tag": 2577
-  },
-  {
-   "kind": "field",
-   "name": "StrikeCurrency",
-   "required": false,
-   "tag": 947
-  },
-  {
-   "kind": "field",
-   "name": "StrikeCurrencyCodeSource",
-   "required": false,
-   "tag": 2904
-  },
-  {
-   "kind": "field",
-   "name": "StrikeMultiplier",
-   "required": false,
-   "tag": 967
-  },
-  {
-   "kind": "field",
-   "name": "StrikeValue",
-   "required": false,
-   "tag": 968
-  },
-  {
-   "kind": "field",
-   "name": "StrikeUnitOfMeasure",
-   "required": false,
-   "tag": 1698
-  },
-  {
-   "kind": "field",
-   "name": "StrikeIndex",
-   "required": false,
-   "tag": 1866
-  },
-  {
-   "kind": "field",
-   "name": "StrikeIndexCurvePoint",
-   "required": false,
-   "tag": 2600
-  },
-  {
-   "kind": "field",
-   "name": "StrikeIndexSpread",
-   "required": false,
-   "tag": 2001
-  },
-  {
-   "kind": "field",
-   "name": "StrikeIndexQuote",
-   "required": false,
-   "tag": 2601
-  },
-  {
-   "kind": "field",
-   "name": "StrikePriceDeterminationMethod",
-   "required": false,
-   "tag": 1478
-  },
-  {
-   "kind": "field",
-   "name": "StrikePriceBoundaryMethod",
-   "required": false,
-   "tag": 1479
-  },
-  {
-   "kind": "field",
-   "name": "StrikePriceBoundaryPrecision",
-   "required": false,
-   "tag": 1480
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceDeterminationMethod",
-   "required": false,
-   "tag": 1481
-  },
-  {
-   "kind": "field",
-   "name": "OptAttribute",
-   "required": false,
-   "tag": 206
-  },
-  {
-   "kind": "field",
-   "name": "ContractMultiplier",
-   "required": false,
-   "tag": 231
-  },
-  {
-   "kind": "field",
-   "name": "ContractMultiplierUnit",
-   "required": false,
-   "tag": 1435
-  },
-  {
-   "kind": "field",
-   "name": "TradingUnitPeriodMultiplier",
-   "required": false,
-   "tag": 2353
-  },
-  {
-   "kind": "field",
-   "name": "FlowScheduleType",
-   "required": false,
-   "tag": 1439
-  },
-  {
-   "kind": "field",
-   "name": "MinPriceIncrement",
-   "required": false,
-   "tag": 969
-  },
-  {
-   "kind": "field",
-   "name": "MinPriceIncrementAmount",
-   "required": false,
-   "tag": 1146
-  },
-  {
-   "kind": "field",
-   "name": "UnitOfMeasure",
-   "required": false,
-   "tag": 996
-  },
-  {
-   "kind": "field",
-   "name": "UnitOfMeasureQty",
-   "required": false,
-   "tag": 1147
-  },
-  {
-   "kind": "field",
-   "name": "UnitOfMeasureCurrency",
-   "required": false,
-   "tag": 1716
-  },
-  {
-   "kind": "field",
-   "name": "UnitOfMeasureCurrencyCodeSource",
-   "required": false,
-   "tag": 2905
-  },
-  {
-   "kind": "field",
-   "name": "PriceUnitOfMeasure",
-   "required": false,
-   "tag": 1191
-  },
-  {
-   "kind": "field",
-   "name": "PriceUnitOfMeasureQty",
-   "required": false,
-   "tag": 1192
-  },
-  {
-   "kind": "field",
-   "name": "PriceUnitOfMeasureCurrency",
-   "required": false,
-   "tag": 1717
-  },
-  {
-   "kind": "field",
-   "name": "PriceUnitOfMeasureCurrencyCodeSource",
-   "required": false,
-   "tag": 2906
-  },
-  {
-   "kind": "field",
-   "name": "SettlMethod",
-   "required": false,
-   "tag": 1193
-  },
-  {
-   "kind": "field",
-   "name": "SettlSubMethod",
-   "required": false,
-   "tag": 2579
-  },
-  {
-   "kind": "field",
-   "name": "ExerciseStyle",
-   "required": false,
-   "tag": 1194
-  },
-  {
-   "kind": "field",
-   "name": "OptPayoutType",
-   "required": false,
-   "tag": 1482
-  },
-  {
-   "kind": "field",
-   "name": "OptPayoutAmount",
-   "required": false,
-   "tag": 1195
-  },
-  {
-   "kind": "field",
-   "name": "ReturnTrigger",
-   "required": false,
-   "tag": 2753
-  },
-  {
-   "kind": "field",
-   "name": "PriceQuoteMethod",
-   "required": false,
-   "tag": 1196
-  },
-  {
-   "kind": "field",
-   "name": "ValuationMethod",
-   "required": false,
-   "tag": 1197
-  },
-  {
-   "kind": "field",
-   "name": "ValuationSource",
-   "required": false,
-   "tag": 2002
-  },
-  {
-   "kind": "field",
-   "name": "ValuationReferenceModel",
-   "required": false,
-   "tag": 2140
-  },
-  {
-   "kind": "field",
-   "name": "PriceQuoteCurrency",
-   "required": false,
-   "tag": 1524
-  },
-  {
-   "kind": "field",
-   "name": "PriceQuoteCurrencyCodeSource",
-   "required": false,
-   "tag": 2907
-  },
-  {
-   "kind": "field",
-   "name": "ListMethod",
-   "required": false,
-   "tag": 1198
-  },
-  {
-   "kind": "field",
-   "name": "CapPrice",
-   "required": false,
-   "tag": 1199
-  },
-  {
-   "kind": "field",
-   "name": "FloorPrice",
-   "required": false,
-   "tag": 1200
-  },
-  {
-   "kind": "field",
-   "name": "PutOrCall",
-   "required": false,
-   "tag": 201
-  },
-  {
-   "kind": "field",
-   "name": "InTheMoneyCondition",
-   "required": false,
-   "tag": 2681
-  },
-  {
-   "kind": "field",
-   "name": "ContraryInstructionEligibilityIndicator",
-   "required": false,
-   "tag": 2685
-  },
-  {
-   "kind": "field",
-   "name": "FlexibleIndicator",
-   "required": false,
-   "tag": 1244
-  },
-  {
-   "kind": "field",
-   "name": "FlexProductEligibilityIndicator",
-   "required": false,
-   "tag": 1242
-  },
-  {
-   "kind": "field",
-   "name": "BlockTradeEligibilityIndicator",
-   "required": false,
-   "tag": 2575
-  },
-  {
-   "kind": "field",
-   "name": "LowExercisePriceOptionIndicator",
-   "required": false,
-   "tag": 2574
-  },
-  {
-   "kind": "field",
-   "name": "TimeUnit",
-   "required": false,
-   "tag": 997
-  },
-  {
-   "kind": "field",
-   "name": "CouponRate",
-   "required": false,
-   "tag": 223
-  },
-  {
-   "kind": "field",
-   "name": "SecurityExchange",
-   "required": false,
-   "tag": 207
-  },
-  {
-   "kind": "field",
-   "name": "PositionLimit",
-   "required": false,
-   "tag": 970
-  },
-  {
-   "kind": "field",
-   "name": "NTPositionLimit",
-   "required": false,
-   "tag": 971
-  },
-  {
-   "kind": "field",
-   "name": "Issuer",
-   "required": false,
-   "tag": 106
-  },
-  {
-   "kind": "field",
-   "name": "EncodedIssuerLen",
-   "required": false,
-   "tag": 348
-  },
-  {
-   "kind": "field",
-   "name": "EncodedIssuer",
-   "required": false,
-   "tag": 349
-  },
-  {
-   "kind": "field",
-   "name": "FinancialInstrumentShortName",
-   "required": false,
-   "tag": 2737
-  },
-  {
-   "kind": "field",
-   "name": "FinancialInstrumentFullName",
-   "required": false,
-   "tag": 2714
-  },
-  {
-   "kind": "field",
-   "name": "EncodedFinancialInstrumentFullNameLen",
-   "required": false,
-   "tag": 2715
-  },
-  {
-   "kind": "field",
-   "name": "EncodedFinancialInstrumentFullName",
-   "required": false,
-   "tag": 2716
-  },
-  {
-   "kind": "field",
-   "name": "SecurityDesc",
-   "required": false,
-   "tag": 107
-  },
-  {
-   "kind": "field",
-   "name": "EncodedSecurityDescLen",
-   "required": false,
-   "tag": 350
-  },
-  {
-   "kind": "field",
-   "name": "EncodedSecurityDesc",
-   "required": false,
-   "tag": 351
-  },
-  {
-   "kind": "component",
-   "name": "SecurityXML",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "Pool",
-   "required": false,
-   "tag": 691
-  },
-  {
-   "kind": "field",
-   "name": "ContractSettlMonth",
-   "required": false,
-   "tag": 667
-  },
-  {
-   "kind": "field",
-   "name": "CPProgram",
-   "required": false,
-   "tag": 875
-  },
-  {
-   "kind": "field",
-   "name": "CPRegType",
-   "required": false,
-   "tag": 876
-  },
-  {
-   "kind": "component",
-   "name": "EvntGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "DatedDate",
-   "required": false,
-   "tag": 873
-  },
-  {
-   "kind": "field",
-   "name": "InterestAccrualDate",
-   "required": false,
-   "tag": 874
-  },
-  {
-   "kind": "component",
-   "name": "InstrumentParties",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "ShortSaleRestriction",
-   "required": false,
-   "tag": 1687
-  },
-  {
-   "kind": "component",
-   "name": "ComplexEvents",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "RefTickTableID",
-   "required": false,
-   "tag": 1787
-  },
-  {
-   "kind": "field",
-   "name": "StrategyType",
-   "required": false,
-   "tag": 2141
-  },
-  {
-   "kind": "field",
-   "name": "CommonPricingIndicator",
-   "required": false,
-   "tag": 2142
-  },
-  {
-   "kind": "field",
-   "name": "SettlDisruptionProvision",
-   "required": false,
-   "tag": 2143
-  },
-  {
-   "kind": "field",
-   "name": "DeliveryRouteOrCharter",
-   "required": false,
-   "tag": 2752
-  },
-  {
-   "kind": "field",
-   "name": "InstrumentRoundingDirection",
-   "required": false,
-   "tag": 2144
-  },
-  {
-   "kind": "field",
-   "name": "InstrumentRoundingPrecision",
-   "required": false,
-   "tag": 2145
-  },
-  {
-   "kind": "field",
-   "name": "InstrumentPricePrecision",
-   "required": false,
-   "tag": 2576
-  },
-  {
-   "kind": "field",
-   "name": "SecurityReferenceDataSupplement",
-   "required": false,
-   "tag": 2962
-  },
-  {
-   "kind": "component",
-   "name": "DateAdjustment",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PricingDateTime",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "MarketDisruption",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "OptionExercise",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "StreamGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "ProvisionGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "AdditionalTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "ProtectionTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "CashSettlTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PhysicalSettlTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "ExtraordinaryEventGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "ExtraordinaryEventAdjustmentMethod",
-   "required": false,
-   "tag": 2602
-  },
-  {
-   "kind": "field",
-   "name": "ExchangeLookAlike",
-   "required": false,
-   "tag": 2603
-  }
- ]
+ "declaration": {
+  "name": "Instrument",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Instrument",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "Symbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "55"
+    }
+   },
+   {
+    "name": "SymbolSfx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "65"
+    }
+   },
+   {
+    "name": "SecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "48"
+    }
+   },
+   {
+    "name": "SecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "22"
+    }
+   },
+   {
+    "name": "SecAltIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecAltIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Product",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "460"
+    }
+   },
+   {
+    "name": "ProductComplex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1227"
+    }
+   },
+   {
+    "name": "SecurityGroup",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1151"
+    }
+   },
+   {
+    "name": "CFICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "461"
+    }
+   },
+   {
+    "name": "UPICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2891"
+    }
+   },
+   {
+    "name": "SecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "167"
+    }
+   },
+   {
+    "name": "SecuritySubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "762"
+    }
+   },
+   {
+    "name": "MaturityMonthYear",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "200"
+    }
+   },
+   {
+    "name": "MaturityDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "541"
+    }
+   },
+   {
+    "name": "MaturityTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1079"
+    }
+   },
+   {
+    "name": "SettleOnOpenFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "966"
+    }
+   },
+   {
+    "name": "InstrmtAssignmentMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1049"
+    }
+   },
+   {
+    "name": "SecurityStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "965"
+    }
+   },
+   {
+    "name": "CouponPaymentDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "224"
+    }
+   },
+   {
+    "name": "RestructuringType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1449"
+    }
+   },
+   {
+    "name": "Seniority",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1450"
+    }
+   },
+   {
+    "name": "NotionalPercentageOutstanding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1451"
+    }
+   },
+   {
+    "name": "OriginalNotionalPercentageOutstanding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1452"
+    }
+   },
+   {
+    "name": "AttachmentPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1457"
+    }
+   },
+   {
+    "name": "DetachmentPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1458"
+    }
+   },
+   {
+    "name": "ObligationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1739"
+    }
+   },
+   {
+    "name": "AssetGroup",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2210"
+    }
+   },
+   {
+    "name": "AssetClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1938"
+    }
+   },
+   {
+    "name": "AssetSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1939"
+    }
+   },
+   {
+    "name": "AssetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1940"
+    }
+   },
+   {
+    "name": "AssetSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2735"
+    }
+   },
+   {
+    "name": "SecondaryAssetGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecondaryAssetGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "AssetAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AssetAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SwapClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1941"
+    }
+   },
+   {
+    "name": "SwapSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1575"
+    }
+   },
+   {
+    "name": "NthToDefault",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1942"
+    }
+   },
+   {
+    "name": "MthToDefault",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1943"
+    }
+   },
+   {
+    "name": "SettledEntityMatrixSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1944"
+    }
+   },
+   {
+    "name": "SettledEntityMatrixPublicationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1945"
+    }
+   },
+   {
+    "name": "CouponType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1946"
+    }
+   },
+   {
+    "name": "TotalIssuedAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1947"
+    }
+   },
+   {
+    "name": "CouponFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1948"
+    }
+   },
+   {
+    "name": "CouponFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1949"
+    }
+   },
+   {
+    "name": "CouponDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1950"
+    }
+   },
+   {
+    "name": "CouponOtherDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2879"
+    }
+   },
+   {
+    "name": "ConvertibleBondEquityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1951"
+    }
+   },
+   {
+    "name": "ConvertibleBondEquityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1952"
+    }
+   },
+   {
+    "name": "ContractPriceRefMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1953"
+    }
+   },
+   {
+    "name": "LienSeniority",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1954"
+    }
+   },
+   {
+    "name": "LoanFacility",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1955"
+    }
+   },
+   {
+    "name": "ReferenceEntityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1956"
+    }
+   },
+   {
+    "name": "IndexSeries",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1957"
+    }
+   },
+   {
+    "name": "IndexAnnexVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1958"
+    }
+   },
+   {
+    "name": "IndexAnnexDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1959"
+    }
+   },
+   {
+    "name": "IndexAnnexSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1960"
+    }
+   },
+   {
+    "name": "SettlRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1577"
+    }
+   },
+   {
+    "name": "SettlRateIndexLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1580"
+    }
+   },
+   {
+    "name": "OptionExpirationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1581"
+    }
+   },
+   {
+    "name": "EncodedOptionExpirationDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1678"
+    }
+   },
+   {
+    "name": "EncodedOptionExpirationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1697"
+    }
+   },
+   {
+    "name": "IssueDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "225"
+    }
+   },
+   {
+    "name": "RepoCollateralSecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "239"
+    }
+   },
+   {
+    "name": "RepurchaseTerm",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "226"
+    }
+   },
+   {
+    "name": "RepurchaseRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "227"
+    }
+   },
+   {
+    "name": "Factor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "228"
+    }
+   },
+   {
+    "name": "CreditRating",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "255"
+    }
+   },
+   {
+    "name": "InstrRegistry",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "543"
+    }
+   },
+   {
+    "name": "CountryOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "470"
+    }
+   },
+   {
+    "name": "StateOrProvinceOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "471"
+    }
+   },
+   {
+    "name": "LocaleOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "472"
+    }
+   },
+   {
+    "name": "RedemptionDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "240"
+    }
+   },
+   {
+    "name": "StrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "202"
+    }
+   },
+   {
+    "name": "OrigStrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2578"
+    }
+   },
+   {
+    "name": "StrikePricePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2577"
+    }
+   },
+   {
+    "name": "StrikeCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "947"
+    }
+   },
+   {
+    "name": "StrikeCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2904"
+    }
+   },
+   {
+    "name": "StrikeMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "967"
+    }
+   },
+   {
+    "name": "StrikeValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "968"
+    }
+   },
+   {
+    "name": "StrikeUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1698"
+    }
+   },
+   {
+    "name": "StrikeIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1866"
+    }
+   },
+   {
+    "name": "StrikeIndexCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2600"
+    }
+   },
+   {
+    "name": "StrikeIndexSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2001"
+    }
+   },
+   {
+    "name": "StrikeIndexQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2601"
+    }
+   },
+   {
+    "name": "StrikePriceDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1478"
+    }
+   },
+   {
+    "name": "StrikePriceBoundaryMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1479"
+    }
+   },
+   {
+    "name": "StrikePriceBoundaryPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1480"
+    }
+   },
+   {
+    "name": "UnderlyingPriceDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1481"
+    }
+   },
+   {
+    "name": "OptAttribute",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "206"
+    }
+   },
+   {
+    "name": "ContractMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "231"
+    }
+   },
+   {
+    "name": "ContractMultiplierUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1435"
+    }
+   },
+   {
+    "name": "TradingUnitPeriodMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2353"
+    }
+   },
+   {
+    "name": "FlowScheduleType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1439"
+    }
+   },
+   {
+    "name": "MinPriceIncrement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "969"
+    }
+   },
+   {
+    "name": "MinPriceIncrementAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1146"
+    }
+   },
+   {
+    "name": "UnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "996"
+    }
+   },
+   {
+    "name": "UnitOfMeasureQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1147"
+    }
+   },
+   {
+    "name": "UnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1716"
+    }
+   },
+   {
+    "name": "UnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2905"
+    }
+   },
+   {
+    "name": "PriceUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1191"
+    }
+   },
+   {
+    "name": "PriceUnitOfMeasureQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1192"
+    }
+   },
+   {
+    "name": "PriceUnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1717"
+    }
+   },
+   {
+    "name": "PriceUnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2906"
+    }
+   },
+   {
+    "name": "SettlMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1193"
+    }
+   },
+   {
+    "name": "SettlSubMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2579"
+    }
+   },
+   {
+    "name": "ExerciseStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1194"
+    }
+   },
+   {
+    "name": "OptPayoutType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1482"
+    }
+   },
+   {
+    "name": "OptPayoutAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1195"
+    }
+   },
+   {
+    "name": "ReturnTrigger",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2753"
+    }
+   },
+   {
+    "name": "PriceQuoteMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1196"
+    }
+   },
+   {
+    "name": "ValuationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1197"
+    }
+   },
+   {
+    "name": "ValuationSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2002"
+    }
+   },
+   {
+    "name": "ValuationReferenceModel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2140"
+    }
+   },
+   {
+    "name": "PriceQuoteCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1524"
+    }
+   },
+   {
+    "name": "PriceQuoteCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2907"
+    }
+   },
+   {
+    "name": "ListMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1198"
+    }
+   },
+   {
+    "name": "CapPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1199"
+    }
+   },
+   {
+    "name": "FloorPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1200"
+    }
+   },
+   {
+    "name": "PutOrCall",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "201"
+    }
+   },
+   {
+    "name": "InTheMoneyCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2681"
+    }
+   },
+   {
+    "name": "ContraryInstructionEligibilityIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2685"
+    }
+   },
+   {
+    "name": "FlexibleIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1244"
+    }
+   },
+   {
+    "name": "FlexProductEligibilityIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1242"
+    }
+   },
+   {
+    "name": "BlockTradeEligibilityIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2575"
+    }
+   },
+   {
+    "name": "LowExercisePriceOptionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2574"
+    }
+   },
+   {
+    "name": "TimeUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "997"
+    }
+   },
+   {
+    "name": "CouponRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "223"
+    }
+   },
+   {
+    "name": "SecurityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "207"
+    }
+   },
+   {
+    "name": "PositionLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "970"
+    }
+   },
+   {
+    "name": "NTPositionLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "971"
+    }
+   },
+   {
+    "name": "Issuer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "106"
+    }
+   },
+   {
+    "name": "EncodedIssuerLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "348"
+    }
+   },
+   {
+    "name": "EncodedIssuer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "349"
+    }
+   },
+   {
+    "name": "FinancialInstrumentShortName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2737"
+    }
+   },
+   {
+    "name": "FinancialInstrumentFullName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2714"
+    }
+   },
+   {
+    "name": "EncodedFinancialInstrumentFullNameLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2715"
+    }
+   },
+   {
+    "name": "EncodedFinancialInstrumentFullName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2716"
+    }
+   },
+   {
+    "name": "SecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "107"
+    }
+   },
+   {
+    "name": "EncodedSecurityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "350"
+    }
+   },
+   {
+    "name": "EncodedSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "351"
+    }
+   },
+   {
+    "name": "SecurityXML",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SecurityXML"
+    },
+    "fields": []
+   },
+   {
+    "name": "Pool",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "691"
+    }
+   },
+   {
+    "name": "ContractSettlMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "667"
+    }
+   },
+   {
+    "name": "CPProgram",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "875"
+    }
+   },
+   {
+    "name": "CPRegType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "876"
+    }
+   },
+   {
+    "name": "EvntGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "EvntGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "DatedDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "873"
+    }
+   },
+   {
+    "name": "InterestAccrualDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "874"
+    }
+   },
+   {
+    "name": "InstrumentParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ShortSaleRestriction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1687"
+    }
+   },
+   {
+    "name": "ComplexEvents",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEvents"
+    },
+    "fields": []
+   },
+   {
+    "name": "RefTickTableID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1787"
+    }
+   },
+   {
+    "name": "StrategyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2141"
+    }
+   },
+   {
+    "name": "CommonPricingIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2142"
+    }
+   },
+   {
+    "name": "SettlDisruptionProvision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2143"
+    }
+   },
+   {
+    "name": "DeliveryRouteOrCharter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2752"
+    }
+   },
+   {
+    "name": "InstrumentRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2144"
+    }
+   },
+   {
+    "name": "InstrumentRoundingPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2145"
+    }
+   },
+   {
+    "name": "InstrumentPricePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2576"
+    }
+   },
+   {
+    "name": "SecurityReferenceDataSupplement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2962"
+    }
+   },
+   {
+    "name": "DateAdjustment",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DateAdjustment"
+    },
+    "fields": []
+   },
+   {
+    "name": "PricingDateTime",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PricingDateTime"
+    },
+    "fields": []
+   },
+   {
+    "name": "MarketDisruption",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "MarketDisruption"
+    },
+    "fields": []
+   },
+   {
+    "name": "OptionExercise",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "OptionExercise"
+    },
+    "fields": []
+   },
+   {
+    "name": "StreamGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "StreamGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ProvisionGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ProvisionGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "AdditionalTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AdditionalTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ProtectionTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ProtectionTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CashSettlTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "CashSettlTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PhysicalSettlTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PhysicalSettlTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExtraordinaryEventGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ExtraordinaryEventGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ExtraordinaryEventAdjustmentMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2602"
+    }
+   },
+   {
+    "name": "ExchangeLookAlike",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2603"
+    }
+   }
+  ]
+ }
 }

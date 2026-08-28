@@ -3,78 +3,119 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyRiskLimits",
-   "required": false,
-   "tag": 1677,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ListUpdateAction",
-     "required": false,
-     "tag": 1324
+ "declaration": {
+  "name": "PartyRiskLimitsAckGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitsAckGrp",
+   "msgtypes": "[\"PartyRiskLimitsDefinitionRequestAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartyRiskLimits",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1677"
     },
-    {
-     "kind": "field",
-     "name": "RiskLimitStatus",
-     "required": false,
-     "tag": 1763
-    },
-    {
-     "kind": "field",
-     "name": "RiskLimitResult",
-     "required": false,
-     "tag": 1764
-    },
-    {
-     "kind": "component",
-     "name": "PartyDetailGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "RiskLimitsGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "RiskLimitID",
-     "required": false,
-     "tag": 1670
-    },
-    {
-     "kind": "field",
-     "name": "RiskLimitCheckModelType",
-     "required": false,
-     "tag": 2339
-    },
-    {
-     "kind": "field",
-     "name": "RejectText",
-     "required": false,
-     "tag": 1328
-    },
-    {
-     "kind": "field",
-     "name": "EncodedRejectTextLen",
-     "required": false,
-     "tag": 1664
-    },
-    {
-     "kind": "field",
-     "name": "EncodedRejectText",
-     "required": false,
-     "tag": 1665
-    },
-    {
-     "kind": "field",
-     "name": "PartyRiskLimitStatus",
-     "required": false,
-     "tag": 2355
+    "item": {
+     "name": "PartyRiskLimit",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
+      },
+      {
+       "name": "RiskLimitStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1763"
+       }
+      },
+      {
+       "name": "RiskLimitResult",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1764"
+       }
+      },
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RiskLimitsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RiskLimitsGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RiskLimitID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1670"
+       }
+      },
+      {
+       "name": "RiskLimitCheckModelType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2339"
+       }
+      },
+      {
+       "name": "RejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1328"
+       }
+      },
+      {
+       "name": "EncodedRejectTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1664"
+       }
+      },
+      {
+       "name": "EncodedRejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1665"
+       }
+      },
+      {
+       "name": "PartyRiskLimitStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

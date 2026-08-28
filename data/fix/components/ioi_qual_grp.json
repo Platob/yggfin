@@ -6,20 +6,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoIOIQualifiers",
-   "required": false,
-   "tag": 199,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "IOIQualGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "IOIQualGrp",
+   "msgtypes": "[\"IOI\"]"
+  },
+  "fields": [
+   {
+    "name": "NoIOIQualifiers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "199"
+    },
+    "item": {
      "name": "IOIQualifier",
-     "required": false,
-     "tag": 104
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IOIQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "104"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

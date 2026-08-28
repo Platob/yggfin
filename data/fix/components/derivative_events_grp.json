@@ -4,44 +4,69 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDerivativeEvents",
-   "required": false,
-   "tag": 1286,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeEventType",
-     "required": false,
-     "tag": 1287
+ "declaration": {
+  "name": "DerivativeEventsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeEventsGrp",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoDerivativeEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1286"
     },
-    {
-     "kind": "field",
-     "name": "DerivativeEventDate",
-     "required": false,
-     "tag": 1288
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEventTime",
-     "required": false,
-     "tag": 1289
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEventPx",
-     "required": false,
-     "tag": 1290
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEventText",
-     "required": false,
-     "tag": 1291
+    "item": {
+     "name": "DerivativeEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1287"
+       }
+      },
+      {
+       "name": "DerivativeEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1288"
+       }
+      },
+      {
+       "name": "DerivativeEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1289"
+       }
+      },
+      {
+       "name": "DerivativeEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1290"
+       }
+      },
+      {
+       "name": "DerivativeEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1291"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

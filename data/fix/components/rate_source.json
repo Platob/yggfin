@@ -3,44 +3,69 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRateSources",
-   "required": false,
-   "tag": 1445,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "RateSource",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RateSource",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationReport\",\"ExecutionReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteRequest\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1445"
+    },
+    "item": {
      "name": "RateSource",
-     "required": false,
-     "tag": 1446
-    },
-    {
-     "kind": "field",
-     "name": "RateSourceType",
-     "required": false,
-     "tag": 1447
-    },
-    {
-     "kind": "field",
-     "name": "ReferencePage",
-     "required": false,
-     "tag": 1448
-    },
-    {
-     "kind": "field",
-     "name": "RateSourceReferemcePageHeading",
-     "required": false,
-     "tag": 2412
-    },
-    {
-     "kind": "field",
-     "name": "FXBenchmarkRateFix",
-     "required": false,
-     "tag": 2796
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1446"
+       }
+      },
+      {
+       "name": "RateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1447"
+       }
+      },
+      {
+       "name": "ReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1448"
+       }
+      },
+      {
+       "name": "RateSourceReferemcePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2412"
+       }
+      },
+      {
+       "name": "FXBenchmarkRateFix",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2796"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

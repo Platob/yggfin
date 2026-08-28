@@ -6,30 +6,55 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegs",
-   "required": false,
-   "tag": 555,
-   "members": [
-    {
-     "kind": "component",
-     "name": "InstrumentLeg",
-     "required": false
+ "declaration": {
+  "name": "InstrmtLegIOIGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrmtLegIOIGrp",
+   "msgtypes": "[\"IOI\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "555"
     },
-    {
-     "kind": "field",
-     "name": "LegIOIQty",
-     "required": false,
-     "tag": 682
-    },
-    {
-     "kind": "component",
-     "name": "LegStipulations",
-     "required": false
+    "item": {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegIOIQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "682"
+       }
+      },
+      {
+       "name": "LegStipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStipulations"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

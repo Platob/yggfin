@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoContractualMatrices",
-   "required": false,
-   "tag": 40042,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ContractualMatrixSource",
-     "required": false,
-     "tag": 40043
+ "declaration": {
+  "name": "FinancingContractualMatrixGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FinancingContractualMatrixGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"Email\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderStatusRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoContractualMatrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40042"
     },
-    {
-     "kind": "field",
-     "name": "ContractualMatrixDate",
-     "required": false,
-     "tag": 40044
-    },
-    {
-     "kind": "field",
-     "name": "ContractualMatrixTerm",
-     "required": false,
-     "tag": 40045
+    "item": {
+     "name": "ContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40043"
+       }
+      },
+      {
+       "name": "ContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40044"
+       }
+      },
+      {
+       "name": "ContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40045"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

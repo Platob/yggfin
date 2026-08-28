@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMandatoryClearingJurisdictions",
-   "required": false,
-   "tag": 41312,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "MandatoryClearingJurisdictionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MandatoryClearingJurisdictionGrp",
+   "msgtypes": "[\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMandatoryClearingJurisdictions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41312"
+    },
+    "item": {
      "name": "MandatoryClearingJurisdiction",
-     "required": false,
-     "tag": 41313
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MandatoryClearingJurisdiction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41313"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

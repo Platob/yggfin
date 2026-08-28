@@ -5,38 +5,61 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingAmounts",
-   "required": false,
-   "tag": 984,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPayAmount",
-     "required": false,
-     "tag": 985
+ "declaration": {
+  "name": "UnderlyingAmount",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingAmount",
+   "msgtypes": "[\"PositionReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingAmounts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "984"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingCollectAmount",
-     "required": false,
-     "tag": 986
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlementDate",
-     "required": false,
-     "tag": 987
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlementStatus",
-     "required": false,
-     "tag": 988
+    "item": {
+     "name": "UnderlyingAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPayAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "985"
+       }
+      },
+      {
+       "name": "UnderlyingCollectAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "986"
+       }
+      },
+      {
+       "name": "UnderlyingSettlementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "987"
+       }
+      },
+      {
+       "name": "UnderlyingSettlementStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "988"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

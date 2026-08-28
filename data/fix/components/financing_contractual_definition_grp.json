@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoContractualDefinitions",
-   "required": false,
-   "tag": 40040,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "FinancingContractualDefinitionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FinancingContractualDefinitionGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"Email\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderStatusRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoContractualDefinitions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40040"
+    },
+    "item": {
      "name": "ContractualDefinition",
-     "required": false,
-     "tag": 40041
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40041"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

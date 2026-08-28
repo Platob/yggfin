@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoValueChecks",
-   "required": false,
-   "tag": 1868,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ValueCheckType",
-     "required": false,
-     "tag": 1869
+ "declaration": {
+  "name": "ValueChecksGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ValueChecksGrp",
+   "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\"]"
+  },
+  "fields": [
+   {
+    "name": "NoValueChecks",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1868"
     },
-    {
-     "kind": "field",
-     "name": "ValueCheckAction",
-     "required": false,
-     "tag": 1870
+    "item": {
+     "name": "ValueCheck",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ValueCheckType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1869"
+       }
+      },
+      {
+       "name": "ValueCheckAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1870"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

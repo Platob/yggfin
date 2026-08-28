@@ -1,0 +1,188 @@
+{
+ "name": "TradeCaptureReportRequestAck",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "TradeCaptureReportRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeCaptureReportRequestAck",
+   "msgtype": "AQ"
+  },
+  "fields": [
+   {
+    "name": "TradeRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "568"
+    }
+   },
+   {
+    "name": "TradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1003"
+    }
+   },
+   {
+    "name": "SecondaryTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1040"
+    }
+   },
+   {
+    "name": "FirmTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1041"
+    }
+   },
+   {
+    "name": "SecondaryFirmTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1042"
+    }
+   },
+   {
+    "name": "TradeRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "569"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "TotNumTradeReports",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "748"
+    }
+   },
+   {
+    "name": "TradeRequestResult",
+    "type": "string",
+    "fix": {
+     "tag": "749"
+    }
+   },
+   {
+    "name": "TradeRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "750"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "InstrmtLegGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrmtLegGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "MultiLegReportingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "442"
+    }
+   },
+   {
+    "name": "ResponseTransportType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "725"
+    }
+   },
+   {
+    "name": "ResponseDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "726"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "MessageEventSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1011"
+    }
+   }
+  ]
+ }
+}

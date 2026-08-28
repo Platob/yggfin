@@ -5,34 +5,34 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
-import json
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, Self
 
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.enums import Ranged
-from rekep.enums.ranged import _AsciiInt32
-from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
+from rekep.enums import Ascii32
+from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
-
-#: The prefix the enum keys ride under, like `fix:` and `iceberg:`.
-ENUM = "enum"
+from rekep.market.identity import ROW_SPELLED, read_member, stored_member
 
 
 class MarketFieldBuilder(FieldBuilder):
     """`FieldBuilder` with the four rules market declarations add."""
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
-        """Market integer codes are `int32`; other scalars use the base answer.
+        """Market codes store their declared width; other scalars use the base.
 
-        Checked first because the base sees an `IntEnum` as Python `int64`.
+        An ASCII code's storage is the index type of its cached dictionary
+        type, so the width one declaration states is the width every column
+        carries. Checked first because the base sees an `IntEnum` as Python
+        `int64`.
         """
-        if isinstance(annotation, type) and issubclass(annotation, (Ranged, _AsciiInt32)):
-            return pyarrow.int32()
+        if isinstance(annotation, type) and issubclass(annotation, Ascii32):
+            return annotation.into_arrow_type().index_type
         return super().scalar(annotation)
 
-    def data_type(self, annotation: Any) -> pyarrow.DataType:
+    def arrow_type(self, annotation: Any) -> pyarrow.DataType:
         """A member's type, with the keys stripped from anything nested inside it.
 
         Only members reach here -- a class projected as a whole goes through
@@ -41,8 +41,8 @@ class MarketFieldBuilder(FieldBuilder):
         """
         single = single_member(annotation)
         if single is not None:
-            return Newtype(self.data_type(single[1]), single[0])
-        return unkeyed(super().data_type(annotation))
+            return Newtype(self.arrow_type(single[1]), single[0])
+        return unkeyed(super().arrow_type(annotation))
 
     def field(self, name: str, annotation: Any, *, description: str | None = None) -> Field:
         """One member, with what its enum means written into the schema beside it."""
@@ -50,7 +50,7 @@ class MarketFieldBuilder(FieldBuilder):
         declared = enum_of(annotation)
         if declared is not None:
             describe_enum(built, declared)
-        if isinstance(declared, type) and issubclass(declared, _AsciiInt32):
+        if isinstance(declared, type) and issubclass(declared, Ascii32):
             built.protocol(ENUM).update(declared.schema_metadata())
         return built
 
@@ -73,8 +73,36 @@ class MarketConvertible(Convertible):
         return tuple(
             member.name
             for member in cls.into_field().fields
-            if pyarrow.types.is_floating(member.arrow_type)
+            if pyarrow.types.is_floating(member.dtype)
         )
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
+        """Read either spelling: a document's integers or a row's stored bytes."""
+        return Convertible.from_dict.__func__(
+            cls, {name: read_member(name, value) for name, value in mapping.items()}
+        )
+
+    #: One member as its column holds it, for the builder that assembles a
+    #: batch member by member. Only the spelling is asked here: `stored_member`
+    #: answers for the identity members wherever they appear, and the builder
+    #: walks a nested shape itself rather than being handed a document of it.
+    into_column_value = staticmethod(stored_member)
+
+    def into_row(self) -> dict[str, Any]:
+        """This value as a stored row: every member as the column holds it.
+
+        Read off the live members rather than off `into_dict`, because the two
+        spellings differ: a document renders a date as text and an identifier
+        as a number, while a column wants the date and the sixteen bytes.
+        Nested values convert through their own `into_row`, so a book's orders
+        and levels follow -- and a plain map of codes does not, however its
+        keys are spelled. `from_dict` reads either spelling back.
+        """
+        return {
+            member.name: _row_value(member.name, getattr(self, member.name))
+            for member in dataclasses.fields(self)
+        }
 
     def normalize_float_members(self) -> None:
         """Canonicalise numeric inputs before identity bytes are derived."""
@@ -84,31 +112,47 @@ class MarketConvertible(Convertible):
                 setattr(self, name, float(value))
 
 
+def _row_value(name: str, value: Any) -> Any:
+    """One member as a column holds it, recursing through declared shapes."""
+    if value is None or name in ROW_SPELLED:
+        return stored_member(name, value)
+    if isinstance(value, MarketConvertible):
+        return value.into_row()
+    if isinstance(value, Convertible):
+        return value.into_dict()
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {
+            member.name: _row_value(member.name, getattr(value, member.name))
+            for member in dataclasses.fields(value)
+        }
+    if isinstance(value, list | tuple):
+        return [_row_value(name, one) for one in value]
+    return value
+
+
 def fix_tag(name: str, **declared: Any) -> Field:
     """A model annotation backed by the packaged FIX registry."""
-    registry = FixRegistry.from_builtin().scalar(name, arrow_type=None)
+    registry = FixRegistry.from_builtin().scalar(name, dtype=None)
     return registry.merge(Field(**declared))
 
 
-def unkeyed(arrow_type: pyarrow.DataType) -> pyarrow.DataType:
-    """`arrow_type` with every nested primary and partition key declaration dropped."""
+def unkeyed(dtype: pyarrow.DataType) -> pyarrow.DataType:
+    """`dtype` with every nested primary and partition key declaration dropped."""
     kinds = pyarrow.types
-    if kinds.is_struct(arrow_type):
-        return pyarrow.struct(
-            [_unkeyed(arrow_type.field(index)) for index in range(arrow_type.num_fields)]
-        )
-    if kinds.is_map(arrow_type):
+    if kinds.is_struct(dtype):
+        return pyarrow.struct([_unkeyed(dtype.field(index)) for index in range(dtype.num_fields)])
+    if kinds.is_map(dtype):
         return pyarrow.map_(
-            _unkeyed(arrow_type.key_field),
-            _unkeyed(arrow_type.item_field),
-            keys_sorted=arrow_type.keys_sorted,
+            _unkeyed(dtype.key_field),
+            _unkeyed(dtype.item_field),
+            keys_sorted=dtype.keys_sorted,
         )
-    if kinds.is_fixed_size_list(arrow_type):
-        return pyarrow.list_(_unkeyed(arrow_type.field(0)), arrow_type.list_size)
+    if kinds.is_fixed_size_list(dtype):
+        return pyarrow.list_(_unkeyed(dtype.field(0)), dtype.list_size)
     for matches, build in _LISTS:
-        if matches(arrow_type):
-            return build(_unkeyed(arrow_type.field(0)))
-    return arrow_type
+        if matches(dtype):
+            return build(_unkeyed(dtype.field(0)))
+    return dtype
 
 
 # -- helpers ----------------------------------------------------------------
@@ -187,22 +231,20 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     """Write what `declared`'s codes mean into `built`'s metadata."""
     values = {member.name: member.value for member in declared}
     kinds = {type(value) for value in values.values()}
-    keys = built.protocol(ENUM)
-    keys["name"] = declared.__name__
-    keys["key_type"] = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
-    keys["value_type"] = "utf8"
-    keys["values"] = json.dumps(
-        {str(value): name for name, value in values.items()}, separators=(",", ":")
-    )
+    keys = built.enum
+    keys.name = declared.__name__
+    if isinstance(declared, type) and issubclass(declared, Ascii32):
+        keys.key_type = str(declared.into_arrow_type().index_type)
+    else:
+        keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
+    keys.value_type = "utf8"
+    keys.members = {str(value): name for name, value in values.items()}
     mapping = getattr(declared, "fix_mapping", None)
     if mapping is not None:
-        keys["fix_values"] = json.dumps(
-            {
-                str(tag): {wire: int(member) for wire, member in values.items()}
-                for tag, values in mapping().items()
-            },
-            separators=(",", ":"),
-        )
+        keys.fix_values = {
+            str(tag): {wire: int(member) for wire, member in values.items()}
+            for tag, values in mapping().items()
+        }
 
 
 def dictionary_arrow(array: Any, target: pyarrow.DataType) -> Any:
@@ -228,16 +270,30 @@ def dictionary_arrow(array: Any, target: pyarrow.DataType) -> Any:
     return array.cast(target.value_type, safe=False).dictionary_encode().cast(target, safe=False)
 
 
+#: How far the identity fallback will go before it is certain the indices are
+#: not positions. A dictionary of more entries than this is never what a
+#: caller meant -- a packed ASCII code would ask for millions.
+_IDENTITY_LIMIT = 1 << 16
+
+
 def _values_of(indices: Any, target: pyarrow.DataType) -> Any:
     """The dictionary an array of bare indices points into.
 
-    There is nothing to look them up in, so the dictionary is the indices'
-    own range: index `i` means value `i`, which is exactly true for a `Ranged`
-    code stored as itself and is the only reading that loses nothing. Built
-    with `cumulative_sum` over `repeat`, never a Python `range`.
+    A fallback for the one case with nothing better: the array arrived as
+    indices alone, with no dictionary to look them up in, so all that is left
+    is the identity mapping -- index `i` means value `i`. It asserts nothing
+    about what those codes mean; a caller that holds the real dictionary
+    should encode against that instead. Built with `cumulative_sum` over
+    `repeat`, never a Python `range`.
     """
     compute = pyarrow.compute
     highest = compute.max(indices).as_py()
     size = 0 if highest is None else int(highest) + 1
+    if size > _IDENTITY_LIMIT:
+        raise ValueError(
+            f"cannot encode {size:,} identity dictionary entries: these indices are "
+            "values in their own right, not positions. Encode against the dictionary "
+            "that spells them -- a stable code's is `EnumName.into_arrow_array`."
+        )
     counted = compute.cumulative_sum(pyarrow.repeat(pyarrow.scalar(1, pyarrow.int64()), size))
     return compute.subtract(counted, 1).cast(target.value_type, safe=False)

@@ -5,151 +5,212 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTradingSessions",
-   "required": false,
-   "tag": 386,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TradingSessionID",
-     "required": true,
-     "tag": 336
+ "declaration": {
+  "name": "TrdSessLstGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TrdSessLstGrp",
+   "msgtypes": "[\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTradingSessions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "386"
     },
-    {
-     "kind": "field",
-     "name": "TradingSessionSubID",
-     "required": false,
-     "tag": 625
-    },
-    {
-     "kind": "field",
-     "name": "TradSesUpdateAction",
-     "required": false,
-     "tag": 1327
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "MarketID",
-     "required": false,
-     "tag": 1301
-    },
-    {
-     "kind": "field",
-     "name": "MarketSegmentID",
-     "required": false,
-     "tag": 1300
-    },
-    {
-     "kind": "field",
-     "name": "TradingSessionDesc",
-     "required": false,
-     "tag": 1326
-    },
-    {
-     "kind": "field",
-     "name": "TradSesMethod",
-     "required": false,
-     "tag": 338
-    },
-    {
-     "kind": "field",
-     "name": "TradSesMode",
-     "required": false,
-     "tag": 339
-    },
-    {
-     "kind": "field",
-     "name": "UnsolicitedIndicator",
-     "required": false,
-     "tag": 325
-    },
-    {
-     "kind": "field",
-     "name": "TradSesStatus",
-     "required": true,
-     "tag": 340
-    },
-    {
-     "kind": "field",
-     "name": "TradSesStatusRejReason",
-     "required": false,
-     "tag": 567
-    },
-    {
-     "kind": "field",
-     "name": "TradSesStartTime",
-     "required": false,
-     "tag": 341
-    },
-    {
-     "kind": "field",
-     "name": "TradSesOpenTime",
-     "required": false,
-     "tag": 342
-    },
-    {
-     "kind": "field",
-     "name": "TradSesPreCloseTime",
-     "required": false,
-     "tag": 343
-    },
-    {
-     "kind": "field",
-     "name": "TradSesCloseTime",
-     "required": false,
-     "tag": 344
-    },
-    {
-     "kind": "field",
-     "name": "TradSesEndTime",
-     "required": false,
-     "tag": 345
-    },
-    {
-     "kind": "field",
-     "name": "TotalVolumeTraded",
-     "required": false,
-     "tag": 387
-    },
-    {
-     "kind": "component",
-     "name": "TradingSessionRules",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TransactTime",
-     "required": false,
-     "tag": 60
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "name": "TradingSession",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      },
+      {
+       "name": "TradSesUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1327"
+       }
+      },
+      {
+       "name": "SecurityExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "207"
+       }
+      },
+      {
+       "name": "MarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1301"
+       }
+      },
+      {
+       "name": "MarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1300"
+       }
+      },
+      {
+       "name": "TradingSessionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1326"
+       }
+      },
+      {
+       "name": "TradSesMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "338"
+       }
+      },
+      {
+       "name": "TradSesMode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "339"
+       }
+      },
+      {
+       "name": "UnsolicitedIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "325"
+       }
+      },
+      {
+       "name": "TradSesStatus",
+       "type": "string",
+       "fix": {
+        "tag": "340"
+       }
+      },
+      {
+       "name": "TradSesStatusRejReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "567"
+       }
+      },
+      {
+       "name": "TradSesStartTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "341"
+       }
+      },
+      {
+       "name": "TradSesOpenTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "342"
+       }
+      },
+      {
+       "name": "TradSesPreCloseTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "343"
+       }
+      },
+      {
+       "name": "TradSesCloseTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "344"
+       }
+      },
+      {
+       "name": "TradSesEndTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "345"
+       }
+      },
+      {
+       "name": "TotalVolumeTraded",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "387"
+       }
+      },
+      {
+       "name": "TradingSessionRules",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TradingSessionRules"
+       },
+       "fields": []
+      },
+      {
+       "name": "TransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "60"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

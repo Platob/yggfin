@@ -65,11 +65,13 @@ Measured 2026-08-27 on the same machine and versions as above, over
 `bench_text_file.py`'s mixed capture -- 100,000 rows at 60% OTHER, 25% FIX,
 15% UL, in batches of 65,536 -- with everything warm: the text stage reads
 about 68,000 rows/s, the FIX stage about 50,000 rows/s, and the two together
-about 29,000 rows/s. Directional figures, like everything on this page, and
-recorded with their profiles because three optimization proposals were parked
-pending exactly this measurement:
+about 29,000 rows/s.
 
-- **The text stage is its tokenizer.** `Kwarg.parse_arrow` is roughly three
+Directional figures, like everything on this page, and recorded with their
+profiles because three optimization proposals were parked pending exactly this
+measurement:
+
+- **The text stage is its tokenizer.** `Entry.parse_arrow` is roughly three
   quarters of `Message.parse_arrow`; the classification probes
   (`_msg_type_probe`, `looks_structured_arrow`) are about a seventh.
   Collapsing the probe scans into one combined extraction -- proposed as a
@@ -96,38 +98,43 @@ pending exactly this measurement:
   not against this fixture.
 
 Reproduce with `bench_text_file.capture` and `cProfile` over
-`Message.parse_arrow` and `FixMsg.from_message_arrow_batch` separately, warm.
+`Message.parse_arrow` and `FixMsg.from_message_batch` separately, warm.
 
 Collapsing each rule's pattern list into one alternation nearly doubled
 classification on its own: 1.9x on `Rules.into_arrow_protocol_array` over the
 same 65,536-row mixed batch (571,000 to 1,076,000 rows/s), measured
 interleaved against the pre-change module on one machine in one process, with
-the protocol answers asserted identical first. Direction resolution was
-unchanged. That is more than the 1.53x a position-based combined pass
-measured on real captures, and it kept first-configured-rule-wins.
+the protocol answers asserted identical first.
+
+Direction resolution was unchanged. That is more than the 1.53x a
+position-based combined pass measured on real captures, and it kept
+first-configured-rule-wins.
 
 A same-day rerun of every parsing benchmark's quick mode read 10-30% below
 the table above across the board -- including paths no change has touched
-since, such as the per-line header loop and `_tag_numbers` -- which is what
-host variance looks like against what a regression looks like: a controlled
-interleaved A/B on the changed path, in one process, moved the other way.
-Every benchmark's own vector-against-scalar assertion held.
+since, such as the per-line header loop and `_tag_numbers`.
+
+That is what host variance looks like against what a regression looks like: a
+controlled interleaved A/B on the changed path, in one process, moved the
+other way. Every benchmark's own vector-against-scalar assertion held.
 
 A key column is read through its **distinct** spellings, not its rows. A
 message keys its fields out of a bounded vocabulary, so a batch of a hundred
 thousand entries carries a few dozen spellings, and every scan of them --
 `FixCodec.structure`, `TagIndex.resolve_with_match`, `_tag_numbers` -- runs
-over the column's dictionary and is taken back across the entries. On a
-captured batch that is 10x for the structuration of a wire message, 18x for a
-bridge one, and 25x for resolving a bridge one's names. `_tag_numbers` is now
-the fastest of the four implementations `bench_text_file.py` races it against,
-ahead of a bare `pyarrow.compute.index_in` over the same keys.
+over the column's dictionary and is taken back across the entries.
+
+On a captured batch that is 10x for the structuration of a wire message, 18x
+for a bridge one, and 25x for resolving a bridge one's names. `_tag_numbers`
+is now the fastest of the four implementations `bench_text_file.py` races it
+against, ahead of a bare `pyarrow.compute.index_in` over the same keys.
 
 The one row-at-a-time loop the parser has left -- the per-line header match --
 is raced there too, and wins: 798,965 lines/s against 419,462 for one RE2 pass
 with the continuations numbered by a cumulative sum and joined by a group-by.
+
 RE2 walks an alternation of three timestamp shapes over every byte of the
-capture where the loop stops at the first character of a line that is not a
+capture, where the loop stops at the first character of a line that is not a
 header.
 
 Everything a translation needs from a dictionary -- a name's wire tag, the tags
@@ -144,10 +151,11 @@ the message once and translates it.
 
 A changed bid rebuilds only bid levels and bid summaries; ask values are
 carried from the preceding Book before cross-side prices are derived, and the
-same applies in the other direction. Book identity includes every ordered live
-Order hash, so dense-book throughput also measures that required linear
-identity input; duplicate-event shortcuts avoid the walk when no Book is
-emitted.
+same applies in the other direction.
+
+Book identity includes every ordered live Order hash, so dense-book throughput
+also measures that required linear identity input; duplicate-event shortcuts
+avoid the walk when no Book is emitted.
 
 The [notebook smoke run](../pipeline/operations/run.md) exercises all six jobs, all three
 log routes, registry-backed instrument enrichment, book recovery rows,

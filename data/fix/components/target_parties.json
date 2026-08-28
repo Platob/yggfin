@@ -3,43 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTargetPartyIDs",
-   "required": false,
-   "tag": 1461,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "TargetParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TargetParties",
+   "msgtypes": "[\"ExecutionReport\",\"MassQuoteAck\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"QuoteCancel\",\"QuoteStatusReport\",\"QuoteStatusRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTargetPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1461"
+    },
+    "item": {
      "name": "TargetPartyID",
-     "required": false,
-     "tag": 1462
-    },
-    {
-     "kind": "field",
-     "name": "TargetPartyIDSource",
-     "required": false,
-     "tag": 1463
-    },
-    {
-     "kind": "field",
-     "name": "TargetPartyRole",
-     "required": false,
-     "tag": 1464
-    },
-    {
-     "kind": "field",
-     "name": "TargetPartyRoleQualifier",
-     "required": false,
-     "tag": 1818
-    },
-    {
-     "kind": "component",
-     "name": "TargetPtysSubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1462"
+       }
+      },
+      {
+       "name": "TargetPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1463"
+       }
+      },
+      {
+       "name": "TargetPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1464"
+       }
+      },
+      {
+       "name": "TargetPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1818"
+       }
+      },
+      {
+       "name": "TargetPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TargetPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

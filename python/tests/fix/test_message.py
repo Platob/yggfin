@@ -17,7 +17,7 @@ from rekep.fix import (
     rendered_keys,
     tag_arrow_array,
 )
-from rekep.fix.message import _TAG_PROBE, _Names
+from rekep.fix.message import _TAG_PROBE, _Names, group_segment_pairs
 
 PIPE = "8=FIX.4.2|9=2058|35=8|49=BRK|54=1|58=hello world|10=045"
 SOHED = PIPE.replace("|", SOH)
@@ -66,8 +66,11 @@ def test_tag_18_never_reads_as_a_beginstring() -> None:
 @pytest.mark.parametrize("line", [PIPE, SOHED, CARET])
 def test_the_two_spellings_parse_identically(line: str) -> None:
     parsed = FixMsg.from_text(line)
+
     assert _raw(parsed, 8).startswith("FIX")
-    assert _raw(parsed, 9) in {"2058", "100"}
+    # A lifted header field answers from its column, and `BodyLength` is a
+    # number there: the raw stage keeps the text, this stage keeps the reading.
+    assert _raw(parsed, 9) in {2058, 100}
 
 
 def test_the_pipe_message_has_every_field() -> None:
@@ -161,6 +164,39 @@ def test_a_missing_or_zero_group_is_empty() -> None:
     parsed = FixMsg.from_text("8=FIX.4.2|268=0|10=000")
     assert parsed.group(268) == []
     assert parsed.group(999) == []
+
+
+def test_group_segments_keep_entries_whose_nested_groups_repeat_tags() -> None:
+    """A first-repeat scan ends inside side one's parties; a segment runs from
+    one delimiter to the next, whatever repeats inside."""
+    pairs = [
+        ("552", "2"),
+        ("54", "1"),
+        ("453", "2"),
+        ("448", "A"),
+        ("448", "B"),
+        ("54", "2"),
+        ("448", "C"),
+    ]
+    entries = group_segment_pairs(pairs, "552", "54")
+    assert [entry[0] for entry in entries] == [("54", "1"), ("54", "2")]
+    assert entries[0][2:] == [("448", "A"), ("448", "B")]
+
+
+def test_group_segments_return_the_report_level_prefix_when_asked() -> None:
+    pairs = [("35", "AE"), ("31", "10.5"), ("552", "1"), ("54", "1"), ("11", "C1")]
+    prefix, entries = group_segment_pairs(pairs, "552", "54", with_prefix=True)
+    assert prefix == [("35", "AE"), ("31", "10.5"), ("552", "1")]
+    assert entries == [[("54", "1"), ("11", "C1")]]
+
+
+def test_a_missing_count_or_unreadable_count_is_no_segments() -> None:
+    assert group_segment_pairs([("54", "1")], "552", "54") == []
+    assert group_segment_pairs([("552", "x"), ("54", "1")], "552", "54") == []
+    assert group_segment_pairs([("552", "x")], "552", "54", with_prefix=True) == (
+        [("552", "x")],
+        [],
+    )
 
 
 # -- rendered names and indexed groups ---------------------------------------
@@ -276,11 +312,14 @@ def test_get_returns_the_default_when_nothing_matches() -> None:
 
 
 def test_a_user_defined_wire_wrapper_prefers_its_named_payload() -> None:
+    """The raw stage owns the discriminator: the named payload's `MSGTYPE=D`
+    wins the `U1` wrapper and re-emits canonically, at the wire's position."""
     parsed = FixMsg.from_text("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|10=000|")
 
+    assert parsed.MsgType == "D"
     assert parsed.pairs == [
         ("8", "FIX.4.4"),
-        ("MSGTYPE", "D"),
+        ("35", "D"),
         ("SYMBOL", "named"),
         ("10", "000"),
     ]

@@ -8,11 +8,11 @@ from typing import Any
 import pyarrow
 import pyarrow.compute as compute
 
+from rekep.entries import ENTRIES
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import COLUMNS, TYPES
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import BEGIN_STRING_SOURCE, _raw_spelling_changed, _version_key
-from rekep.kwargs import KWARGS
 
 
 def into_flat_fixmsg_batch(
@@ -24,22 +24,22 @@ def into_flat_fixmsg_batch(
 ) -> pyarrow.RecordBatch | None:
     """Transcribe numeric standard fields, or return None for registry fallback."""
     rows = batch.num_rows
-    kwargs = columns.get("kwargs")
+    entries = columns.get("entries")
     if (
         not rows
-        or kwargs is None
-        or kwargs.null_count
+        or entries is None
+        or entries.null_count
         or not _supports(codec)
         or protocols.null_count
         or not compute.all(compute.equal(protocols, "FIX"), min_count=0).as_py()
     ):
         return None
-    entries = compute.list_flatten(kwargs)
-    tags = compute.struct_field(entries, "tag")
-    keys = compute.struct_field(entries, "key")
-    values = compute.struct_field(entries, "value")
-    namespace = compute.struct_field(entries, "namespace")
-    component = compute.struct_field(entries, "comp")
+    items = compute.list_flatten(entries)
+    tags = compute.struct_field(items, "tag")
+    keys = compute.struct_field(items, "key")
+    values = compute.struct_field(items, "value")
+    namespace = compute.struct_field(items, "namespace")
+    component = compute.struct_field(items, "comp")
     if (
         tags.null_count
         or values.null_count
@@ -60,17 +60,19 @@ def into_flat_fixmsg_batch(
         )
         if compute.any(absent, min_count=0).as_py():
             return None
-    parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
     identities = compute.add(
         compute.multiply(parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
         tags.cast(pyarrow.int64()),
     )
     if len(compute.unique(identities)) != len(identities) or not _checksum_is_last(
-        kwargs, parents, tags
+        entries, parents, tags
     ):
         return None
 
-    protocol_version, protocol_version_source = _versions(codec, kwargs, tags, values, rows)
+    protocol_version, protocol_version_source = _versions(
+        codec, entries, tags, values, rows, columns.get("BeginString")
+    )
     versions = compute.drop_null(compute.unique(protocol_version))
     if protocol_version.null_count or len(versions) != 1:
         return None
@@ -86,7 +88,7 @@ def into_flat_fixmsg_batch(
         return None
 
     fields = codec.flat_fields(version)
-    resolved = _complete_tagged(codec, kwargs, version)
+    resolved = _complete_tagged(codec, entries, version)
     lifted = _lifted_columns(resolved, fields, rows)
     if lifted is None:
         return None
@@ -98,7 +100,7 @@ def into_flat_fixmsg_batch(
             "protocol_code": protocols,
             "protocol_version": protocol_version,
             "protocol_version_source": protocol_version_source,
-            "kwargs": residual,
+            "entries": residual,
             **promoted,
         }
     )
@@ -117,17 +119,17 @@ def flat_fixmsg_positions(
     protocols: pyarrow.Array,
 ) -> Iterator[pyarrow.Array]:
     """Yield version-homogeneous rows accepted by the flat transcription."""
-    kwargs = columns.get("kwargs")
+    entries = columns.get("entries")
     rows = len(protocols)
-    if not rows or kwargs is None or not _supports(codec):
+    if not rows or entries is None or not _supports(codec):
         return
-    entries = compute.list_flatten(kwargs)
-    tags = compute.struct_field(entries, "tag")
-    keys = compute.struct_field(entries, "key")
-    values = compute.struct_field(entries, "value")
-    namespace = compute.struct_field(entries, "namespace")
-    component = compute.struct_field(entries, "comp")
-    parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
+    items = compute.list_flatten(entries)
+    tags = compute.struct_field(items, "tag")
+    keys = compute.struct_field(items, "key")
+    values = compute.struct_field(items, "value")
+    namespace = compute.struct_field(items, "namespace")
+    component = compute.struct_field(items, "comp")
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
 
     good = compute.and_(compute.is_valid(tags), compute.greater(tags, 0))
     good = compute.and_(good, compute.is_valid(values))
@@ -142,14 +144,14 @@ def flat_fixmsg_positions(
             value_set=pyarrow.array(sorted(codec.null_values), pyarrow.string()),
         )
         good = compute.and_(good, compute.invert(compute.fill_null(absent, True)))
-    eligible = compute.and_(compute.is_valid(kwargs), compute.equal(protocols, "FIX"))
+    eligible = compute.and_(compute.is_valid(entries), compute.equal(protocols, "FIX"))
     invalid_rows = _marked_rows(parents, compute.invert(good), rows)
     eligible = compute.and_(eligible, compute.invert(invalid_rows))
     eligible = compute.and_(eligible, compute.invert(_duplicate_rows(parents, tags, rows)))
-    misplaced = _misplaced_checksum_rows(kwargs, parents, tags)
+    misplaced = _misplaced_checksum_rows(entries, parents, tags)
     eligible = compute.and_(eligible, compute.invert(misplaced))
 
-    versions, _ = _versions(codec, kwargs, tags, values, rows)
+    versions, _ = _versions(codec, entries, tags, values, rows, columns.get("BeginString"))
     eligible = compute.and_(eligible, compute.is_valid(versions))
     positions = sequence(rows)
     for version in compute.drop_null(compute.unique(compute.filter(versions, eligible))).sort():
@@ -203,14 +205,14 @@ def _duplicate_rows(parents: pyarrow.Array, tags: pyarrow.Array, rows: int) -> p
 
 
 def _misplaced_checksum_rows(
-    kwargs: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array
+    entries: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array
 ) -> pyarrow.Array:
     """Mark rows whose CheckSum is not their final field."""
-    rows = len(kwargs)
+    rows = len(entries)
     checksum = compute.fill_null(compute.equal(tags, 10), False)
     if not compute.any(checksum, min_count=0).as_py():
         return pyarrow.repeat(pyarrow.scalar(False), rows)
-    sizes = compute.fill_null(compute.list_value_length(kwargs), 0).cast(pyarrow.int64())
+    sizes = compute.fill_null(compute.list_value_length(entries), 0).cast(pyarrow.int64())
     ends = compute.subtract(compute.cumulative_sum(sizes), 1)
     checksum_parents = compute.filter(parents, checksum)
     checksum_positions = compute.filter(sequence(len(tags)), checksum)
@@ -220,15 +222,21 @@ def _misplaced_checksum_rows(
 
 def _versions(
     codec: Any,
-    kwargs: pyarrow.Array,
+    entries: pyarrow.Array,
     tags: pyarrow.Array,
     values: pyarrow.Array,
     rows: int,
+    begin_strings: pyarrow.Array | None = None,
 ) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Resolve one common non-transport BeginString once for the whole batch."""
-    begins = compute.equal(tags, 8)
-    if compute.sum(begins).as_py() == rows:
-        distinct = compute.unique(compute.filter(values, begins))
+    """Resolve one common non-transport BeginString once for the whole batch.
+
+    `begin_strings` is the column the raw stage lifted the tag into; a batch
+    written before it existed still carries the tag in `entries`, so both are
+    read and the column leads.
+    """
+    spelled = _begin_strings(entries, tags, values, rows, begin_strings)
+    if spelled is not None and spelled.null_count == 0:
+        distinct = compute.unique(spelled)
         if len(distinct) == 1:
             spelling = distinct[0].as_py()
             if not _version_key(spelling).startswith("FIXT"):
@@ -238,40 +246,59 @@ def _versions(
                         pyarrow.repeat(pyarrow.scalar(version), rows),
                         pyarrow.repeat(pyarrow.scalar(BEGIN_STRING_SOURCE), rows),
                     )
-    return codec.versions_of_kwargs(kwargs)
+    return codec.versions_of_entries(entries, begin_strings)
 
 
-def _complete_tagged(codec: Any, kwargs: pyarrow.Array, version: str) -> pyarrow.Array:
+def _begin_strings(
+    entries: pyarrow.Array,
+    tags: pyarrow.Array,
+    values: pyarrow.Array,
+    rows: int,
+    lifted: pyarrow.Array | None,
+) -> pyarrow.Array | None:
+    """One `BeginString` per row, from the column first and the tag second."""
+    begins = compute.equal(tags, 8)
+    inline = None
+    if compute.sum(begins, min_count=0).as_py() == rows:
+        inline = compute.filter(values, begins)
+    if lifted is None:
+        return inline
+    column = lifted.combine_chunks() if isinstance(lifted, pyarrow.ChunkedArray) else lifted
+    column = column.cast(pyarrow.string(), safe=False)
+    return column if inline is None else compute.coalesce(column, inline)
+
+
+def _complete_tagged(codec: Any, entries: pyarrow.Array, version: str) -> pyarrow.Array:
     """Canonicalize values whose numeric identities are already authoritative."""
-    entries = compute.list_flatten(kwargs)
-    tags = compute.struct_field(entries, "tag")
-    keys = compute.struct_field(entries, "key")
-    values = compute.struct_field(entries, "value")
+    items = compute.list_flatten(entries)
+    tags = compute.struct_field(items, "tag")
+    keys = compute.struct_field(items, "key")
+    values = compute.struct_field(items, "value")
     completed = pyarrow.StructArray.from_arrays(
         [
             tags,
             codec._canonical(keys, tags, version),
             codec._encoded(tags, values, version),
-            compute.struct_field(entries, "namespace"),
-            compute.struct_field(entries, "comp"),
+            compute.struct_field(items, "namespace"),
+            compute.struct_field(items, "comp"),
         ],
-        fields=list(entries.type),
+        fields=list(items.type),
     )
     return build_list(
-        KWARGS,
-        compute.list_value_length(kwargs).cast(pyarrow.int32()),
+        ENTRIES,
+        compute.list_value_length(entries).cast(pyarrow.int32()),
         completed,
     )
 
 
 def _lifted_columns(
-    kwargs: pyarrow.Array, fields: Mapping[int, Any], rows: int
+    entries: pyarrow.Array, fields: Mapping[int, Any], rows: int
 ) -> tuple[dict[str, pyarrow.Array], pyarrow.Array] | None:
     """Lift one occurrence per tag and retain raw text a typed column loses."""
-    entries = compute.list_flatten(kwargs)
-    parents = compute.list_parent_indices(kwargs).cast(pyarrow.int64())
-    tags = compute.struct_field(entries, "tag")
-    values = compute.struct_field(entries, "value")
+    items = compute.list_flatten(entries)
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
+    tags = compute.struct_field(items, "tag")
+    values = compute.struct_field(items, "value")
     wanted = compute.is_in(tags, value_set=pyarrow.array(sorted(fields), tags.type))
     row_ids = sequence(rows)
     columns: dict[str, pyarrow.Array] = {}
@@ -291,7 +318,7 @@ def _lifted_columns(
         column_rows = sorted_parents.slice(at, run)
         identities = sorted_identities.slice(at, run)
         at += run
-        column = _cast(raw, fields[tag].arrow_type, TYPES[tag])
+        column = _cast(raw, fields[tag].dtype, TYPES[tag])
         changed = _raw_spelling_changed(raw, column)
         if compute.any(changed, min_count=0).as_py():
             retained_identities.append(compute.filter(identities, changed))
@@ -314,10 +341,10 @@ def _lifted_columns(
         )
     kept_parents = compute.filter(parents, keep)
     kept = pyarrow.StructArray.from_arrays(
-        [compute.filter(compute.struct_field(entries, field.name), keep) for field in entries.type],
-        fields=list(entries.type),
+        [compute.filter(compute.struct_field(items, field.name), keep) for field in items.type],
+        fields=list(items.type),
     )
-    residual = build_list(KWARGS, dense_counts(kept_parents, rows), kept)
+    residual = build_list(ENTRIES, dense_counts(kept_parents, rows), kept)
     return columns, residual
 
 
@@ -335,12 +362,12 @@ def _cast(
     return read.cast(target_type, safe=False)
 
 
-def _checksum_is_last(kwargs: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array) -> bool:
+def _checksum_is_last(entries: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array) -> bool:
     """Whether every present CheckSum is its row's final field."""
     checksum = compute.equal(tags, 10)
     if not compute.any(checksum, min_count=0).as_py():
         return True
-    sizes = compute.list_value_length(kwargs).cast(pyarrow.int64())
+    sizes = compute.list_value_length(entries).cast(pyarrow.int64())
     ends = compute.subtract(compute.cumulative_sum(sizes), 1)
     checksum_parents = compute.filter(parents, checksum)
     checksum_positions = compute.filter(sequence(len(tags)), checksum)

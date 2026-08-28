@@ -1,0 +1,174 @@
+{
+ "name": "MassQuote",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "MassQuote",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MassQuote",
+   "msgtype": "i"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteModelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2403"
+    }
+   },
+   {
+    "name": "QuoteResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "301"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "DefBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "293"
+    }
+   },
+   {
+    "name": "DefOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "294"
+    }
+   },
+   {
+    "name": "QuotSetGrp",
+    "type": "struct",
+    "fix": {
+     "component": "QuotSetGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SelfMatchPreventionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2362"
+    }
+   },
+   {
+    "name": "SelfMatchPreventionInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2964"
+    }
+   },
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   },
+   {
+    "name": "ComplianceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "376"
+    }
+   },
+   {
+    "name": "ComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2404"
+    }
+   },
+   {
+    "name": "EncodedComplianceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2351"
+    }
+   },
+   {
+    "name": "EncodedComplianceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2352"
+    }
+   }
+  ]
+ }
+}

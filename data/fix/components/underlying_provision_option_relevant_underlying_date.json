@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateUnadjusted",
-   "required": false,
-   "tag": 42142
+ "declaration": {
+  "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBizDayConvention",
-   "required": false,
-   "tag": 42143
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateRelativeTo",
-   "required": false,
-   "tag": 42144
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetPeriod",
-   "required": false,
-   "tag": 42145
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetUnit",
-   "required": false,
-   "tag": 42146
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetDayType",
-   "required": false,
-   "tag": 42147
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateAdjusted",
-   "required": false,
-   "tag": 42148
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42142"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBizDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42143"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42144"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42145"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42146"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42147"
+    }
+   },
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42148"
+    }
+   }
+  ]
+ }
 }

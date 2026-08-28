@@ -3,178 +3,249 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamType",
-   "required": false,
-   "tag": 41429
+ "declaration": {
+  "name": "LegDeliveryStream",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegDeliveryStream",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "component",
-   "name": "LegDeliveryStreamCommoditySourceGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamPipeline",
-   "required": false,
-   "tag": 41430
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamEntryPoint",
-   "required": false,
-   "tag": 41431
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamWithdrawalPoint",
-   "required": false,
-   "tag": 41432
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryPoint",
-   "required": false,
-   "tag": 41433
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryPointSource",
-   "required": false,
-   "tag": 42194
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryPointDesc",
-   "required": false,
-   "tag": 42195
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryRestriction",
-   "required": false,
-   "tag": 41434
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryContingency",
-   "required": false,
-   "tag": 41435
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliveryContingentPartySide",
-   "required": false,
-   "tag": 41436
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamDeliverAtSourceIndicator",
-   "required": false,
-   "tag": 41437
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamRiskApportionment",
-   "required": false,
-   "tag": 41438
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamRiskApportionmentSource",
-   "required": false,
-   "tag": 41219
-  },
-  {
-   "kind": "component",
-   "name": "LegDeliveryStreamCycleGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamTitleTransferLocation",
-   "required": false,
-   "tag": 41439
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamTitleTransferCondition",
-   "required": false,
-   "tag": 41440
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamImporterOfRecord",
-   "required": false,
-   "tag": 41441
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamNegativeTolerance",
-   "required": false,
-   "tag": 41442
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamPositiveTolerance",
-   "required": false,
-   "tag": 41443
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamToleranceUnitOfMeasure",
-   "required": false,
-   "tag": 41444
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamToleranceType",
-   "required": false,
-   "tag": 41445
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamToleranceOptionSide",
-   "required": false,
-   "tag": 41446
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamTotalPositiveTolerance",
-   "required": false,
-   "tag": 41447
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamTotalNegativeTolerance",
-   "required": false,
-   "tag": 41448
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamNotionalConversionFactor",
-   "required": false,
-   "tag": 41449
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamTransportEquipment",
-   "required": false,
-   "tag": 41450
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamElectingPartySide",
-   "required": false,
-   "tag": 41451
-  },
-  {
-   "kind": "field",
-   "name": "LegDeliveryStreamRouteOrCharter",
-   "required": false,
-   "tag": 43095
-  }
- ]
+  "fields": [
+   {
+    "name": "LegDeliveryStreamType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41429"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamCommoditySourceGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDeliveryStreamCommoditySourceGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDeliveryStreamPipeline",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41430"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamEntryPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41431"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamWithdrawalPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41432"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41433"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryPointSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42194"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryPointDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42195"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryRestriction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41434"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryContingency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41435"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliveryContingentPartySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41436"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamDeliverAtSourceIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41437"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamRiskApportionment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41438"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamRiskApportionmentSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41219"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamCycleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegDeliveryStreamCycleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegDeliveryStreamTitleTransferLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41439"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamTitleTransferCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41440"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamImporterOfRecord",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41441"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamNegativeTolerance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41442"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamPositiveTolerance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41443"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamToleranceUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41444"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamToleranceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41445"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamToleranceOptionSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41446"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamTotalPositiveTolerance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41447"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamTotalNegativeTolerance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41448"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamNotionalConversionFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41449"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamTransportEquipment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41450"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamElectingPartySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41451"
+    }
+   },
+   {
+    "name": "LegDeliveryStreamRouteOrCharter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43095"
+    }
+   }
+  ]
+ }
 }

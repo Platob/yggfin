@@ -3,43 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegProvisionPartyIDs",
-   "required": false,
-   "tag": 40533,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegProvisionParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionParties",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegProvisionPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40533"
+    },
+    "item": {
      "name": "LegProvisionPartyID",
-     "required": false,
-     "tag": 40534
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionPartyIDSource",
-     "required": false,
-     "tag": 40535
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionPartyRole",
-     "required": false,
-     "tag": 40536
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionPartyRoleQualifier",
-     "required": false,
-     "tag": 2380
-    },
-    {
-     "kind": "component",
-     "name": "LegProvisionPtysSubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40534"
+       }
+      },
+      {
+       "name": "LegProvisionPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40535"
+       }
+      },
+      {
+       "name": "LegProvisionPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40536"
+       }
+      },
+      {
+       "name": "LegProvisionPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2380"
+       }
+      },
+      {
+       "name": "LegProvisionPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegProvisionPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -14,7 +14,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import StructField
-from rekep.market import Book, Execution, Instrument, MarketEvent, Order
+from rekep.market import HASH, Book, Execution, Instrument, MarketEvent, Order
 from rekep.market.event import SECOND
 
 from ..conftest import catalog_properties
@@ -46,22 +46,23 @@ def test_every_column_comment_travels(shape: type) -> None:
         assert schema.find_field(member.name).doc == member.description, member.name
 
 
-def test_an_identifier_is_a_long_in_every_engine() -> None:
-    """The whole reason it is not `fixed[16]`: Doris reads that as `char(16)` of
-    raw bytes, Spark cannot create one, and Iceberg's `uuid` reaches Spark as a
-    string. A `long` is the same column everywhere, and a join and sort key in
-    all of them."""
+def test_an_identifier_is_a_fixed_width_column_in_every_engine() -> None:
+    """A version hash is an instant over a 64-bit digest and no longer fits a
+    `long`, so every identifier is `fixed[16]`: Iceberg's one exact fixed-width
+    type, which round trips back to the Arrow column it was written from, and
+    whose big-endian bytes still sort by time."""
     schema = MarketEvent.into_field().into_iceberg_schema()
-    assert str(schema.find_field("hash").field_type) == "long"
-    assert str(schema.find_field("xhash").field_type) == "long"
+    assert str(schema.find_field("hash").field_type) == "fixed[16]"
+    assert str(schema.find_field("xhash").field_type) == "fixed[16]"
     back = StructField.from_iceberg_schema(schema)
-    assert back.field("hash").arrow_type == pyarrow.int64()
+    assert back.field("hash").dtype == HASH
 
 
-def test_a_ranged_code_is_an_iceberg_int() -> None:
+def test_a_stable_code_is_a_plain_iceberg_integer() -> None:
+    """A code is an integer to Iceberg, as wide as its own declaration packs."""
     schema = MarketEvent.into_field().into_iceberg_schema()
-    assert str(schema.find_field("state").field_type) == "int"
-    assert str(schema.find_field("side").field_type) == "int"
+    assert str(schema.find_field("state").field_type) == "long", "State packs eight bytes"
+    assert str(schema.find_field("side").field_type) == "int", "Side packs four"
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -116,9 +117,10 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
 
     assert read.num_rows == 3
     assert read.column("hash").to_pylist() == given.column("hash").to_pylist()
-    assert read.column("state").type == pyarrow.int32(), "the code stayed narrow"
+    assert read.column("state").type == pyarrow.int64(), "the code kept its own width"
+    assert read.column("side").type == pyarrow.int32(), "and a four-byte code stayed narrow"
     assert read.column("unix_partition").type == pyarrow.int32()
-    assert read.column("hash").type == pyarrow.int64(), "and the identifier stayed a long"
+    assert read.column("hash").type == HASH, "and the identifier kept its stored width"
     written = [task.file for task in dataset.iceberg_table.scan().plan_files()]
     assert {one.partition[0] for one in written} == {unix_partition}
     assert all(f"unix_partition={unix_partition}" in one.file_path for one in written), (

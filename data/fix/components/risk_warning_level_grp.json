@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRiskWarningLevels",
-   "required": false,
-   "tag": 1559,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RiskWarningLevelAction",
-     "required": false,
-     "tag": 1769
+ "declaration": {
+  "name": "RiskWarningLevelGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RiskWarningLevelGrp",
+   "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRiskWarningLevels",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1559"
     },
-    {
-     "kind": "field",
-     "name": "RiskWarningLevelPercent",
-     "required": false,
-     "tag": 1560
-    },
-    {
-     "kind": "field",
-     "name": "RiskWarningLevelAmount",
-     "required": false,
-     "tag": 1768
-    },
-    {
-     "kind": "field",
-     "name": "RiskWarningLevelName",
-     "required": false,
-     "tag": 1561
+    "item": {
+     "name": "RiskWarningLevel",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RiskWarningLevelAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1769"
+       }
+      },
+      {
+       "name": "RiskWarningLevelPercent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1560"
+       }
+      },
+      {
+       "name": "RiskWarningLevelAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1768"
+       }
+      },
+      {
+       "name": "RiskWarningLevelName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1561"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -1,0 +1,130 @@
+{
+ "name": "ListStatus",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "ListStatus",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ListStatus",
+   "msgtype": "N"
+  },
+  "fields": [
+   {
+    "name": "ListID",
+    "type": "string",
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "ListStatusType",
+    "type": "string",
+    "fix": {
+     "tag": "429"
+    }
+   },
+   {
+    "name": "NoRpts",
+    "type": "string",
+    "fix": {
+     "tag": "82"
+    }
+   },
+   {
+    "name": "ListOrderStatus",
+    "type": "string",
+    "fix": {
+     "tag": "431"
+    }
+   },
+   {
+    "name": "ContingencyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1385"
+    }
+   },
+   {
+    "name": "ListRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1386"
+    }
+   },
+   {
+    "name": "RptSeq",
+    "type": "string",
+    "fix": {
+     "tag": "83"
+    }
+   },
+   {
+    "name": "ListStatusText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "444"
+    }
+   },
+   {
+    "name": "EncodedListStatusTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "445"
+    }
+   },
+   {
+    "name": "EncodedListStatusText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "446"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TotNoOrders",
+    "type": "string",
+    "fix": {
+     "tag": "68"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "OrdListStatGrp",
+    "type": "struct",
+    "fix": {
+     "component": "OrdListStatGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

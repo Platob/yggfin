@@ -3,76 +3,113 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationDateBusinessDayConvention",
-   "required": false,
-   "tag": 41517
+ "declaration": {
+  "name": "LegOptionExerciseExpiration",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegOptionExerciseExpiration",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "component",
-   "name": "LegOptionExerciseExpirationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegOptionExerciseExpirationDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationDateRelativeTo",
-   "required": false,
-   "tag": 41518
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationDateOffsetPeriod",
-   "required": false,
-   "tag": 41519
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationDateOffsetUnit",
-   "required": false,
-   "tag": 41520
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationFrequencyPeriod",
-   "required": false,
-   "tag": 41521
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationFrequencyUnit",
-   "required": false,
-   "tag": 41522
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationRollConvention",
-   "required": false,
-   "tag": 41523
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationDateOffsetDayType",
-   "required": false,
-   "tag": 41524
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationTime",
-   "required": false,
-   "tag": 41525
-  },
-  {
-   "kind": "field",
-   "name": "LegOptionExerciseExpirationTimeBusinessCenter",
-   "required": false,
-   "tag": 41526
-  }
- ]
+  "fields": [
+   {
+    "name": "LegOptionExerciseExpirationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41517"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegOptionExerciseExpirationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegOptionExerciseExpirationDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41518"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41519"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41520"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41521"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41522"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41523"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41524"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41525"
+    }
+   },
+   {
+    "name": "LegOptionExerciseExpirationTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41526"
+    }
+   }
+  ]
+ }
 }

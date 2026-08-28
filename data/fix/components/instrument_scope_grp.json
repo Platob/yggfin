@@ -3,25 +3,46 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoInstrumentScopes",
-   "required": false,
-   "tag": 1656,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentScopeOperator",
-     "required": false,
-     "tag": 1535
+ "declaration": {
+  "name": "InstrumentScopeGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentScopeGrp",
+   "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoInstrumentScopes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1656"
     },
-    {
-     "kind": "component",
+    "item": {
      "name": "InstrumentScope",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentScopeOperator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1535"
+       }
+      },
+      {
+       "name": "InstrumentScope",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentScope"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

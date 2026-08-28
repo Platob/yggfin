@@ -19,8 +19,9 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.enums import EventType
+from rekep.fields import TimestampField
 from rekep.fields.arrays import sequence
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import NANOS, SECONDS_A_DAY, cast_arrow_fix
 
 #: `TrdRegTimestampType <770>`, and `SideTrdRegTimestampType <1013>`, which
 #: FIX gives the same meanings. Named rather than spelled at the ranking
@@ -95,11 +96,19 @@ class Stamped:
         return None if found is None else Transacted(found, self.name)
 
     def _dated(self, read: Callable[[str], Any], recorded: int | None) -> int | None:
-        """A rung FIX splits across a date field and a time field."""
+        """A rung FIX splits across a date field and a time field.
+
+        The two halves add: the date field is the day, the clock field is the
+        time on it. A clock read on its own is anchored to the epoch's day --
+        by the text reader when it is given no day, and by its column's type
+        when it has one -- so only its within-day part is the value here.
+        """
         date, clock = self.fields
-        found = read(date)
-        on = read(clock, found if found is not None else recorded)  # type: ignore[call-arg]
-        return on if on is not None else found
+        day = read(date)
+        on = read(clock, day if day is not None else recorded)  # type: ignore[call-arg]
+        if on is None or day is None:
+            return day if on is None else on
+        return day - day % A_DAY + on % A_DAY
 
     def _entry(
         self,
@@ -173,8 +182,16 @@ class Stamped:
             return None
         if len(read) == 1:
             return self._arrow_nanos(read[0], rows)
+        # A rung FIX splits in two is a day and a clock within it, so the two
+        # halves add. Taking the clock alone -- which is what this did -- put
+        # every `MDEntry` on 1970-01-01, because a clock read on its own is
+        # anchored to the epoch's day and the date half was the day it
+        # belonged on.
         date, clock = (self._arrow_nanos(column, rows) for column in read)
-        return pyarrow.compute.coalesce(clock, date)
+        compute = pyarrow.compute
+        within = compute.subtract(clock, compute.multiply(compute.divide(clock, A_DAY), A_DAY))
+        floor = compute.subtract(date, compute.multiply(compute.divide(date, A_DAY), A_DAY))
+        return compute.coalesce(compute.add(compute.subtract(date, floor), within), clock, date)
 
     def _arrow_entry(self, column: Any, etypes: Any, rows: int) -> tuple[Any, Any]:
         """The preferred entry of one regulatory group, per row, in kernels.
@@ -225,7 +242,7 @@ class Stamped:
         if etypes is None:
             return cls._arrow_rank_of(kinds, preferred_types(None), unranked)
         codes = compute.take(
-            compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0), parents
+            compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0), parents
         )
         rank = pyarrow.repeat(unranked, len(parents))
         for code in compute.unique(codes).to_pylist():
@@ -254,9 +271,12 @@ class Stamped:
             column = column.combine_chunks()
         if not pyarrow.types.is_timestamp(column.type):
             column = cast_arrow_fix(column, pyarrow.timestamp("us", tz="UTC"))
-        micros = column.cast(pyarrow.timestamp("us"), safe=False).cast(pyarrow.int64())
-        return pyarrow.compute.multiply(micros, pyarrow.scalar(1000, pyarrow.int64()))
+        micros = TimestampField.of("us").cast_arrow_array(column)
+        return TimestampField.into_unix_arrow(micros)
 
+
+#: One day in the nanosecond clock every rung answers in.
+A_DAY = SECONDS_A_DAY * NANOS
 
 #: Where `unix` comes from, **best first**, and why each is where it is.
 #:
@@ -363,7 +383,7 @@ def preferred_types(etype: EventType | int | None) -> tuple[int, ...]:
     """Which regulatory stamp types `etype` prefers, best first."""
     if etype is None:
         return _ANY
-    kind = etype if isinstance(etype, EventType) else EventType.from_code(etype)
+    kind = etype if isinstance(etype, EventType) else EventType.from_int(etype)
     found = PREFERRED.get(kind)
     if found is not None:
         return found

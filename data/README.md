@@ -9,7 +9,8 @@ data/fix/versions.json          the version list, session layers, and which
 data/fix/fields/000000.json     tags 0-499, one cross-version record each
 data/fix/fields/000080.json     tags 40000-40499, the 5.0.SP2 extension pack
 data/fix/fields/named.json      the fields FIX never numbered
-data/fix/components/parties.json  one component's member tree
+data/fix/components/parties.json  one component, declared as a Field
+data/fix/components/new_order_single.json  a message, declared the same way
 data/fix-conflicts.json         every reading the collapse dropped
 ```
 
@@ -25,8 +26,11 @@ where each field is used -- in messages *and* in component blocks, which is how
 a field FIX only carries inside a component (`TrdRegTimestamp <769>`, and three
 hundred others in 4.4 alone) records where it lives. The QuickFIX spec supplies
 the symbolic name of every enumerated value and every field an extension pack
-numbered past what the site wrote up. Both are needed: without the spec there
-are no symbols, and the `encoded`/`decoded` string codecs are built from them.
+numbered past what the site wrote up, and the member trees themselves: both
+the reusable blocks and the messages, which are the same declaration with a
+MsgType on it. Both sources are needed: without the spec a value has no
+symbol, and the string codecs are derived from every spelling a value
+carries.
 
 ```python
 from rekep.fix import FixRegistry
@@ -72,7 +76,8 @@ FixRegistry(cache_dir='../data/fix', offline=True).into_zip('../data/fix.zip')"
 ```
 
 Then rebuild the projection the wheel ships, which selects the keys
-`rekep.fix.publish.PROJECTED` names and carries every component declaration:
+`rekep.fix.publish.PROJECTED` names and carries every declaration, the
+messages included:
 
 ```bash
 cd python

@@ -1,5 +1,6 @@
 """Stable protocol and market codes."""
 
+from rekep.enums.ascii_codes import Ascii32, Ascii64
 from rekep.enums.codes import (
     MIC,
     AssetKind,
@@ -12,17 +13,17 @@ from rekep.enums.codes import (
     State,
     TimeInForce,
 )
-from rekep.enums.ranged import Ranged
 
 __all__ = [
     "MIC",
+    "Ascii32",
+    "Ascii64",
     "AssetKind",
     "Currency",
     "EventType",
     "IdSource",
     "MarketKind",
     "OptionKind",
-    "Ranged",
     "Side",
     "State",
     "TimeInForce",

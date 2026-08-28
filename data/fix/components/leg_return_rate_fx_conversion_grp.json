@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegReturnRateFXConversions",
-   "required": false,
-   "tag": 42530,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegReturnRateFXCurrencySymbol",
-     "required": false,
-     "tag": 42531
+ "declaration": {
+  "name": "LegReturnRateFXConversionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegReturnRateFXConversionGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegReturnRateFXConversions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42530"
     },
-    {
-     "kind": "field",
-     "name": "LegReturnRateFXRate",
-     "required": false,
-     "tag": 42532
-    },
-    {
-     "kind": "field",
-     "name": "LegReturnRateFXRateCalc",
-     "required": false,
-     "tag": 42533
+    "item": {
+     "name": "LegReturnRateFXConversion",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRateFXCurrencySymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42531"
+       }
+      },
+      {
+       "name": "LegReturnRateFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42532"
+       }
+      },
+      {
+       "name": "LegReturnRateFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42533"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

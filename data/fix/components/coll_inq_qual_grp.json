@@ -6,20 +6,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoCollInquiryQualifier",
-   "required": false,
-   "tag": 938,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "CollInqQualGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CollInqQualGrp",
+   "msgtypes": "[\"CollateralInquiry\",\"CollateralInquiryAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoCollInquiryQualifier",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "938"
+    },
+    "item": {
      "name": "CollInquiryQualifier",
-     "required": false,
-     "tag": 896
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CollInquiryQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "896"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

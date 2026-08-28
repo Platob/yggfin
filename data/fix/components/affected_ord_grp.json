@@ -6,32 +6,53 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAffectedOrders",
-   "required": false,
-   "tag": 534,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AffectedOrigClOrdID",
-     "required": false,
-     "tag": 1824
+ "declaration": {
+  "name": "AffectedOrdGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AffectedOrdGrp",
+   "msgtypes": "[\"OrderMassActionReport\",\"OrderMassCancelReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoAffectedOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "534"
     },
-    {
-     "kind": "field",
-     "name": "AffectedOrderID",
-     "required": false,
-     "tag": 535
-    },
-    {
-     "kind": "field",
-     "name": "AffectedSecondaryOrderID",
-     "required": false,
-     "tag": 536
+    "item": {
+     "name": "AffectedOrder",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AffectedOrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1824"
+       }
+      },
+      {
+       "name": "AffectedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "535"
+       }
+      },
+      {
+       "name": "AffectedSecondaryOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "536"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

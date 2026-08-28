@@ -6,61 +6,94 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRegistDtls",
-   "required": false,
-   "tag": 473,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RegistDtls",
-     "required": false,
-     "tag": 509
+ "declaration": {
+  "name": "RgstDtlsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RgstDtlsGrp",
+   "msgtypes": "[\"RegistrationInstructions\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRegistDtls",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "473"
     },
-    {
-     "kind": "field",
-     "name": "RegistEmail",
-     "required": false,
-     "tag": 511
-    },
-    {
-     "kind": "field",
-     "name": "MailingDtls",
-     "required": false,
-     "tag": 474
-    },
-    {
-     "kind": "field",
-     "name": "MailingInst",
-     "required": false,
-     "tag": 482
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "OwnerType",
-     "required": false,
-     "tag": 522
-    },
-    {
-     "kind": "field",
-     "name": "DateOfBirth",
-     "required": false,
-     "tag": 486
-    },
-    {
-     "kind": "field",
-     "name": "InvestorCountryOfResidence",
-     "required": false,
-     "tag": 475
+    "item": {
+     "name": "RegistDtl",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegistDtls",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "509"
+       }
+      },
+      {
+       "name": "RegistEmail",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "511"
+       }
+      },
+      {
+       "name": "MailingDtls",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "474"
+       }
+      },
+      {
+       "name": "MailingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "482"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "OwnerType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "522"
+       }
+      },
+      {
+       "name": "DateOfBirth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "486"
+       }
+      },
+      {
+       "name": "InvestorCountryOfResidence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "475"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -1,57 +1,80 @@
 {
  "name": "RekepInstrument",
- "msg_type": "U1",
  "versions": [
   "*"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "MsgType",
-   "required": true,
-   "tag": 35
+ "declaration": {
+  "name": "RekepInstrument",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RekepInstrument",
+   "msgtype": "U1"
   },
-  {
-   "kind": "field",
-   "name": "Symbol",
-   "required": false,
-   "tag": 55
-  },
-  {
-   "kind": "field",
-   "name": "SecurityID",
-   "required": false,
-   "tag": 48
-  },
-  {
-   "kind": "field",
-   "name": "SecurityIDSource",
-   "required": false,
-   "tag": 22
-  },
-  {
-   "kind": "field",
-   "name": "CFICode",
-   "required": false,
-   "tag": 461
-  },
-  {
-   "kind": "field",
-   "name": "SecurityType",
-   "required": false,
-   "tag": 167
-  },
-  {
-   "kind": "field",
-   "name": "SecurityExchange",
-   "required": false,
-   "tag": 207
-  },
-  {
-   "kind": "field",
-   "name": "Currency",
-   "required": false,
-   "tag": 15
-  }
- ]
+  "fields": [
+   {
+    "name": "MsgType",
+    "type": "string",
+    "fix": {
+     "tag": "35"
+    }
+   },
+   {
+    "name": "Symbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "55"
+    }
+   },
+   {
+    "name": "SecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "48"
+    }
+   },
+   {
+    "name": "SecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "22"
+    }
+   },
+   {
+    "name": "CFICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "461"
+    }
+   },
+   {
+    "name": "SecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "167"
+    }
+   },
+   {
+    "name": "SecurityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "207"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   }
+  ]
+ }
 }

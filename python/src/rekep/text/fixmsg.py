@@ -13,8 +13,7 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.convert import Convertible
-from rekep.enums import MIC, EventType, IdSource, OptionKind, Side
+from rekep.enums import MIC, AssetKind, Currency, EventType, IdSource, OptionKind, Side
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -28,12 +27,11 @@ from rekep.fields.arrays import (
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import (
     DECLARATIONS,
+    ENTRIES,
     IDENTIFIER_FIELDS,
     ISIN_CODE,
-    KWARGS,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    Kwarg,
 )
 from rekep.fix.components import (
     LEGS,
@@ -52,23 +50,23 @@ from rekep.fix.components import (
     # that column's own default under `get_type_hints`.
     SecurityAltID as SecurityAltIDEntry,
 )
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import cast_arrow_fix, scalar_fix_value
 from rekep.fix.message import (
     group_pairs,
     indexed_group_pairs,
     normalized_pairs,
-    parse_pairs,
     render_fix_value,
 )
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
-from rekep.fix.transcribe import NO_SOURCE, infer_version_from_pairs
+from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
-from rekep.market.identity import NIL
-from rekep.text.message import Message
+from rekep.market.fields import MarketConvertible
+from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
+from rekep.text.message import SESSION_FIELDS, Message
 
-_EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_EVENT_CODE = pyarrow.int64()
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 
@@ -82,42 +80,97 @@ _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
-_COMPONENT_GROUPS: tuple[tuple[str, str, type[Any]], ...] = (
-    ("Parties", "NoPartyIDs", Party),
-    ("TrdRegTimestamps", "NoTrdRegTimestamps", TrdRegTimestamp),
-    ("SideTrdRegTS", "NoSideTrdRegTS", SideTrdRegTimestamp),
-    ("SecurityAltID", "NoSecurityAltID", SecurityAltIDEntry),
-    ("Legs", "NoLegs", Leg),
-)
-
-#: The parsed columns that hold one structured component each. What the
-#: market translator checks before taking its flat shortcut, published here so
-#: a component added above is one edit and not a hunt for hardcoded tuples.
-COMPONENT_COLUMNS: tuple[str, ...] = tuple(column for column, _, _ in _COMPONENT_GROUPS)
 
 
 @functools.cache
-def _row_access() -> FieldAccess:
-    """The accessor a stored row reads through: the cross-version dictionary."""
-    return FieldAccess.of(FixRegistry.from_builtin(), None)
+def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
+    """`(column, count group, entry class)` off the codec's component extractors.
+
+    Derived and not declared twice: `FixCodec.into_components` is the one
+    mapping of structured columns to extractors, and each extractor already
+    names its group and its row shape.
+    """
+    return tuple(
+        (column, extractor.group, extractor.into_row())
+        for column, extractor in FixCodec.into_components().items()
+    )
+
+
+#: The parsed columns that hold one structured component each. What
+#: `FixMsg.into_first_values` checks before taking its flat shortcut.
+COMPONENT_COLUMNS: tuple[str, ...] = tuple(FixCodec.into_components())
+
+
+@functools.lru_cache(maxsize=8)
+def _codec_of(registry: FixRegistry, _revision: int) -> FixCodec:
+    """One shared codec per dictionary generation, so batches share its memos.
+
+    Keyed on the store revision like `MarketTags._of`: a codec snapshots its
+    tag indexes and component declarations, so a mutated registry earns a
+    fresh one rather than serving stale reads.
+    """
+    return FixCodec(registry=registry)
 
 
 @scalar(slots=True)
 class FixMsg(Message):
     """One raw message transcribed under the FIX registry."""
 
+    # The dictionary this row resolves through is reader state, not row
+    # content -- the same stored row reads under another feed's dictionary
+    # without changing -- so the link is private and never a column.
+    __registry: FixRegistry | None = None
+
+    @classmethod
+    @functools.cache
+    def into_registry(cls) -> FixRegistry:
+        """The dictionary an unlinked row resolves through: the packaged one."""
+        return FixRegistry.from_builtin()
+
+    @classmethod
+    def into_codec(cls, registry: FixRegistry | None = None) -> FixCodec:
+        """One conversion needs one dictionary: the codec derives from it.
+
+        The packaged registry when none is given, so an unconfigured
+        transcription still reads offline.
+        """
+        selected = registry if registry is not None else cls.into_registry()
+        return _codec_of(selected, selected.revision)
+
+    @property
+    def registry(self) -> FixRegistry:
+        """The privately linked dictionary, or the packaged default."""
+        return getattr(self, "_FixMsg__registry", None) or type(self).into_registry()
+
+    def link_registry(self, registry: FixRegistry | None) -> FixMsg:
+        """Privately link the dictionary every read on this row resolves through."""
+        self.__registry = registry
+        return self
+
+    def _row_access(self) -> FieldAccess:
+        """The accessor this row reads through: its dictionary, cross-version."""
+        return FieldAccess.of(self.registry, None)
+
     @classmethod
     def from_(cls, source: Any, *args: Any, **kwargs: Any) -> FixMsg:
-        """Build text and bytes as FIX payloads; document readers stay explicit."""
+        """Build text and bytes as FIX payloads; document readers stay explicit.
+
+        The text check leads so a payload spelled like a document name still
+        parses as a payload; everything else dispatches through the redirect
+        table -- spelled without `super()`, whose `__class__` cell predates
+        the class `slots=True` rebuilt.
+        """
         if isinstance(source, str | bytes):
             return cls.from_text(source, *args, **kwargs)
-        return super().from_(source, *args, **kwargs)
+        return getattr(cls, f"from_{cls.redirect_of(source)}")(source, *args, **kwargs)
 
     @classmethod
     @functools.cache
     def into_redirects(cls) -> Mapping[Any, str]:
-        """Generic conversions plus direct text parsing."""
-        return MappingProxyType({**Message.into_redirects(), str: "text", bytes: "text"})
+        """Generic conversions plus direct text parsing and raw-row transcription."""
+        return MappingProxyType(
+            {**Message.into_redirects(), str: "text", bytes: "text", Message: "message"}
+        )
 
     @classmethod
     @functools.cache
@@ -143,7 +196,7 @@ class FixMsg(Message):
         """`MsgType <35>` a synthesized instrument row carries."""
         return _INSTRUMENT_MSG_TYPE
 
-    xhash: int = NIL
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Digest of `code`, or the raw-line digest when no correlation code exists."""
 
     code: str = ""
@@ -187,19 +240,19 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
-        if self.kwargs is not None:
-            self.kwargs = [Kwarg.from_stored(entry) for entry in self.kwargs]
+        if self.entries is not None:
+            self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if (
             self.protocol_version is None
             and self.protocol_code == NO_PROTOCOL
-            and (self.BeginString or self.kwargs)
+            and (self.BeginString or self.entries)
         ):
             evidence: list[tuple[str, Any]] = []
             if self.BeginString:
                 evidence.append(("8", self.BeginString))
             if self.ApplVerID:
                 evidence.append(("1128", self.ApplVerID))
-            evidence.extend(_stored_pairs(self.kwargs))
+            evidence.extend(_stored_pairs(self.entries))
             version, source = infer_version_from_pairs(evidence)
             if version is not None:
                 self.protocol_version = version
@@ -211,7 +264,7 @@ class FixMsg(Message):
         """Give the parsed event its lifecycle and version identities."""
         return Event.identify(self)
 
-    # Nullable, and null on `fix.market`: typed columns plus `kwargs` carry
+    # Nullable, and null on `fix.market`: typed columns plus `entries` carry
     # every field the line held, so keeping the raw string beside them would
     # store the same content twice. An all-null column run-length and dictionary encodes
     # to nothing on disk, which is what makes one stored shape across the
@@ -247,13 +300,13 @@ class FixMsg(Message):
 
     # A list preserves repeated keys and wire order. Null means no parsed
     # message; an empty list means no residual or raw audit sidecar remains.
-    kwargs: list[Kwarg] | None = None
+    entries: list[Entry] | None = None
     """Unlifted fields and lossless raw audit sidecars for typed columns."""
 
     Parties: Annotated[
         list[Party] | None,
         Field(
-            arrow_type=PARTIES,
+            dtype=PARTIES,
             metadata={"fix:component": "Parties"},
         ),
     ] = None
@@ -262,7 +315,7 @@ class FixMsg(Message):
     TrdRegTimestamps: Annotated[
         list[TrdRegTimestamp] | None,
         Field(
-            arrow_type=TRD_REG_TIMESTAMPS,
+            dtype=TRD_REG_TIMESTAMPS,
             metadata={"fix:component": "TrdRegTimestamps"},
         ),
     ] = None
@@ -271,7 +324,7 @@ class FixMsg(Message):
     SideTrdRegTS: Annotated[
         list[SideTrdRegTimestamp] | None,
         Field(
-            arrow_type=SIDE_TRD_REG_TIMESTAMPS,
+            dtype=SIDE_TRD_REG_TIMESTAMPS,
             metadata={"fix:component": "SideTrdRegTS"},
         ),
     ] = None
@@ -289,7 +342,7 @@ class FixMsg(Message):
     # -- what a message says, flattened ---------------------------------------
     #
     # Flat fields keep the registry's exact name, type, description and
-    # metadata. A lifted fact stays in `kwargs` only where typing loses text.
+    # metadata. A lifted fact stays in `entries` only where typing loses text.
 
     # The envelope itself.
 
@@ -494,7 +547,7 @@ class FixMsg(Message):
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
-    # in `kwargs`; a value is lifted only when it occurs once on the line.
+    # in `entries`; a value is lifted only when it occurs once on the line.
 
     QuoteID: Annotated[str | None, DECLARATIONS[117]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
@@ -559,7 +612,7 @@ class FixMsg(Message):
     SecurityAltID: Annotated[
         list[SecurityAltIDEntry] | None,
         Field(
-            arrow_type=SECURITY_ALT_IDS,
+            dtype=SECURITY_ALT_IDS,
             metadata={"fix:component": "SecurityAltID"},
         ),
     ] = None
@@ -568,7 +621,7 @@ class FixMsg(Message):
     Legs: Annotated[
         list[Leg] | None,
         Field(
-            arrow_type=LEGS,
+            dtype=LEGS,
             metadata={"fix:component": "Legs"},
         ),
     ] = None
@@ -582,42 +635,72 @@ class FixMsg(Message):
         *,
         named: bool | None = None,
         entry_separator: str | None = None,
+        registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
-        """Build a scalar parsed row from one ordered FIX payload."""
-        pairs = parse_pairs(
-            text,
-            separator,
-            named=named,
-            entry_separator=entry_separator,
-        )
-        return cls._from_fix_pairs(pairs, **declared)
+        """Build a scalar parsed row from one ordered FIX payload.
+
+        `Message.from_text` owns the tokenization and the discriminator; this
+        is `from_message` over that staged raw row.
+        """
+        staged = Message.from_text(text, separator, named=named, entry_separator=entry_separator)
+        return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
     def from_pairs(
         cls,
         pairs: Iterable[tuple[Any, Any]],
         names: Mapping[str, int | str] | None = None,
+        *,
+        registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        return cls._from_fix_pairs(normalized_pairs(pairs, names), **declared)
+        staged = Message(entries=normalized_pairs(pairs, names))
+        return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
-    def _from_fix_pairs(cls, pairs: Sequence[tuple[str, str]], **declared: Any) -> FixMsg:
-        """Promote the discriminator while retaining every ordered field."""
-        msg_type = declared.pop("MsgType", None)
-        staged = Message(MsgType=msg_type, kwargs=list(pairs))
-        if "etype" not in declared:
-            if staged.MsgType is None:
-                declared["etype"] = EventType.MISC
-            else:
-                declared["etype"] = (
-                    FixRegistry.from_builtin()
-                    .msg_type_event_types()
-                    .get(staged.MsgType, EventType.UNKNOWN)
-                )
-        return cls(MsgType=staged.MsgType, kwargs=list(pairs), **declared)
+    def from_message(
+        cls,
+        source: Message,
+        *,
+        registry: FixRegistry | None = None,
+        **declared: Any,
+    ) -> FixMsg:
+        """Transcribe one raw row: the scalar half of `from_message_batch`.
+
+        The raw stage already tokenized the payload and promoted the
+        discriminator, so the row carries over whole -- envelope, provenance
+        and residual arguments. `etype` classifies under the registry only
+        where the raw stage left it unknown, and identity resets: a parsed
+        row hashes over its parsed values, not the raw line's digest.
+        """
+        if not isinstance(source, Message):
+            raise TypeError(f"source must be Message, got {type(source).__name__}")
+        values = {
+            member.name: getattr(source, member.name) for member in dataclasses.fields(Message)
+        }
+        values.update(
+            {
+                "message": source.message or None,
+                "entries": list(source.entries or ()),
+                "linked_events": list(source.linked_events),
+                "codes": dict(source.codes),
+                "parent_hash": None if source.parent_hash is None else list(source.parent_hash),
+                "hash": NIL,
+                "xhash": NIL,
+            }
+        )
+        values.update(_session_values(source))
+        values.update(declared)
+        msg_type = values.get("MsgType")
+        if "etype" not in declared and msg_type is not None and source.etype == EventType.UNKNOWN:
+            values["etype"] = (
+                (registry or cls.into_registry())
+                .msg_type_event_types()
+                .get(msg_type, EventType.UNKNOWN)
+            )
+        return cls(**values).link_registry(registry)
 
     @classmethod
     def from_instrument(cls, instrument: Any, **declared: Any) -> FixMsg:
@@ -627,63 +710,69 @@ class FixMsg(Message):
         if not isinstance(instrument, Instrument):
             raise TypeError(f"instrument must be Instrument, got {type(instrument).__name__}")
         known = instrument if instrument.hash else dataclasses.replace(instrument).identify()
-        values = {member.name: getattr(known, member.name) for member in dataclasses.fields(Event)}
-        values.update(
-            {
-                "etype": EventType.INSTRUMENT,
-                "source_url": "",
-                "source_rownum": 0,
-                "thread_name": "",
-                "plugin_code": cls.into_instrument_plugin(),
-                # Null for the same reason a market row's is: `kwargs` below
-                # carries every fact this row states, so a raw line beside it
-                # would be the same content twice -- and there was no line.
-                "message": None,
-                "protocol_code": cls.into_instrument_protocol(),
-                "MsgType": cls.into_instrument_msg_type(),
-                "Symbol": known.symbol or None,
-                "SecurityID": known.security_id,
-                "SecurityIDSource": known.security_id_source,
-                "ISINCODE": known.isin_code,
-                "SecurityType": known.security_type,
-                "CFICode": known.cfi,
-                "SecurityExchange": known.exchange,
-                "Currency": None if known.currency is None else known.currency.into_fix(),
-                "kwargs": _stored_entries(_instrument_pairs(known)),
-            }
+        staged = Message(
+            **{member.name: getattr(known, member.name) for member in dataclasses.fields(Event)},
+            plugin_code=cls.into_instrument_plugin(),
+            protocol_code=cls.into_instrument_protocol(),
+            MsgType=cls.into_instrument_msg_type(),
+            entries=_stored_entries(_instrument_pairs(known)) or [],
         )
-        values.update(declared)
-        return cls(**values)
+        return cls.from_message(
+            staged,
+            # A synthesized row keeps the identified instrument's identity --
+            # `from_message` resets identity only because a parsed row earns
+            # its own -- and carries no raw line: `entries` states every fact,
+            # so text beside them would be the same content twice.
+            hash=known.hash,
+            xhash=known.xhash,
+            message=None,
+            etype=declared.pop("etype", EventType.INSTRUMENT),
+            Symbol=known.symbol or None,
+            SecurityID=known.security_id,
+            SecurityIDSource=known.security_id_source,
+            ISINCODE=known.isin_code,
+            SecurityType=known.security_type,
+            CFICode=known.cfi,
+            SecurityExchange=known.exchange,
+            Currency=None if known.currency is None else known.currency.into_fix(),
+            **declared,
+        )
 
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
-        encoded = Convertible.into_dict(self)
-        encoded["kwargs"] = _stored_entries(self.kwargs)
+        encoded = Event.into_dict(self)
+        encoded["entries"] = _stored_entries(self.entries)
+        return encoded
+
+    def into_row(self) -> dict[str, Any]:
+        """The stored row, with the same list-struct spelling for `entries`."""
+        encoded = MarketConvertible.into_row(self)
+        encoded["entries"] = _stored_entries(self.entries)
         return encoded
 
     def get(self, field: int | str) -> Reading:
         """One field off this row, whichever of the four ways it is named.
 
         The one accessor (fix/access.py) reads the promoted columns first and
-        the stored `kwargs` after them, so a lifted fact and a residual one
+        the stored `entries` after them, so a lifted fact and a residual one
         answer through one call. The `Reading` carries the stored value and
         the typed reading together.
         """
-        return _row_access().reading(self._field_entries(), field)
+        return self._row_access().reading(self._field_entries(), field)
 
     def readings(self, field: int | str) -> list[Reading]:
         """Every value of `field` on this row, in stored order."""
-        return _row_access().readings(self._field_entries(), field)
+        return self._row_access().readings(self._field_entries(), field)
 
     def into_fix_pairs(self, access: FieldAccess | None = None) -> list[tuple[str, str]]:
-        """Ordered FIX fields projected once from columns, components, and `kwargs`.
+        """Ordered FIX fields projected once from columns, components, and `entries`.
 
         When an accessor resolves both a numeric field and a rendered field to
         one registry identity, the rendered occurrence is authoritative. Its
         position relative to other rendered fields is unchanged.
         """
-        resolver = access or _row_access()
-        pairs, resolved = self._canonical_pairs(resolver)
+        resolver = access or self._row_access()
+        _, pairs, resolved = self._canonical_fields(resolver)
         return [
             (
                 (tagged if access is not None else source)[0],
@@ -692,11 +781,18 @@ class FixMsg(Message):
             for source, tagged in zip(pairs, resolved, strict=True)
         ]
 
-    def _canonical_pairs(
+    def _canonical_fields(
         self, access: FieldAccess
-    ) -> tuple[list[tuple[str, Any]], list[tuple[str, Any]]]:
-        """Source-spelled and tag-resolved views, retaining stored value types."""
-        stored = [(str(key), value) for key, value in _stored_pairs(self.kwargs)]
+    ) -> tuple[list[Entry], list[tuple[str, Any]], list[tuple[str, Any]]]:
+        """Structured entries with source-spelled and tag-resolved keys.
+
+        One aligned pass, retaining stored value types: the dedup rules run
+        on the rendered keys, and every surviving position keeps its ready
+        `Entry` -- so a field read never re-splits a spelling the stored
+        shape already holds apart.
+        """
+        stored_entries = [Entry.from_stored(entry) for entry in self.entries or ()]
+        stored = [(entry.spelling, entry.value) for entry in stored_entries]
         stored_resolved = access.tagged_pairs(stored)
         stored_identities = {
             _pair_identity(pair[0])
@@ -704,32 +800,59 @@ class FixMsg(Message):
             if not _component_key(source[0])
         }
 
-        promoted = [
-            (str(tag), value)
+        promoted_entries = [
+            Entry.of(tag=int(tag), key=str(tag), value=value)
             for name, tag in type(self).into_tagged_columns()
             if (value := getattr(self, name, None)) is not None
         ]
-        promoted.extend(
-            (spelled, value)
+        promoted_entries.extend(
+            Entry.of(key=spelled, value=value)
             for name, spelled in type(self).into_named_columns()
             if (value := getattr(self, name, None)) is not None
         )
+        promoted = [(entry.spelling, entry.value) for entry in promoted_entries]
         promoted_resolved = access.tagged_pairs(promoted)
-        promoted = [
-            source
-            for source, pair in zip(promoted, promoted_resolved, strict=True)
-            if _pair_identity(pair[0]) not in stored_identities
+        keep_promoted = [
+            _pair_identity(pair[0]) not in stored_identities for pair in promoted_resolved
         ]
+        promoted_entries = [
+            entry for entry, kept in zip(promoted_entries, keep_promoted, strict=True) if kept
+        ]
+        promoted = [pair for pair, kept in zip(promoted, keep_promoted, strict=True) if kept]
 
-        components: list[tuple[str, Any]] = []
-        for column, count_name, row_type in _COMPONENT_GROUPS:
+        component_fields: list[tuple[str, Entry]] = []
+        for column, count_name, row_type in _component_groups():
             entries = getattr(self, column, None)
             if entries is None:
                 continue
             count = _tag_of(count_name)
             if _pair_identity(str(count)) not in stored_identities:
-                components.extend(_component_pairs(count, entries, row_type))
+                component_fields.extend(_component_fields(count, entries, row_type))
+        component_records = [entry for _, entry in component_fields]
+        components = [(key, entry.value) for key, entry in component_fields]
 
+        # The promoted discriminator re-enters at its wire-legal position:
+        # after the leading BeginString/BodyLength run the raw stage left in
+        # `entries`. The projection then keeps the wire's own order, and a
+        # rendered row re-parses whole -- a `35=` in front of the `8=` anchor
+        # would be shed as log noise.
+        head = 0
+        while head < len(stored) and stored[head][0] in ("8", "9"):
+            head += 1
+        if head:
+            at = next((index for index, pair in enumerate(promoted) if pair[0] == "35"), None)
+            if at is not None:
+                stored = [*stored[:head], promoted[at], *stored[head:]]
+                stored_entries = [
+                    *stored_entries[:head],
+                    promoted_entries[at],
+                    *stored_entries[head:],
+                ]
+                promoted = [*promoted[:at], *promoted[at + 1 :]]
+                promoted_entries = [*promoted_entries[:at], *promoted_entries[at + 1 :]]
+                stored_resolved = access.tagged_pairs(stored)
+
+        fields = [*promoted_entries, *component_records, *stored_entries]
         pairs = [*promoted, *components, *stored]
         resolved = access.tagged_pairs(pairs)
         named = {
@@ -740,7 +863,7 @@ class FixMsg(Message):
             and _numeric_key(pair[0])
         }
         if not named:
-            return pairs, resolved
+            return fields, pairs, resolved
 
         group_version = access.version or self.protocol_version
         if access.registry is not None and group_version is None:
@@ -774,6 +897,7 @@ class FixMsg(Message):
             for source, pair, guarded in zip(pairs, resolved, protected, strict=True)
         ]
         return (
+            [entry for entry, kept in zip(fields, keep, strict=True) if kept],
             [pair for pair, kept in zip(pairs, keep, strict=True) if kept],
             [pair for pair, kept in zip(resolved, keep, strict=True) if kept],
         )
@@ -787,6 +911,82 @@ class FixMsg(Message):
     def indexed_group(self, name: int | str) -> list[list[tuple[str, str]]]:
         """Rendered indexed group entries in index order."""
         return indexed_group_pairs(self.pairs, name)
+
+    def resolved_version(self, registry: FixRegistry | None = None) -> str | None:
+        """Which protocol version this row reads under, inferred when unresolved."""
+        if self.protocol_version is not None:
+            return self.protocol_version
+        try:
+            return infer_version_from_pairs(self.pairs, registry or self.registry)[0]
+        except (OSError, ValueError):
+            return None
+
+    @property
+    def has_indexed_entries(self) -> bool:
+        """Whether a rendered group path survives only in source spelling."""
+        return any(entry.comp or "[" in entry.key for entry in self.entries or ())
+
+    def component_records(self, column: str) -> list[dict[str, str]] | None:
+        """One resolved component column, each entry first-value-by-name.
+
+        None when the parse stage did not resolve the column, which is what
+        sends a scalar-built message down the pair-walking fallback. A stored
+        row hands entries back as mappings and a constructed one as `@scalar`
+        rows; both answer here, typed members rendered back to the wire's
+        spelling so the same readers serve both paths, and `buffer` merged
+        after them because a member kept as text was one a column could not
+        hold.
+        """
+        entries = getattr(self, column, None)
+        if entries is None:
+            return None
+        found: list[dict[str, str]] = []
+        for entry in entries:
+            if isinstance(entry, Mapping):
+                values = dict(entry)
+            else:
+                values = {
+                    member.name: getattr(entry, member.name, None)
+                    for member in dataclasses.fields(entry)
+                }
+            resolved: dict[str, str] = {}
+            for name, value in values.items():
+                if name != "buffer" and value is not None:
+                    resolved.setdefault(name, render_fix_value(value))
+            for name, value in dict(values.get("buffer") or {}).items():
+                resolved.setdefault(name, value)
+            found.append(resolved)
+        return found
+
+    def into_first_values(self, access: FieldAccess | None = None) -> dict[str, Any] | None:
+        """Promoted columns and simple numeric residuals without a FIX round trip.
+
+        The first occurrence of each wire key wins, as a flat message read
+        does. None when a component column or a rendered entry survives on
+        this row, which is what sends a reader down the canonical projection.
+        """
+        if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
+            return None
+        entries = self.entries or ()
+        if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
+            return None
+
+        resolver = access or self._row_access()
+        stored = [(str(entry.tag), entry.value) for entry in entries]
+        stored_tags = {tag for tag, _ in stored}
+        found: dict[str, Any] = {}
+        for name, tag in type(self).into_tagged_columns():
+            value = getattr(self, name, None)
+            if value is None or tag in stored_tags:
+                continue
+            found[tag] = render_fix_value(resolver.canonical_value(tag, value))
+        for name, spelling in type(self).into_named_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                found[spelling] = render_fix_value(resolver.canonical_value(spelling, value))
+        for tag, value in stored:
+            found.setdefault(tag, render_fix_value(resolver.canonical_value(tag, value)))
+        return found
 
     @property
     def pairs(self) -> list[tuple[str, str]]:
@@ -806,13 +1006,15 @@ class FixMsg(Message):
     def _field_entries(self) -> list[Entry]:
         """The canonical field sequence as accessor-ready entries.
 
-        A list of ready `Entry` views, so a caller reading several dozen
-        fields off one row builds them once: `entries_of` passes a ready entry
-        straight through, and rebuilding the row per ask was the whole cost of
-        decoding a normalized instrument (benchmarks/bench_market.py).
+        A list of ready `Entry` views built beside the canonical dedup, so a
+        caller reading several dozen fields off one row never re-splits a
+        spelling the stored shape already holds apart: `entries_of` passes a
+        ready entry straight through, and rebuilding the row per ask was the
+        whole cost of decoding a normalized instrument
+        (benchmarks/bench_market.py).
         """
-        pairs, _ = self._canonical_pairs(_row_access())
-        return [Entry.from_pair(key, value) for key, value in pairs]
+        fields, _, _ = self._canonical_fields(self._row_access())
+        return fields
 
     @classmethod
     @functools.cache
@@ -837,14 +1039,55 @@ class FixMsg(Message):
     # -- the FIX stage --------------------------------------------------------
 
     @classmethod
-    def from_message_arrow_batch(
-        cls, batch: pyarrow.RecordBatch, codec: Any
+    def from_message_batch(
+        cls,
+        source: pyarrow.RecordBatch | Iterable[Message],
+        codec: FixCodec | FixRegistry | None = None,
     ) -> pyarrow.RecordBatch:
+        """Transcribe raw messages as one parsed Arrow batch.
+
+        The vectorized half of the one conversion path -- raw `Message` to
+        `FixMsg` to typed market events; `from_message` is the row-by-row
+        half. `source` is one raw-contract RecordBatch or an iterable of
+        scalar `Message` rows. A feed's `FixRegistry` is all the conversion
+        needs -- the codec derives from it -- and a full `FixCodec` is for
+        the feeds whose rules or field declarations differ; the default
+        reads the packaged registry.
+        """
+        selected = codec if isinstance(codec, FixCodec) else cls.into_codec(codec)
+        if isinstance(source, pyarrow.RecordBatch):
+            return cls._from_message_batch(source, selected)
+        rows = list(source)
+        for row in rows:
+            if not isinstance(row, Message):
+                raise TypeError(f"from_message_batch takes Message rows, got {type(row).__name__}")
+        schema = Message.into_field().into_arrow_schema()
+        if not rows:
+            staged = pyarrow.RecordBatch.from_pylist([], schema=schema)
+        else:
+            table = pyarrow.Table.from_batches(
+                Message.into_arrow_reader(rows, batch_row_size=len(rows)), schema=schema
+            ).combine_chunks()
+            staged = table.to_batches(max_chunksize=table.num_rows)[0]
+        return cls._from_message_batch(staged, selected)
+
+    @classmethod
+    def _from_message_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
         """Transcribe one classified raw `Message` batch under a FIX codec."""
         if not isinstance(batch, pyarrow.RecordBatch):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
+        # A batch scanned back out of Iceberg carries `large_string` where the
+        # raw contract says `string`, and the vectorized path below joins those
+        # columns against constants it builds itself -- which Arrow refuses
+        # across the two widths. The declaration is the one reading, so the
+        # batch is brought onto it here rather than at each kernel. Narrowed
+        # and not merged: this stage is read with `message` projected away, and
+        # filling a column the reader did not select would invent the text it
+        # deliberately left behind.
+        batch = Message.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
         rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
+        columns.update(_session_batch_columns(columns))
         messages = columns.get("message")
         if messages is not None:
             protocols = codec.categorise(messages, columns.get("plugin_code"))
@@ -926,7 +1169,7 @@ class FixMsg(Message):
                 fallback = _take_record_batch(batch, fallback_at)
                 fallback_columns = {name: fallback.column(name) for name in fallback.schema.names}
                 fast_parts.append(
-                    cls._from_message_arrow_batch_reference(
+                    cls._from_message_batch_reference(
                         fallback,
                         codec,
                         fallback_columns,
@@ -935,10 +1178,10 @@ class FixMsg(Message):
                 )
                 fast_positions.append(fallback_at)
             return _scatter_record_batches(fast_parts, fast_positions)
-        return cls._from_message_arrow_batch_reference(batch, codec, columns, protocols)
+        return cls._from_message_batch_reference(batch, codec, columns, protocols)
 
     @classmethod
-    def _from_message_arrow_batch_reference(
+    def _from_message_batch_reference(
         cls,
         batch: pyarrow.RecordBatch,
         codec: Any,
@@ -947,30 +1190,39 @@ class FixMsg(Message):
     ) -> pyarrow.RecordBatch:
         """Transcribe rows through the registry's complete configurable path."""
         rows = batch.num_rows
+        # Every way into this method hands over columns taken straight off a
+        # batch, including the fast path's fallback slice, so the header
+        # columns the raw stage lifted are read as this stage stores them here
+        # rather than at each caller.
+        columns = {**columns, **_session_batch_columns(columns)}
         parts, positions = [], []
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
             if rule.named is None:
-                parts.append(pyarrow.nulls(len(where), KWARGS))
+                parts.append(pyarrow.nulls(len(where), ENTRIES))
             else:
-                kwargs = (
-                    columns["kwargs"]
+                entries = (
+                    columns["entries"]
                     if len(where) == rows
-                    else pyarrow.compute.take(columns["kwargs"], where)
+                    else pyarrow.compute.take(columns["entries"], where)
                 )
                 pairs = codec.drop_null_values(
-                    codec.into_payload_pairs(codec.into_pairs_from_kwargs(kwargs, protocol.as_py()))
+                    codec.into_payload_pairs(
+                        codec.into_pairs_from_entries(entries, protocol.as_py())
+                    )
                 )
-                parts.append(codec.into_message_kwargs(pairs))
+                parts.append(codec.into_message_entries(pairs))
             positions.append(where)
-        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
-        protocol_version, protocol_version_source = codec.versions_of_kwargs(kwargs)
+        entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
+        protocol_version, protocol_version_source = codec.versions_of_entries(
+            entries, columns.get("BeginString")
+        )
         columns.update(
             {
                 "protocol_code": protocols,
                 "protocol_version": protocol_version,
                 "protocol_version_source": protocol_version_source,
-                "kwargs": kwargs,
+                "entries": entries,
             }
         )
         schema = cls._message_schema(batch.schema)
@@ -1018,25 +1270,25 @@ class FixMsg(Message):
     def _resolved_columns(
         cls, columns: Mapping[str, Any], codec: Any, version: str | None, rows: int
     ) -> dict[str, Any]:
-        """One homogeneous slice: `kwargs` completed, and what it gives up to columns."""
-        kwargs = codec.complete_kwargs(columns["kwargs"], version)
-        kwargs = cls._prefer_named_kwargs(
-            columns["kwargs"], kwargs, codec.registry.group_count_tags(version)
+        """One homogeneous slice: `entries` completed, and what it gives up to columns."""
+        entries = codec.complete_entries(columns["entries"], version)
+        entries = cls._prefer_named_entries(
+            columns["entries"], entries, codec.registry.group_count_tags(version)
         )
-        components, kwargs = codec.into_component_columns(kwargs, version)
-        lifted, kwargs = codec.into_lifted_columns(kwargs, version)
-        found: dict[str, Any] = {"kwargs": kwargs, **components, **lifted}
+        components, entries = codec.into_component_columns(entries, version)
+        lifted, entries = codec.into_lifted_columns(entries, version)
+        found: dict[str, Any] = {"entries": entries, **components, **lifted}
         # A lifted value only fills a column already read directly where it is empty:
         # `MsgType` is read off the front of the message before any of this,
         # and the wire is the authority on what it says.
         for name, column in found.items():
             stored = columns.get(name)
-            if name != "kwargs" and stored is not None and stored.null_count < rows:
+            if name != "entries" and stored is not None and stored.null_count < rows:
                 found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
         return found
 
     @staticmethod
-    def _prefer_named_kwargs(
+    def _prefer_named_entries(
         source: Any, resolved: Any, group_count_tags: Collection[int] = ()
     ) -> Any:
         """Drop flat numeric copies shadowed by named fields of one identity.
@@ -1108,7 +1360,7 @@ class FixMsg(Message):
             fields=list(entries.type),
         )
         mask = compute.is_null(resolved) if resolved.null_count else None
-        return build_list(KWARGS, sizes, values, mask)
+        return build_list(ENTRIES, sizes, values, mask)
 
     @classmethod
     def identified(
@@ -1159,7 +1411,7 @@ class FixMsg(Message):
             "protocol_code",
             "protocol_version",
             "MsgType",
-            "kwargs",
+            "entries",
         )
 
     @classmethod
@@ -1172,14 +1424,16 @@ class FixMsg(Message):
         """
         compute = pyarrow.compute
         parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
-        digests = cls.hash_arrow(*parsed)
-        stored = columns.get("kwargs")
+        clock = columns["unix"]
+        digests = cls.txhash_arrow(clock, *parsed)
+        stored = columns.get("entries")
         if stored is None:
             return digests
         unread = compute.is_null(stored)
         if not compute.any(unread, min_count=0).as_py():
             return digests
-        recomputed = cls.hash_arrow(
+        recomputed = cls.txhash_arrow(
+            clock,
             _digest_text(columns.get("message"), rows),
             _digest_text(columns.get("source_url"), rows),
             _digest_text(columns.get("source_rownum"), rows),
@@ -1189,7 +1443,10 @@ class FixMsg(Message):
             recomputed
             if incoming is None
             else compute.if_else(
-                compute.and_(compute.is_valid(incoming), compute.not_equal(incoming, NIL)),
+                compute.and_(
+                    compute.is_valid(incoming),
+                    compute.not_equal(incoming, pyarrow.scalar(NIL_BYTES, HASH)),
+                ),
                 incoming,
                 recomputed,
             )
@@ -1216,11 +1473,11 @@ class FixMsg(Message):
         )
         residual = (
             FieldAccess.first_arrow_fields(
-                columns.get("kwargs"),
+                columns.get("entries"),
                 tuple((tag, field) for _, field, tag in identified if tag > 0),
                 rows,
             )
-            if columns.get("kwargs") is not None
+            if columns.get("entries") is not None
             else {}
         )
         available = []
@@ -1299,7 +1556,12 @@ class FixMsg(Message):
         """Expose this parsed row through the FIX market translator."""
         from rekep.market.fix import FixEvents
 
-        carried = {"runix": self.runix or self.unix, "mic": self.mic, **declared}
+        carried = {
+            "runix": self.runix or self.unix,
+            "mic": self.mic,
+            "registry": getattr(self, "_FixMsg__registry", None),
+            **declared,
+        }
         return self._transacted(FixEvents(message=self, **carried))
 
     def _transacted(self, built: Any) -> Any:
@@ -1529,7 +1791,7 @@ class FixMsg(Message):
             )
         target = Instrument.into_field()
         columns = {name: batch.column(name) for name in target.names if name in batch.schema.names}
-        normalized = _NormalizedInstrumentFields.from_array(batch.column("kwargs"), batch.num_rows)
+        normalized = _NormalizedInstrumentFields.from_array(batch.column("entries"), batch.num_rows)
         columns.update(
             {
                 "etype": pyarrow.repeat(
@@ -1540,7 +1802,7 @@ class FixMsg(Message):
                 "security_id": batch.column("SecurityID"),
                 "security_id_source": batch.column("SecurityIDSource"),
                 "isin_code": batch.column("ISINCODE"),
-                "alt_ids": normalized.alt_ids(target.field("alt_ids").arrow_type),
+                "alt_ids": normalized.alt_ids(target.field("alt_ids").dtype),
                 "security_type": batch.column("SecurityType"),
                 "cfi": batch.column("CFICode"),
                 "exchange": batch.column("SecurityExchange"),
@@ -1554,7 +1816,7 @@ class FixMsg(Message):
                 "strike": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
                 "option_kind": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
                 "label": normalized.first("SecurityDesc"),
-                "legs": normalized.legs(target.field("legs").arrow_type),
+                "legs": normalized.legs(target.field("legs").dtype),
             }
         )
         raw = pyarrow.RecordBatch.from_arrays(
@@ -1659,7 +1921,7 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     """ISO exchange fields, the stored venue, then FIX session endpoints."""
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
-    stored = columns.get("kwargs")
+    stored = columns.get("entries")
     tags = (
         FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
         if stored is not None
@@ -1700,7 +1962,7 @@ _GROUP_STRIDE = 1 << 32
 
 @dataclasses.dataclass(frozen=True)
 class _NormalizedInstrumentFields:
-    """Column views over the normalized fields stored in `FixMsg.kwargs`."""
+    """Column views over the normalized fields stored in `FixMsg.entries`."""
 
     rows: int
     parents: pyarrow.Array
@@ -1781,34 +2043,34 @@ class _NormalizedInstrumentFields:
             return pyarrow.nulls(len(roots), pyarrow.string())
         return compute.take(values, compute.index_in(roots, value_set=ids))
 
-    def alt_ids(self, arrow_type: pyarrow.DataType | None) -> pyarrow.Array:
+    def alt_ids(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
         """Alternative identifiers as one nullable Arrow map per row."""
-        assert arrow_type is not None
+        assert dtype is not None
         roots, parents, values = self._roots("NoSecurityAltID", "SecurityAltID", nonblank=True)
         sizes = dense_counts(parents, self.rows)
         sources = _id_source_name_arrow(
             self._member(roots, "NoSecurityAltID", "SecurityAltIDSource")
         )
         return build_map(
-            arrow_type,
+            dtype,
             sizes,
             sources,
             values,
             mask=pyarrow.compute.equal(sizes, 0),
         )
 
-    def legs(self, arrow_type: pyarrow.DataType | None) -> pyarrow.Array:
+    def legs(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
         """Normalized leg groups as one nullable Arrow list per row."""
-        assert arrow_type is not None
+        assert dtype is not None
         roots, parents, xhash = self._roots("NoLegs", "xhash")
         sizes = dense_counts(parents, self.rows)
 
         def member(name: str) -> pyarrow.Array:
             return self._member(roots, "NoLegs", name)
 
-        item = arrow_type.value_type
+        item = dtype.value_type
         columns = {
-            "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
+            "xhash": arrow_of(pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0)),
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
@@ -1829,16 +2091,21 @@ class _NormalizedInstrumentFields:
             fields=[item.field(index) for index in range(item.num_fields)],
         )
         return build_list(
-            arrow_type,
+            dtype,
             sizes,
             entries,
             mask=pyarrow.compute.equal(sizes, 0),
         )
 
 
-def _stored_code(values: pyarrow.Array) -> pyarrow.Array:
-    """A stored stable integer code, with malformed values degraded to unknown."""
-    return pyarrow.compute.fill_null(cast_arrow_fix(values, pyarrow.int32()), 0)
+def _stored_code(values: pyarrow.Array, declared: type[Any] = AssetKind) -> pyarrow.Array:
+    """A stored stable integer code, with malformed values degraded to unknown.
+
+    As wide as the code's own declaration: a column stores the width its enum
+    packs into, never a width a call site guessed.
+    """
+    stored = declared.into_arrow_type().index_type
+    return pyarrow.compute.fill_null(cast_arrow_fix(values, stored), 0)
 
 
 @functools.cache
@@ -1847,7 +2114,7 @@ def _fix_enum_arrays(enum_type: type[Any]) -> tuple[pyarrow.Array, pyarrow.Array
     declared = {spelling: int(member) for member in enum_type if (spelling := member.into_fix())}
     return (
         pyarrow.array(declared, pyarrow.string()),
-        pyarrow.array(declared.values(), pyarrow.int32()),
+        pyarrow.array(declared.values(), enum_type.into_arrow_type().index_type),
     )
 
 
@@ -1858,7 +2125,7 @@ def _fix_enum_arrow(values: pyarrow.Array, enum_type: type[Any]) -> pyarrow.Arra
     text = compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
     return compute.fill_null(
         compute.take(codes, compute.index_in(text, value_set=spellings)), 0
-    ).cast(pyarrow.int32())
+    ).cast(enum_type.into_arrow_type().index_type)
 
 
 @functools.cache
@@ -1885,22 +2152,28 @@ def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
-    """Canonical normalized currency text packed into its persisted int32."""
+    """Canonical normalized currency text packed into its persisted int32.
+
+    Three letters big-endian above a trailing NUL -- exactly `Currency._pack`,
+    aliases resolved through the table the scalar readers use, so the kernel
+    and the scalar write one value.
+    """
     compute = pyarrow.compute
     text = values.cast(pyarrow.string(), safe=False)
     canonical = compute.utf8_upper(compute.utf8_trim_whitespace(text))
+    aliases = Currency.aliased_codes()
+    if aliases:
+        position = compute.index_in(canonical, value_set=pyarrow.array(list(aliases)))
+        resolved = compute.take(pyarrow.array(list(aliases.values())), position)
+        canonical = compute.coalesce(resolved, canonical)
     valid = compute.fill_null(compute.match_substring_regex(canonical, r"^[A-Z]{3}$"), False)
-    packed_text = compute.binary_join_element_wise(canonical, "0", "")
     alphabet = pyarrow.array(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     packed = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(values))
-    for index, multiplier in enumerate((1 << 24, 1 << 16, 1 << 8, 1)):
-        if index == 3:
-            byte = pyarrow.repeat(pyarrow.scalar(ord("0"), pyarrow.int32()), len(values))
-        else:
-            character = compute.utf8_slice_codeunits(packed_text, start=index, stop=index + 1)
-            byte = compute.add(compute.index_in(character, value_set=alphabet), 65).cast(
-                pyarrow.int32()
-            )
+    for index, multiplier in enumerate((1 << 24, 1 << 16, 1 << 8)):
+        character = compute.utf8_slice_codeunits(canonical, start=index, stop=index + 1)
+        byte = compute.add(compute.index_in(character, value_set=alphabet), 65).cast(
+            pyarrow.int32()
+        )
         packed = compute.add(packed, compute.multiply(byte, multiplier)).cast(pyarrow.int32())
     unknown = compute.if_else(
         compute.is_null(values),
@@ -1972,7 +2245,7 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
     """Stored fields in the spelling Arrow accepts without a shape pass."""
-    return None if entries is None else [Kwarg.from_stored(entry).into_dict() for entry in entries]
+    return None if entries is None else [Entry.from_stored(entry).into_dict() for entry in entries]
 
 
 @functools.cache
@@ -1986,11 +2259,17 @@ def _tag_of(name: str) -> int:
     return _tags_by_name()[name.casefold()]
 
 
-def _component_pairs(
+def _component_fields(
     count_tag: int, entries: Sequence[Any], row_type: type[Any]
-) -> list[tuple[str, Any]]:
-    """One typed component restored as a valid count-led repeating group."""
-    pairs: list[tuple[str, Any]] = [(str(count_tag), len(entries))]
+) -> list[tuple[str, Entry]]:
+    """One typed component restored as a valid count-led repeating group.
+
+    `(spelling, entry)` per field: a constructed member spells as its tag,
+    and a `buffer` key keeps its stored spelling byte for byte.
+    """
+    fields: list[tuple[str, Entry]] = [
+        (str(count_tag), Entry.of(tag=count_tag, key=str(count_tag), value=len(entries)))
+    ]
     members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
@@ -2006,10 +2285,11 @@ def _component_pairs(
             if index == 0 and value is None:
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
-                pairs.append((str(member.fix["tag"]), value))
+                tag = int(member.fix["tag"])
+                fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
         for key, value in buffered.items():
-            pairs.append((str(key), value))
-    return pairs
+            fields.append((str(key), Entry.from_pair(str(key), value)))
+    return fields
 
 
 def _fix_text(value: Any) -> str:
@@ -2045,6 +2325,59 @@ def _id_source(value: Any) -> str:
     return named.into_fix() if named is not None and named.into_fix() else text
 
 
+@functools.cache
+def _session_types() -> Mapping[str, Any]:
+    """Which of the lifted header fields this stage stores as something else.
+
+    The raw stage is protocol-neutral and keeps every one of them as the text
+    the payload spelled; a `BodyLength` is a number here and a `SendingTime` an
+    instant, so the two stages disagree on exactly three of the seven and this
+    is the list of them.
+    """
+    declared = FixMsg.into_field()
+    return {
+        name: declared.field(name).dtype
+        for name, _ in SESSION_FIELDS
+        if not pyarrow.types.is_string(declared.field(name).dtype)
+    }
+
+
+def _session_batch_columns(columns: Mapping[str, Any]) -> dict[str, Any]:
+    """The header columns the raw stage lifted, read as this stage stores them.
+
+    The raw stage is protocol-neutral and keeps every one of them as text; a
+    `BodyLength` is a number here and a `SendingTime` an instant, so the three
+    that differ are cast once for the whole batch instead of being scanned for
+    again in `entries`.
+    """
+    found: dict[str, Any] = {}
+    for name, dtype in _session_types().items():
+        column = columns.get(name)
+        if column is None:
+            continue
+        if pyarrow.types.is_string(column.type):
+            found[name] = cast_arrow_fix(column, dtype)
+    return found
+
+
+def _session_values(source: Message) -> dict[str, Any]:
+    """The header fields the raw stage already lifted, as this stage holds them.
+
+    Read off the columns rather than out of `entries`: the raw stage parsed
+    them once, and scanning the list again for facts already in hand is what
+    this exists to stop.
+    """
+    typed = _session_types()
+    found: dict[str, Any] = {}
+    for name, _ in SESSION_FIELDS:
+        value = getattr(source, name, None)
+        if value is None:
+            continue
+        dtype = typed.get(name)
+        found[name] = value if dtype is None else scalar_fix_value(value, dtype)
+    return found
+
+
 def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     """Stored fields as the pairs a FIX reader addresses them by.
 
@@ -2055,7 +2388,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     """
     for entry in entries or ():
         if not isinstance(entry, Mapping):
-            entry = Kwarg.from_stored(entry)
+            entry = Entry.from_stored(entry)
         lead = entry.get("namespace") or entry.get("comp")
         name = entry["key"]
         if lead:
@@ -2086,7 +2419,7 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
 
 
 def _stored_text(column: Any, rows: int) -> pyarrow.Array:
-    """A `KWARGS` column as one string per row: every field, in wire order."""
+    """A `ENTRIES` column as one string per row: every field, in wire order."""
     compute = pyarrow.compute
     entries = compute.list_flatten(column)
     spelled = compute.binary_join_element_wise(

@@ -1,0 +1,61 @@
+{
+ "name": "RFQRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "RFQRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RFQRequest",
+   "msgtype": "AH"
+  },
+  "fields": [
+   {
+    "name": "RFQReqID",
+    "type": "string",
+    "fix": {
+     "tag": "644"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "RFQReqGrp",
+    "type": "struct",
+    "fix": {
+     "component": "RFQReqGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "PrivateQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1171"
+    }
+   }
+  ]
+ }
+}

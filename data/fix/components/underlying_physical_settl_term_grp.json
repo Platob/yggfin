@@ -3,43 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingPhysicalSettlTerms",
-   "required": false,
-   "tag": 42060,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
-     "required": false
+ "declaration": {
+  "name": "UnderlyingPhysicalSettlTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPhysicalSettlTermGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingPhysicalSettlTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42060"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlCurrency",
-     "required": false,
-     "tag": 42061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlBusinessDays",
-     "required": false,
-     "tag": 42062
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
-     "required": false,
-     "tag": 42063
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPhysicalSettlTermXID",
-     "required": false,
-     "tag": 42064
+    "item": {
+     "name": "UnderlyingPhysicalSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42061"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42062"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42063"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42064"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

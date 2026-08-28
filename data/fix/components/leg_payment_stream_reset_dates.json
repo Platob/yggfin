@@ -3,146 +3,211 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamResetDateRelativeTo",
-   "required": false,
-   "tag": 40303
+ "declaration": {
+  "name": "LegPaymentStreamResetDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamResetDates",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamResetDateBusinessDayConvention",
-   "required": false,
-   "tag": 40304
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamResetDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamResetFrequencyPeriod",
-   "required": false,
-   "tag": 40306
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamResetFrequencyUnit",
-   "required": false,
-   "tag": 40307
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamResetWeeklyRollConvention",
-   "required": false,
-   "tag": 40308
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateRelativeTo",
-   "required": false,
-   "tag": 40309
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateBusinessDayConvention",
-   "required": false,
-   "tag": 40310
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamInitialFixingDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateOffsetPeriod",
-   "required": false,
-   "tag": 40312
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateOffsetUnit",
-   "required": false,
-   "tag": 40313
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateOffsetDayType",
-   "required": false,
-   "tag": 40314
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamInitialFixingDateAdjusted",
-   "required": false,
-   "tag": 40315
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateRelativeTo",
-   "required": false,
-   "tag": 40316
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateBusinessDayConvention",
-   "required": false,
-   "tag": 40317
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamFixingDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateOffsetPeriod",
-   "required": false,
-   "tag": 40319
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateOffsetUnit",
-   "required": false,
-   "tag": 40320
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateOffsetDayType",
-   "required": false,
-   "tag": 40321
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFixingDateAdjusted",
-   "required": false,
-   "tag": 40322
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamRateCutoffDateOffsetPeriod",
-   "required": false,
-   "tag": 40323
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamRateCutoffDateOffsetUnit",
-   "required": false,
-   "tag": 40324
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamRateCutoffDateOffsetDayType",
-   "required": false,
-   "tag": 40325
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamFixingDateGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStreamResetDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40303"
+    }
+   },
+   {
+    "name": "LegPaymentStreamResetDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40304"
+    }
+   },
+   {
+    "name": "LegPaymentStreamResetDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamResetDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamResetFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40306"
+    }
+   },
+   {
+    "name": "LegPaymentStreamResetFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40307"
+    }
+   },
+   {
+    "name": "LegPaymentStreamResetWeeklyRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40308"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40309"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40310"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamInitialFixingDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40312"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40313"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40314"
+    }
+   },
+   {
+    "name": "LegPaymentStreamInitialFixingDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40315"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40316"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40317"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamFixingDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamFixingDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40319"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40320"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40321"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40322"
+    }
+   },
+   {
+    "name": "LegPaymentStreamRateCutoffDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40323"
+    }
+   },
+   {
+    "name": "LegPaymentStreamRateCutoffDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40324"
+    }
+   },
+   {
+    "name": "LegPaymentStreamRateCutoffDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40325"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFixingDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamFixingDateGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

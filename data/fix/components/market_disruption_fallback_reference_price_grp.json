@@ -3,68 +3,101 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoMarketDisruptionFallbackReferencePrices",
-   "required": false,
-   "tag": 41096,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackUnderlierType",
-     "required": false,
-     "tag": 41097
+ "declaration": {
+  "name": "MarketDisruptionFallbackReferencePriceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MarketDisruptionFallbackReferencePriceGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoMarketDisruptionFallbackReferencePrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41096"
     },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackUnderlierSecurityID",
-     "required": false,
-     "tag": 41098
-    },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
-     "required": false,
-     "tag": 41099
-    },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
-     "required": false,
-     "tag": 41100
-    },
-    {
-     "kind": "field",
-     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
-     "required": false,
-     "tag": 41101
-    },
-    {
-     "kind": "field",
-     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
-     "required": false,
-     "tag": 41102
-    },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackOpenUnits",
-     "required": false,
-     "tag": 41103
-    },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackBasketCurrency",
-     "required": false,
-     "tag": 41104
-    },
-    {
-     "kind": "field",
-     "name": "MarketDisruptionFallbackBasketDivisor",
-     "required": false,
-     "tag": 41105
+    "item": {
+     "name": "MarketDisruptionFallbackReferencePrice",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarketDisruptionFallbackUnderlierType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41097"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackUnderlierSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41098"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41099"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41100"
+       }
+      },
+      {
+       "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41101"
+       }
+      },
+      {
+       "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41102"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackOpenUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41103"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackBasketCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41104"
+       }
+      },
+      {
+       "name": "MarketDisruptionFallbackBasketDivisor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41105"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

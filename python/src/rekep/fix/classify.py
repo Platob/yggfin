@@ -19,7 +19,6 @@ or reports one.
 from __future__ import annotations
 
 import dataclasses
-import json
 import re
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
@@ -28,8 +27,9 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
+from rekep.fields import Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import ANY_VERSION, Alias, FieldEntry, fold
+from rekep.fix.entries import ANY_VERSION, Alias, fold, record_of
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
@@ -237,19 +237,21 @@ class Classified(Convertible):
             occurrences=self.count.total,
         )
 
-    def into_entry(self, column: str = "") -> FieldEntry:
+    def into_entry(self, column: str = "") -> Field:
         """This namespaced name as the record declaring it would be.
 
         `column` names the parsed-log column the field is lifted into, for a
-        caller that already knows it; the empty default leaves the entry in
+        caller that already knows it; the empty default leaves the record in
         the pairs, completable later through `FixRegistry.promote_field`.
         """
-        return FieldEntry(
-            name=self.name,
-            kind="namespace",
-            versions=(ANY_VERSION,),
-            type="String",
-            column=column,
+        return record_of(
+            {
+                "name": self.name,
+                "kind": "namespace",
+                "versions": (ANY_VERSION,),
+                "type": "String",
+                "column": column,
+            }
         )
 
 
@@ -299,27 +301,6 @@ class KeyReport(Convertible):
             messages=int(mapping.get("messages", 0)),
         )
 
-    def into_text(self) -> str:
-        """The report as the lines a person reads first."""
-        totals, names = self.totals(), self.names()
-        written = [
-            f"{self.lines} lines, {self.messages} carrying a message, "
-            f"{len(self.rows)} distinct key names"
-        ]
-        for kind in KINDS:
-            written.append(f"  {kind:8} {names[kind]:6} names {totals[kind]:12} occurrences")
-        for kind in (NAMESPACE, NEAR):
-            rows = self.of(kind)
-            if not rows:
-                continue
-            written.append(f"\n{kind} ({len(rows)}), most counted first:")
-            for row in rows[:20]:
-                nearest = f" ~ {row.resolved} (distance {row.distance})" if row.resolved else ""
-                written.append(f"  {row.count.total:10}  {row.name}{nearest}")
-            if len(rows) > 20:
-                written.append(f"  ... and {len(rows) - 20} more")
-        return "\n".join(written)
-
 
 def classify(counts: KeyCounts, registry: FixRegistry, ceiling: int = NEAR_CEILING) -> KeyReport:
     """Every counted name against the dictionary, most counted first.
@@ -347,15 +328,15 @@ def _classified(
     ceiling: int,
 ) -> Classified:
     """What one counted name is: known, aliased, nearly known, or nobody's."""
-    entry = registry.resolve(count.name)
-    if entry is not None:
-        aliased = fold(count.name) in {alias.folded for alias in entry.aliases}
-        return Classified(count, ALIASED if aliased else EXACT, entry.name)
+    record = registry.resolve(count.name)
+    if record is not None:
+        aliased = fold(count.name) in {alias.folded for alias in record.fix.named_aliases}
+        return Classified(count, ALIASED if aliased else EXACT, record.fix.canonical)
     wanted = _member_name(count.name, containers)
     if wanted != count.name:
-        entry = registry.resolve(wanted)
-        if entry is not None:
-            return Classified(count, EXACT, entry.name)
+        record = registry.resolve(wanted)
+        if record is not None:
+            return Classified(count, EXACT, record.fix.canonical)
     nearest, distance = _nearest(fold(wanted), known, ceiling)
     if nearest:
         return Classified(count, NEAR, nearest, distance)
@@ -384,18 +365,18 @@ def _known_containers(registry: FixRegistry) -> frozenset[str]:
     A field as well as a component, because a group is named by its count
     field -- `NoPartyIDs` -- and that is what a rendered path writes.
     """
-    found = {fold(name) for name in registry.component_entries()}
-    for entry in registry.field_entries().values():
-        found.update(fold(spelling) for spelling in entry.spellings())
+    found = {fold(name) for name in registry.component_records()}
+    for record in registry.field_records().values():
+        found.update(fold(spelling) for spelling in record.fix.spellings())
     return frozenset(found)
 
 
 def _known_names(registry: FixRegistry) -> Mapping[str, str]:
     """`{folded spelling: canonical name}` for every name the dictionary has."""
     found: dict[str, str] = {}
-    for entry in registry.field_entries().values():
-        for spelling in entry.spellings():
-            found.setdefault(fold(spelling), entry.name)
+    for record in registry.field_records().values():
+        for spelling in record.fix.spellings():
+            found.setdefault(fold(spelling), record.fix.canonical)
     return found
 
 
@@ -537,8 +518,3 @@ def count_files(
 def _source_of(url: str) -> str:
     """A capture's own name, which is what a backlog says a count came from."""
     return url.rstrip("/").rsplit("/", 1)[-1]
-
-
-def report_document(report: KeyReport) -> str:
-    """The report as the JSON a review reads and `apply_report` reads back."""
-    return json.dumps(report.into_dict(), indent=1)

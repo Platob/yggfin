@@ -6,20 +6,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAltMDSource",
-   "required": false,
-   "tag": 816,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AltMDSourceID",
-     "required": false,
-     "tag": 817
+ "declaration": {
+  "name": "MDRjctGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MDRjctGrp",
+   "msgtypes": "[\"MarketDataRequestReject\"]"
+  },
+  "fields": [
+   {
+    "name": "NoAltMDSource",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "816"
+    },
+    "item": {
+     "name": "AltMDSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AltMDSourceID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "817"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

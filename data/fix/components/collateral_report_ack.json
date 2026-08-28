@@ -1,0 +1,104 @@
+{
+ "name": "CollateralReportAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "CollateralReportAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CollateralReportAck",
+   "msgtype": "DQ"
+  },
+  "fields": [
+   {
+    "name": "CollRptID",
+    "type": "string",
+    "fix": {
+     "tag": "908"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "CollRptStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2488"
+    }
+   },
+   {
+    "name": "CollRptRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2487"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

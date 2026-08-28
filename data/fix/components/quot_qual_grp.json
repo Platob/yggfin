@@ -6,20 +6,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoQuoteQualifiers",
-   "required": false,
-   "tag": 735,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "QuotQualGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuotQualGrp",
+   "msgtypes": "[\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoQuoteQualifiers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "735"
+    },
+    "item": {
      "name": "QuoteQualifier",
-     "required": false,
-     "tag": 695
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "695"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

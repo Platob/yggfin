@@ -12,7 +12,6 @@ version, which is a schema fact and not data.
 
 from __future__ import annotations
 
-import dataclasses
 import io
 import json
 import os
@@ -32,9 +31,19 @@ import rekep
 from rekep.enums import EventType, State
 from rekep.fields import Field
 from rekep.fix import registry as registry_module
-from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import (
+    ANY_VERSION,
+    NAMESPACE,
+    Alias,
+    ComponentRecord,
+    record_copy,
+    record_document,
+    record_kind,
+    record_of,
+    values_of,
+)
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.quickfix import block, field_member, group_member, members_of
 from rekep.fix.registry import FixRegistry, _problems
 from rekep.fix.store import (
     NAMED_FILE,
@@ -50,8 +59,8 @@ PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 
 def _registry_documents() -> dict[str, dict[str, Any]]:
-    field = FieldEntry(name="FakeRole", tag=90001, versions=("9.1",), type="int")
-    component = ComponentEntry(name="FakeParties", versions=("9.1",))
+    field = record_of({"name": "FakeRole", "tag": 90001, "versions": ["9.1"], "type": "int"})
+    component = ComponentRecord(name="FakeParties", versions=("9.1",))
     return {
         "versions.json": {
             "versions": ["9.1"],
@@ -59,7 +68,7 @@ def _registry_documents() -> dict[str, dict[str, Any]]:
             "declared": ["9.1"],
             "sessions": {"9.1": [["FakeRole", True]]},
         },
-        shard_name(90001): {"90001": field.into_dict()},
+        shard_name(90001): {"90001": record_document(field)},
         "components/fake_parties.json": component.into_dict(),
     }
 
@@ -94,7 +103,7 @@ class Offline(FixRegistry):
 
 
 def _pairs(array: pyarrow.Array, row: int = 0) -> list[tuple[object, str]]:
-    """One `kwargs` or map cell in the pair form the assertions read."""
+    """One `entries` or map cell in the pair form the assertions read."""
     return [
         (entry["key"], entry["value"]) if isinstance(entry, dict) else tuple(entry)
         for entry in array.to_pylist()[row] or ()
@@ -124,13 +133,13 @@ def store(tmp_path: Path) -> Offline:
         [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
         session=(("FakeRole", True),),
         components=[
-            SpecComponent(
+            block(
                 "FakeParties",
-                (
-                    SpecGroup(
-                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
-                    ),
-                ),
+                [
+                    group_member(
+                        "NoFakeParties", 90003, [field_member("FakeRole", 90001, required=True)]
+                    )
+                ],
             )
         ],
     )
@@ -223,12 +232,14 @@ def test_one_layout_is_all_that_is_left_of_the_store() -> None:
 def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Offline) -> None:
     """It has no tag to shard on, so it shares the one document those live in."""
     store.add_field(
-        FieldEntry(
-            name="FAKE.VENDOR.CODE",
-            kind=NAMESPACE,
-            versions=(ANY_VERSION,),
-            type="String",
-            column="fake_vendor_code",
+        record_of(
+            {
+                "name": "FAKE.VENDOR.CODE",
+                "kind": NAMESPACE,
+                "versions": [ANY_VERSION],
+                "type": "String",
+                "column": "fake_vendor_code",
+            }
         )
     )
     assert (Path(store.cache_dir) / NAMED_FILE).exists()
@@ -244,9 +255,9 @@ def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Off
 def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Offline) -> None:
     """One tag, one record, and the name 9.0 used still resolves to it."""
     entry = store.resolve("FakeRole")
-    assert entry.tag == 90001 and entry.name == "FakeRole"
-    assert entry.versions == ("9.0", "9.1")
-    assert [alias.name for alias in entry.aliases] == ["FakeRoleCode"]
+    assert entry.fix.tag == 90001 and entry.fix.canonical == "FakeRole"
+    assert entry.fix.versions == ("9.0", "9.1")
+    assert [alias.name for alias in entry.fix.named_aliases] == ["FakeRoleCode"]
     assert store.resolve("FakeRoleCode") is entry
     stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
     assert stored["90001"]["aliases"] == [
@@ -266,7 +277,7 @@ def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
     """A field a rewritten version no longer names has lost that version."""
     store._store_fields("9.0", [_field("FakeCode", 90002, "9.0")])
     assert [member.name for member in store.fields("9.0")] == ["FakeCode"]
-    assert store.resolve("FakeRole").versions == ("9.1",)
+    assert store.resolve("FakeRole").fix.versions == ("9.1",)
     store._store_fields("9.1", [_field("FakeCode", 90002, "9.1")])
     assert store.resolve("FakeRole") is None, "its last version went, and so did the record"
     assert "90001" not in json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
@@ -278,11 +289,11 @@ def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
 def test_a_name_resolves_canonical_then_alias(store: Offline) -> None:
     """Two tiers, in the order a rendered key is tried against them."""
     store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=9))
-    assert store.resolve("FakeRole").tag == 90001, "tier one: an identity's own name"
-    assert store.resolve("FakeCode").tag == 90002
-    assert store.resolve("FakeRoleCode").tag == 90001, "tier two: what 9.0 called that tag"
-    assert store.resolve("FakeRolle").tag == 90001, "and a spelling somebody recorded"
-    assert store.resolve("FAKEROLLE").tag == 90001, "matching folds case, and only case"
+    assert store.resolve("FakeRole").fix.tag == 90001, "tier one: an identity's own name"
+    assert store.resolve("FakeCode").fix.tag == 90002
+    assert store.resolve("FakeRoleCode").fix.tag == 90001, "tier two: what 9.0 called that tag"
+    assert store.resolve("FakeRolle").fix.tag == 90001, "and a spelling somebody recorded"
+    assert store.resolve("FAKEROLLE").fix.tag == 90001, "matching folds case, and only case"
     assert store.resolve("fake_rolle") is None, "a separator is part of a name, not noise"
     assert store.resolve("FakeNothing") is None, "and a name nothing here has is unknown"
     assert store.alias_conflicts() == {}
@@ -292,7 +303,7 @@ def test_an_alias_an_earlier_tier_already_answers_for_is_refused(store: Offline)
     """Recording a spelling nothing will ever reach is a mistake, not precedence."""
     with pytest.raises(ValueError, match="already FakeRole's"):
         store.alias_field("FakeCode", Alias(name="FakeRole"))
-    assert store.resolve("FakeRole").tag == 90001, "unchanged, because it was refused"
+    assert store.resolve("FakeRole").fix.tag == 90001, "unchanged, because it was refused"
 
 
 def test_two_fields_claiming_one_name_in_one_tier_fails_the_check(store: Offline) -> None:
@@ -303,8 +314,9 @@ def test_two_fields_claiming_one_name_in_one_tier_fails_the_check(store: Offline
     assert store.check() == [], "and the refused change was not written"
 
     # Written past the API, so the check has something to find.
-    entry = store.resolve("FakeCode")
-    store._layout.store_field(dataclasses.replace(entry, aliases=(Alias(name="FakeSpelling"),)))
+    entry = record_copy(store.resolve("FakeCode"))
+    entry.fix.named_aliases = (Alias(name="FakeSpelling"),)
+    store._layout.store_field(entry)
     store._forget()
     assert store.check() == ["'fakespelling' is claimed by ['FakeRole', 'FakeCode']"]
 
@@ -312,13 +324,15 @@ def test_two_fields_claiming_one_name_in_one_tier_fails_the_check(store: Offline
 def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None:
     """A near miss counted in a capture is evidence; a name typed in is not."""
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
-    assert store.resolve("FakeRolle").tag == 90001
+    assert store.resolve("FakeRolle").fix.tag == 90001
     stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
     assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in stored["90001"]["aliases"]
-    assert entry.aliases[-1].occurrences == 41
+    assert entry.fix.named_aliases[-1].occurrences == 41
 
     again = store.alias_field("FakeRole", "FakeRolle")
-    assert len(again.aliases) == len(entry.aliases), "a spelling already recorded is not twice"
+    assert len(again.fix.named_aliases) == len(entry.fix.named_aliases), (
+        "a spelling already recorded is not twice"
+    )
 
 
 def test_aliasing_a_field_nothing_resolves_is_refused(store: Offline) -> None:
@@ -330,20 +344,24 @@ def test_aliasing_a_field_nothing_resolves_is_refused(store: Offline) -> None:
 
 
 def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None:
-    entry = FieldEntry(
-        name="FAKE.VENDOR.CODE",
-        kind=NAMESPACE,
-        versions=(ANY_VERSION,),
-        type="String",
-        description="A vendor's own.",
-        column="fake_vendor_code",
+    entry = record_of(
+        {
+            "name": "FAKE.VENDOR.CODE",
+            "kind": NAMESPACE,
+            "versions": [ANY_VERSION],
+            "type": "String",
+            "description": "A vendor's own.",
+            "column": "fake_vendor_code",
+        }
     )
     store.add_field(entry)
-    assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
     assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
 
-    store.update_field(dataclasses.replace(entry, column="renamed"))
-    assert store.resolve("FAKE.VENDOR.CODE").column == "renamed"
+    renamed = record_copy(entry)
+    renamed.fix.column = "renamed"
+    store.update_field(renamed)
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "renamed"
 
     assert store.remove_field("FAKE.VENDOR.CODE")
     assert store.resolve("FAKE.VENDOR.CODE") is None
@@ -359,12 +377,12 @@ def test_promoting_registers_a_rendered_name_and_its_column_in_one_call(store: O
         description="A vendor's own stamp.",
         aliases=("FAKEVENDORTS",),
     )
-    assert entry.kind == NAMESPACE and entry.tag is None
-    assert entry.versions == (ANY_VERSION,)
-    assert entry.type == "UTCTimestamp"
-    assert entry.column == "fake_vendor_ts"
-    assert store.resolve("FAKE.VENDOR.TS").column == "fake_vendor_ts"
-    assert store.resolve("FAKEVENDORTS").name == "FAKE.VENDOR.TS"
+    assert record_kind(entry) == NAMESPACE and entry.fix.tag is None
+    assert entry.fix.versions == (ANY_VERSION,)
+    assert entry.fix.type == "UTCTimestamp"
+    assert entry.fix.column == "fake_vendor_ts"
+    assert store.resolve("FAKE.VENDOR.TS").fix.column == "fake_vendor_ts"
+    assert store.resolve("FAKEVENDORTS").fix.canonical == "FAKE.VENDOR.TS"
     assert store.check() == []
 
 
@@ -372,12 +390,14 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
     """A declared name with no column -- what `apply --namespace` leaves -- is
     finished in place, keeping the aliases and counts the run recorded."""
     store.add_field(
-        FieldEntry(
-            name="FAKE.VENDOR.CODE",
-            kind=NAMESPACE,
-            versions=(ANY_VERSION,),
-            type="String",
-            aliases=(Alias(name="FAKEVENDORCODE", source="brk", occurrences=7),),
+        record_of(
+            {
+                "name": "FAKE.VENDOR.CODE",
+                "kind": NAMESPACE,
+                "versions": [ANY_VERSION],
+                "type": "String",
+                "aliases": [Alias(name="FAKEVENDORCODE", source="brk", occurrences=7).into_dict()],
+            }
         )
     )
     entry = store.promote_field(
@@ -386,19 +406,23 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
         description="A vendor's own code.",
         aliases=("FAKEVENDORCODE", "FAKE_VENDOR_CODE"),
     )
-    assert entry.column == "fake_vendor_code"
+    assert entry.fix.column == "fake_vendor_code"
     assert entry.description == "A vendor's own code."
-    assert [alias.name for alias in entry.aliases] == ["FAKEVENDORCODE", "FAKE_VENDOR_CODE"]
-    assert entry.aliases[0].occurrences == 7, "the recorded count survived the promotion"
+    assert [alias.name for alias in entry.fix.named_aliases] == [
+        "FAKEVENDORCODE",
+        "FAKE_VENDOR_CODE",
+    ]
+    assert entry.fix.named_aliases[0].occurrences == 7, "the recorded count survived the promotion"
 
     again = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
-    assert again.column == "fake_vendor_code", "the same answer twice is not a conflict"
-    assert again.type == "String", "a type left unsaid keeps what the entry holds"
-    assert store.promote_field("FAKEVENDORCODE", "fake_vendor_code").name == "FAKE.VENDOR.CODE", (
+    assert again.fix.column == "fake_vendor_code", "the same answer twice is not a conflict"
+    assert again.fix.type == "String", "a type left unsaid keeps what the entry holds"
+    aliased = store.promote_field("FAKEVENDORCODE", "fake_vendor_code")
+    assert aliased.fix.canonical == "FAKE.VENDOR.CODE", (
         "any name the entry answers to names it here too"
     )
     retyped = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code", type="UTCTimestamp")
-    assert retyped.type == "UTCTimestamp", "and a type said here is the newest reading"
+    assert retyped.fix.type == "UTCTimestamp", "and a type said here is the newest reading"
     reworded = store.promote_field(
         "FAKE.VENDOR.CODE", "fake_vendor_code", description="A vendor's code, reconfirmed."
     )
@@ -414,9 +438,9 @@ def test_promoting_normalizes_the_column_and_folds_repeated_aliases(store: Offli
         "  fake_vendor_code  ",
         aliases=("FAKEVENDORCODE", "FakeVendorCode"),
     )
-    assert entry.column == "fake_vendor_code"
-    assert [alias.name for alias in entry.aliases] == ["FAKEVENDORCODE"]
-    assert store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code").column == (
+    assert entry.fix.column == "fake_vendor_code"
+    assert [alias.name for alias in entry.fix.named_aliases] == ["FAKEVENDORCODE"]
+    assert store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code").fix.column == (
         "fake_vendor_code"
     ), "and the unpadded spelling names the same column"
 
@@ -425,7 +449,7 @@ def test_promoting_a_standard_field_is_refused(store: Offline) -> None:
     """A tagged field's column is the dictionary's to declare, not this verb's."""
     with pytest.raises(KeyError, match="standard, with tag 90001"):
         store.promote_field("FakeRole", "fake_role")
-    assert store.resolve("FakeRole").column == "", "unchanged, because it was refused"
+    assert store.resolve("FakeRole").fix.column == "", "unchanged, because it was refused"
 
 
 def test_promoting_refuses_moving_an_assigned_column(store: Offline) -> None:
@@ -433,7 +457,7 @@ def test_promoting_refuses_moving_an_assigned_column(store: Offline) -> None:
     store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
     with pytest.raises(ValueError, match="already lifted into 'fake_vendor_code'"):
         store.promote_field("FAKE.VENDOR.CODE", "elsewhere")
-    assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
 
 
 def test_promoting_refuses_a_column_another_field_landed_in(store: Offline) -> None:
@@ -453,16 +477,20 @@ def test_promoting_requires_a_name_and_a_column(store: Offline) -> None:
 
 
 def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> None:
-    entry = FieldEntry(
-        name="MsgType",
-        tag=35,
-        versions=("9.1",),
-        type="String",
-        values={"0": "Heartbeat", "D": "NewOrderSingle"},
+    entry = record_of(
+        {
+            "name": "MsgType",
+            "tag": 35,
+            "versions": ["9.1"],
+            "type": "String",
+            "values": {"0": "Heartbeat", "D": "NewOrderSingle"},
+        }
     )
     store.add_field(entry)
     before = store.msg_type_event_types()
-    store.update_field(dataclasses.replace(entry, event_types={"D": EventType.ORDER}))
+    classified = record_copy(entry)
+    classified.fix.event_types = {"D": EventType.ORDER}
+    store.update_field(classified)
 
     assert before == {"0": EventType.MISC, "D": EventType.MISC}
     assert store.msg_type_event_types() == {"0": EventType.MISC, "D": EventType.ORDER}
@@ -479,21 +507,25 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
 def test_market_dispatch_states_and_codecs_are_cached_store_data(
     store: Offline,
 ) -> None:
-    msg_type = FieldEntry(
-        name="MsgType",
-        tag=35,
-        versions=("9.1",),
-        type="String",
-        values={"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
-        event_types={"D": "ORDER"},
-        states={"D": State.PENDING_NEW},
+    msg_type = record_of(
+        {
+            "name": "MsgType",
+            "tag": 35,
+            "versions": ["9.1"],
+            "type": "String",
+            "values": {"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
+            "event_types": {"D": "ORDER"},
+            "states": {"D": State.PENDING_NEW},
+        }
     )
-    status = FieldEntry(
-        name="OrdStatus",
-        tag=39,
-        versions=("9.1",),
-        type="char",
-        states={"0": State.NEW, "1": State.PARTIALLY_FILLED},
+    status = record_of(
+        {
+            "name": "OrdStatus",
+            "tag": 39,
+            "versions": ["9.1"],
+            "type": "char",
+            "states": {"0": State.NEW, "1": State.PARTIALLY_FILLED},
+        }
     )
     store.add_field(msg_type)
     store.add_field(status)
@@ -502,45 +534,43 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     assert cached == {"0": State.NEW, "1": State.PARTIALLY_FILLED}
     assert store.state_values("OrdStatus") is cached
     assert store.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert store.msg_type_handlers() == {
-        "0": "heartbeat",
-        "1": "testrequest",
-        "D": "newordersingle",
-    }
+    assert store.field(35).fix.encode("NewOrderSingle") == "D"
 
-    store.update_field(dataclasses.replace(status, states={"0": State.ACCEPTED}))
+    restated = record_copy(status)
+    restated.fix.states = {"0": State.ACCEPTED}
+    store.update_field(restated)
     assert store.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert store.state_values("OrdStatus") is not cached
 
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
     assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert reopened.state_values("MsgType") == {"D": State.PENDING_NEW}
-    assert reopened.msg_type_handlers() == {
-        "0": "heartbeat",
-        "1": "testrequest",
-        "D": "newordersingle",
-    }
+    assert reopened.field(35).fix.encode("NewOrderSingle") == "D"
 
 
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(
     store: Offline,
 ) -> None:
     with pytest.raises(KeyError, match="already stored"):
-        store.add_field(FieldEntry(name="FakeRole", tag=90001, versions=("9.1",), type="int"))
+        store.add_field(
+            record_of({"name": "FakeRole", "tag": 90001, "versions": ["9.1"], "type": "int"})
+        )
     with pytest.raises(KeyError, match="no FIX field stored"):
-        store.update_field(FieldEntry(name="FakeAbsent", tag=90099, versions=("9.1",)))
+        store.update_field(record_of({"name": "FakeAbsent", "tag": 90099, "versions": ["9.1"]}))
 
 
 def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
     store: Offline,
 ) -> None:
     """Beside what is already there, because an alias alone is never a collision."""
-    clashing = FieldEntry(
-        name="FakeOther",
-        tag=90004,
-        aliases=(Alias(name="FakeCode"),),
-        versions=("9.1",),
-        type="String",
+    clashing = record_of(
+        {
+            "name": "FakeOther",
+            "tag": 90004,
+            "aliases": [Alias(name="FakeCode").into_dict()],
+            "versions": ["9.1"],
+            "type": "String",
+        }
     )
     # `FakeCode` is another field's canonical name, so this alias could never
     # resolve. Precedence is the rule; recording a spelling nothing will ever
@@ -552,20 +582,20 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
 
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
-    entry = ComponentEntry.from_components(
-        [SpecComponent("FakeInstrument", (SpecFieldRef("FakeCode", False, 90002),))], ["9.1"]
+    entry = ComponentRecord.from_components(
+        [block("FakeInstrument", [field_member("FakeCode", 90002)])], ["9.1"]
     )
     store.add_component(entry)
-    assert store.component("FakeInstrument", "9.1").members[0].tag == 90002
+    assert members_of(store.component("FakeInstrument", "9.1"))[0].fix.tag == 90002
     with pytest.raises(KeyError, match="already stored"):
         store.add_component(entry)
 
     store.update_component(
-        ComponentEntry.from_components(
-            [SpecComponent("FakeInstrument", (SpecFieldRef("FakeRole", False, 90001),))], ["9.1"]
+        ComponentRecord.from_components(
+            [block("FakeInstrument", [field_member("FakeRole", 90001)])], ["9.1"]
         )
     )
-    assert store.component("FakeInstrument", "9.1").members[0].tag == 90001
+    assert members_of(store.component("FakeInstrument", "9.1"))[0].fix.tag == 90001
 
     assert store.remove_component("FakeInstrument")
     assert not store.remove_component("FakeInstrument")
@@ -582,7 +612,7 @@ def test_the_whole_unified_table_comes_back_in_one_call(store: Offline) -> None:
     assert sorted(merged) == ["FakeCode", "FakeRole"]
     scalar = store.scalar("FakeRole")
     assert merged["FakeRole"].name == scalar.name
-    assert merged["FakeRole"].arrow_type == scalar.arrow_type
+    assert merged["FakeRole"].dtype == scalar.dtype
     assert merged["FakeRole"].metadata == scalar.metadata, "the same declaration, in bulk"
     assert json.loads(merged["FakeRole"].fix["versions"]) == ["9.1", "9.0"]
 
@@ -601,7 +631,7 @@ def test_a_component_is_one_queryable_object_across_every_version(store: Offline
     entry = store.merged_component("fakeparties")
     assert entry.name == "FakeParties" and entry.versions == ("9.1",)
     assert entry.delimiters() == {("NoFakeParties",): "FakeRole"}
-    assert store.merged_components()["FakeParties"] is entry
+    assert store.component_records()["FakeParties"] is entry
     with pytest.raises(KeyError, match="FakeAbsent"):
         store.merged_component("FakeAbsent")
 
@@ -616,8 +646,10 @@ def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> No
     entries, _, report = collapse(("9.1", "9.0"), {"9.1": [newer], "9.0": [older]}, {})
 
     entry = entries[90001]
-    assert entry.type == "int" and entry.versions == ("9.0", "9.1")
-    assert entry.values == {"1": "Is", "2": "Gone"}, "the union, newest winning per key"
+    assert entry.fix.type == "int" and entry.fix.versions == ("9.0", "9.1")
+    assert entry.fix.enumerated == values_of({"1": "Is", "2": "Gone"}), (
+        "the union, newest winning per key"
+    )
 
     counts = report.counts()
     assert counts["type"] == 1 and counts["values"] == 1
@@ -707,13 +739,15 @@ def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() ->
 def test_a_write_that_would_duplicate_a_tag_is_refused_whole(store: Offline) -> None:
     """Checked against what the store would hold after, and refused before writing."""
     with pytest.raises(KeyError, match="tag 90001 is already claimed by"):
-        store.add_field(FieldEntry(name="FakeOther", tag=90001, versions=("9.1",), type="String"))
+        store.add_field(
+            record_of({"name": "FakeOther", "tag": 90001, "versions": ["9.1"], "type": "String"})
+        )
     assert store.resolve("FakeOther") is None, "and nothing was written"
 
 
 def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(store: Offline) -> None:
     """One authority for both, so `check` and a write never disagree."""
-    entry = FieldEntry(name="FakeOther", tag=90001, versions=("9.1",), type="String")
+    entry = record_of({"name": "FakeOther", "tag": 90001, "versions": ["9.1"], "type": "String"})
     problems = _problems(({**store._entries[0], "spare": entry}, store._entries[1]))
     assert any("FIX tag 90001 is claimed by" in problem for problem in problems)
 
@@ -973,7 +1007,7 @@ def test_malformed_registry_documents_never_leave_the_staging_directory(
     elif malformed == "field":
         documents[shard_name(90001)]["90001"]["versions"] = "9.1"
     else:
-        documents["components/fake_parties.json"]["members"] = "not-a-list"
+        documents["components/fake_parties.json"]["declaration"] = "not-a-document"
     target = tmp_path / malformed
     registry = FixRegistry(cache_dir=target, offline=True)
 
@@ -1140,7 +1174,7 @@ def test_a_ttl_of_zero_never_reaches_upstream(store: Offline) -> None:
 
 def test_a_store_younger_than_its_ttl_is_served_untouched(store: Offline) -> None:
     registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0)
-    assert "value_names" not in registry.field(90001, "9.1").fix
+    assert not any(one.aliases for one in registry.field(90001, "9.1").fix.enumerated)
     assert registry.refresh_if_stale() is False
     assert not registry.__dict__.get("fetched")
 
@@ -1161,8 +1195,8 @@ def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> 
         "FIX91.xml",
     ], "every version the store holds, so none of it goes stale behind the others"
     reopened = Offline(cache_dir=store.cache_dir, offline=True)
-    assert json.loads(reopened.field(90001, "9.1").fix["value_names"]) == {"1": "FAKE_ONE"}
-    assert reopened.component("FakeParties", "9.1").members[0].name == "NoFakeParties"
+    assert reopened.field(90001, "9.1").fix.value_of("1").aliases == ("FAKE_ONE",)
+    assert members_of(reopened.component("FakeParties", "9.1"))[0].name == "NoFakeParties"
 
 
 def test_a_refetch_that_fails_serves_the_local_copy_and_says_so(store: Offline) -> None:
@@ -1206,20 +1240,22 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     record names.
     """
     store.add_field(
-        FieldEntry(
-            name="FAKE.VENDOR.CODE",
-            kind=NAMESPACE,
-            aliases=(Alias(name="FAKEVENDORCODE", source="brk", occurrences=5),),
-            versions=(ANY_VERSION,),
-            type="String",
-            description="A vendor's own code.",
-            column="fake_vendor_code",
+        record_of(
+            {
+                "name": "FAKE.VENDOR.CODE",
+                "kind": NAMESPACE,
+                "aliases": [Alias(name="FAKEVENDORCODE", source="brk", occurrences=5).into_dict()],
+                "versions": [ANY_VERSION],
+                "type": "String",
+                "description": "A vendor's own code.",
+                "column": "fake_vendor_code",
+            }
         )
     )
 
     # Declared, so the registry answers for it by every spelling it has.
-    assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
-    assert store.resolve("fakevendorcode").name == "FAKE.VENDOR.CODE"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
+    assert store.resolve("fakevendorcode").fix.canonical == "FAKE.VENDOR.CODE"
     assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
     assert "FAKE.VENDOR.CODE" not in store.tags(), "it has no tag to be mapped to"
 
@@ -1245,8 +1281,8 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
         offline=True,
     )
     entry = projected.resolve("FAKE.VENDOR.CODE")
-    assert entry.versions == (ANY_VERSION,), "it holds for every version, not for 9.1"
-    assert entry.column == "fake_vendor_code"
+    assert entry.fix.versions == (ANY_VERSION,), "it holds for every version, not for 9.1"
+    assert entry.fix.column == "fake_vendor_code"
 
     merged = projected.merged_fields()["FAKE.VENDOR.CODE"]
     assert merged.fix["column"] == "fake_vendor_code"
@@ -1267,12 +1303,12 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
         ["#FAKEVENDORCODE=FAKE-CODE-0001", "#FAKEROLE=1", "#UNRESOLVED=x"]
     )
     columns, rest = codec.into_lifted_columns(
-        codec.into_kwargs(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
+        codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
     assert columns["fake_vendor_code"].to_pylist() == ["FAKE-CODE-0001"]
     assert [key for key, _ in _pairs(rest)] == ["FAKEROLE", "UNRESOLVED"], "and nothing else moved"
 
-    dotted = codec.into_kwargs(
+    dotted = codec.into_entries(
         codec.into_pairs(pyarrow.array(["toBridge #FAKE.VENDOR.CODE=FAKE-CODE-0002|#X=1"]), "UL"),
         "9.1",
     )
@@ -1285,10 +1321,10 @@ def test_a_codec_over_a_dictionary_that_declares_none_lifts_none(store: Offline)
     """The column exists in the parsed shape either way; only the value is absent."""
     codec = FixCodec(registry=store)
     assert set(codec.named_fields()) == set()
-    kwargs = codec.into_kwargs(
+    entries = codec.into_entries(
         codec.into_pairs(pyarrow.array(["toBridge #FAKEVENDORCODE=x|#Y=1"]), "UL"), "9.1"
     )
-    columns, rest = codec.into_lifted_columns(kwargs, "9.1")
+    columns, rest = codec.into_lifted_columns(entries, "9.1")
     assert not any(column.to_pylist()[0] is not None for column in columns.values())
     assert [key for key, _ in _pairs(rest)] == ["FAKEVENDORCODE", "Y"]
 
@@ -1302,12 +1338,14 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
     """
     for vendor, column in (("FAKEA", "fake_a_client"), ("FAKEB", "fake_b_client")):
         store.add_field(
-            FieldEntry(
-                name=f"{vendor}.CLIENTID",
-                kind=NAMESPACE,
-                versions=(ANY_VERSION,),
-                type="String",
-                column=column,
+            record_of(
+                {
+                    "name": f"{vendor}.CLIENTID",
+                    "kind": NAMESPACE,
+                    "versions": [ANY_VERSION],
+                    "type": "String",
+                    "column": column,
+                }
             )
         )
     codec = FixCodec(registry=store)
@@ -1318,7 +1356,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
         "toBridge #FAKEA.CLIENTID=ACCT-TEST-01|#FAKEB.CLIENTID=ACCT-TEST-02|#CLIENTID=ACCT-TEST-03"
     )
     columns, rest = codec.into_lifted_columns(
-        codec.into_kwargs(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
+        codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
     assert columns["fake_a_client"].to_pylist() == ["ACCT-TEST-01"]
     assert columns["fake_b_client"].to_pylist() == ["ACCT-TEST-02"]
@@ -1336,8 +1374,22 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
     assert group.nullable, "the group itself is optional in this declaration"
     member = group.item.field("fake_role")
     assert not member.nullable, "and its one member is required"
-    assert member.arrow_type == pyarrow.int32(), "typed from the dictionary, not guessed"
+    assert member.dtype == pyarrow.int32(), "typed from the dictionary, not guessed"
 
 
 def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:
     assert store.component_field("FakeParties", "9.0") is None
+    assert store.component_scalar("FakeParties", "9.0") is None
+
+
+def test_a_component_materialises_as_a_class_the_declaration_wrote(store: Offline) -> None:
+    """No hand-written row class: the declaration already says every member."""
+    built = store.component_scalar("FakeParties", "9.1")
+    entry = built.FakeParty
+
+    assert built.__name__ == "FakeParties"
+    assert entry.__name__ == "FakeParty", "`NoFakeParties` repeats one `FakeParty`"
+    assert built(no_fake_parties=[entry(fake_role=7)]).into_dict() == {
+        "no_fake_parties": [{"fake_role": 7}]
+    }
+    assert built.into_field().dtype == store.component_field("FakeParties", "9.1").dtype

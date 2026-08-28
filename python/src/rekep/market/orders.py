@@ -15,7 +15,7 @@ from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, hash_bytes_of
 
 # Exact source fields stay on Order/Execution. These two namespaces are only
 # the lookup meaning of those fields: equal text in OrderID and ClOrdID is not
@@ -100,9 +100,9 @@ def _quantity_transition(
         current = leaves
     elif total is not None and cumulative is not None:
         current = max(total - cumulative, 0.0)
-    elif previous is not None and last is not None and normalized >= State.PARTIAL:
+    elif previous is not None and last is not None and normalized.rank >= State.PARTIAL.rank:
         current = max(previous - last, 0.0)
-    elif total is not None and last is not None and normalized >= State.PARTIAL:
+    elif total is not None and last is not None and normalized.rank >= State.PARTIAL.rank:
         current = max(total - last, 0.0)
     elif previous is not None:
         current = previous
@@ -112,7 +112,7 @@ def _quantity_transition(
     if normalized is State.PARTIALLY_FILLED and execution_state is State.FILLED and current == 0:
         normalized = State.FILLED
 
-    if previous is None and normalized >= State.PARTIAL:
+    if previous is None and normalized.rank >= State.PARTIAL.rank:
         if leaves is not None and last is not None:
             previous = leaves + last
         elif current is not None and last is not None:
@@ -182,9 +182,7 @@ class Order(MarketEvent):
     parent_order_id: Annotated[str | None, fix_tag("ParentOrderID")] = None
     """Venue order identity of the parent in a replace chain, where a bridge says it."""
 
-    cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", arrow_type=pyarrow.int32())] = (
-        None
-    )
+    cxl_rej_reason: Annotated[int | None, fix_tag("CxlRejReason", dtype=pyarrow.int32())] = None
     """Why a cancel or amend was refused, in FIX's own codes; null off a reject."""
 
     cxl_rej_response_to: Annotated[str | None, fix_tag("CxlRejResponseTo")] = None
@@ -257,7 +255,7 @@ class Order(MarketEvent):
     def life_parts(self) -> tuple[Any, ...]:
         """An order's lifecycle is the identifier that survives its amendments."""
         code = self.life_code()
-        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
+        return (hash_bytes_of(self.instrument_xhash), self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
         """The order identifier that survives amendments, or nothing."""
@@ -329,7 +327,7 @@ class Order(MarketEvent):
             if (
                 candidate
                 and self.hash_of(
-                    self.instrument_xhash,
+                    hash_bytes_of(self.instrument_xhash),
                     self.mic,
                     candidate,
                     self.side,
@@ -490,7 +488,7 @@ class Execution(MarketEvent):
         `ExecRefID <19>` to stay on the report it amends.
         """
         code = self.life_code()
-        return (self.instrument_xhash, self.mic, code, self.side) if code else ()
+        return (hash_bytes_of(self.instrument_xhash), self.mic, code, self.side) if code else ()
 
     def life_code(self) -> str:
         """The report identifier that survives corrections, or nothing."""

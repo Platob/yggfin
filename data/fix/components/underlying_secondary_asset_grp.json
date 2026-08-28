@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingSecondaryAssetClasses",
-   "required": false,
-   "tag": 2080,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "UnderlyingSecondaryAssetGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingSecondaryAssetGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingSecondaryAssetClasses",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2080"
+    },
+    "item": {
      "name": "UnderlyingSecondaryAssetClass",
-     "required": false,
-     "tag": 2081
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSecondaryAssetSubClass",
-     "required": false,
-     "tag": 2082
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSecondaryAssetType",
-     "required": false,
-     "tag": 2083
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSecondaryAssetSubType",
-     "required": false,
-     "tag": 2745
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSecondaryAssetClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2081"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetSubClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2082"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2083"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2745"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

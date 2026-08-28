@@ -3,65 +3,96 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateUnadjusted",
-   "required": false,
-   "tag": 40498
+ "declaration": {
+  "name": "LegProvisionOptionExpirationDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionOptionExpirationDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
-   "required": false,
-   "tag": 40499
-  },
-  {
-   "kind": "component",
-   "name": "LegProvisionOptionExpirationDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateRelativeTo",
-   "required": false,
-   "tag": 40501
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateOffsetPeriod",
-   "required": false,
-   "tag": 40502
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateOffsetUnit",
-   "required": false,
-   "tag": 40503
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateOffsetDayType",
-   "required": false,
-   "tag": 40504
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationDateAdjusted",
-   "required": false,
-   "tag": 40505
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationTime",
-   "required": false,
-   "tag": 40506
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionOptionExpirationTimeBusinessCenter",
-   "required": false,
-   "tag": 40507
-  }
- ]
+  "fields": [
+   {
+    "name": "LegProvisionOptionExpirationDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40498"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40499"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionOptionExpirationDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40501"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40502"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40503"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40504"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40505"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40506"
+    }
+   },
+   {
+    "name": "LegProvisionOptionExpirationTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40507"
+    }
+   }
+  ]
+ }
 }

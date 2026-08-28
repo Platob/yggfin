@@ -9,11 +9,10 @@ shape—schemas, arrays, and record batches—plus standard ways to exchange it.
 ## The useful boundary
 
 The [Arrow format specification](https://arrow.apache.org/docs/format/Intro.html)
-is language-independent. Compatible libraries in one process can share buffers
-through the C Data Interface or PyCapsule without copying; IPC and Flight move
-Arrow batches across process or network boundaries. Zero-copy is a conditional
-property of compatible types, buffers, and ownership, not a claim about every
-arrow in the diagram.
+is language-independent: compatible libraries in one process share buffers
+through the C Data Interface or PyCapsule without copying, and IPC and Flight
+move batches across process or network boundaries. Zero-copy is a conditional
+property of compatible types, buffers and ownership, not of every arrow drawn.
 
 That boundary is a good fit for rekep because each stage can remain a stream of
 typed record batches. Parsing, recursive casts, storage, and downstream compute
@@ -24,13 +23,14 @@ application's central data model.
 
 [Apache Iceberg](https://iceberg.apache.org/spec/) is a table format: its
 snapshots and metadata manage data files stored as Parquet, Avro, or ORC.
-[PyIceberg](https://py.iceberg.apache.org/api/) reads to Arrow tables and batch
-readers and accepts Arrow tables for writes. Arrow also has native
+[PyIceberg](https://py.iceberg.apache.org/api/) reads to Arrow tables and
+batch readers, and accepts Arrow tables for writes.
+
+Arrow itself has native
 [Parquet readers and writers](https://arrow.apache.org/docs/python/parquet.html)
 and implementation-specific adapters such as the
 [Arrow Java Avro adapter](https://arrow.apache.org/cookbook/java/avro.html).
-Those file boundaries encode or decode data; they are not presented as
-zero-copy access to persistent bytes.
+Those boundaries encode or decode data; they are not zero-copy access to bytes.
 
 ## DataFrames and compute
 
@@ -57,10 +57,12 @@ the pipeline at an Arrow boundary instead of requiring a bespoke row model.
 
 [ADBC](https://arrow.apache.org/adbc/) standardizes Arrow-native database
 access, while [Flight SQL](https://arrow.apache.org/docs/format/FlightSql.html)
-defines a SQL protocol over Arrow Flight. The official
+defines a SQL protocol over Arrow Flight.
+
+The official
 [ADBC driver list](https://arrow.apache.org/adbc/current/driver/index.html)
-includes relational databases, warehouses, query engines, and Flight SQL.
-Drivers may convert when the database is not Arrow-native.
+covers relational databases, warehouses, query engines, and Flight SQL, and a
+driver may convert where the database is not Arrow-native.
 
 Apache Doris also exposes
 [Arrow Flight SQL](https://doris.apache.org/docs/4.x/connection-integration/arrow-flight-sql/),

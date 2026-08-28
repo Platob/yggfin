@@ -3,55 +3,86 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyUpdates",
-   "required": false,
-   "tag": 1676,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ListUpdateAction",
-     "required": false,
-     "tag": 1324
+ "declaration": {
+  "name": "PartyDetailAckGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailAckGrp",
+   "msgtypes": "[\"PartyDetailsDefinitionRequestAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartyUpdates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1676"
     },
-    {
-     "kind": "field",
-     "name": "PartyDetailDefinitionStatus",
-     "required": false,
-     "tag": 1879
-    },
-    {
-     "kind": "field",
-     "name": "PartyDetailDefinitionResult",
-     "required": false,
-     "tag": 1880
-    },
-    {
-     "kind": "field",
-     "name": "RejectText",
-     "required": false,
-     "tag": 1328
-    },
-    {
-     "kind": "field",
-     "name": "EncodedRejectTextLen",
-     "required": false,
-     "tag": 1664
-    },
-    {
-     "kind": "field",
-     "name": "EncodedRejectText",
-     "required": false,
-     "tag": 1665
-    },
-    {
-     "kind": "component",
-     "name": "PartyDetailGrp",
-     "required": false
+    "item": {
+     "name": "PartyUpdate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
+      },
+      {
+       "name": "PartyDetailDefinitionStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1879"
+       }
+      },
+      {
+       "name": "PartyDetailDefinitionResult",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1880"
+       }
+      },
+      {
+       "name": "RejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1328"
+       }
+      },
+      {
+       "name": "EncodedRejectTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1664"
+       }
+      },
+      {
+       "name": "EncodedRejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1665"
+       }
+      },
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,24 +3,39 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "ThrottleInst",
-   "required": false,
-   "tag": 1685
+ "declaration": {
+  "name": "ThrottleResponse",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ThrottleResponse",
+   "msgtypes": "[\"ExecutionReport\",\"MassOrderAck\",\"MassQuoteAck\",\"QuoteStatusReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "ThrottleStatus",
-   "required": false,
-   "tag": 1609
-  },
-  {
-   "kind": "field",
-   "name": "ThrottleCountIndicator",
-   "required": false,
-   "tag": 1686
-  }
- ]
+  "fields": [
+   {
+    "name": "ThrottleInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1685"
+    }
+   },
+   {
+    "name": "ThrottleStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1609"
+    }
+   },
+   {
+    "name": "ThrottleCountIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1686"
+    }
+   }
+  ]
+ }
 }

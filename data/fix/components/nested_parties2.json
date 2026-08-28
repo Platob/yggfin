@@ -6,43 +6,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNested2PartyIDs",
-   "required": false,
-   "tag": 756,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "NestedParties2",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NestedParties2",
+   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ConfirmationRequest\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoNested2PartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "756"
+    },
+    "item": {
      "name": "Nested2PartyID",
-     "required": false,
-     "tag": 757
-    },
-    {
-     "kind": "field",
-     "name": "Nested2PartyIDSource",
-     "required": false,
-     "tag": 758
-    },
-    {
-     "kind": "field",
-     "name": "Nested2PartyRole",
-     "required": false,
-     "tag": 759
-    },
-    {
-     "kind": "field",
-     "name": "Nested2PartyRoleQualifier",
-     "required": false,
-     "tag": 2381
-    },
-    {
-     "kind": "component",
-     "name": "NstdPtys2SubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Nested2PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "757"
+       }
+      },
+      {
+       "name": "Nested2PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "758"
+       }
+      },
+      {
+       "name": "Nested2PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "759"
+       }
+      },
+      {
+       "name": "Nested2PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2381"
+       }
+      },
+      {
+       "name": "NstdPtys2SubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NstdPtys2SubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

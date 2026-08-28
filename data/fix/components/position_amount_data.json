@@ -6,86 +6,125 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPosAmt",
-   "required": false,
-   "tag": 753,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PosAmtType",
-     "required": false,
-     "tag": 707
+ "declaration": {
+  "name": "PositionAmountData",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionAmountData",
+   "msgtypes": "[\"AccountSummaryReport\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPosAmt",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "753"
     },
-    {
-     "kind": "field",
+    "item": {
      "name": "PosAmt",
-     "required": false,
-     "tag": 708
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtStreamDesc",
-     "required": false,
-     "tag": 2096
-    },
-    {
-     "kind": "field",
-     "name": "PositionCurrency",
-     "required": false,
-     "tag": 1055
-    },
-    {
-     "kind": "field",
-     "name": "PositionCurrencyCodeSource",
-     "required": false,
-     "tag": 2937
-    },
-    {
-     "kind": "field",
-     "name": "PositionFXRate",
-     "required": false,
-     "tag": 2097
-    },
-    {
-     "kind": "field",
-     "name": "PositionFXRateCalc",
-     "required": false,
-     "tag": 2098
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtReason",
-     "required": false,
-     "tag": 1585
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtMarketSegmentID",
-     "required": false,
-     "tag": 2099
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtMarketID",
-     "required": false,
-     "tag": 2100
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtPrice",
-     "required": false,
-     "tag": 2876
-    },
-    {
-     "kind": "field",
-     "name": "PosAmtPriceType",
-     "required": false,
-     "tag": 2877
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PosAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "707"
+       }
+      },
+      {
+       "name": "PosAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "708"
+       }
+      },
+      {
+       "name": "PosAmtStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2096"
+       }
+      },
+      {
+       "name": "PositionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1055"
+       }
+      },
+      {
+       "name": "PositionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2937"
+       }
+      },
+      {
+       "name": "PositionFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2097"
+       }
+      },
+      {
+       "name": "PositionFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2098"
+       }
+      },
+      {
+       "name": "PosAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1585"
+       }
+      },
+      {
+       "name": "PosAmtMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2099"
+       }
+      },
+      {
+       "name": "PosAmtMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2100"
+       }
+      },
+      {
+       "name": "PosAmtPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2876"
+       }
+      },
+      {
+       "name": "PosAmtPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2877"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

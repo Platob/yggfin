@@ -4,20 +4,37 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoTimeInForceRules",
-   "required": false,
-   "tag": 1239,
-   "members": [
-    {
-     "kind": "field",
-     "name": "TimeInForce",
-     "required": false,
-     "tag": 59
+ "declaration": {
+  "name": "TimeInForceRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TimeInForceRules",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoTimeInForceRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1239"
+    },
+    "item": {
+     "name": "TimeInForceRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TimeInForce",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "59"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

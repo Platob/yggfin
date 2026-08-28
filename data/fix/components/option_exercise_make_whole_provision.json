@@ -3,48 +3,71 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "MakeWholeDate",
-   "required": false,
-   "tag": 42591
+ "declaration": {
+  "name": "OptionExerciseMakeWholeProvision",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OptionExerciseMakeWholeProvision",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
   },
-  {
-   "kind": "field",
-   "name": "MakeWholeAmount",
-   "required": false,
-   "tag": 42592
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkCurveName",
-   "required": false,
-   "tag": 42593
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkCurvePoint",
-   "required": false,
-   "tag": 42594
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeRecallSpread",
-   "required": false,
-   "tag": 42595
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeBenchmarkQuote",
-   "required": false,
-   "tag": 42596
-  },
-  {
-   "kind": "field",
-   "name": "MakeWholeInterpolationMethod",
-   "required": false,
-   "tag": 42597
-  }
- ]
+  "fields": [
+   {
+    "name": "MakeWholeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42591"
+    }
+   },
+   {
+    "name": "MakeWholeAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42592"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkCurveName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42593"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42594"
+    }
+   },
+   {
+    "name": "MakeWholeRecallSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42595"
+    }
+   },
+   {
+    "name": "MakeWholeBenchmarkQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42596"
+    }
+   },
+   {
+    "name": "MakeWholeInterpolationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42597"
+    }
+   }
+  ]
+ }
 }

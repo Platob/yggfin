@@ -7,1233 +7,1700 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingSymbol",
-   "required": false,
-   "tag": 311
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSymbolSfx",
-   "required": false,
-   "tag": 312
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityID",
-   "required": false,
-   "tag": 309
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityIDSource",
-   "required": false,
-   "tag": 305
-  },
-  {
-   "kind": "component",
-   "name": "UndSecAltIDGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingID",
-   "required": false,
-   "tag": 2874
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProduct",
-   "required": false,
-   "tag": 462
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingSecurityXML",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCFICode",
-   "required": false,
-   "tag": 463
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingUPICode",
-   "required": false,
-   "tag": 2894
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityType",
-   "required": false,
-   "tag": 310
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecuritySubType",
-   "required": false,
-   "tag": 763
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMaturityMonthYear",
-   "required": false,
-   "tag": 313
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMaturityDate",
-   "required": false,
-   "tag": 542
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMaturityTime",
-   "required": false,
-   "tag": 1213
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingContractPriceRefMonth",
-   "required": false,
-   "tag": 1837
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponPaymentDate",
-   "required": false,
-   "tag": 241
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRestructuringType",
-   "required": false,
-   "tag": 1453
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSeniority",
-   "required": false,
-   "tag": 1454
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotional",
-   "required": false,
-   "tag": 2614
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalCurrency",
-   "required": false,
-   "tag": 2615
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalCurrencyCodeSource",
-   "required": false,
-   "tag": 2921
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalDeterminationMethod",
-   "required": false,
-   "tag": 2616
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalAdjustments",
-   "required": false,
-   "tag": 2617
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalXIDRef",
-   "required": false,
-   "tag": 2619
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNotionalPercentageOutstanding",
-   "required": false,
-   "tag": 1455
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOriginalNotionalPercentageOutstanding",
-   "required": false,
-   "tag": 1456
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAttachmentPoint",
-   "required": false,
-   "tag": 1459
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDetachmentPoint",
-   "required": false,
-   "tag": 1460
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIssueDate",
-   "required": false,
-   "tag": 242
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRepoCollateralSecurityType",
-   "required": false,
-   "tag": 243
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRepurchaseTerm",
-   "required": false,
-   "tag": 244
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRepurchaseRate",
-   "required": false,
-   "tag": 245
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFactor",
-   "required": false,
-   "tag": 246
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCreditRating",
-   "required": false,
-   "tag": 256
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInstrRegistry",
-   "required": false,
-   "tag": 595
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCountryOfIssue",
-   "required": false,
-   "tag": 592
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStateOrProvinceOfIssue",
-   "required": false,
-   "tag": 593
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLocaleOfIssue",
-   "required": false,
-   "tag": 594
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRedemptionDate",
-   "required": false,
-   "tag": 247
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikePrice",
-   "required": false,
-   "tag": 316
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeCurrency",
-   "required": false,
-   "tag": 941
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeCurrencyCodeSource",
-   "required": false,
-   "tag": 2917
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOptAttribute",
-   "required": false,
-   "tag": 317
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingContractMultiplier",
-   "required": false,
-   "tag": 436
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingContractMultiplierUnit",
-   "required": false,
-   "tag": 1437
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingTradingUnitPeriodMultiplier",
-   "required": false,
-   "tag": 2363
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFlowScheduleType",
-   "required": false,
-   "tag": 1441
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingUnitOfMeasure",
-   "required": false,
-   "tag": 998
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingUnitOfMeasureQty",
-   "required": false,
-   "tag": 1423
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingUnitOfMeasureCurrency",
-   "required": false,
-   "tag": 1718
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingUnitOfMeasureCurrencyCodeSource",
-   "required": false,
-   "tag": 2918
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceUnitOfMeasure",
-   "required": false,
-   "tag": 1424
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceUnitOfMeasureQty",
-   "required": false,
-   "tag": 1425
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceUnitOfMeasureCurrency",
-   "required": false,
-   "tag": 1719
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceUnitOfMeasureCurrencyCodeSource",
-   "required": false,
-   "tag": 2919
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingTimeUnit",
-   "required": false,
-   "tag": 1000
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingExerciseStyle",
-   "required": false,
-   "tag": 1419
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceQuoteCurrency",
-   "required": false,
-   "tag": 1526
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceQuoteCurrencyCodeSource",
-   "required": false,
-   "tag": 2920
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponRate",
-   "required": false,
-   "tag": 435
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityExchange",
-   "required": false,
-   "tag": 308
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIssuer",
-   "required": false,
-   "tag": 306
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingIssuerLen",
-   "required": false,
-   "tag": 362
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingIssuer",
-   "required": false,
-   "tag": 363
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFinancialInstrumentShortName",
-   "required": false,
-   "tag": 2742
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFinancialInstrumentFullName",
-   "required": false,
-   "tag": 2720
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingFinancialInstrumentFullNameLen",
-   "required": false,
-   "tag": 2721
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingFinancialInstrumentFullName",
-   "required": false,
-   "tag": 2722
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexCurveUnit",
-   "required": false,
-   "tag": 2723
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexCurvePeriod",
-   "required": false,
-   "tag": 2724
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityDesc",
-   "required": false,
-   "tag": 307
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingSecurityDescLen",
-   "required": false,
-   "tag": 364
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingSecurityDesc",
-   "required": false,
-   "tag": 365
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCPProgram",
-   "required": false,
-   "tag": 877
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCPRegType",
-   "required": false,
-   "tag": 878
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAllocationPercent",
-   "required": false,
-   "tag": 972
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCurrency",
-   "required": false,
-   "tag": 318
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCurrencyCodeSource",
-   "required": false,
-   "tag": 2916
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingQty",
-   "required": false,
-   "tag": 879
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlementType",
-   "required": false,
-   "tag": 975
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashAmount",
-   "required": false,
-   "tag": 973
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCashType",
-   "required": false,
-   "tag": 974
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPx",
-   "required": false,
-   "tag": 810
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDirtyPrice",
-   "required": false,
-   "tag": 882
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingEndPrice",
-   "required": false,
-   "tag": 883
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStartValue",
-   "required": false,
-   "tag": 884
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCurrentValue",
-   "required": false,
-   "tag": 885
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingEndValue",
-   "required": false,
-   "tag": 886
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAccruedInterestAmt",
-   "required": false,
-   "tag": 2885
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNumDaysInterest",
-   "required": false,
-   "tag": 2886
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStipulations",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAdjustedQuantity",
-   "required": false,
-   "tag": 1044
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFXRate",
-   "required": false,
-   "tag": 1045
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFXRateCalc",
-   "required": false,
-   "tag": 1046
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCapValue",
-   "required": false,
-   "tag": 1038
-  },
-  {
-   "kind": "component",
-   "name": "UndlyInstrumentParties",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlMethod",
-   "required": false,
-   "tag": 1039
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPutOrCall",
-   "required": false,
-   "tag": 315
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInTheMoneyCondition",
-   "required": false,
-   "tag": 2683
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingContraryInstructionEligibilityIndicator",
-   "required": false,
-   "tag": 2687
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingConstituentWeight",
-   "required": false,
-   "tag": 1988
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponType",
-   "required": false,
-   "tag": 1989
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingTotalIssuedAmount",
-   "required": false,
-   "tag": 1990
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponFrequencyPeriod",
-   "required": false,
-   "tag": 1991
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponFrequencyUnit",
-   "required": false,
-   "tag": 1992
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponDayCount",
-   "required": false,
-   "tag": 1993
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCouponOtherDayCount",
-   "required": false,
-   "tag": 2881
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingObligationID",
-   "required": false,
-   "tag": 1994
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingObligationIDSource",
-   "required": false,
-   "tag": 1995
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingEquityID",
-   "required": false,
-   "tag": 1996
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingEquityIDSource",
-   "required": false,
-   "tag": 1997
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFutureID",
-   "required": false,
-   "tag": 2620
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFutureIDSource",
-   "required": false,
-   "tag": 2621
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingEvntGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLienSeniority",
-   "required": false,
-   "tag": 1998
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingLoanFacility",
-   "required": false,
-   "tag": 1999
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingReferenceEntityType",
-   "required": false,
-   "tag": 2000
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexSeries",
-   "required": false,
-   "tag": 2003
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexAnnexVersion",
-   "required": false,
-   "tag": 2004
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexAnnexDate",
-   "required": false,
-   "tag": 2005
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingIndexAnnexSource",
-   "required": false,
-   "tag": 2006
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlRateIndex",
-   "required": false,
-   "tag": 2284
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlRateIndexLocation",
-   "required": false,
-   "tag": 2285
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOptionExpirationDesc",
-   "required": false,
-   "tag": 2286
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingOptionExpirationDescLen",
-   "required": false,
-   "tag": 2287
-  },
-  {
-   "kind": "field",
-   "name": "EncodedUnderlyingOptionExpirationDesc",
-   "required": false,
-   "tag": 2288
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProductComplex",
-   "required": false,
-   "tag": 2007
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityGroup",
-   "required": false,
-   "tag": 2008
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettleOnOpenFlag",
-   "required": false,
-   "tag": 2009
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssignmentMethod",
-   "required": false,
-   "tag": 2010
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSecurityStatus",
-   "required": false,
-   "tag": 2011
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingObligationType",
-   "required": false,
-   "tag": 2012
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssetGroup",
-   "required": false,
-   "tag": 2491
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssetClass",
-   "required": false,
-   "tag": 2013
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssetSubClass",
-   "required": false,
-   "tag": 2014
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssetType",
-   "required": false,
-   "tag": 2015
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAssetSubType",
-   "required": false,
-   "tag": 2744
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingSecondaryAssetGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingAssetAttributeGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSwapClass",
-   "required": false,
-   "tag": 2016
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSwapSubClass",
-   "required": false,
-   "tag": 2289
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNthToDefault",
-   "required": false,
-   "tag": 2017
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMthToDefault",
-   "required": false,
-   "tag": 2018
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettledEntityMatrixSource",
-   "required": false,
-   "tag": 2019
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettledEntityMatrixPublicationDate",
-   "required": false,
-   "tag": 2020
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeMultiplier",
-   "required": false,
-   "tag": 2021
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeValue",
-   "required": false,
-   "tag": 2022
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeUnitOfMeasure",
-   "required": false,
-   "tag": 2290
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeIndexCurvePoint",
-   "required": false,
-   "tag": 2622
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeIndex",
-   "required": false,
-   "tag": 2291
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeIndexQuote",
-   "required": false,
-   "tag": 2623
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikeIndexSpread",
-   "required": false,
-   "tag": 2292
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikePriceDeterminationMethod",
-   "required": false,
-   "tag": 2023
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikePriceBoundaryMethod",
-   "required": false,
-   "tag": 2024
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrikePriceBoundaryPrecision",
-   "required": false,
-   "tag": 2025
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMinPriceIncrement",
-   "required": false,
-   "tag": 2026
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingMinPriceIncrementAmount",
-   "required": false,
-   "tag": 2027
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOptPayoutType",
-   "required": false,
-   "tag": 2028
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOptPayoutAmount",
-   "required": false,
-   "tag": 2029
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingReturnTrigger",
-   "required": false,
-   "tag": 2757
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPriceQuoteMethod",
-   "required": false,
-   "tag": 2030
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingValuationMethod",
-   "required": false,
-   "tag": 2031
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingValuationSource",
-   "required": false,
-   "tag": 2293
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingValuationReferenceModel",
-   "required": false,
-   "tag": 2294
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingListMethod",
-   "required": false,
-   "tag": 2032
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCapPrice",
-   "required": false,
-   "tag": 2033
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFloorPrice",
-   "required": false,
-   "tag": 2034
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFlexibleIndicator",
-   "required": false,
-   "tag": 2035
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingFlexProductEligibilityIndicator",
-   "required": false,
-   "tag": 2036
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPositionLimit",
-   "required": false,
-   "tag": 2037
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingNTPositionLimit",
-   "required": false,
-   "tag": 2038
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPool",
-   "required": false,
-   "tag": 2039
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingContractSettlMonth",
-   "required": false,
-   "tag": 2040
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDatedDate",
-   "required": false,
-   "tag": 2041
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInterestAccrualDate",
-   "required": false,
-   "tag": 2042
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingShortSaleRestriction",
-   "required": false,
-   "tag": 2043
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingRefTickTableID",
-   "required": false,
-   "tag": 2044
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingProtectionTermXIDRef",
-   "required": false,
-   "tag": 41314
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlTermXIDRef",
-   "required": false,
-   "tag": 41315
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingComplexEvents",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingStrategyType",
-   "required": false,
-   "tag": 2295
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingCommonPricingIndicator",
-   "required": false,
-   "tag": 2296
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingSettlDisruptionProvision",
-   "required": false,
-   "tag": 2297
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDeliveryRouteOrCharter",
-   "required": false,
-   "tag": 2756
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInstrumentRoundingDirection",
-   "required": false,
-   "tag": 2298
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInstrumentRoundingPrecision",
-   "required": false,
-   "tag": 2299
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingDateAdjustment",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPricingDateTime",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingMarketDisruption",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingOptionExercise",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingStreamGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProvisionGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingAdditionalTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingProtectionTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingCashSettlTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPhysicalSettlTermGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingRateSpreadSchedule",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingDividendPayout",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingExtraordinaryEventGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingExtraordinaryEventAdjustmentMethod",
-   "required": false,
-   "tag": 2624
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingExchangeLookAlike",
-   "required": false,
-   "tag": 2625
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAverageVolumeLimitationPercentage",
-   "required": false,
-   "tag": 2626
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingAverageVolumeLimitationPeriodDays",
-   "required": false,
-   "tag": 2627
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingDepositoryReceiptIndicator",
-   "required": false,
-   "tag": 2628
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingOpenUnits",
-   "required": false,
-   "tag": 2629
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingBasketDivisor",
-   "required": false,
-   "tag": 2630
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingInstrumentXID",
-   "required": false,
-   "tag": 2631
-  }
- ]
+ "declaration": {
+  "name": "UnderlyingInstrument",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingInstrument",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "UnderlyingSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "311"
+    }
+   },
+   {
+    "name": "UnderlyingSymbolSfx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "312"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "309"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "305"
+    }
+   },
+   {
+    "name": "UndSecAltIDGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndSecAltIDGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2874"
+    }
+   },
+   {
+    "name": "UnderlyingProduct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "462"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityXML",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingSecurityXML"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingCFICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "463"
+    }
+   },
+   {
+    "name": "UnderlyingUPICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2894"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "310"
+    }
+   },
+   {
+    "name": "UnderlyingSecuritySubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "763"
+    }
+   },
+   {
+    "name": "UnderlyingMaturityMonthYear",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "313"
+    }
+   },
+   {
+    "name": "UnderlyingMaturityDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "542"
+    }
+   },
+   {
+    "name": "UnderlyingMaturityTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1213"
+    }
+   },
+   {
+    "name": "UnderlyingContractPriceRefMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1837"
+    }
+   },
+   {
+    "name": "UnderlyingCouponPaymentDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "241"
+    }
+   },
+   {
+    "name": "UnderlyingRestructuringType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1453"
+    }
+   },
+   {
+    "name": "UnderlyingSeniority",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1454"
+    }
+   },
+   {
+    "name": "UnderlyingNotional",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2614"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2615"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2921"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2616"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalAdjustments",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2617"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2619"
+    }
+   },
+   {
+    "name": "UnderlyingNotionalPercentageOutstanding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1455"
+    }
+   },
+   {
+    "name": "UnderlyingOriginalNotionalPercentageOutstanding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1456"
+    }
+   },
+   {
+    "name": "UnderlyingAttachmentPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1459"
+    }
+   },
+   {
+    "name": "UnderlyingDetachmentPoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1460"
+    }
+   },
+   {
+    "name": "UnderlyingIssueDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "242"
+    }
+   },
+   {
+    "name": "UnderlyingRepoCollateralSecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "243"
+    }
+   },
+   {
+    "name": "UnderlyingRepurchaseTerm",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "244"
+    }
+   },
+   {
+    "name": "UnderlyingRepurchaseRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "245"
+    }
+   },
+   {
+    "name": "UnderlyingFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "246"
+    }
+   },
+   {
+    "name": "UnderlyingCreditRating",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "256"
+    }
+   },
+   {
+    "name": "UnderlyingInstrRegistry",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "595"
+    }
+   },
+   {
+    "name": "UnderlyingCountryOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "592"
+    }
+   },
+   {
+    "name": "UnderlyingStateOrProvinceOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "593"
+    }
+   },
+   {
+    "name": "UnderlyingLocaleOfIssue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "594"
+    }
+   },
+   {
+    "name": "UnderlyingRedemptionDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "247"
+    }
+   },
+   {
+    "name": "UnderlyingStrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "316"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "941"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2917"
+    }
+   },
+   {
+    "name": "UnderlyingOptAttribute",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "317"
+    }
+   },
+   {
+    "name": "UnderlyingContractMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "436"
+    }
+   },
+   {
+    "name": "UnderlyingContractMultiplierUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1437"
+    }
+   },
+   {
+    "name": "UnderlyingTradingUnitPeriodMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2363"
+    }
+   },
+   {
+    "name": "UnderlyingFlowScheduleType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1441"
+    }
+   },
+   {
+    "name": "UnderlyingUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "998"
+    }
+   },
+   {
+    "name": "UnderlyingUnitOfMeasureQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1423"
+    }
+   },
+   {
+    "name": "UnderlyingUnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1718"
+    }
+   },
+   {
+    "name": "UnderlyingUnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2918"
+    }
+   },
+   {
+    "name": "UnderlyingPriceUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1424"
+    }
+   },
+   {
+    "name": "UnderlyingPriceUnitOfMeasureQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1425"
+    }
+   },
+   {
+    "name": "UnderlyingPriceUnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1719"
+    }
+   },
+   {
+    "name": "UnderlyingPriceUnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2919"
+    }
+   },
+   {
+    "name": "UnderlyingTimeUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1000"
+    }
+   },
+   {
+    "name": "UnderlyingExerciseStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1419"
+    }
+   },
+   {
+    "name": "UnderlyingPriceQuoteCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1526"
+    }
+   },
+   {
+    "name": "UnderlyingPriceQuoteCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2920"
+    }
+   },
+   {
+    "name": "UnderlyingCouponRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "435"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "308"
+    }
+   },
+   {
+    "name": "UnderlyingIssuer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "306"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingIssuerLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "362"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingIssuer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "363"
+    }
+   },
+   {
+    "name": "UnderlyingFinancialInstrumentShortName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2742"
+    }
+   },
+   {
+    "name": "UnderlyingFinancialInstrumentFullName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2720"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingFinancialInstrumentFullNameLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2721"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingFinancialInstrumentFullName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2722"
+    }
+   },
+   {
+    "name": "UnderlyingIndexCurveUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2723"
+    }
+   },
+   {
+    "name": "UnderlyingIndexCurvePeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2724"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "307"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingSecurityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "364"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "365"
+    }
+   },
+   {
+    "name": "UnderlyingCPProgram",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "877"
+    }
+   },
+   {
+    "name": "UnderlyingCPRegType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "878"
+    }
+   },
+   {
+    "name": "UnderlyingAllocationPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "972"
+    }
+   },
+   {
+    "name": "UnderlyingCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "318"
+    }
+   },
+   {
+    "name": "UnderlyingCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2916"
+    }
+   },
+   {
+    "name": "UnderlyingQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "879"
+    }
+   },
+   {
+    "name": "UnderlyingSettlementType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "975"
+    }
+   },
+   {
+    "name": "UnderlyingCashAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "973"
+    }
+   },
+   {
+    "name": "UnderlyingCashType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "974"
+    }
+   },
+   {
+    "name": "UnderlyingPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "810"
+    }
+   },
+   {
+    "name": "UnderlyingDirtyPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "882"
+    }
+   },
+   {
+    "name": "UnderlyingEndPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "883"
+    }
+   },
+   {
+    "name": "UnderlyingStartValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "884"
+    }
+   },
+   {
+    "name": "UnderlyingCurrentValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "885"
+    }
+   },
+   {
+    "name": "UnderlyingEndValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "886"
+    }
+   },
+   {
+    "name": "UnderlyingAccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2885"
+    }
+   },
+   {
+    "name": "UnderlyingNumDaysInterest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2886"
+    }
+   },
+   {
+    "name": "UnderlyingStipulations",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStipulations"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingAdjustedQuantity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1044"
+    }
+   },
+   {
+    "name": "UnderlyingFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1045"
+    }
+   },
+   {
+    "name": "UnderlyingFXRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1046"
+    }
+   },
+   {
+    "name": "UnderlyingCapValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1038"
+    }
+   },
+   {
+    "name": "UndlyInstrumentParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndlyInstrumentParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingSettlMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1039"
+    }
+   },
+   {
+    "name": "UnderlyingPutOrCall",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "315"
+    }
+   },
+   {
+    "name": "UnderlyingInTheMoneyCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2683"
+    }
+   },
+   {
+    "name": "UnderlyingContraryInstructionEligibilityIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2687"
+    }
+   },
+   {
+    "name": "UnderlyingConstituentWeight",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1988"
+    }
+   },
+   {
+    "name": "UnderlyingCouponType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1989"
+    }
+   },
+   {
+    "name": "UnderlyingTotalIssuedAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1990"
+    }
+   },
+   {
+    "name": "UnderlyingCouponFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1991"
+    }
+   },
+   {
+    "name": "UnderlyingCouponFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1992"
+    }
+   },
+   {
+    "name": "UnderlyingCouponDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1993"
+    }
+   },
+   {
+    "name": "UnderlyingCouponOtherDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2881"
+    }
+   },
+   {
+    "name": "UnderlyingObligationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1994"
+    }
+   },
+   {
+    "name": "UnderlyingObligationIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1995"
+    }
+   },
+   {
+    "name": "UnderlyingEquityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1996"
+    }
+   },
+   {
+    "name": "UnderlyingEquityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1997"
+    }
+   },
+   {
+    "name": "UnderlyingFutureID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2620"
+    }
+   },
+   {
+    "name": "UnderlyingFutureIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2621"
+    }
+   },
+   {
+    "name": "UnderlyingEvntGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingEvntGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingLienSeniority",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1998"
+    }
+   },
+   {
+    "name": "UnderlyingLoanFacility",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1999"
+    }
+   },
+   {
+    "name": "UnderlyingReferenceEntityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2000"
+    }
+   },
+   {
+    "name": "UnderlyingIndexSeries",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2003"
+    }
+   },
+   {
+    "name": "UnderlyingIndexAnnexVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2004"
+    }
+   },
+   {
+    "name": "UnderlyingIndexAnnexDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2005"
+    }
+   },
+   {
+    "name": "UnderlyingIndexAnnexSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2006"
+    }
+   },
+   {
+    "name": "UnderlyingSettlRateIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2284"
+    }
+   },
+   {
+    "name": "UnderlyingSettlRateIndexLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2285"
+    }
+   },
+   {
+    "name": "UnderlyingOptionExpirationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2286"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingOptionExpirationDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2287"
+    }
+   },
+   {
+    "name": "EncodedUnderlyingOptionExpirationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2288"
+    }
+   },
+   {
+    "name": "UnderlyingProductComplex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2007"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityGroup",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2008"
+    }
+   },
+   {
+    "name": "UnderlyingSettleOnOpenFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2009"
+    }
+   },
+   {
+    "name": "UnderlyingAssignmentMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2010"
+    }
+   },
+   {
+    "name": "UnderlyingSecurityStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2011"
+    }
+   },
+   {
+    "name": "UnderlyingObligationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2012"
+    }
+   },
+   {
+    "name": "UnderlyingAssetGroup",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2491"
+    }
+   },
+   {
+    "name": "UnderlyingAssetClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2013"
+    }
+   },
+   {
+    "name": "UnderlyingAssetSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2014"
+    }
+   },
+   {
+    "name": "UnderlyingAssetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2015"
+    }
+   },
+   {
+    "name": "UnderlyingAssetSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2744"
+    }
+   },
+   {
+    "name": "UnderlyingSecondaryAssetGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingSecondaryAssetGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingAssetAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingAssetAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingSwapClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2016"
+    }
+   },
+   {
+    "name": "UnderlyingSwapSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2289"
+    }
+   },
+   {
+    "name": "UnderlyingNthToDefault",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2017"
+    }
+   },
+   {
+    "name": "UnderlyingMthToDefault",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2018"
+    }
+   },
+   {
+    "name": "UnderlyingSettledEntityMatrixSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2019"
+    }
+   },
+   {
+    "name": "UnderlyingSettledEntityMatrixPublicationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2020"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2021"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2022"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2290"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeIndexCurvePoint",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2622"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2291"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeIndexQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2623"
+    }
+   },
+   {
+    "name": "UnderlyingStrikeIndexSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2292"
+    }
+   },
+   {
+    "name": "UnderlyingStrikePriceDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2023"
+    }
+   },
+   {
+    "name": "UnderlyingStrikePriceBoundaryMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2024"
+    }
+   },
+   {
+    "name": "UnderlyingStrikePriceBoundaryPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2025"
+    }
+   },
+   {
+    "name": "UnderlyingMinPriceIncrement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2026"
+    }
+   },
+   {
+    "name": "UnderlyingMinPriceIncrementAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2027"
+    }
+   },
+   {
+    "name": "UnderlyingOptPayoutType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2028"
+    }
+   },
+   {
+    "name": "UnderlyingOptPayoutAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2029"
+    }
+   },
+   {
+    "name": "UnderlyingReturnTrigger",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2757"
+    }
+   },
+   {
+    "name": "UnderlyingPriceQuoteMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2030"
+    }
+   },
+   {
+    "name": "UnderlyingValuationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2031"
+    }
+   },
+   {
+    "name": "UnderlyingValuationSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2293"
+    }
+   },
+   {
+    "name": "UnderlyingValuationReferenceModel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2294"
+    }
+   },
+   {
+    "name": "UnderlyingListMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2032"
+    }
+   },
+   {
+    "name": "UnderlyingCapPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2033"
+    }
+   },
+   {
+    "name": "UnderlyingFloorPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2034"
+    }
+   },
+   {
+    "name": "UnderlyingFlexibleIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2035"
+    }
+   },
+   {
+    "name": "UnderlyingFlexProductEligibilityIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2036"
+    }
+   },
+   {
+    "name": "UnderlyingPositionLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2037"
+    }
+   },
+   {
+    "name": "UnderlyingNTPositionLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2038"
+    }
+   },
+   {
+    "name": "UnderlyingPool",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2039"
+    }
+   },
+   {
+    "name": "UnderlyingContractSettlMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2040"
+    }
+   },
+   {
+    "name": "UnderlyingDatedDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2041"
+    }
+   },
+   {
+    "name": "UnderlyingInterestAccrualDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2042"
+    }
+   },
+   {
+    "name": "UnderlyingShortSaleRestriction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2043"
+    }
+   },
+   {
+    "name": "UnderlyingRefTickTableID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2044"
+    }
+   },
+   {
+    "name": "UnderlyingProtectionTermXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41314"
+    }
+   },
+   {
+    "name": "UnderlyingSettlTermXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41315"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEvents",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingComplexEvents"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStrategyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2295"
+    }
+   },
+   {
+    "name": "UnderlyingCommonPricingIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2296"
+    }
+   },
+   {
+    "name": "UnderlyingSettlDisruptionProvision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2297"
+    }
+   },
+   {
+    "name": "UnderlyingDeliveryRouteOrCharter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2756"
+    }
+   },
+   {
+    "name": "UnderlyingInstrumentRoundingDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2298"
+    }
+   },
+   {
+    "name": "UnderlyingInstrumentRoundingPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2299"
+    }
+   },
+   {
+    "name": "UnderlyingDateAdjustment",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingDateAdjustment"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPricingDateTime",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPricingDateTime"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingMarketDisruption",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingMarketDisruption"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingOptionExercise",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingOptionExercise"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingStreamGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingStreamGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProvisionGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProvisionGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingAdditionalTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingAdditionalTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingProtectionTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingProtectionTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingCashSettlTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingCashSettlTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPhysicalSettlTermGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPhysicalSettlTermGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingRateSpreadSchedule",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingRateSpreadSchedule"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingDividendPayout",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingDividendPayout"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingExtraordinaryEventGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingExtraordinaryEventGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingExtraordinaryEventAdjustmentMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2624"
+    }
+   },
+   {
+    "name": "UnderlyingExchangeLookAlike",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2625"
+    }
+   },
+   {
+    "name": "UnderlyingAverageVolumeLimitationPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2626"
+    }
+   },
+   {
+    "name": "UnderlyingAverageVolumeLimitationPeriodDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2627"
+    }
+   },
+   {
+    "name": "UnderlyingDepositoryReceiptIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2628"
+    }
+   },
+   {
+    "name": "UnderlyingOpenUnits",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2629"
+    }
+   },
+   {
+    "name": "UnderlyingBasketDivisor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2630"
+    }
+   },
+   {
+    "name": "UnderlyingInstrumentXID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2631"
+    }
+   }
+  ]
+ }
 }

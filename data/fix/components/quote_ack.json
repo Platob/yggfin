@@ -1,0 +1,146 @@
+{
+ "name": "QuoteAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "QuoteAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuoteAck",
+   "msgtype": "CW"
+  },
+  "fields": [
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "QuoteMsgID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1166"
+    }
+   },
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteCancelType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "298"
+    }
+   },
+   {
+    "name": "SecondaryQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1751"
+    }
+   },
+   {
+    "name": "QuoteAckStatus",
+    "type": "string",
+    "fix": {
+     "tag": "1865"
+    }
+   },
+   {
+    "name": "QuoteRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "300"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "QuoteAttributeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuoteAttributeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

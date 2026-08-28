@@ -1,0 +1,81 @@
+{
+ "name": "PartyRiskLimitsDefinitionRequestAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyRiskLimitsDefinitionRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitsDefinitionRequestAck",
+   "msgtype": "CT"
+  },
+  "fields": [
+   {
+    "name": "RiskLimitRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1666"
+    }
+   },
+   {
+    "name": "RiskLimitRequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1761"
+    }
+   },
+   {
+    "name": "RiskLimitRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "1762"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyRiskLimitsAckGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyRiskLimitsAckGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

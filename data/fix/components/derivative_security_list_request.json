@@ -1,0 +1,141 @@
+{
+ "name": "DerivativeSecurityListRequest",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "DerivativeSecurityListRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeSecurityListRequest",
+   "msgtype": "z"
+  },
+  "fields": [
+   {
+    "name": "SecurityReqID",
+    "type": "string",
+    "fix": {
+     "tag": "320"
+    }
+   },
+   {
+    "name": "SecurityListRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "559"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "UnderlyingInstrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingInstrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "DerivativeInstrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DerivativeInstrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecuritySubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "762"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "263"
+    }
+   }
+  ]
+ }
+}

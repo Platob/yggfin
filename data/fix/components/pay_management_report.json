@@ -1,0 +1,194 @@
+{
+ "name": "PayManagementReport",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PayManagementReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PayManagementReport",
+   "msgtype": "EA"
+  },
+  "fields": [
+   {
+    "name": "PayReportID",
+    "type": "string",
+    "fix": {
+     "tag": "2799"
+    }
+   },
+   {
+    "name": "PayRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2812"
+    }
+   },
+   {
+    "name": "PayReportTransType",
+    "type": "string",
+    "fix": {
+     "tag": "2804"
+    }
+   },
+   {
+    "name": "PayReportRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2803"
+    }
+   },
+   {
+    "name": "ReplaceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2805"
+    }
+   },
+   {
+    "name": "EncodedReplaceTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2802"
+    }
+   },
+   {
+    "name": "EncodedReplaceText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2801"
+    }
+   },
+   {
+    "name": "PayRequestStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2813"
+    }
+   },
+   {
+    "name": "PayDisputeReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2800"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedTradeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedTradeGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "PostTradePayment",
+    "type": "struct",
+    "fix": {
+     "component": "PostTradePayment"
+    },
+    "fields": []
+   },
+   {
+    "name": "SettlDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "SettlDetails"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

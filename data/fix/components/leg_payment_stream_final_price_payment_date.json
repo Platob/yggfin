@@ -3,42 +3,63 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateUnadjusted",
-   "required": false,
-   "tag": 42453
+ "declaration": {
+  "name": "LegPaymentStreamFinalPricePaymentDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamFinalPricePaymentDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateRelativeTo",
-   "required": false,
-   "tag": 42454
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 42455
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateOffsetUnit",
-   "required": false,
-   "tag": 42456
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateOffsetDayType",
-   "required": false,
-   "tag": 42457
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFinalPricePaymentDateAdjusted",
-   "required": false,
-   "tag": 42458
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42453"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42454"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42455"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42456"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42457"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFinalPricePaymentDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42458"
+    }
+   }
+  ]
+ }
 }

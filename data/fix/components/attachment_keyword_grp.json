@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAttachmentKeywords",
-   "required": false,
-   "tag": 2113,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "AttachmentKeywordGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AttachmentKeywordGrp",
+   "msgtypes": "[\"Email\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoAttachmentKeywords",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2113"
+    },
+    "item": {
      "name": "AttachmentKeyword",
-     "required": false,
-     "tag": 2114
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AttachmentKeyword",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2114"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

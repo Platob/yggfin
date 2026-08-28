@@ -3,15 +3,29 @@
 from __future__ import annotations
 
 import pyarrow
+import pytest
 
 from rekep.enums import EventType
-from rekep.text import Kwarg, Message
+from rekep.text import Entry, Message
 
 EVENT_TYPES = {
     "8": EventType.EXECUTION,
     "D": EventType.ORDER,
     "W": EventType.BOOK,
 }
+
+#: The standard header this stage lifts out of `entries` into columns of its
+#: own, spelled out rather than imported from `rekep.text.message` so a field
+#: quietly added to or dropped from the lift is a failure here.
+SESSION_COLUMNS = (
+    "BeginString",
+    "BodyLength",
+    "MsgType",
+    "MsgSeqNum",
+    "SenderCompID",
+    "TargetCompID",
+    "SendingTime",
+)
 
 
 def parsed(*messages: str | None) -> dict[str, object]:
@@ -24,6 +38,25 @@ def test_a_mapped_message_type_assigns_its_registry_event_type() -> None:
 
     assert found["MsgType"].to_pylist() == ["D"]
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+
+
+def test_the_configured_spelling_may_be_a_name_a_mnemonic_or_a_code() -> None:
+    """A config written as the member's name, its mnemonic, or its stored code
+    all land in the column as that code."""
+    for spelled in ("ORDER", "order", int(EventType.ORDER), str(int(EventType.ORDER))):
+        found = Message.parse_arrow(
+            pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string()), {"D": spelled}
+        )
+        assert found["etype"].to_pylist() == [int(EventType.ORDER)], spelled
+
+
+def test_a_spelling_no_event_kind_answers_to_is_refused() -> None:
+    """Better a loud refusal than a dead code every reader maps to UNKNOWN."""
+    column = pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string())
+    with pytest.raises(ValueError, match="EventType"):
+        Message.parse_arrow(column, {"D": "XYZW"})
+    with pytest.raises(ValueError, match="EventType"):
+        Message.parse_arrow(column, {"D": 999})
 
 
 def test_a_wire_discriminator_without_begin_string_is_fix() -> None:
@@ -44,7 +77,7 @@ def test_no_message_type_is_misc_and_keeps_no_incidental_assignments() -> None:
 
     assert found["MsgType"].to_pylist() == [None, None, None, None, None]
     assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
-    assert found["kwargs"].to_pylist() == [[], [], [], [], []]
+    assert found["entries"].to_pylist() == [[], [], [], [], []]
 
 
 def test_an_unregistered_message_type_remains_unknown() -> None:
@@ -52,7 +85,7 @@ def test_an_unregistered_message_type_remains_unknown() -> None:
 
     assert found["MsgType"].to_pylist() == ["ZZ"]
     assert found["etype"].to_pylist() == [int(EventType.UNKNOWN)]
-    entry = found["kwargs"].to_pylist()[0][-1]
+    entry = found["entries"].to_pylist()[0][-1]
     assert (entry["key"], entry["value"]) == ("Text", "future")
 
 
@@ -70,8 +103,9 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["MsgType"].to_pylist() == ["D"]
-    residual = found["kwargs"].to_pylist()[0]
-    assert [entry["key"] for entry in residual] == ["8", "SIDE"]
+    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
+    residual = found["entries"].to_pylist()[0]
+    assert [entry["key"] for entry in residual] == ["SIDE"]
 
 
 def test_a_regular_wire_kind_stays_authoritative_over_named_noise() -> None:
@@ -102,12 +136,16 @@ def test_message_type_is_read_from_tokens_not_prose_values_or_the_trailer() -> N
 
     assert found["MsgType"].to_pylist() == [None] * 5
     assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
-    assert [[entry["key"] for entry in row] for row in found["kwargs"].to_pylist()] == [
+    # Every header field is measured against the same boundary: `8` precedes
+    # the checksum in the last two rows and so is lifted, while the
+    # discriminator written behind it is not.
+    assert found["BeginString"].to_pylist() == [None, None, None, "FIX.4.4", "FIX.4.4"]
+    assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         [],
         ["Text", "Other"],
-        ["8", "10", "35"],
-        ["8", "10", "MsgType"],
+        ["10", "35"],
+        ["10", "MsgType"],
     ]
 
 
@@ -119,7 +157,7 @@ def test_a_prefixed_marked_checksum_ends_discriminator_promotion() -> None:
 
     assert found["MsgType"].to_pylist() == [None]
     assert found["etype"].to_pylist() == [int(EventType.MISC)]
-    assert [entry["key"] for entry in found["kwargs"].to_pylist()[0]] == [
+    assert [entry["key"] for entry in found["entries"].to_pylist()[0]] == [
         "10",
         "MSGTYPE",
         "Text",
@@ -134,12 +172,15 @@ def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
     )
 
     assert found["MsgType"].to_pylist() == [None, None, None]
+    # The qualifying rows are the ones that reached the splitter at all, and
+    # the begin string they spelled is now the column rather than an entry.
+    assert found["BeginString"].to_pylist() == [None, "FIX.4.4", "FIXT.1.1"]
     assert [
-        [(entry["key"], entry["value"]) for entry in row] for row in found["kwargs"].to_pylist()
+        [(entry["key"], entry["value"]) for entry in row] for row in found["entries"].to_pylist()
     ] == [
         [],
-        [("8", "FIX.4.4")],
-        [("8", "FIXT.1.1")],
+        [],
+        [],
     ]
 
 
@@ -147,7 +188,7 @@ def test_bare_caret_delimited_fields_are_tokens() -> None:
     found = parsed("35=D^Text=kept^")
 
     assert found["MsgType"].to_pylist() == ["D"]
-    assert [(entry["key"], entry["value"]) for entry in found["kwargs"].to_pylist()[0]] == [
+    assert [(entry["key"], entry["value"]) for entry in found["entries"].to_pylist()[0]] == [
         ("Text", "kept")
     ]
 
@@ -155,16 +196,21 @@ def test_bare_caret_delimited_fields_are_tokens() -> None:
 def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
     messages = pyarrow.chunked_array(
         [
-            pyarrow.array(["plain", "35=D|A=1"], pyarrow.large_string()),
+            pyarrow.array(["plain", "35=D|49=BUYSIDE|A=1"], pyarrow.large_string()),
             pyarrow.array(["#MSGTYPE=W|#B=2"], pyarrow.large_string()),
         ]
     )
 
     found = Message.parse_arrow(messages, EVENT_TYPES)
 
-    assert found["etype"].to_pylist() == [10, 110, 320]
+    assert found["etype"].to_pylist() == [
+        int(EventType.MISC),
+        int(EventType.ORDER),
+        int(EventType.BOOK),
+    ]
     assert found["MsgType"].to_pylist() == [None, "D", "W"]
-    assert [[entry["key"] for entry in row] for row in found["kwargs"].to_pylist()] == [
+    assert found["SenderCompID"].to_pylist() == [None, "BUYSIDE", None]
+    assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         ["A"],
         ["B"],
@@ -175,11 +221,11 @@ def test_unstructured_long_rows_never_enter_the_key_value_splitter(monkeypatch) 
     def unexpected(cls, messages):
         raise AssertionError(f"split {len(messages)} rows")
 
-    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(unexpected))
+    monkeypatch.setattr(Entry, "parse_arrow", classmethod(unexpected))
     found = Message.parse_arrow(pyarrow.array(["x" * 1_000_000, "diagnostic A=1"]), EVENT_TYPES)
 
-    assert found["etype"].to_pylist() == [10, 10]
-    assert found["kwargs"].to_pylist() == [[], []]
+    assert found["etype"].to_pylist() == [int(EventType.MISC), int(EventType.MISC)]
+    assert found["entries"].to_pylist() == [[], []]
 
 
 def test_plugin_codes_do_not_define_message_types() -> None:
@@ -190,8 +236,8 @@ def test_plugin_codes_do_not_define_message_types() -> None:
     )
 
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
-    assert [(entry["key"], entry["value"]) for entry in found["kwargs"][0].as_py()] == [
-        ("8", "FIX.4.4"),
+    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
+    assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
         ("11", "one"),
     ]
 
@@ -226,24 +272,26 @@ def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
         protocol_code="MISC",
         MsgType="0",
         etype=EventType.MISC,
-        kwargs=[],
+        entries=[],
     ).into_dict()
 
     def unexpected(cls, messages):
         raise AssertionError(f"reparsed {len(messages)} stored technical rows")
 
-    monkeypatch.setattr(Kwarg, "parse_arrow", classmethod(unexpected))
+    monkeypatch.setattr(Entry, "parse_arrow", classmethod(unexpected))
     restored = Message.from_dict(stored)
 
     assert restored.MsgType == "0"
+    assert restored.BeginString is None, "a stored row's header is what it stored"
     assert restored.protocol_code == "MISC"
     assert restored.etype == EventType.MISC
-    assert restored.kwargs == []
+    assert restored.entries == []
 
 
 def test_empty_input_keeps_the_declared_column_types() -> None:
     found = Message.parse_arrow(pyarrow.array([], pyarrow.string()), EVENT_TYPES)
 
-    assert found["etype"].type == pyarrow.int32()
-    assert found["MsgType"].type == pyarrow.string()
-    assert found["kwargs"].type == Message.into_field().field("kwargs").arrow_type
+    assert found["etype"].type == pyarrow.int64()
+    for name in SESSION_COLUMNS:
+        assert found[name].type == pyarrow.string(), name
+    assert found["entries"].type == Message.into_field().field("entries").dtype

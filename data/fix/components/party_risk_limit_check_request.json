@@ -1,0 +1,205 @@
+{
+ "name": "PartyRiskLimitCheckRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyRiskLimitCheckRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitCheckRequest",
+   "msgtype": "DF"
+  },
+  "fields": [
+   {
+    "name": "RiskLimitCheckRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2318"
+    }
+   },
+   {
+    "name": "RiskLimitCheckID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2319"
+    }
+   },
+   {
+    "name": "RiskLimitCheckTransType",
+    "type": "string",
+    "fix": {
+     "tag": "2320"
+    }
+   },
+   {
+    "name": "RiskLimitCheckType",
+    "type": "string",
+    "fix": {
+     "tag": "2321"
+    }
+   },
+   {
+    "name": "RiskLimitCheckRequestRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2322"
+    }
+   },
+   {
+    "name": "RefOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1080"
+    }
+   },
+   {
+    "name": "RefOrderIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1081"
+    }
+   },
+   {
+    "name": "RiskLimitCheckRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2323"
+    }
+   },
+   {
+    "name": "RiskLimitCheckAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2324"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "RiskLimitID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1670"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "RelatedPartyDetailGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelatedPartyDetailGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegOrdGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegOrdGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

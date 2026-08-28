@@ -4,73 +4,108 @@
   "4.4",
   "5.0"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyings",
-   "required": false,
-   "tag": 711,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingInstrument",
-     "required": false
+ "declaration": {
+  "name": "UndInstrmtStrkPxGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UndInstrmtStrkPxGrp"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyings",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "711"
     },
-    {
-     "kind": "field",
-     "name": "PrevClosePx",
-     "required": false,
-     "tag": 140
-    },
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": false,
-     "tag": 11
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryClOrdID",
-     "required": false,
-     "tag": 526
-    },
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": false,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "Price",
-     "required": true,
-     "tag": 44
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -6,579 +6,817 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrders",
-   "required": false,
-   "tag": 73,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": true,
-     "tag": 11
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryClOrdID",
-     "required": false,
-     "tag": 526
-    },
-    {
-     "kind": "field",
-     "name": "ListSeqNo",
-     "required": true,
-     "tag": 67
-    },
-    {
-     "kind": "field",
-     "name": "ClOrdLinkID",
-     "required": false,
-     "tag": 583
-    },
-    {
-     "kind": "field",
-     "name": "SettlInstMode",
-     "required": false,
-     "tag": 160
-    },
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TradeOriginationDate",
-     "required": false,
-     "tag": 229
-    },
-    {
-     "kind": "field",
-     "name": "TradeDate",
-     "required": false,
-     "tag": 75
-    },
-    {
-     "kind": "field",
-     "name": "Account",
-     "required": false,
-     "tag": 1
-    },
-    {
-     "kind": "field",
-     "name": "AcctIDSource",
-     "required": false,
-     "tag": 660
-    },
-    {
-     "kind": "field",
-     "name": "AccountType",
-     "required": false,
-     "tag": 581
-    },
-    {
-     "kind": "field",
-     "name": "DayBookingInst",
-     "required": false,
-     "tag": 589
-    },
-    {
-     "kind": "field",
-     "name": "BookingUnit",
-     "required": false,
-     "tag": 590
-    },
-    {
-     "kind": "field",
-     "name": "AllocID",
-     "required": false,
-     "tag": 70
-    },
-    {
-     "kind": "field",
-     "name": "PreallocMethod",
-     "required": false,
-     "tag": 591
-    },
-    {
-     "kind": "component",
-     "name": "PreAllocGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SettlType",
-     "required": false,
-     "tag": 63
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate",
-     "required": false,
-     "tag": 64
-    },
-    {
-     "kind": "field",
-     "name": "CashMargin",
-     "required": false,
-     "tag": 544
-    },
-    {
-     "kind": "field",
-     "name": "ClearingFeeIndicator",
-     "required": false,
-     "tag": 635
-    },
-    {
-     "kind": "field",
-     "name": "HandlInst",
-     "required": false,
-     "tag": 21
-    },
-    {
-     "kind": "field",
-     "name": "ExecInst",
-     "required": false,
-     "tag": 18
-    },
-    {
-     "kind": "field",
-     "name": "MinQty",
-     "required": false,
-     "tag": 110
-    },
-    {
-     "kind": "field",
-     "name": "MatchIncrement",
-     "required": false,
-     "tag": 1089
-    },
-    {
-     "kind": "field",
-     "name": "MaxPriceLevels",
-     "required": false,
-     "tag": 1090
-    },
-    {
-     "kind": "component",
-     "name": "DisplayInstruction",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "MaxFloor",
-     "required": false,
-     "tag": 111
-    },
-    {
-     "kind": "field",
-     "name": "ExDestination",
-     "required": false,
-     "tag": 100
-    },
-    {
-     "kind": "field",
-     "name": "ExDestinationIDSource",
-     "required": false,
-     "tag": 1133
-    },
-    {
-     "kind": "component",
-     "name": "TrdgSesGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProcessCode",
-     "required": false,
-     "tag": 81
-    },
-    {
-     "kind": "component",
-     "name": "Instrument",
-     "required": true
-    },
-    {
-     "kind": "component",
-     "name": "UndInstrmtGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PrevClosePx",
-     "required": false,
-     "tag": 140
-    },
-    {
-     "kind": "field",
-     "name": "Side",
-     "required": true,
-     "tag": 54
-    },
-    {
-     "kind": "field",
-     "name": "ShortMarkingExemptIndicator",
-     "required": false,
-     "tag": 2102
-    },
-    {
-     "kind": "field",
-     "name": "ShortSaleExemptionReason",
-     "required": false,
-     "tag": 1688
-    },
-    {
-     "kind": "field",
-     "name": "SideValueInd",
-     "required": false,
-     "tag": 401
-    },
-    {
-     "kind": "field",
-     "name": "LocateReqd",
-     "required": false,
-     "tag": 114
-    },
-    {
-     "kind": "field",
-     "name": "TransactTime",
-     "required": false,
-     "tag": 60
-    },
-    {
-     "kind": "component",
-     "name": "Stipulations",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "QtyType",
-     "required": false,
-     "tag": 854
-    },
-    {
-     "kind": "component",
-     "name": "OrderQtyData",
-     "required": true
-    },
-    {
-     "kind": "field",
-     "name": "OrdType",
-     "required": false,
-     "tag": 40
-    },
-    {
-     "kind": "field",
-     "name": "PriceType",
-     "required": false,
-     "tag": 423
-    },
-    {
-     "kind": "field",
-     "name": "Price",
-     "required": false,
-     "tag": 44
-    },
-    {
-     "kind": "field",
-     "name": "PriceProtectionScope",
-     "required": false,
-     "tag": 1092
-    },
-    {
-     "kind": "field",
-     "name": "StopPx",
-     "required": false,
-     "tag": 99
-    },
-    {
-     "kind": "component",
-     "name": "TriggeringInstruction",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "SpreadOrBenchmarkCurveData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "YieldData",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Currency",
-     "required": false,
-     "tag": 15
-    },
-    {
-     "kind": "field",
-     "name": "CurrencyCodeSource",
-     "required": false,
-     "tag": 2897
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceID",
-     "required": false,
-     "tag": 376
-    },
-    {
-     "kind": "field",
-     "name": "ComplianceText",
-     "required": false,
-     "tag": 2404
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceTextLen",
-     "required": false,
-     "tag": 2351
-    },
-    {
-     "kind": "field",
-     "name": "EncodedComplianceText",
-     "required": false,
-     "tag": 2352
-    },
-    {
-     "kind": "field",
-     "name": "SolicitedFlag",
-     "required": false,
-     "tag": 377
-    },
-    {
-     "kind": "field",
-     "name": "IOIID",
-     "required": false,
-     "tag": 23
-    },
-    {
-     "kind": "field",
-     "name": "QuoteID",
-     "required": false,
-     "tag": 117
-    },
-    {
-     "kind": "field",
-     "name": "RefOrderID",
-     "required": false,
-     "tag": 1080
-    },
-    {
-     "kind": "field",
-     "name": "RefOrderIDSource",
-     "required": false,
-     "tag": 1081
-    },
-    {
-     "kind": "field",
-     "name": "TimeInForce",
-     "required": false,
-     "tag": 59
-    },
-    {
-     "kind": "field",
-     "name": "EffectiveTime",
-     "required": false,
-     "tag": 168
-    },
-    {
-     "kind": "field",
-     "name": "ExpireDate",
-     "required": false,
-     "tag": 432
-    },
-    {
-     "kind": "field",
-     "name": "ExpireTime",
-     "required": false,
-     "tag": 126
-    },
-    {
-     "kind": "field",
-     "name": "GTBookingInst",
-     "required": false,
-     "tag": 427
-    },
-    {
-     "kind": "field",
-     "name": "ExposureDuration",
-     "required": false,
-     "tag": 1629
-    },
-    {
-     "kind": "field",
-     "name": "ExposureDurationUnit",
-     "required": false,
-     "tag": 1916
-    },
-    {
-     "kind": "component",
-     "name": "CommissionData",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "CommissionDataGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "OrderCapacity",
-     "required": false,
-     "tag": 528
-    },
-    {
-     "kind": "field",
-     "name": "OrderRestrictions",
-     "required": false,
-     "tag": 529
-    },
-    {
-     "kind": "field",
-     "name": "PreTradeAnonymity",
-     "required": false,
-     "tag": 1091
-    },
-    {
-     "kind": "field",
-     "name": "CustOrderCapacity",
-     "required": false,
-     "tag": 582
-    },
-    {
-     "kind": "component",
-     "name": "OrderAttributeGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ForexReq",
-     "required": false,
-     "tag": 121
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrency",
-     "required": false,
-     "tag": 120
-    },
-    {
-     "kind": "field",
-     "name": "SettlCurrencyCodeSource",
-     "required": false,
-     "tag": 2899
-    },
-    {
-     "kind": "field",
-     "name": "BookingType",
-     "required": false,
-     "tag": 775
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
-    },
-    {
-     "kind": "field",
-     "name": "SettlDate2",
-     "required": false,
-     "tag": 193
-    },
-    {
-     "kind": "field",
-     "name": "OrderQty2",
-     "required": false,
-     "tag": 192
-    },
-    {
-     "kind": "field",
-     "name": "Price2",
-     "required": false,
-     "tag": 640
-    },
-    {
-     "kind": "field",
-     "name": "PositionEffect",
-     "required": false,
-     "tag": 77
-    },
-    {
-     "kind": "field",
-     "name": "CoveredOrUncovered",
-     "required": false,
-     "tag": 203
-    },
-    {
-     "kind": "field",
-     "name": "MaxShow",
-     "required": false,
-     "tag": 210
-    },
-    {
-     "kind": "component",
-     "name": "PegInstructions",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "DiscretionInstructions",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TargetStrategy",
-     "required": false,
-     "tag": 847
-    },
-    {
-     "kind": "component",
-     "name": "StrategyParametersGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "TargetStrategyParameters",
-     "required": false,
-     "tag": 848
-    },
-    {
-     "kind": "field",
-     "name": "ParticipationRate",
-     "required": false,
-     "tag": 849
-    },
-    {
-     "kind": "field",
-     "name": "Designation",
-     "required": false,
-     "tag": 494
-    },
-    {
-     "kind": "field",
-     "name": "ManualOrderIndicator",
-     "required": false,
-     "tag": 1028
+ "declaration": {
+  "name": "ListOrdGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ListOrdGrp",
+   "msgtypes": "[\"NewOrderList\"]"
+  },
+  "fields": [
+   {
+    "name": "NoOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "73"
+    },
+    "item": {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "ListSeqNo",
+       "type": "string",
+       "fix": {
+        "tag": "67"
+       }
+      },
+      {
+       "name": "ClOrdLinkID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "583"
+       }
+      },
+      {
+       "name": "SettlInstMode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "160"
+       }
+      },
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradeOriginationDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "229"
+       }
+      },
+      {
+       "name": "TradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "75"
+       }
+      },
+      {
+       "name": "Account",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1"
+       }
+      },
+      {
+       "name": "AcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "660"
+       }
+      },
+      {
+       "name": "AccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "581"
+       }
+      },
+      {
+       "name": "DayBookingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "589"
+       }
+      },
+      {
+       "name": "BookingUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "590"
+       }
+      },
+      {
+       "name": "AllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "70"
+       }
+      },
+      {
+       "name": "PreallocMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "591"
+       }
+      },
+      {
+       "name": "PreAllocGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PreAllocGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "CashMargin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "544"
+       }
+      },
+      {
+       "name": "ClearingFeeIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "635"
+       }
+      },
+      {
+       "name": "HandlInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "21"
+       }
+      },
+      {
+       "name": "ExecInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "18"
+       }
+      },
+      {
+       "name": "MinQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "110"
+       }
+      },
+      {
+       "name": "MatchIncrement",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1089"
+       }
+      },
+      {
+       "name": "MaxPriceLevels",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1090"
+       }
+      },
+      {
+       "name": "DisplayInstruction",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DisplayInstruction"
+       },
+       "fields": []
+      },
+      {
+       "name": "MaxFloor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "111"
+       }
+      },
+      {
+       "name": "ExDestination",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "100"
+       }
+      },
+      {
+       "name": "ExDestinationIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1133"
+       }
+      },
+      {
+       "name": "TrdgSesGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TrdgSesGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProcessCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "81"
+       }
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "ShortMarkingExemptIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2102"
+       }
+      },
+      {
+       "name": "ShortSaleExemptionReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1688"
+       }
+      },
+      {
+       "name": "SideValueInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "401"
+       }
+      },
+      {
+       "name": "LocateReqd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "114"
+       }
+      },
+      {
+       "name": "TransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "60"
+       }
+      },
+      {
+       "name": "Stipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Stipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "QtyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "854"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      },
+      {
+       "name": "PriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "423"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "PriceProtectionScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1092"
+       }
+      },
+      {
+       "name": "StopPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "99"
+       }
+      },
+      {
+       "name": "TriggeringInstruction",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TriggeringInstruction"
+       },
+       "fields": []
+      },
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "YieldData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "YieldData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "ComplianceID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "376"
+       }
+      },
+      {
+       "name": "ComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2404"
+       }
+      },
+      {
+       "name": "EncodedComplianceTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2351"
+       }
+      },
+      {
+       "name": "EncodedComplianceText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2352"
+       }
+      },
+      {
+       "name": "SolicitedFlag",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "377"
+       }
+      },
+      {
+       "name": "IOIID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "23"
+       }
+      },
+      {
+       "name": "QuoteID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "117"
+       }
+      },
+      {
+       "name": "RefOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1080"
+       }
+      },
+      {
+       "name": "RefOrderIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1081"
+       }
+      },
+      {
+       "name": "TimeInForce",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "59"
+       }
+      },
+      {
+       "name": "EffectiveTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "168"
+       }
+      },
+      {
+       "name": "ExpireDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "432"
+       }
+      },
+      {
+       "name": "ExpireTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "126"
+       }
+      },
+      {
+       "name": "GTBookingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "427"
+       }
+      },
+      {
+       "name": "ExposureDuration",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1629"
+       }
+      },
+      {
+       "name": "ExposureDurationUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1916"
+       }
+      },
+      {
+       "name": "CommissionData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionData"
+       },
+       "fields": []
+      },
+      {
+       "name": "CommissionDataGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionDataGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "OrderCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "528"
+       }
+      },
+      {
+       "name": "OrderRestrictions",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "529"
+       }
+      },
+      {
+       "name": "PreTradeAnonymity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1091"
+       }
+      },
+      {
+       "name": "CustOrderCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "582"
+       }
+      },
+      {
+       "name": "OrderAttributeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "OrderAttributeGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ForexReq",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "121"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "BookingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "775"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      },
+      {
+       "name": "SettlDate2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "193"
+       }
+      },
+      {
+       "name": "OrderQty2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "192"
+       }
+      },
+      {
+       "name": "Price2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "640"
+       }
+      },
+      {
+       "name": "PositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "77"
+       }
+      },
+      {
+       "name": "CoveredOrUncovered",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "203"
+       }
+      },
+      {
+       "name": "MaxShow",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "210"
+       }
+      },
+      {
+       "name": "PegInstructions",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PegInstructions"
+       },
+       "fields": []
+      },
+      {
+       "name": "DiscretionInstructions",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DiscretionInstructions"
+       },
+       "fields": []
+      },
+      {
+       "name": "TargetStrategy",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "847"
+       }
+      },
+      {
+       "name": "StrategyParametersGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StrategyParametersGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "TargetStrategyParameters",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "848"
+       }
+      },
+      {
+       "name": "ParticipationRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "849"
+       }
+      },
+      {
+       "name": "Designation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "494"
+       }
+      },
+      {
+       "name": "ManualOrderIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1028"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

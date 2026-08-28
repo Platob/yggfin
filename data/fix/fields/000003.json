@@ -38,39 +38,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Unknown client",
-   "1": "Exceeds maximum size",
-   "2": "Unknown or Invalid currency pair",
-   "3": "No available stream",
-   "99": "Other"
-  },
-  "value_names": {
-   "0": "UNKNOWN_CLIENT",
-   "1": "EXCEEDS_MAXIMUM_SIZE",
-   "2": "UNKNOWN_OR_INVALID_CURRENCY_PAIR",
-   "3": "NO_AVAILABLE_STREAM",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "unknownclient": "0",
-   "exceedsmaximumsize": "1",
-   "unknownorinvalidcurrencypair": "2",
-   "noavailablestream": "3",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "unknownclient",
-   "1": "exceedsmaximumsize",
-   "2": "unknownorinvalidcurrencypair",
-   "3": "noavailablestream",
-   "99": "other"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Unknown client",
+    "aliases": [
+     "UNKNOWN_CLIENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Exceeds maximum size",
+    "aliases": [
+     "EXCEEDS_MAXIMUM_SIZE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Unknown or Invalid currency pair",
+    "aliases": [
+     "UNKNOWN_OR_INVALID_CURRENCY_PAIR"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "No available stream",
+    "aliases": [
+     "NO_AVAILABLE_STREAM"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "Other",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ],
   "used_in": [
    "StreamAssignmentReportACK"
   ],
@@ -86,24 +90,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "0": "Assignment Accepted",
-   "1": "Assignment Rejected"
-  },
-  "value_names": {
-   "0": "ASSIGNMENT_ACCEPTED",
-   "1": "ASSIGNMENT_REJECTED"
-  },
-  "encoded": {
-   "assignmentaccepted": "0",
-   "assignmentrejected": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "assignmentaccepted",
-   "1": "assignmentrejected"
-  },
+  "values": [
+   {
+    "value": "0",
+    "meaning": "Assignment Accepted",
+    "aliases": [
+     "ASSIGNMENT_ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "Assignment Rejected",
+    "aliases": [
+     "ASSIGNMENT_REJECTED"
+    ]
+   }
+  ],
   "used_in": [
    "StreamAssignmentReportACK"
   ]
@@ -178,40 +180,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "VALID_REQUEST",
-   "1": "INVALID_OR_UNSUPPORTED_REQUEST",
-   "2": "NO_DATA_FOUND",
-   "3": "NOT_AUTHORIZED",
-   "4": "DATA_TEMPORARILY_UNAVAILABLE",
-   "5": "REQUEST_FOR_DATA_NOT_SUPPORTED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "validrequest": "0",
-   "invalidorunsupportedrequest": "1",
-   "nodatafound": "2",
-   "notauthorized": "3",
-   "datatemporarilyunavailable": "4",
-   "requestfordatanotsupported": "5",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "validrequest",
-   "1": "invalidorunsupportedrequest",
-   "2": "nodatafound",
-   "3": "notauthorized",
-   "4": "datatemporarilyunavailable",
-   "5": "requestfordatanotsupported",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "VALID_REQUEST"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNSUPPORTED_REQUEST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NO_DATA_FOUND"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "NOT_AUTHORIZED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DATA_TEMPORARILY_UNAVAILABLE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "REQUEST_FOR_DATA_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1512": {
   "name": "TotNoParties",
@@ -244,168 +263,281 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "IS_ALSO",
-   "1": "CLEARS_FOR",
-   "2": "CLEARS_THROUGH",
-   "3": "TRADES_FOR",
-   "4": "TRADES_THROUGH",
-   "5": "SPONSORS",
-   "6": "SPONSORED_THROUGH",
-   "7": "PROVIDES_GUARANTEE_FOR",
-   "8": "IS_GUARANTEED_BY",
-   "9": "MEMBER_OF",
-   "10": "HAS_MEMBERS",
-   "11": "PROVIDES_MARKETPLACE_FOR",
-   "12": "PARTICIPANT_OF_MARKETPLACE",
-   "13": "CARRIES_POSITIONS_FOR",
-   "14": "POSTS_TRADES_TO",
-   "15": "ENTERS_TRADES_FOR",
-   "16": "ENTERS_TRADES_THROUGH",
-   "17": "PROVIDES_QUOTES_TO",
-   "18": "REQUESTS_QUOTES_FROM",
-   "19": "INVESTS_FOR",
-   "20": "INVESTS_THROUGH",
-   "21": "BROKERS_TRADES_FOR",
-   "22": "BROKERS_TRADES_THROUGH",
-   "23": "PROVIDES_TRADING_SERVICES_FOR",
-   "24": "USES_TRADING_SERVICES_OF",
-   "25": "APPROVES_OF",
-   "26": "APPROVED_BY",
-   "27": "PARENT_FIRM_FOR",
-   "28": "SUBSIDIARY_OF",
-   "29": "REGULATORY_OWNER_OF",
-   "30": "OWNED_BY_REGULATORY",
-   "31": "CONTROLS",
-   "32": "IS_CONTROLLED_BY",
-   "33": "LEGAL_OWNER_OF",
-   "34": "OWNED_BY_LEGAL",
-   "35": "BENEFICIAL_OWNER_OF",
-   "36": "OWNED_BY_BENEFICIAL",
-   "37": "SETTLES_FOR",
-   "38": "SETTLES_THROUGH"
-  },
-  "encoded": {
-   "isalso": "0",
-   "clearsfor": "1",
-   "clearsthrough": "2",
-   "tradesfor": "3",
-   "tradesthrough": "4",
-   "sponsors": "5",
-   "sponsoredthrough": "6",
-   "providesguaranteefor": "7",
-   "isguaranteedby": "8",
-   "memberof": "9",
-   "hasmembers": "10",
-   "providesmarketplacefor": "11",
-   "participantofmarketplace": "12",
-   "carriespositionsfor": "13",
-   "poststradesto": "14",
-   "enterstradesfor": "15",
-   "enterstradesthrough": "16",
-   "providesquotesto": "17",
-   "requestsquotesfrom": "18",
-   "investsfor": "19",
-   "investsthrough": "20",
-   "brokerstradesfor": "21",
-   "brokerstradesthrough": "22",
-   "providestradingservicesfor": "23",
-   "usestradingservicesof": "24",
-   "approvesof": "25",
-   "approvedby": "26",
-   "parentfirmfor": "27",
-   "subsidiaryof": "28",
-   "regulatoryownerof": "29",
-   "ownedbyregulatory": "30",
-   "controls": "31",
-   "iscontrolledby": "32",
-   "legalownerof": "33",
-   "ownedbylegal": "34",
-   "beneficialownerof": "35",
-   "ownedbybeneficial": "36",
-   "settlesfor": "37",
-   "settlesthrough": "38",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "33": "33",
-   "34": "34",
-   "35": "35",
-   "36": "36",
-   "37": "37",
-   "38": "38"
-  },
-  "decoded": {
-   "0": "isalso",
-   "1": "clearsfor",
-   "2": "clearsthrough",
-   "3": "tradesfor",
-   "4": "tradesthrough",
-   "5": "sponsors",
-   "6": "sponsoredthrough",
-   "7": "providesguaranteefor",
-   "8": "isguaranteedby",
-   "9": "memberof",
-   "10": "hasmembers",
-   "11": "providesmarketplacefor",
-   "12": "participantofmarketplace",
-   "13": "carriespositionsfor",
-   "14": "poststradesto",
-   "15": "enterstradesfor",
-   "16": "enterstradesthrough",
-   "17": "providesquotesto",
-   "18": "requestsquotesfrom",
-   "19": "investsfor",
-   "20": "investsthrough",
-   "21": "brokerstradesfor",
-   "22": "brokerstradesthrough",
-   "23": "providestradingservicesfor",
-   "24": "usestradingservicesof",
-   "25": "approvesof",
-   "26": "approvedby",
-   "27": "parentfirmfor",
-   "28": "subsidiaryof",
-   "29": "regulatoryownerof",
-   "30": "ownedbyregulatory",
-   "31": "controls",
-   "32": "iscontrolledby",
-   "33": "legalownerof",
-   "34": "ownedbylegal",
-   "35": "beneficialownerof",
-   "36": "ownedbybeneficial",
-   "37": "settlesfor",
-   "38": "settlesthrough"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "IS_ALSO"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CLEARS_FOR"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLEARS_THROUGH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TRADES_FOR"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "TRADES_THROUGH"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SPONSORS"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SPONSORED_THROUGH"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PROVIDES_GUARANTEE_FOR"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "IS_GUARANTEED_BY"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "MEMBER_OF"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "HAS_MEMBERS"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "PROVIDES_MARKETPLACE_FOR"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "PARTICIPANT_OF_MARKETPLACE"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "CARRIES_POSITIONS_FOR"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "POSTS_TRADES_TO"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "ENTERS_TRADES_FOR"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "ENTERS_TRADES_THROUGH"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "PROVIDES_QUOTES_TO"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "REQUESTS_QUOTES_FROM"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "INVESTS_FOR"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "INVESTS_THROUGH"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "BROKERS_TRADES_FOR"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "BROKERS_TRADES_THROUGH"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "PROVIDES_TRADING_SERVICES_FOR"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "USES_TRADING_SERVICES_OF"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "APPROVES_OF"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "APPROVED_BY"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "PARENT_FIRM_FOR"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "SUBSIDIARY_OF"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "REGULATORY_OWNER_OF"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "OWNED_BY_REGULATORY"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "CONTROLS"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "IS_CONTROLLED_BY"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "LEGAL_OWNER_OF"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "OWNED_BY_LEGAL"
+    ]
+   },
+   {
+    "value": "35",
+    "meaning": "",
+    "aliases": [
+     "BENEFICIAL_OWNER_OF"
+    ]
+   },
+   {
+    "value": "36",
+    "meaning": "",
+    "aliases": [
+     "OWNED_BY_BENEFICIAL"
+    ]
+   },
+   {
+    "value": "37",
+    "meaning": "",
+    "aliases": [
+     "SETTLES_FOR"
+    ]
+   },
+   {
+    "value": "38",
+    "meaning": "",
+    "aliases": [
+     "SETTLES_THROUGH"
+    ]
+   }
+  ]
  },
  "1516": {
   "name": "NoPartyDetailAltID",
@@ -470,24 +602,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "REJECTED",
-   "2": "RECEIVED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "1",
-   "received": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "rejected",
-   "2": "received"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   }
+  ]
  },
  "1524": {
   "name": "PriceQuoteCurrency",
@@ -544,84 +681,134 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CREDIT_LIMIT",
-   "1": "GROSS_LIMIT",
-   "2": "NET_LIMIT",
-   "3": "EXPOSURE",
-   "4": "LONG_LIMIT",
-   "5": "SHORT_LIMIT",
-   "6": "CASH_MARGIN",
-   "7": "ADDITIONAL_MARGIN",
-   "8": "TOTAL_MARGIN",
-   "9": "LIMIT_CONSUMED",
-   "10": "CLIP_SIZE",
-   "11": "MAX_NOTIONAL_ORDER_SIZE",
-   "12": "DV01_PV01_LIMIT",
-   "13": "CS01_LIMIT",
-   "14": "VOLUME_LIMIT_PER_TIME_PERIOD",
-   "15": "VOL_FILLED_PCT_ORD_VOL_TM_PERIOD",
-   "16": "NOTL_FILLED_PCT_NOTL_TM_PERIOD",
-   "17": "TRANSACTION_EXECUTION_LIMIT_PER_TIME_PERIOD"
-  },
-  "encoded": {
-   "creditlimit": "0",
-   "grosslimit": "1",
-   "netlimit": "2",
-   "exposure": "3",
-   "longlimit": "4",
-   "shortlimit": "5",
-   "cashmargin": "6",
-   "additionalmargin": "7",
-   "totalmargin": "8",
-   "limitconsumed": "9",
-   "clipsize": "10",
-   "maxnotionalordersize": "11",
-   "dv01pv01limit": "12",
-   "cs01limit": "13",
-   "volumelimitpertimeperiod": "14",
-   "volfilledpctordvoltmperiod": "15",
-   "notlfilledpctnotltmperiod": "16",
-   "transactionexecutionlimitpertimeperiod": "17",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17"
-  },
-  "decoded": {
-   "0": "creditlimit",
-   "1": "grosslimit",
-   "2": "netlimit",
-   "3": "exposure",
-   "4": "longlimit",
-   "5": "shortlimit",
-   "6": "cashmargin",
-   "7": "additionalmargin",
-   "8": "totalmargin",
-   "9": "limitconsumed",
-   "10": "clipsize",
-   "11": "maxnotionalordersize",
-   "12": "dv01pv01limit",
-   "13": "cs01limit",
-   "14": "volumelimitpertimeperiod",
-   "15": "volfilledpctordvoltmperiod",
-   "16": "notlfilledpctnotltmperiod",
-   "17": "transactionexecutionlimitpertimeperiod"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_LIMIT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "GROSS_LIMIT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NET_LIMIT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EXPOSURE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "LONG_LIMIT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SHORT_LIMIT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CASH_MARGIN"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ADDITIONAL_MARGIN"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_MARGIN"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "LIMIT_CONSUMED"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "CLIP_SIZE"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "MAX_NOTIONAL_ORDER_SIZE"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "DV01_PV01_LIMIT"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "CS01_LIMIT"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "VOLUME_LIMIT_PER_TIME_PERIOD"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "VOL_FILLED_PCT_ORD_VOL_TM_PERIOD"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "NOTL_FILLED_PCT_NOTL_TM_PERIOD"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "TRANSACTION_EXECUTION_LIMIT_PER_TIME_PERIOD"
+    ]
+   }
+  ]
  },
  "1531": {
   "name": "RiskLimitAmount",
@@ -662,20 +849,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "INCLUDE",
-   "2": "EXCLUDE"
-  },
-  "encoded": {
-   "include": "1",
-   "exclude": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "include",
-   "2": "exclude"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INCLUDE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXCLUDE"
+    ]
+   }
+  ]
  },
  "1536": {
   "name": "InstrumentScopeSymbol",
@@ -996,32 +1185,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "AMTZ": "AMORTIZING",
-   "COMP": "COMPOUNDING",
-   "CNST": "CONSTANT_NOTIONAL_SCHEDULE",
-   "ACRT": "ACCRETING_NOTIONAL_SCHEDULE",
-   "CUST": "CUSTOM_NOTIONAL_SCHEDULE"
-  },
-  "encoded": {
-   "amortizing": "AMTZ",
-   "compounding": "COMP",
-   "constantnotionalschedule": "CNST",
-   "accretingnotionalschedule": "ACRT",
-   "customnotionalschedule": "CUST",
-   "amtz": "AMTZ",
-   "comp": "COMP",
-   "cnst": "CNST",
-   "acrt": "ACRT",
-   "cust": "CUST"
-  },
-  "decoded": {
-   "AMTZ": "amortizing",
-   "COMP": "compounding",
-   "CNST": "constantnotionalschedule",
-   "ACRT": "accretingnotionalschedule",
-   "CUST": "customnotionalschedule"
-  }
+  "values": [
+   {
+    "value": "AMTZ",
+    "meaning": "",
+    "aliases": [
+     "AMORTIZING"
+    ]
+   },
+   {
+    "value": "COMP",
+    "meaning": "",
+    "aliases": [
+     "COMPOUNDING"
+    ]
+   },
+   {
+    "value": "CNST",
+    "meaning": "",
+    "aliases": [
+     "CONSTANT_NOTIONAL_SCHEDULE"
+    ]
+   },
+   {
+    "value": "ACRT",
+    "meaning": "",
+    "aliases": [
+     "ACCRETING_NOTIONAL_SCHEDULE"
+    ]
+   },
+   {
+    "value": "CUST",
+    "meaning": "",
+    "aliases": [
+     "CUSTOM_NOTIONAL_SCHEDULE"
+    ]
+   }
+  ]
  },
  "1576": {
   "name": "DerivativePriceQuoteCurrency",
@@ -1086,44 +1286,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "FEE",
-   "1": "CREDIT_CONTROLS",
-   "2": "MARGIN",
-   "3": "ENTITLEMENT_OR_ELIGIBILITY",
-   "4": "MARKET_DATA",
-   "5": "ACCOUNT_SELECTION",
-   "6": "DELIVERY_PROCESS",
-   "7": "SECTOR"
-  },
-  "encoded": {
-   "fee": "0",
-   "creditcontrols": "1",
-   "margin": "2",
-   "entitlementoreligibility": "3",
-   "marketdata": "4",
-   "accountselection": "5",
-   "deliveryprocess": "6",
-   "sector": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "fee",
-   "1": "creditcontrols",
-   "2": "margin",
-   "3": "entitlementoreligibility",
-   "4": "marketdata",
-   "5": "accountselection",
-   "6": "deliveryprocess",
-   "7": "sector"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "FEE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_CONTROLS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MARGIN"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ENTITLEMENT_OR_ELIGIBILITY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "MARKET_DATA"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ACCOUNT_SELECTION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_PROCESS"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SECTOR"
+    ]
+   }
+  ]
  },
  "1584": {
   "name": "SecurityClassificationValue",
@@ -1140,40 +1360,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "OPTIONS_SETTLEMENT",
-   "1": "PENDING_EROSION_ADJUSTMENT",
-   "2": "FINAL_EROSION_ADJUSTMENT",
-   "3": "TEAR_UP_COUPON_AMOUNT",
-   "4": "PRICE_ALIGNMENT_INTEREST",
-   "5": "DELIVERY_INVOICE_CHARGES",
-   "6": "DELIVERY_STORAGE_CHARGES"
-  },
-  "encoded": {
-   "optionssettlement": "0",
-   "pendingerosionadjustment": "1",
-   "finalerosionadjustment": "2",
-   "tearupcouponamount": "3",
-   "pricealignmentinterest": "4",
-   "deliveryinvoicecharges": "5",
-   "deliverystoragecharges": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "optionssettlement",
-   "1": "pendingerosionadjustment",
-   "2": "finalerosionadjustment",
-   "3": "tearupcouponamount",
-   "4": "pricealignmentinterest",
-   "5": "deliveryinvoicecharges",
-   "6": "deliverystoragecharges"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "OPTIONS_SETTLEMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PENDING_EROSION_ADJUSTMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FINAL_EROSION_ADJUSTMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TEAR_UP_COUPON_AMOUNT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PRICE_ALIGNMENT_INTEREST"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_INVOICE_CHARGES"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_STORAGE_CHARGES"
+    ]
+   }
+  ]
  },
  "1586": {
   "name": "NoLegPosAmt",
@@ -1278,20 +1515,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TRADE_CLEARING_AT_EXECUTION_PRICE",
-   "1": "TRADE_CLEARING_AT_ALTERNATE_CLEARING_PRICE"
-  },
-  "encoded": {
-   "tradeclearingatexecutionprice": "0",
-   "tradeclearingatalternateclearingprice": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "tradeclearingatexecutionprice",
-   "1": "tradeclearingatalternateclearingprice"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TRADE_CLEARING_AT_EXECUTION_PRICE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRADE_CLEARING_AT_ALTERNATE_CLEARING_PRICE"
+    ]
+   }
+  ]
  },
  "1599": {
   "name": "SidePriceDifferential",
@@ -1364,56 +1603,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "INVALID_INSTRUMENT_REQUESTED",
-   "2": "INSTRUMENT_ALREADY_EXISTS",
-   "3": "REQUEST_TYPE_NOT_SUPPORTED",
-   "4": "SYSTEM_UNAVAILABLE_FOR_INSTRUMENT_CREATION",
-   "5": "INELIGIBLE_INSTRUMENT_GROUP",
-   "6": "INSTRUMENT_ID_UNAVAILABLE",
-   "7": "INVALID_OR_MISSING_DATA_ON_OPTION_LEG",
-   "8": "INVALID_OR_MISSING_DATA_ON_FUTURE_LEG",
-   "10": "INVALID_OR_MISSING_DATA_ON_FX_LEG",
-   "11": "INVALID_LEG_PRICE_SPECIFIED",
-   "12": "INVALID_INSTRUMENT_STRUCTURE_SPECIFIED"
-  },
-  "encoded": {
-   "invalidinstrumentrequested": "1",
-   "instrumentalreadyexists": "2",
-   "requesttypenotsupported": "3",
-   "systemunavailableforinstrumentcreation": "4",
-   "ineligibleinstrumentgroup": "5",
-   "instrumentidunavailable": "6",
-   "invalidormissingdataonoptionleg": "7",
-   "invalidormissingdataonfutureleg": "8",
-   "invalidormissingdataonfxleg": "10",
-   "invalidlegpricespecified": "11",
-   "invalidinstrumentstructurespecified": "12",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "10": "10",
-   "11": "11",
-   "12": "12"
-  },
-  "decoded": {
-   "1": "invalidinstrumentrequested",
-   "2": "instrumentalreadyexists",
-   "3": "requesttypenotsupported",
-   "4": "systemunavailableforinstrumentcreation",
-   "5": "ineligibleinstrumentgroup",
-   "6": "instrumentidunavailable",
-   "7": "invalidormissingdataonoptionleg",
-   "8": "invalidormissingdataonfutureleg",
-   "10": "invalidormissingdataonfxleg",
-   "11": "invalidlegpricespecified",
-   "12": "invalidinstrumentstructurespecified"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_INSTRUMENT_REQUESTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_ALREADY_EXISTS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "REQUEST_TYPE_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SYSTEM_UNAVAILABLE_FOR_INSTRUMENT_CREATION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "INELIGIBLE_INSTRUMENT_GROUP"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_ID_UNAVAILABLE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_MISSING_DATA_ON_OPTION_LEG"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_MISSING_DATA_ON_FUTURE_LEG"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_MISSING_DATA_ON_FX_LEG"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "INVALID_LEG_PRICE_SPECIFIED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "INVALID_INSTRUMENT_STRUCTURE_SPECIFIED"
+    ]
+   }
+  ]
  },
  "1608": {
   "name": "InitialDisplayQty",
@@ -1430,20 +1698,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "THROTTLE_LIMIT_NOT_EXCEEDED_NOT_QUEUED",
-   "1": "QUEUED_DUE_TO_THROTTLE_LIMIT_EXCEEDED"
-  },
-  "encoded": {
-   "throttlelimitnotexceedednotqueued": "0",
-   "queuedduetothrottlelimitexceeded": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "throttlelimitnotexceedednotqueued",
-   "1": "queuedduetothrottlelimitexceeded"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "THROTTLE_LIMIT_NOT_EXCEEDED_NOT_QUEUED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUEUED_DUE_TO_THROTTLE_LIMIT_EXCEEDED"
+    ]
+   }
+  ]
  },
  "1610": {
   "name": "NoThrottles",
@@ -1460,32 +1730,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "QUEUE_INBOUND",
-   "1": "QUEUE_OUTBOUND",
-   "2": "REJECT",
-   "3": "DISCONNECT",
-   "4": "WARNING"
-  },
-  "encoded": {
-   "queueinbound": "0",
-   "queueoutbound": "1",
-   "reject": "2",
-   "disconnect": "3",
-   "warning": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "queueinbound",
-   "1": "queueoutbound",
-   "2": "reject",
-   "3": "disconnect",
-   "4": "warning"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "QUEUE_INBOUND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUEUE_OUTBOUND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DISCONNECT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "WARNING"
+    ]
+   }
+  ]
  },
  "1612": {
   "name": "ThrottleType",
@@ -1494,20 +1775,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INBOUND_RATE",
-   "1": "OUTSTANDING_REQUESTS"
-  },
-  "encoded": {
-   "inboundrate": "0",
-   "outstandingrequests": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "inboundrate",
-   "1": "outstandingrequests"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INBOUND_RATE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OUTSTANDING_REQUESTS"
+    ]
+   }
+  ]
  },
  "1613": {
   "name": "ThrottleNoMsgs",
@@ -1549,30 +1832,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "values": {
-   "1": "Assignment",
-   "2": "Rejected",
-   "3": "Terminate/Unassign"
-  },
-  "value_names": {
-   "1": "ASSIGNMENT",
-   "2": "REJECTED",
-   "3": "TERMINATE"
-  },
-  "encoded": {
-   "assignment": "1",
-   "rejected": "2",
-   "terminateunassign": "3",
-   "terminate": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "assignment",
-   "2": "rejected",
-   "3": "terminate"
-  },
+  "values": [
+   {
+    "value": "1",
+    "meaning": "Assignment",
+    "aliases": [
+     "ASSIGNMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "Rejected",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "Terminate/Unassign",
+    "aliases": [
+     "TERMINATE"
+    ]
+   }
+  ],
   "components": [
    "StrmAsgnRptInstrmtGrp"
   ]
@@ -1640,20 +1922,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "MATCH",
-   "2": "DO_NOT_MATCH"
-  },
-  "encoded": {
-   "match": "1",
-   "donotmatch": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "match",
-   "2": "donotmatch"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MATCH"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_MATCH"
+    ]
+   }
+  ]
  },
  "1626": {
   "name": "MatchAttribTagID",
@@ -1678,36 +1962,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "THIS_ORDER",
-   "1": "OTHER_ORDER",
-   "2": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY",
-   "3": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_PRICE",
-   "4": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_SIDE",
-   "5": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_PRICE_AND_SIDE"
-  },
-  "encoded": {
-   "thisorder": "0",
-   "otherorder": "1",
-   "allotherordersforgivensecurity": "2",
-   "allotherordersforgivensecurityandprice": "3",
-   "allotherordersforgivensecurityandside": "4",
-   "allotherordersforgivensecuritypriceandside": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "thisorder",
-   "1": "otherorder",
-   "2": "allotherordersforgivensecurity",
-   "3": "allotherordersforgivensecurityandprice",
-   "4": "allotherordersforgivensecurityandside",
-   "5": "allotherordersforgivensecuritypriceandside"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "THIS_ORDER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OTHER_ORDER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_PRICE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_SIDE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_PRICE_AND_SIDE"
+    ]
+   }
+  ]
  },
  "1629": {
   "name": "ExposureDuration",
@@ -1732,36 +2030,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CREDIT_LIMIT",
-   "1": "GROSS_POSITION_LIMIT",
-   "2": "NET_POSITION_LIMIT",
-   "3": "RISK_EXPOSURE_LIMIT",
-   "4": "LONG_POSITION_LIMIT",
-   "5": "SHORT_POSITION_LIMIT"
-  },
-  "encoded": {
-   "creditlimit": "0",
-   "grosspositionlimit": "1",
-   "netpositionlimit": "2",
-   "riskexposurelimit": "3",
-   "longpositionlimit": "4",
-   "shortpositionlimit": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "creditlimit",
-   "1": "grosspositionlimit",
-   "2": "netpositionlimit",
-   "3": "riskexposurelimit",
-   "4": "longpositionlimit",
-   "5": "shortpositionlimit"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_LIMIT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "GROSS_POSITION_LIMIT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NET_POSITION_LIMIT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "RISK_EXPOSURE_LIMIT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "LONG_POSITION_LIMIT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SHORT_POSITION_LIMIT"
+    ]
+   }
+  ]
  },
  "1632": {
   "name": "LastLimitAmt",
@@ -1810,28 +2122,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUMMARY",
-   "1": "DETAIL",
-   "2": "EXCESS_DEFICIT",
-   "3": "NET_POSITION"
-  },
-  "encoded": {
-   "summary": "0",
-   "detail": "1",
-   "excessdeficit": "2",
-   "netposition": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "summary",
-   "1": "detail",
-   "2": "excessdeficit",
-   "3": "netposition"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUMMARY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DETAIL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXCESS_DEFICIT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "NET_POSITION"
+    ]
+   }
+  ]
  },
  "1638": {
   "name": "MarginReqmtRptType",
@@ -1840,24 +2160,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUMMARY",
-   "1": "DETAIL",
-   "2": "EXCESS_DEFICIT"
-  },
-  "encoded": {
-   "summary": "0",
-   "detail": "1",
-   "excessdeficit": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "summary",
-   "1": "detail",
-   "2": "excessdeficit"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUMMARY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DETAIL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "EXCESS_DEFICIT"
+    ]
+   }
+  ]
  },
  "1639": {
   "name": "MarginClass",
@@ -1882,52 +2207,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
-   "2": "INVALID_OR_UNKNOWN_MARGIN_CLASS",
-   "3": "INVALID_PARTIES",
-   "4": "INVALID_TRANSPORT_TYPE_REQ",
-   "5": "INVALID_DESTINATION_REQ",
-   "6": "NO_MARGIN_REQ_FOUND",
-   "7": "MARGIN_REQ_INQUIRY_QUALIFIER_NOT_SUPPORTED",
-   "8": "UNAUTHORIZED_FOR_MARGIN_REQ_INQUIRY",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidorunknowninstrument": "1",
-   "invalidorunknownmarginclass": "2",
-   "invalidparties": "3",
-   "invalidtransporttypereq": "4",
-   "invaliddestinationreq": "5",
-   "nomarginreqfound": "6",
-   "marginreqinquiryqualifiernotsupported": "7",
-   "unauthorizedformarginreqinquiry": "8",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidorunknowninstrument",
-   "2": "invalidorunknownmarginclass",
-   "3": "invalidparties",
-   "4": "invalidtransporttypereq",
-   "5": "invaliddestinationreq",
-   "6": "nomarginreqfound",
-   "7": "marginreqinquiryqualifiernotsupported",
-   "8": "unauthorizedformarginreqinquiry",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_MARGIN_CLASS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTIES"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INVALID_TRANSPORT_TYPE_REQ"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "INVALID_DESTINATION_REQ"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "NO_MARGIN_REQ_FOUND"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_REQ_INQUIRY_QUALIFIER_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "UNAUTHORIZED_FOR_MARGIN_REQ_INQUIRY"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1642": {
   "name": "MarginReqmtRptID",
@@ -1952,152 +2303,253 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ADDITIONAL_MARGIN",
-   "2": "ADJUSTED_MARGIN",
-   "3": "UNADJUSTED_MARGIN",
-   "4": "BINARY_ADD_ON_AMOUNT",
-   "5": "CASH_BALANCE_AMOUNT",
-   "6": "CONCENTRATION_MARGIN",
-   "7": "CORE_MARGIN",
-   "8": "DELIVERY_MARGIN",
-   "9": "DISCRETIONARY_MARGIN",
-   "10": "FUTURES_SPREAD_MARGIN",
-   "11": "INITIAL_MARGIN",
-   "12": "LIQUIDATING_MARGIN",
-   "13": "MARGIN_CALL_AMOUNT",
-   "14": "MARGIN_DEFICIT_AMOUNT",
-   "15": "MARGIN_EXCESS_AMOUNT",
-   "16": "OPTION_PREMIUM_AMOUNT",
-   "17": "PREMIUM_MARGIN",
-   "18": "RESERVE_MARGIN",
-   "19": "SECURITY_COLLATERAL_AMOUNT",
-   "20": "STRESS_TEST_ADD_ON_AMOUNT",
-   "21": "SUPER_MARGIN",
-   "22": "TOTAL_MARGIN",
-   "23": "VARIATION_MARGIN",
-   "24": "SECONDARY_VARIATION_MARGIN",
-   "25": "ROLLED_UP_MARGIN_DEFICIT",
-   "26": "SPREAD_RESPONSE_MARGIN",
-   "27": "SYSTEMIC_RISK_MARGIN",
-   "28": "CURVE_RISK_MARGIN",
-   "29": "INDEX_SPREAD_RISK_MARGIN",
-   "30": "SECTOR_RISK_MARGIN",
-   "31": "JUMP_TO_DEFAULT_RISK_MARGIN",
-   "32": "BASIS_RISK_MARGIN",
-   "33": "INTEREST_RATE_RISK_MARGIN",
-   "34": "JUMP_TO_HEALTH_RISK_MARGIN",
-   "35": "OTHER_RISK_MARGIN"
-  },
-  "encoded": {
-   "additionalmargin": "1",
-   "adjustedmargin": "2",
-   "unadjustedmargin": "3",
-   "binaryaddonamount": "4",
-   "cashbalanceamount": "5",
-   "concentrationmargin": "6",
-   "coremargin": "7",
-   "deliverymargin": "8",
-   "discretionarymargin": "9",
-   "futuresspreadmargin": "10",
-   "initialmargin": "11",
-   "liquidatingmargin": "12",
-   "margincallamount": "13",
-   "margindeficitamount": "14",
-   "marginexcessamount": "15",
-   "optionpremiumamount": "16",
-   "premiummargin": "17",
-   "reservemargin": "18",
-   "securitycollateralamount": "19",
-   "stresstestaddonamount": "20",
-   "supermargin": "21",
-   "totalmargin": "22",
-   "variationmargin": "23",
-   "secondaryvariationmargin": "24",
-   "rolledupmargindeficit": "25",
-   "spreadresponsemargin": "26",
-   "systemicriskmargin": "27",
-   "curveriskmargin": "28",
-   "indexspreadriskmargin": "29",
-   "sectorriskmargin": "30",
-   "jumptodefaultriskmargin": "31",
-   "basisriskmargin": "32",
-   "interestrateriskmargin": "33",
-   "jumptohealthriskmargin": "34",
-   "otherriskmargin": "35",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "33": "33",
-   "34": "34",
-   "35": "35"
-  },
-  "decoded": {
-   "1": "additionalmargin",
-   "2": "adjustedmargin",
-   "3": "unadjustedmargin",
-   "4": "binaryaddonamount",
-   "5": "cashbalanceamount",
-   "6": "concentrationmargin",
-   "7": "coremargin",
-   "8": "deliverymargin",
-   "9": "discretionarymargin",
-   "10": "futuresspreadmargin",
-   "11": "initialmargin",
-   "12": "liquidatingmargin",
-   "13": "margincallamount",
-   "14": "margindeficitamount",
-   "15": "marginexcessamount",
-   "16": "optionpremiumamount",
-   "17": "premiummargin",
-   "18": "reservemargin",
-   "19": "securitycollateralamount",
-   "20": "stresstestaddonamount",
-   "21": "supermargin",
-   "22": "totalmargin",
-   "23": "variationmargin",
-   "24": "secondaryvariationmargin",
-   "25": "rolledupmargindeficit",
-   "26": "spreadresponsemargin",
-   "27": "systemicriskmargin",
-   "28": "curveriskmargin",
-   "29": "indexspreadriskmargin",
-   "30": "sectorriskmargin",
-   "31": "jumptodefaultriskmargin",
-   "32": "basisriskmargin",
-   "33": "interestrateriskmargin",
-   "34": "jumptohealthriskmargin",
-   "35": "otherriskmargin"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADDITIONAL_MARGIN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ADJUSTED_MARGIN"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UNADJUSTED_MARGIN"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "BINARY_ADD_ON_AMOUNT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CASH_BALANCE_AMOUNT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CONCENTRATION_MARGIN"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "CORE_MARGIN"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY_MARGIN"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "DISCRETIONARY_MARGIN"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "FUTURES_SPREAD_MARGIN"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "INITIAL_MARGIN"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "LIQUIDATING_MARGIN"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_CALL_AMOUNT"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_DEFICIT_AMOUNT"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_EXCESS_AMOUNT"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "OPTION_PREMIUM_AMOUNT"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "PREMIUM_MARGIN"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "RESERVE_MARGIN"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_COLLATERAL_AMOUNT"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "STRESS_TEST_ADD_ON_AMOUNT"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "SUPER_MARGIN"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_MARGIN"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "VARIATION_MARGIN"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "SECONDARY_VARIATION_MARGIN"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "ROLLED_UP_MARGIN_DEFICIT"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "SPREAD_RESPONSE_MARGIN"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "SYSTEMIC_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "CURVE_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "INDEX_SPREAD_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "SECTOR_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "JUMP_TO_DEFAULT_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "BASIS_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "INTEREST_RATE_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "JUMP_TO_HEALTH_RISK_MARGIN"
+    ]
+   },
+   {
+    "value": "35",
+    "meaning": "",
+    "aliases": [
+     "OTHER_RISK_MARGIN"
+    ]
+   }
+  ]
  },
  "1645": {
   "name": "MarginAmt",
@@ -2130,36 +2582,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "HEDGES_FOR_INSTRUMENT",
-   "2": "UNDERLIER",
-   "3": "EQUITY_EQUIVALENT",
-   "4": "NEAREST_EXCHANGE_TRADED_CONTRACT",
-   "5": "RETAIL_EQUIVALENT",
-   "6": "LEG"
-  },
-  "encoded": {
-   "hedgesforinstrument": "1",
-   "underlier": "2",
-   "equityequivalent": "3",
-   "nearestexchangetradedcontract": "4",
-   "retailequivalent": "5",
-   "leg": "6",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "1": "hedgesforinstrument",
-   "2": "underlier",
-   "3": "equityequivalent",
-   "4": "nearestexchangetradedcontract",
-   "5": "retailequivalent",
-   "6": "leg"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "HEDGES_FOR_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UNDERLIER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_EQUIVALENT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NEAREST_EXCHANGE_TRADED_CONTRACT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "RETAIL_EQUIVALENT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "LEG"
+    ]
+   }
+  ]
  },
  "1649": {
   "name": "RelatedSymbol",
@@ -2216,28 +2682,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_PARTICIPATION",
-   "1": "BUY_PARTICIPATION",
-   "2": "SELL_PARTICIPATION",
-   "3": "BOTH_BUY_AND_SELL_PARTICIPATION"
-  },
-  "encoded": {
-   "noparticipation": "0",
-   "buyparticipation": "1",
-   "sellparticipation": "2",
-   "bothbuyandsellparticipation": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "noparticipation",
-   "1": "buyparticipation",
-   "2": "sellparticipation",
-   "3": "bothbuyandsellparticipation"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_PARTICIPATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUY_PARTICIPATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELL_PARTICIPATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BOTH_BUY_AND_SELL_PARTICIPATION"
+    ]
+   }
+  ]
  },
  "1656": {
   "name": "NoInstrumentScopes",
@@ -2374,24 +2848,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACTIVE",
-   "1": "SUSPENDED",
-   "2": "HALTED"
-  },
-  "encoded": {
-   "active": "0",
-   "suspended": "1",
-   "halted": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "active",
-   "1": "suspended",
-   "2": "halted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACTIVE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SUSPENDED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "HALTED"
+    ]
+   }
+  ]
  },
  "1673": {
   "name": "MatchInstMarketID",
@@ -2408,136 +2887,225 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "23": "FIRM_OR_LEGAL_ENTITY",
-   "18": "CURRENT",
-   "19": "NEW",
-   "24": "NATURAL_PERSON",
-   "0": "AGENCY",
-   "1": "PRINCIPAL",
-   "2": "RISKLESS_PRINCIPAL",
-   "30": "EXCHANGE_ORDER_SUBMITTER",
-   "9": "PRIMARY_TRD_REPOSITORY",
-   "10": "ORIG_TRD_REPOSITORY",
-   "11": "ADDTNL_INTL_TRD_REPOSITORY",
-   "12": "ADDTNL_DOMESTIC_TRD_REPOSITORY",
-   "25": "REGULAR_TRADER",
-   "26": "HEAD_TRADER",
-   "27": "SUPERVISOR",
-   "22": "ALGORITHM",
-   "13": "RELATED_EXCHANGE",
-   "14": "OPTIONS_EXCHANGE",
-   "15": "SPECIFIED_EXCHANGE",
-   "16": "CONSTITUENT_EXCHANGE",
-   "7": "BANK",
-   "8": "HUB",
-   "28": "TRI_PARTY",
-   "29": "LENDER",
-   "3": "GENERAL_CLEARING_MEMBER",
-   "4": "INDIVIDUAL_CLEARING_MEMBER",
-   "5": "PREFERRED_MARKET_MAKER",
-   "6": "DIRECTED_MARKET_MAKER",
-   "20": "DESIGNATED_SPONSOR",
-   "21": "SPECIALIST",
-   "17": "EXEMPT_FROM_TRADE_REPORTING"
-  },
-  "encoded": {
-   "firmorlegalentity": "23",
-   "current": "18",
-   "new": "19",
-   "naturalperson": "24",
-   "agency": "0",
-   "principal": "1",
-   "risklessprincipal": "2",
-   "exchangeordersubmitter": "30",
-   "primarytrdrepository": "9",
-   "origtrdrepository": "10",
-   "addtnlintltrdrepository": "11",
-   "addtnldomestictrdrepository": "12",
-   "regulartrader": "25",
-   "headtrader": "26",
-   "supervisor": "27",
-   "algorithm": "22",
-   "relatedexchange": "13",
-   "optionsexchange": "14",
-   "specifiedexchange": "15",
-   "constituentexchange": "16",
-   "bank": "7",
-   "hub": "8",
-   "triparty": "28",
-   "lender": "29",
-   "generalclearingmember": "3",
-   "individualclearingmember": "4",
-   "preferredmarketmaker": "5",
-   "directedmarketmaker": "6",
-   "designatedsponsor": "20",
-   "specialist": "21",
-   "exemptfromtradereporting": "17",
-   "23": "23",
-   "18": "18",
-   "19": "19",
-   "24": "24",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "30": "30",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "22": "22",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "7": "7",
-   "8": "8",
-   "28": "28",
-   "29": "29",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "20": "20",
-   "21": "21",
-   "17": "17"
-  },
-  "decoded": {
-   "23": "firmorlegalentity",
-   "18": "current",
-   "19": "new",
-   "24": "naturalperson",
-   "0": "agency",
-   "1": "principal",
-   "2": "risklessprincipal",
-   "30": "exchangeordersubmitter",
-   "9": "primarytrdrepository",
-   "10": "origtrdrepository",
-   "11": "addtnlintltrdrepository",
-   "12": "addtnldomestictrdrepository",
-   "25": "regulartrader",
-   "26": "headtrader",
-   "27": "supervisor",
-   "22": "algorithm",
-   "13": "relatedexchange",
-   "14": "optionsexchange",
-   "15": "specifiedexchange",
-   "16": "constituentexchange",
-   "7": "bank",
-   "8": "hub",
-   "28": "triparty",
-   "29": "lender",
-   "3": "generalclearingmember",
-   "4": "individualclearingmember",
-   "5": "preferredmarketmaker",
-   "6": "directedmarketmaker",
-   "20": "designatedsponsor",
-   "21": "specialist",
-   "17": "exemptfromtradereporting"
-  }
+  "values": [
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "FIRM_OR_LEGAL_ENTITY"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "CURRENT"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "NATURAL_PERSON"
+    ]
+   },
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AGENCY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PRINCIPAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "RISKLESS_PRINCIPAL"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_ORDER_SUBMITTER"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "PRIMARY_TRD_REPOSITORY"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ORIG_TRD_REPOSITORY"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "ADDTNL_INTL_TRD_REPOSITORY"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "ADDTNL_DOMESTIC_TRD_REPOSITORY"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "REGULAR_TRADER"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "HEAD_TRADER"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "SUPERVISOR"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "ALGORITHM"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "RELATED_EXCHANGE"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "OPTIONS_EXCHANGE"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "SPECIFIED_EXCHANGE"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "CONSTITUENT_EXCHANGE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "BANK"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "HUB"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "TRI_PARTY"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "LENDER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "GENERAL_CLEARING_MEMBER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INDIVIDUAL_CLEARING_MEMBER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PREFERRED_MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED_MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "DESIGNATED_SPONSOR"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "SPECIALIST"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "EXEMPT_FROM_TRADE_REPORTING"
+    ]
+   }
+  ]
  },
  "1675": {
   "name": "RelatedPartyDetailRoleQualifier",
@@ -2626,20 +3194,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "REJECT_IF_THROTTLE_LIMIT_EXCEEDED",
-   "1": "QUEUE_IF_THROTTLE_LIMIT_EXCEEDED"
-  },
-  "encoded": {
-   "rejectifthrottlelimitexceeded": "0",
-   "queueifthrottlelimitexceeded": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "rejectifthrottlelimitexceeded",
-   "1": "queueifthrottlelimitexceeded"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "REJECT_IF_THROTTLE_LIMIT_EXCEEDED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUEUE_IF_THROTTLE_LIMIT_EXCEEDED"
+    ]
+   }
+  ]
  },
  "1686": {
   "name": "ThrottleCountIndicator",
@@ -2648,20 +3218,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "OUTSTANDING_REQUESTS_UNCHANGED",
-   "1": "OUTSTANDING_REQUESTS_DECREASED"
-  },
-  "encoded": {
-   "outstandingrequestsunchanged": "0",
-   "outstandingrequestsdecreased": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "outstandingrequestsunchanged",
-   "1": "outstandingrequestsdecreased"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "OUTSTANDING_REQUESTS_UNCHANGED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OUTSTANDING_REQUESTS_DECREASED"
+    ]
+   }
+  ]
  },
  "1687": {
   "name": "ShortSaleRestriction",
@@ -2670,28 +3242,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_RESTRICTIONS",
-   "1": "SECURITY_NOT_SHORTABLE",
-   "2": "SECURITY_NOT_SHORTABLE_AT_OR_BELOW_BEST_BID",
-   "3": "SECURITY_NOT_SHORTABLE_WITHOUT_PRE_BORROW"
-  },
-  "encoded": {
-   "norestrictions": "0",
-   "securitynotshortable": "1",
-   "securitynotshortableatorbelowbestbid": "2",
-   "securitynotshortablewithoutpreborrow": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "norestrictions",
-   "1": "securitynotshortable",
-   "2": "securitynotshortableatorbelowbestbid",
-   "3": "securitynotshortablewithoutpreborrow"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_RESTRICTIONS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_NOT_SHORTABLE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_NOT_SHORTABLE_AT_OR_BELOW_BEST_BID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SECURITY_NOT_SHORTABLE_WITHOUT_PRE_BORROW"
+    ]
+   }
+  ]
  },
  "1688": {
   "name": "ShortSaleExemptionReason",
@@ -2700,52 +3280,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EXEMPTION_REASON_UNKNOWN",
-   "1": "INCOMING_SSE",
-   "2": "ABOVE_NATIONAL_BEST_BID",
-   "3": "DELAYED_DELIVERY",
-   "4": "ODD_LOT",
-   "5": "DOMESTIC_ARBITRAGE",
-   "6": "INTERNATIONAL_ARBITRAGE",
-   "7": "UNDERWRITER_OR_SYNDICATE_DISTRIBUTION",
-   "8": "RISKLESS_PRINCIPAL",
-   "9": "VWAP"
-  },
-  "encoded": {
-   "exemptionreasonunknown": "0",
-   "incomingsse": "1",
-   "abovenationalbestbid": "2",
-   "delayeddelivery": "3",
-   "oddlot": "4",
-   "domesticarbitrage": "5",
-   "internationalarbitrage": "6",
-   "underwriterorsyndicatedistribution": "7",
-   "risklessprincipal": "8",
-   "vwap": "9",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9"
-  },
-  "decoded": {
-   "0": "exemptionreasonunknown",
-   "1": "incomingsse",
-   "2": "abovenationalbestbid",
-   "3": "delayeddelivery",
-   "4": "oddlot",
-   "5": "domesticarbitrage",
-   "6": "internationalarbitrage",
-   "7": "underwriterorsyndicatedistribution",
-   "8": "risklessprincipal",
-   "9": "vwap"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EXEMPTION_REASON_UNKNOWN"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INCOMING_SSE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ABOVE_NATIONAL_BEST_BID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DELAYED_DELIVERY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ODD_LOT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "DOMESTIC_ARBITRAGE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "INTERNATIONAL_ARBITRAGE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "UNDERWRITER_OR_SYNDICATE_DISTRIBUTION"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "RISKLESS_PRINCIPAL"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "VWAP"
+    ]
+   }
+  ]
  },
  "1689": {
   "name": "LegShortSaleExemptionReason",
@@ -3034,40 +3640,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ORDER_RECEIVED_FROM_CUSTOMER",
-   "2": "ORDER_RECEIVED_FROM_WITHIN_FIRM",
-   "3": "ORDER_RECEIVED_FROM_ANOTHER_BROKER_DEALER",
-   "4": "ORDER_RECEIVED_FROM_CUSTOMER_OR_WITH_FIRM",
-   "5": "ORDER_RECEIVED_FROM_DIRECT_ACCESS_CUSTOMER",
-   "6": "ORDER_RECEIVED_FROM_FOREIGN_DEALER_EQUIVALENT",
-   "7": "ORDER_RECEIVED_FROM_EXECUTION_ONLY_SERVICE"
-  },
-  "encoded": {
-   "orderreceivedfromcustomer": "1",
-   "orderreceivedfromwithinfirm": "2",
-   "orderreceivedfromanotherbrokerdealer": "3",
-   "orderreceivedfromcustomerorwithfirm": "4",
-   "orderreceivedfromdirectaccesscustomer": "5",
-   "orderreceivedfromforeigndealerequivalent": "6",
-   "orderreceivedfromexecutiononlyservice": "7",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "1": "orderreceivedfromcustomer",
-   "2": "orderreceivedfromwithinfirm",
-   "3": "orderreceivedfromanotherbrokerdealer",
-   "4": "orderreceivedfromcustomerorwithfirm",
-   "5": "orderreceivedfromdirectaccesscustomer",
-   "6": "orderreceivedfromforeigndealerequivalent",
-   "7": "orderreceivedfromexecutiononlyservice"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_CUSTOMER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_WITHIN_FIRM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_ANOTHER_BROKER_DEALER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_CUSTOMER_OR_WITH_FIRM"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_DIRECT_ACCESS_CUSTOMER"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_FOREIGN_DEALER_EQUIVALENT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ORDER_RECEIVED_FROM_EXECUTION_ONLY_SERVICE"
+    ]
+   }
+  ]
  },
  "1725": {
   "name": "OriginatingDeptID",
@@ -3156,20 +3779,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ROLLUP",
-   "1": "DO_NOT_ROLL_UP"
-  },
-  "encoded": {
-   "rollup": "0",
-   "donotrollup": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "rollup",
-   "1": "donotrollup"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ROLLUP"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_ROLL_UP"
+    ]
+   }
+  ]
  },
  "1736": {
   "name": "AllocGroupQuantity",
@@ -3194,24 +3819,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "COMPLETED",
-   "1": "REFUSED",
-   "2": "CANCELLED"
-  },
-  "encoded": {
-   "completed": "0",
-   "refused": "1",
-   "cancelled": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "completed",
-   "1": "refused",
-   "2": "cancelled"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "COMPLETED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REFUSED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CANCELLED"
+    ]
+   }
+  ]
  },
  "1739": {
   "name": "ObligationType",
@@ -3220,28 +3850,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BOND",
-   "1": "CONVERT_BOND",
-   "2": "MORTGAGE",
-   "3": "LOAN"
-  },
-  "encoded": {
-   "bond": "0",
-   "convertbond": "1",
-   "mortgage": "2",
-   "loan": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "bond",
-   "1": "convertbond",
-   "2": "mortgage",
-   "3": "loan"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BOND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CONVERT_BOND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MORTGAGE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "LOAN"
+    ]
+   }
+  ]
  },
  "1740": {
   "name": "TradePriceNegotiationMethod",
@@ -3250,40 +3888,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PERCENT_PAR",
-   "1": "DEAL_SPREAD",
-   "2": "UPFRONT_PNTS",
-   "3": "UPFRONT_AMT",
-   "4": "PAR_UPFRONT_AMT",
-   "5": "SPREAD_UPFRONT_AMT",
-   "6": "UPFRONT_PNTS_AMT"
-  },
-  "encoded": {
-   "percentpar": "0",
-   "dealspread": "1",
-   "upfrontpnts": "2",
-   "upfrontamt": "3",
-   "parupfrontamt": "4",
-   "spreadupfrontamt": "5",
-   "upfrontpntsamt": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "percentpar",
-   "1": "dealspread",
-   "2": "upfrontpnts",
-   "3": "upfrontamt",
-   "4": "parupfrontamt",
-   "5": "spreadupfrontamt",
-   "6": "upfrontpntsamt"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PERCENT_PAR"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DEAL_SPREAD"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UPFRONT_PNTS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UPFRONT_AMT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PAR_UPFRONT_AMT"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SPREAD_UPFRONT_AMT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "UPFRONT_PNTS_AMT"
+    ]
+   }
+  ]
  },
  "1741": {
   "name": "UpfrontPriceType",
@@ -3292,20 +3947,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "PERCENTAGE",
-   "3": "FIXED_AMOUNT"
-  },
-  "encoded": {
-   "percentage": "1",
-   "fixedamount": "3",
-   "1": "1",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "percentage",
-   "3": "fixedamount"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FIXED_AMOUNT"
+    ]
+   }
+  ]
  },
  "1742": {
   "name": "UpfrontPrice",
@@ -3330,20 +3987,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_APPL_RECOVERY_NEEDED",
-   "1": "APPL_RECOVERY_NEEDED"
-  },
-  "encoded": {
-   "noapplrecoveryneeded": "0",
-   "applrecoveryneeded": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "noapplrecoveryneeded",
-   "1": "applrecoveryneeded"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_APPL_RECOVERY_NEEDED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "APPL_RECOVERY_NEEDED"
+    ]
+   }
+  ]
  },
  "1745": {
   "name": "BidMDEntryID",
@@ -3472,24 +4131,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "DEFINITIONS",
-   "2": "UTILIZATION",
-   "3": "DEFINITIONS_AND_UTILIZATIONS"
-  },
-  "encoded": {
-   "definitions": "1",
-   "utilization": "2",
-   "definitionsandutilizations": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "definitions",
-   "2": "utilization",
-   "3": "definitionsandutilizations"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DEFINITIONS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UTILIZATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DEFINITIONS_AND_UTILIZATIONS"
+    ]
+   }
+  ]
  },
  "1761": {
   "name": "RiskLimitRequestResult",
@@ -3498,80 +4162,127 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_PARTY",
-   "2": "INVALID_RELATED_PARTY",
-   "3": "INVALID_RISK_LIMIT_TYPE",
-   "4": "INVALID_RISK_LIMIT_ID",
-   "5": "INVALID_RISK_LIMIT_AMOUNT",
-   "6": "INVALID_RISK_WARNING_LEVEL_ACTION",
-   "7": "INVALID_RISK_INSTRUMENT_SCOPE",
-   "8": "RISK_LIMIT_ACTIONS_NOT_SUPPORTED",
-   "9": "WARNING_LEVELS_NOT_SUPPORTED",
-   "10": "WARNING_LEVEL_ACTIONS_NOT_SUPPORTED",
-   "11": "RISK_INSTRUMENT_SCOPE_NOT_SUPPORTED",
-   "12": "RISK_LIMIT_NOT_APPROVED_FOR_PARTY",
-   "13": "RISK_LIMIT_ALREADY_DEFINED_FOR_PARTY",
-   "14": "INSTRUMENT_NOT_APPROVED_FOR_PARTY",
-   "98": "NOT_AUTHORIZED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidparty": "1",
-   "invalidrelatedparty": "2",
-   "invalidrisklimittype": "3",
-   "invalidrisklimitid": "4",
-   "invalidrisklimitamount": "5",
-   "invalidriskwarninglevelaction": "6",
-   "invalidriskinstrumentscope": "7",
-   "risklimitactionsnotsupported": "8",
-   "warninglevelsnotsupported": "9",
-   "warninglevelactionsnotsupported": "10",
-   "riskinstrumentscopenotsupported": "11",
-   "risklimitnotapprovedforparty": "12",
-   "risklimitalreadydefinedforparty": "13",
-   "instrumentnotapprovedforparty": "14",
-   "notauthorized": "98",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "98": "98",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidparty",
-   "2": "invalidrelatedparty",
-   "3": "invalidrisklimittype",
-   "4": "invalidrisklimitid",
-   "5": "invalidrisklimitamount",
-   "6": "invalidriskwarninglevelaction",
-   "7": "invalidriskinstrumentscope",
-   "8": "risklimitactionsnotsupported",
-   "9": "warninglevelsnotsupported",
-   "10": "warninglevelactionsnotsupported",
-   "11": "riskinstrumentscopenotsupported",
-   "12": "risklimitnotapprovedforparty",
-   "13": "risklimitalreadydefinedforparty",
-   "14": "instrumentnotapprovedforparty",
-   "98": "notauthorized",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RELATED_PARTY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RISK_LIMIT_TYPE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RISK_LIMIT_ID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RISK_LIMIT_AMOUNT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RISK_WARNING_LEVEL_ACTION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RISK_INSTRUMENT_SCOPE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "RISK_LIMIT_ACTIONS_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "WARNING_LEVELS_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "WARNING_LEVEL_ACTIONS_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "RISK_INSTRUMENT_SCOPE_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "RISK_LIMIT_NOT_APPROVED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "RISK_LIMIT_ALREADY_DEFINED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_NOT_APPROVED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "98",
+    "meaning": "",
+    "aliases": [
+     "NOT_AUTHORIZED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1762": {
   "name": "RiskLimitRequestStatus",
@@ -3620,56 +4331,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "QUEUE_INBOUND",
-   "1": "QUEUE_OUTBOUND",
-   "2": "REJECT",
-   "3": "DISCONNECT",
-   "4": "WARNING",
-   "5": "PING_CREDIT_CHECK_WITH_REVALIDATION",
-   "6": "PING_CREDIT_CHECK_NO_REVALIDATION",
-   "7": "PUSH_CREDIT_CHECK_WITH_REVALIDATION",
-   "8": "PUSH_CREDIT_CHECK_NO_REVALIDATION",
-   "9": "SUSPEND",
-   "10": "HALT_TRADING"
-  },
-  "encoded": {
-   "queueinbound": "0",
-   "queueoutbound": "1",
-   "reject": "2",
-   "disconnect": "3",
-   "warning": "4",
-   "pingcreditcheckwithrevalidation": "5",
-   "pingcreditchecknorevalidation": "6",
-   "pushcreditcheckwithrevalidation": "7",
-   "pushcreditchecknorevalidation": "8",
-   "suspend": "9",
-   "halttrading": "10",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "0": "queueinbound",
-   "1": "queueoutbound",
-   "2": "reject",
-   "3": "disconnect",
-   "4": "warning",
-   "5": "pingcreditcheckwithrevalidation",
-   "6": "pingcreditchecknorevalidation",
-   "7": "pushcreditcheckwithrevalidation",
-   "8": "pushcreditchecknorevalidation",
-   "9": "suspend",
-   "10": "halttrading"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "QUEUE_INBOUND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUEUE_OUTBOUND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DISCONNECT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "WARNING"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PING_CREDIT_CHECK_WITH_REVALIDATION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PING_CREDIT_CHECK_NO_REVALIDATION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PUSH_CREDIT_CHECK_WITH_REVALIDATION"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PUSH_CREDIT_CHECK_NO_REVALIDATION"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "SUSPEND"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "HALT_TRADING"
+    ]
+   }
+  ]
  },
  "1768": {
   "name": "RiskWarningLevelAmount",
@@ -3734,48 +4474,71 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TRADE",
-   "1": "MAKE_MARKETS",
-   "2": "HOLD_POSITIONS",
-   "3": "PERFORM_GIVE_UPS",
-   "4": "SUBMIT_IO_IS",
-   "5": "SUBSCRIBE_MARKET_DATA",
-   "6": "SHORT_WITH_PRE_BORROW",
-   "7": "SUBMIT_QUOTE_REQUESTS",
-   "8": "RESPOND_TO_QUOTE_REQUESTS"
-  },
-  "encoded": {
-   "trade": "0",
-   "makemarkets": "1",
-   "holdpositions": "2",
-   "performgiveups": "3",
-   "submitiois": "4",
-   "subscribemarketdata": "5",
-   "shortwithpreborrow": "6",
-   "submitquoterequests": "7",
-   "respondtoquoterequests": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "trade",
-   "1": "makemarkets",
-   "2": "holdpositions",
-   "3": "performgiveups",
-   "4": "submitiois",
-   "5": "subscribemarketdata",
-   "6": "shortwithpreborrow",
-   "7": "submitquoterequests",
-   "8": "respondtoquoterequests"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TRADE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MAKE_MARKETS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "HOLD_POSITIONS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PERFORM_GIVE_UPS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SUBMIT_IO_IS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SUBSCRIBE_MARKET_DATA"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SHORT_WITH_PRE_BORROW"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SUBMIT_QUOTE_REQUESTS"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "RESPOND_TO_QUOTE_REQUESTS"
+    ]
+   }
+  ]
  },
  "1776": {
   "name": "EntitlementID",
@@ -3808,152 +4571,253 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "29": "TENOR",
-   "32": "PATTERN",
-   "33": "RESERVED100_PLUS",
-   "34": "RESERVED1000_PLUS",
-   "35": "RESERVED4000_PLUS",
-   "14": "STRING",
-   "15": "MULTIPLE_CHAR_VALUE",
-   "16": "CURRENCY",
-   "17": "EXCHANGE",
-   "18": "MONTH_YEAR",
-   "19": "UTC_TIMESTAMP",
-   "20": "UTC_TIME_ONLY",
-   "21": "LOCAL_MKT_DATE",
-   "22": "UTC_DATE_ONLY",
-   "23": "DATA",
-   "24": "MULTIPLE_STRING_VALUE",
-   "25": "COUNTRY",
-   "26": "LANGUAGE",
-   "27": "TZ_TIME_ONLY",
-   "28": "TZ_TIMESTAMP",
-   "31": "XML_DATA",
-   "12": "CHAR",
-   "13": "BOOLEAN",
-   "6": "FLOAT",
-   "7": "QTY",
-   "8": "PRICE",
-   "9": "PRICE_OFFSET",
-   "10": "AMT",
-   "11": "PERCENTAGE",
-   "1": "INT",
-   "2": "LENGTH",
-   "3": "NUM_IN_GROUP",
-   "4": "SEQ_NUM",
-   "5": "TAG_NUM",
-   "30": "DAY_OF_MONTH"
-  },
-  "encoded": {
-   "tenor": "29",
-   "pattern": "32",
-   "reserved100plus": "33",
-   "reserved1000plus": "34",
-   "reserved4000plus": "35",
-   "string": "14",
-   "multiplecharvalue": "15",
-   "currency": "16",
-   "exchange": "17",
-   "monthyear": "18",
-   "utctimestamp": "19",
-   "utctimeonly": "20",
-   "localmktdate": "21",
-   "utcdateonly": "22",
-   "data": "23",
-   "multiplestringvalue": "24",
-   "country": "25",
-   "language": "26",
-   "tztimeonly": "27",
-   "tztimestamp": "28",
-   "xmldata": "31",
-   "char": "12",
-   "boolean": "13",
-   "float": "6",
-   "qty": "7",
-   "price": "8",
-   "priceoffset": "9",
-   "amt": "10",
-   "percentage": "11",
-   "int": "1",
-   "length": "2",
-   "numingroup": "3",
-   "seqnum": "4",
-   "tagnum": "5",
-   "dayofmonth": "30",
-   "29": "29",
-   "32": "32",
-   "33": "33",
-   "34": "34",
-   "35": "35",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "31": "31",
-   "12": "12",
-   "13": "13",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "30": "30"
-  },
-  "decoded": {
-   "29": "tenor",
-   "32": "pattern",
-   "33": "reserved100plus",
-   "34": "reserved1000plus",
-   "35": "reserved4000plus",
-   "14": "string",
-   "15": "multiplecharvalue",
-   "16": "currency",
-   "17": "exchange",
-   "18": "monthyear",
-   "19": "utctimestamp",
-   "20": "utctimeonly",
-   "21": "localmktdate",
-   "22": "utcdateonly",
-   "23": "data",
-   "24": "multiplestringvalue",
-   "25": "country",
-   "26": "language",
-   "27": "tztimeonly",
-   "28": "tztimestamp",
-   "31": "xmldata",
-   "12": "char",
-   "13": "boolean",
-   "6": "float",
-   "7": "qty",
-   "8": "price",
-   "9": "priceoffset",
-   "10": "amt",
-   "11": "percentage",
-   "1": "int",
-   "2": "length",
-   "3": "numingroup",
-   "4": "seqnum",
-   "5": "tagnum",
-   "30": "dayofmonth"
-  }
+  "values": [
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "TENOR"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "PATTERN"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "RESERVED100_PLUS"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "RESERVED1000_PLUS"
+    ]
+   },
+   {
+    "value": "35",
+    "meaning": "",
+    "aliases": [
+     "RESERVED4000_PLUS"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "STRING"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "MULTIPLE_CHAR_VALUE"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "MONTH_YEAR"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "UTC_TIMESTAMP"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "UTC_TIME_ONLY"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "LOCAL_MKT_DATE"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "UTC_DATE_ONLY"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "DATA"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "MULTIPLE_STRING_VALUE"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "COUNTRY"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "LANGUAGE"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "TZ_TIME_ONLY"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "TZ_TIMESTAMP"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "XML_DATA"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "CHAR"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "BOOLEAN"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "FLOAT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "QTY"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PRICE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "PRICE_OFFSET"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "AMT"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "LENGTH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "NUM_IN_GROUP"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SEQ_NUM"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "TAG_NUM"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "DAY_OF_MONTH"
+    ]
+   }
+  ]
  },
  "1780": {
   "name": "EntitlementAttribValue",
@@ -4002,20 +4866,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AUTOMATIC",
-   "1": "MANUAL"
-  },
-  "encoded": {
-   "automatic": "0",
-   "manual": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "automatic",
-   "1": "manual"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MANUAL"
+    ]
+   }
+  ]
  },
  "1786": {
   "name": "TradeVolType",
@@ -4024,20 +4890,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NUMBER_OF_UNITS",
-   "1": "NUMBER_OF_ROUND_LOTS"
-  },
-  "encoded": {
-   "numberofunits": "0",
-   "numberofroundlots": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "numberofunits",
-   "1": "numberofroundlots"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NUMBER_OF_UNITS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NUMBER_OF_ROUND_LOTS"
+    ]
+   }
+  ]
  },
  "1787": {
   "name": "RefTickTableID",
@@ -4118,56 +4986,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ADDED",
-   "2": "MODIFIED",
-   "3": "DELETED",
-   "4": "PARTIALLY_FILLED",
-   "5": "FILLED",
-   "6": "SUSPENDED",
-   "7": "RELEASED",
-   "8": "RESTATED",
-   "9": "LOCKED",
-   "10": "TRIGGERED",
-   "11": "ACTIVATED"
-  },
-  "encoded": {
-   "added": "1",
-   "modified": "2",
-   "deleted": "3",
-   "partiallyfilled": "4",
-   "filled": "5",
-   "suspended": "6",
-   "released": "7",
-   "restated": "8",
-   "locked": "9",
-   "triggered": "10",
-   "activated": "11",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11"
-  },
-  "decoded": {
-   "1": "added",
-   "2": "modified",
-   "3": "deleted",
-   "4": "partiallyfilled",
-   "5": "filled",
-   "6": "suspended",
-   "7": "released",
-   "8": "restated",
-   "9": "locked",
-   "10": "triggered",
-   "11": "activated"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADDED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MODIFIED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DELETED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PARTIALLY_FILLED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "FILLED"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SUSPENDED"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "RELEASED"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "RESTATED"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "LOCKED"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "TRIGGERED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "ACTIVATED"
+    ]
+   }
+  ]
  },
  "1797": {
   "name": "OrderEventExecID",
@@ -4184,64 +5081,99 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ADD_ORDER_REQUEST",
-   "2": "MODIFY_ORDER_REQUEST",
-   "3": "DELETE_ORDER_REQUEST",
-   "4": "ORDER_ENTERED_OOB",
-   "5": "ORDER_MODIFIED_OOB",
-   "6": "ORDER_DELETED_OOB",
-   "7": "ORDER_ACTIVATED_OR_TRIGGERED",
-   "8": "ORDER_EXPIRED",
-   "9": "RESERVE_ORDER_REFRESHED",
-   "10": "AWAY_MARKET_BETTER",
-   "11": "CORPORATE_ACTION",
-   "12": "START_OF_DAY",
-   "13": "END_OF_DAY"
-  },
-  "encoded": {
-   "addorderrequest": "1",
-   "modifyorderrequest": "2",
-   "deleteorderrequest": "3",
-   "orderenteredoob": "4",
-   "ordermodifiedoob": "5",
-   "orderdeletedoob": "6",
-   "orderactivatedortriggered": "7",
-   "orderexpired": "8",
-   "reserveorderrefreshed": "9",
-   "awaymarketbetter": "10",
-   "corporateaction": "11",
-   "startofday": "12",
-   "endofday": "13",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13"
-  },
-  "decoded": {
-   "1": "addorderrequest",
-   "2": "modifyorderrequest",
-   "3": "deleteorderrequest",
-   "4": "orderenteredoob",
-   "5": "ordermodifiedoob",
-   "6": "orderdeletedoob",
-   "7": "orderactivatedortriggered",
-   "8": "orderexpired",
-   "9": "reserveorderrefreshed",
-   "10": "awaymarketbetter",
-   "11": "corporateaction",
-   "12": "startofday",
-   "13": "endofday"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADD_ORDER_REQUEST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MODIFY_ORDER_REQUEST"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DELETE_ORDER_REQUEST"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "ORDER_ENTERED_OOB"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ORDER_MODIFIED_OOB"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ORDER_DELETED_OOB"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ORDER_ACTIVATED_OR_TRIGGERED"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "ORDER_EXPIRED"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "RESERVE_ORDER_REFRESHED"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "AWAY_MARKET_BETTER"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "CORPORATE_ACTION"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "START_OF_DAY"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "END_OF_DAY"
+    ]
+   }
+  ]
  },
  "1799": {
   "name": "OrderEventPx",
@@ -4282,48 +5214,71 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "BLOCK_ORDER_AUCTION",
-   "2": "DIRECTED_ORDER_AUCTION",
-   "3": "EXPOSURE_ORDER_AUCTION",
-   "4": "FLASH_ORDER_AUCTION",
-   "5": "FACILITATION_ORDER_AUCTION",
-   "6": "SOLICITATION_ORDER_AUCTION",
-   "7": "PRICE_IMPROVEMENT_MECHANISM",
-   "8": "DIRECTED_ORDER_PRICE_IMPROVEMENT_MECHANISM"
-  },
-  "encoded": {
-   "none": "0",
-   "blockorderauction": "1",
-   "directedorderauction": "2",
-   "exposureorderauction": "3",
-   "flashorderauction": "4",
-   "facilitationorderauction": "5",
-   "solicitationorderauction": "6",
-   "priceimprovementmechanism": "7",
-   "directedorderpriceimprovementmechanism": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "blockorderauction",
-   "2": "directedorderauction",
-   "3": "exposureorderauction",
-   "4": "flashorderauction",
-   "5": "facilitationorderauction",
-   "6": "solicitationorderauction",
-   "7": "priceimprovementmechanism",
-   "8": "directedorderpriceimprovementmechanism"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BLOCK_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EXPOSURE_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "FLASH_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "FACILITATION_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SOLICITATION_ORDER_AUCTION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PRICE_IMPROVEMENT_MECHANISM"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED_ORDER_PRICE_IMPROVEMENT_MECHANISM"
+    ]
+   }
+  ]
  },
  "1804": {
   "name": "AuctionAllocationPct",
@@ -4340,20 +5295,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AUTOMATED_AUCTION_PERMITTED",
-   "1": "AUTOMATED_AUCTION_NOT_PERMITTED"
-  },
-  "encoded": {
-   "automatedauctionpermitted": "0",
-   "automatedauctionnotpermitted": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "automatedauctionpermitted",
-   "1": "automatedauctionnotpermitted"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATED_AUCTION_PERMITTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATED_AUCTION_NOT_PERMITTED"
+    ]
+   }
+  ]
  },
  "1806": {
   "name": "RefClOrdID",
@@ -4370,44 +5327,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_LOCKED",
-   "1": "AWAY_MARKET_NETTER",
-   "2": "THREE_TICK_LOCKED",
-   "3": "LOCKED_BY_MARKET_MAKER",
-   "4": "DIRECTED_ORDER_LOCK",
-   "5": "MULTILEG_LOCK",
-   "6": "MARKET_ORDER_LOCK",
-   "7": "PRE_ASSIGNMENT_LOCK"
-  },
-  "encoded": {
-   "notlocked": "0",
-   "awaymarketnetter": "1",
-   "threeticklocked": "2",
-   "lockedbymarketmaker": "3",
-   "directedorderlock": "4",
-   "multileglock": "5",
-   "marketorderlock": "6",
-   "preassignmentlock": "7",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "0": "notlocked",
-   "1": "awaymarketnetter",
-   "2": "threeticklocked",
-   "3": "lockedbymarketmaker",
-   "4": "directedorderlock",
-   "5": "multileglock",
-   "6": "marketorderlock",
-   "7": "preassignmentlock"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_LOCKED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "AWAY_MARKET_NETTER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "THREE_TICK_LOCKED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "LOCKED_BY_MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED_ORDER_LOCK"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "MULTILEG_LOCK"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "MARKET_ORDER_LOCK"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PRE_ASSIGNMENT_LOCK"
+    ]
+   }
+  ]
  },
  "1808": {
   "name": "LockedQty",
@@ -4432,20 +5409,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ISO",
-   "2": "NO_AWAY_MARKET_BETTER_CHECK"
-  },
-  "encoded": {
-   "iso": "1",
-   "noawaymarketbettercheck": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "iso",
-   "2": "noawaymarketbettercheck"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ISO"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NO_AWAY_MARKET_BETTER_CHECK"
+    ]
+   }
+  ]
  },
  "1811": {
   "name": "ReleaseQty",
@@ -4470,40 +5449,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "VOLUME",
-   "2": "PRICE",
-   "3": "SIDE",
-   "4": "AON",
-   "5": "GENERAL",
-   "6": "CLEARING_ACCOUNT",
-   "7": "CMTA_ACCOUNT"
-  },
-  "encoded": {
-   "volume": "1",
-   "price": "2",
-   "side": "3",
-   "aon": "4",
-   "general": "5",
-   "clearingaccount": "6",
-   "cmtaaccount": "7",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7"
-  },
-  "decoded": {
-   "1": "volume",
-   "2": "price",
-   "3": "side",
-   "4": "aon",
-   "5": "general",
-   "6": "clearingaccount",
-   "7": "cmtaaccount"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "VOLUME"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PRICE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SIDE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "AON"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "GENERAL"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "CLEARING_ACCOUNT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "CMTA_ACCOUNT"
+    ]
+   }
+  ]
  },
  "1814": {
   "name": "DisclosureInstruction",
@@ -4512,24 +5508,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO",
-   "1": "YES",
-   "2": "USE_DEFAULT_SETTING"
-  },
-  "encoded": {
-   "no": "0",
-   "yes": "1",
-   "usedefaultsetting": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "no",
-   "1": "yes",
-   "2": "usedefaultsetting"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "YES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "USE_DEFAULT_SETTING"
+    ]
+   }
+  ]
  },
  "1815": {
   "name": "TradingCapacity",
@@ -4538,44 +5539,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "CUSTOMER",
-   "2": "CUSTOMER_PROFESSIONAL",
-   "3": "BROKER_DEALER",
-   "4": "CUSTOMER_BROKER_DEALER",
-   "5": "PRINCIPAL",
-   "6": "MARKET_MAKER",
-   "7": "AWAY_MARKET_MAKER",
-   "8": "SYSTEMATIC_INTERNALISER"
-  },
-  "encoded": {
-   "customer": "1",
-   "customerprofessional": "2",
-   "brokerdealer": "3",
-   "customerbrokerdealer": "4",
-   "principal": "5",
-   "marketmaker": "6",
-   "awaymarketmaker": "7",
-   "systematicinternaliser": "8",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "1": "customer",
-   "2": "customerprofessional",
-   "3": "brokerdealer",
-   "4": "customerbrokerdealer",
-   "5": "principal",
-   "6": "marketmaker",
-   "7": "awaymarketmaker",
-   "8": "systematicinternaliser"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER_PROFESSIONAL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BROKER_DEALER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER_BROKER_DEALER"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PRINCIPAL"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "AWAY_MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "SYSTEMATIC_INTERNALISER"
+    ]
+   }
+  ]
  },
  "1816": {
   "name": "ClearingAccountType",
@@ -4584,24 +5605,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "CUSTOMER",
-   "2": "FIRM",
-   "3": "MARKET_MAKER"
-  },
-  "encoded": {
-   "customer": "1",
-   "firm": "2",
-   "marketmaker": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "customer",
-   "2": "firm",
-   "3": "marketmaker"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FIRM"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "MARKET_MAKER"
+    ]
+   }
+  ]
  },
  "1817": {
   "name": "LegClearingAccountType",
@@ -4642,20 +5668,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "NB_BID",
-   "2": "NB_OFFER"
-  },
-  "encoded": {
-   "nbbid": "1",
-   "nboffer": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "nbbid",
-   "2": "nboffer"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NB_BID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NB_OFFER"
+    ]
+   }
+  ]
  },
  "1822": {
   "name": "MinQtyMethod",
@@ -4664,20 +5692,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ONCE",
-   "2": "MULTIPLE"
-  },
-  "encoded": {
-   "once": "1",
-   "multiple": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "once",
-   "2": "multiple"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ONCE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MULTIPLE"
+    ]
+   }
+  ]
  },
  "1823": {
   "name": "Triggered",
@@ -4686,36 +5716,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_TRIGGERED",
-   "1": "TRIGGERED",
-   "2": "STOP_ORDER_TRIGGERED",
-   "3": "OCO_ORDER_TRIGGERED",
-   "4": "OTO_ORDER_TRIGGERED",
-   "5": "OUO_ORDER_TRIGGERED"
-  },
-  "encoded": {
-   "nottriggered": "0",
-   "triggered": "1",
-   "stopordertriggered": "2",
-   "ocoordertriggered": "3",
-   "otoordertriggered": "4",
-   "ouoordertriggered": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "nottriggered",
-   "1": "triggered",
-   "2": "stopordertriggered",
-   "3": "ocoordertriggered",
-   "4": "otoordertriggered",
-   "5": "ouoordertriggered"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_TRIGGERED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRIGGERED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "STOP_ORDER_TRIGGERED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "OCO_ORDER_TRIGGERED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "OTO_ORDER_TRIGGERED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "OUO_ORDER_TRIGGERED"
+    ]
+   }
+  ]
  },
  "1824": {
   "name": "AffectedOrigClOrdID",
@@ -4748,40 +5792,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "H": "HOUR",
-   "Min": "MINUTE",
-   "S": "SECOND",
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR"
-  },
-  "encoded": {
-   "hour": "H",
-   "minute": "Min",
-   "second": "S",
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "h": "H",
-   "min": "Min",
-   "s": "S",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr"
-  },
-  "decoded": {
-   "H": "hour",
-   "Min": "minute",
-   "S": "second",
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year"
-  }
+  "values": [
+   {
+    "value": "H",
+    "meaning": "",
+    "aliases": [
+     "HOUR"
+    ]
+   },
+   {
+    "value": "Min",
+    "meaning": "",
+    "aliases": [
+     "MINUTE"
+    ]
+   },
+   {
+    "value": "S",
+    "meaning": "",
+    "aliases": [
+     "SECOND"
+    ]
+   },
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   }
+  ]
  },
  "1828": {
   "name": "LastQtyVariance",
@@ -4822,28 +5883,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOT_CLEARED",
-   "1": "CLEARED",
-   "2": "SUBMITTED",
-   "3": "REJECTED"
-  },
-  "encoded": {
-   "notcleared": "0",
-   "cleared": "1",
-   "submitted": "2",
-   "rejected": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "notcleared",
-   "1": "cleared",
-   "2": "submitted",
-   "3": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOT_CLEARED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CLEARED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SUBMITTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "1833": {
   "name": "ContractRefPosType",
@@ -4852,28 +5921,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "TWO_COMPONENT_INTERCOMMODITY_SPREAD",
-   "1": "INDEX_OR_BASKET",
-   "2": "TWO_COMPONENT_LOCATION_BASIS",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "twocomponentintercommodityspread": "0",
-   "indexorbasket": "1",
-   "twocomponentlocationbasis": "2",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "twocomponentintercommodityspread",
-   "1": "indexorbasket",
-   "2": "twocomponentlocationbasis",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "TWO_COMPONENT_INTERCOMMODITY_SPREAD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INDEX_OR_BASKET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TWO_COMPONENT_LOCATION_BASIS"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1834": {
   "name": "PositionCapacity",
@@ -4882,28 +5959,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PRINCIPAL",
-   "1": "AGENT",
-   "2": "CUSTOMER",
-   "3": "COUNTERPARTY"
-  },
-  "encoded": {
-   "principal": "0",
-   "agent": "1",
-   "customer": "2",
-   "counterparty": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "principal",
-   "1": "agent",
-   "2": "customer",
-   "3": "counterparty"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PRINCIPAL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "AGENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CUSTOMER"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "COUNTERPARTY"
+    ]
+   }
+  ]
  },
  "1835": {
   "name": "PosQtyUnitOfMeasureCurrency",
@@ -4944,88 +6029,141 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SPECIAL_CUM_DIVIDEND",
-   "1": "SPECIAL_CUM_RIGHTS",
-   "2": "SPECIAL_EX_DIVIDEND",
-   "3": "SPECIAL_EX_RIGHTS",
-   "4": "SPECIAL_CUM_COUPON",
-   "5": "SPECIAL_CUM_CAPITAL_REPAYMENTS",
-   "6": "SPECIAL_EX_COUPON",
-   "7": "SPECIAL_EX_CAPITAL_REPAYMENTS",
-   "8": "CASH_SETTLEMENT",
-   "9": "SPECIAL_CUM_BONUS",
-   "10": "SPECIAL_PRICE",
-   "11": "SPECIAL_EX_BONUS",
-   "12": "GUARANTEED_DELIVERY",
-   "13": "SPECIAL_DIVIDEND",
-   "14": "PRICE_IMPROVEMENT",
-   "15": "NON_PRICE_FORMING_TRADE",
-   "16": "TRADE_EXEMPTED_FROM_TRADING_OBLIGATION",
-   "17": "PRICE_PENDING",
-   "18": "PRICE_NOT_APPLICABLE"
-  },
-  "encoded": {
-   "specialcumdividend": "0",
-   "specialcumrights": "1",
-   "specialexdividend": "2",
-   "specialexrights": "3",
-   "specialcumcoupon": "4",
-   "specialcumcapitalrepayments": "5",
-   "specialexcoupon": "6",
-   "specialexcapitalrepayments": "7",
-   "cashsettlement": "8",
-   "specialcumbonus": "9",
-   "specialprice": "10",
-   "specialexbonus": "11",
-   "guaranteeddelivery": "12",
-   "specialdividend": "13",
-   "priceimprovement": "14",
-   "nonpriceformingtrade": "15",
-   "tradeexemptedfromtradingobligation": "16",
-   "pricepending": "17",
-   "pricenotapplicable": "18",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18"
-  },
-  "decoded": {
-   "0": "specialcumdividend",
-   "1": "specialcumrights",
-   "2": "specialexdividend",
-   "3": "specialexrights",
-   "4": "specialcumcoupon",
-   "5": "specialcumcapitalrepayments",
-   "6": "specialexcoupon",
-   "7": "specialexcapitalrepayments",
-   "8": "cashsettlement",
-   "9": "specialcumbonus",
-   "10": "specialprice",
-   "11": "specialexbonus",
-   "12": "guaranteeddelivery",
-   "13": "specialdividend",
-   "14": "priceimprovement",
-   "15": "nonpriceformingtrade",
-   "16": "tradeexemptedfromtradingobligation",
-   "17": "pricepending",
-   "18": "pricenotapplicable"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_CUM_DIVIDEND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_CUM_RIGHTS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_EX_DIVIDEND"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_EX_RIGHTS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_CUM_COUPON"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_CUM_CAPITAL_REPAYMENTS"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_EX_COUPON"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_EX_CAPITAL_REPAYMENTS"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "CASH_SETTLEMENT"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_CUM_BONUS"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_PRICE"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_EX_BONUS"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "GUARANTEED_DELIVERY"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SPECIAL_DIVIDEND"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "PRICE_IMPROVEMENT"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "NON_PRICE_FORMING_TRADE"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "TRADE_EXEMPTED_FROM_TRADING_OBLIGATION"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "PRICE_PENDING"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "PRICE_NOT_APPLICABLE"
+    ]
+   }
+  ]
  },
  "1840": {
   "name": "TradeAllocStatus",
@@ -5034,28 +6172,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PENDING_CLEAR",
-   "1": "CLAIMED",
-   "2": "CLEARED",
-   "3": "REJECTED"
-  },
-  "encoded": {
-   "pendingclear": "0",
-   "claimed": "1",
-   "cleared": "2",
-   "rejected": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "pendingclear",
-   "1": "claimed",
-   "2": "cleared",
-   "3": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PENDING_CLEAR"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CLAIMED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLEARED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "1841": {
   "name": "NoTradeQtys",
@@ -5072,48 +6218,71 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CLEARED_QUANTITY",
-   "1": "LONG_SIDE_CLAIMED_QUANTITY",
-   "2": "SHORT_SIDE_CLAIMED_QUANTITY",
-   "3": "LONG_SIDE_REJECTED_QUANTITY",
-   "4": "SHORT_SIDE_REJECTED_QUANTITY",
-   "5": "PENDING_QUANTITY",
-   "6": "TRANSACTION_QUANTITY",
-   "7": "REMAINING_QUANTITY",
-   "8": "PREVIOUS_REMAINING_QUANTITY"
-  },
-  "encoded": {
-   "clearedquantity": "0",
-   "longsideclaimedquantity": "1",
-   "shortsideclaimedquantity": "2",
-   "longsiderejectedquantity": "3",
-   "shortsiderejectedquantity": "4",
-   "pendingquantity": "5",
-   "transactionquantity": "6",
-   "remainingquantity": "7",
-   "previousremainingquantity": "8",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "0": "clearedquantity",
-   "1": "longsideclaimedquantity",
-   "2": "shortsideclaimedquantity",
-   "3": "longsiderejectedquantity",
-   "4": "shortsiderejectedquantity",
-   "5": "pendingquantity",
-   "6": "transactionquantity",
-   "7": "remainingquantity",
-   "8": "previousremainingquantity"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CLEARED_QUANTITY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LONG_SIDE_CLAIMED_QUANTITY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SHORT_SIDE_CLAIMED_QUANTITY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "LONG_SIDE_REJECTED_QUANTITY"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SHORT_SIDE_REJECTED_QUANTITY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PENDING_QUANTITY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "TRANSACTION_QUANTITY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "REMAINING_QUANTITY"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS_REMAINING_QUANTITY"
+    ]
+   }
+  ]
  },
  "1843": {
   "name": "TradeQty",
@@ -5162,20 +6331,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ADD",
-   "1": "DO_NOT_ADD"
-  },
-  "encoded": {
-   "add": "0",
-   "donotadd": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "add",
-   "1": "donotadd"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ADD"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_ADD"
+    ]
+   }
+  ]
  },
  "1849": {
   "name": "OffsetInstruction",
@@ -5184,20 +6355,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "OFFSET",
-   "1": "ONSET"
-  },
-  "encoded": {
-   "offset": "0",
-   "onset": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "offset",
-   "1": "onset"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "OFFSET"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ONSET"
+    ]
+   }
+  ]
  },
  "1850": {
   "name": "TradeAllocAmtReason",
@@ -5230,24 +6403,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_AVG_PRICING",
-   "1": "TRADE_IS_PART_AVG_PRICE_GRP",
-   "2": "LAST_TRADE_IS_PART_AVG_PRICE_GRP"
-  },
-  "encoded": {
-   "noavgpricing": "0",
-   "tradeispartavgpricegrp": "1",
-   "lasttradeispartavgpricegrp": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "noavgpricing",
-   "1": "tradeispartavgpricegrp",
-   "2": "lasttradeispartavgpricegrp"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_AVG_PRICING"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRADE_IS_PART_AVG_PRICE_GRP"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "LAST_TRADE_IS_PART_AVG_PRICE_GRP"
+    ]
+   }
+  ]
  },
  "1854": {
   "name": "SideAvgPxGroupID",
@@ -5280,40 +6458,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NON_FIX_SOURCE",
-   "1": "TRADE_ID",
-   "2": "SECONDARY_TRADE_ID",
-   "3": "TRADE_REPORT_ID",
-   "4": "FIRM_TRADE_ID",
-   "5": "SECONDARY_FIRM_TRADE_ID",
-   "6": "REGULATORY_TRADE_ID"
-  },
-  "encoded": {
-   "nonfixsource": "0",
-   "tradeid": "1",
-   "secondarytradeid": "2",
-   "tradereportid": "3",
-   "firmtradeid": "4",
-   "secondaryfirmtradeid": "5",
-   "regulatorytradeid": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "nonfixsource",
-   "1": "tradeid",
-   "2": "secondarytradeid",
-   "3": "tradereportid",
-   "4": "firmtradeid",
-   "5": "secondaryfirmtradeid",
-   "6": "regulatorytradeid"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NON_FIX_SOURCE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "TRADE_ID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SECONDARY_TRADE_ID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TRADE_REPORT_ID"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "FIRM_TRADE_ID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SECONDARY_FIRM_TRADE_ID"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "REGULATORY_TRADE_ID"
+    ]
+   }
+  ]
  },
  "1858": {
   "name": "RelatedTradeDate",
@@ -5362,24 +6557,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "POS_MAINT_RPT_ID",
-   "2": "TRANSFER_ID",
-   "3": "POSITION_ENTITY_ID"
-  },
-  "encoded": {
-   "posmaintrptid": "1",
-   "transferid": "2",
-   "positionentityid": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "posmaintrptid",
-   "2": "transferid",
-   "3": "positionentityid"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "POS_MAINT_RPT_ID"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TRANSFER_ID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "POSITION_ENTITY_ID"
+    ]
+   }
+  ]
  },
  "1864": {
   "name": "RelatedPositionDate",
@@ -5396,24 +6596,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECEIVED_NOT_YET_PROCESSED",
-   "1": "ACCEPTED",
-   "2": "REJECTED"
-  },
-  "encoded": {
-   "receivednotyetprocessed": "0",
-   "accepted": "1",
-   "rejected": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "receivednotyetprocessed",
-   "1": "accepted",
-   "2": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED_NOT_YET_PROCESSED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "1866": {
   "name": "StrikeIndex",
@@ -5446,24 +6651,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "PRICE_CHECK",
-   "2": "NOTIONAL_VALUE_CHECK",
-   "3": "QUANTITY_CHECK"
-  },
-  "encoded": {
-   "pricecheck": "1",
-   "notionalvaluecheck": "2",
-   "quantitycheck": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "pricecheck",
-   "2": "notionalvaluecheck",
-   "3": "quantitycheck"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PRICE_CHECK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NOTIONAL_VALUE_CHECK"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "QUANTITY_CHECK"
+    ]
+   }
+  ]
  },
  "1870": {
   "name": "ValueCheckAction",
@@ -5472,24 +6682,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DO_NOT_CHECK",
-   "1": "CHECK",
-   "2": "BEST_EFFORT"
-  },
-  "encoded": {
-   "donotcheck": "0",
-   "check": "1",
-   "besteffort": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "donotcheck",
-   "1": "check",
-   "2": "besteffort"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_CHECK"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CHECK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BEST_EFFORT"
+    ]
+   }
+  ]
  },
  "1871": {
   "name": "LegSecurityXMLLen",
@@ -5546,36 +6761,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_PARTY",
-   "2": "INVALID_RELATED_PARTY",
-   "3": "INVALID_PARTY_STATUS",
-   "98": "NOT_AUTHORIZED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidparty": "1",
-   "invalidrelatedparty": "2",
-   "invalidpartystatus": "3",
-   "notauthorized": "98",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "98": "98",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidparty",
-   "2": "invalidrelatedparty",
-   "3": "invalidpartystatus",
-   "98": "notauthorized",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RELATED_PARTY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY_STATUS"
+    ]
+   },
+   {
+    "value": "98",
+    "meaning": "",
+    "aliases": [
+     "NOT_AUTHORIZED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1878": {
   "name": "PartyDetailRequestStatus",
@@ -5584,28 +6813,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "ACCEPTED_WITH_CHANGES",
-   "2": "REJECTED",
-   "3": "ACCEPTANCE_PENDING"
-  },
-  "encoded": {
-   "accepted": "0",
-   "acceptedwithchanges": "1",
-   "rejected": "2",
-   "acceptancepending": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "acceptedwithchanges",
-   "2": "rejected",
-   "3": "acceptancepending"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_WITH_CHANGES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTANCE_PENDING"
+    ]
+   }
+  ]
  },
  "1879": {
   "name": "PartyDetailDefinitionStatus",
@@ -5614,24 +6851,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "ACCEPTED_WITH_CHANGES",
-   "2": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "acceptedwithchanges": "1",
-   "rejected": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "acceptedwithchanges",
-   "2": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_WITH_CHANGES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "1880": {
   "name": "PartyDetailDefinitionResult",
@@ -5648,80 +6890,127 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_PARTY",
-   "2": "INVALID_RELATED_PARTY",
-   "3": "INVALID_ENTITLEMENT_TYPE",
-   "4": "INVALID_ENTITLEMENT_ID",
-   "5": "INVALID_ENTITLEMENT_ATTRIBUTE",
-   "6": "INVALID_INSTRUMENT_SCOPE",
-   "7": "INVALID_MARKET_SEGMENT_SCOPE",
-   "8": "INVALID_START_DATE",
-   "9": "INVALID_END_DATE",
-   "10": "INSTRUMENT_SCOPE_NOT_SUPPORTED",
-   "11": "MARKET_SEGMENT_SCOPE_NOT_SUPPORTED",
-   "12": "ENTITLEMENT_NOT_APPROVED_FOR_PARTY",
-   "13": "ENTITLEMENT_ALREADY_DEFINED_FOR_PARTY",
-   "14": "INSTRUMENT_NOT_APPROVED_FOR_PARTY",
-   "98": "NOT_AUTHORIZED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidparty": "1",
-   "invalidrelatedparty": "2",
-   "invalidentitlementtype": "3",
-   "invalidentitlementid": "4",
-   "invalidentitlementattribute": "5",
-   "invalidinstrumentscope": "6",
-   "invalidmarketsegmentscope": "7",
-   "invalidstartdate": "8",
-   "invalidenddate": "9",
-   "instrumentscopenotsupported": "10",
-   "marketsegmentscopenotsupported": "11",
-   "entitlementnotapprovedforparty": "12",
-   "entitlementalreadydefinedforparty": "13",
-   "instrumentnotapprovedforparty": "14",
-   "notauthorized": "98",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "98": "98",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidparty",
-   "2": "invalidrelatedparty",
-   "3": "invalidentitlementtype",
-   "4": "invalidentitlementid",
-   "5": "invalidentitlementattribute",
-   "6": "invalidinstrumentscope",
-   "7": "invalidmarketsegmentscope",
-   "8": "invalidstartdate",
-   "9": "invalidenddate",
-   "10": "instrumentscopenotsupported",
-   "11": "marketsegmentscopenotsupported",
-   "12": "entitlementnotapprovedforparty",
-   "13": "entitlementalreadydefinedforparty",
-   "14": "instrumentnotapprovedforparty",
-   "98": "notauthorized",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_RELATED_PARTY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_ENTITLEMENT_TYPE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INVALID_ENTITLEMENT_ID"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "INVALID_ENTITLEMENT_ATTRIBUTE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "INVALID_INSTRUMENT_SCOPE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "INVALID_MARKET_SEGMENT_SCOPE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "INVALID_START_DATE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "INVALID_END_DATE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_SCOPE_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "MARKET_SEGMENT_SCOPE_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "ENTITLEMENT_NOT_APPROVED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "ENTITLEMENT_ALREADY_DEFINED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "INSTRUMENT_NOT_APPROVED_FOR_PARTY"
+    ]
+   },
+   {
+    "value": "98",
+    "meaning": "",
+    "aliases": [
+     "NOT_AUTHORIZED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1882": {
   "name": "EntitlementRequestStatus",
@@ -5738,36 +7027,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "ACCEPTED_WITH_CHANGES",
-   "2": "REJECTED",
-   "3": "PENDING",
-   "4": "REQUESTED",
-   "5": "DEFERRED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "acceptedwithchanges": "1",
-   "rejected": "2",
-   "pending": "3",
-   "requested": "4",
-   "deferred": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "acceptedwithchanges",
-   "2": "rejected",
-   "3": "pending",
-   "4": "requested",
-   "5": "deferred"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_WITH_CHANGES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PENDING"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "REQUESTED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "DEFERRED"
+    ]
+   }
+  ]
  },
  "1884": {
   "name": "EntitlementResult",
@@ -5872,24 +7175,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECEIVED_NOT_PROCESSED",
-   "1": "ACCEPTED",
-   "2": "REJECTED"
-  },
-  "encoded": {
-   "receivednotprocessed": "0",
-   "accepted": "1",
-   "rejected": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "receivednotprocessed",
-   "1": "accepted",
-   "2": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED_NOT_PROCESSED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "1897": {
   "name": "TradeMatchRejectReason",
@@ -5898,36 +7206,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_PARTY_INFORMATION",
-   "2": "UNKNOWN_INSTRUMENT",
-   "3": "UNAUTHORIZED",
-   "4": "INVALID_TRADE_TYPE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidpartyinformation": "1",
-   "unknowninstrument": "2",
-   "unauthorized": "3",
-   "invalidtradetype": "4",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidpartyinformation",
-   "2": "unknowninstrument",
-   "3": "unauthorized",
-   "4": "invalidtradetype",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY_INFORMATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UNAUTHORIZED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INVALID_TRADE_TYPE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1898": {
   "name": "SideMarketSegmentID",
@@ -5984,40 +7306,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INITIAL_BLOCK_TRADE",
-   "1": "ALLOCATION",
-   "2": "CLEARING",
-   "3": "COMPRESSION",
-   "4": "NOVATION",
-   "5": "TERMINATION",
-   "6": "POST_TRD_VAL"
-  },
-  "encoded": {
-   "initialblocktrade": "0",
-   "allocation": "1",
-   "clearing": "2",
-   "compression": "3",
-   "novation": "4",
-   "termination": "5",
-   "posttrdval": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "initialblocktrade",
-   "1": "allocation",
-   "2": "clearing",
-   "3": "compression",
-   "4": "novation",
-   "5": "termination",
-   "6": "posttrdval"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INITIAL_BLOCK_TRADE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ALLOCATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLEARING"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "COMPRESSION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NOVATION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "TERMINATION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "POST_TRD_VAL"
+    ]
+   }
+  ]
  },
  "1905": {
   "name": "RegulatoryTradeIDSource",
@@ -6026,16 +7365,15 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "UNIQUE_TRANSACTION_IDENTIFIER"
-  },
-  "encoded": {
-   "uniquetransactionidentifier": "1",
-   "1": "1"
-  },
-  "decoded": {
-   "1": "uniquetransactionidentifier"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNIQUE_TRANSACTION_IDENTIFIER"
+    ]
+   }
+  ]
  },
  "1906": {
   "name": "RegulatoryTradeIDType",
@@ -6044,36 +7382,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CURRENT",
-   "1": "PREVIOUS",
-   "2": "BLOCK",
-   "3": "RELATED",
-   "4": "CLEARED_BLOCK_TRADE",
-   "5": "TRADING_VENUE_TRANSACTION_IDENTIFIER"
-  },
-  "encoded": {
-   "current": "0",
-   "previous": "1",
-   "block": "2",
-   "related": "3",
-   "clearedblocktrade": "4",
-   "tradingvenuetransactionidentifier": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "current",
-   "1": "previous",
-   "2": "block",
-   "3": "related",
-   "4": "clearedblocktrade",
-   "5": "tradingvenuetransactionidentifier"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CURRENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "BLOCK"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "RELATED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "CLEARED_BLOCK_TRADE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "TRADING_VENUE_TRANSACTION_IDENTIFIER"
+    ]
+   }
+  ]
  },
  "1907": {
   "name": "NoRegulatoryTradeIDs",
@@ -6210,20 +7562,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AMOUNT",
-   "1": "PERCENTAGE"
-  },
-  "encoded": {
-   "amount": "0",
-   "percentage": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "amount",
-   "1": "percentage"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AMOUNT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ]
  },
  "1924": {
   "name": "ClearingIntention",
@@ -6232,20 +7586,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DO_NOT_INTEND_TO_CLEAR",
-   "1": "INTEND_TO_CLEAR"
-  },
-  "encoded": {
-   "donotintendtoclear": "0",
-   "intendtoclear": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "donotintendtoclear",
-   "1": "intendtoclear"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DO_NOT_INTEND_TO_CLEAR"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTEND_TO_CLEAR"
+    ]
+   }
+  ]
  },
  "1925": {
   "name": "TradeClearingInstruction",
@@ -6270,24 +7626,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NON_ELECTRONIC",
-   "1": "ELECTRONIC",
-   "2": "UNCONFIRMED"
-  },
-  "encoded": {
-   "nonelectronic": "0",
-   "electronic": "1",
-   "unconfirmed": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "nonelectronic",
-   "1": "electronic",
-   "2": "unconfirmed"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NON_ELECTRONIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ELECTRONIC"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UNCONFIRMED"
+    ]
+   }
+  ]
  },
  "1928": {
   "name": "MandatoryClearingIndicator",
@@ -6320,20 +7681,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NON_ELECTRONIC",
-   "1": "ELECTRONIC"
-  },
-  "encoded": {
-   "nonelectronic": "0",
-   "electronic": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "nonelectronic",
-   "1": "electronic"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NON_ELECTRONIC"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ELECTRONIC"
+    ]
+   }
+  ]
  },
  "1932": {
   "name": "ClearingRequirementException",
@@ -6342,36 +7705,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_EXCEPTION",
-   "1": "EXCEPTION",
-   "2": "END_USER_EXCEPTION",
-   "3": "INTER_AFFILIATE_EXCEPTION",
-   "4": "TREASURY_AFFILIATE_EXCEPTION",
-   "5": "COOPERATIVE_EXCEPTION"
-  },
-  "encoded": {
-   "noexception": "0",
-   "exception": "1",
-   "enduserexception": "2",
-   "interaffiliateexception": "3",
-   "treasuryaffiliateexception": "4",
-   "cooperativeexception": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "noexception",
-   "1": "exception",
-   "2": "enduserexception",
-   "3": "interaffiliateexception",
-   "4": "treasuryaffiliateexception",
-   "5": "cooperativeexception"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_EXCEPTION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "EXCEPTION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "END_USER_EXCEPTION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INTER_AFFILIATE_EXCEPTION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "TREASURY_AFFILIATE_EXCEPTION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "COOPERATIVE_EXCEPTION"
+    ]
+   }
+  ]
  },
  "1933": {
   "name": "IRSDirection",
@@ -6380,21 +7757,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "PAY": "PAY",
-   "RCV": "RCV",
-   "NA": "NA"
-  },
-  "encoded": {
-   "pay": "PAY",
-   "rcv": "RCV",
-   "na": "NA"
-  },
-  "decoded": {
-   "PAY": "pay",
-   "RCV": "rcv",
-   "NA": "na"
-  }
+  "values": [
+   {
+    "value": "PAY",
+    "meaning": "",
+    "aliases": [
+     "PAY"
+    ]
+   },
+   {
+    "value": "RCV",
+    "meaning": "",
+    "aliases": [
+     "RCV"
+    ]
+   },
+   {
+    "value": "NA",
+    "meaning": "",
+    "aliases": [
+     "NA"
+    ]
+   }
+  ]
  },
  "1934": {
   "name": "RegulatoryReportType",
@@ -6403,152 +7788,253 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RT",
-   "1": "PET",
-   "2": "SNAPSHOT",
-   "3": "CONFIRMATION",
-   "4": "RTPET",
-   "5": "PET_CONFIRMATION",
-   "6": "RTPET_CONFIRMATION",
-   "7": "POST_TRADE",
-   "8": "VERIFICATION",
-   "9": "PST_TRD_EVNT",
-   "10": "PST_TRD_EVNT_RT_REPORTABLE",
-   "11": "LMTF",
-   "12": "DATF",
-   "13": "VOLO",
-   "14": "FWAF",
-   "15": "IDAF",
-   "16": "VOLW",
-   "17": "FULF",
-   "18": "FULA",
-   "19": "FULV",
-   "20": "FULJ",
-   "21": "COAF",
-   "22": "ORDER",
-   "23": "CHILD_ORDER",
-   "24": "ORDER_ROUTE",
-   "25": "TRADE",
-   "26": "QUOTE",
-   "27": "SUPPLEMENT",
-   "28": "NEW_TRANSACTION",
-   "29": "TRANSACTION_CORRECTION",
-   "30": "TRANSACTION_MODIFICATION",
-   "31": "COLLATERAL_UPDATE",
-   "32": "MARGIN_UPDATE",
-   "33": "TRANSACTION_REPORTED_IN_ERROR",
-   "34": "TERMINATION_EARLY_TERMINATION"
-  },
-  "encoded": {
-   "rt": "0",
-   "pet": "1",
-   "snapshot": "2",
-   "confirmation": "3",
-   "rtpet": "4",
-   "petconfirmation": "5",
-   "rtpetconfirmation": "6",
-   "posttrade": "7",
-   "verification": "8",
-   "psttrdevnt": "9",
-   "psttrdevntrtreportable": "10",
-   "lmtf": "11",
-   "datf": "12",
-   "volo": "13",
-   "fwaf": "14",
-   "idaf": "15",
-   "volw": "16",
-   "fulf": "17",
-   "fula": "18",
-   "fulv": "19",
-   "fulj": "20",
-   "coaf": "21",
-   "order": "22",
-   "childorder": "23",
-   "orderroute": "24",
-   "trade": "25",
-   "quote": "26",
-   "supplement": "27",
-   "newtransaction": "28",
-   "transactioncorrection": "29",
-   "transactionmodification": "30",
-   "collateralupdate": "31",
-   "marginupdate": "32",
-   "transactionreportedinerror": "33",
-   "terminationearlytermination": "34",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "33": "33",
-   "34": "34"
-  },
-  "decoded": {
-   "0": "rt",
-   "1": "pet",
-   "2": "snapshot",
-   "3": "confirmation",
-   "4": "rtpet",
-   "5": "petconfirmation",
-   "6": "rtpetconfirmation",
-   "7": "posttrade",
-   "8": "verification",
-   "9": "psttrdevnt",
-   "10": "psttrdevntrtreportable",
-   "11": "lmtf",
-   "12": "datf",
-   "13": "volo",
-   "14": "fwaf",
-   "15": "idaf",
-   "16": "volw",
-   "17": "fulf",
-   "18": "fula",
-   "19": "fulv",
-   "20": "fulj",
-   "21": "coaf",
-   "22": "order",
-   "23": "childorder",
-   "24": "orderroute",
-   "25": "trade",
-   "26": "quote",
-   "27": "supplement",
-   "28": "newtransaction",
-   "29": "transactioncorrection",
-   "30": "transactionmodification",
-   "31": "collateralupdate",
-   "32": "marginupdate",
-   "33": "transactionreportedinerror",
-   "34": "terminationearlytermination"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SNAPSHOT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CONFIRMATION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "RTPET"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PET_CONFIRMATION"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "RTPET_CONFIRMATION"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "POST_TRADE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "VERIFICATION"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "PST_TRD_EVNT"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "PST_TRD_EVNT_RT_REPORTABLE"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "LMTF"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "DATF"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "VOLO"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "FWAF"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "IDAF"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "VOLW"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "FULF"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "FULA"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "FULV"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "FULJ"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "COAF"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "ORDER"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "CHILD_ORDER"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "ORDER_ROUTE"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "TRADE"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "QUOTE"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "SUPPLEMENT"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "NEW_TRANSACTION"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "TRANSACTION_CORRECTION"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "TRANSACTION_MODIFICATION"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "COLLATERAL_UPDATE"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_UPDATE"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "TRANSACTION_REPORTED_IN_ERROR"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "TERMINATION_EARLY_TERMINATION"
+    ]
+   }
+  ]
  },
  "1935": {
   "name": "VoluntaryRegulatoryReport",
@@ -6565,32 +8051,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNCOLLATERALIZED",
-   "1": "PARTIALLY_COLLATERALIZED",
-   "2": "ONE_WAY_COLLATERALLIZATION",
-   "3": "FULLY_COLLATERALIZED",
-   "4": "NET_EXPOSURE"
-  },
-  "encoded": {
-   "uncollateralized": "0",
-   "partiallycollateralized": "1",
-   "onewaycollaterallization": "2",
-   "fullycollateralized": "3",
-   "netexposure": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "uncollateralized",
-   "1": "partiallycollateralized",
-   "2": "onewaycollaterallization",
-   "3": "fullycollateralized",
-   "4": "netexposure"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNCOLLATERALIZED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PARTIALLY_COLLATERALIZED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ONE_WAY_COLLATERALLIZATION"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FULLY_COLLATERALIZED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "NET_EXPOSURE"
+    ]
+   }
+  ]
  },
  "1937": {
   "name": "TradeContinuation",
@@ -6599,148 +8096,246 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NOVATION",
-   "1": "PARTIAL_NOVATION",
-   "2": "TRADE_UNWIND",
-   "3": "PARTIAL_TRADE_UNWIND",
-   "4": "EXERCISE",
-   "5": "NETTING",
-   "6": "FULL_NETTING",
-   "7": "PARTIAL_NETTING",
-   "8": "AMENDMENT",
-   "9": "INCREASE",
-   "10": "CREDIT_EVENT",
-   "11": "STRATEGIC_RESTRUCTURING",
-   "12": "SUCCESSION_EVENT_REORGANIZATION",
-   "13": "SUCCESSION_EVENT_RENAMING",
-   "14": "PORTING",
-   "15": "WITHDRAWL",
-   "16": "VOID",
-   "17": "ACCOUNT_TRANSFER",
-   "18": "GIVE_UP",
-   "19": "TAKE_UP",
-   "20": "AVERAGE_PRICING",
-   "21": "REVERSAL",
-   "22": "ALLOC_TRD_POSTING",
-   "23": "CASCADE",
-   "24": "DELIVERY",
-   "25": "OPTION_ASGN",
-   "26": "EXPIRATION",
-   "27": "MATURITY",
-   "28": "EQUAL_POS_ADJ",
-   "29": "UNEQUAL_POS_ADJ",
-   "30": "CORRECTION",
-   "31": "EARLY_TERMINATION",
-   "32": "RERATE",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "novation": "0",
-   "partialnovation": "1",
-   "tradeunwind": "2",
-   "partialtradeunwind": "3",
-   "exercise": "4",
-   "netting": "5",
-   "fullnetting": "6",
-   "partialnetting": "7",
-   "amendment": "8",
-   "increase": "9",
-   "creditevent": "10",
-   "strategicrestructuring": "11",
-   "successioneventreorganization": "12",
-   "successioneventrenaming": "13",
-   "porting": "14",
-   "withdrawl": "15",
-   "void": "16",
-   "accounttransfer": "17",
-   "giveup": "18",
-   "takeup": "19",
-   "averagepricing": "20",
-   "reversal": "21",
-   "alloctrdposting": "22",
-   "cascade": "23",
-   "delivery": "24",
-   "optionasgn": "25",
-   "expiration": "26",
-   "maturity": "27",
-   "equalposadj": "28",
-   "unequalposadj": "29",
-   "correction": "30",
-   "earlytermination": "31",
-   "rerate": "32",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "novation",
-   "1": "partialnovation",
-   "2": "tradeunwind",
-   "3": "partialtradeunwind",
-   "4": "exercise",
-   "5": "netting",
-   "6": "fullnetting",
-   "7": "partialnetting",
-   "8": "amendment",
-   "9": "increase",
-   "10": "creditevent",
-   "11": "strategicrestructuring",
-   "12": "successioneventreorganization",
-   "13": "successioneventrenaming",
-   "14": "porting",
-   "15": "withdrawl",
-   "16": "void",
-   "17": "accounttransfer",
-   "18": "giveup",
-   "19": "takeup",
-   "20": "averagepricing",
-   "21": "reversal",
-   "22": "alloctrdposting",
-   "23": "cascade",
-   "24": "delivery",
-   "25": "optionasgn",
-   "26": "expiration",
-   "27": "maturity",
-   "28": "equalposadj",
-   "29": "unequalposadj",
-   "30": "correction",
-   "31": "earlytermination",
-   "32": "rerate",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NOVATION"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PARTIAL_NOVATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "TRADE_UNWIND"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PARTIAL_TRADE_UNWIND"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXERCISE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "NETTING"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "FULL_NETTING"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "PARTIAL_NETTING"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "AMENDMENT"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "INCREASE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_EVENT"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "STRATEGIC_RESTRUCTURING"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSION_EVENT_REORGANIZATION"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSION_EVENT_RENAMING"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "PORTING"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "WITHDRAWL"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "VOID"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "ACCOUNT_TRANSFER"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "GIVE_UP"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "TAKE_UP"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_PRICING"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "REVERSAL"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "ALLOC_TRD_POSTING"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "CASCADE"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "DELIVERY"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "OPTION_ASGN"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "EXPIRATION"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "MATURITY"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "EQUAL_POS_ADJ"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "UNEQUAL_POS_ADJ"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "CORRECTION"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "EARLY_TERMINATION"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "RERATE"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1938": {
   "name": "AssetClass",
@@ -6749,56 +8344,85 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "INTEREST_RATE",
-   "2": "CURRENCY",
-   "3": "CREDIT",
-   "4": "EQUITY",
-   "5": "COMMODITY",
-   "6": "OTHER",
-   "7": "CASH",
-   "8": "DEBT",
-   "9": "FUND",
-   "10": "LOAN_FACILITY",
-   "11": "INDEX"
-  },
-  "encoded": {
-   "interestrate": "1",
-   "currency": "2",
-   "credit": "3",
-   "equity": "4",
-   "commodity": "5",
-   "other": "6",
-   "cash": "7",
-   "debt": "8",
-   "fund": "9",
-   "loanfacility": "10",
-   "index": "11",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11"
-  },
-  "decoded": {
-   "1": "interestrate",
-   "2": "currency",
-   "3": "credit",
-   "4": "equity",
-   "5": "commodity",
-   "6": "other",
-   "7": "cash",
-   "8": "debt",
-   "9": "fund",
-   "10": "loanfacility",
-   "11": "index"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTEREST_RATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CREDIT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EQUITY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "CASH"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "DEBT"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "FUND"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "LOAN_FACILITY"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "INDEX"
+    ]
+   }
+  ]
  },
  "1939": {
   "name": "AssetSubClass",
@@ -6807,204 +8431,344 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "13": "METALS",
-   "14": "BULLION",
-   "15": "ENERGY",
-   "16": "COMMODITY_INDEX",
-   "17": "AGRICULTURAL",
-   "18": "ENVIRONMENTAL",
-   "19": "FREIGHT",
-   "41": "FERTILIZER",
-   "42": "INDUSTRIAL_PRODUCT",
-   "43": "INFLATION",
-   "44": "PAPER",
-   "45": "POLYPROPYLENE",
-   "46": "OFFICIAL_ECONOMIC_STATISTICS",
-   "4": "SINGLE_NAME",
-   "5": "CREDIT_INDEX",
-   "6": "INDEX_TRANCHE",
-   "7": "CREDIT_BASKET",
-   "3": "BASKET",
-   "38": "FX_CROSS_RATES",
-   "39": "FX_EMERGING_MARKETS",
-   "40": "FX_MAJORS",
-   "20": "GOVERNMENT",
-   "21": "AGENCY",
-   "22": "CORPORATE",
-   "23": "FINANCING",
-   "24": "MONEY_MARKET",
-   "25": "MORTGAGE",
-   "26": "MUNICIPAL",
-   "9": "COMMON",
-   "10": "PREFERRED",
-   "11": "EQUITY_INDEX",
-   "12": "EQUITY_BASKET",
-   "34": "DIVIDEND_INDEX",
-   "35": "STOCK_DIVIDEND",
-   "36": "EXCHANGE_TRADED_FUND",
-   "37": "VOLATILITY_INDEX",
-   "27": "MUTUAL_FUND",
-   "28": "COLLECTIVE_INVESTMENT_VEHICLE",
-   "29": "INVESTMENT_PROGRAM",
-   "30": "SPECIALIZED_ACCOUNT_PROGRAM",
-   "1": "SINGLE_CURRENCY",
-   "2": "CROSS_CURRENCY",
-   "31": "TERM_LOAN",
-   "32": "BRIDGE_LOAN",
-   "33": "LETTER_OF_CREDIT",
-   "8": "EXOTIC",
-   "47": "OTHER_C10",
-   "48": "OTHER"
-  },
-  "encoded": {
-   "metals": "13",
-   "bullion": "14",
-   "energy": "15",
-   "commodityindex": "16",
-   "agricultural": "17",
-   "environmental": "18",
-   "freight": "19",
-   "fertilizer": "41",
-   "industrialproduct": "42",
-   "inflation": "43",
-   "paper": "44",
-   "polypropylene": "45",
-   "officialeconomicstatistics": "46",
-   "singlename": "4",
-   "creditindex": "5",
-   "indextranche": "6",
-   "creditbasket": "7",
-   "basket": "3",
-   "fxcrossrates": "38",
-   "fxemergingmarkets": "39",
-   "fxmajors": "40",
-   "government": "20",
-   "agency": "21",
-   "corporate": "22",
-   "financing": "23",
-   "moneymarket": "24",
-   "mortgage": "25",
-   "municipal": "26",
-   "common": "9",
-   "preferred": "10",
-   "equityindex": "11",
-   "equitybasket": "12",
-   "dividendindex": "34",
-   "stockdividend": "35",
-   "exchangetradedfund": "36",
-   "volatilityindex": "37",
-   "mutualfund": "27",
-   "collectiveinvestmentvehicle": "28",
-   "investmentprogram": "29",
-   "specializedaccountprogram": "30",
-   "singlecurrency": "1",
-   "crosscurrency": "2",
-   "termloan": "31",
-   "bridgeloan": "32",
-   "letterofcredit": "33",
-   "exotic": "8",
-   "otherc10": "47",
-   "other": "48",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "41": "41",
-   "42": "42",
-   "43": "43",
-   "44": "44",
-   "45": "45",
-   "46": "46",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "3": "3",
-   "38": "38",
-   "39": "39",
-   "40": "40",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "34": "34",
-   "35": "35",
-   "36": "36",
-   "37": "37",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "1": "1",
-   "2": "2",
-   "31": "31",
-   "32": "32",
-   "33": "33",
-   "8": "8",
-   "47": "47",
-   "48": "48"
-  },
-  "decoded": {
-   "13": "metals",
-   "14": "bullion",
-   "15": "energy",
-   "16": "commodityindex",
-   "17": "agricultural",
-   "18": "environmental",
-   "19": "freight",
-   "41": "fertilizer",
-   "42": "industrialproduct",
-   "43": "inflation",
-   "44": "paper",
-   "45": "polypropylene",
-   "46": "officialeconomicstatistics",
-   "4": "singlename",
-   "5": "creditindex",
-   "6": "indextranche",
-   "7": "creditbasket",
-   "3": "basket",
-   "38": "fxcrossrates",
-   "39": "fxemergingmarkets",
-   "40": "fxmajors",
-   "20": "government",
-   "21": "agency",
-   "22": "corporate",
-   "23": "financing",
-   "24": "moneymarket",
-   "25": "mortgage",
-   "26": "municipal",
-   "9": "common",
-   "10": "preferred",
-   "11": "equityindex",
-   "12": "equitybasket",
-   "34": "dividendindex",
-   "35": "stockdividend",
-   "36": "exchangetradedfund",
-   "37": "volatilityindex",
-   "27": "mutualfund",
-   "28": "collectiveinvestmentvehicle",
-   "29": "investmentprogram",
-   "30": "specializedaccountprogram",
-   "1": "singlecurrency",
-   "2": "crosscurrency",
-   "31": "termloan",
-   "32": "bridgeloan",
-   "33": "letterofcredit",
-   "8": "exotic",
-   "47": "otherc10",
-   "48": "other"
-  }
+  "values": [
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "METALS"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "BULLION"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "ENERGY"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "COMMODITY_INDEX"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "AGRICULTURAL"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "ENVIRONMENTAL"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "FREIGHT"
+    ]
+   },
+   {
+    "value": "41",
+    "meaning": "",
+    "aliases": [
+     "FERTILIZER"
+    ]
+   },
+   {
+    "value": "42",
+    "meaning": "",
+    "aliases": [
+     "INDUSTRIAL_PRODUCT"
+    ]
+   },
+   {
+    "value": "43",
+    "meaning": "",
+    "aliases": [
+     "INFLATION"
+    ]
+   },
+   {
+    "value": "44",
+    "meaning": "",
+    "aliases": [
+     "PAPER"
+    ]
+   },
+   {
+    "value": "45",
+    "meaning": "",
+    "aliases": [
+     "POLYPROPYLENE"
+    ]
+   },
+   {
+    "value": "46",
+    "meaning": "",
+    "aliases": [
+     "OFFICIAL_ECONOMIC_STATISTICS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SINGLE_NAME"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_INDEX"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "INDEX_TRANCHE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "CREDIT_BASKET"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BASKET"
+    ]
+   },
+   {
+    "value": "38",
+    "meaning": "",
+    "aliases": [
+     "FX_CROSS_RATES"
+    ]
+   },
+   {
+    "value": "39",
+    "meaning": "",
+    "aliases": [
+     "FX_EMERGING_MARKETS"
+    ]
+   },
+   {
+    "value": "40",
+    "meaning": "",
+    "aliases": [
+     "FX_MAJORS"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "GOVERNMENT"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "AGENCY"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "CORPORATE"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "FINANCING"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "MONEY_MARKET"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "MORTGAGE"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "MUNICIPAL"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "COMMON"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "PREFERRED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_INDEX"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_BASKET"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "DIVIDEND_INDEX"
+    ]
+   },
+   {
+    "value": "35",
+    "meaning": "",
+    "aliases": [
+     "STOCK_DIVIDEND"
+    ]
+   },
+   {
+    "value": "36",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_TRADED_FUND"
+    ]
+   },
+   {
+    "value": "37",
+    "meaning": "",
+    "aliases": [
+     "VOLATILITY_INDEX"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "MUTUAL_FUND"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "COLLECTIVE_INVESTMENT_VEHICLE"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "INVESTMENT_PROGRAM"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "SPECIALIZED_ACCOUNT_PROGRAM"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SINGLE_CURRENCY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CROSS_CURRENCY"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "TERM_LOAN"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "BRIDGE_LOAN"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "LETTER_OF_CREDIT"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "EXOTIC"
+    ]
+   },
+   {
+    "value": "47",
+    "meaning": "",
+    "aliases": [
+     "OTHER_C10"
+    ]
+   },
+   {
+    "value": "48",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1940": {
   "name": "AssetType",
@@ -7021,28 +8785,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "BS": "BASIS_SWAP",
-   "IX": "INDEX_SWAP",
-   "BB": "BROAD_BASED_SECURITY_SWAP",
-   "SK": "BASKET_SWAP"
-  },
-  "encoded": {
-   "basisswap": "BS",
-   "indexswap": "IX",
-   "broadbasedsecurityswap": "BB",
-   "basketswap": "SK",
-   "bs": "BS",
-   "ix": "IX",
-   "bb": "BB",
-   "sk": "SK"
-  },
-  "decoded": {
-   "BS": "basisswap",
-   "IX": "indexswap",
-   "BB": "broadbasedsecurityswap",
-   "SK": "basketswap"
-  }
+  "values": [
+   {
+    "value": "BS",
+    "meaning": "",
+    "aliases": [
+     "BASIS_SWAP"
+    ]
+   },
+   {
+    "value": "IX",
+    "meaning": "",
+    "aliases": [
+     "INDEX_SWAP"
+    ]
+   },
+   {
+    "value": "BB",
+    "meaning": "",
+    "aliases": [
+     "BROAD_BASED_SECURITY_SWAP"
+    ]
+   },
+   {
+    "value": "SK",
+    "meaning": "",
+    "aliases": [
+     "BASKET_SWAP"
+    ]
+   }
+  ]
  },
  "1942": {
   "name": "NthToDefault",
@@ -7083,28 +8855,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ZERO",
-   "1": "FIXED_RATE",
-   "2": "FLOATING_RATE",
-   "3": "STRUCTURED"
-  },
-  "encoded": {
-   "zero": "0",
-   "fixedrate": "1",
-   "floatingrate": "2",
-   "structured": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "zero",
-   "1": "fixedrate",
-   "2": "floatingrate",
-   "3": "structured"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ZERO"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIXED_RATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "FLOATING_RATE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "STRUCTURED"
+    ]
+   }
+  ]
  },
  "1947": {
   "name": "TotalIssuedAmount",
@@ -7129,44 +8909,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "D": "DAY",
-   "Wk": "WEEK",
-   "Mo": "MONTH",
-   "Yr": "YEAR",
-   "H": "HOUR",
-   "Min": "MINUTE",
-   "S": "SECOND",
-   "T": "TERM"
-  },
-  "encoded": {
-   "day": "D",
-   "week": "Wk",
-   "month": "Mo",
-   "year": "Yr",
-   "hour": "H",
-   "minute": "Min",
-   "second": "S",
-   "term": "T",
-   "d": "D",
-   "wk": "Wk",
-   "mo": "Mo",
-   "yr": "Yr",
-   "h": "H",
-   "min": "Min",
-   "s": "S",
-   "t": "T"
-  },
-  "decoded": {
-   "D": "day",
-   "Wk": "week",
-   "Mo": "month",
-   "Yr": "year",
-   "H": "hour",
-   "Min": "minute",
-   "S": "second",
-   "T": "term"
-  }
+  "values": [
+   {
+    "value": "D",
+    "meaning": "",
+    "aliases": [
+     "DAY"
+    ]
+   },
+   {
+    "value": "Wk",
+    "meaning": "",
+    "aliases": [
+     "WEEK"
+    ]
+   },
+   {
+    "value": "Mo",
+    "meaning": "",
+    "aliases": [
+     "MONTH"
+    ]
+   },
+   {
+    "value": "Yr",
+    "meaning": "",
+    "aliases": [
+     "YEAR"
+    ]
+   },
+   {
+    "value": "H",
+    "meaning": "",
+    "aliases": [
+     "HOUR"
+    ]
+   },
+   {
+    "value": "Min",
+    "meaning": "",
+    "aliases": [
+     "MINUTE"
+    ]
+   },
+   {
+    "value": "S",
+    "meaning": "",
+    "aliases": [
+     "SECOND"
+    ]
+   },
+   {
+    "value": "T",
+    "meaning": "",
+    "aliases": [
+     "TERM"
+    ]
+   }
+  ]
  },
  "1950": {
   "name": "CouponDayCount",
@@ -7175,108 +8975,176 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ONE_ONE",
-   "1": "THIRTY_THREE_SIXTY_US",
-   "2": "THIRTY_THREE_SIXTY_SIA",
-   "3": "THIRTY_THREE_SIXTY_M",
-   "4": "THIRTY_E_THREE_SIXTY",
-   "5": "THIRTY_E_THREE_SIXTY_ISDA",
-   "6": "ACT_THREE_SIXTY",
-   "7": "ACT_THREE_SIXTY_FIVE_FIXED",
-   "8": "ACT_ACT_AFB",
-   "9": "ACT_ACT_ICMA",
-   "10": "ACT_ACT_ISMA_ULTIMO",
-   "11": "ACT_ACT_ISDA",
-   "12": "BUS_TWO_FIFTY_TWO",
-   "13": "THIRTY_E_PLUS_THREE_SIXTY",
-   "14": "ACT_THREE_SIXTY_FIVE_L",
-   "15": "NL_THREE_SIXTY_FIVE",
-   "16": "NL_THREE_SIXTY",
-   "17": "ACT364",
-   "18": "THIRTY_THREE_SIXTY_FIVE",
-   "19": "THIRTY_ACTUAL",
-   "20": "THIRTY_THREE_SIXTY_ICMA",
-   "21": "THIRTY_E_TWO_THREE_SIXTY",
-   "22": "THIRTY_E_THREE_THREE_SIXTY",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "oneone": "0",
-   "thirtythreesixtyus": "1",
-   "thirtythreesixtysia": "2",
-   "thirtythreesixtym": "3",
-   "thirtyethreesixty": "4",
-   "thirtyethreesixtyisda": "5",
-   "actthreesixty": "6",
-   "actthreesixtyfivefixed": "7",
-   "actactafb": "8",
-   "actacticma": "9",
-   "actactismaultimo": "10",
-   "actactisda": "11",
-   "bustwofiftytwo": "12",
-   "thirtyeplusthreesixty": "13",
-   "actthreesixtyfivel": "14",
-   "nlthreesixtyfive": "15",
-   "nlthreesixty": "16",
-   "act364": "17",
-   "thirtythreesixtyfive": "18",
-   "thirtyactual": "19",
-   "thirtythreesixtyicma": "20",
-   "thirtyetwothreesixty": "21",
-   "thirtyethreethreesixty": "22",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "oneone",
-   "1": "thirtythreesixtyus",
-   "2": "thirtythreesixtysia",
-   "3": "thirtythreesixtym",
-   "4": "thirtyethreesixty",
-   "5": "thirtyethreesixtyisda",
-   "6": "actthreesixty",
-   "7": "actthreesixtyfivefixed",
-   "8": "actactafb",
-   "9": "actacticma",
-   "10": "actactismaultimo",
-   "11": "actactisda",
-   "12": "bustwofiftytwo",
-   "13": "thirtyeplusthreesixty",
-   "14": "actthreesixtyfivel",
-   "15": "nlthreesixtyfive",
-   "16": "nlthreesixty",
-   "17": "act364",
-   "18": "thirtythreesixtyfive",
-   "19": "thirtyactual",
-   "20": "thirtythreesixtyicma",
-   "21": "thirtyetwothreesixty",
-   "22": "thirtyethreethreesixty",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ONE_ONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_THREE_SIXTY_US"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_THREE_SIXTY_SIA"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_THREE_SIXTY_M"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_E_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_E_THREE_SIXTY_ISDA"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ACT_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ACT_THREE_SIXTY_FIVE_FIXED"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "ACT_ACT_AFB"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "ACT_ACT_ICMA"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ACT_ACT_ISMA_ULTIMO"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "ACT_ACT_ISDA"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "BUS_TWO_FIFTY_TWO"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_E_PLUS_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "ACT_THREE_SIXTY_FIVE_L"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "NL_THREE_SIXTY_FIVE"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "NL_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "ACT364"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_THREE_SIXTY_FIVE"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_ACTUAL"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_THREE_SIXTY_ICMA"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_E_TWO_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "THIRTY_E_THREE_THREE_SIXTY"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "1951": {
   "name": "ConvertibleBondEquityID",
@@ -7309,28 +9177,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNKNOWN",
-   "1": "FIRST_LIEN",
-   "2": "SECOND_LIEN",
-   "3": "THIRD_LIEN"
-  },
-  "encoded": {
-   "unknown": "0",
-   "firstlien": "1",
-   "secondlien": "2",
-   "thirdlien": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "unknown",
-   "1": "firstlien",
-   "2": "secondlien",
-   "3": "thirdlien"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FIRST_LIEN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SECOND_LIEN"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "THIRD_LIEN"
+    ]
+   }
+  ]
  },
  "1955": {
   "name": "LoanFacility",
@@ -7339,36 +9215,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BRIDGE_LOAN",
-   "1": "LETTER_OF_CREDIT",
-   "2": "REVOLVING_LOAN",
-   "3": "SWINGLINE_FUNDING",
-   "4": "TERM_LOAN",
-   "5": "TRADE_CLAIM"
-  },
-  "encoded": {
-   "bridgeloan": "0",
-   "letterofcredit": "1",
-   "revolvingloan": "2",
-   "swinglinefunding": "3",
-   "termloan": "4",
-   "tradeclaim": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "bridgeloan",
-   "1": "letterofcredit",
-   "2": "revolvingloan",
-   "3": "swinglinefunding",
-   "4": "termloan",
-   "5": "tradeclaim"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BRIDGE_LOAN"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LETTER_OF_CREDIT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REVOLVING_LOAN"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SWINGLINE_FUNDING"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "TERM_LOAN"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "TRADE_CLAIM"
+    ]
+   }
+  ]
  },
  "1956": {
   "name": "ReferenceEntityType",
@@ -7377,52 +9267,78 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ASIAN",
-   "2": "AUSTRALIAN_NEW_ZEALAND",
-   "3": "EUROPEAN_EMERGING_MARKETS",
-   "4": "JAPANESE",
-   "5": "NORTH_AMERICAN_HIGH_YIELD",
-   "6": "NORTH_AMERICAN_INSURANCE",
-   "7": "NORTH_AMERICAN_INVESTMENT_GRADE",
-   "8": "SINGAPOREAN",
-   "9": "WESTERN_EUROPEAN",
-   "10": "WESTERN_EUROPEAN_INSURANCE"
-  },
-  "encoded": {
-   "asian": "1",
-   "australiannewzealand": "2",
-   "europeanemergingmarkets": "3",
-   "japanese": "4",
-   "northamericanhighyield": "5",
-   "northamericaninsurance": "6",
-   "northamericaninvestmentgrade": "7",
-   "singaporean": "8",
-   "westerneuropean": "9",
-   "westerneuropeaninsurance": "10",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10"
-  },
-  "decoded": {
-   "1": "asian",
-   "2": "australiannewzealand",
-   "3": "europeanemergingmarkets",
-   "4": "japanese",
-   "5": "northamericanhighyield",
-   "6": "northamericaninsurance",
-   "7": "northamericaninvestmentgrade",
-   "8": "singaporean",
-   "9": "westerneuropean",
-   "10": "westerneuropeaninsurance"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ASIAN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AUSTRALIAN_NEW_ZEALAND"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "EUROPEAN_EMERGING_MARKETS"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "JAPANESE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "NORTH_AMERICAN_HIGH_YIELD"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "NORTH_AMERICAN_INSURANCE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "NORTH_AMERICAN_INVESTMENT_GRADE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "SINGAPOREAN"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "WESTERN_EUROPEAN"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "WESTERN_EUROPEAN_INSURANCE"
+    ]
+   }
+  ]
  },
  "1957": {
   "name": "IndexSeries",
@@ -7615,24 +9531,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BLOCK_TO_BE_ALLOCATED",
-   "1": "BLOCK_NOT_TO_BE_ALLOCATED",
-   "2": "ALLOCATED_TRADE"
-  },
-  "encoded": {
-   "blocktobeallocated": "0",
-   "blocknottobeallocated": "1",
-   "allocatedtrade": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "blocktobeallocated",
-   "1": "blocknottobeallocated",
-   "2": "allocatedtrade"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BLOCK_TO_BE_ALLOCATED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BLOCK_NOT_TO_BE_ALLOCATED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ALLOCATED_TRADE"
+    ]
+   }
+  ]
  },
  "1981": {
   "name": "NoUnderlyingEvents",

@@ -3,26 +3,44 @@
  "versions": [
   "5.0.SP1"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNotAffectedOrders",
-   "required": false,
-   "tag": 1370,
-   "members": [
-    {
-     "kind": "field",
-     "name": "NotAffOrigClOrdID",
-     "required": false,
-     "tag": 1372
+ "declaration": {
+  "name": "NotAffectedOrdersGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NotAffectedOrdersGrp"
+  },
+  "fields": [
+   {
+    "name": "NoNotAffectedOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1370"
     },
-    {
-     "kind": "field",
-     "name": "NotAffectedOrderID",
-     "required": false,
-     "tag": 1371
+    "item": {
+     "name": "NotAffectedOrder",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NotAffOrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1372"
+       }
+      },
+      {
+       "name": "NotAffectedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1371"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

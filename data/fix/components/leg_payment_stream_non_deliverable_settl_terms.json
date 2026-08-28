@@ -3,62 +3,99 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableRefCurrency",
-   "required": false,
-   "tag": 40359
+ "declaration": {
+  "name": "LegPaymentStreamNonDeliverableSettlTerms",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamNonDeliverableSettlTerms",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
-   "required": false,
-   "tag": 40360
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesRelativeTo",
-   "required": false,
-   "tag": 40362
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
-   "required": false,
-   "tag": 40363
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetUnit",
-   "required": false,
-   "tag": 40364
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetDayType",
-   "required": false,
-   "tag": 40365
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamNonDeliverableSettlRateSource",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegSettlRateDisruptionFallbackGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStreamNonDeliverableRefCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40359"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40360"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40362"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40363"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40364"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40365"
+    }
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableSettlRateSource",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamNonDeliverableSettlRateSource"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamNonDeliverableFixingDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegSettlRateDisruptionFallbackGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegSettlRateDisruptionFallbackGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

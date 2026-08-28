@@ -4,26 +4,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoDerivativeInstrAttrib",
-   "required": false,
-   "tag": 1311,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeInstrAttribType",
-     "required": false,
-     "tag": 1313
+ "declaration": {
+  "name": "DerivativeInstrumentAttribute",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeInstrumentAttribute",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoDerivativeInstrAttrib",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1311"
     },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrAttribValue",
-     "required": false,
-     "tag": 1314
+    "item": {
+     "name": "DerivativeInstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1313"
+       }
+      },
+      {
+       "name": "DerivativeInstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1314"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

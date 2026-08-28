@@ -11,6 +11,18 @@ SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
+#: What each contract's stored shape is on, so a bump is a deliberate edit
+#: here and not a number that drifted with a declaration.
+VERSIONS = {
+    "fixmsg.yaml": "2",
+    # 3 lifts the standard header out of `entries` into columns of its own.
+    "message.yaml": "3",
+    "instrument.yaml": "2",
+    "book.yaml": "2",
+    "order.yaml": "2",
+    "execution.yaml": "2",
+}
+
 PUBLISHED = {
     "fixmsg.yaml": FixMsg,
     "message.yaml": Message,
@@ -32,7 +44,7 @@ def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
     assert path.read_bytes() == contract.into_yaml()
     assert Field.from_dict(contract.into_dict()) == contract
     assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == "1"
+    assert contract.metadata["version"] == VERSIONS[path.name], "a stored shape changed"
 
 
 @pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))

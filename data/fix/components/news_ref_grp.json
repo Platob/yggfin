@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNewsRefIDs",
-   "required": false,
-   "tag": 1475,
-   "members": [
-    {
-     "kind": "field",
-     "name": "NewsRefID",
-     "required": false,
-     "tag": 1476
+ "declaration": {
+  "name": "NewsRefGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NewsRefGrp",
+   "msgtypes": "[\"News\"]"
+  },
+  "fields": [
+   {
+    "name": "NoNewsRefIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1475"
     },
-    {
-     "kind": "field",
-     "name": "NewsRefType",
-     "required": false,
-     "tag": 1477
+    "item": {
+     "name": "NewsRefID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NewsRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1476"
+       }
+      },
+      {
+       "name": "NewsRefType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1477"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

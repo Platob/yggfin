@@ -3,24 +3,33 @@
 ```python
 from rekep.enums import EventType
 
-kind = EventType.from_code(219)
+kind = EventType.from_int(5062401484197462016)
 assert kind is EventType.FACT
+assert str(kind) == "FACT"
 assert EventType.BOOK.is_snapshot
 ```
 
-Event types are banded by what a row asserts. Band markers are valid query
-boundaries as well as fallback values for unknown detailed codes.
+The stored `int64` is the event kind's ASCII mnemonic -- explicit spellings
+like `ORDER` and `EXECUTED`, packed big-endian left-justified with trailing
+NULs -- readable in raw column dumps, exact in scans. `from_int` answers only
+on the compiled codes: any other integer is `UNKNOWN`, never a near-miss
+respelling.
 
-| Key | Stored value | Meaning |
-| --- | ---: | --- |
-| `UNKNOWN` | 0 | No event kind was resolved. |
-| `MISC` | 10 | A recognized message outside the market event families. |
-| `INTENT` | 100 | Band floor for instructions. |
-| `ORDER` | 110 | An order instruction or lifecycle event. |
-| `QUOTE` | 120 | A quote instruction or response. |
-| `FACT` | 200 | Band floor for occurrences. |
-| `EXECUTION` | 210 | A trade or execution fact. |
-| `STATE` | 300 | Band floor for state snapshots. |
-| `BOOK` | 320 | An order-book delta or snapshot. |
-| `INSTRUMENT_STATE` | 400 | Band floor for instrument state. |
-| `INSTRUMENT` | 410 | Instrument reference state. |
+The order the bands read in rides in each member's *rank*. A kind question
+compares ranks (`kind.rank >= EventType.INTENT.rank`), and a storage scan
+filters on the finite code sets `ranked_at_least`/`ranked_below` spell rather
+than on a range of the stored value.
+
+| Key | Mnemonic | Stored value | Rank | Meaning |
+| --- | --- | ---: | ---: | --- |
+| `UNKNOWN` | `` | 0 | 0 | No event kind was resolved. |
+| `MISC` | `MISC` | 5569073961448243200 | 10 | A recognized message outside the market event families. |
+| `INTENT` | `INTENT` | 5282252069595774976 | 100 | Band floor for instructions. |
+| `ORDER` | `ORDER` | 5715705941605744640 | 110 | An order instruction or lifecycle event. |
+| `QUOTE` | `QUOTE` | 5860677713446043648 | 120 | A quote instruction or response. |
+| `FACT` | `FACT` | 5062401484197462016 | 200 | Band floor for occurrences. |
+| `EXECUTION` | `EXECUTED` | 4996819942064276804 | 210 | A trade or execution fact. |
+| `STATE` | `STATE` | 6004496033382400000 | 300 | Band floor for state snapshots. |
+| `BOOK` | `BOOK` | 4778124913204527104 | 320 | An order-book delta or snapshot. |
+| `INSTRUMENT_STATE` | `ISTATE` | 5283659427399139328 | 400 | Band floor for instrument state. |
+| `INSTRUMENT` | `INSTRMT` | 5282251034575328256 | 410 | Instrument reference state. |

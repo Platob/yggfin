@@ -25,10 +25,11 @@ import pyarrow.fs
 import pytest
 
 from rekep.enums import EventType
-from rekep.fields import Field
+from rekep.fields import Field, newest_rank
 from rekep.fix import FixRegistry
-from rekep.fix.entries import newest_rank
+from rekep.fix.entries import values_of
 from rekep.fix.fields import fix_field
+from rekep.fix.quickfix import is_group, members_of
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
 
 from .conftest import FIXTURES, fixture_page
@@ -49,9 +50,10 @@ EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
 #: What a store of those twelve fields holds: two tag shards (the fixture's
-#: tags straddle 500), two components and the version index. Derived from the
-#: fixture, then pinned, so a layout that stopped sharding fails here.
-EXPECTED_DOCUMENTS = 5
+#: tags straddle 500), two components, one message and the version index.
+#: Derived from the fixture, then pinned, so a layout that stopped sharding
+#: fails here.
+EXPECTED_DOCUMENTS = 6
 
 #: Where the fixture's `Side <54>` lands: tags 0 to 499.
 SIDE_SHARD = "fields/000000.json"
@@ -205,17 +207,17 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
     registry.fields("4.4")
     side = registry.field("Side", "4.4")
     assert side.name == "Side"
-    assert side.arrow_type == pyarrow.string(), "char projects to string"
+    assert side.dtype == pyarrow.string(), "char projects to string"
     assert side.nullable
     assert side.description == "Side of order."
     assert side.fix["type"] == "char"
-    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert side.fix.value_of("1").meaning == "Buy"
     assert "ExecutionReport" in json.loads(side.fix["msgtypes"])
 
 
 def test_a_boolean_field_projects_to_arrow_bool(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
-    assert registry.field(43, "4.4").arrow_type == pyarrow.bool_()
+    assert registry.field(43, "4.4").dtype == pyarrow.bool_()
 
 
 def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) -> None:
@@ -223,7 +225,7 @@ def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) 
     registry.fields("4.4")
     maturity = registry.field(205, "4.4")
     assert maturity.name == "MaturityDay"
-    assert maturity.arrow_type == pyarrow.string()
+    assert maturity.dtype == pyarrow.string()
     assert maturity.fix["note"] == "no longer used", "the parenthetical is annotation, not name"
 
 
@@ -246,14 +248,16 @@ def test_a_captured_page_fills_description_and_paragraph_values(
     side = captured[54]
     assert side.name == "Side"
     assert side.description == "Side of order."
-    assert json.loads(side.fix["values"]) == {
-        "1": "Buy",
-        "2": "Sell",
-        "3": "Buy minus",
-        "4": "Sell plus",
-        "5": "Sell short",
-        "6": "Sell short exempt",
-    }
+    assert side.fix.enumerated == values_of(
+        {
+            "1": "Buy",
+            "2": "Sell",
+            "3": "Buy minus",
+            "4": "Sell plus",
+            "5": "Sell short",
+            "6": "Sell short exempt",
+        }
+    )
     assert json.loads(side.fix["msgtypes"])[:2] == ["IndicationofInterest", "ExecutionReport"]
 
 
@@ -272,9 +276,8 @@ def test_message_links_that_are_values_are_not_read_as_messages(
 ) -> None:
     """MsgType lists its messages *as values*, and its own Used In is empty."""
     msg_type = captured[35]
-    values = json.loads(msg_type.fix["values"])
-    assert values["0"] == "Heartbeat"
-    assert values["D"] == "NewOrderSingle"
+    assert msg_type.fix.value_of("0").meaning == "Heartbeat"
+    assert msg_type.fix.value_of("D").meaning == "NewOrderSingle"
     assert "msgtypes" not in msg_type.fix, "the value links belong to the enumeration"
 
 
@@ -464,8 +467,8 @@ def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> 
         names = opened.namelist()
     written = [path.relative_to(dumped).as_posix() for path in dumped.rglob("*.json")]
     assert sorted(names) == sorted(written)
-    # Twelve fields in two tag shards, two components and the version index.
-    # Not a size claim -- five documents of a few hundred bytes each cost more
+    # Twelve fields in two tag shards, three blocks and the version index.
+    # Not a size claim -- six documents of a few hundred bytes each cost more
     # in zip headers than deflating them saves, and what compresses is the
     # whole dictionary (`tests/test_data.py`), not a fixture.
     assert len(names) == EXPECTED_DOCUMENTS
@@ -477,7 +480,7 @@ def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -
     prefixed = OfflineRegistry(cache_dir=rooted)
     assert prefixed.versions == OfflineRegistry(cache_dir=dumped).versions
     assert prefixed.field("Side").fix["tag"] == "54"
-    assert prefixed.component("Parties", "4.4").members[0].tag == 453
+    assert members_of(prefixed.component("Parties", "4.4"))[0].fix.tag == 453
 
 
 def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
@@ -676,10 +679,12 @@ def test_lookup_without_a_version_walks_them_newest_first(registry: FixtureRegis
     assert [member.fix["version"] for member in found] == ["4.4"]
 
 
-def test_an_unknown_field_raises_key_error(registry: FixtureRegistry) -> None:
+def test_an_unknown_field_is_answered_with_none(registry: FixtureRegistry) -> None:
+    """`field()` answers what it holds; `scalar()` is the one that insists."""
     registry.fields("4.4")
+    assert registry.field("NoSuchField") is None
     with pytest.raises(KeyError, match="NoSuchField"):
-        registry.field("NoSuchField")
+        registry.scalar("NoSuchField")
 
 
 def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
@@ -717,18 +722,23 @@ def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
     assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
 
 
-def test_msg_type_handlers_are_the_canonical_decodings() -> None:
-    registry = FixRegistry.from_builtin()
-    msg_type = registry.resolve("MsgType")
-    handlers = registry.msg_type_handlers()
+def test_a_standard_message_name_encodes_to_the_msgtype_that_spells_it() -> None:
+    """The one direction the dictionary keeps, and the one market dispatch uses.
 
-    assert all(msg_type.encode(handler) == value for value, handler in handlers.items())
-    assert {value: handlers[value] for value in ("8", "D", "W", "AE")} == {
-        "8": "executionreport",
-        "D": "newordersingle",
-        "W": "marketdatasnapshotfullrefresh",
-        "AE": "tradecapturereport",
+    There is no reverse: nothing asks the registry what `8` is called, because
+    the caller that has `8` already has the fact it needed."""
+    msg_type = FixRegistry.from_builtin().resolve("MsgType")
+
+    assert {
+        name: msg_type.fix.encode(name)
+        for name in ("executionreport", "newordersingle", "marketdatasnapshotfullrefresh")
+    } == {
+        "executionreport": "8",
+        "newordersingle": "D",
+        "marketdatasnapshotfullrefresh": "W",
     }
+    assert msg_type.fix.encode("TradeCaptureReport") == "AE", "however the caller spells it"
+    assert not hasattr(FixRegistry, "msg_type_handlers")
 
 
 def test_the_builtin_registry_classifies_msg_types_before_transcription() -> None:
@@ -770,17 +780,17 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
     assert begin.fix["version"] == "5.0.SP2"
 
     side = registry.scalar("Side")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["H"] == "SELL_UNDISCLOSED"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("H").aliases == ("SELL_UNDISCLOSED",)
     assert "Quote" in json.loads(side.fix["msgtypes"])
 
 
 def test_a_scalar_is_fresh_and_an_explicit_version_stays_exact() -> None:
     registry = FixRegistry.from_builtin()
-    first = registry.scalar("Price", name="px", arrow_type=None)
-    second = registry.scalar("Price", name="px", arrow_type=None)
+    first = registry.scalar("Price", name="px", dtype=None)
+    second = registry.scalar("Price", name="px", dtype=None)
     assert first == second and first is not second
-    assert first.name == "px" and first.arrow_type is None and first.nullable is None
+    assert first.name == "px" and first.dtype is None and first.nullable is None
     first.fix["tag"] = "999"
     assert second.fix["tag"] == "44"
 
@@ -843,8 +853,8 @@ def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
     """
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     side = next(field for field in registry.fields("4.4") if field.fix["tag"] == "54")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["1"] == "BUY"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("1").aliases == ("BUY",)
     assert side.description, "and the description the site alone has is still there"
 
 
@@ -854,14 +864,15 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     by_tag = {field.fix["tag"]: field for field in registry.fields("4.4")}
     assert "828" not in {"43", "54", "103", "205"}, "the fixture's extra tag"
     assert by_tag["828"].name == "TrdType"
-    assert by_tag["828"].arrow_type == pyarrow.int32(), "typed from the spec"
+    assert by_tag["828"].dtype == pyarrow.int32(), "typed from the spec"
     assert not by_tag["828"].description, "and with no prose, because there is none"
 
 
-def test_a_field_with_no_enumeration_gains_no_symbols(tmp_path: Path) -> None:
+def test_a_field_the_spec_does_not_enumerate_gains_no_symbols(tmp_path: Path) -> None:
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     listed = {field.fix["tag"]: field for field in registry.fields("4.4")}
-    assert "value_names" not in listed["103"].fix
+    assert listed["103"].fix.enumerated, "the site wrote the values up"
+    assert not any(one.aliases for one in listed["103"].fix.enumerated), "the spec did not"
 
 
 def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
@@ -877,20 +888,54 @@ def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
 
     fields = NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
     assert len(fields) == EXPECTED_LISTED, "every field the site listed is still here"
-    assert all("value_names" not in field.fix for field in fields)
+    assert all(not any(one.aliases for one in field.fix.enumerated) for field in fields)
 
 
 # -- reusable components ----------------------------------------------------
 
 
 def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> None:
+    """The reusable blocks, and only those: a message is not read through."""
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     registry.fields("4.4")
     components = registry.components("4.4")
     assert [component.name for component in components] == ["Parties", "PtysSubGrp"]
     assert registry.component("PARTIES", "4.4") == components[0]
-    assert components[0].members[0].name == "NoPartyIDs"
-    assert components[0].members[0].tag == 453
+    opener = members_of(components[0])[0]
+    assert opener.name == "NoPartyIDs"
+    assert opener.fix.tag == 453
+    assert is_group(opener), "a count tag opens the group it counts"
+
+
+def test_a_message_is_declared_and_found_by_its_msgtype(tmp_path: Path) -> None:
+    """One record, one folder, two ways in: the name, and the wire code."""
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry.fields("4.4")
+    report = registry.merged_component("AE")
+    assert report.name == "TradeCaptureReport" and report.msg_type == "AE"
+    assert registry.merged_component("tradecapturereport") is report
+    assert registry.message_records() == {"AE": report}
+    assert [member.name for member in report.members] == ["TrdType", "Parties"]
+    # And the block it carries knows it is carried by it.
+    assert registry.merged_component("Parties").msgtypes == ("TradeCaptureReport",)
+    assert registry.merged_component("PtysSubGrp").msgtypes == ("TradeCaptureReport",)
+
+
+def test_group_delimiters_come_off_the_declared_components() -> None:
+    """What the market translator segments side and quote-set entries by."""
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    assert registry.group_delimiters("TrdCapRptSideGrp", ("NoSides",), "4.4") == ("Side",)
+    assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoQuoteEntries")) == (
+        "QuoteSetID",
+        "QuoteEntryID",
+    )
+
+
+def test_an_undeclared_group_chain_has_no_delimiters() -> None:
+    """None and not a partial answer: the caller falls back whole."""
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    assert registry.group_delimiters("NoSuchGrp", ("NoQuoteSets",), "4.4") is None
+    assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoSuchGrp"), "4.4") is None
 
 
 def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path) -> None:
@@ -898,7 +943,7 @@ def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path)
     plain._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     assert registry._stored_components("4.4") is None, "the old document has no key"
-    assert registry.component("Parties", "4.4").members[0].tag == 453
+    assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
     assert registry.fetched == [f"{registry.spec_url}/FIX44.xml"]
 
 
@@ -954,15 +999,16 @@ def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Pat
     """
     plain = FixRegistry(cache_dir=tmp_path / "fix")
     plain._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
-    assert "value_names" not in plain.field(54, "4.4").fix
+    assert not any(one.aliases for one in plain.field(54, "4.4").fix.enumerated)
 
     enriched = FixtureRegistry(cache_dir=tmp_path / "fix")
     assert enriched.enrich("4.4") == {"4.4": 1}, "the one stored field that enumerates"
     after = OfflineRegistry(cache_dir=tmp_path / "fix")
-    assert json.loads(after.field(54, "4.4").fix["value_names"])["1"] == "BUY"
-    assert json.loads(after.field(54, "4.4").fix["values"])["1"] == "Buy", "prose untouched"
+    stored = after.field(54, "4.4").fix.value_of("1")
+    assert stored.aliases == ("BUY",)
+    assert stored.meaning == "Buy", "prose untouched"
     assert after.session("4.4"), "and the session layer lands with it"
-    assert after.component("Parties", "4.4").members[0].name == "NoPartyIDs"
+    assert members_of(after.component("Parties", "4.4"))[0].name == "NoPartyIDs"
 
 
 def test_enriching_a_version_nothing_stored_does_nothing(tmp_path: Path) -> None:

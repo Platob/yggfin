@@ -3,24 +3,39 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegSecurityXMLLen",
-   "required": false,
-   "tag": 1871
+ "declaration": {
+  "name": "LegSecurityXML",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegSecurityXML",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegSecurityXML",
-   "required": false,
-   "tag": 1872
-  },
-  {
-   "kind": "field",
-   "name": "LegSecurityXMLSchema",
-   "required": false,
-   "tag": 1873
-  }
- ]
+  "fields": [
+   {
+    "name": "LegSecurityXMLLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1871"
+    }
+   },
+   {
+    "name": "LegSecurityXML",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1872"
+    }
+   },
+   {
+    "name": "LegSecurityXMLSchema",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1873"
+    }
+   }
+  ]
+ }
 }

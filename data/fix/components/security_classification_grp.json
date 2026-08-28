@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSecurityClassifications",
-   "required": false,
-   "tag": 1582,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SecurityClassificationReason",
-     "required": false,
-     "tag": 1583
+ "declaration": {
+  "name": "SecurityClassificationGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityClassificationGrp",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityList\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSecurityClassifications",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1582"
     },
-    {
-     "kind": "field",
-     "name": "SecurityClassificationValue",
-     "required": false,
-     "tag": 1584
+    "item": {
+     "name": "SecurityClassification",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SecurityClassificationReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1583"
+       }
+      },
+      {
+       "name": "SecurityClassificationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1584"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

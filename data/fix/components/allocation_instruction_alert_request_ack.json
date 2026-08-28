@@ -1,0 +1,55 @@
+{
+ "name": "AllocationInstructionAlertRequestAck",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "AllocationInstructionAlertRequestAck",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AllocationInstructionAlertRequestAck",
+   "msgtype": "DV"
+  },
+  "fields": [
+   {
+    "name": "AllocRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "2758"
+    }
+   },
+   {
+    "name": "AllocRequestStatus",
+    "type": "string",
+    "fix": {
+     "tag": "2768"
+    }
+   },
+   {
+    "name": "RejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1328"
+    }
+   },
+   {
+    "name": "EncodedRejectTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1664"
+    }
+   },
+   {
+    "name": "EncodedRejectText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1665"
+    }
+   }
+  ]
+ }
+}

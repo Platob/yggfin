@@ -3,62 +3,99 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableRefCurrency",
-   "required": false,
-   "tag": 40648
+ "declaration": {
+  "name": "UnderlyingPaymentStreamNonDeliverableSettlTerms",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingPaymentStreamNonDeliverableSettlTerms",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBizDayConvention",
-   "required": false,
-   "tag": 40649
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesRelativeTo",
-   "required": false,
-   "tag": 40651
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
-   "required": false,
-   "tag": 40652
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetUnit",
-   "required": false,
-   "tag": 40653
-  },
-  {
-   "kind": "field",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetDayType",
-   "required": false,
-   "tag": 40654
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamNonDeliverableSettlRateSource",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingPaymentStreamNonDeliverableFixingDateGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "UnderlyingSettlRateDisruptionFallbackGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableRefCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40648"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBizDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40649"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40651"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40652"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40653"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40654"
+    }
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableSettlRateSource",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamNonDeliverableSettlRateSource"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingPaymentStreamNonDeliverableFixingDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingPaymentStreamNonDeliverableFixingDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "UnderlyingSettlRateDisruptionFallbackGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingSettlRateDisruptionFallbackGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

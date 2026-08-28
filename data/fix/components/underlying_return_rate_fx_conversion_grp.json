@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingReturnRateFXConversions",
-   "required": false,
-   "tag": 43030,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateFXCurrencySymbol",
-     "required": false,
-     "tag": 43031
+ "declaration": {
+  "name": "UnderlyingReturnRateFXConversionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingReturnRateFXConversionGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingReturnRateFXConversions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43030"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateFXRate",
-     "required": false,
-     "tag": 43032
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateFXRateCalc",
-     "required": false,
-     "tag": 43033
+    "item": {
+     "name": "UnderlyingReturnRateFXConversion",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRateFXCurrencySymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43031"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43032"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43033"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -1,0 +1,80 @@
+{
+ "name": "SecurityMassStatusRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SecurityMassStatusRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecurityMassStatusRequest",
+   "msgtype": "CN"
+  },
+  "fields": [
+   {
+    "name": "SecurityStatusReqID",
+    "type": "string",
+    "fix": {
+     "tag": "324"
+    }
+   },
+   {
+    "name": "InstrumentScope",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScope"
+    },
+    "fields": []
+   },
+   {
+    "name": "SubscriptionRequestType",
+    "type": "string",
+    "fix": {
+     "tag": "263"
+    }
+   },
+   {
+    "name": "SecurityListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1465"
+    }
+   },
+   {
+    "name": "MarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1301"
+    }
+   },
+   {
+    "name": "MarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1300"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   }
+  ]
+ }
+}

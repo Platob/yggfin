@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingReturnRateInformationSources",
-   "required": false,
-   "tag": 43060,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "UnderlyingReturnRateInformationSourceGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingReturnRateInformationSourceGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingReturnRateInformationSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "43060"
+    },
+    "item": {
      "name": "UnderlyingReturnRateInformationSource",
-     "required": false,
-     "tag": 43061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateReferencePage",
-     "required": false,
-     "tag": 43062
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingReturnRateReferencePageHeading",
-     "required": false,
-     "tag": 43063
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRateInformationSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43061"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43062"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43063"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

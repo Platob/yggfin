@@ -1,0 +1,66 @@
+{
+ "name": "PartyRiskLimitsDefinitionRequest",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PartyRiskLimitsDefinitionRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyRiskLimitsDefinitionRequest",
+   "msgtype": "CS"
+  },
+  "fields": [
+   {
+    "name": "RiskLimitRequestID",
+    "type": "string",
+    "fix": {
+     "tag": "1666"
+    }
+   },
+   {
+    "name": "RequestingPartyGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RequestingPartyGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PartyRiskLimitsUpdateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PartyRiskLimitsUpdateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

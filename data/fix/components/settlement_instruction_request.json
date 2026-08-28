@@ -1,0 +1,163 @@
+{
+ "name": "SettlementInstructionRequest",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "SettlementInstructionRequest",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SettlementInstructionRequest",
+   "msgtype": "AV"
+  },
+  "fields": [
+   {
+    "name": "SettlInstReqID",
+    "type": "string",
+    "fix": {
+     "tag": "791"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "AllocAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "79"
+    }
+   },
+   {
+    "name": "AllocAcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "661"
+    }
+   },
+   {
+    "name": "Side",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "54"
+    }
+   },
+   {
+    "name": "Product",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "460"
+    }
+   },
+   {
+    "name": "SecurityType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "167"
+    }
+   },
+   {
+    "name": "CFICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "461"
+    }
+   },
+   {
+    "name": "UPICode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2891"
+    }
+   },
+   {
+    "name": "SettlCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "120"
+    }
+   },
+   {
+    "name": "SettlCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2899"
+    }
+   },
+   {
+    "name": "EffectiveTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "168"
+    }
+   },
+   {
+    "name": "ExpireTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "126"
+    }
+   },
+   {
+    "name": "LastUpdateTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "779"
+    }
+   },
+   {
+    "name": "StandInstDbType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "169"
+    }
+   },
+   {
+    "name": "StandInstDbName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "170"
+    }
+   },
+   {
+    "name": "StandInstDbID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "171"
+    }
+   }
+  ]
+ }
+}

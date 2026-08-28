@@ -4,26 +4,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOfSecSizes",
-   "required": false,
-   "tag": 1177,
-   "members": [
-    {
-     "kind": "field",
-     "name": "MDSecSizeType",
-     "required": false,
-     "tag": 1178
+ "declaration": {
+  "name": "SecSizesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecSizesGrp",
+   "msgtypes": "[\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\"]"
+  },
+  "fields": [
+   {
+    "name": "NoOfSecSizes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1177"
     },
-    {
-     "kind": "field",
-     "name": "MDSecSize",
-     "required": false,
-     "tag": 1179
+    "item": {
+     "name": "OfSecSize",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDSecSizeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1178"
+       }
+      },
+      {
+       "name": "MDSecSize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1179"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

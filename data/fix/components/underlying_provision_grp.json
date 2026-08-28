@@ -3,204 +3,301 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingProvisions",
-   "required": false,
-   "tag": 42149,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionType",
-     "required": false,
-     "tag": 42150
+ "declaration": {
+  "name": "UnderlyingProvisionGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingProvisionGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingProvisions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42149"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionDateUnadjusted",
-     "required": false,
-     "tag": 42151
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionDateBusinessDayConvention",
-     "required": false,
-     "tag": 42152
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionDateAdjusted",
-     "required": false,
-     "tag": 42153
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionDateTenorPeriod",
-     "required": false,
-     "tag": 42154
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionDateTenorUnit",
-     "required": false,
-     "tag": 42155
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionBreakFeeElection",
-     "required": false,
-     "tag": 43002
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionBreakFeeRate",
-     "required": false,
-     "tag": 43003
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCalculationAgent",
-     "required": false,
-     "tag": 42156
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
-     "required": false,
-     "tag": 42157
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionSinglePartySellerSide",
-     "required": false,
-     "tag": 42158
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionCashSettlValueDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionOptionExerciseDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionOptionExpirationDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseStyle",
-     "required": false,
-     "tag": 42159
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
-     "required": false,
-     "tag": 42160
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
-     "required": false,
-     "tag": 42161
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
-     "required": false,
-     "tag": 42162
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionMinimumNumber",
-     "required": false,
-     "tag": 42163
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionMaximumNumber",
-     "required": false,
-     "tag": 42164
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionOptionExerciseConfirmation",
-     "required": false,
-     "tag": 42165
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionCashSettlPaymentDates",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlMethod",
-     "required": false,
-     "tag": 42166
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlCurrency",
-     "required": false,
-     "tag": 42167
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlCurrency2",
-     "required": false,
-     "tag": 42168
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionCashSettlQuoteType",
-     "required": false,
-     "tag": 42169
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionCashSettlQuoteSource",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingProvisionText",
-     "required": false,
-     "tag": 42170
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingProvisionTextLen",
-     "required": false,
-     "tag": 42171
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingProvisionText",
-     "required": false,
-     "tag": 42172
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingProvisionParties",
-     "required": false
+    "item": {
+     "name": "UnderlyingProvision",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42150"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42151"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42152"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionDateBusinessCenterGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42153"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateTenorPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42154"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateTenorUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42155"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionBreakFeeElection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43002"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionBreakFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43003"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42156"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42157"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionSinglePartySellerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42158"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlValueDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlValueDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExerciseDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExpirationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExpirationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionRelevantUnderlyingDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42159"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42160"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42161"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42162"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMinimumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42163"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMaximumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42164"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseConfirmation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42165"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlPaymentDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42166"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42167"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42168"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42169"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlQuoteSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42170"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42171"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42172"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionParties"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegContractualDefinitions",
-   "required": false,
-   "tag": 42198,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "LegFinancingContractualDefinitionsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegFinancingContractualDefinitionsGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"NewOrderCross\",\"News\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"QuoteCancel\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityListRequest\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegContractualDefinitions",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42198"
+    },
+    "item": {
      "name": "LegContractualDefinition",
-     "required": false,
-     "tag": 42199
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42199"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -21,12 +21,13 @@ import pytest
 
 BENCHMARKS = Path(__file__).resolve().parents[1] / "benchmarks"
 
-#: Every benchmark, and whether `--quick` can run here. The registry one
-#: scrapes the FIX dictionary over the network, which a test does not.
+#: Every benchmark, and whether `--quick` can run here. All six do: the
+#: registry one reads the published archive and a copy of it on disk, and
+#: answers every question from both rather than fetching anything.
 SCRIPTS = {
     "bench_cast": True,
     "bench_fix": True,
-    "bench_fix_registry": False,
+    "bench_fix_registry": True,
     "bench_iceberg": True,
     "bench_market": True,
     "bench_text_file": True,

@@ -3,50 +3,77 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPriceRangeRules",
-   "required": false,
-   "tag": 2550,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StartPriceRange",
-     "required": false,
-     "tag": 2551
+ "declaration": {
+  "name": "PriceRangeRuleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PriceRangeRuleGrp",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPriceRangeRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2550"
     },
-    {
-     "kind": "field",
-     "name": "EndPriceRange",
-     "required": false,
-     "tag": 2552
-    },
-    {
-     "kind": "field",
-     "name": "PriceRangeValue",
-     "required": false,
-     "tag": 2553
-    },
-    {
-     "kind": "field",
-     "name": "PriceRangePercentage",
-     "required": false,
-     "tag": 2554
-    },
-    {
-     "kind": "field",
-     "name": "PriceRangeRuleID",
-     "required": false,
-     "tag": 2556
-    },
-    {
-     "kind": "field",
-     "name": "PriceRangeProductComplex",
-     "required": false,
-     "tag": 2555
+    "item": {
+     "name": "PriceRangeRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StartPriceRange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2551"
+       }
+      },
+      {
+       "name": "EndPriceRange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2552"
+       }
+      },
+      {
+       "name": "PriceRangeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2553"
+       }
+      },
+      {
+       "name": "PriceRangePercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2554"
+       }
+      },
+      {
+       "name": "PriceRangeRuleID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2556"
+       }
+      },
+      {
+       "name": "PriceRangeProductComplex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2555"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

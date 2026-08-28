@@ -6,80 +6,117 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoBidDescriptors",
-   "required": false,
-   "tag": 398,
-   "members": [
-    {
-     "kind": "field",
-     "name": "BidDescriptorType",
-     "required": false,
-     "tag": 399
+ "declaration": {
+  "name": "BidDescReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BidDescReqGrp",
+   "msgtypes": "[\"BidRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoBidDescriptors",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "398"
     },
-    {
-     "kind": "field",
+    "item": {
      "name": "BidDescriptor",
-     "required": false,
-     "tag": 400
-    },
-    {
-     "kind": "field",
-     "name": "SideValueInd",
-     "required": false,
-     "tag": 401
-    },
-    {
-     "kind": "field",
-     "name": "LiquidityValue",
-     "required": false,
-     "tag": 404
-    },
-    {
-     "kind": "field",
-     "name": "LiquidityNumSecurities",
-     "required": false,
-     "tag": 441
-    },
-    {
-     "kind": "field",
-     "name": "LiquidityPctLow",
-     "required": false,
-     "tag": 402
-    },
-    {
-     "kind": "field",
-     "name": "LiquidityPctHigh",
-     "required": false,
-     "tag": 403
-    },
-    {
-     "kind": "field",
-     "name": "EFPTrackingError",
-     "required": false,
-     "tag": 405
-    },
-    {
-     "kind": "field",
-     "name": "FairValue",
-     "required": false,
-     "tag": 406
-    },
-    {
-     "kind": "field",
-     "name": "OutsideIndexPct",
-     "required": false,
-     "tag": 407
-    },
-    {
-     "kind": "field",
-     "name": "ValueOfFutures",
-     "required": false,
-     "tag": 408
+     "type": "struct",
+     "fields": [
+      {
+       "name": "BidDescriptorType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "399"
+       }
+      },
+      {
+       "name": "BidDescriptor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "400"
+       }
+      },
+      {
+       "name": "SideValueInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "401"
+       }
+      },
+      {
+       "name": "LiquidityValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "404"
+       }
+      },
+      {
+       "name": "LiquidityNumSecurities",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "441"
+       }
+      },
+      {
+       "name": "LiquidityPctLow",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "402"
+       }
+      },
+      {
+       "name": "LiquidityPctHigh",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "403"
+       }
+      },
+      {
+       "name": "EFPTrackingError",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "405"
+       }
+      },
+      {
+       "name": "FairValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "406"
+       }
+      },
+      {
+       "name": "OutsideIndexPct",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "407"
+       }
+      },
+      {
+       "name": "ValueOfFutures",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "408"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

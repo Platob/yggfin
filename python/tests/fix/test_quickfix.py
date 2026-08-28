@@ -13,31 +13,38 @@ from pathlib import Path
 
 import pytest
 
+from rekep.fields import Field
 from rekep.fix.quickfix import (
     SPEC_VERSIONS,
-    SpecComponent,
-    SpecComponentRef,
-    SpecFieldRef,
-    SpecGroup,
-    parse_components,
+    block,
+    entry_name,
+    entry_of,
+    field_member,
+    group_member,
+    is_group,
+    is_reference,
+    members_of,
+    parse_declarations,
     parse_session,
     parse_spec,
+    reference_member,
     spec_name,
 )
 
 SPEC = (Path(__file__).parent / "fixtures" / "FIX44.xml").read_text()
 
-#: Derived from the fixture, then pinned: its fields, values, and components.
+#: Derived from the fixture, then pinned: its fields, values, and the blocks
+#: it declares -- two components and the one message.
 EXPECTED_FIELDS = 11
 EXPECTED_VALUES = 6
-EXPECTED_COMPONENTS = 2
+EXPECTED_DECLARATIONS = 3
 
 
 def test_the_fixture_is_the_shape_the_tests_assume() -> None:
     parsed = parse_spec(SPEC)
     assert len(parsed) == EXPECTED_FIELDS
     assert sum(len(field.values) for field in parsed.values()) == EXPECTED_VALUES
-    assert len(parse_components(SPEC)) == EXPECTED_COMPONENTS
+    assert len(parse_declarations(SPEC)) == EXPECTED_DECLARATIONS
 
 
 # -- which file is which version ----------------------------------------------
@@ -95,7 +102,7 @@ def test_a_document_that_is_not_a_spec_reads_as_nothing() -> None:
     assert parse_spec("") == {}
     assert parse_spec("<fix><fields>") == {}
     assert parse_spec("not xml at all") == {}
-    assert parse_components("<broken") == {}
+    assert parse_declarations("<broken") == {}
     assert parse_session("<broken") == ()
 
 
@@ -115,49 +122,112 @@ def test_a_field_missing_its_number_or_name_is_skipped_rather_than_guessed() -> 
 
 
 def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
-    parties = parse_components(SPEC)["Parties"]
-    assert isinstance(parties, SpecComponent)
-    assert [member.name for member in parties.members] == ["NoPartyIDs"]
-    group = parties.members[0]
-    assert isinstance(group, SpecGroup)
-    assert group.tag == 453
-    assert [member.name for member in group.members] == [
+    parties = parse_declarations(SPEC)["Parties"]
+    assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
+    group = members_of(parties)[0]
+    assert is_group(group)
+    assert group.fix.tag == 453
+    rows = members_of(entry_of(group))
+    assert [member.name for member in rows] == [
         "PartyID",
         "PartyIDSource",
         "PartyRole",
         "PtysSubGrp",
     ]
-    assert [member.tag for member in group.members[:3] if isinstance(member, SpecFieldRef)] == [
-        448,
-        447,
-        452,
-    ]
-    assert isinstance(group.members[-1], SpecComponentRef)
+    assert [member.fix.tag for member in rows[:3]] == [448, 447, 452]
+    assert is_reference(rows[-1])
 
 
 def test_a_nested_group_is_its_own_component_declaration() -> None:
-    subgroup = parse_components(SPEC)["PtysSubGrp"]
-    group = subgroup.members[0]
-    assert isinstance(group, SpecGroup)
-    assert (group.name, group.tag) == ("NoPartySubIDs", 802)
-    assert [(member.name, member.tag) for member in group.members] == [
+    subgroup = parse_declarations(SPEC)["PtysSubGrp"]
+    group = members_of(subgroup)[0]
+    assert is_group(group)
+    assert (group.name, group.fix.tag) == ("NoPartySubIDs", 802)
+    assert [(member.name, member.fix.tag) for member in members_of(entry_of(group))] == [
         ("PartySubID", 523),
         ("PartySubIDType", 803),
     ]
 
 
 def test_a_component_declaration_round_trips_as_a_typed_document() -> None:
-    parties = parse_components(SPEC)["Parties"]
-    rebuilt = SpecComponent.from_dict(parties.into_dict())
+    """The document is the declaration's own: a struct of structs and lists,
+    so what comes back is the same tree and not a resemblance of it."""
+    parties = parse_declarations(SPEC)["Parties"]
+    rebuilt = Field.from_dict(parties.into_dict())
     assert rebuilt == parties
-    assert isinstance(rebuilt.members[0], SpecGroup)
-    assert isinstance(rebuilt.members[0].members[-1], SpecComponentRef)
+    group = members_of(rebuilt)[0]
+    assert is_group(group)
+    assert is_reference(members_of(entry_of(group))[-1])
 
 
-def test_each_member_class_owns_its_stored_kind() -> None:
-    assert SpecFieldRef.into_kind() == "field"
-    assert SpecComponentRef.into_kind() == "component"
-    assert SpecGroup.into_kind() == "group"
+def test_a_round_trip_keeps_which_members_the_standard_requires() -> None:
+    """Requiredness is nullability now, and a dumped declaration that lost it
+    would read as a standard where nothing is mandatory."""
+    declared = block(
+        "Parties",
+        [
+            group_member(
+                "NoPartyIDs",
+                453,
+                [
+                    field_member("PartyID", 448),
+                    field_member("PartyIDSource", 447, required=True),
+                ],
+                required=True,
+            )
+        ],
+    )
+    rebuilt = Field.from_dict(declared.into_dict())
+    assert rebuilt == declared
+    group = members_of(rebuilt)[0]
+    assert group.nullable is False
+    assert [member.nullable for member in members_of(entry_of(group))] == [True, False]
+
+
+def test_each_member_kind_is_told_apart_by_its_shape() -> None:
+    """No member stores its kind any more: a group is a list, a reference is a
+    struct with no members yet, and a plain field is neither."""
+    plain = field_member("PartyID", 448)
+    group = group_member("NoPartyIDs", 453, [plain])
+    reference = reference_member("PtysSubGrp")
+    assert (is_group(plain), is_reference(plain)) == (False, False)
+    assert (is_group(group), is_reference(group)) == (True, False)
+    assert (is_group(reference), is_reference(reference)) == (False, True)
+
+
+@pytest.mark.parametrize(
+    ("group", "entry"),
+    [
+        # The count is dropped and the stem singularized -- 269 of the 507
+        # groups the dictionary declares land on a real field name this way.
+        ("NoPartyIDs", "PartyID"),
+        ("NoLegs", "Leg"),
+        ("NoMDEntries", "MDEntry"),
+        ("NoCapacities", "Capacity"),
+        # A stem that hisses takes `es`, one that does not takes `s`.
+        ("NoSecondaryAssetClasses", "SecondaryAssetClass"),
+        ("NoOfSecSizes", "OfSecSize"),
+        # The one plural in the whole dictionary no rule reaches...
+        ("NoContractualMatrices", "ContractualMatrix"),
+        # ...and the ones that were never plural to begin with.
+        ("NoRelatedSym", "RelatedSym"),
+        ("NoSecurityAltID", "SecurityAltID"),
+        ("NoPosAmt", "PosAmt"),
+        # A regular plural that merely looks Latin.
+        ("NoReturnRatePrices", "ReturnRatePrice"),
+    ],
+)
+def test_a_group_says_what_one_row_of_it_is(group: str, entry: str) -> None:
+    assert entry_name(group) == entry
+
+
+def test_the_entry_a_group_repeats_is_the_declaration_it_carries() -> None:
+    """Arrow would call it `item`; a FIX group repeats something named."""
+    group = group_member("NoPartyIDs", 453, [field_member("PartyID", 448)])
+
+    assert group.dtype.field(0).name == "PartyID"
+    assert entry_of(group).name == "PartyID"
+    assert [member.name for member in members_of(entry_of(group))] == ["PartyID"]
 
 
 def test_a_component_refusing_an_unknown_field_names_the_path() -> None:
@@ -167,7 +237,7 @@ def test_a_component_refusing_an_unknown_field_names_the_path() -> None:
     </component></components><fields/></fix>
     """
     with pytest.raises(ValueError, match="Parties.*Missing"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 def test_recursive_components_are_refused_by_their_chain() -> None:
@@ -178,7 +248,7 @@ def test_recursive_components_are_refused_by_their_chain() -> None:
     </components><fields/></fix>
     """
     with pytest.raises(ValueError, match=r"A -> B -> A"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 def test_an_unknown_component_reference_names_its_owner() -> None:
@@ -188,7 +258,7 @@ def test_an_unknown_component_reference_names_its_owner() -> None:
     </components><fields/></fix>
     """
     with pytest.raises(ValueError, match="Parties.*Missing"):
-        parse_components(document)
+        parse_declarations(document)
 
 
 # -- what every message carries -----------------------------------------------

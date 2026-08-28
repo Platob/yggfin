@@ -1,0 +1,188 @@
+{
+ "name": "PositionTransferInstruction",
+ "versions": [
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "PositionTransferInstruction",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PositionTransferInstruction",
+   "msgtype": "DL"
+  },
+  "fields": [
+   {
+    "name": "TransferInstructionID",
+    "type": "string",
+    "fix": {
+     "tag": "2436"
+    }
+   },
+   {
+    "name": "TransferID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2437"
+    }
+   },
+   {
+    "name": "TransferTransType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2439"
+    }
+   },
+   {
+    "name": "TransferType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2440"
+    }
+   },
+   {
+    "name": "TransferScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2441"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingBusinessDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "715"
+    }
+   },
+   {
+    "name": "TradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "75"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "UndInstrmtGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UndInstrmtGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PositionQty",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionQty"
+    },
+    "fields": []
+   },
+   {
+    "name": "ClearingTradePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1596"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "PriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "423"
+    }
+   },
+   {
+    "name": "PositionAmountData",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PositionAmountData"
+    },
+    "fields": []
+   },
+   {
+    "name": "Text",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "58"
+    }
+   },
+   {
+    "name": "EncodedTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "354"
+    }
+   },
+   {
+    "name": "EncodedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "355"
+    }
+   }
+  ]
+ }
+}

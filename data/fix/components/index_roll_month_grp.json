@@ -3,20 +3,37 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoIndexRollMonths",
-   "required": false,
-   "tag": 2734,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "IndexRollMonthGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "IndexRollMonthGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"Email\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"News\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoIndexRollMonths",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2734"
+    },
+    "item": {
      "name": "IndexRollMonth",
-     "required": false,
-     "tag": 2733
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IndexRollMonth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2733"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

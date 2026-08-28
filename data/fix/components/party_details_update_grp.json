@@ -3,25 +3,46 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyUpdates",
-   "required": false,
-   "tag": 1676,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ListUpdateAction",
-     "required": false,
-     "tag": 1324
+ "declaration": {
+  "name": "PartyDetailsUpdateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PartyDetailsUpdateGrp",
+   "msgtypes": "[\"PartyDetailsDefinitionRequest\",\"PartyDetailsListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartyUpdates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1676"
     },
-    {
-     "kind": "component",
-     "name": "PartyDetailGrp",
-     "required": false
+    "item": {
+     "name": "PartyUpdate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
+      },
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

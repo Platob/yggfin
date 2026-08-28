@@ -6,50 +6,83 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "DeliveryForm",
-   "required": false,
-   "tag": 668
+ "declaration": {
+  "name": "InstrumentExtension",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentExtension",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"Email\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"News\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\"]"
   },
-  {
-   "kind": "field",
-   "name": "PctAtRisk",
-   "required": false,
-   "tag": 869
-  },
-  {
-   "kind": "component",
-   "name": "AttrbGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "CommodityFinalPriceType",
-   "required": false,
-   "tag": 2736
-  },
-  {
-   "kind": "component",
-   "name": "IndexRollMonthGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "NextIndexRollDate",
-   "required": false,
-   "tag": 2738
-  },
-  {
-   "kind": "component",
-   "name": "FloatingRateIndex",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "ReferenceDataDateGrp",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "DeliveryForm",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "668"
+    }
+   },
+   {
+    "name": "PctAtRisk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "869"
+    }
+   },
+   {
+    "name": "AttrbGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "AttrbGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CommodityFinalPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2736"
+    }
+   },
+   {
+    "name": "IndexRollMonthGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "IndexRollMonthGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "NextIndexRollDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2738"
+    }
+   },
+   {
+    "name": "FloatingRateIndex",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FloatingRateIndex"
+    },
+    "fields": []
+   },
+   {
+    "name": "ReferenceDataDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ReferenceDataDateGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

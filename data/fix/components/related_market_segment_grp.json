@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedMarketSegments",
-   "required": false,
-   "tag": 2545,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RelatedMarketSegmentID",
-     "required": false,
-     "tag": 2546
+ "declaration": {
+  "name": "RelatedMarketSegmentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelatedMarketSegmentGrp",
+   "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedMarketSegments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2545"
     },
-    {
-     "kind": "field",
-     "name": "MarketSegmentRelationship",
-     "required": false,
-     "tag": 2547
+    "item": {
+     "name": "RelatedMarketSegment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2546"
+       }
+      },
+      {
+       "name": "MarketSegmentRelationship",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2547"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

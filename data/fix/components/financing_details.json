@@ -6,159 +6,226 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "AgreementDesc",
-   "required": false,
-   "tag": 913
+ "declaration": {
+  "name": "FinancingDetails",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FinancingDetails",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"Email\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderStatusRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\"]"
   },
-  {
-   "kind": "field",
-   "name": "AgreementID",
-   "required": false,
-   "tag": 914
-  },
-  {
-   "kind": "field",
-   "name": "AgreementVersion",
-   "required": false,
-   "tag": 1961
-  },
-  {
-   "kind": "field",
-   "name": "AgreementDate",
-   "required": false,
-   "tag": 915
-  },
-  {
-   "kind": "field",
-   "name": "AgreementCurrency",
-   "required": false,
-   "tag": 918
-  },
-  {
-   "kind": "field",
-   "name": "AgreementCurrencyCodeSource",
-   "required": false,
-   "tag": 2952
-  },
-  {
-   "kind": "field",
-   "name": "MasterConfirmationDesc",
-   "required": false,
-   "tag": 1962
-  },
-  {
-   "kind": "field",
-   "name": "MasterConfirmationDate",
-   "required": false,
-   "tag": 1963
-  },
-  {
-   "kind": "field",
-   "name": "MasterConfirmationAnnexDesc",
-   "required": false,
-   "tag": 1964
-  },
-  {
-   "kind": "field",
-   "name": "MasterConfirmationAnnexDate",
-   "required": false,
-   "tag": 1965
-  },
-  {
-   "kind": "field",
-   "name": "BrokerConfirmationDesc",
-   "required": false,
-   "tag": 1966
-  },
-  {
-   "kind": "component",
-   "name": "FinancingContractualDefinitionGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "FinancingTermSupplementGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "FinancingContractualMatrixGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "CreditSupportAgreementDesc",
-   "required": false,
-   "tag": 1967
-  },
-  {
-   "kind": "field",
-   "name": "CreditSupportAgreementDate",
-   "required": false,
-   "tag": 1968
-  },
-  {
-   "kind": "field",
-   "name": "CreditSupportAgreementID",
-   "required": false,
-   "tag": 1969
-  },
-  {
-   "kind": "field",
-   "name": "GoverningLaw",
-   "required": false,
-   "tag": 1970
-  },
-  {
-   "kind": "field",
-   "name": "DocumentationText",
-   "required": false,
-   "tag": 1513
-  },
-  {
-   "kind": "field",
-   "name": "EncodedDocumentationTextLen",
-   "required": false,
-   "tag": 1525
-  },
-  {
-   "kind": "field",
-   "name": "EncodedDocumentationText",
-   "required": false,
-   "tag": 1527
-  },
-  {
-   "kind": "field",
-   "name": "TerminationType",
-   "required": false,
-   "tag": 788
-  },
-  {
-   "kind": "field",
-   "name": "StartDate",
-   "required": false,
-   "tag": 916
-  },
-  {
-   "kind": "field",
-   "name": "EndDate",
-   "required": false,
-   "tag": 917
-  },
-  {
-   "kind": "field",
-   "name": "DeliveryType",
-   "required": false,
-   "tag": 919
-  },
-  {
-   "kind": "field",
-   "name": "MarginRatio",
-   "required": false,
-   "tag": 898
-  }
- ]
+  "fields": [
+   {
+    "name": "AgreementDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "913"
+    }
+   },
+   {
+    "name": "AgreementID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "914"
+    }
+   },
+   {
+    "name": "AgreementVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1961"
+    }
+   },
+   {
+    "name": "AgreementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "915"
+    }
+   },
+   {
+    "name": "AgreementCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "918"
+    }
+   },
+   {
+    "name": "AgreementCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2952"
+    }
+   },
+   {
+    "name": "MasterConfirmationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1962"
+    }
+   },
+   {
+    "name": "MasterConfirmationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1963"
+    }
+   },
+   {
+    "name": "MasterConfirmationAnnexDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1964"
+    }
+   },
+   {
+    "name": "MasterConfirmationAnnexDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1965"
+    }
+   },
+   {
+    "name": "BrokerConfirmationDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1966"
+    }
+   },
+   {
+    "name": "FinancingContractualDefinitionGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingContractualDefinitionGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingTermSupplementGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingTermSupplementGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "FinancingContractualMatrixGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingContractualMatrixGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "CreditSupportAgreementDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1967"
+    }
+   },
+   {
+    "name": "CreditSupportAgreementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1968"
+    }
+   },
+   {
+    "name": "CreditSupportAgreementID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1969"
+    }
+   },
+   {
+    "name": "GoverningLaw",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1970"
+    }
+   },
+   {
+    "name": "DocumentationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1513"
+    }
+   },
+   {
+    "name": "EncodedDocumentationTextLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1525"
+    }
+   },
+   {
+    "name": "EncodedDocumentationText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1527"
+    }
+   },
+   {
+    "name": "TerminationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "788"
+    }
+   },
+   {
+    "name": "StartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "916"
+    }
+   },
+   {
+    "name": "EndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "917"
+    }
+   },
+   {
+    "name": "DeliveryType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "919"
+    }
+   },
+   {
+    "name": "MarginRatio",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "898"
+    }
+   }
+  ]
+ }
 }

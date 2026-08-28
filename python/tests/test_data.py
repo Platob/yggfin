@@ -31,6 +31,7 @@ from rekep.fix.publish import (
     missing_from,
     publish_builtin,
 )
+from rekep.fix.quickfix import members_of
 from rekep.fix.store import NAMED_FILE, SHARD_SPAN, ConflictReport, shard_name
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
@@ -65,6 +66,14 @@ def records() -> dict[str, dict[str, object]]:
     return {key: record for shard in members("fields").values() for key, record in shard.items()}
 
 
+def stored_value(record: dict[str, object], value: str) -> dict[str, object]:
+    """One enumerated value out of a stored record, by what the wire carries."""
+    for one in record.get("values") or ():
+        if one["value"] == value:
+            return one
+    raise AssertionError(f"{record.get('name')} declares no value {value!r}")
+
+
 INDEX: dict[str, object] = member("versions.json")
 VERSIONS: list[str] = INDEX["versions"]
 
@@ -77,7 +86,10 @@ VERSIONS: list[str] = INDEX["versions"]
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
 EXPECTED_FIELD_RECORDS = 6074
-EXPECTED_COMPONENT_FILES = 730
+EXPECTED_COMPONENT_FILES = 900
+#: Of which these are messages: a message is a component that arrives under a
+#: MsgType, and the 171st is the dictionary's own `RekepInstrument <U1>`.
+EXPECTED_MESSAGE_FILES = 171
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"
@@ -181,33 +193,61 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
         assert all(str(name).isalnum() for name in record.get("components", ())), key
 
     msg_type = held["35"]
-    assert msg_type["values"]["8"] == "ExecutionReport"
+    assert stored_value(msg_type, "8")["meaning"] == "ExecutionReport"
+    assert stored_value(msg_type, "i")["meaning"] == "MassQuote"
     assert "handlers" not in msg_type
-    assert msg_type["encoded"]["executionreport"] == "8"
-    assert msg_type["encoded"]["massquote"] == "i"
-    assert msg_type["decoded"]["8"] == "executionreport"
+    assert "encoded" not in msg_type and "decoded" not in msg_type, (
+        "a lookup derived from the values is not stored beside them"
+    )
     assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
 
 
-def test_a_component_record_is_one_member_tree_and_its_versions() -> None:
-    """The same for a component: the newest tree, and who declares it."""
+def test_a_component_record_is_one_declaration_and_its_versions() -> None:
+    """The same for a component, and its declaration is a Field document: a
+    struct of members, a list where one of them repeats, and `fix` at every
+    level -- the shape every other declaration in this package is stored as."""
     parties = members("components")["parties"]
     assert parties["name"] == "Parties"
     assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
-    assert parties["members"][0]["name"] == "NoPartyIDs"
-    assert parties["members"][0]["tag"] == 453
-    assert "msg_type" not in parties, "a reusable block is not a message definition"
+    declared = parties["declaration"]
+    assert declared["type"] == "struct" and declared["fix"]["component"] == "Parties"
+    assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
+    carried = json.loads(declared["fix"]["msgtypes"])
+    assert {"NewOrderSingle", "ExecutionReport"} <= set(carried), "which messages carry it"
+    assert carried == sorted(carried)
+    group = declared["fields"][0]
+    assert group["name"] == "NoPartyIDs"
+    assert group["type"] == "list" and group["fix"]["tag"] == "453"
+    assert group["item"]["fields"][0]["name"] == "PartyID"
+
+
+def test_a_message_is_stored_as_the_component_it_is() -> None:
+    """One folder, one record shape: the MsgType is the whole difference."""
+    single = members("components")["new_order_single"]
+    assert single["name"] == "NewOrderSingle"
+    declared = single["declaration"]
+    assert declared["fix"]["msgtype"] == "D"
+    assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
+    assert [member["name"] for member in declared["fields"][:4]] == [
+        "ClOrdID",
+        "OrderRequestID",
+        "SecondaryClOrdID",
+        "ClOrdLinkID",
+    ], "the newest tree, as every record here keeps"
+    stored = members("components")
+    messages = [one for one in stored.values() if one["declaration"]["fix"].get("msgtype")]
+    assert len(messages) == EXPECTED_MESSAGE_FILES
+    assert len(stored) == EXPECTED_COMPONENT_FILES
 
 
 def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
     """The real dictionary uses one codec path for prose, symbols and values."""
-    stamps = registry.resolve("TrdRegTimestampType")
+    stamps = registry.resolve("TrdRegTimestampType").fix
     assert stamps.encode("Order Submission Time") == "10"
     assert stamps.encode("ORDER_SUBMISSION_TIME") == "10"
     assert stamps.encode("ordersubmissiontime") == "10"
     assert stamps.encode("10") == "10"
-    assert stamps.decode("10") == "ordersubmissiontime"
-    assert records()["770"]["encoded"]["ordersubmissiontime"] == "10"
+    assert stored_value(records()["770"], "10")["aliases"] == ["ORDER_SUBMISSION_TIME"]
 
 
 def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
@@ -275,7 +315,7 @@ def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
     assert side.fix["tag"] == "54"
     assert side.fix["version"] == "5.0.SP2", "the newest version that has it"
     assert side.description == "Side of order."
-    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert side.fix.value_of("1").meaning == "Buy"
     assert registry.field(35).name == "MsgType"
     assert [member.fix["version"] for member in registry.lookup("Side")] == [
         version for version in VERSIONS if version != "FIXT1.1"
@@ -318,11 +358,14 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    # Just under half of the published dictionary for two fields, and nearly all
-    # of the remainder is component declarations: those travel whole rather than being
+    # Three quarters of the published dictionary for two fields, and nearly all
+    # of the remainder is declarations: those travel whole rather than being
     # selected with the fields, because a component says where a repeating
     # group starts and ends and a tree missing members would end it elsewhere.
-    assert target.stat().st_size < DATA.stat().st_size * 51 // 100
+    # The messages are the bulk of them, and travel for the same reason: a
+    # projection that could not say what a `D` is would be one every reader
+    # had to fetch the whole dictionary to get past.
+    assert target.stat().st_size < DATA.stat().st_size * 80 // 100
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
     assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"
@@ -352,8 +395,8 @@ def test_the_builtin_projection_matches_the_published_versions(
     # spellings and the collapse keeps the older one as an alias. One of the
     # 170 is the vendor field, which `tags()` cannot map because it has no tag.
     assert len(builtin.tags()) == 177
-    assert len(builtin.field_entries()) == 180
-    assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
+    assert len(builtin.field_records()) == 180
+    assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     selected = {
         int(tag)
         for version in registry.versions
@@ -428,8 +471,8 @@ def test_the_builtin_projection_carries_the_component_declarations(
     builtin = FixRegistry.from_builtin()
     parties = builtin.component("Parties", "4.4")
     assert parties.name == "Parties"
-    assert [member.name for member in parties.members] == ["NoPartyIDs"]
-    assert parties.members[0].tag == 453
+    assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
+    assert members_of(parties)[0].fix.tag == 453
     for version in registry.versions:
         assert builtin.components_available(version), version
         assert builtin.components(version) == registry.components(version), version
@@ -505,9 +548,9 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     # The dictionary's own slips (`Quantity`, `Day`, `Stirng`) are older
     # versions' spellings, and a record keeps the newest -- which is the
     # correct one in each case, and never a string standing in for a number.
-    assert registry.field("RatioQty", "4.3").arrow_type == pyarrow.float64()
-    assert registry.field("MaturityDay", "4.1").arrow_type == pyarrow.int64()
-    assert registry.field("LegFutSettDate", "4.3").arrow_type == pyarrow.date32()
+    assert registry.field("RatioQty", "4.3").dtype == pyarrow.float64()
+    assert registry.field("MaturityDay", "4.1").dtype == pyarrow.int64()
+    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("ns")
 
 
 # -- the second source --------------------------------------------------------
@@ -523,15 +566,19 @@ def test_the_published_dictionary_carries_the_symbol_beside_the_description(
     wants an identifier should not have to invent one by upper-casing prose.
     """
     side = registry.field(54, "4.4")
-    assert json.loads(side.fix["values"])["1"] == "Buy"
-    assert json.loads(side.fix["value_names"])["1"] == "BUY"
-    assert json.loads(side.fix["value_names"])["3"] == "BUY_MINUS"
+    assert side.fix.value_of("1").meaning == "Buy"
+    assert side.fix.value_of("1").aliases == ("BUY",)
+    assert side.fix.value_of("3").aliases == ("BUY_MINUS",)
 
 
 def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry) -> None:
     """Derived from the archive, then pinned: a version that lost them fails here."""
     counted = {
-        version: sum(1 for member in registry.fields(version) if member.fix.get("value_names"))
+        version: sum(
+            1
+            for member in registry.fields(version)
+            if any(one.aliases for one in member.fix.enumerated)
+        )
         for version in registry.versions
     }
     assert counted == {
@@ -556,7 +603,7 @@ def test_a_symbol_is_never_written_where_a_description_goes(registry: OfflineReg
     shouted = 0
     for version in registry.versions:
         for member in registry.fields(version):
-            for text in json.loads(member.fix.get("values") or "{}").values():
+            for text in (one.meaning for one in member.fix.enumerated):
                 if text and text.isupper() and "_" in text:
                     shouted += 1
     assert shouted == 0

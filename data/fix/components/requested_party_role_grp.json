@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRequestedPartyRoles",
-   "required": false,
-   "tag": 1508,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RequestedPartyRole",
-     "required": false,
-     "tag": 1509
+ "declaration": {
+  "name": "RequestedPartyRoleGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RequestedPartyRoleGrp",
+   "msgtypes": "[\"PartyDetailsListRequest\",\"PartyEntitlementsRequest\",\"PartyRiskLimitsRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRequestedPartyRoles",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1508"
     },
-    {
-     "kind": "field",
-     "name": "RequestedPartyRoleQualifier",
-     "required": false,
-     "tag": 2386
+    "item": {
+     "name": "RequestedPartyRole",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestedPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1509"
+       }
+      },
+      {
+       "name": "RequestedPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2386"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegExtraordinaryEvents",
-   "required": false,
-   "tag": 42388,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegExtraordinaryEventType",
-     "required": false,
-     "tag": 42389
+ "declaration": {
+  "name": "LegExtraordinaryEventGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegExtraordinaryEventGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegExtraordinaryEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42388"
     },
-    {
-     "kind": "field",
-     "name": "LegExtraordinaryEventValue",
-     "required": false,
-     "tag": 42390
+    "item": {
+     "name": "LegExtraordinaryEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegExtraordinaryEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42389"
+       }
+      },
+      {
+       "name": "LegExtraordinaryEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42390"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

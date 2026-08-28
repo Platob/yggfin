@@ -6,50 +6,77 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSecurityTypes",
-   "required": false,
-   "tag": 558,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "SecTypesGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SecTypesGrp",
+   "msgtypes": "[\"SecurityTypes\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSecurityTypes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "558"
+    },
+    "item": {
      "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "SecuritySubType",
-     "required": false,
-     "tag": 762
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "UPICode",
-     "required": false,
-     "tag": 2891
-    },
-    {
-     "kind": "field",
-     "name": "TransactTime",
-     "required": false,
-     "tag": 60
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "167"
+       }
+      },
+      {
+       "name": "SecuritySubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "762"
+       }
+      },
+      {
+       "name": "Product",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "460"
+       }
+      },
+      {
+       "name": "CFICode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "461"
+       }
+      },
+      {
+       "name": "UPICode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2891"
+       }
+      },
+      {
+       "name": "TransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "60"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

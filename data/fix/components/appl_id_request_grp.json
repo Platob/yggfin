@@ -4,43 +4,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoApplIDs",
-   "required": false,
-   "tag": 1351,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RefApplID",
-     "required": false,
-     "tag": 1355
+ "declaration": {
+  "name": "ApplIDRequestGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ApplIDRequestGrp",
+   "msgtypes": "[\"ApplicationMessageRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoApplIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1351"
     },
-    {
-     "kind": "field",
-     "name": "RefApplReqID",
-     "required": false,
-     "tag": 1433
-    },
-    {
-     "kind": "field",
-     "name": "ApplBegSeqNum",
-     "required": false,
-     "tag": 1182
-    },
-    {
-     "kind": "field",
-     "name": "ApplEndSeqNum",
-     "required": false,
-     "tag": 1183
-    },
-    {
-     "kind": "component",
-     "name": "NestedParties",
-     "required": false
+    "item": {
+     "name": "ApplID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefApplID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1355"
+       }
+      },
+      {
+       "name": "RefApplReqID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1433"
+       }
+      },
+      {
+       "name": "ApplBegSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1182"
+       }
+      },
+      {
+       "name": "ApplEndSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1183"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

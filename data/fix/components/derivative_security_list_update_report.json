@@ -1,0 +1,118 @@
+{
+ "name": "DerivativeSecurityListUpdateReport",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "DerivativeSecurityListUpdateReport",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DerivativeSecurityListUpdateReport",
+   "msgtype": "BR"
+  },
+  "fields": [
+   {
+    "name": "ApplicationSequenceControl",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ApplicationSequenceControl"
+    },
+    "fields": []
+   },
+   {
+    "name": "SecurityReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "320"
+    }
+   },
+   {
+    "name": "SecurityResponseID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "322"
+    }
+   },
+   {
+    "name": "SecurityRequestResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "560"
+    }
+   },
+   {
+    "name": "SecurityUpdateAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "980"
+    }
+   },
+   {
+    "name": "UnderlyingInstrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "UnderlyingInstrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "DerivativeSecurityDefinition",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "DerivativeSecurityDefinition"
+    },
+    "fields": []
+   },
+   {
+    "name": "LastUpdateTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "779"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TotNoRelatedSym",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "393"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "893"
+    }
+   },
+   {
+    "name": "RelSymDerivSecUpdGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "RelSymDerivSecUpdGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

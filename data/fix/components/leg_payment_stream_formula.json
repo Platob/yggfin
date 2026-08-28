@@ -3,34 +3,57 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFormulaCurrency",
-   "required": false,
-   "tag": 42482
+ "declaration": {
+  "name": "LegPaymentStreamFormula",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStreamFormula",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFormulaCurrencyDeterminationMethod",
-   "required": false,
-   "tag": 42483
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStreamFormulaReferenceAmount",
-   "required": false,
-   "tag": 42484
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamFormulaMathGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStreamFormulaImage",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStreamFormulaCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42482"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFormulaCurrencyDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42483"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFormulaReferenceAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42484"
+    }
+   },
+   {
+    "name": "LegPaymentStreamFormulaMathGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamFormulaMathGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStreamFormulaImage",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStreamFormulaImage"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

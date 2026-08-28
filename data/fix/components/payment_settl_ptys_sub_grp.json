@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPaymentSettlPartySubIDs",
-   "required": false,
-   "tag": 40238,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentSettlPartySubID",
-     "required": false,
-     "tag": 40239
+ "declaration": {
+  "name": "PaymentSettlPtysSubGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentSettlPtysSubGrp",
+   "msgtypes": "[\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPaymentSettlPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40238"
     },
-    {
-     "kind": "field",
-     "name": "PaymentSettlPartySubIDType",
-     "required": false,
-     "tag": 40240
+    "item": {
+     "name": "PaymentSettlPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentSettlPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40239"
+       }
+      },
+      {
+       "name": "PaymentSettlPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40240"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

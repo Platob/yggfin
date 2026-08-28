@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoExecs",
-   "required": false,
-   "tag": 124,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LastQty",
-     "required": false,
-     "tag": 32
+ "declaration": {
+  "name": "ExecutionAggregationGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ExecutionAggregationGrp",
+   "msgtypes": "[\"TradeAggregationRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoExecs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "124"
     },
-    {
-     "kind": "field",
-     "name": "ExecID",
-     "required": false,
-     "tag": 17
-    },
-    {
-     "kind": "field",
-     "name": "TradeID",
-     "required": false,
-     "tag": 1003
-    },
-    {
-     "kind": "field",
-     "name": "LastPx",
-     "required": false,
-     "tag": 31
+    "item": {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

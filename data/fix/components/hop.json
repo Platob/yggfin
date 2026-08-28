@@ -3,32 +3,52 @@
  "versions": [
   "4.4"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoHops",
-   "required": false,
-   "tag": 627,
-   "members": [
-    {
-     "kind": "field",
-     "name": "HopCompID",
-     "required": false,
-     "tag": 628
+ "declaration": {
+  "name": "Hop",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Hop"
+  },
+  "fields": [
+   {
+    "name": "NoHops",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "627"
     },
-    {
-     "kind": "field",
-     "name": "HopSendingTime",
-     "required": false,
-     "tag": 629
-    },
-    {
-     "kind": "field",
-     "name": "HopRefID",
-     "required": false,
-     "tag": 630
+    "item": {
+     "name": "Hop",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "HopCompID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "628"
+       }
+      },
+      {
+       "name": "HopSendingTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "629"
+       }
+      },
+      {
+       "name": "HopRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "630"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

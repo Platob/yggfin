@@ -39,8 +39,8 @@ def lifted(codec: FixCodec, line: str = LINE) -> dict:
 
 def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
     column = pyarrow.array([line])
-    kwargs = codec.into_message_kwargs(codec.into_pairs(column, "FIX"))
-    done = codec.complete_kwargs(kwargs, "4.4")
+    entries = codec.into_message_entries(codec.into_pairs(column, "FIX"))
+    done = codec.complete_entries(entries, "4.4")
     return [(one["tag"], one["value"]) for one in done.to_pylist()[0]]
 
 
@@ -75,16 +75,19 @@ def test_a_tag_the_dictionary_does_not_number_reads_as_declared(registry: FixReg
     """Which is the whole point: a vendor tag no dictionary will ever carry."""
     codec = codec_of(registry, {"rules": [{"field": "9999", "type": "utctimestamp"}]})
     field = codec.tag_field(9999, "4.4")
-    assert field is not None and pyarrow.types.is_timestamp(field.arrow_type)
+    assert field is not None and pyarrow.types.is_timestamp(field.dtype)
     assert codec_of(registry).tag_field(9999, "4.4") is None
 
 
 def test_a_declared_type_is_held_as_arrow_spells_it() -> None:
     """A dumped rule states its unit and its zone whichever spelling wrote it."""
-    assert FieldRule(field="X", type="date").type == "date32[day]"
-    assert FieldRule(field="X", type="UTCDateOnly").type == "date32[day]"
     assert FieldRule(field="X", type="date32[day]").type == "date32[day]"
     assert FieldRule(field="X", type="int").type == "int32"
+    # A FIX datatype normalizes to what the dictionary projects it to, and
+    # every point in time projects to an instant. A rule that wants the day
+    # says so in Arrow's own spelling, which is the line above.
+    assert FieldRule(field="X", type="date").type == "timestamp[ns]"
+    assert FieldRule(field="X", type="UTCDateOnly").type == "timestamp[ns]"
 
 
 def test_a_type_that_is_neither_arrow_nor_fix_is_refused() -> None:
@@ -128,7 +131,7 @@ def test_declared_readings_round_trip_through_a_document() -> None:
     )
     back = FieldRules.from_dict(rules.into_dict())
     assert [one.field for one in back] == ["60", "Side"]
-    assert back.rules[0].arrow_type == pyarrow.date32()
+    assert back.rules[0].dtype == pyarrow.date32()
     assert back.rules[1].values == {"BUYSIDE": "1"}
 
 
@@ -157,10 +160,7 @@ def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: Fix
     ) as log:
         messages = log.into_arrow_table()
     rows = pyarrow.Table.from_batches(
-        [
-            FixMsg.from_message_arrow_batch(batch, codec_of(registry))
-            for batch in messages.to_batches()
-        ]
+        [FixMsg.from_message_batch(batch, codec_of(registry)) for batch in messages.to_batches()]
     )
     assert messages.num_rows == 1
     assert messages.column("plugin_code").to_pylist() == ["VendorBridge"]

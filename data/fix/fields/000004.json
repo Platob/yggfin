@@ -102,28 +102,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BOND",
-   "1": "CONVERTIBLE_BOND",
-   "2": "MORTGAGE",
-   "3": "LOAN"
-  },
-  "encoded": {
-   "bond": "0",
-   "convertiblebond": "1",
-   "mortgage": "2",
-   "loan": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "bond",
-   "1": "convertiblebond",
-   "2": "mortgage",
-   "3": "loan"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BOND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CONVERTIBLE_BOND"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MORTGAGE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "LOAN"
+    ]
+   }
+  ]
  },
  "2013": {
   "name": "UnderlyingAssetClass",
@@ -900,20 +908,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "BASE64",
-   "1": "RAW_BINARY"
-  },
-  "encoded": {
-   "base64": "0",
-   "rawbinary": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "base64",
-   "1": "rawbinary"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "BASE64"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RAW_BINARY"
+    ]
+   }
+  ]
  },
  "2110": {
   "name": "UnencodedAttachmentLen",
@@ -962,24 +972,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "AUTO_SPOT",
-   "1": "NEGOTIATED_SPOT",
-   "2": "PHONE_SPOT"
-  },
-  "encoded": {
-   "autospot": "0",
-   "negotiatedspot": "1",
-   "phonespot": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "autospot",
-   "1": "negotiatedspot",
-   "2": "phonespot"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "AUTO_SPOT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NEGOTIATED_SPOT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PHONE_SPOT"
+    ]
+   }
+  ]
  },
  "2116": {
   "name": "NextAuctionTime",
@@ -1028,40 +1043,57 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CLOSE",
-   "1": "OPEN",
-   "2": "OFFICIAL_SETTL",
-   "3": "VALUATION_TIME",
-   "4": "EXCAHGNE_SETTL_TIME",
-   "5": "DERIVATIVES_CLOSE",
-   "6": "AS_SPECIFIED"
-  },
-  "encoded": {
-   "close": "0",
-   "open": "1",
-   "officialsettl": "2",
-   "valuationtime": "3",
-   "excahgnesettltime": "4",
-   "derivativesclose": "5",
-   "asspecified": "6",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6"
-  },
-  "decoded": {
-   "0": "close",
-   "1": "open",
-   "2": "officialsettl",
-   "3": "valuationtime",
-   "4": "excahgnesettltime",
-   "5": "derivativesclose",
-   "6": "asspecified"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "OPEN"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFFICIAL_SETTL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "VALUATION_TIME"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "EXCAHGNE_SETTL_TIME"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "DERIVATIVES_CLOSE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "AS_SPECIFIED"
+    ]
+   }
+  ]
  },
  "2122": {
   "name": "ComplexOptPayoutCurrency",
@@ -1102,20 +1134,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CURRENCY1_PER_CURRENCY2",
-   "1": "CURRENCY2_PER_CURRENCY1"
-  },
-  "encoded": {
-   "currency1percurrency2": "0",
-   "currency2percurrency1": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "currency1percurrency2",
-   "1": "currency2percurrency1"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY1_PER_CURRENCY2"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CURRENCY2_PER_CURRENCY1"
+    ]
+   }
+  ]
  },
  "2127": {
   "name": "ComplexEventFixedFXRate",
@@ -1180,24 +1214,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SELLER_NOTIFIES",
-   "1": "BUYER_NOTIFIES",
-   "2": "SELLER_OR_BUYER_NOTIFIES"
-  },
-  "encoded": {
-   "sellernotifies": "0",
-   "buyernotifies": "1",
-   "sellerorbuyernotifies": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "sellernotifies",
-   "1": "buyernotifies",
-   "2": "sellerorbuyernotifies"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SELLER_NOTIFIES"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUYER_NOTIFIES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SELLER_OR_BUYER_NOTIFIES"
+    ]
+   }
+  ]
  },
  "2135": {
   "name": "ComplexEventCreditEventBusinessCenter",
@@ -1254,35 +1293,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "STD": "STRADDLE",
-   "STG": "STRANGLE",
-   "BF": "BUTTERFLY",
-   "CNDR": "CONDOR",
-   "CISN": "CALLABLE_INVERSIBLE_SNOWBALL",
-   "OTHER": "OTHER"
-  },
-  "encoded": {
-   "straddle": "STD",
-   "strangle": "STG",
-   "butterfly": "BF",
-   "condor": "CNDR",
-   "callableinversiblesnowball": "CISN",
-   "other": "OTHER",
-   "std": "STD",
-   "stg": "STG",
-   "bf": "BF",
-   "cndr": "CNDR",
-   "cisn": "CISN"
-  },
-  "decoded": {
-   "STD": "straddle",
-   "STG": "strangle",
-   "BF": "butterfly",
-   "CNDR": "condor",
-   "CISN": "callableinversiblesnowball",
-   "OTHER": "other"
-  }
+  "values": [
+   {
+    "value": "STD",
+    "meaning": "",
+    "aliases": [
+     "STRADDLE"
+    ]
+   },
+   {
+    "value": "STG",
+    "meaning": "",
+    "aliases": [
+     "STRANGLE"
+    ]
+   },
+   {
+    "value": "BF",
+    "meaning": "",
+    "aliases": [
+     "BUTTERFLY"
+    ]
+   },
+   {
+    "value": "CNDR",
+    "meaning": "",
+    "aliases": [
+     "CONDOR"
+    ]
+   },
+   {
+    "value": "CISN",
+    "meaning": "",
+    "aliases": [
+     "CALLABLE_INVERSIBLE_SNOWBALL"
+    ]
+   },
+   {
+    "value": "OTHER",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2142": {
   "name": "CommonPricingIndicator",
@@ -1299,20 +1353,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "NEGOTIATION",
-   "2": "CANCELLATION"
-  },
-  "encoded": {
-   "negotiation": "1",
-   "cancellation": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "negotiation",
-   "2": "cancellation"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "NEGOTIATION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CANCELLATION"
+    ]
+   }
+  ]
  },
  "2144": {
   "name": "InstrumentRoundingDirection",
@@ -1849,24 +1905,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "FINANCIALS",
-   "2": "COMMODITIES",
-   "3": "ALTERNATIVE_INVESTMENTS"
-  },
-  "encoded": {
-   "financials": "1",
-   "commodities": "2",
-   "alternativeinvestments": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "financials",
-   "2": "commodities",
-   "3": "alternativeinvestments"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "FINANCIALS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "COMMODITIES"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ALTERNATIVE_INVESTMENTS"
+    ]
+   }
+  ]
  },
  "2211": {
   "name": "LegStrategyType",
@@ -2715,20 +2776,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2317": {
   "name": "RiskLimitReportRejectReason",
@@ -2737,24 +2800,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNK_RISK_LMT_RPRT_ID",
-   "1": "UNK_PTY",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "unkrisklmtrprtid": "0",
-   "unkpty": "1",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "unkrisklmtrprtid",
-   "1": "unkpty",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNK_RISK_LMT_RPRT_ID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNK_PTY"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2318": {
   "name": "RiskLimitCheckRequestID",
@@ -2779,24 +2847,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "CANCEL",
-   "2": "REPLACE"
-  },
-  "encoded": {
-   "new": "0",
-   "cancel": "1",
-   "replace": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "cancel",
-   "2": "replace"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CANCEL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REPLACE"
+    ]
+   }
+  ]
  },
  "2321": {
   "name": "RiskLimitCheckType",
@@ -2805,20 +2878,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUBMIT",
-   "1": "LIMIT_CONSUMED"
-  },
-  "encoded": {
-   "submit": "0",
-   "limitconsumed": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "submit",
-   "1": "limitconsumed"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUBMIT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "LIMIT_CONSUMED"
+    ]
+   }
+  ]
  },
  "2322": {
   "name": "RiskLimitCheckRequestRefID",
@@ -2835,20 +2910,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ALL_OR_NONE",
-   "1": "PARTIAL"
-  },
-  "encoded": {
-   "allornone": "0",
-   "partial": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "allornone",
-   "1": "partial"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ALL_OR_NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PARTIAL"
+    ]
+   }
+  ]
  },
  "2324": {
   "name": "RiskLimitCheckAmount",
@@ -2865,32 +2942,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "APPROVED",
-   "1": "PARTIALLY_APPROVED",
-   "2": "REJECTED",
-   "3": "APPROVAL_PENDING",
-   "4": "CANCELLED"
-  },
-  "encoded": {
-   "approved": "0",
-   "partiallyapproved": "1",
-   "rejected": "2",
-   "approvalpending": "3",
-   "cancelled": "4",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4"
-  },
-  "decoded": {
-   "0": "approved",
-   "1": "partiallyapproved",
-   "2": "rejected",
-   "3": "approvalpending",
-   "4": "cancelled"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "APPROVED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PARTIALLY_APPROVED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "APPROVAL_PENDING"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "CANCELLED"
+    ]
+   }
+  ]
  },
  "2326": {
   "name": "RiskLimitCheckRequestResult",
@@ -2899,36 +2987,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_PARTY",
-   "2": "REQ_EXCEEDS_CREDIT_LIMIT",
-   "3": "REQ_EXCEEDS_CLIP_SIZE_LIMIT",
-   "4": "REQ_EXCEEDS_MAX_NOTIONAL",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidparty": "1",
-   "reqexceedscreditlimit": "2",
-   "reqexceedsclipsizelimit": "3",
-   "reqexceedsmaxnotional": "4",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidparty",
-   "2": "reqexceedscreditlimit",
-   "3": "reqexceedsclipsizelimit",
-   "4": "reqexceedsmaxnotional",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REQ_EXCEEDS_CREDIT_LIMIT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "REQ_EXCEEDS_CLIP_SIZE_LIMIT"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "REQ_EXCEEDS_MAX_NOTIONAL"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2327": {
   "name": "RiskLimitApprovedAmount",
@@ -2953,24 +3055,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUSPEND",
-   "1": "HALT_TRADING",
-   "2": "REINSTATE"
-  },
-  "encoded": {
-   "suspend": "0",
-   "halttrading": "1",
-   "reinstate": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "suspend",
-   "1": "halttrading",
-   "2": "reinstate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUSPEND"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "HALT_TRADING"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REINSTATE"
+    ]
+   }
+  ]
  },
  "2330": {
   "name": "ApplTestMessageIndicator",
@@ -2995,24 +3102,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "COMPLETED",
-   "2": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "completed": "1",
-   "rejected": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "completed",
-   "2": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "COMPLETED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2333": {
   "name": "PartyActionRejectReason",
@@ -3021,28 +3133,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INVALID_PARTY",
-   "1": "UNK_REQ_PARTY",
-   "98": "NOT_AUTHORIZED",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "invalidparty": "0",
-   "unkreqparty": "1",
-   "notauthorized": "98",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "98": "98",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "invalidparty",
-   "1": "unkreqparty",
-   "98": "notauthorized",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNK_REQ_PARTY"
+    ]
+   },
+   {
+    "value": "98",
+    "meaning": "",
+    "aliases": [
+     "NOT_AUTHORIZED"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2334": {
   "name": "RefRiskLimitCheckID",
@@ -3059,24 +3179,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RISK_LIMIT_REQUEST_ID",
-   "1": "RISK_LIMIT_CHECK_ID",
-   "3": "OUT_OF_BAND_ID"
-  },
-  "encoded": {
-   "risklimitrequestid": "0",
-   "risklimitcheckid": "1",
-   "outofbandid": "3",
-   "0": "0",
-   "1": "1",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "risklimitrequestid",
-   "1": "risklimitcheckid",
-   "3": "outofbandid"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RISK_LIMIT_REQUEST_ID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RISK_LIMIT_CHECK_ID"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "OUT_OF_BAND_ID"
+    ]
+   }
+  ]
  },
  "2336": {
   "name": "RiskLimitVelocityPeriod",
@@ -3109,28 +3234,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "PLUS_ONE_MODEL",
-   "2": "PING_MODEL",
-   "3": "PUSH_MODEL"
-  },
-  "encoded": {
-   "none": "0",
-   "plusonemodel": "1",
-   "pingmodel": "2",
-   "pushmodel": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "plusonemodel",
-   "2": "pingmodel",
-   "3": "pushmodel"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "PLUS_ONE_MODEL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PING_MODEL"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PUSH_MODEL"
+    ]
+   }
+  ]
  },
  "2340": {
   "name": "EventMonthYear",
@@ -3163,72 +3296,113 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "REJECTED",
-   "2": "CLAIM_REQUIRED",
-   "3": "PRE_DEFINED_LIMIT_CHECK_SUCCEEDED",
-   "4": "PRE_DEFINED_LIMIT_CHECK_FAILED",
-   "5": "PRE_DEFINED_AUTO_ACCEPT_RULE_INVOKED",
-   "6": "PRE_DEFINED_AUTO_REJECT_RULE_INVOKED",
-   "7": "ACCEPTED_BY_CLEARING_FIRM",
-   "8": "REJECTED_BY_CLEARING_FIRM",
-   "9": "PENDING",
-   "10": "ACCEPTED_BY_CREDIT_HUB",
-   "11": "REJECTED_BY_CREDIT_HUB",
-   "12": "PENDING_CREDIT_HUB_CHECK",
-   "13": "ACCEPTED_BY_EXEC_VENUE",
-   "14": "REJECTED_BY_EXEC_VENUE"
-  },
-  "encoded": {
-   "accepted": "0",
-   "rejected": "1",
-   "claimrequired": "2",
-   "predefinedlimitchecksucceeded": "3",
-   "predefinedlimitcheckfailed": "4",
-   "predefinedautoacceptruleinvoked": "5",
-   "predefinedautorejectruleinvoked": "6",
-   "acceptedbyclearingfirm": "7",
-   "rejectedbyclearingfirm": "8",
-   "pending": "9",
-   "acceptedbycredithub": "10",
-   "rejectedbycredithub": "11",
-   "pendingcredithubcheck": "12",
-   "acceptedbyexecvenue": "13",
-   "rejectedbyexecvenue": "14",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "rejected",
-   "2": "claimrequired",
-   "3": "predefinedlimitchecksucceeded",
-   "4": "predefinedlimitcheckfailed",
-   "5": "predefinedautoacceptruleinvoked",
-   "6": "predefinedautorejectruleinvoked",
-   "7": "acceptedbyclearingfirm",
-   "8": "rejectedbyclearingfirm",
-   "9": "pending",
-   "10": "acceptedbycredithub",
-   "11": "rejectedbycredithub",
-   "12": "pendingcredithubcheck",
-   "13": "acceptedbyexecvenue",
-   "14": "rejectedbyexecvenue"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLAIM_REQUIRED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PRE_DEFINED_LIMIT_CHECK_SUCCEEDED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "PRE_DEFINED_LIMIT_CHECK_FAILED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PRE_DEFINED_AUTO_ACCEPT_RULE_INVOKED"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PRE_DEFINED_AUTO_REJECT_RULE_INVOKED"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_BY_CLEARING_FIRM"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "REJECTED_BY_CLEARING_FIRM"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "PENDING"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_BY_CREDIT_HUB"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "REJECTED_BY_CREDIT_HUB"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "PENDING_CREDIT_HUB_CHECK"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_BY_EXEC_VENUE"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "REJECTED_BY_EXEC_VENUE"
+    ]
+   }
+  ]
  },
  "2344": {
   "name": "SideRiskLimitCheckStatus",
@@ -3261,24 +3435,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NONE",
-   "1": "SEF_REQUIRED_TRANSACTION",
-   "2": "SEF_PERMITTED_TRANSACTION"
-  },
-  "encoded": {
-   "none": "0",
-   "sefrequiredtransaction": "1",
-   "sefpermittedtransaction": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "none",
-   "1": "sefrequiredtransaction",
-   "2": "sefpermittedtransaction"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NONE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SEF_REQUIRED_TRANSACTION"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SEF_PERMITTED_TRANSACTION"
+    ]
+   }
+  ]
  },
  "2348": {
   "name": "LegAssetGroup",
@@ -3343,20 +3522,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DISABLED",
-   "1": "ENABLED"
-  },
-  "encoded": {
-   "disabled": "0",
-   "enabled": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "disabled",
-   "1": "enabled"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DISABLED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ENABLED"
+    ]
+   }
+  ]
  },
  "2356": {
   "name": "RemunerationIndicator",
@@ -3365,20 +3546,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_REMUNERATION_PAID",
-   "1": "REMUNERATION_PAID"
-  },
-  "encoded": {
-   "noremunerationpaid": "0",
-   "remunerationpaid": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "noremunerationpaid",
-   "1": "remunerationpaid"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_REMUNERATION_PAID"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REMUNERATION_PAID"
+    ]
+   }
+  ]
  },
  "2357": {
   "name": "LegTotalTradeQty",
@@ -3531,20 +3714,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "I": "ISIN_OR_ALT_INSTRMT_ID",
-   "E": "INTERIM_TAXONOMY"
-  },
-  "encoded": {
-   "isinoraltinstrmtid": "I",
-   "interimtaxonomy": "E",
-   "i": "I",
-   "e": "E"
-  },
-  "decoded": {
-   "I": "isinoraltinstrmtid",
-   "E": "interimtaxonomy"
-  }
+  "values": [
+   {
+    "value": "I",
+    "meaning": "",
+    "aliases": [
+     "ISIN_OR_ALT_INSTRMT_ID"
+    ]
+   },
+   {
+    "value": "E",
+    "meaning": "",
+    "aliases": [
+     "INTERIM_TAXONOMY"
+    ]
+   }
+  ]
  },
  "2376": {
   "name": "PartyRoleQualifier",
@@ -3641,24 +3826,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "DOES_NOT_APPLY",
-   "1": "CONTINGENT_TRADE",
-   "2": "NON_CONTINGENT_TRADE"
-  },
-  "encoded": {
-   "doesnotapply": "0",
-   "contingenttrade": "1",
-   "noncontingenttrade": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "doesnotapply",
-   "1": "contingenttrade",
-   "2": "noncontingenttrade"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "DOES_NOT_APPLY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CONTINGENT_TRADE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "NON_CONTINGENT_TRADE"
+    ]
+   }
+  ]
  },
  "2388": {
   "name": "RootPartyRoleQualifier",
@@ -3739,20 +3929,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "CLEARING_MEMBER",
-   "2": "CLIENT"
-  },
-  "encoded": {
-   "clearingmember": "1",
-   "client": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "clearingmember",
-   "2": "client"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CLEARING_MEMBER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CLIENT"
+    ]
+   }
+  ]
  },
  "2398": {
   "name": "SideRegulatoryTradeIDScope",
@@ -3793,44 +3985,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ORDER_ENTRY",
-   "2": "H_IT_LIFT",
-   "3": "VIEW_INDICATIVE_PX",
-   "4": "VIEW_EXECUTABLE_PX",
-   "5": "SINGLE_QUOTE",
-   "6": "STREAMING_QUOTES",
-   "7": "SINGLE_BROKER",
-   "8": "MULTI_BROKERS"
-  },
-  "encoded": {
-   "orderentry": "1",
-   "hitlift": "2",
-   "viewindicativepx": "3",
-   "viewexecutablepx": "4",
-   "singlequote": "5",
-   "streamingquotes": "6",
-   "singlebroker": "7",
-   "multibrokers": "8",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "1": "orderentry",
-   "2": "hitlift",
-   "3": "viewindicativepx",
-   "4": "viewexecutablepx",
-   "5": "singlequote",
-   "6": "streamingquotes",
-   "7": "singlebroker",
-   "8": "multibrokers"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ORDER_ENTRY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "H_IT_LIFT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "VIEW_INDICATIVE_PX"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "VIEW_EXECUTABLE_PX"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "SINGLE_QUOTE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "STREAMING_QUOTES"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "SINGLE_BROKER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "MULTI_BROKERS"
+    ]
+   }
+  ]
  },
  "2403": {
   "name": "QuoteModelType",
@@ -3839,20 +4051,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "QUOTE_ENTRY",
-   "2": "QUOTE_MODIFICATION"
-  },
-  "encoded": {
-   "quoteentry": "1",
-   "quotemodification": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "quoteentry",
-   "2": "quotemodification"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_ENTRY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "QUOTE_MODIFICATION"
+    ]
+   }
+  ]
  },
  "2404": {
   "name": "ComplianceText",
@@ -3869,28 +4083,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNSPECIFIED",
-   "1": "MANUAL",
-   "2": "AUTOMATED",
-   "3": "VOICE_BROKERED"
-  },
-  "encoded": {
-   "unspecified": "0",
-   "manual": "1",
-   "automated": "2",
-   "voicebrokered": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "unspecified",
-   "1": "manual",
-   "2": "automated",
-   "3": "voicebrokered"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNSPECIFIED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MANUAL"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATED"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "VOICE_BROKERED"
+    ]
+   }
+  ]
  },
  "2406": {
   "name": "AllocRegulatoryLegRefID",
@@ -4051,24 +4273,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ACCEPTED",
-   "2": "ACCEPTED_WITH_ADDITIONAL_EVENTS",
-   "3": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "1",
-   "acceptedwithadditionalevents": "2",
-   "rejected": "3",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "1": "accepted",
-   "2": "acceptedwithadditionalevents",
-   "3": "rejected"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED_WITH_ADDITIONAL_EVENTS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2426": {
   "name": "MassOrderRequestResult",
@@ -4077,32 +4304,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "RESPONSE_LEVEL_NOT_SUPPORTED",
-   "2": "INVALID_MARKET",
-   "3": "INVALID_MARKET_SEGMENT",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "responselevelnotsupported": "1",
-   "invalidmarket": "2",
-   "invalidmarketsegment": "3",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "responselevelnotsupported",
-   "2": "invalidmarket",
-   "3": "invalidmarketsegment",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RESPONSE_LEVEL_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_MARKET"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_MARKET_SEGMENT"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2427": {
   "name": "OrderResponseLevel",
@@ -4111,28 +4349,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NO_ACK",
-   "1": "MINIMUM_ACK",
-   "2": "ACK_EACH",
-   "3": "SUMMARY_ACK"
-  },
-  "encoded": {
-   "noack": "0",
-   "minimumack": "1",
-   "ackeach": "2",
-   "summaryack": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "noack",
-   "1": "minimumack",
-   "2": "ackeach",
-   "3": "summaryack"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NO_ACK"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "MINIMUM_ACK"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ACK_EACH"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "SUMMARY_ACK"
+    ]
+   }
+  ]
  },
  "2428": {
   "name": "NoOrderEntries",
@@ -4149,32 +4395,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ADD",
-   "2": "MODIFY",
-   "3": "DELETE",
-   "4": "SUSPEND",
-   "5": "RELEASE"
-  },
-  "encoded": {
-   "add": "1",
-   "modify": "2",
-   "delete": "3",
-   "suspend": "4",
-   "release": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "add",
-   "2": "modify",
-   "3": "delete",
-   "4": "suspend",
-   "5": "release"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ADD"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MODIFY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "DELETE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "SUSPEND"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "RELEASE"
+    ]
+   }
+  ]
  },
  "2430": {
   "name": "OrderEntryID",
@@ -4191,72 +4448,113 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ORD_ADDED_ON_REQUEST",
-   "2": "ORD_REPLACED_ON_REQUEST",
-   "3": "ORD_CXLD_ON_REQUEST",
-   "4": "UNSOLICITED_ORD_CXL",
-   "5": "NON_RESTING_ORD_ADDED_ON_REQUEST",
-   "6": "ORD_REPLACED_WITH_NON_RESTING_ORD_ON_REQUEST",
-   "7": "TRIGGER_ORD_REPLACED_ON_REQUEST",
-   "8": "SUSPENDED_ORD_REPLACED_ON_REQUEST",
-   "9": "SUSPENDED_ORD_CXLD_ON_REQUEST",
-   "10": "ORD_CXL_PENDING",
-   "11": "PENDING_CXL_EXECUTED",
-   "12": "RESTING_ORD_TRIGGERED",
-   "13": "SUSPENDED_ORD_ACTIVATED",
-   "14": "ACTIVE_ORD_SUSPENDED",
-   "15": "ORD_EXPIRED"
-  },
-  "encoded": {
-   "ordaddedonrequest": "1",
-   "ordreplacedonrequest": "2",
-   "ordcxldonrequest": "3",
-   "unsolicitedordcxl": "4",
-   "nonrestingordaddedonrequest": "5",
-   "ordreplacedwithnonrestingordonrequest": "6",
-   "triggerordreplacedonrequest": "7",
-   "suspendedordreplacedonrequest": "8",
-   "suspendedordcxldonrequest": "9",
-   "ordcxlpending": "10",
-   "pendingcxlexecuted": "11",
-   "restingordtriggered": "12",
-   "suspendedordactivated": "13",
-   "activeordsuspended": "14",
-   "ordexpired": "15",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15"
-  },
-  "decoded": {
-   "1": "ordaddedonrequest",
-   "2": "ordreplacedonrequest",
-   "3": "ordcxldonrequest",
-   "4": "unsolicitedordcxl",
-   "5": "nonrestingordaddedonrequest",
-   "6": "ordreplacedwithnonrestingordonrequest",
-   "7": "triggerordreplacedonrequest",
-   "8": "suspendedordreplacedonrequest",
-   "9": "suspendedordcxldonrequest",
-   "10": "ordcxlpending",
-   "11": "pendingcxlexecuted",
-   "12": "restingordtriggered",
-   "13": "suspendedordactivated",
-   "14": "activeordsuspended",
-   "15": "ordexpired"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ORD_ADDED_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ORD_REPLACED_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ORD_CXLD_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "UNSOLICITED_ORD_CXL"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "NON_RESTING_ORD_ADDED_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "ORD_REPLACED_WITH_NON_RESTING_ORD_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "TRIGGER_ORD_REPLACED_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "SUSPENDED_ORD_REPLACED_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "SUSPENDED_ORD_CXLD_ON_REQUEST"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "ORD_CXL_PENDING"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "PENDING_CXL_EXECUTED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "RESTING_ORD_TRIGGERED"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SUSPENDED_ORD_ACTIVATED"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "ACTIVE_ORD_SUSPENDED"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "ORD_EXPIRED"
+    ]
+   }
+  ]
  },
  "2432": {
   "name": "TotNoOrderEntries",
@@ -4321,24 +4619,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "NEW",
-   "1": "REPLACE",
-   "2": "CANCEL"
-  },
-  "encoded": {
-   "new": "0",
-   "replace": "1",
-   "cancel": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "new",
-   "1": "replace",
-   "2": "cancel"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "NEW"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REPLACE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CANCEL"
+    ]
+   }
+  ]
  },
  "2440": {
   "name": "TransferType",
@@ -4347,24 +4650,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "REQUEST_TRANSFER",
-   "1": "ACCEPT_TRANSFER",
-   "2": "DECLINE_TRANSFER"
-  },
-  "encoded": {
-   "requesttransfer": "0",
-   "accepttransfer": "1",
-   "declinetransfer": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "requesttransfer",
-   "1": "accepttransfer",
-   "2": "declinetransfer"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "REQUEST_TRANSFER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACCEPT_TRANSFER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "DECLINE_TRANSFER"
+    ]
+   }
+  ]
  },
  "2441": {
   "name": "TransferScope",
@@ -4373,24 +4681,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "INTER_FIRM_TRANSFER",
-   "1": "INTRA_FIRM_TRANSFER",
-   "2": "CMTA"
-  },
-  "encoded": {
-   "interfirmtransfer": "0",
-   "intrafirmtransfer": "1",
-   "cmta": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "interfirmtransfer",
-   "1": "intrafirmtransfer",
-   "2": "cmta"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "INTER_FIRM_TRANSFER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INTRA_FIRM_TRANSFER"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "CMTA"
+    ]
+   }
+  ]
  },
  "2442": {
   "name": "TransferStatus",
@@ -4399,36 +4712,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECEIVED",
-   "1": "REJECTED_BY_INTERMEDIARY",
-   "2": "ACCEPT_PENDING",
-   "3": "ACCEPTED",
-   "4": "DECLINED",
-   "5": "CANCELLED"
-  },
-  "encoded": {
-   "received": "0",
-   "rejectedbyintermediary": "1",
-   "acceptpending": "2",
-   "accepted": "3",
-   "declined": "4",
-   "cancelled": "5",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "0": "received",
-   "1": "rejectedbyintermediary",
-   "2": "acceptpending",
-   "3": "accepted",
-   "4": "declined",
-   "5": "cancelled"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "REJECTED_BY_INTERMEDIARY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "ACCEPT_PENDING"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DECLINED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CANCELLED"
+    ]
+   }
+  ]
  },
  "2443": {
   "name": "TransferRejectReason",
@@ -4437,36 +4764,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESS",
-   "1": "INVALID_PARTY",
-   "2": "UNKNOWN_INSTRUMENT",
-   "3": "UNAUTHORIZED_TO_SUBMIT_XFER",
-   "4": "UNKNOWN_POSITION",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "success": "0",
-   "invalidparty": "1",
-   "unknowninstrument": "2",
-   "unauthorizedtosubmitxfer": "3",
-   "unknownposition": "4",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "success",
-   "1": "invalidparty",
-   "2": "unknowninstrument",
-   "3": "unauthorizedtosubmitxfer",
-   "4": "unknownposition",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESS"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTY"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UNAUTHORIZED_TO_SUBMIT_XFER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_POSITION"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2444": {
   "name": "TransferReportType",
@@ -4475,20 +4816,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUBMIT",
-   "1": "ALLEGED"
-  },
-  "encoded": {
-   "submit": "0",
-   "alleged": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "submit",
-   "1": "alleged"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUBMIT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ALLEGED"
+    ]
+   }
+  ]
  },
  "2445": {
   "name": "AggressorTime",
@@ -4585,132 +4928,218 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "COUNT",
-   "2": "AVERAGE_VOLUME",
-   "3": "TOTAL_VOLUME",
-   "4": "DISTRIBUTION",
-   "5": "RATIO",
-   "6": "LIQUIDITY",
-   "7": "VWAP",
-   "8": "VOLATILITY",
-   "9": "DURATION",
-   "10": "TICK",
-   "11": "AVERAGE_VALUE",
-   "12": "TOTAL_VALUE",
-   "13": "HIGH",
-   "14": "LOW",
-   "15": "MIDPOINT",
-   "16": "FIRST",
-   "17": "LAST",
-   "18": "FINAL",
-   "19": "EXCHANGE_BEST",
-   "20": "EXCHANGE_BEST_WITH_VOLUME",
-   "21": "CONSOLIDATED_BEST",
-   "22": "CONSOLIDATED_BEST_WITH_VOLUME",
-   "23": "TWAP",
-   "24": "AVERAGE_DURATION",
-   "25": "AVERAGE_PRICE",
-   "26": "TOTAL_FEES",
-   "27": "TOTAL_BENEFITS",
-   "28": "MEDIAN_VALUE",
-   "29": "AVERAGE_LIQUIDITY",
-   "30": "MEDIAN_DURATION"
-  },
-  "encoded": {
-   "count": "1",
-   "averagevolume": "2",
-   "totalvolume": "3",
-   "distribution": "4",
-   "ratio": "5",
-   "liquidity": "6",
-   "vwap": "7",
-   "volatility": "8",
-   "duration": "9",
-   "tick": "10",
-   "averagevalue": "11",
-   "totalvalue": "12",
-   "high": "13",
-   "low": "14",
-   "midpoint": "15",
-   "first": "16",
-   "last": "17",
-   "final": "18",
-   "exchangebest": "19",
-   "exchangebestwithvolume": "20",
-   "consolidatedbest": "21",
-   "consolidatedbestwithvolume": "22",
-   "twap": "23",
-   "averageduration": "24",
-   "averageprice": "25",
-   "totalfees": "26",
-   "totalbenefits": "27",
-   "medianvalue": "28",
-   "averageliquidity": "29",
-   "medianduration": "30",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30"
-  },
-  "decoded": {
-   "1": "count",
-   "2": "averagevolume",
-   "3": "totalvolume",
-   "4": "distribution",
-   "5": "ratio",
-   "6": "liquidity",
-   "7": "vwap",
-   "8": "volatility",
-   "9": "duration",
-   "10": "tick",
-   "11": "averagevalue",
-   "12": "totalvalue",
-   "13": "high",
-   "14": "low",
-   "15": "midpoint",
-   "16": "first",
-   "17": "last",
-   "18": "final",
-   "19": "exchangebest",
-   "20": "exchangebestwithvolume",
-   "21": "consolidatedbest",
-   "22": "consolidatedbestwithvolume",
-   "23": "twap",
-   "24": "averageduration",
-   "25": "averageprice",
-   "26": "totalfees",
-   "27": "totalbenefits",
-   "28": "medianvalue",
-   "29": "averageliquidity",
-   "30": "medianduration"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "COUNT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_VOLUME"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_VOLUME"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DISTRIBUTION"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "RATIO"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "LIQUIDITY"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "VWAP"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "VOLATILITY"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "DURATION"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "TICK"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_VALUE"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_VALUE"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "HIGH"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "LOW"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "MIDPOINT"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "FIRST"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "LAST"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "FINAL"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BEST"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "EXCHANGE_BEST_WITH_VOLUME"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "CONSOLIDATED_BEST"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "CONSOLIDATED_BEST_WITH_VOLUME"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "TWAP"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_DURATION"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_PRICE"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_FEES"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "TOTAL_BENEFITS"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "MEDIAN_VALUE"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "AVERAGE_LIQUIDITY"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "MEDIAN_DURATION"
+    ]
+   }
+  ]
  },
  "2457": {
   "name": "MDStatisticScope",
@@ -4719,156 +5148,260 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BID_PRICES",
-   "2": "OFFER_PRICES",
-   "3": "BID_DEPTH",
-   "4": "OFFER_DEPTH",
-   "5": "ORDERS",
-   "6": "QUOTES",
-   "7": "ORDERS_AND_QUOTES",
-   "8": "TRADES",
-   "9": "TRADE_PRICES",
-   "10": "AUCTION_PRICES",
-   "11": "OPENING_PRICES",
-   "12": "CLOSING_PRICES",
-   "13": "SETTLEMENT_PRICES",
-   "14": "UNDERLYING_PRICES",
-   "15": "OPEN_INTEREST",
-   "16": "INDEX_VALUES",
-   "17": "MARGIN_RATES",
-   "18": "OUTAGES",
-   "19": "SCHEDULED_AUCTIONS",
-   "20": "REFERENCE_PRICES",
-   "21": "TRADE_VALUE",
-   "22": "MARKET_DATA_FEE_ITEMS",
-   "23": "REBATES",
-   "24": "DISCOUNTS",
-   "25": "PAYMENTS",
-   "26": "TAXES",
-   "27": "LEVIES",
-   "28": "BENEFITS",
-   "29": "FEES",
-   "30": "ORDERS_RF_QS",
-   "31": "MARKET_MAKERS",
-   "32": "TRADING_INTERRUPTIONS",
-   "33": "TRADING_SUSPENSIONS",
-   "34": "NO_QUOTES",
-   "35": "REQUEST_FOR_QUOTES",
-   "36": "TRADE_VOLUME"
-  },
-  "encoded": {
-   "bidprices": "1",
-   "offerprices": "2",
-   "biddepth": "3",
-   "offerdepth": "4",
-   "orders": "5",
-   "quotes": "6",
-   "ordersandquotes": "7",
-   "trades": "8",
-   "tradeprices": "9",
-   "auctionprices": "10",
-   "openingprices": "11",
-   "closingprices": "12",
-   "settlementprices": "13",
-   "underlyingprices": "14",
-   "openinterest": "15",
-   "indexvalues": "16",
-   "marginrates": "17",
-   "outages": "18",
-   "scheduledauctions": "19",
-   "referenceprices": "20",
-   "tradevalue": "21",
-   "marketdatafeeitems": "22",
-   "rebates": "23",
-   "discounts": "24",
-   "payments": "25",
-   "taxes": "26",
-   "levies": "27",
-   "benefits": "28",
-   "fees": "29",
-   "ordersrfqs": "30",
-   "marketmakers": "31",
-   "tradinginterruptions": "32",
-   "tradingsuspensions": "33",
-   "noquotes": "34",
-   "requestforquotes": "35",
-   "tradevolume": "36",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "33": "33",
-   "34": "34",
-   "35": "35",
-   "36": "36"
-  },
-  "decoded": {
-   "1": "bidprices",
-   "2": "offerprices",
-   "3": "biddepth",
-   "4": "offerdepth",
-   "5": "orders",
-   "6": "quotes",
-   "7": "ordersandquotes",
-   "8": "trades",
-   "9": "tradeprices",
-   "10": "auctionprices",
-   "11": "openingprices",
-   "12": "closingprices",
-   "13": "settlementprices",
-   "14": "underlyingprices",
-   "15": "openinterest",
-   "16": "indexvalues",
-   "17": "marginrates",
-   "18": "outages",
-   "19": "scheduledauctions",
-   "20": "referenceprices",
-   "21": "tradevalue",
-   "22": "marketdatafeeitems",
-   "23": "rebates",
-   "24": "discounts",
-   "25": "payments",
-   "26": "taxes",
-   "27": "levies",
-   "28": "benefits",
-   "29": "fees",
-   "30": "ordersrfqs",
-   "31": "marketmakers",
-   "32": "tradinginterruptions",
-   "33": "tradingsuspensions",
-   "34": "noquotes",
-   "35": "requestforquotes",
-   "36": "tradevolume"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BID_PRICES"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "OFFER_PRICES"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "BID_DEPTH"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "OFFER_DEPTH"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ORDERS"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "QUOTES"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ORDERS_AND_QUOTES"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "TRADES"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "TRADE_PRICES"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "AUCTION_PRICES"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "OPENING_PRICES"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "CLOSING_PRICES"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "SETTLEMENT_PRICES"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "UNDERLYING_PRICES"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "OPEN_INTEREST"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "INDEX_VALUES"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "MARGIN_RATES"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "OUTAGES"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "SCHEDULED_AUCTIONS"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "REFERENCE_PRICES"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "TRADE_VALUE"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "MARKET_DATA_FEE_ITEMS"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "REBATES"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "DISCOUNTS"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "PAYMENTS"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "TAXES"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "LEVIES"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "BENEFITS"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "FEES"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "ORDERS_RF_QS"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "MARKET_MAKERS"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "TRADING_INTERRUPTIONS"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "TRADING_SUSPENSIONS"
+    ]
+   },
+   {
+    "value": "34",
+    "meaning": "",
+    "aliases": [
+     "NO_QUOTES"
+    ]
+   },
+   {
+    "value": "35",
+    "meaning": "",
+    "aliases": [
+     "REQUEST_FOR_QUOTES"
+    ]
+   },
+   {
+    "value": "36",
+    "meaning": "",
+    "aliases": [
+     "TRADE_VOLUME"
+    ]
+   }
+  ]
  },
  "2458": {
   "name": "MDStatisticSubScope",
@@ -4877,144 +5410,239 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "VISIBLE",
-   "2": "HIDDEN",
-   "3": "INDICATIVE",
-   "4": "TRADEABLE",
-   "5": "PASSIVE",
-   "6": "MARKET_CONSENSUS",
-   "7": "POWER",
-   "8": "HARDWARE_ERROR",
-   "9": "SOFTWARE_ERROR",
-   "10": "NETWORK_ERROR",
-   "11": "FAILED",
-   "12": "EXECUTED",
-   "13": "ENTERED",
-   "14": "MODIFIED",
-   "15": "CANCELLED",
-   "16": "MARKET_DATA_ACCESS",
-   "17": "TERMINAL_ACCESS",
-   "18": "VOLUME",
-   "19": "CLEARED",
-   "20": "SETTLED",
-   "21": "OTHER",
-   "22": "MONETARY",
-   "23": "NON_MONETARY",
-   "24": "GROSS",
-   "25": "LARGE_IN_SCALE",
-   "26": "NEITHER_HIDDEN_NOR_LARGE_IN_SCALE",
-   "27": "CORPORATE_ACTION",
-   "28": "VENUE_DECISION",
-   "29": "MINIMUM_TIME_PERIOD",
-   "30": "OPEN",
-   "31": "NOT_EXECUTED",
-   "32": "AGGRESSIVE",
-   "33": "DIRECTED"
-  },
-  "encoded": {
-   "visible": "1",
-   "hidden": "2",
-   "indicative": "3",
-   "tradeable": "4",
-   "passive": "5",
-   "marketconsensus": "6",
-   "power": "7",
-   "hardwareerror": "8",
-   "softwareerror": "9",
-   "networkerror": "10",
-   "failed": "11",
-   "executed": "12",
-   "entered": "13",
-   "modified": "14",
-   "cancelled": "15",
-   "marketdataaccess": "16",
-   "terminalaccess": "17",
-   "volume": "18",
-   "cleared": "19",
-   "settled": "20",
-   "other": "21",
-   "monetary": "22",
-   "nonmonetary": "23",
-   "gross": "24",
-   "largeinscale": "25",
-   "neitherhiddennorlargeinscale": "26",
-   "corporateaction": "27",
-   "venuedecision": "28",
-   "minimumtimeperiod": "29",
-   "open": "30",
-   "notexecuted": "31",
-   "aggressive": "32",
-   "directed": "33",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "19": "19",
-   "20": "20",
-   "21": "21",
-   "22": "22",
-   "23": "23",
-   "24": "24",
-   "25": "25",
-   "26": "26",
-   "27": "27",
-   "28": "28",
-   "29": "29",
-   "30": "30",
-   "31": "31",
-   "32": "32",
-   "33": "33"
-  },
-  "decoded": {
-   "1": "visible",
-   "2": "hidden",
-   "3": "indicative",
-   "4": "tradeable",
-   "5": "passive",
-   "6": "marketconsensus",
-   "7": "power",
-   "8": "hardwareerror",
-   "9": "softwareerror",
-   "10": "networkerror",
-   "11": "failed",
-   "12": "executed",
-   "13": "entered",
-   "14": "modified",
-   "15": "cancelled",
-   "16": "marketdataaccess",
-   "17": "terminalaccess",
-   "18": "volume",
-   "19": "cleared",
-   "20": "settled",
-   "21": "other",
-   "22": "monetary",
-   "23": "nonmonetary",
-   "24": "gross",
-   "25": "largeinscale",
-   "26": "neitherhiddennorlargeinscale",
-   "27": "corporateaction",
-   "28": "venuedecision",
-   "29": "minimumtimeperiod",
-   "30": "open",
-   "31": "notexecuted",
-   "32": "aggressive",
-   "33": "directed"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "VISIBLE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "HIDDEN"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INDICATIVE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "TRADEABLE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "PASSIVE"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "MARKET_CONSENSUS"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "POWER"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "HARDWARE_ERROR"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "SOFTWARE_ERROR"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "NETWORK_ERROR"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "FAILED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "EXECUTED"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "ENTERED"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "MODIFIED"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "CANCELLED"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "MARKET_DATA_ACCESS"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "TERMINAL_ACCESS"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "VOLUME"
+    ]
+   },
+   {
+    "value": "19",
+    "meaning": "",
+    "aliases": [
+     "CLEARED"
+    ]
+   },
+   {
+    "value": "20",
+    "meaning": "",
+    "aliases": [
+     "SETTLED"
+    ]
+   },
+   {
+    "value": "21",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   },
+   {
+    "value": "22",
+    "meaning": "",
+    "aliases": [
+     "MONETARY"
+    ]
+   },
+   {
+    "value": "23",
+    "meaning": "",
+    "aliases": [
+     "NON_MONETARY"
+    ]
+   },
+   {
+    "value": "24",
+    "meaning": "",
+    "aliases": [
+     "GROSS"
+    ]
+   },
+   {
+    "value": "25",
+    "meaning": "",
+    "aliases": [
+     "LARGE_IN_SCALE"
+    ]
+   },
+   {
+    "value": "26",
+    "meaning": "",
+    "aliases": [
+     "NEITHER_HIDDEN_NOR_LARGE_IN_SCALE"
+    ]
+   },
+   {
+    "value": "27",
+    "meaning": "",
+    "aliases": [
+     "CORPORATE_ACTION"
+    ]
+   },
+   {
+    "value": "28",
+    "meaning": "",
+    "aliases": [
+     "VENUE_DECISION"
+    ]
+   },
+   {
+    "value": "29",
+    "meaning": "",
+    "aliases": [
+     "MINIMUM_TIME_PERIOD"
+    ]
+   },
+   {
+    "value": "30",
+    "meaning": "",
+    "aliases": [
+     "OPEN"
+    ]
+   },
+   {
+    "value": "31",
+    "meaning": "",
+    "aliases": [
+     "NOT_EXECUTED"
+    ]
+   },
+   {
+    "value": "32",
+    "meaning": "",
+    "aliases": [
+     "AGGRESSIVE"
+    ]
+   },
+   {
+    "value": "33",
+    "meaning": "",
+    "aliases": [
+     "DIRECTED"
+    ]
+   }
+  ]
  },
  "2459": {
   "name": "MDStatisticScopeType",
@@ -5023,32 +5651,43 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ENTRY_RATE",
-   "2": "MODIFICATION_RATE",
-   "3": "CANCEL_RATE",
-   "4": "DOWNWARD_MOVE",
-   "5": "UPWARD_MOVE"
-  },
-  "encoded": {
-   "entryrate": "1",
-   "modificationrate": "2",
-   "cancelrate": "3",
-   "downwardmove": "4",
-   "upwardmove": "5",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5"
-  },
-  "decoded": {
-   "1": "entryrate",
-   "2": "modificationrate",
-   "3": "cancelrate",
-   "4": "downwardmove",
-   "5": "upwardmove"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ENTRY_RATE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "MODIFICATION_RATE"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "CANCEL_RATE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "DOWNWARD_MOVE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "UPWARD_MOVE"
+    ]
+   }
+  ]
  },
  "2460": {
   "name": "MDStatisticFrequencyPeriod",
@@ -5089,44 +5728,64 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "SLIDING_WINDOW",
-   "2": "SLIDING_WINDOW_PEAK",
-   "3": "FIXED_DATE_RANGE",
-   "4": "FIXED_TIME_RANGE",
-   "5": "CURRENT_TIME_UNIT",
-   "6": "PREVIOUS_TIME_UNIT",
-   "7": "MAXIMUM_RANGE",
-   "8": "MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT"
-  },
-  "encoded": {
-   "slidingwindow": "1",
-   "slidingwindowpeak": "2",
-   "fixeddaterange": "3",
-   "fixedtimerange": "4",
-   "currenttimeunit": "5",
-   "previoustimeunit": "6",
-   "maximumrange": "7",
-   "maximumrangeuptoprevioustimeunit": "8",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8"
-  },
-  "decoded": {
-   "1": "slidingwindow",
-   "2": "slidingwindowpeak",
-   "3": "fixeddaterange",
-   "4": "fixedtimerange",
-   "5": "currenttimeunit",
-   "6": "previoustimeunit",
-   "7": "maximumrange",
-   "8": "maximumrangeuptoprevioustimeunit"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "SLIDING_WINDOW"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "SLIDING_WINDOW_PEAK"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "FIXED_DATE_RANGE"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "FIXED_TIME_RANGE"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "CURRENT_TIME_UNIT"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "PREVIOUS_TIME_UNIT"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "MAXIMUM_RANGE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT"
+    ]
+   }
+  ]
  },
  "2465": {
   "name": "MDStatisticIntervalTypeUnit",
@@ -5191,60 +5850,92 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "BUYERS_TO_SELLERS",
-   "2": "UPTICKS_TO_DOWNTICKS",
-   "3": "MARKET_MAKER_TO_NON_MARKET_MAKER",
-   "4": "AUTOMATED_TO_NON_AUTOMATED",
-   "5": "ORDERS_TO_TRADES",
-   "6": "QUOTES_TO_TRADES",
-   "7": "ORDERS_AND_QUOTES_TO_TRADES",
-   "8": "FAILED_TO_TOTAL_TRADED_VALUE",
-   "9": "BENEFITS_TO_TOTAL_TRADED_VALUE",
-   "10": "FEES_TO_TOTAL_TRADED_VALUE",
-   "11": "TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME",
-   "12": "ORDERS_TO_TOTAL_NUMBER_ORDERS"
-  },
-  "encoded": {
-   "buyerstosellers": "1",
-   "uptickstodownticks": "2",
-   "marketmakertononmarketmaker": "3",
-   "automatedtononautomated": "4",
-   "orderstotrades": "5",
-   "quotestotrades": "6",
-   "ordersandquotestotrades": "7",
-   "failedtototaltradedvalue": "8",
-   "benefitstototaltradedvalue": "9",
-   "feestototaltradedvalue": "10",
-   "tradevolumetototaltradedvolume": "11",
-   "orderstototalnumberorders": "12",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12"
-  },
-  "decoded": {
-   "1": "buyerstosellers",
-   "2": "uptickstodownticks",
-   "3": "marketmakertononmarketmaker",
-   "4": "automatedtononautomated",
-   "5": "orderstotrades",
-   "6": "quotestotrades",
-   "7": "ordersandquotestotrades",
-   "8": "failedtototaltradedvalue",
-   "9": "benefitstototaltradedvalue",
-   "10": "feestototaltradedvalue",
-   "11": "tradevolumetototaltradedvolume",
-   "12": "orderstototalnumberorders"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "BUYERS_TO_SELLERS"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UPTICKS_TO_DOWNTICKS"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "MARKET_MAKER_TO_NON_MARKET_MAKER"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "AUTOMATED_TO_NON_AUTOMATED"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "ORDERS_TO_TRADES"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "QUOTES_TO_TRADES"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "ORDERS_AND_QUOTES_TO_TRADES"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "FAILED_TO_TOTAL_TRADED_VALUE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "BENEFITS_TO_TOTAL_TRADED_VALUE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "FEES_TO_TOTAL_TRADED_VALUE"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "ORDERS_TO_TOTAL_NUMBER_ORDERS"
+    ]
+   }
+  ]
  },
  "2473": {
   "name": "MDStatisticRequestResult",
@@ -5253,92 +5944,148 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "SUCCESSFUL",
-   "1": "INVALID_OR_UNKNOWN_MARKET",
-   "2": "INVALID_OR_UNKNOWN_MARKET_SEGMENT",
-   "3": "INVALID_OR_UNKNOWN_SECURITY_LIST",
-   "4": "INVALID_OR_UNKNOWN_INSTRUMENTS",
-   "5": "INVALID_PARTIES",
-   "6": "TRADE_DATE_OUT_OF_SUPPORTED_RANGE",
-   "7": "UNSUPPORTED_STATISTIC_TYPE",
-   "8": "UNSUPPORTED_SCOPE_OR_SUB_SCOPE",
-   "9": "UNSUPPORTED_SCOPE_TYPE",
-   "10": "MARKET_DEPTH_NOT_SUPPORTED",
-   "11": "FREQUENCY_NOT_SUPPORTED",
-   "12": "UNSUPPORTED_STATISTIC_INTERVAL",
-   "13": "UNSUPPORTED_STATISTIC_DATE_RANGE",
-   "14": "UNSUPPORTED_STATISTIC_TIME_RANGE",
-   "15": "UNSUPPORTED_RATIO_TYPE",
-   "16": "INVALID_OR_UNKNOWN_TRADE_INPUT_SOURCE",
-   "17": "INVALID_OR_UNKNOWN_TRADING_SESSION",
-   "18": "UNAUTHORIZED_FOR_STATISTIC_REQUEST",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "successful": "0",
-   "invalidorunknownmarket": "1",
-   "invalidorunknownmarketsegment": "2",
-   "invalidorunknownsecuritylist": "3",
-   "invalidorunknowninstruments": "4",
-   "invalidparties": "5",
-   "tradedateoutofsupportedrange": "6",
-   "unsupportedstatistictype": "7",
-   "unsupportedscopeorsubscope": "8",
-   "unsupportedscopetype": "9",
-   "marketdepthnotsupported": "10",
-   "frequencynotsupported": "11",
-   "unsupportedstatisticinterval": "12",
-   "unsupportedstatisticdaterange": "13",
-   "unsupportedstatistictimerange": "14",
-   "unsupportedratiotype": "15",
-   "invalidorunknowntradeinputsource": "16",
-   "invalidorunknowntradingsession": "17",
-   "unauthorizedforstatisticrequest": "18",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "5": "5",
-   "6": "6",
-   "7": "7",
-   "8": "8",
-   "9": "9",
-   "10": "10",
-   "11": "11",
-   "12": "12",
-   "13": "13",
-   "14": "14",
-   "15": "15",
-   "16": "16",
-   "17": "17",
-   "18": "18",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "successful",
-   "1": "invalidorunknownmarket",
-   "2": "invalidorunknownmarketsegment",
-   "3": "invalidorunknownsecuritylist",
-   "4": "invalidorunknowninstruments",
-   "5": "invalidparties",
-   "6": "tradedateoutofsupportedrange",
-   "7": "unsupportedstatistictype",
-   "8": "unsupportedscopeorsubscope",
-   "9": "unsupportedscopetype",
-   "10": "marketdepthnotsupported",
-   "11": "frequencynotsupported",
-   "12": "unsupportedstatisticinterval",
-   "13": "unsupportedstatisticdaterange",
-   "14": "unsupportedstatistictimerange",
-   "15": "unsupportedratiotype",
-   "16": "invalidorunknowntradeinputsource",
-   "17": "invalidorunknowntradingsession",
-   "18": "unauthorizedforstatisticrequest",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "SUCCESSFUL"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_MARKET"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_MARKET_SEGMENT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_SECURITY_LIST"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_INSTRUMENTS"
+    ]
+   },
+   {
+    "value": "5",
+    "meaning": "",
+    "aliases": [
+     "INVALID_PARTIES"
+    ]
+   },
+   {
+    "value": "6",
+    "meaning": "",
+    "aliases": [
+     "TRADE_DATE_OUT_OF_SUPPORTED_RANGE"
+    ]
+   },
+   {
+    "value": "7",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_STATISTIC_TYPE"
+    ]
+   },
+   {
+    "value": "8",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_SCOPE_OR_SUB_SCOPE"
+    ]
+   },
+   {
+    "value": "9",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_SCOPE_TYPE"
+    ]
+   },
+   {
+    "value": "10",
+    "meaning": "",
+    "aliases": [
+     "MARKET_DEPTH_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "11",
+    "meaning": "",
+    "aliases": [
+     "FREQUENCY_NOT_SUPPORTED"
+    ]
+   },
+   {
+    "value": "12",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_STATISTIC_INTERVAL"
+    ]
+   },
+   {
+    "value": "13",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_STATISTIC_DATE_RANGE"
+    ]
+   },
+   {
+    "value": "14",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_STATISTIC_TIME_RANGE"
+    ]
+   },
+   {
+    "value": "15",
+    "meaning": "",
+    "aliases": [
+     "UNSUPPORTED_RATIO_TYPE"
+    ]
+   },
+   {
+    "value": "16",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_TRADE_INPUT_SOURCE"
+    ]
+   },
+   {
+    "value": "17",
+    "meaning": "",
+    "aliases": [
+     "INVALID_OR_UNKNOWN_TRADING_SESSION"
+    ]
+   },
+   {
+    "value": "18",
+    "meaning": "",
+    "aliases": [
+     "UNAUTHORIZED_FOR_STATISTIC_REQUEST"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2474": {
   "name": "NoMDStatistics",
@@ -5371,20 +6118,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ACTIVE",
-   "2": "INACTIVE"
-  },
-  "encoded": {
-   "active": "1",
-   "inactive": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "active",
-   "2": "inactive"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ACTIVE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "INACTIVE"
+    ]
+   }
+  ]
  },
  "2478": {
   "name": "MDStatisticValue",
@@ -5401,20 +6150,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "1": "ABSOLUTE",
-   "2": "PERCENTAGE"
-  },
-  "encoded": {
-   "absolute": "1",
-   "percentage": "2",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "1": "absolute",
-   "2": "percentage"
-  }
+  "values": [
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "ABSOLUTE"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PERCENTAGE"
+    ]
+   }
+  ]
  },
  "2480": {
   "name": "MDStatisticValueUnit",
@@ -5479,36 +6230,50 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "UNKNOWN_TRADE",
-   "1": "UNKNOWN_INSTRUMENT",
-   "2": "UNKNOWN_COUNTERPARTY",
-   "3": "UNKNOWN_POSITION",
-   "4": "UNACCEPTABLE_COLLATERAL",
-   "99": "OTHER"
-  },
-  "encoded": {
-   "unknowntrade": "0",
-   "unknowninstrument": "1",
-   "unknowncounterparty": "2",
-   "unknownposition": "3",
-   "unacceptablecollateral": "4",
-   "other": "99",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3",
-   "4": "4",
-   "99": "99"
-  },
-  "decoded": {
-   "0": "unknowntrade",
-   "1": "unknowninstrument",
-   "2": "unknowncounterparty",
-   "3": "unknownposition",
-   "4": "unacceptablecollateral",
-   "99": "other"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_TRADE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_INSTRUMENT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_COUNTERPARTY"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "UNKNOWN_POSITION"
+    ]
+   },
+   {
+    "value": "4",
+    "meaning": "",
+    "aliases": [
+     "UNACCEPTABLE_COLLATERAL"
+    ]
+   },
+   {
+    "value": "99",
+    "meaning": "",
+    "aliases": [
+     "OTHER"
+    ]
+   }
+  ]
  },
  "2488": {
   "name": "CollRptStatus",
@@ -5517,24 +6282,29 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "ACCEPTED",
-   "1": "RECEIVED",
-   "2": "REJECTED"
-  },
-  "encoded": {
-   "accepted": "0",
-   "received": "1",
-   "rejected": "2",
-   "0": "0",
-   "1": "1",
-   "2": "2"
-  },
-  "decoded": {
-   "0": "accepted",
-   "1": "received",
-   "2": "rejected"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "ACCEPTED"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RECEIVED"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "REJECTED"
+    ]
+   }
+  ]
  },
  "2489": {
   "name": "PackageID",

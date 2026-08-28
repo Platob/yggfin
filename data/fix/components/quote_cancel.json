@@ -1,0 +1,144 @@
+{
+ "name": "QuoteCancel",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "declaration": {
+  "name": "QuoteCancel",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "QuoteCancel",
+   "msgtype": "Z"
+  },
+  "fields": [
+   {
+    "name": "QuoteReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "131"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "117"
+    }
+   },
+   {
+    "name": "SecondaryQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1751"
+    }
+   },
+   {
+    "name": "QuoteMsgID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1166"
+    }
+   },
+   {
+    "name": "QuoteCancelType",
+    "type": "string",
+    "fix": {
+     "tag": "298"
+    }
+   },
+   {
+    "name": "QuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "537"
+    }
+   },
+   {
+    "name": "QuoteResponseLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "301"
+    }
+   },
+   {
+    "name": "Parties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Parties"
+    },
+    "fields": []
+   },
+   {
+    "name": "TargetParties",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "TargetParties"
+    },
+    "fields": []
+   },
+   {
+    "name": "Account",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1"
+    }
+   },
+   {
+    "name": "AcctIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "660"
+    }
+   },
+   {
+    "name": "AccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "581"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "QuotCxlEntriesGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "QuotCxlEntriesGrp"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

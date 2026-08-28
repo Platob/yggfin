@@ -209,7 +209,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         ),
     ]
     schema = Book.into_field().into_arrow_schema()
-    expected = pyarrow.Table.from_pylist([row.into_dict() for row in rows], schema=schema)
+    expected = pyarrow.Table.from_pylist([row.into_row() for row in rows], schema=schema)
     batches = list(Book.into_arrow_reader(iter(rows), batch_row_size=1))
     actual = pyarrow.Table.from_batches(batches, schema=schema)
 

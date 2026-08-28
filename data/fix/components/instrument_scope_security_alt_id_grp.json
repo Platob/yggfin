@@ -3,26 +3,45 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoInstrumentScopeSecurityAltID",
-   "required": false,
-   "tag": 1540,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityAltID",
-     "required": false,
-     "tag": 1541
+ "declaration": {
+  "name": "InstrumentScopeSecurityAltIDGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "InstrumentScopeSecurityAltIDGrp",
+   "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"PartyActionReport\",\"PartyActionRequest\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\",\"SecurityMassStatus\",\"SecurityMassStatusRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoInstrumentScopeSecurityAltID",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1540"
     },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityAltIDSource",
-     "required": false,
-     "tag": 1542
+    "item": {
+     "name": "InstrumentScopeSecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentScopeSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1541"
+       }
+      },
+      {
+       "name": "InstrumentScopeSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1542"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

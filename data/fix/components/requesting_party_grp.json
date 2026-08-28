@@ -3,43 +3,70 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRequestingPartyIDs",
-   "required": false,
-   "tag": 1657,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "RequestingPartyGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RequestingPartyGrp",
+   "msgtypes": "[\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListRequest\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRequestingPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1657"
+    },
+    "item": {
      "name": "RequestingPartyID",
-     "required": false,
-     "tag": 1658
-    },
-    {
-     "kind": "field",
-     "name": "RequestingPartyIDSource",
-     "required": false,
-     "tag": 1659
-    },
-    {
-     "kind": "field",
-     "name": "RequestingPartyRole",
-     "required": false,
-     "tag": 1660
-    },
-    {
-     "kind": "field",
-     "name": "RequestingPartyRoleQualifier",
-     "required": false,
-     "tag": 2338
-    },
-    {
-     "kind": "component",
-     "name": "RequestingPartySubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestingPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1658"
+       }
+      },
+      {
+       "name": "RequestingPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1659"
+       }
+      },
+      {
+       "name": "RequestingPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1660"
+       }
+      },
+      {
+       "name": "RequestingPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2338"
+       }
+      },
+      {
+       "name": "RequestingPartySubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RequestingPartySubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -4,19 +4,38 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOfLegUnderlyings",
-   "required": false,
-   "tag": 1342,
-   "members": [
-    {
-     "kind": "component",
-     "name": "UnderlyingLegInstrument",
-     "required": false
+ "declaration": {
+  "name": "TradeCapLegUnderlyingsGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TradeCapLegUnderlyingsGrp",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoOfLegUnderlyings",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1342"
+    },
+    "item": {
+     "name": "OfLegUnderlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingLegInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingLegInstrument"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

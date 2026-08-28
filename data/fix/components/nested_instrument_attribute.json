@@ -4,26 +4,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoNestedInstrAttrib",
-   "required": false,
-   "tag": 1312,
-   "members": [
-    {
-     "kind": "field",
-     "name": "NestedInstrAttribType",
-     "required": false,
-     "tag": 1210
+ "declaration": {
+  "name": "NestedInstrumentAttribute",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NestedInstrumentAttribute",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoNestedInstrAttrib",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1312"
     },
-    {
-     "kind": "field",
-     "name": "NestedInstrAttribValue",
-     "required": false,
-     "tag": 1211
+    "item": {
+     "name": "NestedInstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NestedInstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1210"
+       }
+      },
+      {
+       "name": "NestedInstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1211"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

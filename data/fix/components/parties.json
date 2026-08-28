@@ -7,43 +7,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoPartyIDs",
-   "required": false,
-   "tag": 453,
-   "members": [
-    {
-     "kind": "field",
+ "declaration": {
+  "name": "Parties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Parties",
+   "msgtypes": "[\"AccountSummaryReport\",\"AdjustedPositionReport\",\"Allocation\",\"AllocationAck\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationInstructionAlertRequest\",\"AllocationReport\",\"AllocationReportAck\",\"ApplicationMessageRequest\",\"ApplicationMessageRequestAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralReportAck\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"ExecutionReport\",\"IOI\",\"ListCancelRequest\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataRequestReject\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReject\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsListRequest\",\"PartyEntitlementsRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsRequest\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"Quote\",\"QuoteAck\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RegistrationInstructions\",\"RegistrationInstructionsResponse\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SettlementInstructionRequest\",\"SettlementInstructions\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "453"
+    },
+    "item": {
      "name": "PartyID",
-     "required": false,
-     "tag": 448
-    },
-    {
-     "kind": "field",
-     "name": "PartyIDSource",
-     "required": false,
-     "tag": 447
-    },
-    {
-     "kind": "field",
-     "name": "PartyRole",
-     "required": false,
-     "tag": 452
-    },
-    {
-     "kind": "field",
-     "name": "PartyRoleQualifier",
-     "required": false,
-     "tag": 2376
-    },
-    {
-     "kind": "component",
-     "name": "PtysSubGrp",
-     "required": false
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "PtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

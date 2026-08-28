@@ -10,8 +10,9 @@
   <field name='Signature' required='N' />
  </trailer>
  <messages>
-  <message name='Heartbeat' msgtype='0' msgcat='admin'>
-   <field name='TestReqID' required='N' />
+  <message name='TradeCaptureReport' msgtype='AE' msgcat='app'>
+   <field name='TrdType' required='N' />
+   <component name='Parties' required='N' />
   </message>
  </messages>
  <components>

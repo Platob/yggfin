@@ -19,7 +19,7 @@ from pyiceberg.io import FileIO, InputFile, InputStream, OutputFile, OutputStrea
 from pyiceberg.io.pyarrow import PyArrowFile, PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
-from rekep.filesystems import ArrowFileIO as OpenedArrowFileIO
+from rekep.filesystems import ArrowFile
 from rekep.urls import S3, Url, properties_of, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
@@ -471,7 +471,7 @@ def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()
     return {**environment, **normalized}
 
 
-class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
+class ArrowFileIO(ArrowFile, PyArrowFileIO):
     """`PyArrowFileIO` whose locations are read the way this package reads every location, and
     whose immutable metadata is fetched once."""
 
@@ -492,7 +492,7 @@ class ArrowFileIO(OpenedArrowFileIO, PyArrowFileIO):
                 self._content_cache = None
             else:
                 CONTENT_CACHE.resize(int(budget))
-        OpenedArrowFileIO.__init__(
+        ArrowFile.__init__(
             self,
             location=location,
             filesystem=filesystem,

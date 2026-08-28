@@ -3,87 +3,130 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentDateBusinessDayConvention",
-   "required": false,
-   "tag": 40751
+ "declaration": {
+  "name": "PaymentStreamPaymentDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaymentStreamPaymentDates",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
   },
-  {
-   "kind": "component",
-   "name": "PaymentStreamPaymentDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamPaymentDateGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentFrequencyPeriod",
-   "required": false,
-   "tag": 40753
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentFrequencyUnit",
-   "required": false,
-   "tag": 40754
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentRollConvention",
-   "required": false,
-   "tag": 40755
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamFirstPaymentDateUnadjusted",
-   "required": false,
-   "tag": 40756
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamLastRegularPaymentDateUnadjusted",
-   "required": false,
-   "tag": 40757
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentDateRelativeTo",
-   "required": false,
-   "tag": 40758
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentDateOffsetPeriod",
-   "required": false,
-   "tag": 40759
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentDateOffsetUnit",
-   "required": false,
-   "tag": 40760
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamPaymentDateOffsetDayType",
-   "required": false,
-   "tag": 40920
-  },
-  {
-   "kind": "field",
-   "name": "PaymentStreamMasterAgreementPaymentDatesIndicator",
-   "required": false,
-   "tag": 41223
-  },
-  {
-   "kind": "component",
-   "name": "PaymentStreamFinalPricePaymentDate",
-   "required": false
-  }
- ]
+  "fields": [
+   {
+    "name": "PaymentStreamPaymentDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40751"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamPaymentDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamPaymentDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamPaymentDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "PaymentStreamPaymentFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40753"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40754"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40755"
+    }
+   },
+   {
+    "name": "PaymentStreamFirstPaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40756"
+    }
+   },
+   {
+    "name": "PaymentStreamLastRegularPaymentDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40757"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40758"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40759"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40760"
+    }
+   },
+   {
+    "name": "PaymentStreamPaymentDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40920"
+    }
+   },
+   {
+    "name": "PaymentStreamMasterAgreementPaymentDatesIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41223"
+    }
+   },
+   {
+    "name": "PaymentStreamFinalPricePaymentDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PaymentStreamFinalPricePaymentDate"
+    },
+    "fields": []
+   }
+  ]
+ }
 }

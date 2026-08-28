@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import cached_property
 from typing import Any
@@ -21,97 +20,14 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 
+from rekep.entries import KEY_VIEW, Entry, fold
+from rekep.fields import Field, encoded_key
 from rekep.fields.arrays import sequence
-from rekep.fix.entries import FieldEntry, encoded_key, fold
 from rekep.fix.fields import cast_arrow_fix, coherent_fix_value, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import TagIndex
 
-#: A rendered key cut into whatever stood in front, the name, and its entry
-#: index: `NoPartyIDs[0].PartyID` is lead `NoPartyIDs[0]` name `PartyID`;
-#: `TECH.CLIENTID` is lead `TECH` name `CLIENTID`; `Side[0]` is name `Side`
-#: index `0`. Greedy lead, so the *last* dot is the cut -- the same rule the
-#: parser and the transcription apply.
-_KEY = re.compile(
-    r"(?s)^(?:(?P<lead>.*)\.)?(?P<name>[^.\[\]]*)(?:\[(?P<index>[0-9]+)\])?$",
-    re.ASCII,
-)
-
-#: A lead that names a repeating-group entry rather than a namespace: it ends
-#: with an index. The one dotted lead a bare name still answers through --
-#: `get("PartyID")` finds `NoPartyIDs[0].PartyID`, because the group is where
-#: the field sits and not what it is, while `TECH.CLIENTID` stays out of reach
-#: of `get("CLIENTID")` because a vendor namespace is part of the name.
-_ENTRY_LEAD = re.compile(r"\[[0-9]+\]$", re.ASCII)
-
 _MISSING = object()
-
-
-@dataclasses.dataclass(frozen=True)
-class Entry:
-    """One field as a row carries it, whichever shape the row stored it in."""
-
-    tag: int = 0
-    name: str = ""
-    index: int | None = None
-    lead: str | None = None
-    #: Whether a bare-name ask may reach through `lead`: true for a group
-    #: entry (`NoPartyIDs[0]`) and for a stored `comp`, false for a namespace.
-    entry_lead: bool = False
-    value: Any = None
-
-    @cached_property
-    def folded(self) -> str:
-        """`name` as `Resolved.matches` compares it: folded once per entry.
-
-        Once and not once per compare, because reading several dozen fields
-        off one row compares every entry against every ask.
-        """
-        return fold(self.name)
-
-    @cached_property
-    def folded_lead(self) -> str:
-        """`lead` folded, empty where the entry carries none."""
-        return fold(self.lead or "")
-
-    @classmethod
-    def from_pair(cls, key: Any, value: Any) -> Entry:
-        """A wire `(key, value)` pair, split under the parser's own key rule."""
-        text = str(key)
-        if text.isascii() and text.isdigit() and len(text) <= 9:
-            return cls(tag=int(text), name=text, value=value)
-        match = _KEY.match(text)
-        if match is None:
-            return cls(name=text, value=value)
-        lead, name, index = match.group("lead", "name", "index")
-        numeric = bool(name) and name.isascii() and name.isdigit() and len(name) <= 9
-        return cls(
-            tag=int(name) if numeric else 0,
-            name=name or text,
-            index=None if index is None else int(index),
-            lead=lead,
-            entry_lead=bool(lead) and _ENTRY_LEAD.search(lead) is not None,
-            value=value,
-        )
-
-    @classmethod
-    def from_stored(cls, stored: Mapping[str, Any]) -> Entry:
-        """One stored `kwargs` struct entry, `comp`/`namespace` already split."""
-        comp = stored.get("comp")
-        lead = comp if comp else stored.get("namespace")
-        key = str(stored.get("key") or "")
-        match = _KEY.match(key)
-        name, index = key, None
-        if match is not None and match.group("index") is not None:
-            name, index = match.group("name"), int(match.group("index"))
-        return cls(
-            tag=int(stored.get("tag") or 0),
-            name=name,
-            index=index,
-            lead=lead,
-            entry_lead=bool(comp),
-            value=stored.get("value"),
-        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -258,7 +174,7 @@ class FieldAccess:
         try:
             if self.version is not None:
                 return tuple(component.name for component in self.registry.components(self.version))
-            return tuple(self.registry.component_entries())
+            return tuple(self.registry.component_records())
         except (KeyError, OSError, ValueError):
             return ()
 
@@ -279,7 +195,7 @@ class FieldAccess:
             tag = int(spelling)
             names = frozenset({spelling}) | self._spellings_of(tag)
             return Resolved(spelling=spelling, tag=tag, names=names)
-        match = _KEY.match(spelling)
+        match = KEY_VIEW.match(spelling)
         lead = name = None
         index = None
         if match is not None:
@@ -288,11 +204,11 @@ class FieldAccess:
         name = name or spelling
         tag, hit, _, _ = self.index.resolve_key(spelling)
         record = self._record(name) if self.registry is not None else None
-        if not hit and record is not None and record.tag is not None:
-            tag = int(record.tag)
+        if not hit and record is not None and record.fix.tag is not None:
+            tag = int(record.fix.tag)
         names = {fold(name)}
         if record is not None:
-            names.update(fold(one) for one in record.spellings())
+            names.update(fold(one) for one in record.fix.spellings())
         if tag is not None:
             names.update(self._spellings_of(tag))
         return Resolved(
@@ -309,14 +225,14 @@ class FieldAccess:
         record = self._record(tag)
         if record is None:
             return frozenset()
-        return frozenset(fold(one) for one in record.spellings())
+        return frozenset(fold(one) for one in record.fix.spellings())
 
-    def _record(self, key: int | str) -> FieldEntry | None:
+    def _record(self, key: int | str) -> Field | None:
         """The dictionary's record for one tag or name, or None."""
         if self.registry is None:
             return None
         try:
-            return self.registry.entry(key)
+            return self.registry.field(key)
         except (OSError, ValueError):
             return None
 
@@ -384,8 +300,8 @@ class FieldAccess:
             tag, hit, _, _ = self.index.resolve_key(text)
             if not hit and self.registry is not None:
                 record = self._record(_KEY_TAIL(text))
-                if record is not None and record.tag is not None:
-                    tag, hit = int(record.tag), True
+                if record is not None and record.fix.tag is not None:
+                    tag, hit = int(record.fix.tag), True
             built.append((str(tag) if hit and tag is not None else text, value))
         return built
 
@@ -402,12 +318,8 @@ class FieldAccess:
         temporal = self._temporal_fields.get(field, _MISSING)
         if temporal is _MISSING:
             record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
-            arrow_type = None if record is None else self._arrow_type(record)
-            temporal = (
-                arrow_type
-                if arrow_type is not None and pyarrow.types.is_temporal(arrow_type)
-                else None
-            )
+            dtype = None if record is None else self._arrow_type(record)
+            temporal = dtype if dtype is not None and pyarrow.types.is_temporal(dtype) else None
             self._temporal_fields[field] = temporal
         if temporal is None:
             return raw
@@ -417,7 +329,7 @@ class FieldAccess:
     def typed(self, field: int | str, raw: Any) -> Any:
         """`raw` as the dictionary reads it: encoded, then cast to type.
 
-        The encoding is `FieldEntry.encode` -- the dictionary's own
+        The encoding is the record's own `fix.encode` -- the dictionary's own
         resolver -- and the cast is `cast_arrow_fix`, the same reading the
         columnar path applies, over one value. A field no record explains
         still gets the plainest reading its value spells --
@@ -430,17 +342,17 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return coherent_fix_value(raw)
-        text = record.encode(raw)
-        arrow_type = self._arrow_type(record)
-        if arrow_type is None or pyarrow.types.is_string(arrow_type):
+        text = record.fix.encode(raw)
+        dtype = self._arrow_type(record)
+        if dtype is None or pyarrow.types.is_string(dtype):
             return text
         try:
-            return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), arrow_type)[0].as_py()
+            return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), dtype)[0].as_py()
         except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, ValueError):
             return text
 
     def meaning(self, field: int | str, raw: Any) -> str | None:
-        """What one value means, through the record's own `meaning`.
+        """What one value means, through the record's own `fix.meaning`.
 
         Encoded first, so a value spelled by its meaning still finds it:
         `Side=Buy` and `Side=1` both mean "Buy".
@@ -450,22 +362,24 @@ class FieldAccess:
         record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
         if record is None:
             return None
-        return record.meaning(record.encode(raw))
+        return record.fix.meaning(record.fix.encode(raw))
 
     @cached_property
     def _arrow_types(self) -> dict[int | str, pyarrow.DataType | None]:
         return {}
 
-    def _arrow_type(self, record: FieldEntry) -> pyarrow.DataType | None:
+    def _arrow_type(self, record: Field) -> pyarrow.DataType | None:
         if self.registry is None:
             return None
-        if record.key not in self._arrow_types:
+        key = record.fix.key
+        if key not in self._arrow_types:
             try:
-                found = self.registry.field(record.key, self.version).arrow_type
-            except (KeyError, OSError, ValueError):
-                found = None
-            self._arrow_types[record.key] = found
-        return self._arrow_types[record.key]
+                declared = self.registry.field(key, self.version)
+            except (OSError, ValueError):
+                declared = None
+            found = None if declared is None else declared.dtype
+            self._arrow_types[key] = found
+        return self._arrow_types[key]
 
     # -- whole columns --------------------------------------------------------
     #
@@ -475,7 +389,7 @@ class FieldAccess:
 
     @staticmethod
     def entries_of(fields: Iterable[Any]) -> Iterator[Entry]:
-        """`Entry` views over pairs, stored `kwargs` structs, or ready entries."""
+        """`Entry` views over pairs, stored structs, or ready entries."""
         for field in fields or ():
             if isinstance(field, Entry):
                 yield field
@@ -516,7 +430,7 @@ class FieldAccess:
 
     @classmethod
     def first_arrow_tags(cls, stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
-        """First value of each wanted tag out of a stored `kwargs` column."""
+        """First value of each wanted tag out of a stored `entries` column."""
         flattened = cls._flattened(stored, rows)
         if flattened is None:
             return {}
@@ -604,7 +518,7 @@ class FieldAccess:
 
 def _KEY_TAIL(spelling: str) -> str | int:
     """The name segment a dictionary record is asked for, index stripped."""
-    match = _KEY.match(spelling)
+    match = KEY_VIEW.match(spelling)
     if match is None:
         return spelling
     return match.group("name") or spelling

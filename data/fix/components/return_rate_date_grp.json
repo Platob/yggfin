@@ -3,150 +3,215 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoReturnRateDates",
-   "required": false,
-   "tag": 42709,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ReturnRateDateMode",
-     "required": false,
-     "tag": 42710
+ "declaration": {
+  "name": "ReturnRateDateGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ReturnRateDateGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoReturnRateDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42709"
     },
-    {
-     "kind": "component",
-     "name": "ReturnRateValuationDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateRelativeTo",
-     "required": false,
-     "tag": 42711
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateOffsetPeriod",
-     "required": false,
-     "tag": 42712
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateOffsetUnit",
-     "required": false,
-     "tag": 42713
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateOffsetDayType",
-     "required": false,
-     "tag": 42714
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateUnadjusted",
-     "required": false,
-     "tag": 42715
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateRelativeTo",
-     "required": false,
-     "tag": 42716
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateOffsetPeriod",
-     "required": false,
-     "tag": 42717
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateOffsetUnit",
-     "required": false,
-     "tag": 42718
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateOffsetDayType",
-     "required": false,
-     "tag": 42719
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationStartDateAdjusted",
-     "required": false,
-     "tag": 42720
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateUnadjusted",
-     "required": false,
-     "tag": 42721
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateRelativeTo",
-     "required": false,
-     "tag": 42722
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateOffsetPeriod",
-     "required": false,
-     "tag": 42723
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateOffsetUnit",
-     "required": false,
-     "tag": 42724
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateOffsetDayType",
-     "required": false,
-     "tag": 42725
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationEndDateAdjusted",
-     "required": false,
-     "tag": 42726
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationFrequencyPeriod",
-     "required": false,
-     "tag": 42727
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationFrequencyUnit",
-     "required": false,
-     "tag": 42728
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationFrequencyRollConvention",
-     "required": false,
-     "tag": 42729
-    },
-    {
-     "kind": "field",
-     "name": "ReturnRateValuationDateBusinessDayConvention",
-     "required": false,
-     "tag": 42730
-    },
-    {
-     "kind": "component",
-     "name": "ReturnRateValuationDateBusinessCenterGrp",
-     "required": false
+    "item": {
+     "name": "ReturnRateDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateDateMode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42710"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRateValuationDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ReturnRateValuationDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42711"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42712"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42713"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42714"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42715"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42716"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42717"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42718"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42719"
+       }
+      },
+      {
+       "name": "ReturnRateValuationStartDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42720"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42721"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42722"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42723"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42724"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42725"
+       }
+      },
+      {
+       "name": "ReturnRateValuationEndDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42726"
+       }
+      },
+      {
+       "name": "ReturnRateValuationFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42727"
+       }
+      },
+      {
+       "name": "ReturnRateValuationFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42728"
+       }
+      },
+      {
+       "name": "ReturnRateValuationFrequencyRollConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42729"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42730"
+       }
+      },
+      {
+       "name": "ReturnRateValuationDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ReturnRateValuationDateBusinessCenterGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

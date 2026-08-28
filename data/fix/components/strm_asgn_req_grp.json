@@ -3,24 +3,47 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoAsgnReqs",
-   "required": false,
-   "tag": 1499,
-   "members": [
-    {
-     "kind": "component",
-     "name": "Parties",
-     "required": false
+ "declaration": {
+  "name": "StrmAsgnReqGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StrmAsgnReqGrp",
+   "msgtypes": "[\"StreamAssignmentRequest\"]"
+  },
+  "fields": [
+   {
+    "name": "NoAsgnReqs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1499"
     },
-    {
-     "kind": "component",
-     "name": "StrmAsgnReqInstrmtGrp",
-     "required": false
+    "item": {
+     "name": "AsgnReq",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
+      },
+      {
+       "name": "StrmAsgnReqInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StrmAsgnReqInstrmtGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

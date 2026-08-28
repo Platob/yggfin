@@ -3,74 +3,109 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegEvents",
-   "required": false,
-   "tag": 2059,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegEventType",
-     "required": false,
-     "tag": 2060
+ "declaration": {
+  "name": "LegEvntGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegEvntGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2059"
     },
-    {
-     "kind": "field",
-     "name": "LegEventDate",
-     "required": false,
-     "tag": 2061
-    },
-    {
-     "kind": "field",
-     "name": "LegEventTime",
-     "required": false,
-     "tag": 2062
-    },
-    {
-     "kind": "field",
-     "name": "LegEventTimeUnit",
-     "required": false,
-     "tag": 2063
-    },
-    {
-     "kind": "field",
-     "name": "LegEventTimePeriod",
-     "required": false,
-     "tag": 2064
-    },
-    {
-     "kind": "field",
-     "name": "LegEventMonthYear",
-     "required": false,
-     "tag": 2341
-    },
-    {
-     "kind": "field",
-     "name": "LegEventPx",
-     "required": false,
-     "tag": 2065
-    },
-    {
-     "kind": "field",
-     "name": "LegEventText",
-     "required": false,
-     "tag": 2066
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegEventTextLen",
-     "required": false,
-     "tag": 2074
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegEventText",
-     "required": false,
-     "tag": 2075
+    "item": {
+     "name": "LegEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2060"
+       }
+      },
+      {
+       "name": "LegEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2061"
+       }
+      },
+      {
+       "name": "LegEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2062"
+       }
+      },
+      {
+       "name": "LegEventTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2063"
+       }
+      },
+      {
+       "name": "LegEventTimePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2064"
+       }
+      },
+      {
+       "name": "LegEventMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2341"
+       }
+      },
+      {
+       "name": "LegEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2065"
+       }
+      },
+      {
+       "name": "LegEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2066"
+       }
+      },
+      {
+       "name": "EncodedLegEventTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2074"
+       }
+      },
+      {
+       "name": "EncodedLegEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2075"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

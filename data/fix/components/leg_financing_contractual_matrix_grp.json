@@ -3,32 +3,53 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLegContractualMatrices",
-   "required": false,
-   "tag": 42203,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegContractualMatrixSource",
-     "required": false,
-     "tag": 42204
+ "declaration": {
+  "name": "LegFinancingContractualMatrixGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegFinancingContractualMatrixGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"NewOrderCross\",\"News\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"QuoteCancel\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityListRequest\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLegContractualMatrices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "42203"
     },
-    {
-     "kind": "field",
-     "name": "LegContractualMatrixDate",
-     "required": false,
-     "tag": 42205
-    },
-    {
-     "kind": "field",
-     "name": "LegContractualMatrixTerm",
-     "required": false,
-     "tag": 42206
+    "item": {
+     "name": "LegContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42204"
+       }
+      },
+      {
+       "name": "LegContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42205"
+       }
+      },
+      {
+       "name": "LegContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42206"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

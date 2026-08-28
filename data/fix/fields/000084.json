@@ -1542,20 +1542,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "PROPRIETARY",
-   "1": "EIC"
-  },
-  "encoded": {
-   "proprietary": "0",
-   "eic": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "proprietary",
-   "1": "eic"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "PROPRIETARY"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "EIC"
+    ]
+   }
+  ]
  },
  "42193": {
   "name": "DeliveryStreamDeliveryPointDesc",
@@ -1756,20 +1758,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "CLOSE",
-   "1": "HEDGE"
-  },
-  "encoded": {
-   "close": "0",
-   "hedge": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "close",
-   "1": "hedge"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "CLOSE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "HEDGE"
+    ]
+   }
+  ]
  },
  "42218": {
   "name": "DividendFloatingRateIndex",
@@ -2002,20 +2006,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EX_DATE",
-   "1": "RECORD_DATE"
-  },
-  "encoded": {
-   "exdate": "0",
-   "recorddate": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "exdate",
-   "1": "recorddate"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EX_DATE"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "RECORD_DATE"
+    ]
+   }
+  ]
  },
  "42247": {
   "name": "DividendAmountType",
@@ -2024,28 +2030,36 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "RECORD_AMOUNT",
-   "1": "EX_AMOUNT",
-   "2": "PAID_AMOUNT",
-   "3": "PER_MASTER_CONFIRM"
-  },
-  "encoded": {
-   "recordamount": "0",
-   "examount": "1",
-   "paidamount": "2",
-   "permasterconfirm": "3",
-   "0": "0",
-   "1": "1",
-   "2": "2",
-   "3": "3"
-  },
-  "decoded": {
-   "0": "recordamount",
-   "1": "examount",
-   "2": "paidamount",
-   "3": "permasterconfirm"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "RECORD_AMOUNT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "EX_AMOUNT"
+    ]
+   },
+   {
+    "value": "2",
+    "meaning": "",
+    "aliases": [
+     "PAID_AMOUNT"
+    ]
+   },
+   {
+    "value": "3",
+    "meaning": "",
+    "aliases": [
+     "PER_MASTER_CONFIRM"
+    ]
+   }
+  ]
  },
  "42248": {
   "name": "DividendUnderlierRefID",
@@ -2134,20 +2148,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "POTENTIAL_ADJUSTMENT",
-   "1": "CASH_EQUIVALENT"
-  },
-  "encoded": {
-   "potentialadjustment": "0",
-   "cashequivalent": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "potentialadjustment",
-   "1": "cashequivalent"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "POTENTIAL_ADJUSTMENT"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CASH_EQUIVALENT"
+    ]
+   }
+  ]
  },
  "42259": {
   "name": "DividendComposition",
@@ -2156,20 +2172,22 @@
   "versions": [
    "5.0.SP2"
   ],
-  "value_names": {
-   "0": "EQUITY_AMOUNT_RECEIVER",
-   "1": "CALCULATION_AGENT"
-  },
-  "encoded": {
-   "equityamountreceiver": "0",
-   "calculationagent": "1",
-   "0": "0",
-   "1": "1"
-  },
-  "decoded": {
-   "0": "equityamountreceiver",
-   "1": "calculationagent"
-  }
+  "values": [
+   {
+    "value": "0",
+    "meaning": "",
+    "aliases": [
+     "EQUITY_AMOUNT_RECEIVER"
+    ]
+   },
+   {
+    "value": "1",
+    "meaning": "",
+    "aliases": [
+     "CALCULATION_AGENT"
+    ]
+   }
+  ]
  },
  "42260": {
   "name": "SpecialDividendsIndicator",

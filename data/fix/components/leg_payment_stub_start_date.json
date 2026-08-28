@@ -3,53 +3,80 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateUnadjusted",
-   "required": false,
-   "tag": 42497
+ "declaration": {
+  "name": "LegPaymentStubStartDate",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegPaymentStubStartDate",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateBusinessDayConvention",
-   "required": false,
-   "tag": 42498
-  },
-  {
-   "kind": "component",
-   "name": "LegPaymentStubStartDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateRelativeTo",
-   "required": false,
-   "tag": 42499
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateOffsetPeriod",
-   "required": false,
-   "tag": 42500
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateOffsetUnit",
-   "required": false,
-   "tag": 42501
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateOffsetDayType",
-   "required": false,
-   "tag": 42502
-  },
-  {
-   "kind": "field",
-   "name": "LegPaymentStubStartDateAdjusted",
-   "required": false,
-   "tag": 42503
-  }
- ]
+  "fields": [
+   {
+    "name": "LegPaymentStubStartDateUnadjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42497"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42498"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegPaymentStubStartDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegPaymentStubStartDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42499"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42500"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42501"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42502"
+    }
+   },
+   {
+    "name": "LegPaymentStubStartDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42503"
+    }
+   }
+  ]
+ }
 }

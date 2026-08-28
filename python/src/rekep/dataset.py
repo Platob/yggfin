@@ -403,29 +403,28 @@ def _polars_table(frame: Any, target: StructField, polars: Any) -> pyarrow.Table
     """Export at the newest compatible level, then enforce the Arrow contract."""
     compatibility = getattr(polars, "CompatLevel", None)
     options = {}
-    if compatibility is not None and not _needs_compatible_polars_arrow(target.arrow_type):
+    if compatibility is not None and not _needs_compatible_polars_arrow(target.dtype):
         options["compat_level"] = compatibility.newest()
     return target.cast_arrow_table(frame.to_arrow(**options))
 
 
-def _needs_compatible_polars_arrow(data_type: pyarrow.DataType) -> bool:
+def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:
     """Whether newest Polars export would replace a declared text buffer with a view."""
     types = pyarrow.types
     if (
-        types.is_string(data_type)
-        or types.is_large_string(data_type)
-        or types.is_binary(data_type)
-        or types.is_large_binary(data_type)
+        types.is_string(dtype)
+        or types.is_large_string(dtype)
+        or types.is_binary(dtype)
+        or types.is_large_binary(dtype)
     ):
         return True
-    if types.is_dictionary(data_type):
-        return _needs_compatible_polars_arrow(data_type.value_type)
-    storage = getattr(data_type, "storage_type", None)
+    if types.is_dictionary(dtype):
+        return _needs_compatible_polars_arrow(dtype.value_type)
+    storage = getattr(dtype, "storage_type", None)
     if storage is not None:
         return _needs_compatible_polars_arrow(storage)
     return any(
-        _needs_compatible_polars_arrow(data_type.field(index).type)
-        for index in range(data_type.num_fields)
+        _needs_compatible_polars_arrow(dtype.field(index).type) for index in range(dtype.num_fields)
     )
 
 

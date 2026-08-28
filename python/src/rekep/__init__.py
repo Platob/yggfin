@@ -2,7 +2,7 @@
 
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
-from rekep.enums import Currency, MarketKind, Ranged
+from rekep.enums import Ascii32, Ascii64, Currency, MarketKind
 from rekep.fields import (
     Field,
     FieldBuilder,
@@ -27,7 +27,7 @@ from rekep.market import (
     Order,
 )
 from rekep.tasks import Task
-from rekep.text import FixMsg, Kwarg, Message, TextFile, TextFiles
+from rekep.text import Entry, FixMsg, Message, TextFile, TextFiles
 from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
@@ -36,6 +36,8 @@ __version__ = "0.1.0"
 __all__ = [
     "Book",
     "Convertible",
+    "Ascii32",
+    "Ascii64",
     "Currency",
     "Dataset",
     "Event",
@@ -44,7 +46,7 @@ __all__ = [
     "FieldBuilder",
     "FixEvents",
     "FixMsg",
-    "Kwarg",
+    "Entry",
     "FieldRule",
     "FieldRules",
     "FixCodec",
@@ -62,7 +64,6 @@ __all__ = [
     "Message",
     "Order",
     "ProtocolMetadata",
-    "Ranged",
     "StructField",
     "Task",
     "TextFile",

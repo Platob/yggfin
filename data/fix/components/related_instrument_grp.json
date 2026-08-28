@@ -3,74 +3,109 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoRelatedInstruments",
-   "required": false,
-   "tag": 1647,
-   "members": [
-    {
-     "kind": "field",
-     "name": "RelatedInstrumentType",
-     "required": false,
-     "tag": 1648
+ "declaration": {
+  "name": "RelatedInstrumentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RelatedInstrumentGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Email\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"News\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoRelatedInstruments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1647"
     },
-    {
-     "kind": "field",
-     "name": "RelatedSymbol",
-     "required": false,
-     "tag": 1649
-    },
-    {
-     "kind": "field",
-     "name": "RelatedSecurityID",
-     "required": false,
-     "tag": 1650
-    },
-    {
-     "kind": "field",
-     "name": "RelatedSecurityIDSource",
-     "required": false,
-     "tag": 1651
-    },
-    {
-     "kind": "field",
-     "name": "RelatedSecurityType",
-     "required": false,
-     "tag": 1652
-    },
-    {
-     "kind": "field",
-     "name": "RelatedMaturityMonthYear",
-     "required": false,
-     "tag": 1653
-    },
-    {
-     "kind": "field",
-     "name": "RelatedToSecurityID",
-     "required": false,
-     "tag": 2413
-    },
-    {
-     "kind": "field",
-     "name": "RelatedToSecurityIDSource",
-     "required": false,
-     "tag": 2414
-    },
-    {
-     "kind": "field",
-     "name": "RelatedToStreamXIDRef",
-     "required": false,
-     "tag": 2415
-    },
-    {
-     "kind": "field",
-     "name": "RelatedToDividendPeriodXIDRef",
-     "required": false,
-     "tag": 2417
+    "item": {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
+       }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

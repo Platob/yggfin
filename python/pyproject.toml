@@ -22,14 +22,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Reading TOML needs nothing: `tomllib` is stdlib. Writing it does.
 yaml = ["pyyaml>=6.0"]
-toml = ["tomli-w>=1.0"]
 # The Iceberg dataset, with the SQLite catalog that makes it fully local and
 # the Rust core every partition transform but `identity` is written through.
 iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
 polars = ["polars>=1.36"]
-all = ["rekep[iceberg,polars,toml,yaml]"]
+all = ["rekep[iceberg,polars,yaml]"]
 
 [project.scripts]
 # Publishing a declaration and checking one loads are things CI and a
@@ -48,7 +46,7 @@ docs = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
-    "rekep[iceberg,polars,toml,yaml]",
+    "rekep[iceberg,polars,yaml]",
 ]
 # What the benchmarks race the shipped implementations against, and nothing
 # else. Neither is imported by `src/`: a candidate that loses a race must not

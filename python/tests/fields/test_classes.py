@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import decimal
 import functools
+import typing
 from typing import Annotated
 
 import pyarrow
@@ -30,7 +31,7 @@ class Book(Convertible):
     name: str
     """Human name of the book."""
 
-    size: Annotated[int, Field(arrow_type=pyarrow.int32(), metadata={"unit": "lots"})]
+    size: Annotated[int, Field(dtype=pyarrow.int32(), metadata={"unit": "lots"})]
     price: decimal.Decimal
     opened: datetime.datetime
     venues: list[Venue]
@@ -79,8 +80,8 @@ def test_the_rebuilt_class_is_keyword_only(rebuilt: type) -> None:
 
 
 def test_exact_types_are_carried_not_re_inferred(rebuilt: type) -> None:
-    assert rebuilt.into_field().field("size").arrow_type == pyarrow.int32()
-    assert rebuilt.into_field().field("price").arrow_type == pyarrow.decimal128(38, 9)
+    assert rebuilt.into_field().field("size").dtype == pyarrow.int32()
+    assert rebuilt.into_field().field("price").dtype == pyarrow.decimal128(38, 9)
 
 
 def test_metadata_and_descriptions_survive(rebuilt: type) -> None:
@@ -89,7 +90,7 @@ def test_metadata_and_descriptions_survive(rebuilt: type) -> None:
 
 
 def test_a_nested_structs_own_descriptions_survive(rebuilt: type) -> None:
-    item = rebuilt.into_field().field("venues").arrow_type.field(0)
+    item = rebuilt.into_field().field("venues").dtype.field(0)
     assert item.type.field(0).metadata[b"description"] == b"ISO 10383 market identifier."
 
 
@@ -190,3 +191,43 @@ def test_a_builder_can_be_pointed_at_another_base() -> None:
         Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())]))
     )
     assert issubclass(built, Base)
+
+
+def test_a_list_entry_class_is_named_after_the_list() -> None:
+    """Two groups in one struct must not both be classes called `Item`."""
+    schema = pyarrow.schema(
+        [
+            pyarrow.field(
+                "no_party_ids", pyarrow.list_(pyarrow.struct([("id", pyarrow.string())]))
+            ),
+            pyarrow.field("no_legs", pyarrow.list_(pyarrow.struct([("symbol", pyarrow.string())]))),
+        ]
+    )
+    built = Field.from_arrow_schema(schema).into_dataclass("Order")
+    entries = [
+        typing.get_args(typing.get_args(typing.get_args(annotation)[0])[0])[0]
+        for annotation in built.__annotations__.values()
+    ]
+
+    assert [entry.__name__ for entry in entries] == ["NoPartyIds", "NoLegs"]
+    assert (
+        built.into_field()
+        .into_arrow_schema()
+        .equals(pyarrow.schema(list(schema), metadata={"name": "Order"}))
+    )
+
+
+def test_a_column_python_cannot_spell_becomes_an_attribute_that_projects_back() -> None:
+    """FIX tag 236 is `Yield`, and `yield` is a statement, not an attribute."""
+    schema = pyarrow.schema([("yield", pyarrow.float64()), ("symbol", pyarrow.string())])
+
+    built = Field.from_arrow_schema(schema).into_dataclass("Bond")
+
+    assert list(built.__annotations__) == ["yield_", "symbol"]
+    assert (
+        built.into_field()
+        .into_arrow_schema()
+        .equals(pyarrow.schema(list(schema), metadata={"name": "Bond"}))
+    )
+    assert built.into_field_columns() == {"yield_": "yield"}, "the class says what it renamed"
+    assert [member.name for member in built.into_field().fields] == ["yield", "symbol"]

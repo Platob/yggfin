@@ -3,38 +3,61 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSideCollateralReinvestments",
-   "required": false,
-   "tag": 2864,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SideCollateralReinvestmentType",
-     "required": false,
-     "tag": 2867
+ "declaration": {
+  "name": "SideCollateralReinvestmentGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SideCollateralReinvestmentGrp",
+   "msgtypes": "[\"TradeCaptureReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSideCollateralReinvestments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2864"
     },
-    {
-     "kind": "field",
-     "name": "SideCollateralReinvestmentAmount",
-     "required": false,
-     "tag": 2865
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralReinvestmentCurrency",
-     "required": false,
-     "tag": 2866
-    },
-    {
-     "kind": "field",
-     "name": "SideCollateralReinvestmentCurrencyCodeSource",
-     "required": false,
-     "tag": 2932
+    "item": {
+     "name": "SideCollateralReinvestment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideCollateralReinvestmentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2867"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2865"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2866"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2932"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -63,6 +63,26 @@ EXPECTED_BRIDGE_PAIRS = 15
 #: take its column's assertions here with it.
 FLAT_NAMES = (*COLUMNS.values(), "ISINCODE")
 
+#: The standard header the *raw* stage lifts out of `entries` into columns of
+#: its own, tag by column name. Spelled out rather than imported from
+#: `SESSION_FIELDS`, so a field quietly leaving that tuple cannot move both
+#: sides of an assertion together. A row answers to either spelling: the tag,
+#: or the rendered name case-insensitively.
+LIFTED_HEADER = {
+    "8": "BeginString",
+    "9": "BodyLength",
+    "34": "MsgSeqNum",
+    "35": "MsgType",
+    "49": "SenderCompID",
+    "52": "SendingTime",
+    "56": "TargetCompID",
+}
+
+#: `CheckSum <10>` is the boundary every lift is measured against -- a field is
+#: eligible only where it stands in front of it -- so it is deliberately not
+#: among them and stays in `entries` for the FIX stage to read.
+UNLIFTED_TRAILER = "10"
+
 #: Row indexes worth naming. `WRAPPED` is a bridge message inside a FIX
 #: envelope -- a wire header and a `#NAME=` body on one line, which answers to
 #: both tells and so is the one the rule order exists for.
@@ -75,6 +95,7 @@ PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED, HASHED = 2, 3, 4, 5, 6, 7, 10
 WIRE = RECORDS[PIPED].decode().split("sending >> ")[1].split(" << ")[0]
 EXPECTED_WIRE_FIELDS = 15
 
+#: Every field the caret-separated line writes, in wire order.
 CARET_RAW_PAIRS = [
     (8, "FIX4"),
     (9, "61"),
@@ -84,6 +105,11 @@ CARET_RAW_PAIRS = [
     (52, "20260814-00:05:01.148"),
     (10, "017"),
 ]
+
+#: What is left of it in `entries`: the checksum alone. Every other field it
+#: writes is standard header, and the raw stage lifts all six into columns
+#: whatever the payload's version turns out to be.
+CARET_RESIDUAL_PAIRS = [(10, "017")]
 
 BRIDGE_RAW_PAIRS = [
     ("ISINCODE", "XX0000084733"),
@@ -121,6 +147,10 @@ def test_the_sample_is_the_shape_the_tests_assume() -> None:
     assert SAMPLE_BYTES.count(b"\x01") > 0, "the SOH lines are bytes, not four characters"
     assert b"^A9=61" in SAMPLE_BYTES, "and the caret-A line is the two characters"
     assert len(WIRE.strip("|").split("|")) == EXPECTED_WIRE_FIELDS
+    assert CARET_RESIDUAL_PAIRS == [
+        pair for pair in CARET_RAW_PAIRS if str(pair[0]) not in LIFTED_HEADER
+    ], "the caret line is standard header and a checksum, and nothing else"
+    assert UNLIFTED_TRAILER not in LIFTED_HEADER
 
 
 @pytest.fixture(scope="module")
@@ -155,12 +185,27 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
         "protocol_version",
         "Parties",
     } & set(raw_table.schema.names)
-    assert {"protocol_code", "MsgType"} <= set(raw_table.schema.names)
-    assert _keys(raw_table.column("kwargs")[PIPED]) == [
+    assert {"protocol_code", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
+    assert "CheckSum" not in raw_table.schema.names, "the boundary is not one of the lifted"
+    # Protocol-neutral: this stage reads no numbers and no clocks, so every
+    # one of the seven is stored as the text the payload spelled.
+    for name in LIFTED_HEADER.values():
+        assert pyarrow.types.is_string(raw_table.schema.field(name).type), name
+    assert _keys(raw_table.column("entries")[PIPED]) == [
         token.split("=", 1)[0]
         for token in WIRE.strip("|").split("|")
-        if token.split("=", 1)[0] != "35"
+        if token.split("=", 1)[0] not in LIFTED_HEADER
     ]
+    assert [raw_table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX.4.2",
+        "176",
+        "1092",
+        "D",
+        "BUYSIDE",
+        "20260814-00:05:01.147",
+        "XPAR",
+    ]
+    assert UNLIFTED_TRAILER in _keys(raw_table.column("entries")[PIPED])
 
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
@@ -182,12 +227,12 @@ def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Tab
     assert table.column("Symbol")[PIPED].as_py() == "TTF"
     assert table.column("Side")[PIPED].as_py() == "1"
     assert table.column("Price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
-    assert _tagged(table.column("kwargs")[PIPED]) == [
-        (52, "20260814-00:05:01.147"),
-        (44, "41.2500"),
-    ]
-    assert _keys(table.column("kwargs")[PIPED]) == ["SendingTime", "Price"]
-    assert _named(table.column("kwargs")[PIPED]) == []
+    # `52` used to sit here too, as the sidecar an instant column cannot spell
+    # back. The raw stage lifts it now, so it never reaches the FIX stage to
+    # be audited and the trailing zeros of `44=41.2500` are the only text left.
+    assert _tagged(table.column("entries")[PIPED]) == [(44, "41.2500")]
+    assert _keys(table.column("entries")[PIPED]) == ["Price"]
+    assert _named(table.column("entries")[PIPED]) == []
     around = str([table.column(name)[PIPED].as_py() for name in FLAT_NAMES])
     assert "sending" not in around and "queued" not in around
 
@@ -196,25 +241,40 @@ def test_every_field_of_a_wire_message_lands_in_one_of_the_three_places(
     table: pyarrow.Table,
 ) -> None:
     """Nothing drops or duplicates across both pair lists and the columns."""
-    pairs = _tagged(table.column("kwargs")[PIPED])
+    pairs = _tagged(table.column("entries")[PIPED])
     resolved = len(pairs) - len(_audit_pairs(table, PIPED, pairs))
-    rest = len(_named(table.column("kwargs")[PIPED]))
+    rest = len(_named(table.column("entries")[PIPED]))
     assert resolved + rest + _lifted(table, PIPED) == EXPECTED_WIRE_FIELDS
 
 
 def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     table: pyarrow.Table,
 ) -> None:
-    """Known `FIX.4.4` decodes; malformed `FIX4` remains lossless raw input."""
+    """Known `FIX.4.4` decodes; malformed `FIX4` still gets only its header read.
+
+    The header lift is the raw stage's and knows no versions, so the caret
+    line's six standard fields land in columns exactly as the SOH line's do.
+    What separates the two is everything past the header: `FIX.4.4` types its
+    body, and `FIX4` names no dictionary, so its body stays raw.
+    """
     assert table.column("BeginString")[SOHED].as_py() == "FIX.4.4"
     assert table.column("MsgSeqNum")[SOHED].as_py() == 1094
     assert table.column("CheckSum")[SOHED].as_py() == "118"
     assert table.column("MsgType")[SOHED].as_py() == "8"
-    assert _tagged(table.column("kwargs")[SOHED]) == [(31, "41.2500"), (6, "41.2500")]
+    assert _tagged(table.column("entries")[SOHED]) == [(31, "41.2500"), (6, "41.2500")]
 
-    assert _tagged(table.column("kwargs")[CARET]) == CARET_RAW_PAIRS
-    assert _keys(table.column("kwargs")[CARET]) == [str(tag) for tag, _ in CARET_RAW_PAIRS]
-    assert _named(table.column("kwargs")[CARET]) == []
+    assert _tagged(table.column("entries")[CARET]) == CARET_RESIDUAL_PAIRS
+    assert _keys(table.column("entries")[CARET]) == [str(tag) for tag, _ in CARET_RESIDUAL_PAIRS]
+    assert _named(table.column("entries")[CARET]) == []
+    assert [table.column(name)[CARET].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX4",
+        61,
+        1093,
+        "0",
+        "XPAR",
+        datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+        "BUYSIDE",
+    ], "every header field the line wrote, and the two integers and the instant typed"
     _assert_no_semantic_columns(table, CARET)
 
 
@@ -224,7 +284,7 @@ def test_a_flat_tag_stays_only_for_a_repeat_or_a_lossless_audit(table: pyarrow.T
     for row in range(table.num_rows):
         if row == CARET:
             continue
-        pairs = _tagged(table.column("kwargs")[row])
+        pairs = _tagged(table.column("entries")[row])
         if pairs is None:
             continue
         left = [tag for tag, _ in pairs if tag in COLUMNS]
@@ -236,8 +296,8 @@ def test_every_field_of_the_bridge_line_lands_in_one_of_the_four_places(
     table: pyarrow.Table,
 ) -> None:
     """A versionless named message remains complete and in wire order."""
-    assert _tagged(table.column("kwargs")[BRIDGE]) == []
-    assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert _tagged(table.column("entries")[BRIDGE]) == []
+    assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert len(BRIDGE_RAW_PAIRS) == EXPECTED_BRIDGE_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
 
@@ -246,17 +306,17 @@ def test_the_versionless_bridge_line_does_not_guess_a_dictionary(
     table: pyarrow.Table,
 ) -> None:
     """Known-looking names are still raw without message-local version evidence."""
-    raw = dict(_named(table.column("kwargs")[BRIDGE]))
+    raw = dict(_named(table.column("entries")[BRIDGE]))
     assert raw["SYMBOL"] == "TTF"
     assert raw["SIDE"] == "1"
     assert raw["ORDERQTY"] == "1200"
     assert raw["PRICE"] == "41.2500"
-    assert _tagged(table.column("kwargs")[BRIDGE]) == []
+    assert _tagged(table.column("entries")[BRIDGE]) == []
     _assert_no_semantic_columns(table, BRIDGE)
 
 
 def test_the_versionless_bridge_group_stays_raw_in_wire_order(table: pyarrow.Table) -> None:
-    pairs = _named(table.column("kwargs")[BRIDGE])
+    pairs = _named(table.column("entries")[BRIDGE])
     assert pairs[6:13] == BRIDGE_RAW_PAIRS[6:13]
     assert pairs[13] == ("TRANSACTTIME", "20260814-00:05:01.148")
     assert table.column("TransactTime")[BRIDGE].as_py() is None
@@ -308,7 +368,7 @@ def test_a_bridge_message_in_a_fix_envelope_keeps_both_halves(table: pyarrow.Tab
     assert table.column("Side")[WRAPPED].as_py() == "1"
     assert table.column("OrderQty")[WRAPPED].as_py() == 1200.0
     assert table.column("ISINCODE")[WRAPPED].as_py() == "XX0000084733"
-    assert _named(table.column("kwargs")[WRAPPED]) == []
+    assert _named(table.column("entries")[WRAPPED]) == []
 
 
 def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
@@ -321,15 +381,15 @@ def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
     it: `#A=1#B=2` came back as `A=''` and `B` glued to whatever followed. It
     parsed, which is how it would have travelled.
     """
-    assert _named(table.column("kwargs")[HASHED]) == HASHED_RAW_PAIRS
-    assert _tagged(table.column("kwargs")[HASHED]) == []
-    assert _keys(table.column("kwargs")[HASHED]) == [key for key, _ in HASHED_RAW_PAIRS]
+    assert _named(table.column("entries")[HASHED]) == HASHED_RAW_PAIRS
+    assert _tagged(table.column("entries")[HASHED]) == []
+    assert _keys(table.column("entries")[HASHED]) == [key for key, _ in HASHED_RAW_PAIRS]
     _assert_no_semantic_columns(table, HASHED)
 
 
 def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -> None:
     """Two separators on one line, and neither is the other's."""
-    pairs = _named(table.column("kwargs")[HASHED])
+    pairs = _named(table.column("entries")[HASHED])
     assert pairs[4:7] == [
         ("NOPARTYIDS", "1"),
         ("NOPARTYIDS[0].PARTYID", "BUYSIDE"),
@@ -347,8 +407,8 @@ def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> No
 
 
 def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
-    assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
-    assert _keys(table.column("kwargs")[BRIDGE]) == [key for key, _ in BRIDGE_RAW_PAIRS]
+    assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert _keys(table.column("entries")[BRIDGE]) == [key for key, _ in BRIDGE_RAW_PAIRS]
     assert table.column("ISINCODE")[BRIDGE].as_py() is None
     _assert_no_semantic_columns(table, BRIDGE)
 
@@ -358,7 +418,7 @@ def test_a_line_carrying_no_message_has_no_pairs_at_all(table: pyarrow.Table) ->
     for row, protocol in enumerate(EXPECTED_PROTOCOLS):
         if protocol != NO_PROTOCOL:
             continue
-        assert table.column("kwargs")[row].as_py() is None
+        assert table.column("entries")[row].as_py() is None
         assert table.column("Parties")[row].as_py() is None
         assert _lifted(table, row) == 0
 
@@ -385,6 +445,60 @@ def test_a_wire_message_lands_its_header_and_trailer_in_columns(table: pyarrow.T
     assert table.column("CheckSum")[PIPED].as_py() == "203"
 
 
+def test_a_header_field_written_twice_two_ways_is_lifted_by_neither(tmp_path: Path) -> None:
+    """Two readings of one fact is not one statement of it.
+
+    A row spelling `MsgSeqNum <34>` twice with two values has not said what its
+    sequence number is, so the column stays null and both readings stay in
+    `entries` where a reader can see them disagree. Spelled twice with one
+    value it *has* said it, and every occurrence leaves the list.
+    """
+    staged = _staged_lines(
+        tmp_path / "torn.txt",
+        "FixSession_XPAR",
+        [
+            "sending >> 8=FIX.4.4|9=99|35=D|34=7|49=BUYSIDE|34=8|55=TTF|10=001|",
+            "sending >> 8=FIX.4.4|9=99|35=D|34=7|49=BUYSIDE|34=7|55=TTF|10=002|",
+        ],
+    )
+    assert staged.column("MsgSeqNum").to_pylist() == [None, "7"]
+    assert _tagged(staged.column("entries")[0]) == [
+        (34, "7"),
+        (34, "8"),
+        (55, "TTF"),
+        (10, "001"),
+    ], "neither reading is lifted, so both are still there to be read"
+    assert _tagged(staged.column("entries")[1]) == [(55, "TTF"), (10, "002")]
+    assert staged.column("SenderCompID").to_pylist() == ["BUYSIDE", "BUYSIDE"], (
+        "and one torn field costs the six beside it nothing"
+    )
+
+
+def test_the_header_lift_stops_at_the_checksum_it_is_measured_against(
+    tmp_path: Path,
+) -> None:
+    """`CheckSum <10>` never lifts itself, and nothing standing behind it lifts either.
+
+    A field is header because of where it is, not only what it is called: the
+    trailer is the boundary, so a `49` written after it is something else the
+    line said and stays in `entries` beside the checksum that ended the message.
+    """
+    staged = _staged_lines(
+        tmp_path / "trailing.txt",
+        "FixSession_XPAR",
+        ["sending >> 8=FIX.4.4|9=99|35=D|34=9|55=TTF|10=003|49=LATE|52=20260814-09:30:00.000"],
+    )
+    assert staged.column("SenderCompID")[0].as_py() is None
+    assert staged.column("SendingTime")[0].as_py() is None
+    assert staged.column("MsgSeqNum")[0].as_py() == "9", "what stood in front of it still lifted"
+    assert _tagged(staged.column("entries")[0]) == [
+        (55, "TTF"),
+        (10, "003"),
+        (49, "LATE"),
+        (52, "20260814-09:30:00.000"),
+    ]
+
+
 def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) -> None:
     """The other half of the flat layer: what a desk queries a fill by."""
     assert table.column("Symbol")[SOHED].as_py() == "TTF"
@@ -402,7 +516,7 @@ def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) ->
 
 def test_a_malformed_version_keeps_its_checksum_raw_and_lossless(table: pyarrow.Table) -> None:
     """Unknown `FIX4` cannot type fields, but raw CheckSum still keeps its zero."""
-    assert dict(_tagged(table.column("kwargs")[CARET]))[10] == "017"
+    assert dict(_tagged(table.column("entries")[CARET]))[10] == "017"
     assert table.column("CheckSum")[CARET].as_py() is None
     _assert_no_semantic_columns(table, CARET)
 
@@ -465,7 +579,7 @@ def test_a_tag_is_lifted_only_where_it_occurs_once_in_its_own_line(
             "sending >> 8=FIX.4.4|9=88|35=D|34=9|49=BUYSIDE|56=XPAR|55=TTF|54=1|44=41.25|10=012|",
         ],
     )
-    assert _tagged(parsed.column("kwargs")[0]) == [
+    assert _tagged(parsed.column("entries")[0]) == [
         (555, "2"),
         (600, "TTF"),
         (55, "SPREAD"),
@@ -479,7 +593,7 @@ def test_a_tag_is_lifted_only_where_it_occurs_once_in_its_own_line(
     assert parsed.column("MsgSeqNum")[0].as_py() == 8, "while what was written once still lifted"
     assert parsed.column("MsgType")[0].as_py() == "AB"
 
-    assert _tagged(parsed.column("kwargs")[1]) == [], "and the line beside it lifted all of it"
+    assert _tagged(parsed.column("entries")[1]) == [], "and the line beside it lifted all of it"
     assert parsed.column("Symbol")[1].as_py() == "TTF"
     assert parsed.column("Price")[1].as_py() == 41.25
     assert parsed.column("MsgSeqNum")[1].as_py() == 9
@@ -496,14 +610,14 @@ def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
         "sending >> 8=FIX.4.4|9=99|35=A|34=3|49=BUYSIDE|56=XPAR|"
         "627=2|628=HOP1|630=7|628=HOP2|630=8|10=001|",
     )
-    assert [tag for tag, _ in _tagged(parsed.column("kwargs")[0])] == [
+    assert [tag for tag, _ in _tagged(parsed.column("entries")[0])] == [
         627,
         628,
         630,
         628,
         630,
     ]
-    hops = [value for tag, value in _tagged(parsed.column("kwargs")[0]) if tag == 628]
+    hops = [value for tag, value in _tagged(parsed.column("entries")[0]) if tag == 628]
     assert hops == ["HOP1", "HOP2"], "both of them, in the order they relayed it"
     assert parsed.column("SenderCompID")[0].as_py() == "BUYSIDE", "and the scalars still lifted"
 
@@ -518,19 +632,23 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
         "ULBridge",
         "toBridge #ISINCODE=XX00#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>#SENDERCOMPID=BRIDGE1",
     )
-    assert _named(parsed.column("kwargs")[0]) == [
+    assert _named(parsed.column("entries")[0]) == [
         ("ISINCODE", "XX00"),
         ("SYMBOL", "TTF"),
         ("SIDE", "1"),
         ("SENDERCOMPID", "BRIDGE1"),
     ]
-    assert _tagged(parsed.column("kwargs")[0]) == []
-    assert _keys(parsed.column("kwargs")[0]) == [
+    assert _tagged(parsed.column("entries")[0]) == []
+    assert _keys(parsed.column("entries")[0]) == [
         "ISINCODE",
         "SYMBOL",
         "SIDE",
         "SENDERCOMPID",
     ]
+    # `SENDERCOMPID` stays in the list with the rest of them. The header lift
+    # reads FIX's tags, not a bridge's names for them: which name a feed writes
+    # is data, and a rendered spelling is kept exactly as it arrived.
+    assert parsed.column("SenderCompID")[0].as_py() is None
     _assert_no_semantic_columns(parsed, 0)
 
 
@@ -590,12 +708,20 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
-    assert table.column("kwargs")[PIPED].as_py() is None
-    assert _lifted(table, PIPED) == 1, "only Message's promoted MsgType survives"
+    assert table.column("entries")[PIPED].as_py() is None
+    assert _lifted(table, PIPED) == len(LIFTED_HEADER), (
+        "only the standard header the raw stage lifted before any rule ran survives"
+    )
+    assert table.column("MsgType")[PIPED].as_py() == "D"
+    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("CheckSum")[PIPED].as_py() is None, "the trailer was never lifted"
+    assert table.column("Symbol")[PIPED].as_py() is None, "and no rule read the body"
 
 
-def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) -> None:
-    """An empty FIX rule set leaves every raw Message uninterpreted."""
+def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
+    codec: FixCodec,
+) -> None:
+    """An empty FIX rule set reads no payload; the raw stage still lifted the header."""
     quiet = FixCodec(registry=codec.registry, rules=Rules(rules=[]))
     with TextFile.from_path(
         SAMPLE,
@@ -604,16 +730,30 @@ def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) 
     ) as log:
         table = _parsed(log.read_arrow_table(), quiet)
     assert table.column("protocol_code").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
-    assert table.column("kwargs").to_pylist() == [None] * EXPECTED_RECORDS
+    assert table.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("Parties").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("Symbol").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("ISINCODE").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("code").to_pylist() == [""] * EXPECTED_RECORDS
     assert table.column("MsgType").null_count < EXPECTED_RECORDS
+    # The header is not the rule set's to withhold: it was lifted upstream of
+    # any protocol, so it stands here with no rule in sight.
+    assert [table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+        "FIX.4.2",
+        176,
+        1092,
+        "D",
+        "BUYSIDE",
+        datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
+        "XPAR",
+    ]
+    assert table.column("CheckSum").null_count == EXPECTED_RECORDS, (
+        "the trailer is nobody's header, so nothing lifted it"
+    )
     assert all(
         table.column(name).null_count == EXPECTED_RECORDS
         for name in FLAT_NAMES
-        if name != "MsgType"
+        if name not in set(LIFTED_HEADER.values())
     )
 
 
@@ -622,21 +762,26 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
 ) -> None:
     class SparseCodec(FixCodec):
         def into_lifted_columns(
-            self, kwargs: object, version: str | None = None
+            self, entries: object, version: str | None = None
         ) -> tuple[dict[str, object], object]:
-            return {}, kwargs
+            return {}, entries
 
         def into_component_columns(
-            self, kwargs: object, version: str | None = None
+            self, entries: object, version: str | None = None
         ) -> tuple[dict[str, object], object]:
-            return {}, kwargs
+            return {}, entries
 
     sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
-    assert parsed.column("MsgSeqNum")[0].as_py() is None
+    assert parsed.column("Symbol")[0].as_py() is None
     assert parsed.column("Parties")[0].as_py() is None
-    assert [tag for tag, _ in _tagged(parsed.column("kwargs")[0])] == [8, 34, 55]
+    # `8` and `34` are gone from the list and `55` is not: a codec that lifts
+    # nothing cannot suppress the header, because the raw stage lifted it
+    # before this codec was asked anything.
+    assert [tag for tag, _ in _tagged(parsed.column("entries")[0])] == [55]
+    assert parsed.column("MsgSeqNum")[0].as_py() == 7
+    assert parsed.column("BeginString")[0].as_py() == "FIX.4.4"
     assert parsed.column("MsgType").to_pylist() == ["D"]
 
 
@@ -665,7 +810,7 @@ def test_quote_fields_are_typed_once_and_drive_log_correlation(
     assert parsed.column("DefBidSize").to_pylist() == [9.0]
     assert parsed.column("DefOfferSize").to_pylist() == [11.0]
     assert parsed.column("ValidUntilTime").to_pylist() == [datetime(2026, 8, 21, 10, 5, tzinfo=UTC)]
-    assert _tagged(parsed.column("kwargs")[0]) == [(62, "20260821-10:05:00")]
+    assert _tagged(parsed.column("entries")[0]) == [(62, "20260821-10:05:00")]
 
 
 def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCodec) -> None:
@@ -679,7 +824,7 @@ def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCo
     assert parsed.column("NoQuoteEntries").to_pylist() == [2]
     assert parsed.column("QuoteEntryID").to_pylist() == [None]
     assert parsed.column("BidPx").to_pylist() == [None]
-    assert _tagged(parsed.column("kwargs")[0]) == [
+    assert _tagged(parsed.column("entries")[0]) == [
         (295, "2"),
         (299, "Q-1"),
         (132, "100"),
@@ -699,13 +844,10 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     ) as log:
         table = _parsed(log.read_arrow_table(), cold)
     assert table.num_rows == EXPECTED_RECORDS
-    assert _tagged(table.column("kwargs")[PIPED]) == [
-        (8, "FIX.4.2"),
-        (9, "176"),
-        (34, "1092"),
-        (49, "BUYSIDE"),
-        (56, "XPAR"),
-        (52, "20260814-00:05:01.147"),
+    # A cold dictionary types nothing, so the body is intact -- but the header
+    # never needed one, and its six fields plus the discriminator are already
+    # in columns. The checksum stays, as it does under a warm dictionary too.
+    assert _tagged(table.column("entries")[PIPED]) == [
         (11, "ORD-0000038106"),
         (55, "TTF"),
         (54, "1"),
@@ -715,10 +857,12 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
         (59, "0"),
         (10, "203"),
     ]
-    assert len(_keys(table.column("kwargs")[PIPED])) == EXPECTED_WIRE_FIELDS - 1
-    assert _tagged(table.column("kwargs")[BRIDGE]) == []
-    assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
-    assert len(_keys(table.column("kwargs")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
+    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(LIFTED_HEADER)
+    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("MsgSeqNum")[PIPED].as_py() == 1092
+    assert _tagged(table.column("entries")[BRIDGE]) == []
+    assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert len(_keys(table.column("entries")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
     for row in (PIPED, CARET, SOHED, BRIDGE, WRAPPED, HASHED):
         _assert_no_semantic_columns(table, row)
 
@@ -739,8 +883,8 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     table = _parsed(files.read_arrow_table(), codec)
     assert table.num_rows == EXPECTED_RECORDS * 2
     assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS * 2
-    assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
-    assert _named(table.column("kwargs")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert _named(table.column("entries")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
     _assert_no_semantic_columns(table, EXPECTED_RECORDS + BRIDGE)
     sequences = table.column("MsgSeqNum").to_pylist()
@@ -756,24 +900,24 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
 def test_absent_values_never_reach_a_column(tmp_path: Path, codec: FixCodec) -> None:
     message = "toBridge #SYMBOL=TTF|#SIDE=<null>|#ACCOUNT=|#TEXT=N/A|#ORDERQTY=1200"
     table = _one_line(tmp_path / "absent.txt", codec, "ULBridge", message)
-    assert _tagged(table.column("kwargs")[0]) == []
-    assert _named(table.column("kwargs")[0]) == [
+    assert _tagged(table.column("entries")[0]) == []
+    assert _named(table.column("entries")[0]) == [
         ("SYMBOL", "TTF"),
         ("ORDERQTY", "1200"),
     ]
-    assert _keys(table.column("kwargs")[0]) == ["SYMBOL", "ORDERQTY"]
+    assert _keys(table.column("entries")[0]) == ["SYMBOL", "ORDERQTY"]
     _assert_no_semantic_columns(table, 0)
 
     keeping = FixCodec(registry=codec.registry, null_values=frozenset())
     kept = _one_line(tmp_path / "kept.txt", keeping, "ULBridge", message)
-    assert _named(kept.column("kwargs")[0]) == [
+    assert _named(kept.column("entries")[0]) == [
         ("SYMBOL", "TTF"),
         ("SIDE", "<null>"),
         ("ACCOUNT", ""),
         ("TEXT", "N/A"),
         ("ORDERQTY", "1200"),
     ]
-    assert _keys(kept.column("kwargs")[0]) == [
+    assert _keys(kept.column("entries")[0]) == [
         "SYMBOL",
         "SIDE",
         "ACCOUNT",
@@ -805,16 +949,18 @@ def _audit_pairs(
 
 
 def _semantic_floor(table: pyarrow.Table, row: int) -> int:
-    """What a row fills before any dictionary is consulted: `MsgType <35>`, or nothing."""
-    return 1 if table.column("MsgType")[row].as_py() is not None else 0
+    """What a row fills before any dictionary is consulted: the standard header."""
+    return sum(table.column(name)[row].as_py() is not None for name in LIFTED_HEADER.values())
 
 
 def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
     """Unknown-version rows retain pairs without publishing interpreted values.
 
-    `MsgType` is the one column such a row may still fill: it is one tag off
-    the front of a message, found without a dictionary, and a row whose
-    version nothing resolved still knows what kind of message it is.
+    The seven standard header fields are the ones such a row may still fill:
+    they are lifted off the front of the message by the raw stage, before any
+    protocol reads it, and a row whose version nothing resolved still knows
+    who sent what kind of message to whom and when. `CheckSum <10>` is not
+    among them, so it stays with the body a dictionary would have had to type.
     """
     assert _lifted(table, row) == _semantic_floor(table, row)
     assert _component_fields(table, row) == 0
@@ -834,7 +980,7 @@ def _component_fields(table: pyarrow.Table, row: int) -> int:
 
 
 def _entries(scalar: pyarrow.Scalar) -> list[dict[str, object]] | None:
-    """One row of `kwargs`, or `None` where the line carried no message."""
+    """One row of `entries`, or `None` where the line carried no message."""
     return scalar.as_py()
 
 
@@ -867,11 +1013,31 @@ def _key(entry: dict[str, object]) -> str:
     return f"{lead}.{entry['key']}" if lead else str(entry["key"])
 
 
-def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pyarrow.Table:
-    """Synthesised log lines converted from Message to FixMsg in one batch."""
+def _write_lines(path: Path, plugin: str, messages: list[str]) -> None:
+    """Synthesised payloads behind the fixed log header this file reads."""
     path.write_text(
         "".join(f"2026-08-14 00:05:01.147 [t] [{plugin}] (INFO) {one}\n" for one in messages)
     )
+
+
+def _staged_lines(path: Path, plugin: str, messages: list[str]) -> pyarrow.Table:
+    """Synthesised log lines as the raw Message rows they stage as.
+
+    Stops one stage short of `_lines`: no codec has read the payload, so what
+    stands in a column here is what the raw stage put there itself.
+    """
+    _write_lines(path, plugin, messages)
+    with TextFile.from_path(
+        path,
+        msg_type_event_types=event_types(),
+        protocol_rules=Rules.into_default(),
+    ) as log:
+        return log.read_arrow_table()
+
+
+def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pyarrow.Table:
+    """Synthesised log lines converted from Message to FixMsg in one batch."""
+    _write_lines(path, plugin, messages)
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(codec.registry),
@@ -888,7 +1054,7 @@ def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow
 def _parsed(messages: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     """Convert raw Message batches through the public FixMsg boundary."""
     return pyarrow.Table.from_batches(
-        [FixMsg.from_message_arrow_batch(batch, codec) for batch in messages.to_batches()]
+        [FixMsg.from_message_batch(batch, codec) for batch in messages.to_batches()]
     )
 
 
@@ -1063,15 +1229,32 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert staged.schema.names == Message.into_field().names
     expected = [line.split("(INFO) ", 1)[1] for line in STAGED_LINES.splitlines()]
     assert staged.column("message").to_pylist() == expected
-    assert "kwargs" in staged.schema.names
+    assert "entries" in staged.schema.names
     assert staged.column("MsgType").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
     assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
-    assert [entry["value"] for entry in staged.column("kwargs")[0].as_py()[:3]] == [
-        "FIX.4.4",
+    # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
+    # the first field the header lift left behind.
+    assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
         "C1",
         "1",
+        "IBM",
     ]
+    # The second line spells its header in rendered names, which the lift does
+    # not read: it answers to FIX's tags, and a bridge's own name for a field
+    # stays in `entries` where the FIX stage decides what it is.
+    assert staged.column("BeginString").to_pylist() == ["FIX.4.4", None, None, None]
+    assert _keys(staged.column("entries")[1]) == [
+        "BEGINSTRING",
+        "SIDE",
+        "SYMBOL",
+        "NOPARTYIDS[0].PARTYID",
+        "TECH.CLIENTID",
+    ], "only `#MSGTYPE=` lifted; every other rendered name is untouched"
+    # Protocol-neutral: this stage neither counts nor parses a clock, so the
+    # trailer's `10=000` is text in `entries` and nothing was cast.
+    assert staged.column("MsgSeqNum").to_pylist() == [None] * 4
+    assert staged.column("entries")[0].as_py()[-1]["value"] == "000"
 
 
 def test_fix_conversion_adds_the_canonical_fix_contract(
@@ -1119,9 +1302,9 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
 
 def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:
     """The one stored shape: two content columns, and which is filled where."""
-    market = FixMsg(unix=1, hash=1, message=None, kwargs=[])
-    misc = FixMsg(unix=2, hash=2, message="heartbeat", kwargs=None)
-    assert market.message is None and market.kwargs == []
+    market = FixMsg(unix=1, hash=1, message=None, entries=[])
+    misc = FixMsg(unix=2, hash=2, message="heartbeat", entries=None)
+    assert market.message is None and market.entries == []
     assert misc.message == "heartbeat"
     field = FixMsg.into_field()
     assert field.field("message").nullable, "a market row leaves it null"
@@ -1171,12 +1354,12 @@ def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:
     """Structuring and dictionary completion both preserve wire order."""
     line = "8=FIX.4.4|35=D|453=3|448=ONE|448=TWO|448=THREE|10=000"
     pairs = codec.into_pairs(pyarrow.array([line], pyarrow.string()), "FIX")
-    columns = {"kwargs": codec.into_message_kwargs(pairs)}
+    columns = {"entries": codec.into_message_entries(pairs)}
     structured = [
-        entry["value"] for entry in columns["kwargs"].to_pylist()[0] if entry["tag"] == 448
+        entry["value"] for entry in columns["entries"].to_pylist()[0] if entry["tag"] == 448
     ]
     assert structured == ["ONE", "TWO", "THREE"], "the sequence, not the set"
-    done = codec.complete_kwargs(columns["kwargs"], "4.4").to_pylist()[0]
+    done = codec.complete_entries(columns["entries"], "4.4").to_pylist()[0]
     assert [entry["value"] for entry in done if entry["tag"] == 448] == ["ONE", "TWO", "THREE"]
 
 
@@ -1184,8 +1367,8 @@ def test_the_split_key_still_spells_what_the_line_wrote(codec: FixCodec) -> None
     """`namespace`/`comp` joined to `key` survives dictionary completion."""
     line = "send #NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42"
     pairs = codec.into_pairs(pyarrow.array([line], pyarrow.string()), "UL")
-    columns = {"kwargs": codec.into_message_kwargs(pairs)}
-    for level in (columns["kwargs"], codec.complete_kwargs(columns["kwargs"], "4.4")):
+    columns = {"entries": codec.into_message_entries(pairs)}
+    for level in (columns["entries"], codec.complete_entries(columns["entries"], "4.4")):
         rebuilt = [
             ".".join(
                 part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part

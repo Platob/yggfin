@@ -8,6 +8,7 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 
+from rekep.entries import ENTRIES, Entry
 from rekep.fields.arrays import (
     build_list,
     dense_counts,
@@ -16,9 +17,8 @@ from rekep.fields.arrays import (
     scattered,
     sequence,
 )
-from rekep.kwargs import KWARGS, Kwarg
 
-# A generic argument name. Capture its marker so `Kwarg` can remove it while
+# A generic argument name. Capture its marker so `Entry` can remove it while
 # preserving that normalization for protocol-specific conversion.
 _NAME = r"[A-Za-z_][A-Za-z0-9_.\-]*"
 _BARE_KEY = rf"(?:[0-9]+|{_NAME})(?:\[[^\]\r\n]+\])?(?:\.[A-Za-z0-9_.\-]+)?"
@@ -61,9 +61,11 @@ def looks_structured_arrow(messages):
 def parse_arrow(messages):
     """Split text into ordered arguments without protocol interpretation."""
     if isinstance(messages, pyarrow.ChunkedArray):
-        return pyarrow.chunked_array([parse_arrow(chunk) for chunk in messages.chunks], type=KWARGS)
+        return pyarrow.chunked_array(
+            [parse_arrow(chunk) for chunk in messages.chunks], type=ENTRIES
+        )
     if not len(messages):
-        return pyarrow.array([], type=KWARGS)
+        return pyarrow.array([], type=ENTRIES)
 
     compute = pyarrow.compute
     text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
@@ -98,7 +100,7 @@ def pop_arrow(
         parts = [pop_arrow(chunk, names, case_sensitive=case_sensitive) for chunk in stored.chunks]
         return (
             pyarrow.chunked_array([found for found, _ in parts], pyarrow.string()),
-            pyarrow.chunked_array([rest for _, rest in parts], KWARGS),
+            pyarrow.chunked_array([rest for _, rest in parts], ENTRIES),
         )
 
     rows = len(stored)
@@ -135,7 +137,7 @@ def pop_arrow(
     keep = compute.invert(matches)
     kept_parents = compute.filter(parents, keep)
     residual = build_list(
-        KWARGS,
+        ENTRIES,
         dense_counts(kept_parents, rows),
         compute.filter(entries, keep),
         null_mask(stored),
@@ -232,6 +234,6 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     )
     offsets = compute.take(counted, tokens.offsets)
     entries = pyarrow.StructArray.from_arrays(
-        Kwarg.structure_arrow(keys, values), fields=list(Kwarg.into_field().arrow_type)
+        Entry.structure_arrow(keys, values), fields=list(Entry.into_field().dtype)
     )
-    return pyarrow.ListArray.from_arrays(offsets, entries, type=KWARGS)
+    return pyarrow.ListArray.from_arrays(offsets, entries, type=ENTRIES)

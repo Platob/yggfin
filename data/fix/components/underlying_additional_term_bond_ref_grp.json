@@ -3,122 +3,173 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUnderlyingAdditionalTermBondRefs",
-   "required": false,
-   "tag": 41340,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondSecurityID",
-     "required": false,
-     "tag": 41341
+ "declaration": {
+  "name": "UnderlyingAdditionalTermBondRefGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UnderlyingAdditionalTermBondRefGrp",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUnderlyingAdditionalTermBondRefs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41340"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondSecurityIDSource",
-     "required": false,
-     "tag": 41701
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondDesc",
-     "required": false,
-     "tag": 41709
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingAdditionalTermBondDescLen",
-     "required": false,
-     "tag": 41710
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingAdditionalTermBondDesc",
-     "required": false,
-     "tag": 41711
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCurrency",
-     "required": false,
-     "tag": 41712
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondIssuer",
-     "required": false,
-     "tag": 42017
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
-     "required": false,
-     "tag": 42025
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingAdditionalTermBondIssuer",
-     "required": false,
-     "tag": 42026
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondSeniority",
-     "required": false,
-     "tag": 42027
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCouponType",
-     "required": false,
-     "tag": 42028
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCouponRate",
-     "required": false,
-     "tag": 42029
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondMaturityDate",
-     "required": false,
-     "tag": 42030
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondParValue",
-     "required": false,
-     "tag": 42031
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
-     "required": false,
-     "tag": 42032
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
-     "required": false,
-     "tag": 42033
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
-     "required": false,
-     "tag": 42034
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAdditionalTermBondDayCount",
-     "required": false,
-     "tag": 42035
+    "item": {
+     "name": "UnderlyingAdditionalTermBondRef",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingAdditionalTermBondSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41341"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41701"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41709"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingAdditionalTermBondDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41710"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingAdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41711"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41712"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42017"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42025"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingAdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42026"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondSeniority",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42027"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCouponType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42028"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCouponRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42029"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondMaturityDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42030"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondParValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42031"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42032"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42033"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42034"
+       }
+      },
+      {
+       "name": "UnderlyingAdditionalTermBondDayCount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42035"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

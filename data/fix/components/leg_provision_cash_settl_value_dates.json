@@ -3,59 +3,88 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueTime",
-   "required": false,
-   "tag": 40524
+ "declaration": {
+  "name": "LegProvisionCashSettlValueDates",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LegProvisionCashSettlValueDates",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderMultileg\",\"News\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
   },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueTimeBusinessCenter",
-   "required": false,
-   "tag": 40525
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateBusinessDayConvention",
-   "required": false,
-   "tag": 40526
-  },
-  {
-   "kind": "component",
-   "name": "LegProvisionCashSettlValueDateBusinessCenterGrp",
-   "required": false
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateRelativeTo",
-   "required": false,
-   "tag": 40528
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateOffsetPeriod",
-   "required": false,
-   "tag": 40529
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateOffsetUnit",
-   "required": false,
-   "tag": 40530
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateOffsetDayType",
-   "required": false,
-   "tag": 40531
-  },
-  {
-   "kind": "field",
-   "name": "LegProvisionCashSettlValueDateAdjusted",
-   "required": false,
-   "tag": 40532
-  }
- ]
+  "fields": [
+   {
+    "name": "LegProvisionCashSettlValueTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40524"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueTimeBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40525"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateBusinessDayConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40526"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateBusinessCenterGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegProvisionCashSettlValueDateBusinessCenterGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateRelativeTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40528"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40529"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40530"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateOffsetDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40531"
+    }
+   },
+   {
+    "name": "LegProvisionCashSettlValueDateAdjusted",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40532"
+    }
+   }
+  ]
+ }
 }

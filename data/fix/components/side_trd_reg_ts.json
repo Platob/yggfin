@@ -5,32 +5,53 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoSideTrdRegTS",
-   "required": false,
-   "tag": 1016,
-   "members": [
-    {
-     "kind": "field",
-     "name": "SideTrdRegTimestamp",
-     "required": false,
-     "tag": 1012
+ "declaration": {
+  "name": "SideTrdRegTS",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SideTrdRegTS",
+   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+  },
+  "fields": [
+   {
+    "name": "NoSideTrdRegTS",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1016"
     },
-    {
-     "kind": "field",
-     "name": "SideTrdRegTimestampType",
-     "required": false,
-     "tag": 1013
-    },
-    {
-     "kind": "field",
-     "name": "SideTrdRegTimestampSrc",
-     "required": false,
-     "tag": 1014
+    "item": {
+     "name": "SideTrdRegTS",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideTrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1012"
+       }
+      },
+      {
+       "name": "SideTrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1013"
+       }
+      },
+      {
+       "name": "SideTrdRegTimestampSrc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1014"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

@@ -4,26 +4,45 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoLotTypeRules",
-   "required": false,
-   "tag": 1234,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LotType",
-     "required": false,
-     "tag": 1093
+ "declaration": {
+  "name": "LotTypeRules",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "LotTypeRules",
+   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoLotTypeRules",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1234"
     },
-    {
-     "kind": "field",
-     "name": "MinLotSize",
-     "required": false,
-     "tag": 1231
+    "item": {
+     "name": "LotTypeRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LotType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1093"
+       }
+      },
+      {
+       "name": "MinLotSize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1231"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

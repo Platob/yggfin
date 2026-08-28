@@ -3,144 +3,207 @@
  "versions": [
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoCashSettlTerms",
-   "required": false,
-   "tag": 40022,
-   "members": [
-    {
-     "kind": "field",
-     "name": "CashSettlCurrency",
-     "required": false,
-     "tag": 40023
+ "declaration": {
+  "name": "CashSettlTermGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CashSettlTermGrp",
+   "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"CrossRequest\",\"CrossRequestAck\",\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\",\"MarginRequirementReport\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassOrder\",\"MassOrderAck\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"SettlementObligationReport\",\"StreamAssignmentReport\",\"StreamAssignmentRequest\",\"TradeAggregationReport\",\"TradeAggregationRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\",\"TradingSessionStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoCashSettlTerms",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "40022"
     },
-    {
-     "kind": "field",
-     "name": "CashSettlValuationFirstBusinessDayOffset",
-     "required": false,
-     "tag": 40024
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlValuationSubsequentBusinessDaysOffset",
-     "required": false,
-     "tag": 40916
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlNumOfValuationDates",
-     "required": false,
-     "tag": 40917
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlValuationTime",
-     "required": false,
-     "tag": 40025
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlBusinessCenter",
-     "required": false,
-     "tag": 40026
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlQuoteMethod",
-     "required": false,
-     "tag": 40027
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlQuoteAmount",
-     "required": false,
-     "tag": 40028
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlQuoteCurrency",
-     "required": false,
-     "tag": 40029
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlMinimumQuoteAmount",
-     "required": false,
-     "tag": 40030
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlMinimumQuoteCurrency",
-     "required": false,
-     "tag": 40031
-    },
-    {
-     "kind": "component",
-     "name": "CashSettlDealerGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlPriceSource",
-     "required": false,
-     "tag": 42216
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlPriceDefault",
-     "required": false,
-     "tag": 42217
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlBusinessDays",
-     "required": false,
-     "tag": 40033
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlAmount",
-     "required": false,
-     "tag": 40034
-    },
-    {
-     "kind": "component",
-     "name": "CashSettlDate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlRecoveryFactor",
-     "required": false,
-     "tag": 40035
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlFixedTermIndicator",
-     "required": false,
-     "tag": 40036
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlAccruedInterestIndicator",
-     "required": false,
-     "tag": 40037
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlValuationMethod",
-     "required": false,
-     "tag": 40038
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlTermXID",
-     "required": false,
-     "tag": 40039
+    "item": {
+     "name": "CashSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40023"
+       }
+      },
+      {
+       "name": "CashSettlValuationFirstBusinessDayOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40024"
+       }
+      },
+      {
+       "name": "CashSettlValuationSubsequentBusinessDaysOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40916"
+       }
+      },
+      {
+       "name": "CashSettlNumOfValuationDates",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40917"
+       }
+      },
+      {
+       "name": "CashSettlValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40025"
+       }
+      },
+      {
+       "name": "CashSettlBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40026"
+       }
+      },
+      {
+       "name": "CashSettlQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40027"
+       }
+      },
+      {
+       "name": "CashSettlQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40028"
+       }
+      },
+      {
+       "name": "CashSettlQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40029"
+       }
+      },
+      {
+       "name": "CashSettlMinimumQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40030"
+       }
+      },
+      {
+       "name": "CashSettlMinimumQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40031"
+       }
+      },
+      {
+       "name": "CashSettlDealerGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CashSettlDealerGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "CashSettlPriceSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42216"
+       }
+      },
+      {
+       "name": "CashSettlPriceDefault",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42217"
+       }
+      },
+      {
+       "name": "CashSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40033"
+       }
+      },
+      {
+       "name": "CashSettlAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40034"
+       }
+      },
+      {
+       "name": "CashSettlDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CashSettlDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "CashSettlRecoveryFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40035"
+       }
+      },
+      {
+       "name": "CashSettlFixedTermIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40036"
+       }
+      },
+      {
+       "name": "CashSettlAccruedInterestIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40037"
+       }
+      },
+      {
+       "name": "CashSettlValuationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40038"
+       }
+      },
+      {
+       "name": "CashSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40039"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

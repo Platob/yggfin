@@ -5,43 +5,70 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoUndlyInstrumentParties",
-   "required": false,
-   "tag": 1058,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyID",
-     "required": false,
-     "tag": 1059
+ "declaration": {
+  "name": "UndlyInstrumentParties",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UndlyInstrumentParties",
+   "msgtypes": "[\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ContraryIntentionReport\",\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\",\"DontKnowTrade\",\"Email\",\"ExecutionAck\",\"ExecutionAcknowledgement\",\"ExecutionReport\",\"IOI\",\"ListStrikePrice\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"MassQuote\",\"MassQuoteAck\",\"MassQuoteAcknowledgement\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"OrderStatusRequest\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"RFQRequest\",\"RequestForPositions\",\"RequestForPositionsAck\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\",\"TradeCaptureReportRequestAck\",\"TradeMatchReport\"]"
+  },
+  "fields": [
+   {
+    "name": "NoUndlyInstrumentParties",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1058"
     },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyIDSource",
-     "required": false,
-     "tag": 1060
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyRole",
-     "required": false,
-     "tag": 1061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingInstrumentPartyRoleQualifier",
-     "required": false,
-     "tag": 2391
-    },
-    {
-     "kind": "component",
-     "name": "UndlyInstrumentPtysSubGrp",
-     "required": false
+    "item": {
+     "name": "UndlyInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1059"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1060"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1061"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2391"
+       }
+      },
+      {
+       "name": "UndlyInstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndlyInstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

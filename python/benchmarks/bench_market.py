@@ -53,9 +53,10 @@ if os.name == "nt":
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from _bench import best_of, parser, report  # noqa: E402
+from _bench import best_of, identical, parser, report  # noqa: E402
 
 from rekep import FixMsg  # noqa: E402
+from rekep.enums import State  # noqa: E402
 from rekep.fix import parse_arrow_array  # noqa: E402
 from rekep.fix.message import parse_pairs  # noqa: E402
 from rekep.market import (  # noqa: E402
@@ -72,6 +73,7 @@ from rekep.market.identity import (  # noqa: E402
     _binary,
     _length,
     hash_arrow,
+    hash_bytes_of,
     hash_of,
 )
 
@@ -81,7 +83,18 @@ UNIX_PARTITION = UNIX // SECOND
 
 #: The states a day of orders actually visits, which is what makes the column
 #: worth encoding: a handful of distinct values repeated through a feed.
-STATES = [210, 310, 410, 510, 610, 240]
+STATES = [
+    int(State.NEW),
+    int(State.PARTIALLY_FILLED),
+    int(State.FILLED),
+    int(State.CANCELLED),
+    int(State.REJECTED),
+    int(State.PENDING_CANCEL),
+]
+
+#: The width `State` declares for its own column, which is what a stored
+#: lifecycle column is: a packed ASCII mnemonic, not a small ordinal.
+STATE_WIDTH = State.into_arrow_type().index_type
 FIX_DICTIONARY = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix"
 
 
@@ -275,8 +288,12 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     scalar, one_at_a_time = timed(
         lambda: [hash_of("Order", *values) for values in zip(*parts, strict=True)], repeat
     )
-    # Verified before it is timed: the two must be the same identifiers.
-    assert built.to_pylist()[:scalar_rows] == one_at_a_time, "the two builders disagree"
+    # Verified before it is timed: the two must be the same identifiers. One
+    # builds a column and answers in the sixteen bytes a column stores; the
+    # other builds one identity and answers in the integer a reader works in.
+    assert built.to_pylist()[:scalar_rows] == [hash_bytes_of(one) for one in one_at_a_time], (
+        "the two builders disagree"
+    )
 
     joined, _ = timed(lambda: plain_join(*columns), repeat)
     framed, _ = timed(lambda: framed_join(*columns), repeat)
@@ -464,12 +481,12 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
 
 def bench_codes(rows: int, repeat: int) -> None:
     """What dictionary encoding buys a column whose whole point is that it repeats."""
-    print(f"\nRanged codes -- {rows:,} rows, {len(STATES)} distinct")
-    plain = pyarrow.array([STATES[index % len(STATES)] for index in range(rows)], pyarrow.int32())
-    target = pyarrow.dictionary(pyarrow.int8(), pyarrow.int32())
+    print(f"\nASCII codes -- {rows:,} rows, {len(STATES)} distinct")
+    plain = pyarrow.array([STATES[index % len(STATES)] for index in range(rows)], STATE_WIDTH)
+    target = pyarrow.dictionary(pyarrow.int8(), STATE_WIDTH)
 
     encode, encoded = timed(lambda: dictionary_arrow(plain, target), repeat)
-    decode, decoded = timed(lambda: dictionary_arrow(encoded, pyarrow.int32()), repeat)
+    decode, decoded = timed(lambda: dictionary_arrow(encoded, STATE_WIDTH), repeat)
     indices = encoded.indices
     reindex, _ = timed(lambda: dictionary_arrow(indices, target), repeat)
     assert decoded.equals(plain), "the round trip lost values"
@@ -1028,7 +1045,7 @@ def log_stream(rows: int) -> list[object]:
     if not built:
         return []
     raw = next(iter(Message.into_arrow_reader(built, batch_row_size=rows)))
-    parsed = FixMsg.from_message_arrow_batch(raw, FixCodec(registry=FixRegistry.from_builtin()))
+    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=FixRegistry.from_builtin()))
     return list(FixMsg.from_arrow_reader([parsed]))
 
 
@@ -1060,13 +1077,13 @@ def _pipeline_message_batches(
         stop = min(start + batch_row_size, rows)
         indices = range(start, stop)
         unix = pyarrow.array([base + index * 1_000_000 for index in indices], pyarrow.int64())
-        kinds, protocols, msg_types, kwargs = [], [], [], []
+        kinds, protocols, msg_types, entries = [], [], [], []
         for index in indices:
             if alternating_technical and index % 2:
                 kinds.append(int(EventType.MISC))
                 protocols.append("OTHER")
                 msg_types.append(None)
-                kwargs.append(None)
+                entries.append(None)
                 continue
             etype, pairs = shapes[index % len(shapes)]
             stamp = _fix_stamp(base + index * 1_000_000)
@@ -1079,7 +1096,7 @@ def _pipeline_message_batches(
             kinds.append(int(etype))
             protocols.append("FIX")
             msg_types.append(next(value for tag, value in pairs if tag == "35"))
-            kwargs.append(
+            entries.append(
                 [
                     {
                         "tag": int(tag),
@@ -1096,7 +1113,7 @@ def _pipeline_message_batches(
         columns: dict[str, pyarrow.Array] = {
             "unix": unix,
             "unix_partition": unix_partition_arrow(unix),
-            "etype": pyarrow.array(kinds, pyarrow.int32()),
+            "etype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
             "cunix": unix,
             "runix": unix,
             "source_url": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),
@@ -1104,7 +1121,7 @@ def _pipeline_message_batches(
             "message": pyarrow.repeat(pyarrow.scalar(""), count),
             "protocol_code": pyarrow.array(protocols),
             "MsgType": pyarrow.array(msg_types),
-            "kwargs": pyarrow.array(kwargs, schema.field("kwargs").type),
+            "entries": pyarrow.array(entries, schema.field("entries").type),
         }
         arrays = []
         for field in schema:
@@ -1118,6 +1135,13 @@ def _pipeline_message_batches(
                     column = pyarrow.repeat(pyarrow.scalar(""), count)
                 elif pyarrow.types.is_boolean(field.type):
                     column = pyarrow.repeat(pyarrow.scalar(False), count)
+                elif pyarrow.types.is_fixed_size_binary(field.type):
+                    # An identity column is its width in bytes, and zero is
+                    # that many of them -- `scalar(0, ...)` is not a number
+                    # here, it is a buffer Arrow refuses to guess the size of.
+                    column = pyarrow.repeat(
+                        pyarrow.scalar(b"\x00" * field.type.byte_width, field.type), count
+                    )
                 else:
                     column = pyarrow.repeat(pyarrow.scalar(0, field.type), count)
             arrays.append(column)
@@ -1130,7 +1154,7 @@ def _pipeline_batches(
 ) -> Iterator[pyarrow.RecordBatch]:
     """Parse-fix batches with the raw payload projected out before conversion."""
     for batch in messages:
-        yield FixMsg.from_message_arrow_batch(batch.drop_columns(["message"]), codec)
+        yield FixMsg.from_message_batch(batch.drop_columns(["message"]), codec)
 
 
 def bench_pipeline(rows: int) -> None:
@@ -1263,15 +1287,20 @@ def bench_fold(events: int, repeat: int) -> None:
     schema = Book.into_field().into_arrow_schema()
 
     def document_projection() -> pyarrow.Table:
-        batch = pyarrow.RecordBatch.from_pylist(
-            [book.into_dict() for book in sample], schema=schema
-        )
+        batch = pyarrow.RecordBatch.from_pylist([book.into_row() for book in sample], schema=schema)
+        return pyarrow.Table.from_batches([batch], schema=schema)
+
+    def column_projection() -> pyarrow.Table:
+        batch = Book.into_arrow_batch(sample)
         return pyarrow.Table.from_batches([batch], schema=schema)
 
     generic, expected = timed(document_projection, repeat)
+    columnar, built = timed(column_projection, repeat)
     assert expected.num_rows == len(sample)
+    assert identical(built, expected), "the two projections must be the same table"
     print(f"\nBook to Arrow -- {len(sample):,} rows")
-    report("generic document projection", generic, len(sample))
+    report("row by row, through a document", generic, len(sample))
+    report("member by member, off the objects", columnar, len(sample), against=generic)
 
 
 def main() -> None:

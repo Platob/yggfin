@@ -6,92 +6,128 @@
   "5.0.SP1",
   "5.0.SP2"
  ],
- "members": [
-  {
-   "kind": "group",
-   "name": "NoOrders",
-   "required": false,
-   "tag": 73,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ClOrdID",
-     "required": false,
-     "tag": 11
+ "declaration": {
+  "name": "OrdListStatGrp",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OrdListStatGrp",
+   "msgtypes": "[\"ListStatus\"]"
+  },
+  "fields": [
+   {
+    "name": "NoOrders",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "73"
     },
-    {
-     "kind": "field",
-     "name": "OrderID",
-     "required": false,
-     "tag": 37
-    },
-    {
-     "kind": "field",
-     "name": "SecondaryClOrdID",
-     "required": false,
-     "tag": 526
-    },
-    {
-     "kind": "field",
-     "name": "CumQty",
-     "required": true,
-     "tag": 14
-    },
-    {
-     "kind": "field",
-     "name": "OrdStatus",
-     "required": true,
-     "tag": 39
-    },
-    {
-     "kind": "field",
-     "name": "WorkingIndicator",
-     "required": false,
-     "tag": 636
-    },
-    {
-     "kind": "field",
-     "name": "LeavesQty",
-     "required": true,
-     "tag": 151
-    },
-    {
-     "kind": "field",
-     "name": "CxlQty",
-     "required": true,
-     "tag": 84
-    },
-    {
-     "kind": "field",
-     "name": "AvgPx",
-     "required": true,
-     "tag": 6
-    },
-    {
-     "kind": "field",
-     "name": "OrdRejReason",
-     "required": false,
-     "tag": 103
-    },
-    {
-     "kind": "field",
-     "name": "Text",
-     "required": false,
-     "tag": 58
-    },
-    {
-     "kind": "field",
-     "name": "EncodedTextLen",
-     "required": false,
-     "tag": 354
-    },
-    {
-     "kind": "field",
-     "name": "EncodedText",
-     "required": false,
-     "tag": 355
+    "item": {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "CumQty",
+       "type": "string",
+       "fix": {
+        "tag": "14"
+       }
+      },
+      {
+       "name": "OrdStatus",
+       "type": "string",
+       "fix": {
+        "tag": "39"
+       }
+      },
+      {
+       "name": "WorkingIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "636"
+       }
+      },
+      {
+       "name": "LeavesQty",
+       "type": "string",
+       "fix": {
+        "tag": "151"
+       }
+      },
+      {
+       "name": "CxlQty",
+       "type": "string",
+       "fix": {
+        "tag": "84"
+       }
+      },
+      {
+       "name": "AvgPx",
+       "type": "string",
+       "fix": {
+        "tag": "6"
+       }
+      },
+      {
+       "name": "OrdRejReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "103"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
     }
-   ]
-  }
- ]
+   }
+  ]
+ }
 }

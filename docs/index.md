@@ -34,11 +34,10 @@ pip install "rekep[all]"       # all package extras
 </div>
 
 Arrow is the project's shared columnar boundary: Iceberg tables and encoded
-files sit on one side, while Spark, DataFrames, query engines, and SQL database
-drivers sit on the other. The distinction matters—Arrow is neither the store
-nor the engine, so each can change without replacing the in-memory contract.
-See [why rekep chooses Apache Arrow](overview/arrow.md) for the sourced interoperability
-details and the limits of zero-copy exchange.
+files on one side, Spark, DataFrames, query engines, and SQL database drivers
+on the other. Arrow is neither the store nor the engine, so each can change
+without replacing the in-memory contract. See [why rekep chooses Apache Arrow](overview/arrow.md)
+for the sourced interoperability details and the limits of zero-copy exchange.
 
 ## Workflow
 
@@ -119,7 +118,7 @@ source = TextFiles.from_folder(
     msg_type_event_types=registry.msg_type_event_types(),
 )
 for messages in source.read_arrow_reader():
-    parsed = FixMsg.from_message_arrow_batch(messages, FixCodec(registry=registry))
+    parsed = FixMsg.from_message_batch(messages, FixCodec(registry=registry))
 ```
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices

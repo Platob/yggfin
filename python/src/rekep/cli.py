@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import importlib
 import json
 import pathlib
@@ -13,11 +12,21 @@ from typing import Any
 from rekep import __version__
 from rekep.console import Console
 from rekep.fields import Field, StructField
-from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
-from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
+from rekep.filesystems import read_bytes
+from rekep.fix.classify import KeyReport, apply_report, classify, count_files
+from rekep.fix.entries import (
+    ANY_VERSION,
+    NAMESPACE,
+    STANDARD,
+    Alias,
+    ComponentRecord,
+    record_copy,
+    record_document,
+    record_of,
+)
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
-from rekep.fix.store import field_document
+from rekep.fix.store import document_of, field_document
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -32,7 +41,6 @@ CONSOLE = Console(stream="stderr")
 FORMATS: dict[str, tuple[str, ...]] = {
     "json": (".json",),
     "yaml": (".yaml", ".yml"),
-    "toml": (".toml",),
 }
 
 
@@ -103,7 +111,7 @@ def load(arguments: argparse.Namespace) -> int:
     schema = shape.into_arrow_schema()
     print(f"{shape.name or '<unnamed>'}: {len(schema.names)} columns, builds")
     for member in getattr(shape, "fields", ()):
-        print(f"  {member.name}: {member.arrow_type}{_marks(member)}")
+        print(f"  {member.name}: {member.dtype}{_marks(member)}")
     if isinstance(shape, StructField):
         print(f"  primary keys: {shape.primary_keys() or '-'}")
         print(f"  partition keys: {shape.partition_keys() or '-'}")
@@ -195,33 +203,33 @@ def registry_versions(arguments: argparse.Namespace) -> int:
 def find_fields(arguments: argparse.Namespace) -> int:
     """Write distinct field records matching one query."""
     registry = _registry(arguments)
-    entries: list[FieldEntry] = []
+    entries: list[Field] = []
     for member in registry.search(
         arguments.query,
         version=arguments.version,
         limit=arguments.limit,
     ):
-        entry = registry.entry(member.fix.get("tag") or member.name)
+        entry = registry.field(member.fix.get("tag") or member.name)
         if entry is not None:
             entries.append(entry)
-    _write_json([entry.into_dict() for entry in entries])
+    _write_json([record_document(entry) for entry in entries])
     return 0
 
 
 def show_field(arguments: argparse.Namespace) -> int:
     """Write one complete field record."""
-    entry = _registry(arguments).entry(arguments.field)
+    entry = _registry(arguments).field(arguments.field)
     if entry is None:
         CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
         return 1
-    _write_json(entry.into_dict())
+    _write_json(record_document(entry))
     return 0
 
 
 def list_components(arguments: argparse.Namespace) -> int:
     """Write component identities, optionally filtered by name."""
     wanted = arguments.query.casefold()
-    entries = sorted(_registry(arguments).component_entries().values(), key=lambda item: item.name)
+    entries = sorted(_registry(arguments).component_records().values(), key=lambda item: item.name)
     _write_json(
         [
             {"name": entry.name, "versions": list(entry.versions)}
@@ -255,7 +263,7 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -265,9 +273,10 @@ def update_field(arguments: argparse.Namespace) -> int:
     held = registry.resolve(arguments.name) if arguments.name else None
     fresh = _field_entry(arguments)
     if held is not None and not arguments.declaration:
-        fresh = dataclasses.replace(fresh, aliases=held.aliases or fresh.aliases)
+        fresh = record_copy(fresh)
+        fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
     entry = registry.update_field(fresh)
-    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -281,7 +290,7 @@ def promote_field(arguments: argparse.Namespace) -> int:
         description=arguments.description,
         aliases=tuple(arguments.alias),
     )
-    CONSOLE.ok(f"promoted {entry.name} {CONSOLE.glyph('arrow')} column {entry.column}")
+    CONSOLE.ok(f"promoted {entry.fix.canonical} {CONSOLE.glyph('arrow')} column {entry.fix.column}")
     return 0
 
 
@@ -304,7 +313,7 @@ def alias_field(arguments: argparse.Namespace) -> int:
             for alias in arguments.alias
         ),
     )
-    CONSOLE.ok(f"{entry.name} answers to {', '.join(entry.spellings())}")
+    CONSOLE.ok(f"{entry.fix.canonical} answers to {', '.join(entry.fix.spellings())}")
     return 0
 
 
@@ -333,13 +342,13 @@ def update_component(arguments: argparse.Namespace) -> int:
     return 0
 
 
-def _component_entry(arguments: argparse.Namespace) -> ComponentEntry:
+def _component_entry(arguments: argparse.Namespace) -> ComponentRecord:
     """One component identity out of the document `--declaration` names.
 
     Whichever format it is written in: `Convertible` reads the extension, so a
     declaration travels as JSON, YAML or TOML without a flag saying which.
     """
-    return ComponentEntry.from_file(arguments.declaration)
+    return ComponentRecord.from_file(arguments.declaration)
 
 
 def check_registry(arguments: argparse.Namespace) -> int:
@@ -372,25 +381,35 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
     with CONSOLE.spinner(f"scraping into {target}"):
         registry = FixRegistry.scrape(arguments.output, **configuration)
     CONSOLE.ok(
-        f"{registry.cache_dir} holds {len(registry.field_entries())} fields and "
-        f"{len(registry.component_entries())} components"
+        f"{registry.cache_dir} holds {len(registry.field_records())} fields and "
+        f"{len(registry.component_records())} components"
     )
     return 0
 
 
-def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
-    """One field identity out of the flags that describe it."""
+def _field_entry(arguments: argparse.Namespace) -> Field:
+    """One field identity out of the flags that describe it.
+
+    A record is a `Field` and no longer reads itself, so `--declaration` is
+    read the way the store reads its own documents: `FORMATS` above says which
+    spelling the name means, `document_of` decodes it, and `record_of` applies
+    every refusal a stored record meets. Its keys are the stored ones, which
+    is what a person writing that document has in front of them.
+    """
     if arguments.declaration:
-        return FieldEntry.from_file(arguments.declaration)
-    return FieldEntry(
-        name=arguments.name,
-        tag=arguments.tag,
-        kind=STANDARD if arguments.tag else NAMESPACE,
-        aliases=tuple(Alias(name=alias) for alias in arguments.alias),
-        versions=tuple(arguments.version or [ANY_VERSION]),
-        type=arguments.type or "",
-        description=arguments.description or "",
-        column=arguments.column or "",
+        payload = read_bytes(arguments.declaration)
+        return record_of(document_of(payload, f".{_format_of(arguments.declaration)}"))
+    return record_of(
+        {
+            "name": arguments.name,
+            "tag": arguments.tag,
+            "kind": STANDARD if arguments.tag else NAMESPACE,
+            "aliases": [{"name": alias} for alias in arguments.alias],
+            "versions": list(arguments.version or [ANY_VERSION]),
+            "type": arguments.type or "",
+            "description": arguments.description or "",
+            "column": arguments.column or "",
+        }
     )
 
 
@@ -409,16 +428,16 @@ def classify_keys(arguments: argparse.Namespace) -> int:
     )
     report = classify(counts, registry)
     if arguments.report:
-        pathlib.Path(arguments.report).write_text(report_document(report))
+        report.into_json(arguments.report)
         CONSOLE.ok(f"{arguments.source} {CONSOLE.glyph('arrow')} {arguments.report}")
-    print(report.into_text())
+    _write_json(report.into_dict())
     return 0
 
 
 def apply_keys(arguments: argparse.Namespace) -> int:
     """Register what a report found, through the registry's own verbs."""
     registry = FixRegistry(cache_dir=arguments.store, offline=True)
-    report = KeyReport.from_dict(json.loads(pathlib.Path(arguments.report).read_text()))
+    report = KeyReport.from_json(arguments.report)
     applied = apply_report(
         registry,
         report,
@@ -585,7 +604,7 @@ def _parser() -> argparse.ArgumentParser:
         source.add_argument("--name", help="the field's canonical name")
         source.add_argument(
             "--declaration",
-            help="complete JSON, YAML, or TOML FieldEntry; other field flags are ignored",
+            help="complete JSON or YAML field record; other field flags are ignored",
         )
         action.add_argument(
             "--tag",
