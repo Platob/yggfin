@@ -15,7 +15,6 @@ from rekep.enums import (
     AssetKind,
     Currency,
     EventType,
-    IdSource,
     MarketKind,
     OptionKind,
     Side,
@@ -24,7 +23,7 @@ from rekep.enums import (
 )
 from rekep.fields import StructField, encoded_key
 from rekep.fix.access import FieldAccess
-from rekep.fix.columns import IDENTIFIER_FIELDS
+from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
@@ -74,7 +73,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     # The repeating groups an instrument is read out of. A group's own
     # `NumInGroup` count and the members that land somewhere other than a
     # column of their own -- an alternative identifier becomes a key of
-    # `alt_ids`, so its two tags are read and stored and are not extras.
+    # `altids`, so its two tags are read and stored and are not extras.
     "NoSecurityAltID",
     "SecurityAltID",
     "SecurityAltIDSource",
@@ -82,7 +81,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     # The group a multi-sided TradeCaptureReport splits by: each entry is one
     # Execution, so the count is read and is not an extra.
     "NoSides",
-    # The older way to say when a contract expires, which `maturity` falls back
+    # The older way to say when a contract expires, which `maturitydate` falls back
     # to. A venue that sends it usually sends no `MaturityDate <541>` at all.
     "MaturityMonthYear",
     "LegMaturityMonthYear",
@@ -115,8 +114,8 @@ FRAMING_FIELDS = frozenset({"BodyLength", "CheckSum"})
 #: columns the parse layer has.
 _REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
     {
-        "TrdRegTimestamps": "NoTrdRegTimestamps",
-        "SideTrdRegTS": "NoSideTrdRegTS",
+        "trdregtimestamps": "NoTrdRegTimestamps",
+        "sidetrdregts": "NoSideTrdRegTS",
     }
 )
 
@@ -234,6 +233,15 @@ _STATE_FIELDS = ("OrdStatus", "ExecType", "MDUpdateAction", "QuoteStatus", "Quot
 #: Folded wherever the dictionary's own spellings are folded, never over an
 #: explicit code.
 _SPELLING_SHORTHAND: Mapping[str, str] = types.MappingProxyType({"cancel": "canceled"})
+
+
+@functools.cache
+def _tag_of(name: str) -> int:
+    """One field's tag, from the dictionary. `MarketKind.fix_mapping()` is keyed
+    by tag and the call site already names the field, so the number is spare."""
+    return int(FixRegistry.from_builtin().scalar(name).fix.tag)
+
+
 RAW_METADATA_FIELDS = frozenset(_STATE_FIELDS) | {
     "OrdType",
     "CxlQty",
@@ -378,14 +386,14 @@ class MarketTags:
     def order_kinds(self) -> Mapping[str, MarketKind]:
         """`OrdType <40>` codes and dictionary spellings, as the kind each means."""
         return types.MappingProxyType(
-            _worded_values(self.registry, "OrdType", MarketKind.fix_mapping()[40])
+            _worded_values(self.registry, "OrdType", MarketKind.fix_mapping()[_tag_of("OrdType")])
         )
 
     @functools.cached_property
     def execution_kinds(self) -> Mapping[str, MarketKind]:
         """`ExecType <150>` codes and dictionary spellings, as the kind each means."""
         return types.MappingProxyType(
-            _worded_values(self.registry, "ExecType", MarketKind.fix_mapping()[150])
+            _worded_values(self.registry, "ExecType", MarketKind.fix_mapping()[_tag_of("ExecType")])
         )
 
     @functools.cached_property
@@ -1017,7 +1025,7 @@ class FixEvents(Convertible):
         """The order this message is about, in the state the message puts it in."""
         get = self.get
         unix = self.unix
-        tif = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
+        timeinforce = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
         if state is State.UNKNOWN:
@@ -1038,7 +1046,7 @@ class FixEvents(Convertible):
             execution_state=self.execution_state(),
             order_qty=order_qty,
             cum_qty=cumulative,
-            leaves_qty=leaves,
+            leavesqty=leaves,
             last_qty=_number(get("LastQty")),
             cancel_qty=_number(get("CxlQty")),
         )
@@ -1047,24 +1055,24 @@ class FixEvents(Convertible):
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                eunix=self._expires(tif, unix, duration),
+                eunix=self._expires(timeinforce, unix, duration),
                 state=transition.state,
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("Price")),
                 qty=transition.current_qty,
-                prev_qty=transition.previous_qty,
+                prevqty=transition.previous_qty,
                 kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
-                tif=tif,
-                stop_px=_number(get("StopPx")),
-                hidden_qty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
-                order_id=get("OrderID"),
-                client_order_id=get("ClOrdID"),
-                prev_client_order_id=get("OrigClOrdID"),
-                clord_link_id=get("ClOrdLinkID"),
-                parent_client_order_id=get("ParentClOrdID"),
-                parent_order_id=get("ParentOrderID"),
-                cxl_rej_reason=_integer(get("CxlRejReason")),
-                cxl_rej_response_to=get("CxlRejResponseTo"),
+                timeinforce=timeinforce,
+                stoppx=_number(get("StopPx")),
+                hiddenqty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
+                orderid=get("OrderID"),
+                clordid=get("ClOrdID"),
+                origclordid=get("OrigClOrdID"),
+                clordlinkid=get("ClOrdLinkID"),
+                parentclordid=get("ParentClOrdID"),
+                parentorderid=get("ParentOrderID"),
+                cxlrejreason=_integer(get("CxlRejReason")),
+                cxlrejresponseto=get("CxlRejResponseTo"),
                 **self._shared(),
             )
         )
@@ -1092,8 +1100,8 @@ class FixEvents(Convertible):
                 qty=qty,
                 kind=MarketKind.LIMIT_ORDER,
                 indicative=True,
-                order_id=get("QuoteEntryID") or get("QuoteID"),
-                client_order_id=get("QuoteReqID"),
+                orderid=get("QuoteEntryID") or get("QuoteID"),
+                clordid=get("QuoteReqID"),
                 **self._shared(),
             )
         )
@@ -1112,23 +1120,23 @@ class FixEvents(Convertible):
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("LastPx")),
                 qty=_number(get("LastQty")),
-                exec_id=get("ExecID"),
-                exec_ref_id=get("ExecRefID"),
-                trade_id=get("TradeID") or get("TrdMatchID"),
-                linked_events=(
+                execid=get("ExecID"),
+                execrefid=get("ExecRefID"),
+                tradeid=get("TradeID") or get("TrdMatchID"),
+                linkedevents=(
                     [(order.unix, order.xhash)] if order is not None and order.xhash else []
                 ),
-                parent_hash=[order.hash] if order is not None and order.hash else [],
-                order_id=get("OrderID"),
-                client_order_id=get("ClOrdID"),
-                prev_client_order_id=get("OrigClOrdID"),
-                filled_qty=_number(get("CumQty")),
-                leaves_qty=_number(get("LeavesQty")),
-                aggressor=_flag(get("AggressorIndicator")),
-                settl_date=_date(get("SettlDate")),
-                settl_type=get("SettlType"),
-                settl_currency=get("SettlCurrency"),
-                settl_curr_fx_rate_calc=get("SettlCurrFxRateCalc"),
+                parenthash=[order.hash] if order is not None and order.hash else [],
+                orderid=get("OrderID"),
+                clordid=get("ClOrdID"),
+                origclordid=get("OrigClOrdID"),
+                cumqty=_number(get("CumQty")),
+                leavesqty=_number(get("LeavesQty")),
+                aggressorindicator=_flag(get("AggressorIndicator")),
+                settldate=_date(get("SettlDate")),
+                settltype=get("SettlType"),
+                settlcurrency=get("SettlCurrency"),
+                settlcurrfxratecalc=get("SettlCurrFxRateCalc"),
                 **self._shared(),
             ),
             order,
@@ -1159,7 +1167,7 @@ class FixEvents(Convertible):
                 # the price is what persists across its updates: that is what
                 # `MDUpdateAction <279>` addresses when it says Change or Delete,
                 # and it is what makes a level's own lifecycle findable.
-                order_id=get("MDEntryID")
+                orderid=get("MDEntryID")
                 or (f"{side.name}@{get('MDEntryPx')}" if get("MDEntryPx") else None),
                 **self._shared(),
             )
@@ -1179,8 +1187,8 @@ class FixEvents(Convertible):
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("MDEntryPx")),
                 qty=_number(get("MDEntrySize")),
-                exec_id=get("MDEntryID"),
-                trade_id=get("TradeID") or get("TrdMatchID"),
+                execid=get("MDEntryID"),
+                tradeid=get("TradeID") or get("TrdMatchID"),
                 **self._shared(),
             )
         )
@@ -1205,24 +1213,24 @@ class FixEvents(Convertible):
         """
         get = self.get
         cfi = get("CFICode")
-        security_type = get("SecurityType")
+        securitytype = get("SecurityType")
         return Instrument(
             symbol=get("Symbol") or "",
-            kind=_classified(cfi, security_type),
-            security_id=get("SecurityID"),
-            security_id_source=get("SecurityIDSource"),
-            alt_ids=self.into_alt_ids() or None,
-            security_type=security_type,
-            cfi=cfi,
-            exchange=get("SecurityExchange") or get("ExDestination"),
+            kind=_classified(cfi, securitytype),
+            securityid=get("SecurityID"),
+            securityidsource=get("SecurityIDSource"),
+            altids=self.into_alt_ids() or None,
+            securitytype=securitytype,
+            cficode=cfi,
+            securityexchange=get("SecurityExchange") or get("ExDestination"),
             currency=_currency(get("Currency")),
-            multiplier=_number(get("ContractMultiplier")),
-            tick=_number(get("MinPriceIncrement")),
-            lot=_number(get("RoundLot")),
-            maturity=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
-            strike=_number(get("StrikePrice")),
-            option_kind=OptionKind.from_fix(get("PutOrCall"), OptionKind.UNKNOWN),
-            label=get("SecurityDesc"),
+            contractmultiplier=_number(get("ContractMultiplier")),
+            minpriceincrement=_number(get("MinPriceIncrement")),
+            roundlot=_number(get("RoundLot")),
+            maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
+            strikeprice=_number(get("StrikePrice")),
+            putorcall=OptionKind.from_fix(get("PutOrCall"), OptionKind.UNKNOWN),
+            securitydesc=get("SecurityDesc"),
             legs=self.into_legs() or None,
         )
 
@@ -1234,12 +1242,13 @@ class FixEvents(Convertible):
         found: dict[str, str] = {}
         for entry in entries:
             named = entry.get("SecurityAltID")
-            raw_scheme = entry.get("SecurityAltIDSource")
-            scheme = IdSource.from_fix(raw_scheme, IdSource.UNKNOWN)
             if not named:
                 continue
-            key = scheme.name if scheme is not IdSource.UNKNOWN else (raw_scheme or "")
-            found.setdefault(key or IdSource.UNKNOWN.name, named)
+            raw_scheme = entry.get("SecurityAltIDSource")
+            # The dictionary's own name for the scheme, the raw value where it
+            # declares none, and one name for "the message did not say".
+            key = id_scheme(raw_scheme) or str(raw_scheme or "")
+            found.setdefault(key or UNKNOWN_SCHEME, named)
         return found
 
     def into_legs(self) -> list[Leg]:
@@ -1254,24 +1263,24 @@ class FixEvents(Convertible):
             entries = self._group("NoLegs")
         built = []
         for entry in entries:
-            cfi, security_type = entry.get("LegCFICode"), entry.get("LegSecurityType")
+            cfi, securitytype = entry.get("LegCFICode"), entry.get("LegSecurityType")
             built.append(
                 Leg(
                     symbol=entry.get("LegSymbol") or "",
                     side=Side.from_fix(entry.get("LegSide"), Side.UNKNOWN),
                     ratio=_number(entry.get("LegRatioQty")),
-                    kind=_classified(cfi, security_type),
-                    security_id=entry.get("LegSecurityID"),
-                    security_id_source=entry.get("LegSecurityIDSource"),
-                    cfi=cfi,
-                    security_type=security_type,
-                    exchange=entry.get("LegSecurityExchange"),
+                    kind=_classified(cfi, securitytype),
+                    securityid=entry.get("LegSecurityID"),
+                    securityidsource=entry.get("LegSecurityIDSource"),
+                    cficode=cfi,
+                    securitytype=securitytype,
+                    securityexchange=entry.get("LegSecurityExchange"),
                     currency=_currency(entry.get("LegCurrency")),
-                    multiplier=_number(entry.get("LegContractMultiplier")),
-                    maturity=_date(entry.get("LegMaturityDate"))
+                    contractmultiplier=_number(entry.get("LegContractMultiplier")),
+                    maturitydate=_date(entry.get("LegMaturityDate"))
                     or _month_year(entry.get("LegMaturityMonthYear")),
-                    strike=_number(entry.get("LegStrikePrice")),
-                    option_kind=OptionKind.from_fix(entry.get("LegPutOrCall"), OptionKind.UNKNOWN),
+                    strikeprice=_number(entry.get("LegStrikePrice")),
+                    putorcall=OptionKind.from_fix(entry.get("LegPutOrCall"), OptionKind.UNKNOWN),
                 )
             )
         return built
@@ -1359,12 +1368,12 @@ class FixEvents(Convertible):
             return None
         return registry.msg_type_event_types().get(self._message_kind)
 
-    def _expires(self, tif: TimeInForce, unix: int, duration: int | None) -> int | None:
+    def _expires(self, timeinforce: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
         explicit = unix_of(self.get("ExpireTime"))
         if explicit is not None:
             return explicit
-        if tif is not TimeInForce.GFT or duration is None or duration <= 0:
+        if timeinforce is not TimeInForce.GFT or duration is None or duration <= 0:
             return None
         raw_unit = self.get("ExposureDurationUnit")
         unit = 0 if raw_unit is None else _integer(raw_unit)
@@ -1383,9 +1392,9 @@ class FixEvents(Convertible):
             "codes": self._identifier_codes,
             "mic": mic,
             "reason": self._reason(),
-            "instrument_xhash": instrument.xhash,
-            "px_unit": instrument.currency.into_str() if instrument.currency else "",
-            "ccy": instrument.currency,
+            "instrumentxhash": instrument.xhash,
+            "pxunit": instrument.currency.into_str() if instrument.currency else "",
+            "currency": instrument.currency,
         }
 
     @functools.cached_property
@@ -1532,7 +1541,7 @@ SECURITY_TYPES: dict[str, AssetKind] = {
 }
 
 
-def _classified(cfi: str | None, security_type: str | None) -> AssetKind:
+def _classified(cfi: str | None, securitytype: str | None) -> AssetKind:
     """What an instrument settles as, from its CFI code or from FIX's own word.
 
     The CFI first, because ISO 10962's category letter *is* what `AssetKind` is
@@ -1541,11 +1550,11 @@ def _classified(cfi: str | None, security_type: str | None) -> AssetKind:
     and a reading that stopped at the CFI left every one of those `UNKNOWN`.
     """
     if cfi:
-        found = AssetKind.from_fix(cfi[:1], AssetKind.UNKNOWN)
+        found = AssetKind.from_cfi(cfi[:1])
         if found is not AssetKind.UNKNOWN:
             return found
-    if security_type:
-        return SECURITY_TYPES.get(security_type.strip().upper(), AssetKind.UNKNOWN)
+    if securitytype:
+        return SECURITY_TYPES.get(securitytype.strip().upper(), AssetKind.UNKNOWN)
     return AssetKind.UNKNOWN
 
 

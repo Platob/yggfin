@@ -2,11 +2,12 @@
 
 import dataclasses
 import re
+from pathlib import Path
 
 import pyarrow
 import pytest
 
-from rekep import FixMsg
+from rekep import FixMsg, FixRegistry
 from rekep.fix import (
     BRIDGE,
     MARKER,
@@ -17,7 +18,7 @@ from rekep.fix import (
     rendered_keys,
     tag_arrow_array,
 )
-from rekep.fix.message import _TAG_PROBE, _Names, group_segment_pairs
+from rekep.fix.message import _TAG_PROBE, DATA_TAGS, _Names, group_segment_pairs, parse_pairs
 
 PIPE = "8=FIX.4.2|9=2058|35=8|49=BRK|54=1|58=hello world|10=045"
 SOHED = PIPE.replace("|", SOH)
@@ -100,7 +101,7 @@ def test_generic_building_dispatches_text_to_the_message_parser() -> None:
 def test_generic_text_that_looks_like_a_document_is_still_a_fix_payload() -> None:
     parsed = FixMsg.from_("35=D|Text=report.json")
 
-    assert parsed.MsgType == "D"
+    assert parsed.msgtype == "D"
     assert parsed.get("Text").raw == "report.json"
 
 
@@ -316,7 +317,7 @@ def test_a_user_defined_wire_wrapper_prefers_its_named_payload() -> None:
     wins the `U1` wrapper and re-emits canonically, at the wire's position."""
     parsed = FixMsg.from_text("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|10=000|")
 
-    assert parsed.MsgType == "D"
+    assert parsed.msgtype == "D"
     assert parsed.pairs == [
         ("8", "FIX.4.4"),
         ("35", "D"),
@@ -919,3 +920,80 @@ def test_rendered_keys_reads_a_wire_message_as_its_tags() -> None:
     )
     assert keys.to_pylist() == ["8", "35", "54", "10"]
     assert set(marker.to_pylist()) == {""}
+
+
+def test_a_length_prefixed_value_is_taken_by_its_length_and_not_by_the_delimiter() -> None:
+    """FIX types a field `data` precisely because its value may hold the SOH.
+
+    Split on the delimiter, the value is cut at its first embedded one and
+    everything after it is read as fields -- so every real field behind it is
+    lost, and a `10=` inside the value ends the message where the writer did
+    not.
+    """
+    secure = f"AB{SOH}CD"
+    line = (
+        f"8=FIX.4.4{SOH}9=50{SOH}35=A{SOH}90={len(secure)}{SOH}91={secure}{SOH}"
+        f"98=0{SOH}108=30{SOH}10=123{SOH}"
+    )
+
+    pairs = parse_pairs(line)
+
+    assert pairs == [
+        ("8", "FIX.4.4"),
+        ("9", "50"),
+        ("35", "A"),
+        ("90", "5"),
+        ("91", secure),
+        ("98", "0"),
+        ("108", "30"),
+        ("10", "123"),
+    ]
+    # The column parser is the same reading, and a row without one is split by
+    # the kernel it always was.
+    plain = f"8=FIX.4.4{SOH}35=D{SOH}55=IBM{SOH}10=001{SOH}"
+    column = parse_arrow_array(pyarrow.array([line, plain]))
+    assert list(column.to_pylist()[0]) == pairs
+    assert list(column.to_pylist()[1]) == parse_pairs(plain)
+
+
+def test_a_checksum_inside_a_data_value_does_not_end_the_message() -> None:
+    """It is not a token: the length in front of the value said where it ends."""
+    payload = f"x{SOH}10=000{SOH}y"
+    line = f"8=FIX.4.4{SOH}35=B{SOH}95={len(payload)}{SOH}96={payload}{SOH}148=t{SOH}10=1{SOH}"
+
+    assert parse_pairs(line)[-2:] == [("148", "t"), ("10", "1")]
+
+
+def test_a_declared_length_that_lands_nowhere_defers_to_the_delimiter() -> None:
+    """A writer that miscounted has stated two things; the delimiter is the safer."""
+    line = f"8=FIX.4.4{SOH}35=B{SOH}95=99{SOH}96=short{SOH}10=1{SOH}"
+
+    assert parse_pairs(line) == [
+        ("8", "FIX.4.4"),
+        ("35", "B"),
+        ("95", "99"),
+        ("96", "short"),
+        ("10", "1"),
+    ]
+
+
+def data_tags_of(registry: FixRegistry) -> set[str]:
+    """Every tag a registry types `data`."""
+    return {
+        str(record.metadata["fix:tag"])
+        for record in registry.field_records().values()
+        if str((record.metadata or {}).get("fix:type", "")).lower() == "data"
+        and (record.metadata or {}).get("fix:tag")
+    }
+
+
+def test_the_data_tags_are_the_ones_the_dictionary_types_data() -> None:
+    """A field the registry types `data` and this set does not is a value cut short.
+
+    The shipped dictionary is the authority and has to match exactly. The
+    packaged projection carries the fields declarations use, so it is checked
+    the one way that says anything: nothing in it may be missing here.
+    """
+    shipped = Path(__file__).resolve().parents[3] / "data" / "fix"
+    assert data_tags_of(FixRegistry(cache_dir=str(shipped), offline=True)) == set(DATA_TAGS)
+    assert data_tags_of(FixRegistry.from_builtin()) <= set(DATA_TAGS)

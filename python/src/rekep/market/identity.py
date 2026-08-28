@@ -281,16 +281,16 @@ def stored_member(name: str, value: Any) -> Any:
 
     Named rather than typed because the vectorized builders assemble a batch
     member by member and never hold the whole row: `hash`, `xhash` and
-    `instrument_xhash` are identifiers wherever they appear -- a leg's
+    `instrumentxhash` are identifiers wherever they appear -- a leg's
     instrument included -- and the two list members are lists of them.
     """
     if value is None:
         return None
     if name in IDENTITY_MEMBERS:
         return hash_bytes_of(value)
-    if name == "parent_hash":
+    if name == "parenthash":
         return [hash_bytes_of(one) for one in value]
-    if name == "linked_events":
+    if name == "linkedevents":
         return [hash_bytes_of(linked(unix, xhash)) for unix, xhash in value]
     return value
 
@@ -306,9 +306,9 @@ def read_member(name: str, value: Any) -> Any:
         return None
     if name in IDENTITY_MEMBERS:
         return hash_int_of(value) or NIL
-    if name == "parent_hash":
+    if name == "parenthash":
         return [hash_int_of(one) for one in value]
-    if name == "linked_events":
+    if name == "linkedevents":
         return [unlink(one) for one in value]
     return value
 
@@ -318,10 +318,10 @@ def read_member(name: str, value: Any) -> Any:
 _LIFECYCLE_MASK = (1 << 64) - 1
 
 #: Every member of an event that is one identifier.
-IDENTITY_MEMBERS = ("hash", "xhash", "instrument_xhash")
+IDENTITY_MEMBERS = ("hash", "xhash", "instrumentxhash")
 
 #: Every member a stored row spells differently from a document.
-ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parent_hash", "linked_events"))
+ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parenthash", "linkedevents"))
 
 
 # -- helpers ----------------------------------------------------------------

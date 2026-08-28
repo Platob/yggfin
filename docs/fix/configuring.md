@@ -28,8 +28,8 @@ document. It must name the same four groups.
 from rekep import TextFile
 
 VENDOR = (
-    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<thread_name>[^|]*)\|"
-    r"(?P<plugin_code>[^|]*)\|(?P<message>.*)$"
+    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
+    r"(?P<plugincode>[^|]*)\|(?P<message>.*)$"
 )
 
 with TextFile.from_path("vendor.log", header_pattern=VENDOR) as log:
@@ -48,9 +48,8 @@ declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
 lets a specific rule sit in front of a general one.
 
 A rule carries one `pattern`; alternatives join with `|`, and
-`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its own
-flags (a document from the retired `patterns` list shape still reads, folded
-into the one alternation). A rule's regex must work in Python `re` *and* in
+`rekep.fix.rules.joined_pattern` spells that join so each branch keeps its
+own flags. A rule's regex must work in Python `re` *and* in
 Arrow's RE2, because the scalar reading and the columnar one are one rule.
 
 ```yaml
@@ -81,26 +80,23 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
 ```json
 {
   "name": "MsgType",
-  "tag": 35,
-  "values": [
-    {"value": "8", "meaning": "ExecutionReport"},
-    {"value": "D", "meaning": "NewOrderSingle"},
-    {"value": "W", "meaning": "MarketDataSnapshotFullRefresh"}
-  ],
-  "event_types": {
-    "8": {"name": "EXECUTION", "id": 4996819942064276804},
-    "D": {"name": "ORDER", "id": 5715705941605744640},
-    "W": {"name": "BOOK", "id": 4778124913204527104}
-  },
-  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}}
+  "type": "string",
+  "nullable": true,
+  "fix": {
+    "tag": "35",
+    "type": "String",
+    "values": "[{\"value\":\"8\",\"meaning\":\"ExecutionReport\"},{\"value\":\"D\",\"meaning\":\"NewOrderSingle\"}]",
+    "event_types": "{\"8\":\"EXECUTION\",\"D\":\"ORDER\",\"W\":\"BOOK\"}",
+    "states": "{\"D\":\"PENDING_NEW\"}"
+  }
 }
 ```
 
-The `id` is the member's stored `int64` -- its ASCII mnemonic packed
-big-endian and left-justified (`EXECUTED`, `ORDER`, `BOOK`). The name and the
-id must agree on load; a document carrying an id this release does not store
-is refused, so a registry written by an earlier release is rewritten, not
-migrated.
+Enum members are stored by **name**. The value each name stands for is its
+ASCII mnemonic packed big-endian into an `int64` (`EXECUTION`, `ORDER`,
+`BOOK`), which is a nineteen-digit integer and unreadable in a file people
+edit. A name this release does not declare is refused on load rather than
+read as a degraded `UNKNOWN`.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent
@@ -116,18 +112,17 @@ through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
 Every consumer, including Order fallbacks, reads that map. Python declarations
-use `State` members; registry documents store both their names and integer ids.
+use `State` members; registry documents name them.
 
 ```json
 {
   "name": "ExecType",
-  "tag": 150,
-  "states": {
-    "0": {"name": "NEW", "id": 3616758035474546688},
-    "1": {"name": "PARTIALLY_FILLED", "id": 3688817884324579660},
-    "2": {"name": "FILLED", "id": 3760864444457698628},
-    "G": {"name": "REPLACED", "id": 3833216690499109700},
-    "H": {"name": "CANCELLED", "id": 3832918705633971268}
+  "type": "string",
+  "nullable": true,
+  "fix": {
+    "tag": "150",
+    "type": "char",
+    "states": "{\"0\":\"NEW\",\"1\":\"PARTIALLY_FILLED\",\"2\":\"FILLED\",\"G\":\"REPLACED\",\"H\":\"CANCELLED\"}"
   }
 }
 ```
@@ -200,10 +195,10 @@ null_values: ["", "null", "<null>", "n/a"]
 | `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
-| `technical_plugins` | parsed `plugin_code` filter before persistence | `parse_messages` |
+| `technical_plugins` | parsed `plugincode` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
-| `batch_row_size`, `batch_byte_size` | `TextFile` parser bounds | `parse_messages` |
-| `protocols` | `Message.protocol_code`, then `FixCodec.rules` | both parse stages |
+| `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
+| `protocols` | `Message.protocolcode`, then `FixCodec.rules` | both parse stages |
 | `null_values` | `FixCodec.null_values` | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |
 | `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |

@@ -1,5 +1,7 @@
 # MIC
 
+[`Ascii32`](ascii-codes.md){ .enum-base } — four bytes of printable ASCII packed left-justified into one `int32`, an open vocabulary, so a code it meets and can round-trip registers itself.
+
 ```python
 from rekep.enums import MIC
 

@@ -181,7 +181,7 @@ def test_generic_scalar_dispatch_always_treats_text_and_bytes_as_fix(
 ) -> None:
     built = FixMsg.from_(source)
 
-    assert built.MsgType == "D"
+    assert built.msgtype == "D"
     assert built.get("Text").raw == text
 
 

@@ -39,14 +39,19 @@ theme:
 
 extra_css:
   - stylesheets/terminal.css
+  - stylesheets/ascii-codes.css
   - stylesheets/home.css
   - stylesheets/fix-registry.css
   - stylesheets/fix-transcribe.css
+  - stylesheets/product-lineage.css
 
 extra_javascript:
+  - javascripts/ascii-codes.js
   - javascripts/fix-declaration.js
   - javascripts/fix-registry.js
   - javascripts/fix-transcribe.js
+  # Reads the decoder `fix-transcribe.js` publishes, so it is loaded after it.
+  - javascripts/product-lineage.js
 
 hooks:
   - docs_hooks.py
@@ -57,25 +62,33 @@ nav:
       - Foundations:
           - Why Arrow: overview/arrow.md
           - Design rules: overview/design.md
-  - Schemas:
+  - Products:
+      - Overview: products/index.md
+      - Text:
+          - Message: products/message.md
+          - FixMsg: products/fixmsg.md
+      - Market:
+          - Instrument: products/instrument.md
+          - Order: products/order.md
+          - Execution: products/execution.md
+          - Book: products/book.md
       - Declarations:
           - Types: contracts/types.md
           - Schema contracts: contracts/index.md
-      - Identity:
           - Binary identities: contracts/identity.md
           - Time-anchored hashes: contracts/txhash.md
   - Enums:
       - Overview: enums/index.md
+      - ASCII codes: enums/ascii-codes.md
       - Events:
           - Event type: enums/event-type.md
           - State: enums/state.md
       - Instruments:
           - Asset kind: enums/asset-kind.md
-          - Identifier source: enums/id-source.md
           - Market identifier: enums/mic.md
           - Currency: enums/currency.md
           - Option kind: enums/option-kind.md
-      - Orders:
+      - Market:
           - Side: enums/side.md
           - Market kind: enums/market-kind.md
           - Time in force: enums/time-in-force.md
@@ -96,8 +109,10 @@ nav:
   - Pipeline:
       - Overview: pipeline/index.md
       - Operations:
+          - Deploy from scratch: pipeline/operations/deploy.md
           - Airflow deployment: pipeline/operations/airflow.md
           - End-to-end run: pipeline/operations/run.md
+          - Logs: pipeline/operations/logs.md
       - Tasks:
           - Parse messages: pipeline/tasks/parse-messages.md
           - Parse FIX: pipeline/tasks/parse-fix.md

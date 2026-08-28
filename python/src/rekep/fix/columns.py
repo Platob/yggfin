@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
@@ -11,7 +13,7 @@ import pyarrow.compute
 from rekep.entries import ENTRIES as ENTRIES
 from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
-from rekep.fields import Field
+from rekep.fields import Field, column_name
 from rekep.fix.fields import UTC_DATATYPES
 from rekep.fix.registry import FixRegistry
 
@@ -188,11 +190,17 @@ def _physical_type(member: Field) -> pyarrow.DataType:
 
 
 def _declaration(member: Field) -> Field:
-    """A registry field in the physical shape used by parsed logs."""
+    """A registry field in the physical shape used by parsed logs.
+
+    Named as a column is named -- folded -- with the dictionary's own spelling
+    kept as the display, because that is what a reader wants to see and what
+    the fold throws away.
+    """
     metadata = dict(member.metadata)
     metadata["fix:name"] = member.name
+    metadata["fix:display"] = member.name
     return Field(
-        name=member.name,
+        name=column_name(member.name),
         dtype=_physical_type(member),
         nullable=True,
         metadata=metadata,
@@ -203,25 +211,28 @@ _REGISTRY = FixRegistry.from_builtin()
 _MERGED_FIELDS = _REGISTRY.merged_fields()
 
 # Source identifiers retained on parsed market rows, in lifecycle lookup
-# order. Tags come from the registry so this declaration never respells them.
-_IDENTIFIER_NAMES: tuple[tuple[str, str], ...] = (
-    ("order_id", "OrderID"),
-    ("secondary_order_id", "SecondaryOrderID"),
-    ("orig_cl_ord_id", "OrigClOrdID"),
-    ("cl_ord_id", "ClOrdID"),
-    ("secondary_cl_ord_id", "SecondaryClOrdID"),
-    ("cl_ord_link_id", "ClOrdLinkID"),
-    ("exec_id", "ExecID"),
-    ("secondary_exec_id", "SecondaryExecID"),
-    ("exec_ref_id", "ExecRefID"),
-    ("trade_id", "TradeID"),
-    ("trd_match_id", "TrdMatchID"),
-    ("quote_entry_id", "QuoteEntryID"),
-    ("quote_id", "QuoteID"),
-    ("quote_req_id", "QuoteReqID"),
-    ("quote_set_id", "QuoteSetID"),
-    ("md_entry_id", "MDEntryID"),
-    ("md_entry_ref_id", "MDEntryRefID"),
+# order. Tags come from the registry so this declaration never respells them,
+# and each is stored under its folded name -- the same name its column would
+# carry, so a `codes` key and a column key are never two spellings of one
+# field.
+_IDENTIFIER_NAMES: tuple[str, ...] = (
+    "OrderID",
+    "SecondaryOrderID",
+    "OrigClOrdID",
+    "ClOrdID",
+    "SecondaryClOrdID",
+    "ClOrdLinkID",
+    "ExecID",
+    "SecondaryExecID",
+    "ExecRefID",
+    "TradeID",
+    "TrdMatchID",
+    "QuoteEntryID",
+    "QuoteID",
+    "QuoteReqID",
+    "QuoteSetID",
+    "MDEntryID",
+    "MDEntryRefID",
 )
 
 
@@ -236,7 +247,7 @@ def _identifier_tag(name: str) -> int:
 
 
 IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
-    (stored, name, _identifier_tag(name)) for stored, name in _IDENTIFIER_NAMES
+    (column_name(name), name, _identifier_tag(name)) for name in _IDENTIFIER_NAMES
 )
 
 _ORDER = (
@@ -255,6 +266,16 @@ if len(FIXMSG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry i
     raise ValueError("the bundled FIX fields do not have unique tags")
 DECLARATIONS: Mapping[int, Field] = MappingProxyType(
     {tag: _declaration(member) for tag, member in FIXMSG_FIELDS.items()}
+)
+#: The same declarations under the FIX name each one carries, which is how a
+#: model annotates its column: a member called `msgtype` says
+#: `DECLARED["MsgType"]` and the tag stays in the dictionary, where it is
+#: stated once. A name this registry has not got raises here, at import,
+#: rather than annotating a column with the wrong field the way a mistyped tag
+#: did. Keyed by the dictionary's spelling and not by the folded column name,
+#: because the spelling is what a reader writing the annotation has.
+DECLARED: Mapping[str, Field] = MappingProxyType(
+    {member.fix.canonical: member for member in DECLARATIONS.values()}
 )
 
 _TAGS_BY_NAME = {member.name: member.fix.tag for member in _FIELDS}
@@ -310,13 +331,20 @@ _NAMESPACE_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
 
 
 def _namespace_column(entry: Field) -> Field:
-    """One namespaced field as the log column it is lifted into."""
-    return Field(
+    """One namespaced field as the log column it is lifted into.
+
+    The declared column is folded the way every other column is, and the name
+    the registry knows it by is what the column says it is called -- so
+    `ISINCODE` is stored as `isincode` and still reads back as `ISINCODE`.
+    """
+    built = Field(
         name=entry.fix.column,
         dtype=entry.dtype,
         nullable=True,
         metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
     )
+    built.fix.display = entry.fix.name
+    return built
 
 
 def namespace_columns(registry: FixRegistry) -> Mapping[str, Field]:
@@ -353,6 +381,47 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
         if tail not in found and len(owners) == 1:
             found[tail] = columns[next(iter(owners))]
     return MappingProxyType(found)
+
+
+# -- the schemes an identifier may be issued under ---------------------------
+#
+# `SecurityIDSource <22>` enumerates thirty-three of them and this package used
+# to compile its own copy as an enum, banded by issuer. The dictionary already
+# names every one, so the copy is gone and a scheme is stored under the name
+# the dictionary gives it.
+
+#: The scheme `Instrument.isincode` is read from, by the dictionary's own
+#: symbol for it. One scheme is named here because "this instrument's ISIN" is
+#: this package's question and not the dictionary's -- it enumerates the
+#: schemes and ranks none -- while the wire value beside it is still read from
+#: the dictionary rather than written down.
+ISIN_SCHEME = "ISIN_NUMBER"
+
+#: What an identifier carried under no stated scheme is filed under.
+UNKNOWN_SCHEME = "UNKNOWN"
+
+
+@functools.cache
+def _schemes() -> Field:
+    return _REGISTRY.scalar("SecurityIDSource")
+
+
+def id_schemes() -> Mapping[str, str]:
+    """`{wire value: the scheme it names}` for `SecurityIDSource <22>`."""
+    return _schemes().fix.symbols
+
+
+def id_scheme(value: Any) -> str:
+    """The scheme a stored value names, by its wire code or by its own name.
+
+    Empty where nothing names one, so a caller keeps whatever the message
+    wrote rather than filing it under a scheme the dictionary never declared.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    declared = _schemes().fix
+    return declared.symbols.get(text) or declared.symbols.get(declared.encode(text), "")
 
 
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)

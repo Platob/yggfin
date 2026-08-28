@@ -367,11 +367,11 @@ def test_msgtype_filters_are_forwarded_to_every_file(tmp_path: Path) -> None:
     )
 
     files = TextFiles.from_folder(tmp_path)
-    assert files.read_arrow_table().column("MsgType").to_pylist() == ["0", "D", "1", "8"]
+    assert files.read_arrow_table().column("msgtype").to_pylist() == ["0", "D", "1", "8"]
 
     table = files.read_arrow_table(exclude_msgtypes=("0", "1"))
 
-    assert table.column("MsgType").to_pylist() == ["D", "8"]
+    assert table.column("msgtype").to_pylist() == ["D", "8"]
 
 
 def test_duration_windows_are_shared_across_file_boundaries(tmp_path: Path) -> None:
@@ -414,7 +414,7 @@ def test_time_bounds_are_forwarded_to_every_file(tmp_path: Path) -> None:
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     walked = list(TextFiles.from_folder(capture, pattern="*.txt*").into_urls())
-    read = files.into_arrow_table().column("source_url").to_pylist()
+    read = files.into_arrow_table().column("sourceurl").to_pylist()
     assert read[::EXPECTED_RECORDS] == walked
 
     # Every file's rows are contiguous: a set never interleaves two logs. Cut
@@ -781,3 +781,35 @@ def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> 
     assert files.create_with(narrow) is files
     assert files.into_struct_field() == narrow
     assert not (tmp_path / "nothing-here").exists()
+
+
+def test_the_row_bound_reaches_every_file_in_the_set(tmp_path: Path) -> None:
+    """One set is one shape, so a runaway line in any of its logs is bounded."""
+    header = "2026-08-14 00:05:0%d.000 [t] [M] (INFO) "
+    (tmp_path / "one.txt").write_text(f"{header % 1}{'x' * 500}\n", encoding="utf-8")
+    (tmp_path / "two.txt").write_text(f"{header % 2}short\n", encoding="utf-8")
+
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+    table = files.into_arrow_table(max_row_byte_size=len(header % 1) + 20)
+
+    assert table.column("message").to_pylist() == ["x" * 20, "short"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 480",
+        None,
+    ]
+
+
+def test_closing_the_set_under_a_live_reader_is_not_the_end_of_the_stream(
+    tmp_path: Path,
+) -> None:
+    """A capture read short must not come back as a capture read whole."""
+    for index in range(3):
+        (tmp_path / f"app.{index}.txt").write_bytes(SAMPLE_BYTES)
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+
+    reader = files.read_arrow_reader(batch_row_size=4)
+    assert reader.read_next_batch().num_rows == 4
+    files.close()
+
+    with pytest.raises(ValueError, match="closed file"):
+        reader.read_all()

@@ -26,8 +26,8 @@ import pytest
 
 from rekep.enums import EventType
 from rekep.fields import Field, newest_rank
+from rekep.fields.metadata import values_of
 from rekep.fix import FixRegistry
-from rekep.fix.entries import values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import is_group, members_of
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
@@ -761,7 +761,7 @@ def test_the_builtin_registry_classifies_msg_types_before_transcription() -> Non
     assert "U1" not in classified, "a registry-unknown private type stays UNKNOWN"
 
     metadata = json.loads(registry.scalar("MsgType").fix["event_types"])
-    assert metadata["D"] == int(EventType.ORDER)
+    assert metadata["D"] == EventType.ORDER.name, "stored by name, read back as the member"
     assert registry.msg_type_event_types() is classified
 
 
@@ -809,6 +809,26 @@ def test_search_matches_name_tag_and_description_case_insensitively(
     assert [f.name for f in registry.search("side")] == ["Side"]
     assert [f.name for f in registry.search(54)] == ["Side"]
     assert "OrdRejReason" in [f.name for f in registry.search("REJECTION")]
+
+
+def test_a_query_answered_by_an_identity_is_not_padded_with_prose() -> None:
+    """`54` names `Side`; nine fields whose descriptions mention 54 followed it."""
+    registry = FixRegistry.from_builtin()
+
+    assert [field.name for field in registry.search(54)] == ["Side"]
+    assert [field.name for field in registry.search("side")][0] == "Side"
+    # A name tier still keeps its neighbours -- they are the same question.
+    assert "AdvSide" in [field.name for field in registry.search("side", limit=20)]
+    # Prose is the answer only when nothing else is.
+    assert "OrdRejReason" in [field.name for field in registry.search("REJECTION")]
+
+
+def test_a_query_of_several_words_is_every_one_of_them() -> None:
+    """So a spelling nobody writes without a space still reaches its name."""
+    registry = FixRegistry.from_builtin()
+
+    assert [field.name for field in registry.search("order qty", limit=3)][0] == "OrderQty"
+    assert [field.name for field in registry.search("cl ord id", limit=3)][0] == "ClOrdID"
 
 
 def test_search_limits_distinct_identities_across_versions() -> None:

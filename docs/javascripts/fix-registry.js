@@ -56,11 +56,42 @@
     return `<code class="fix-registry__tag" title="FIX tag ${escape(value)}">${label}</code>`;
   };
   const href = (kind, value) => `#${kind}=${encodeURIComponent(value)}`;
-  const matches = (haystack, query) =>
-    normalized(query)
-      .split(/\s+/)
-      .filter(Boolean)
-      .every((part) => haystack.includes(part));
+
+  // What a query matched, best first, exactly as `FixRegistry.search` ranks it:
+  // an identity -- a tag, a MsgType, a name, part of one -- and only then the
+  // record's own prose. Searching a whole record for the text is what buried
+  // `Side` behind `Account` and `Currency`: 280 of 6,074 fields carry "side"
+  // somewhere in their JSON.
+  const IDENTIFIED = 3;
+  const BY_TEXT = 4;
+
+  function rank(entry, query, parts) {
+    const name = entry._name;
+    if (query === name || query === entry._tag || query === entry._msgtype) return 0;
+    if (name.startsWith(query)) return 1;
+    if (parts.every((part) => name.includes(part))) return 2;
+    if (parts.every((part) => entry._text.includes(part))) return BY_TEXT;
+    return null;
+  }
+
+  // The rows one query answers: those that named something, or -- when nothing
+  // did -- those that only mention it. Never both, so an answer is never
+  // padded with the records that merely say the word.
+  function ranked(entries, query) {
+    const wanted = normalized(query);
+    if (!wanted) return { rows: entries, by: "" };
+    const parts = wanted.split(/\s+/).filter(Boolean);
+    const scored = [];
+    for (const entry of entries) {
+      const score = rank(entry, wanted, parts);
+      if (score !== null) scored.push([score, entry]);
+    }
+    if (!scored.length) return { rows: [], by: "" };
+    const best = Math.min(...scored.map(([score]) => score));
+    const kept = scored.filter(([score]) => (best < IDENTIFIED ? score < IDENTIFIED : true));
+    kept.sort((one, other) => one[0] - other[0]);
+    return { rows: kept.map(([, entry]) => entry), by: best < IDENTIFIED ? "name" : "text" };
+  }
 
   fetch(new URL(app.dataset.source, window.location.href))
     .then((response) => {
@@ -92,7 +123,10 @@
       component._msgType = fixDeclaration.msgType(component.declaration);
       component._members = flattenMembers(component._tree);
       component._shape = componentShape(component);
-      component._search = normalized(JSON.stringify(component));
+      component._name = normalized(component.name);
+      component._tag = "";
+      component._msgtype = normalized(component._msgType);
+      component._text = normalized(JSON.stringify(component));
       component._members
         .filter((member) => member.kind === "component")
         .forEach((member) => {
@@ -103,7 +137,10 @@
     });
     fields.forEach((field) => {
       field._usages = fieldUsages(field);
-      field._search = normalized(JSON.stringify(field));
+      field._name = normalized(field.name);
+      field._tag = field.tag === undefined ? "" : String(field.tag);
+      field._msgtype = "";
+      field._text = normalized(JSON.stringify(field));
       list(field.components).forEach((name) => {
         const members = componentFields.get(normalized(name)) || [];
         members.push(field);
@@ -277,9 +314,9 @@
     }
 
     function renderComponents() {
-      const filtered = components.filter(
+      const found = ranked(components, state.component.query);
+      const filtered = found.rows.filter(
         (component) =>
-          matches(component._search, state.component.query) &&
           (!state.component.version || list(component.versions).includes(state.component.version)) &&
           (!state.component.kind || component._shape === state.component.kind),
       );
@@ -296,14 +333,14 @@
         )
         .join("");
       if (!filtered.length) componentRows.innerHTML = emptyRow(5);
-      updateCount(select("[data-component-count]"), filtered.length, components.length);
+      updateCount(select("[data-component-count]"), filtered.length, components.length, found.by);
       updatePager(select("[data-component-pager]"), state.component.page, filtered.length);
     }
 
     function renderFields() {
-      const filtered = fields.filter(
+      const found = ranked(fields, state.field.query);
+      const filtered = found.rows.filter(
         (field) =>
-          matches(field._search, state.field.query) &&
           (!state.field.version || list(field.versions).includes(state.field.version)) &&
           (!state.field.type || normalized(field.type) === state.field.type) &&
           (!state.field.kind || field._usages.includes(state.field.kind)),
@@ -325,7 +362,7 @@
         )
         .join("");
       if (!filtered.length) fieldRows.innerHTML = emptyRow(6);
-      updateCount(select("[data-field-count]"), filtered.length, fields.length);
+      updateCount(select("[data-field-count]"), filtered.length, fields.length, found.by);
       updatePager(select("[data-field-pager]"), state.field.page, filtered.length);
     }
 
@@ -341,8 +378,12 @@
       return `<tr><td class="fix-registry__empty" colspan="${columns}">No records match these filters.</td></tr>`;
     }
 
-    function updateCount(output, count, total) {
-      output.textContent = `${number.format(count)} / ${number.format(total)}`;
+    function updateCount(output, count, total, by = "") {
+      // Which tier answered, because a search that found nothing by name and
+      // fell back to the prose has to say so -- otherwise a reader reads a
+      // loose match as the strict one they asked for.
+      const tier = by === "text" ? " matched in text" : "";
+      output.textContent = `${number.format(count)} / ${number.format(total)}${tier}`;
     }
 
     function updatePager(pager, current, count) {
@@ -470,12 +511,7 @@
         <tbody>${values
           .map((one) => {
             const code = String(one.value);
-            const configured = object(field.states)[code] || object(field.event_types)[code];
-            const enumText = configured
-              ? typeof configured === "object"
-                ? `${configured.name} (${configured.id})`
-                : configured
-              : "";
+            const enumText = object(field.states)[code] || object(field.event_types)[code] || "";
             return `<tr><td><code>${escape(code)}</code></td><td>${escape(one.meaning || "")}</td><td>${escape(enumText)}</td></tr>`;
           })
           .join("")}</tbody></table></div>`;

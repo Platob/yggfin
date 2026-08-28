@@ -1,159 +1,313 @@
 name: Message
 type: struct
 description: One log header, its provenance, and its protocol-neutral payload.
-metadata: {namespace: rekep.text.message, version: '3'}
+metadata: {namespace: rekep.text.message, version: '1'}
 fields:
 - name: unix
   type: int64
   description: When the event happened, in whole nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
   iceberg: {primary_key: 'true', sort_key: asc}
-- name: unix_partition
+  fix: {display: Unix}
+- name: unixpartition
   type: int32
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
+  fix: {display: Unix Partition}
 - name: etype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
+  fix: {display: Etype}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","6004496033382400000":"STATE","4778124913204527104":"BOOK","5283659427399139328":"INSTRUMENT_STATE","5282251034575328256":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT","INSTRUMENT_STATE":"ISTATE"}'}
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
+  fix: {display: Cunix}
 - name: runix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
+  fix: {display: Runix}
 - name: eunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
+  fix: {display: Eunix}
 - name: sunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
+  fix: {display: Sunix}
 - name: hash
   type: fixed_size_binary[16]
   description: 'Digest of this version''s content: the same version, twice, is one row.'
   iceberg: {primary_key: 'true'}
+  fix: {display: Hash}
 - name: xhash
   type: fixed_size_binary[16]
   description: Identity of the thing across every version of it -- the lifecycle.
-- name: linked_events
+  fix: {display: Xhash}
+- name: linkedevents
   type: list
   description: Related event times and lifecycle identities, primary match first.
+  fix: {display: Linked Events}
   item:
     type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
+  fix: {display: Version}
 - name: state
   type: int64
   description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
+  fix: {display: State}
   enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","REJECTED":"61REJCTD","REPLACED":"52REPLCD","STOPPED":"26STOPPD","SUSPENDED":"25SUSPND"}'}
 - name: code
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
+  fix: {display: Code}
 - name: codes
   type: map
   description: Every other identifier the source spelled, by the name that carried it.
+  fix: {display: Codes}
   key:
     type: string
   value:
     type: string
-- name: prev_unix
+- name: prevunix
   type: int64
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-- name: parent_hash
+  fix: {display: Prev Unix}
+- name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
+  fix: {display: Parent Hash}
   item:
     type: fixed_size_binary[16]
 - name: mic
   type: int32
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
+  fix: {display: MIC}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-- name: source_url
+  fix: {display: Reason}
+- name: sourceurl
   type: string
   description: Path of the log the row came from, as its filesystem addresses it.
-- name: source_rownum
+  fix: {display: Source URL}
+- name: sourcerownum
   type: int64
   description: 1-based physical line number of the header; 0 when not read from a file.
-- name: thread_name
+  fix: {display: Source Rownum}
+- name: threadname
   type: string
   description: Contents of the first bracketed header field.
-- name: plugin_code
+  fix: {display: Thread Name}
+- name: plugincode
   type: string
   description: Contents of the second bracketed header field.
+  fix: {display: Plugin Code}
 - name: message
   type: string
   description: Payload after the fixed log header, with continuation lines folded in.
-- name: protocol_code
+  fix: {display: Message}
+- name: protocolcode
   type: string
   description: Protocol syntax detected without interpreting its fields.
-- name: BeginString
+  fix: {display: Protocol Code}
+- name: beginstring
   type: string
   nullable: true
   description: Protocol the session negotiated, as the payload spells it.
-- name: BodyLength
+  fix: {display: BeginString}
+- name: bodylength
   type: string
   nullable: true
   description: 'Declared body length, kept as text: this stage reads no numbers.'
-- name: MsgType
+  fix: {display: BodyLength}
+- name: msgtype
   type: string
   nullable: true
   description: First FIX message discriminator when the payload names one.
-- name: MsgSeqNum
-  type: string
-  nullable: true
-  description: Sequence number the payload states, as text.
-- name: SenderCompID
+  fix: {display: MsgType}
+- name: sendercompid
   type: string
   nullable: true
   description: Who the payload says sent it.
-- name: TargetCompID
+  fix: {display: SenderCompID}
+- name: sendersubid
+  type: string
+  nullable: true
+  description: Which desk or trader of the sender the payload names.
+  fix: {display: SenderSubID}
+- name: senderlocationid
+  type: string
+  nullable: true
+  description: Where the payload says the sender sent it from.
+  fix: {display: SenderLocationID}
+- name: targetcompid
   type: string
   nullable: true
   description: Who the payload says it was for.
-- name: SendingTime
+  fix: {display: TargetCompID}
+- name: targetsubid
+  type: string
+  nullable: true
+  description: Which desk or trader of the target the payload names.
+  fix: {display: TargetSubID}
+- name: targetlocationid
+  type: string
+  nullable: true
+  description: Where the payload says the target is.
+  fix: {display: TargetLocationID}
+- name: onbehalfofcompid
+  type: string
+  nullable: true
+  description: Firm the message originated with, where a hub relayed it.
+  fix: {display: OnBehalfOfCompID}
+- name: onbehalfofsubid
+  type: string
+  nullable: true
+  description: Which desk or trader of that originating firm the payload names.
+  fix: {display: OnBehalfOfSubID}
+- name: onbehalfoflocationid
+  type: string
+  nullable: true
+  description: Where the payload says that originating firm sent it from.
+  fix: {display: OnBehalfOfLocationID}
+- name: delivertocompid
+  type: string
+  nullable: true
+  description: Firm the message is ultimately for, where a hub is to relay it.
+  fix: {display: DeliverToCompID}
+- name: delivertosubid
+  type: string
+  nullable: true
+  description: Which desk or trader of that firm the payload names.
+  fix: {display: DeliverToSubID}
+- name: delivertolocationid
+  type: string
+  nullable: true
+  description: Where the payload says that firm is.
+  fix: {display: DeliverToLocationID}
+- name: msgseqnum
+  type: string
+  nullable: true
+  description: Sequence number the payload states, as text.
+  fix: {display: MsgSeqNum}
+- name: lastmsgseqnumprocessed
+  type: string
+  nullable: true
+  description: Last sequence number the sender says it had processed, as text.
+  fix: {display: LastMsgSeqNumProcessed}
+- name: possdupflag
+  type: string
+  nullable: true
+  description: Whether the payload flags itself a possible retransmission, as spelled.
+  fix: {display: PossDupFlag}
+- name: possresend
+  type: string
+  nullable: true
+  description: Whether the payload flags itself a possible resend, as spelled.
+  fix: {display: PossResend}
+- name: sendingtime
   type: string
   nullable: true
   description: When the payload says it was sent, in the payload's own spelling.
+  fix: {display: SendingTime}
+- name: origsendingtime
+  type: string
+  nullable: true
+  description: When a resent payload says it first went out, as spelled.
+  fix: {display: OrigSendingTime}
+- name: onbehalfofsendingtime
+  type: string
+  nullable: true
+  description: When the originating firm sent it, where a relayed payload says.
+  fix: {display: OnBehalfOfSendingTime}
+- name: applverid
+  type: string
+  nullable: true
+  description: Application version a FIXT session names for this message.
+  fix: {display: ApplVerID}
+- name: cstmapplverid
+  type: string
+  nullable: true
+  description: Custom application extension the payload names, where it names one.
+  fix: {display: CstmApplVerID}
+- name: applextid
+  type: string
+  nullable: true
+  description: Extension pack the payload names, as text.
+  fix: {display: ApplExtID}
+- name: messageencoding
+  type: string
+  nullable: true
+  description: Encoding the payload declares for its `Encoded*` fields.
+  fix: {display: MessageEncoding}
+- name: securedatalen
+  type: string
+  nullable: true
+  description: Declared length of `securedata`, kept as the text in front of it.
+  fix: {display: SecureDataLen}
+- name: securedata
+  type: string
+  nullable: true
+  description: Encrypted block the payload carried, taken by the length in front of it.
+  fix: {display: SecureData}
+- name: signaturelength
+  type: string
+  nullable: true
+  description: Declared length of `signature`, kept as the text in front of it.
+  fix: {display: SignatureLength}
+- name: signature
+  type: string
+  nullable: true
+  description: Signature the payload carried, taken by the length in front of it.
+  fix: {display: Signature}
 - name: entries
   type: list
   description: Ordered payload arguments other than the promoted message discriminator.
+  fix: {display: Entries}
   item:
     type: struct
+    fix: {display: Item}
     fields:
     - name: tag
       type: int32
       description: Numeric identity written or resolved; zero while unresolved.
+      fix: {display: Tag}
     - name: key
       type: string
       description: Terminal spelling without a leading argument marker.
+      fix: {display: Key}
     - name: value
       type: string
       description: Text after the first equals sign; an empty value is empty text.
+      fix: {display: Value}
     - name: namespace
       type: string
       nullable: true
       description: Prefix outside an indexed container.
+      fix: {display: Namespace}
     - name: comp
       type: string
       nullable: true
       description: Indexed container prefix.
+      fix: {display: Comp}
 - name: direction
   type: bool
   nullable: true
   description: True where the line says it was sent, False received; null undirected.
+  fix: {display: Direction}

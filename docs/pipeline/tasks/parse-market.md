@@ -17,6 +17,9 @@ uv run --project python --with papermill rekep task run \
   --output parse_market.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 Bypass Books and write FIX-carried Orders and Executions directly with:
 
 ```bash

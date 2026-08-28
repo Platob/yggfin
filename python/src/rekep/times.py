@@ -43,7 +43,7 @@ NAMED: dict[str, Any] = {
 #:
 #: One declaration because the set of accepted spellings is *one behavior*
 #: even where the execution is two: this module reads a configuration value
-#: with `strptime`, once per job, and `rekep.text.text_file` reads a column of
+#: with `strptime`, once per job, and `rekep.Text.text_file` reads a column of
 #: log-line stamps in Arrow kernels, once per line. The fast path cannot use
 #: `strptime`, but it must not decide for itself what a stamp looks like, so
 #: it derives its widths and its slicing offsets from these.

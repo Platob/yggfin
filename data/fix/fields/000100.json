@@ -1,42 +1,33 @@
 {
  "50000": {
   "name": "BatchID",
-  "tag": 50000,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "50000",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "50001": {
   "name": "BatchTotalMessages",
-  "tag": 50001,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "50001",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "50002": {
   "name": "BatchProcessMode",
-  "tag": 50002,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "UPDATE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "SNAPSHOT"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "50002",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"UPDATE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"SNAPSHOT\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  }
 }

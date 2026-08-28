@@ -22,8 +22,8 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
     expected = hash_of("symbol", "", "AAPL")
     variants = (
         Instrument(symbol="AAPL"),
-        Instrument(symbol="AAPL", exchange="XNAS"),
-        Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4"),
+        Instrument(symbol="AAPL", securityexchange="XNAS"),
+        Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4"),
         Instrument(symbol="AAPL", xhash=7, code="US0378331005"),
     )
     assert {(built.xhash, built.code) for built in variants} == {(expected, "AAPL")}
@@ -31,17 +31,17 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
 
 def test_two_venues_using_the_same_symbol_agree() -> None:
     one = Instrument(
-        symbol="AAPL", exchange="XNAS", security_id="US0378331005", security_id_source="4"
+        symbol="AAPL", securityexchange="XNAS", securityid="US0378331005", securityidsource="4"
     )
     other = Instrument(
-        symbol="AAPL", exchange="XPAR", security_id="FR0000000001", security_id_source="4"
+        symbol="AAPL", securityexchange="XPAR", securityid="FR0000000001", securityidsource="4"
     )
     assert one.xhash == other.xhash
 
 
 def test_two_symbols_for_the_same_registered_identifier_stay_distinct() -> None:
-    one = Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4")
-    other = Instrument(symbol="AAPL.OQ", security_id="US0378331005", security_id_source="4")
+    one = Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4")
+    other = Instrument(symbol="AAPL.OQ", securityid="US0378331005", securityidsource="4")
     assert one.xhash != other.xhash
 
 
@@ -69,10 +69,10 @@ def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
     unidentified = Instrument(
         xhash=7,
         code="US0378331005",
-        exchange="XCME",
+        securityexchange="XCME",
         currency="USD",
-        security_id="US0378331005",
-        security_id_source="4",
+        securityid="US0378331005",
+        securityidsource="4",
     )
     assert (unidentified.xhash, unidentified.code) == (NIL, "")
 
@@ -106,9 +106,9 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
 ) -> None:
     log = FixMsg(
         unix=1,
-        BeginString="FIX.4.4",
-        MsgType="d",
-        Symbol="FAKE-SYM",
+        beginstring="FIX.4.4",
+        msgtype="d",
+        symbol="FAKE-SYM",
         entries=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
@@ -136,7 +136,11 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         snapshot_every=0,
     )
 
-    assert (instrument.tick, instrument.lot, instrument.label) == (0.01, 100.0, "FAKE-DESC")
+    assert (instrument.minpriceincrement, instrument.roundlot, instrument.securitydesc) == (
+        0.01,
+        100.0,
+        "FAKE-DESC",
+    )
     assert transcription == {"registry": registry}
 
 
@@ -147,19 +151,19 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
         unix=1_000,
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        security_id="FR0000000001",
-        security_id_source="4",
-        alt_ids={"RIC": "CAL.N"},
-        security_type="MLEG",
-        exchange="XPAR",
+        securityid="FR0000000001",
+        securityidsource="4",
+        altids={"RIC_CODE": "CAL.N"},
+        securitytype="MLEG",
+        securityexchange="XPAR",
         currency=Currency.EUR,
-        multiplier=10.0,
-        tick=0.01,
-        lot=1.0,
-        maturity=datetime.date(2027, 6, 18),
-        strike=42.0,
-        option_kind=OptionKind.CALL,
-        label="Calendar spread",
+        contractmultiplier=10.0,
+        minpriceincrement=0.01,
+        roundlot=1.0,
+        maturitydate=datetime.date(2027, 6, 18),
+        strikeprice=42.0,
+        putorcall=OptionKind.CALL,
+        securitydesc="Calendar spread",
         legs=[
             Leg(
                 xhash=17,
@@ -198,22 +202,22 @@ def test_normalized_instrument_batches_decode_without_python_rows(
             unix=1_000,
             cunix=900,
             runix=1_100,
-            parent_hash=[11, 12],
+            parenthash=[11, 12],
             symbol="CAL-27",
             kind=AssetKind.MULTILEG,
-            security_id="FR0000000001",
-            security_id_source="4",
-            alt_ids={"ISIN": "FR0000000001", "RIC": "CAL.N", "Z": "vendor"},
-            security_type="MLEG",
-            exchange="XPAR",
+            securityid="FR0000000001",
+            securityidsource="4",
+            altids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N", "Z": "vendor"},
+            securitytype="MLEG",
+            securityexchange="XPAR",
             currency=Currency.EUR,
-            multiplier=10.0,
-            tick=0.01,
-            lot=1.0,
-            maturity=datetime.date(2027, 6, 18),
-            strike=42.0,
-            option_kind=OptionKind.CALL,
-            label="Calendar spread",
+            contractmultiplier=10.0,
+            minpriceincrement=0.01,
+            roundlot=1.0,
+            maturitydate=datetime.date(2027, 6, 18),
+            strikeprice=42.0,
+            putorcall=OptionKind.CALL,
+            securitydesc="Calendar spread",
             legs=[
                 Leg(
                     symbol="JUN-27",
@@ -221,7 +225,7 @@ def test_normalized_instrument_batches_decode_without_python_rows(
                     ratio=1.0,
                     kind=AssetKind.FUTURE,
                     currency=Currency.EUR,
-                    maturity=datetime.date(2027, 6, 18),
+                    maturitydate=datetime.date(2027, 6, 18),
                 ),
                 Leg(symbol="SEP-27", side=Side.SELL, ratio=2.0),
             ],
@@ -258,8 +262,14 @@ def test_an_empty_normalized_instrument_batch_keeps_the_target_schema() -> None:
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
     """A tick or a maturity learnt afterwards is not part of the key, deliberately:
     an identity that moved when a field was enriched would break every join to it."""
-    bare = Instrument(symbol="AAPL", exchange="XNAS")
-    enriched = Instrument(symbol="AAPL", exchange="XNAS", tick=0.01, lot=100.0, label="Apple Inc")
+    bare = Instrument(symbol="AAPL", securityexchange="XNAS")
+    enriched = Instrument(
+        symbol="AAPL",
+        securityexchange="XNAS",
+        minpriceincrement=0.01,
+        roundlot=100.0,
+        securitydesc="Apple Inc",
+    )
     assert bare.xhash == enriched.xhash
 
 
@@ -275,8 +285,8 @@ def test_a_repeated_instrument_spelling_is_hashed_once(monkeypatch: pytest.Monke
 
     instrument_module._symbol_hash.cache_clear()
     monkeypatch.setattr(instrument_module, "hash_of", counted)
-    first = Instrument(symbol="CACHE-TEST", exchange="XNAS")
-    second = Instrument(symbol="CACHE-TEST", exchange="XNAS")
+    first = Instrument(symbol="CACHE-TEST", securityexchange="XNAS")
+    second = Instrument(symbol="CACHE-TEST", securityexchange="XNAS")
 
     assert first.xhash == second.xhash
     assert calls == 1
@@ -295,13 +305,13 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
     first = Instrument(
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        alt_ids={"RIC": "CAL.N", "ISIN": "FR0000000001"},
-        maturity=maturity,
-        legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturity=maturity)],
+        altids={"RIC_CODE": "CAL.N", "ISIN_NUMBER": "FR0000000001"},
+        maturitydate=maturity,
+        legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturitydate=maturity)],
     )
     reordered = dataclasses.replace(
         first,
-        alt_ids={"ISIN": "FR0000000001", "RIC": "CAL.N"},
+        altids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N"},
     )
 
     one = dataclasses.replace(first, unix=1).with_previous(None)
@@ -309,6 +319,6 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
 
     assert one is not None and two is not None
     assert one.hash == two.hash
-    empty = dataclasses.replace(first, unix=1, alt_ids={}, hash=0).identify().hash
-    absent = dataclasses.replace(first, unix=1, alt_ids=None, hash=0).identify().hash
+    empty = dataclasses.replace(first, unix=1, altids={}, hash=0).identify().hash
+    absent = dataclasses.replace(first, unix=1, altids=None, hash=0).identify().hash
     assert empty != absent

@@ -174,10 +174,18 @@ def test_the_spec_comes_back_as_partition_keys(schema: object) -> None:
     assert built.partition_keys() == {"day": "identity"}
 
 
-def test_the_widths_are_the_stores_own(schema: object) -> None:
-    """A field that renamed pyiceberg's widths would make every read convert."""
+def test_the_widths_are_arrow_s_narrow_ones(schema: object) -> None:
+    """`schema_to_pyarrow` answers `large_string` for every Iceberg string and
+    takes no argument that says otherwise, so a shape read back from a store
+    described columns wider than whatever wrote them. It is narrowed at that
+    seam, and the round trip below shows nothing is lost by it: Iceberg has one
+    `string`, and both Arrow widths are it.
+
+    The conversion this used to avoid does not show above host noise --
+    measured over 400,000 rows, interleaved in one process.
+    """
     built = StructField.from_iceberg_schema(schema)
-    assert built.field("symbol").dtype == pyarrow.large_string()
+    assert built.field("symbol").dtype == pyarrow.string()
 
 
 def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:

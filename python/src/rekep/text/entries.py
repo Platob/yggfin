@@ -17,6 +17,7 @@ from rekep.fields.arrays import (
     scattered,
     sequence,
 )
+from rekep.fix.message import BEGIN_VECTOR, BRIDGE_VECTOR, split_payload_arrow
 
 # A generic argument name. Capture its marker so `Entry` can remove it while
 # preserving that normalization for protocol-specific conversion.
@@ -29,15 +30,18 @@ _ASSIGNMENT = rf"{_KEY}{_WS}*="
 # Prefer a separator between two marked arguments. An indexed value may itself
 # contain `A=1^AB=2`; requiring the next marker keeps that inner `^A` from
 # becoming the row's outer separator.
-_PUNCTUATION = r"\^A|[\x01\x21-\x2c\x2f\x3a-\x3c\x3e-\x40\x5c\x5e\x60\x7b-\x7e]"
+# EOT/ETX leads, because a multi-character candidate has to be tried before
+# anything it contains -- the same order `fix.message.SEPARATORS` is written in.
+_PUNCTUATION = r"\x04\x03|\^A|[\x01\x21-\x2c\x2f\x3a-\x3c\x3e-\x40\x5c\x5e\x60\x7b-\x7e]"
 _MARKED_SEPARATOR = (
     rf"(?s)#{_BARE_KEY}{_WS}*=.*?"
     rf"(?:(?P<sep>{_PUNCTUATION}){_WS}*#|(?P<marker>#)){_BARE_KEY}{_WS}*="
 )
 _PAIR_PUNCTUATION_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>{_PUNCTUATION}){_WS}*{_ASSIGNMENT}"
 _PAIR_WHITESPACE_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>[ \t]+){_ASSIGNMENT}"
-_TRAILING_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>\^A|[\x01|^;#]){_WS}*$"
-_STRUCTURED_PAIRS = rf"(?s){_ASSIGNMENT}.*?(?:\^A|[\x01|^;#]){_WS}*{_ASSIGNMENT}"
+_SEPARATORS = r"\x04\x03|\^A|[\x01|^;#]"
+_TRAILING_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>{_SEPARATORS}){_WS}*$"
+_STRUCTURED_PAIRS = rf"(?s){_ASSIGNMENT}.*?(?:{_SEPARATORS}){_WS}*{_ASSIGNMENT}"
 _SEPARATOR_BEFORE_ASSIGNMENT = rf"(?:{_PUNCTUATION}){_WS}*{_ASSIGNMENT}"
 _MARKED_BODY = rf"(?s)(?P<body>#{_BARE_KEY}{_WS}*=.*)$"
 _UNMARKED_BODY = rf"(?s)(?:^|[^A-Za-z0-9_.\-\]#])(?P<body>{_BARE_KEY}{_WS}*=.*)$"
@@ -68,7 +72,7 @@ def parse_arrow(messages):
         return pyarrow.array([], type=ENTRIES)
 
     compute = pyarrow.compute
-    text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
+    text = _from_message_start(compute.fill_null(messages.cast(pyarrow.string(), safe=False), ""))
     common = _common_separators(text)
     common_rows = compute.is_valid(common)
     if compute.all(common_rows, min_count=0).as_py():
@@ -145,6 +149,21 @@ def pop_arrow(
     return found, residual
 
 
+def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
+    """Each line from where its message starts, as `parse_pairs` cuts it.
+
+    A log writes its own prose in front of the payload, and `seq=1092` in that
+    prose is an assignment: a separator inferred from the whole line reads the
+    `>` of `sending >>` as the delimiter and returns the message as one entry.
+    A line that names no message keeps all of itself, which is what a generic
+    `A=1;B=2` argument list is.
+    """
+    compute = pyarrow.compute
+    begun = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
+    bridged = compute.struct_field(compute.extract_regex(text, BRIDGE_VECTOR), "msg")
+    return compute.coalesce(begun, bridged, text)
+
+
 def _parse_generic(text: pyarrow.Array) -> pyarrow.Array:
     """Parse rows whose separator needs the complete inference rule."""
     compute = pyarrow.compute
@@ -187,7 +206,7 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
     punctuation = compute.find_substring_regex(text, _SEPARATOR_BEFORE_ASSIGNMENT)
     hashes = compute.find_substring(text, "#")
     common: Any = pyarrow.nulls(len(text), pyarrow.string())
-    for separator in ("|", "\x01"):
+    for separator in ("|", "\x01", "\x04\x03"):
         found = compute.find_substring_regex(text, rf"{re.escape(separator)}{_WS}*{_ASSIGNMENT}")
         selected = compute.and_(
             compute.and_(compute.greater_equal(found, 0), compute.equal(found, punctuation)),
@@ -211,7 +230,10 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
         compute.or_(compute.less(unmarked_at, 0), compute.less(marked_at, unmarked_at)),
     )
     body = compute.fill_null(compute.if_else(use_marked, marked_body, unmarked_body), "")
-    tokens = compute.split_pattern(body, separator)
+    # Split by the lengths a row declares where it declares one: a FIX `data`
+    # value may hold the delimiter, and this stage's arguments are what the FIX
+    # stage reads instead of the payload -- so a value cut here is cut for good.
+    tokens = split_payload_arrow(body, separator)
     parsed = compute.extract_regex(tokens.values, _TOKEN)
     keys = compute.struct_field(parsed, "key")
     matched = compute.fill_null(compute.is_valid(keys), False)

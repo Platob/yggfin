@@ -52,6 +52,12 @@ and every bit of that degrades on its own.
 
 - `rekep.console.Console` owns colour, box drawing, spinners and tables.
   Nothing else writes an escape sequence.
+- `Console` renders for the person who just typed a command; `rekep.logs`
+  records what the library did for whoever reads the run afterwards. One fact
+  belongs to one of them. INFO is a completed operation -- one record per
+  public verb, whatever it commits inside; DEBUG is the detail under it, per
+  stream and per file, never per batch. Modules hold
+  `logging.getLogger(__name__)` and nothing configures logging at import.
 - The shell uses the documentation palette: white for primary values, yellow
   for success and selected values, orange for interaction and warnings, red
   for failures, and grey only for secondary context. Do not add another hue.
@@ -93,6 +99,32 @@ and every bit of that degrades on its own.
 - Nested fields never publish table keys.
 - Portable contracts live in `schemas/<namespace>/<name>.yaml` and round-trip
   losslessly through Arrow.
+
+### Column names
+
+Every column name is folded: `column_name` lowercases it and drops everything
+that is not a letter or a digit. `OrigClOrdID` is `origclordid`, `source_url`
+is `sourceurl`. One name serves the Arrow column, the Python attribute and the
+stored document, and there is no snake-case alias beside it.
+
+The fold is also the match: a spelling resolves against the FIX registry by
+what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
+
+Every column carries `fix:display`, the name a reader is shown -- the
+dictionary's spelling for a FIX column, `display_name`'s title case for
+everything else. `tests/test_schemas.py` holds both halves for every published
+contract.
+
+A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
+`clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
+`minpriceincrement`. Two exceptions, both deliberate:
+
+- `px` and `qty` are the abstract slot every market row shares. One attribute,
+  and which FIX field it holds is the subclass's to declare -- `Price <44>` on
+  an order, `LastPx <31>` on a report, `MDEntryPx <270>` on a level.
+- A nested struct takes the *generic* spelling, because the nesting already
+  says whose it is: a leg's `LegCFICode <608>` is `cficode`, the same name its
+  instrument's `CFICode <461>` has, not `legcficode`.
 
 ### Description budget
 
@@ -147,10 +179,12 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 ## Market data
 
 - Events are immutable versions. `hash` identifies a version; `xhash` a
-  lifecycle; `linked_events` relates lifecycles with their event times.
+  lifecycle; `linkedevents` relates lifecycles with their event times.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
-  little-endian `int64` lengths, `-1` for null, typed payload bytes, XXH3-64,
-  and two's-complement `int64` storage. Numbers are never formatted as text.
+  little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
+  Every identity is stored as sixteen big-endian bytes -- `fixed_size_binary(16)`
+  in Arrow -- so a content digest and a time-anchored one share a width, and the
+  column sorts as its values do. Numbers are never formatted as text.
 - Store market notions as ASCII codes packed into one integer, left-justified
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
@@ -213,14 +247,16 @@ tables.
 python/src/rekep/
   fields/       declarations and recursive Arrow casts
   fix/          messages, registry, components, protocol rules, and the shell
-  enums/        one persisted market enum per file
+  enums/        every persisted market code, over two ASCII bases
   market/       event, instrument, order, execution, and book logic
-  iceberg/      catalog, dataset, schema bridge, and Arrow FileIO
+  iceberg/      catalog, dataset, and the schema bridge
   text/         FixMsg plus streamed text files
   tasks/        notebook configuration only
+  arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
   console.py    terminal styling: colour, boxes, tables, spinners
+  logs.py       the level policy, and where a run's records go
   times.py      one reading of "an instant", whatever spelled it
-schemas/rekep/  the five persisted output contracts
+schemas/rekep/  the six persisted output contracts
 data/fix/       the FIX dictionary: tag-range shards, components, messages
 tasks/          notebooks, adjacent YAML, and Airflow DAG
 ```

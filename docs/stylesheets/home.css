@@ -10,8 +10,8 @@
   gap: clamp(1.5rem, 4vw, 3.5rem);
   border: 1px solid var(--rekep-border);
   border-radius: 0.8rem;
-  background: #070708;
-  color: var(--rekep-white);
+  background: var(--rekep-hero);
+  color: var(--md-default-fg-color);
 }
 
 .rkp-hero::before {
@@ -45,7 +45,7 @@
   margin: 0 0 0.75rem;
   align-items: center;
   gap: 0.45rem;
-  color: #a1a1aa;
+  color: var(--rekep-muted);
 }
 
 .rkp-hero__eyebrow::before {
@@ -62,7 +62,7 @@
   margin: 0;
   padding: 0;
   border: 0;
-  color: var(--rekep-white);
+  color: var(--md-default-fg-color);
   font-size: clamp(2.9rem, 7vw, 5.25rem);
   font-weight: 780;
   letter-spacing: -0.075em;
@@ -72,14 +72,14 @@
 .rkp-hero__lead {
   max-width: 30rem;
   margin: 1rem 0 0;
-  color: #d4d4d8;
+  color: var(--md-default-fg-color--light);
   font-size: 0.9rem;
   line-height: 1.6;
 }
 
 .rkp-hero__flow {
   margin: 1.15rem 0 0;
-  color: #a1a1aa;
+  color: var(--rekep-muted);
 }
 
 .rkp-hero__actions {
@@ -94,10 +94,10 @@
   min-height: 2.35rem;
   padding: 0.5rem 0.8rem;
   align-items: center;
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--rekep-border);
   border-radius: var(--rekep-radius-sm);
   background: transparent;
-  color: #f4f4f5;
+  color: var(--md-default-fg-color);
   font-size: 0.7rem;
   font-weight: 650;
   text-decoration: none;
@@ -105,23 +105,23 @@
 }
 
 .md-typeset .rkp-hero__actions a:first-child {
-  border-color: #fafafa;
-  background: #fafafa;
-  color: #09090b;
+  border-color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color);
+  color: var(--md-default-bg-color);
 }
 
 .md-typeset .rkp-hero__actions a:hover,
 .md-typeset .rkp-hero__actions a:focus-visible {
   border-color: var(--rekep-orange);
   background: rgb(249 115 22 / 8%);
-  color: #fafafa;
+  color: var(--md-default-fg-color);
 }
 
 .md-typeset .rkp-hero__actions a:first-child:hover,
 .md-typeset .rkp-hero__actions a:first-child:focus-visible {
-  border-color: #fff;
-  background: #e4e4e7;
-  color: #09090b;
+  border-color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--light);
+  color: var(--md-default-bg-color);
 }
 
 .rkp-hero__mark {
@@ -191,7 +191,7 @@
 
 @media print {
   .rkp-hero {
-    border-color: #444;
-    background: #09090b;
+    border-color: var(--rekep-border);
+    background: var(--rekep-hero);
   }
 }

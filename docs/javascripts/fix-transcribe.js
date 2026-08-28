@@ -2,7 +2,6 @@
   "use strict";
 
   const app = document.querySelector("[data-fix-transcribe]");
-  if (!app) return;
 
   const DECODE_SAMPLES = {
     fix: "8=FIX.4.4|35=D|11=ORD-42|453=2|448=BUY-A|447=D|452=3|448=BUY-B|447=D|452=3|10=000|",
@@ -72,22 +71,62 @@
           character
         ],
     );
-  const status = select("[data-transcribe-status]");
-  const ready = select("[data-transcribe-ready]");
+  // One fetch per catalog URL, and one reading of it. The transcription
+  // workspaces below and the product lineage pages both decode FIX, and two
+  // decoders would be two answers to "what does this tag mean".
+  const catalogs = new Map();
 
-  fetch(new URL(app.dataset.source, window.location.href))
-    .then((response) => {
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-      return response.json();
-    })
-    .then(start)
-    .catch((error) => {
-      status.dataset.error = "";
-      status.textContent = `Registry unavailable: ${error.message}`;
-    });
+  function load(source) {
+    const url = new URL(source, window.location.href).href;
+    if (!catalogs.has(url)) {
+      catalogs.set(
+        url,
+        fetch(url)
+          .then((response) => {
+            if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+            return response.json();
+          })
+          .then((catalog) => ({ catalog, registry: registryOf(catalog) })),
+      );
+    }
+    return catalogs.get(url);
+  }
 
-  function start(catalog) {
-    const registry = registryOf(catalog);
+  // The decode half of a workspace, without a workspace: tokenize the text,
+  // resolve every pair under the registry, and hand back the records and the
+  // structure a page draws. `renderDecode` is this and then the DOM.
+  function decode(text, registry, { separator = "auto", version = "" } = {}) {
+    const parsed = parseInput(text, separator, "decode");
+    const resolved = versionOf(parsed.pairs, version);
+    const transcribed = { ...parsed, pairs: expandPayloadPairs(parsed.pairs, registry) };
+    const records = applyNamedPrecedence(
+      transcribed.pairs.map((pair, ordinal) => ({
+        ...decodePair(pair, resolved.value, registry),
+        ordinal,
+      })),
+      transcribed,
+    );
+    return {
+      protocol: transcribed.protocol,
+      version: resolved,
+      separator: parsed.separator,
+      records,
+      structure: structureOf(records, resolved.value, registry, "decode"),
+      unparsed: parsed.unparsed,
+    };
+  }
+
+  window.fixTranscribe = { load, decode };
+
+  // Null on a page that carries no workspace, which every product page is.
+  // The mount is the last statement in this file rather than a return here:
+  // returning early left every `const` below it -- the codec cache among them
+  // -- in the temporal dead zone, and `decode` reached one from a page that
+  // had no workspace to return from.
+  const status = app && select("[data-transcribe-status]");
+  const ready = app && select("[data-transcribe-ready]");
+
+  function start(catalog, registry) {
     const decodeForm = select("[data-decode-form]");
     const encodeForm = select("[data-encode-form]");
     const versions = list(catalog.versions);
@@ -1630,5 +1669,14 @@
     input.select();
     document.execCommand("copy");
     input.remove();
+  }
+
+  if (app) {
+    load(app.dataset.source)
+      .then(({ catalog, registry }) => start(catalog, registry))
+      .catch((error) => {
+        status.dataset.error = "";
+        status.textContent = `Registry unavailable: ${error.message}`;
+      });
   }
 })();

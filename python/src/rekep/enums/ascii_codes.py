@@ -12,6 +12,7 @@ from __future__ import annotations
 import enum
 import functools
 import json
+import re
 from collections import OrderedDict
 from collections.abc import Mapping
 from types import MappingProxyType
@@ -27,6 +28,11 @@ _ASCII_REGISTERED_LIMIT = 4_096
 #: Where a feed's own ranks begin: everything from here up belongs to whoever
 #: runs it, so nothing this package declares may reach it.
 PRIVATE_RANK = 9_000
+#: The abbreviation the dictionary puts in brackets after a value's prose --
+#: `Good Till Cancel (GTC)` -- which is where the short name this package uses
+#: is spelled, and nowhere else in the record.
+_BRACKETED = re.compile(r"\(([A-Za-z0-9 ]+)\)")
+
 _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
 
@@ -50,13 +56,20 @@ class Ascii32(enum.IntEnum):
     #: bands. A code that ranks itself has one band of its own.
     WIDTH = enum.nonmember(100)
 
-    def __new__(cls, value: int | str, fix_code: str = "", rank: int | None = None) -> Self:
+    #: The FIX field whose enumerated values this vocabulary codes, where it
+    #: codes one. The wire codes themselves are **not** declared here: they
+    #: belong to that field, the dictionary states them, and a second copy on
+    #: each member is a second thing to keep in step with a rescrape. A
+    #: vocabulary that codes no single field -- an open one, or one whose
+    #: meaning is spread across several tags -- names nothing.
+    FIX_FIELD = enum.nonmember("")
+
+    def __new__(cls, value: int | str, rank: int | None = None) -> Self:
         text = str(value).strip().upper() if isinstance(value, str) else ""
         packed = cls._pack(text) if text else int(value)
         member = int.__new__(cls, packed)
         member._value_ = packed
         member._code = text
-        member._fix_code = fix_code
         member._rank = packed if rank is None else rank
         return member
 
@@ -77,14 +90,15 @@ class Ascii32(enum.IntEnum):
         return self.code
 
     def into_fix(self) -> str:
-        """The wire spelling: a declared FIX code, or an open set's own code.
+        """The wire spelling: the dictionary's code for this member, or none.
 
         An open vocabulary's members *are* wire values -- `USD`, `XPAR` --
-        while a closed mnemonic set writes only the codes it declared;
-        a grouping marker with no wire code renders as nothing.
+        while a closed mnemonic set writes whatever code the field it codes
+        gives it; a grouping marker no wire value means renders as nothing.
         """
-        if self._fix_code:
-            return self._fix_code
+        wired = type(self)._wire_codes().get(self, "")
+        if wired:
+            return wired
         return self.code if type(self)._registers_unknown() else ""
 
     def __str__(self) -> str:
@@ -220,15 +234,16 @@ class Ascii32(enum.IntEnum):
     def worded_codes(cls) -> Mapping[str, Self]:
         """Wire-backed compiled members by normalized name and built-in alias.
 
-        Only members carrying a FIX code, so an ordering marker a wire value
-        can never mean does not answer.
+        Only members the field this vocabulary codes gives a wire value, so an
+        ordering marker no wire value can ever mean does not answer.
         """
+        wired = cls._wire_codes()
         found: dict[str, Self] = {
-            name: member for name, member in cls.__members__.items() if member and member._fix_code
+            name: member for name, member in cls.__members__.items() if member and member in wired
         }
         for alias, target in cls._built_in_aliases().items():
             member = cls.__members__.get(target)
-            if member and member._fix_code:
+            if member and member in wired:
                 found.setdefault(alias, member)
         return MappingProxyType(found)
 
@@ -280,7 +295,7 @@ class Ascii32(enum.IntEnum):
         }
         if aliases:
             metadata["aliases"] = json.dumps(aliases, separators=(",", ":"), sort_keys=True)
-        wires = {member._fix_code: member.code for member in cls if member._fix_code}
+        wires = {code: member.code for code, member in cls._fix_codes().items()}
         if wires:
             metadata["fix_aliases"] = json.dumps(wires, separators=(",", ":"), sort_keys=True)
         return metadata
@@ -309,7 +324,6 @@ class Ascii32(enum.IntEnum):
         member._name_ = text
         member._value_ = packed
         member._code = text
-        member._fix_code = ""
         member._rank = packed
         registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
         registered[packed] = member
@@ -374,10 +388,98 @@ class Ascii32(enum.IntEnum):
     def _built_in_aliases(cls) -> dict[str, str]:
         return {}
 
+    # -- the wire codes, which belong to the dictionary ----------------------
+    #
+    # A member used to carry its FIX code beside its spelling. That made the
+    # enum a second copy of one field's enumerated values -- and the two could
+    # disagree, silently, in the direction that mis-parses a message. The
+    # codes are read from the dictionary now, matched to members by the
+    # spellings the spec declares for each value, and cached: `from_fix` runs
+    # once per row and must stay a dictionary lookup.
+
+    @classmethod
+    def _fix_declaration(cls) -> Any:
+        """The registry field this vocabulary codes, or None where it codes none.
+
+        Imported here rather than at module scope: `rekep.fields` reaches this
+        module for `EventType` and `State`, so a top-level import of the
+        registry would close a cycle. By the time anything asks for a wire
+        code the package is loaded.
+        """
+        if not cls.FIX_FIELD:
+            return None
+        from rekep.fix.registry import FixRegistry
+
+        return FixRegistry.from_builtin().scalar(cls.FIX_FIELD)
+
+    @classmethod
+    def _named(cls, spelled: str) -> Self | None:
+        """The member one spelling names, by member name or built-in alias.
+
+        Deliberately not `from_str`: that consults the wire codes, which is
+        the thing this is being asked to build.
+        """
+        text = cls._normalise(spelled)
+        member = cls.__members__.get(text)
+        if member is not None:
+            return member
+        aliased = cls._built_in_aliases().get(text)
+        return cls.__members__.get(aliased) if aliased else None
+
+    @classmethod
+    def _member_of(cls, value: Any) -> Self | None:
+        """The member one enumerated value names, by every spelling it has.
+
+        The spec's symbol first, then its prose, then the abbreviation the
+        prose puts in brackets -- `Immediate Or Cancel (IOC)`, which is the
+        only place the dictionary spells the name this package uses.
+        """
+        spellings: list[str] = [*value.aliases]
+        if value.meaning:
+            spellings.append(value.meaning)
+            spellings.extend(_BRACKETED.findall(value.meaning))
+        for spelled in spellings:
+            found = cls._named(spelled)
+            if found is not None:
+                return found
+        return None
+
     @classmethod
     @functools.cache
-    def _fix_codes(cls) -> dict[str, Self]:
-        return {member._fix_code: member for member in cls if member._fix_code}
+    def _fix_codes(cls) -> Mapping[str, Self]:
+        """`{wire code: member}` for the field this vocabulary codes."""
+        declared = cls._fix_declaration()
+        if declared is None:
+            return MappingProxyType({})
+        found: dict[str, Self] = {}
+        for value in declared.fix.enumerated:
+            member = cls._member_of(value)
+            if member is not None:
+                found.setdefault(value.value, member)
+        return MappingProxyType(found)
+
+    @classmethod
+    @functools.cache
+    def _wire_codes(cls) -> Mapping[Self, str]:
+        """`{member: wire code}` -- the inverse, for rendering a value out."""
+        found: dict[Self, str] = {}
+        for code, member in cls._fix_codes().items():
+            found.setdefault(member, code)
+        return MappingProxyType(found)
+
+    @classmethod
+    def forget_fix_codes(cls) -> None:
+        """Drop the derived codes, for a caller that replaced the dictionary.
+
+        The mutator half of the accessors above. Nothing in a running pipeline
+        calls it -- the packaged dictionary does not change under a process --
+        but a rebuild of that dictionary in the same interpreter would
+        otherwise keep answering from the store it replaced.
+        """
+        cls._fix_codes.cache_clear()
+        cls._wire_codes.cache_clear()
+        cls.worded_codes.cache_clear()
+        cls._from_text.cache_clear()
 
 
 class Ascii64(Ascii32):

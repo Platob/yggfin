@@ -37,11 +37,15 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
 BASE = (1_787_000_000_000_000_000 // HOUR) * HOUR
 
-BTC = Instrument(symbol="BTC-USD", exchange="XCME")
-ETH = Instrument(symbol="ETH-USD", exchange="XCME")
+BTC = Instrument(symbol="BTC-USD", securityexchange="XCME")
+ETH = Instrument(symbol="ETH-USD", securityexchange="XCME")
 #: The same instrument, as a later message spells it: more is known.
 BTC_RICH = Instrument(
-    symbol="BTC-USD", exchange="XCME", currency="USD", cfi="FFICSX", kind=AssetKind.FUTURE
+    symbol="BTC-USD",
+    securityexchange="XCME",
+    currency="USD",
+    cficode="FFICSX",
+    kind=AssetKind.FUTURE,
 )
 
 
@@ -58,7 +62,7 @@ def order(unix: int, about: Instrument, side: Side, px: float, qty: float, named
         "side": side,
         "px": px,
         "qty": qty,
-        "order_id": named,
+        "orderid": named,
         "state": State.NEW,
     }
     return initial(Order(**{**declared, **given}), about)
@@ -98,22 +102,22 @@ def test_instrument_versioning_is_owned_outside_the_book_fold() -> None:
 def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None:
     log = FixMsg(
         unix=BASE,
-        MsgType="D",
-        Symbol="BTC-USD",
-        ClOrdID="B1",
-        Side="1",
-        OrdType="2",
-        Price=100.0,
-        OrderQty=2.0,
-        BeginString="FIX.4.4",
+        msgtype="D",
+        symbol="BTC-USD",
+        clordid="B1",
+        side="1",
+        ordtype="2",
+        price=100.0,
+        orderqty=2.0,
+        beginstring="FIX.4.4",
     )
 
     (instrument,) = Instrument.from_fixmsgs([log], snapshot_every=0)
     (book,) = BookIterator(logs=[instrument.into_fixmsg(), log], snapshot_every=0)
 
     assert instrument.symbol == book.code == "BTC-USD"
-    assert book.instrument_xhash == instrument.xhash
-    assert book.bid_px == 100.0 and book.bid_qty == 2.0
+    assert book.instrumentxhash == instrument.xhash
+    assert book.bidpx == 100.0 and book.bidqty == 2.0
 
 
 def test_book_translation_uses_the_selected_fix_registry(
@@ -134,9 +138,9 @@ def test_book_translation_uses_the_selected_fix_registry(
 
 def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
     columns = {
-        "Symbol": pyarrow.array(["AAPL", None, None]),
-        "SecurityID": pyarrow.array(["ignored", "US0378331005", None]),
-        "ISINCODE": pyarrow.array([None, "ignored", "FR0000120271"]),
+        "symbol": pyarrow.array(["AAPL", None, None]),
+        "securityid": pyarrow.array(["ignored", "US0378331005", None]),
+        "isincode": pyarrow.array([None, "ignored", "FR0000120271"]),
     }
     assert FixMsg.symbol_arrow(columns, 3).to_pylist() == [
         "AAPL",
@@ -147,25 +151,25 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
 
 def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
     columns = {
-        "OrderID": pyarrow.array(["ORD-1", None]),
-        "OrigClOrdID": pyarrow.array(["CL-0", None]),
-        "ClOrdID": pyarrow.array(["CL-1", "CL-2"]),
-        "ExecID": pyarrow.array(["EX-1", None]),
-        "QuoteSetID": pyarrow.array([None, "SET-1"]),
-        "Symbol": pyarrow.array(["AAPL", "MSFT"]),
+        "orderid": pyarrow.array(["ORD-1", None]),
+        "origclordid": pyarrow.array(["CL-0", None]),
+        "clordid": pyarrow.array(["CL-1", "CL-2"]),
+        "execid": pyarrow.array(["EX-1", None]),
+        "quotesetid": pyarrow.array([None, "SET-1"]),
+        "symbol": pyarrow.array(["AAPL", "MSFT"]),
     }
 
     codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
     assert list(codes[0].items()) == [
-        ("order_id", "ORD-1"),
-        ("orig_cl_ord_id", "CL-0"),
-        ("cl_ord_id", "CL-1"),
-        ("exec_id", "EX-1"),
+        ("orderid", "ORD-1"),
+        ("origclordid", "CL-0"),
+        ("clordid", "CL-1"),
+        ("execid", "EX-1"),
     ]
     assert list(codes[1].items()) == [
-        ("cl_ord_id", "CL-2"),
-        ("quote_set_id", "SET-1"),
+        ("clordid", "CL-2"),
+        ("quotesetid", "SET-1"),
     ]
 
 
@@ -191,14 +195,14 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
     )
 
     assert list(codes.items()) == [
-        ("secondary_order_id", "ORD-SECONDARY"),
-        ("secondary_cl_ord_id", "CL-SECONDARY"),
-        ("secondary_exec_id", "EXEC-SECONDARY"),
-        ("exec_ref_id", "EXEC-REF"),
-        ("trade_id", "TRADE"),
-        ("trd_match_id", "MATCH"),
-        ("md_entry_id", "MD-ENTRY"),
-        ("md_entry_ref_id", "MD-REF"),
+        ("secondaryorderid", "ORD-SECONDARY"),
+        ("secondaryclordid", "CL-SECONDARY"),
+        ("secondaryexecid", "EXEC-SECONDARY"),
+        ("execrefid", "EXEC-REF"),
+        ("tradeid", "TRADE"),
+        ("trdmatchid", "MATCH"),
+        ("mdentryid", "MD-ENTRY"),
+        ("mdentryrefid", "MD-REF"),
     ]
 
 
@@ -218,15 +222,15 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
     )
 
     assert list(codes.items()) == [
-        ("secondary_exec_id", "EXEC-NAMED"),
-        ("md_entry_ref_id", "MD-NAMED"),
+        ("secondaryexecid", "EXEC-NAMED"),
+        ("mdentryrefid", "MD-NAMED"),
     ]
 
 
 def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
     logs = [
         FixMsg(entries=[(37, "ORDER-RESIDUAL")]),
-        FixMsg(OrderID="ORDER-PROMOTED", entries=[(37, "ORDER-IGNORED")]),
+        FixMsg(orderid="ORDER-PROMOTED", entries=[(37, "ORDER-IGNORED")]),
     ]
     table = pyarrow.Table.from_pylist(
         [log.into_row() for log in logs],
@@ -236,7 +240,7 @@ def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None
 
     codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
-    assert [row["order_id"] for row in codes] == [
+    assert [row["orderid"] for row in codes] == [
         "ORDER-RESIDUAL",
         "ORDER-PROMOTED",
     ]
@@ -246,10 +250,10 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
     def message(offset: int, message_type: str, **given) -> FixMsg:
         return FixMsg(
             unix=BASE + offset,
-            unix_source="TransactTime",
-            BeginString="FIX.4.4",
-            MsgType=message_type,
-            Symbol="BTC-USD",
+            unixsource="TransactTime",
+            beginstring="FIX.4.4",
+            msgtype=message_type,
+            symbol="BTC-USD",
             mic=MIC.from_str("XCME"),
             **given,
         )
@@ -258,40 +262,40 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             1,
             "D",
-            ClOrdID="CL-1",
-            Side="1",
-            OrdType="2",
-            OrderQty=5.0,
-            Price=100.0,
+            clordid="CL-1",
+            side="1",
+            ordtype="2",
+            orderqty=5.0,
+            price=100.0,
             entries=[(9999, "order-meta")],
             reason="order reason",
         ),
         message(
             2,
             "8",
-            OrderID="ORD-1",
-            ClOrdID="CL-1",
-            ExecID="EXEC-1",
-            Side="1",
-            OrdType="2",
-            OrdStatus="1",
-            ExecType="F",
-            OrderQty=5.0,
-            Price=100.0,
-            LastPx=100.5,
-            LastQty=2.0,
-            CumQty=2.0,
-            LeavesQty=3.0,
-            AvgPx=100.5,
+            orderid="ORD-1",
+            clordid="CL-1",
+            execid="EXEC-1",
+            side="1",
+            ordtype="2",
+            ordstatus="1",
+            exectype="F",
+            orderqty=5.0,
+            price=100.0,
+            lastpx=100.5,
+            lastqty=2.0,
+            cumqty=2.0,
+            leavesqty=3.0,
+            avgpx=100.5,
             entries=[(1003, "TRADE-1"), (9998, "report-meta")],
         ),
         message(
             3,
             "AE",
-            ExecID="EXEC-2",
-            Side="2",
-            LastPx=101.0,
-            LastQty=1.0,
+            execid="EXEC-2",
+            side="2",
+            lastpx=101.0,
+            lastqty=1.0,
             entries=[(1003, "TRADE-2")],
         ),
         message(4, "0"),
@@ -319,11 +323,11 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         message(
             6,
             "S",
-            QuoteID="QUOTE-1",
-            BidPx=99.0,
-            BidSize=3.0,
-            OfferPx=102.0,
-            OfferSize=4.0,
+            quoteid="QUOTE-1",
+            bidpx=99.0,
+            bidsize=3.0,
+            offerpx=102.0,
+            offersize=4.0,
         ),
         message(
             7,
@@ -383,9 +387,9 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         assert found_table.equals(expected_table)
     report_order = expected[Order][1]
     report_execution = expected[Execution][0]
-    assert report_execution.parent_hash == [report_order.hash]
-    assert report_execution.linked_events == [(report_order.unix, report_order.xhash)]
-    assert report_execution.codes["trade_id"] == "TRADE-1"
+    assert report_execution.parenthash == [report_order.hash]
+    assert report_execution.linkedevents == [(report_order.unix, report_order.xhash)]
+    assert report_execution.codes["tradeid"] == "TRADE-1"
     assert report_execution.metadata["9998"] == "report-meta"
 
 
@@ -402,10 +406,10 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
     def message(offset: int, message_type: str, **given) -> FixMsg:
         return FixMsg(
             unix=BASE + offset,
-            unix_source="TransactTime",
-            BeginString="FIX.4.4",
-            MsgType=message_type,
-            Symbol="ETH-USD",
+            unixsource="TransactTime",
+            beginstring="FIX.4.4",
+            msgtype=message_type,
+            symbol="ETH-USD",
             mic=MIC.from_str("XPAR"),
             **given,
         )
@@ -414,80 +418,80 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
         message(
             1,
             "D",
-            ClOrdID="C-1",
-            Side="1",
-            OrdType="2",
-            OrderQty=10.0,
-            Price=100.0,
+            clordid="C-1",
+            side="1",
+            ordtype="2",
+            orderqty=10.0,
+            price=100.0,
         ),
-        message(2, "F", OrigClOrdID="C-1", ClOrdID="C-2", Side="1", OrderQty=10.0),
+        message(2, "F", origclordid="C-1", clordid="C-2", side="1", orderqty=10.0),
         message(
             3,
             "G",
-            OrigClOrdID="C-1",
-            ClOrdID="C-3",
-            Side="1",
-            OrdType="2",
-            OrderQty=12.0,
-            CumQty=2.0,
-            LeavesQty=10.0,
-            Price=99.5,
+            origclordid="C-1",
+            clordid="C-3",
+            side="1",
+            ordtype="2",
+            orderqty=12.0,
+            cumqty=2.0,
+            leavesqty=10.0,
+            price=99.5,
         ),
         message(
             4,
             "8",
-            OrderID="O-1",
-            ClOrdID="C-3",
-            ExecID="E-1",
-            Side="1",
-            OrdStatus="1",
-            ExecType="F",
-            OrderQty=12.0,
-            Price=99.5,
-            LastPx=99.25,
-            LastQty=2.0,
-            CumQty=2.0,
-            LeavesQty=10.0,
-            AvgPx=99.25,
+            orderid="O-1",
+            clordid="C-3",
+            execid="E-1",
+            side="1",
+            ordstatus="1",
+            exectype="F",
+            orderqty=12.0,
+            price=99.5,
+            lastpx=99.25,
+            lastqty=2.0,
+            cumqty=2.0,
+            leavesqty=10.0,
+            avgpx=99.25,
             entries=[(1057, "Y"), (9998, "audit")],
         ),
         message(
             5,
             "AE",
-            ExecID="E-2",
-            ExecType="F",
-            Side="2",
-            LastPx=99.75,
-            LastQty=3.0,
+            execid="E-2",
+            exectype="F",
+            side="2",
+            lastpx=99.75,
+            lastqty=3.0,
             entries=[(1003, "T-2")],
         ),
         message(
             6,
             "8",
-            OrderID="O-2",
-            ExecID="E-3",
-            Side="2",
-            OrdStatus="2",
-            ExecType="F",
-            OrderQty=2.0,
-            Price=101.0,
-            LastPx=101.25,
-            LastQty=2.0,
-            CumQty=2.0,
-            LeavesQty=0.0,
-            AvgPx=101.25,
+            orderid="O-2",
+            execid="E-3",
+            side="2",
+            ordstatus="2",
+            exectype="F",
+            orderqty=2.0,
+            price=101.0,
+            lastpx=101.25,
+            lastqty=2.0,
+            cumqty=2.0,
+            leavesqty=0.0,
+            avgpx=101.25,
         ),
         message(
             7,
             "AE",
-            ExecID="E-4",
-            ExecType="G",
-            Side="2",
-            LastPx=99.5,
-            LastQty=2.0,
-            CumQty=5.0,
-            LeavesQty=0.0,
-            AvgPx=99.6,
+            execid="E-4",
+            exectype="G",
+            side="2",
+            lastpx=99.5,
+            lastqty=2.0,
+            cumqty=5.0,
+            leavesqty=0.0,
+            avgpx=99.6,
             entries=[(19, "E-2")],
         ),
     ]
@@ -530,36 +534,36 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
     def message(offset: int, message_type: str, **given) -> FixMsg:
         return FixMsg(
             unix=BASE + offset,
-            BeginString="FIX.4.4",
-            MsgType=message_type,
-            Symbol="ETH-USD",
+            beginstring="FIX.4.4",
+            msgtype=message_type,
+            symbol="ETH-USD",
             mic=MIC.from_str("XPAR"),
             **given,
         )
 
     logs = [
-        message(1, "D", ClOrdID="C-1", Side="1", OrdType="2", OrderQty=10.0),
+        message(1, "D", clordid="C-1", side="1", ordtype="2", orderqty=10.0),
         message(2, "W", entries=[(268, "0")]),
-        message(3, "AE", ExecID="E-1", ExecType="F", Side="2", LastPx=99.0, LastQty=1.0),
-        message(4, "S", QuoteID="Q-1", BidPx=98.0, OfferPx=100.0),
+        message(3, "AE", execid="E-1", exectype="F", side="2", lastpx=99.0, lastqty=1.0),
+        message(4, "S", quoteid="Q-1", bidpx=98.0, offerpx=100.0),
         message(
             5,
             "8",
-            OrderID="O-1",
-            ClOrdID="C-1",
-            ExecID="E-2",
-            Side="1",
-            OrdStatus="1",
-            ExecType="F",
-            OrderQty=10.0,
-            LastPx=99.5,
-            LastQty=2.0,
-            CumQty=2.0,
-            LeavesQty=8.0,
-            AvgPx=99.5,
+            orderid="O-1",
+            clordid="C-1",
+            execid="E-2",
+            side="1",
+            ordstatus="1",
+            exectype="F",
+            orderqty=10.0,
+            lastpx=99.5,
+            lastqty=2.0,
+            cumqty=2.0,
+            leavesqty=8.0,
+            avgpx=99.5,
         ),
         message(6, "0"),
-        message(7, "F", OrigClOrdID="C-1", ClOrdID="C-2", Side="1"),
+        message(7, "F", origclordid="C-1", clordid="C-2", side="1"),
     ]
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
@@ -645,8 +649,8 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     logs = [
         FixMsg(
             unix=BASE + 1,
-            protocol_version="4.4",
-            MsgType="Q",
+            protocolversion="4.4",
+            msgtype="Q",
             entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["ClOrdID"], "CUSTOM-1"),
@@ -658,8 +662,8 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         ),
         FixMsg(
             unix=BASE + 2,
-            protocol_version="4.4",
-            MsgType="R",
+            protocolversion="4.4",
+            msgtype="R",
             entries=[
                 (wire_tags["Symbol"], "AAPL"),
                 (wire_tags["OrderID"], "ORDER-1"),
@@ -710,7 +714,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         State.PARTIALLY_FILLED,
     ]
     assert expected[Execution][0].state is State.FILLED
-    assert expected[Order][0].codes["cl_ord_id"] == "CUSTOM-1"
+    assert expected[Order][0].codes["clordid"] == "CUSTOM-1"
 
 
 @pytest.mark.parametrize(
@@ -722,20 +726,20 @@ def test_flat_fix_arrow_keeps_trade_revision_order_state_unknown(
 ) -> None:
     message = FixMsg(
         unix=BASE,
-        protocol_version="4.4",
-        MsgType="8",
-        Symbol="AAPL",
-        OrderID="ORDER-1",
-        ClOrdID="CLIENT-1",
-        ExecID="EXEC-1",
-        ExecType=exec_type,
-        Side="1",
-        OrderQty=5.0,
-        LastPx=100.25,
-        LastQty=2.0,
-        CumQty=2.0,
-        LeavesQty=3.0,
-        AvgPx=100.25,
+        protocolversion="4.4",
+        msgtype="8",
+        symbol="AAPL",
+        orderid="ORDER-1",
+        clordid="CLIENT-1",
+        execid="EXEC-1",
+        exectype=exec_type,
+        side="1",
+        orderqty=5.0,
+        lastpx=100.25,
+        lastqty=2.0,
+        cumqty=2.0,
+        leavesqty=3.0,
+        avgpx=100.25,
     )
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row()], schema)
@@ -785,7 +789,7 @@ def test_checkpoint_rows_are_globally_boundary_ordered_across_instruments() -> N
         order(BASE + 3 * HOUR + 1, BTC, Side.BID, 99.0, 1.0, "B2"),
     ]
     streams = (
-        (list(BookIterator.from_events(events)), "instrument_xhash"),
+        (list(BookIterator.from_events(events)), "instrumentxhash"),
         (list(Instrument.from_events(events)), "xhash"),
     )
     for snapshots, key in streams:
@@ -834,15 +838,15 @@ def test_an_out_of_order_rotated_segment_keeps_a_distinct_instrument() -> None:
 def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None:
     first = Instrument(
         symbol="ABC",
-        exchange="XPAR",
-        security_id="111111111",
-        security_id_source="1",
+        securityexchange="XPAR",
+        securityid="111111111",
+        securityidsource="1",
     )
     second = Instrument(
         symbol="ABC",
-        exchange="XPAR",
-        security_id="222222222",
-        security_id_source="1",
+        securityexchange="XPAR",
+        securityid="222222222",
+        securityidsource="1",
     )
 
     instruments = list(
@@ -853,18 +857,18 @@ def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None
     )
 
     (known,) = instruments
-    assert known.security_id == "111111111", "the first nonempty fact remains authoritative"
+    assert known.securityid == "111111111", "the first nonempty fact remains authoritative"
     assert known.xhash == first.xhash == second.xhash
     assert known.version == 0
 
 
 def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
-    weak = Instrument(symbol="ABC", exchange="XPAR")
+    weak = Instrument(symbol="ABC", securityexchange="XPAR")
     strong = Instrument(
         symbol="ABC",
-        exchange="XPAR",
-        security_id="111111111",
-        security_id_source="1",
+        securityexchange="XPAR",
+        securityid="111111111",
+        securityidsource="1",
     )
 
     bare, enriched = Instrument.from_observations(
@@ -872,13 +876,13 @@ def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
         snapshot_every=0,
     )
 
-    assert enriched.security_id == "111111111"
+    assert enriched.securityid == "111111111"
     assert enriched.xhash == bare.xhash
     assert enriched.version == bare.version + 1
 
 
 def test_a_security_id_only_instrument_is_unidentified_and_skipped() -> None:
-    unidentified = Instrument(security_id="US1234567890", security_id_source="4")
+    unidentified = Instrument(securityid="US1234567890", securityidsource="4")
     assert unidentified.xhash == NIL and unidentified.identities() == ()
     assert list(Instrument.from_observations([(BASE, unidentified)], snapshot_every=0)) == []
 
@@ -886,13 +890,13 @@ def test_a_security_id_only_instrument_is_unidentified_and_skipped() -> None:
 def test_different_symbols_do_not_alias_through_a_shared_security_id() -> None:
     first = Instrument(
         symbol="BTC-USD",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityid="US1234567890",
+        securityidsource="4",
     )
     second = Instrument(
         symbol="XBT-USD",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityid="US1234567890",
+        securityidsource="4",
     )
 
     instruments = list(
@@ -943,8 +947,8 @@ def test_an_instrument_s_book_never_sees_another_s_liquidity() -> None:
         order(BASE + 20, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
     books = {one.code: one for one in BookIterator.from_events(events, snapshot_every=0)}
-    assert books["BTC-USD"].bid_px == 100.0 and books["BTC-USD"].bid_qty == 5.0
-    assert books["ETH-USD"].bid_px == 999.0
+    assert books["BTC-USD"].bidpx == 100.0 and books["BTC-USD"].bidqty == 5.0
+    assert books["ETH-USD"].bidpx == 999.0
 
 
 def test_a_stream_out_of_order_is_refused() -> None:
@@ -988,11 +992,11 @@ def test_a_message_that_knows_more_publishes_another_version() -> None:
         order(BASE + 10, BTC_RICH, Side.BID, 99.0, 5.0, "B2"),
     ]
     bare, rich = Instrument.from_events(events)
-    assert bare.cfi is None and bare.kind is AssetKind.UNKNOWN
-    assert rich.cfi == "FFICSX" and rich.kind is AssetKind.FUTURE
+    assert bare.cficode is None and bare.kind is AssetKind.UNKNOWN
+    assert rich.cficode == "FFICSX" and rich.kind is AssetKind.FUTURE
     assert rich.currency is Currency.USD
     assert rich.xhash == bare.xhash, "the same instrument, and an identity that did not move"
-    assert rich.version == bare.version + 1 and rich.prev_unix == bare.unix
+    assert rich.version == bare.version + 1 and rich.prevunix == bare.unix
     assert rich.hash != bare.hash, "two versions of what is known, and two rows"
 
 
@@ -1004,7 +1008,7 @@ def test_learning_never_retracts_what_was_already_known() -> None:
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
     ]
     (only,) = Instrument.from_events(events)
-    assert only.cfi == "FFICSX"
+    assert only.cficode == "FFICSX"
 
 
 def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
@@ -1012,7 +1016,7 @@ def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
 ) -> None:
     """The equality shortcut must still notice the last reference-data member."""
     repeated = dataclasses.replace(BTC)
-    richer = dataclasses.replace(BTC, label="Bitcoin future")
+    richer = dataclasses.replace(BTC, securitydesc="Bitcoin future")
     enriched_with = Instrument.enriched_with
     examined: list[Instrument] = []
 
@@ -1030,7 +1034,7 @@ def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
     found = list(Instrument.from_events(events))
 
     assert examined == [richer], "initial and equal states need no enrichment walk"
-    assert [one.label for one in found] == [None, "Bitcoin future"]
+    assert [one.securitydesc for one in found] == [None, "Bitcoin future"]
 
 
 # -- the hourly grid ----------------------------------------------------------
@@ -1076,7 +1080,7 @@ def test_instrument_state_is_published_on_every_book_boundary() -> None:
         BASE + 3 * HOUR,
     ]
     assert {one.unix for one in instruments if one.sunix is not None} == boundaries
-    assert all(one.cfi == BTC_RICH.cfi for one in instruments)
+    assert all(one.cficode == BTC_RICH.cficode for one in instruments)
 
 
 def test_expiry_delta_does_not_skip_the_instrument_boundary() -> None:
@@ -1095,7 +1099,7 @@ def test_expiry_delta_does_not_skip_the_instrument_boundary() -> None:
     instruments = list(Instrument.from_events(events))
     assert [one.unix for one in instruments] == [BASE + 60, BASE + HOUR, BASE + 2 * HOUR]
     expired = next(one for one in records if one.unix == BASE + HOUR)
-    assert expired.bid_depth == 0
+    assert expired.biddepth == 0
 
 
 def test_recovery_continues_full_instrument_snapshots() -> None:
@@ -1113,12 +1117,12 @@ def test_recovery_continues_full_instrument_snapshots() -> None:
 
     recovered = list(resumed)
     assert [one.unix for one in recovered] == [BASE + 2 * HOUR, BASE + 3 * HOUR]
-    assert all(one.cfi == BTC_RICH.cfi for one in recovered)
+    assert all(one.cficode == BTC_RICH.cficode for one in recovered)
 
 
 def test_instrument_recovery_breaks_equal_versions_by_hash() -> None:
     def seed(unix: int, label: str) -> Instrument:
-        known = dataclasses.replace(BTC, unix=unix, label=label).with_previous(None)
+        known = dataclasses.replace(BTC, unix=unix, securitydesc=label).with_previous(None)
         assert known is not None
         return known
 
@@ -1132,7 +1136,7 @@ def test_instrument_recovery_breaks_equal_versions_by_hash() -> None:
         snapshot_until=BASE + HOUR + 1,
     )
 
-    assert snapshot.label == high.label
+    assert snapshot.securitydesc == high.securitydesc
 
 
 def test_every_instrument_gets_the_hour_and_not_only_the_one_that_traded() -> None:
@@ -1181,7 +1185,7 @@ def test_an_active_exact_boundary_is_one_final_delta() -> None:
     assert len(boundary_books) == 1
     (delta,) = boundary_books
     assert delta.sunix is None
-    assert delta.bid_depth == 2 and delta.ask_depth == 1
+    assert delta.biddepth == 2 and delta.askdepth == 1
     assert len(boundary_refs) == 1 and boundary_refs[0].sunix == BASE + 60
 
 
@@ -1193,7 +1197,7 @@ def test_an_exact_boundary_keeps_one_book_identity() -> None:
     ]
     books = list(BookIterator.from_events(events).books)
 
-    assert len({(book.unix, book.instrument_xhash) for book in books}) == len(books)
+    assert len({(book.unix, book.instrumentxhash) for book in books}) == len(books)
     assert [book.hash for book in books] == [
         book.txhash_of(*book.version_parts()) for book in books
     ]
@@ -1210,7 +1214,7 @@ def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
     assert len({one.xhash for one in found}) == 1, "one book"
     assert len({one.hash for one in found}) == len(found), "and four versions of it"
     for before, after in zip(found, found[1:], strict=False):
-        assert after.prev_unix == before.unix
+        assert after.prevunix == before.unix
 
 
 def test_turning_the_grid_off_leaves_only_what_changed() -> None:
@@ -1240,8 +1244,8 @@ def test_a_side_that_did_not_move_carries_no_levels_delta() -> None:
         order(BASE + 20, BTC, Side.ASK, 100.4, 2.0, "A2"),
     ]
     first, second, third = BookIterator.from_events(events, snapshot_every=0).books
-    assert first.bid_levels and second.bid_levels == [] and third.bid_levels == []
-    assert second.ask_levels and third.ask_levels, "the ask changed on both later rows"
+    assert first.bidlevels and second.bidlevels == [] and third.bidlevels == []
+    assert second.asklevels and third.asklevels, "the ask changed on both later rows"
 
 
 def test_a_side_that_did_not_move_carries_no_delta() -> None:
@@ -1250,8 +1254,8 @@ def test_a_side_that_did_not_move_carries_no_delta() -> None:
         order(BASE + 10, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
     _, second = BookIterator.from_events(events, snapshot_every=0).books
-    assert second.bid_levels == []
-    assert len(second.ask_levels) == 1
+    assert second.bidlevels == []
+    assert len(second.asklevels) == 1
 
 
 def test_a_side_that_did_not_move_still_reports_its_state() -> None:
@@ -1261,8 +1265,8 @@ def test_a_side_that_did_not_move_still_reports_its_state() -> None:
         order(BASE + 10, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
     _, second = BookIterator.from_events(events, snapshot_every=0).books
-    assert second.bid_px == 100.0 and second.bid_qty == 5.0 and second.bid_depth == 1
-    assert second.bid_levels == [], "an unchanged side has no levels delta"
+    assert second.bidpx == 100.0 and second.bidqty == 5.0 and second.biddepth == 1
+    assert second.bidlevels == [], "an unchanged side has no levels delta"
     assert second.spread == pytest.approx(0.5), "and the prices across the sides follow"
 
 
@@ -1278,12 +1282,12 @@ def test_each_delta_reads_both_incremental_side_summaries() -> None:
 
     assert [
         (
-            row.bid_px,
-            row.bid_qty,
-            row.bid_depth,
-            row.ask_px,
-            row.ask_qty,
-            row.ask_depth,
+            row.bidpx,
+            row.bidqty,
+            row.biddepth,
+            row.askpx,
+            row.askqty,
+            row.askdepth,
         )
         for row in found
     ] == [
@@ -1308,13 +1312,13 @@ def test_a_trade_counts_as_the_side_moving() -> None:
                 px=100.0,
                 qty=2.0,
                 state=State.FILLED,
-                exec_id="EX-1",
+                execid="EX-1",
             )
         ),
     ]
     first, _, third = BookIterator.from_events(events, snapshot_every=0).books
-    assert first.bid_qty == 5.0 and third.bid_qty == 3.0
-    assert [(level.px, level.qty) for level in third.bid_levels] == [(100.0, 3.0)]
+    assert first.bidqty == 5.0 and third.bidqty == 3.0
+    assert [(level.px, level.qty) for level in third.bidlevels] == [(100.0, 3.0)]
     assert [(one.px, one.qty) for one in third.executions] == [(100.0, 2.0)]
 
 
@@ -1328,7 +1332,7 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
                 px=100.0,
                 qty=2.0,
                 state=State.FILLED,
-                exec_id="EX-1",
+                execid="EX-1",
             )
         ),
         initial(
@@ -1338,15 +1342,15 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
                 px=100.0,
                 qty=2.0,
                 state=State.CANCELLED,
-                exec_id="EX-2",
-                exec_ref_id="EX-1",
+                execid="EX-2",
+                execrefid="EX-1",
             )
         ),
     ]
 
     found = list(BookIterator.from_events(events, snapshot_every=0))
 
-    assert len(found) == 3 and found[-1].bid_qty == 3.0
+    assert len(found) == 3 and found[-1].bidqty == 3.0
     assert found[-1].executions[0].state is State.CANCELLED
 
 
@@ -1365,17 +1369,17 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
     for one in found:
         if one.sunix is None:
             continue
-        assert [level.px for level in one.bid_levels] == [100.0], "the state is still there"
+        assert [level.px for level in one.bidlevels] == [100.0], "the state is still there"
         assert one.deltas == [] and one.executions == []
         assert (
-            one.prev_bid_px,
-            one.prev_bid_qty,
-            one.prev_ask_px,
-            one.prev_ask_qty,
-            one.prev_exec_px,
+            one.prevbidpx,
+            one.prevbidqty,
+            one.prevaskpx,
+            one.prevaskqty,
+            one.prevexecpx,
         ) == (None, None, None, None, None)
-        assert [order.order_id for order in one.bid_alive] == ["B1"]
-        assert one.linked_events == [(order.unix, order.xhash) for order in one.bid_alive]
+        assert [order.orderid for order in one.bidalive] == ["B1"]
+        assert one.linkedevents == [(order.unix, order.xhash) for order in one.bidalive]
 
 
 def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
@@ -1386,9 +1390,9 @@ def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
         order(BASE + HOUR + 60, BTC, Side.BID, 99.0, 1.0, "B2"),
     ]
     first, snapshot, _ = BookIterator.from_events(events).books
-    assert len(first.bid_levels) == 1, "the row that was pictured still has its delta"
-    assert snapshot.bid_levels is not first.bid_levels
-    assert snapshot.bid_levels == first.bid_levels
+    assert len(first.bidlevels) == 1, "the row that was pictured still has its delta"
+    assert snapshot.bidlevels is not first.bidlevels
+    assert snapshot.bidlevels == first.bidlevels
 
 
 # -- recovery, validation and expiry ---------------------------------------
@@ -1401,9 +1405,9 @@ def test_only_snapshots_carry_the_full_state_needed_to_resume() -> None:
     ]
     changed, snapshot, latest = BookIterator.from_events(events).books
 
-    assert changed.bid_levels and latest.bid_levels == []
+    assert changed.bidlevels and latest.bidlevels == []
     assert snapshot.deltas == [] and snapshot.executions == []
-    assert [one.order_id for one in snapshot.bid_alive] == ["B1"]
+    assert [one.orderid for one in snapshot.bidalive] == ["B1"]
 
 
 def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
@@ -1417,9 +1421,9 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
     iterator = BookIterator.from_events([after], snapshots=[seed], snapshot_every=0)
     (resumed,) = iterator
 
-    assert resumed.bid_depth == 2
-    assert resumed.bid_px == 100.0 and resumed.ask_px is None
-    assert [one.order_id for one in resumed.deltas] == ["B2"]
+    assert resumed.biddepth == 2
+    assert resumed.bidpx == 100.0 and resumed.askpx is None
+    assert [one.orderid for one in resumed.deltas] == ["B2"]
     assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 8.0
 
 
@@ -1513,7 +1517,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            client_order_id="client-1",
+            clordid="client-1",
             state=State.NEW,
         ),
         BTC,
@@ -1523,7 +1527,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     # There is deliberately no linear fallback when the required index is corrupt.
     side.named.clear()
 
-    found = side.standing(Order(client_order_id="client-1"))
+    found = side.standing(Order(clordid="client-1"))
 
     assert found is None
 
@@ -1537,8 +1541,8 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
     (resumed,) = BookIterator.from_events([amended], snapshots=[seed], snapshot_every=0)
 
     (audited,) = resumed.deltas
-    seeded = next(one for one in seed.bid_alive if one.order_id == "B1")
-    assert audited.prev_unix == seeded.unix == placed.unix
+    seeded = next(one for one in seed.bidalive if one.orderid == "B1")
+    assert audited.prevunix == seeded.unix == placed.unix
     assert audited.version == seeded.version + 1
 
 
@@ -1549,8 +1553,8 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            client_order_id="CL-1",
-            codes={"cl_ord_id": "CL-1"},
+            clordid="CL-1",
+            codes={"clordid": "CL-1"},
             state=State.NEW,
         ),
         BTC,
@@ -1561,13 +1565,13 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             side=Side.BID,
             px=100.0,
             qty=4.0,
-            order_id="ORD-1",
-            client_order_id="CL-2",
-            prev_client_order_id="CL-1",
+            orderid="ORD-1",
+            clordid="CL-2",
+            origclordid="CL-1",
             codes={
-                "order_id": "ORD-1",
-                "orig_cl_ord_id": "CL-1",
-                "cl_ord_id": "CL-2",
+                "orderid": "ORD-1",
+                "origclordid": "CL-1",
+                "clordid": "CL-2",
             },
             state=State.OPEN,
         ),
@@ -1585,10 +1589,10 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
     lifecycle = next(iter(side.orders))
 
     for name, code in (
-        ("cl_ord_id", "CL-1"),
-        ("orig_cl_ord_id", "CL-1"),
-        ("cl_ord_id", "CL-2"),
-        ("order_id", "ORD-1"),
+        ("clordid", "CL-1"),
+        ("origclordid", "CL-1"),
+        ("clordid", "CL-2"),
+        ("orderid", "ORD-1"),
     ):
         assert side.standing(Order(codes={name: code})).xhash == lifecycle
 
@@ -1597,8 +1601,8 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             Order(
                 unix=BASE + HOUR + 40,
                 side=Side.BID,
-                order_id="ORD-1",
-                codes={"order_id": "ORD-1"},
+                orderid="ORD-1",
+                codes={"orderid": "ORD-1"},
                 state=State.CANCELLED,
             ),
             BTC,
@@ -1611,7 +1615,7 @@ def test_recovery_refuses_a_live_level_it_cannot_reconstruct() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
     seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
-    broken = dataclasses.replace(seed, bid_alive=[])
+    broken = dataclasses.replace(seed, bidalive=[])
 
     with pytest.raises(ValueError, match="no live Order"):
         BookIterator(snapshots=[broken])
@@ -1621,7 +1625,7 @@ def test_recovery_refuses_a_live_order_absent_from_the_levels() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
     seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
-    broken = dataclasses.replace(seed, bid_depth=0, bid_levels=[])
+    broken = dataclasses.replace(seed, biddepth=0, bidlevels=[])
 
     with pytest.raises(ValueError, match="absent from the levels"):
         BookIterator(snapshots=[broken])
@@ -1633,7 +1637,7 @@ def test_recovery_refuses_a_level_quantity_that_disagrees_with_its_orders() -> N
     seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
     broken = dataclasses.replace(
         seed,
-        bid_levels=[dataclasses.replace(seed.bid_levels[0], qty=4.0)],
+        bidlevels=[dataclasses.replace(seed.bidlevels[0], qty=4.0)],
     )
 
     with pytest.raises(ValueError, match="Orders total"):
@@ -1646,7 +1650,7 @@ def test_recovery_refuses_a_delta_deletion_as_a_full_level() -> None:
     seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
     broken = dataclasses.replace(
         seed,
-        bid_levels=[dataclasses.replace(seed.bid_levels[0], qty=0.0)],
+        bidlevels=[dataclasses.replace(seed.bidlevels[0], qty=0.0)],
     )
 
     with pytest.raises(ValueError, match="must have positive qty"):
@@ -1667,12 +1671,12 @@ def test_recovery_rebuilds_the_explicit_expiry_index() -> None:
     snapshot = next(
         one for one in BookIterator.from_events([placed, clock]).books if one.sunix is not None
     )
-    assert snapshot.bid_levels and snapshot.bid_alive and placed.eunix is not None
+    assert snapshot.bidlevels and snapshot.bidalive and placed.eunix is not None
 
     restored = _Side.from_snapshot(
         Side.BID,
-        snapshot.bid_levels,
-        snapshot.bid_alive,
+        snapshot.bidlevels,
+        snapshot.bidalive,
     )
 
     assert restored._deadlines[0][0] == placed.eunix
@@ -1694,23 +1698,23 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     (bounded,) = iterator.books
 
     expired = [one for one in bounded.deltas if one.state is State.INTERNAL_EXPIRED]
-    assert [one.order_id for one in expired] == ["B3"]
-    assert bounded.bid_depth == 2
+    assert [one.orderid for one in expired] == ["B3"]
+    assert bounded.biddepth == 2
     assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
 
 
 def test_different_symbol_references_do_not_alias_one_book() -> None:
     first = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityexchange="XCME",
+        securityid="US1234567890",
+        securityidsource="4",
     )
     second = Instrument(
         symbol="XBT-USD",
-        exchange="XCME",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityexchange="XCME",
+        securityid="US1234567890",
+        securityidsource="4",
     )
     events = [
         order(BASE, first, Side.BID, 100.0, 5.0, "B1"),
@@ -1724,16 +1728,16 @@ def test_different_symbol_references_do_not_alias_one_book() -> None:
 
     books = list(folding.books)
     assert len(folding.folding) == 2
-    assert {book.instrument_xhash for book in books} == {first.xhash, second.xhash}
+    assert {book.instrumentxhash for book in books} == {first.xhash, second.xhash}
 
 
 def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity() -> None:
-    canonical = Instrument(symbol="BTC-USD", exchange="XCME")
+    canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityexchange="XCME",
+        securityid="US1234567890",
+        securityidsource="4",
     )
     known = dataclasses.replace(canonical, unix=BASE - HOUR).with_previous(None)
     assert known is not None and richer.xhash == known.xhash
@@ -1748,20 +1752,20 @@ def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity
     (book,) = folding
     instrument = known
     (nested,) = book.deltas
-    assert instrument.xhash == book.instrument_xhash == nested.instrument_xhash
-    assert book.instrument_xhash == canonical.xhash
+    assert instrument.xhash == book.instrumentxhash == nested.instrumentxhash
+    assert book.instrumentxhash == canonical.xhash
     assert nested.xhash == Order.hash_of(
         hash_bytes_of(canonical.xhash), nested.mic, "B1", nested.side
     )
 
 
 def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
-    canonical = Instrument(symbol="BTC-USD", exchange="XCME")
+    canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
-        security_id="US1234567890",
-        security_id_source="4",
+        securityexchange="XCME",
+        securityid="US1234567890",
+        securityidsource="4",
     )
     known = dataclasses.replace(canonical, unix=BASE - HOUR).with_previous(None)
     assert known is not None
@@ -1773,9 +1777,9 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
             side=Side.BID,
             px=100.0,
             qty=1.0,
-            exec_id="X1",
-            linked_events=[(placed.unix, placed.xhash)],
-            parent_hash=[placed.hash],
+            execid="X1",
+            linkedevents=[(placed.unix, placed.xhash)],
+            parenthash=[placed.hash],
         )
         .attach_instrument(richer)
         .with_previous(placed)
@@ -1791,7 +1795,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
     nested_order = books[0].deltas[0]
     nested_fill = books[-1].executions[0]
     assert nested_fill.primary_linked_event == (nested_order.unix, nested_order.xhash)
-    assert nested_order.hash in nested_fill.parent_hash
+    assert nested_order.hash in nested_fill.parenthash
 
 
 @pytest.mark.parametrize("explicit", [False, True], ids=["max-age", "eunix"])
@@ -1813,10 +1817,10 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
     )
 
     latest = list(iterator)[-1]
-    expired = [one for one in latest.deltas if one.order_id == "B1"]
+    expired = [one for one in latest.deltas if one.orderid == "B1"]
     assert len(expired) == 1 and expired[0].state is State.INTERNAL_EXPIRED
     assert expired[0].eunix == BASE + 10
-    assert expired[0].reason and latest.bid_depth == 0
+    assert expired[0].reason and latest.biddepth == 0
 
 
 def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None:
@@ -1840,11 +1844,11 @@ def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None
         if any(event.state is State.INTERNAL_EXPIRED for event in one.deltas)
     )
     recovered = btc_books[-1]
-    assert snapshot.unix == BASE + HOUR and snapshot.bid_qty == 5.0
-    assert expired.unix == eth_clock.unix and expired.bid_depth == 0
+    assert snapshot.unix == BASE + HOUR and snapshot.bidqty == 5.0
+    assert expired.unix == eth_clock.unix and expired.biddepth == 0
     assert expired.deltas[-1].state is State.INTERNAL_EXPIRED
     assert recovered is expired and recovered.sunix is None
-    assert len({(book.unix, book.instrument_xhash) for book in btc_books}) == len(btc_books)
+    assert len({(book.unix, book.instrumentxhash) for book in btc_books}) == len(btc_books)
 
 
 @pytest.mark.parametrize(
@@ -1885,13 +1889,13 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
     )
 
     boundary = [one for one in found if one.unix == BASE + HOUR]
-    assert boundary and all(one.bid_depth == 0 for one in boundary)
+    assert boundary and all(one.biddepth == 0 for one in boundary)
     assert len(boundary) == 1 and boundary[0].sunix is None
     expired = [
         event
         for book in found
         for event in book.deltas
-        if event.order_id == "B1" and event.state is State.INTERNAL_EXPIRED
+        if event.orderid == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
     assert expired[0].eunix == deadline
@@ -1917,15 +1921,15 @@ def test_an_inactive_instrument_expires_before_its_crossed_snapshot() -> None:
 
     assert [one.unix for one in btc_books] == sorted(one.unix for one in btc_books)
     boundary = next(one for one in btc_books if one.unix == BASE + HOUR)
-    assert boundary.bid_depth == 0
+    assert boundary.biddepth == 0
     expired = [
         event
         for book in btc_books
         for event in book.deltas
-        if event.order_id == "B1" and event.state is State.INTERNAL_EXPIRED
+        if event.orderid == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
-    assert all(one.bid_depth == 0 for one in btc_books if one.unix >= BASE + HOUR)
+    assert all(one.biddepth == 0 for one in btc_books if one.unix >= BASE + HOUR)
 
 
 def test_an_incomplete_limit_order_is_rejected_but_not_lost() -> None:
@@ -1943,7 +1947,7 @@ def test_an_incomplete_limit_order_is_rejected_but_not_lost() -> None:
 
     (audited,) = book.deltas
     assert audited.state is State.INTERNAL_REJECTED and "required price" in audited.reason
-    assert book.bid_depth == 0 and book.bid_px is None
+    assert book.biddepth == 0 and book.bidpx is None
 
 
 def test_a_new_order_without_a_side_is_rejected_instead_of_silently_ignored() -> None:
@@ -1953,7 +1957,7 @@ def test_a_new_order_without_a_side_is_rejected_instead_of_silently_ignored() ->
 
     (audited,) = book.deltas
     assert audited.state is State.INTERNAL_REJECTED and "side is missing" in audited.reason
-    assert book.bid_depth == book.ask_depth == 0
+    assert book.biddepth == book.askdepth == 0
 
 
 def test_pending_new_is_validated_but_pending_cancel_may_omit_terms() -> None:
@@ -1981,7 +1985,7 @@ def test_pending_new_is_validated_but_pending_cancel_may_omit_terms() -> None:
     books = list(BookIterator.from_events([incomplete, standing, cancel], snapshot_every=0))
 
     assert books[0].deltas[0].state is State.INTERNAL_REJECTED
-    assert books[-1].bid_qty == 5.0
+    assert books[-1].bidqty == 5.0
     assert books[-1].deltas[0].state is State.PENDING_CANCEL
     assert books[-1].deltas[0].reason is None
 
@@ -2001,7 +2005,7 @@ def test_a_rejected_replace_never_removes_the_standing_order() -> None:
 
     latest = list(BookIterator.from_events([standing, malformed], snapshot_every=0))[-1]
 
-    assert latest.bid_px == 100.0 and latest.bid_qty == 5.0
+    assert latest.bidpx == 100.0 and latest.bidqty == 5.0
     assert latest.deltas[0].state is State.INTERNAL_REJECTED
     assert latest.deltas[0].reason == "upstream detail"
 
@@ -2023,13 +2027,13 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
             px=-37.0,
             qty=-1.0,
             state=State.FILLED,
-            exec_id="E1",
+            execid="E1",
         )
     )
 
     latest = list(BookIterator.from_events([priced, bad_fill], snapshot_every=0))[-1]
 
-    assert latest.bid_qty == 5.0
+    assert latest.bidqty == 5.0
     assert latest.executions[0].state is State.INTERNAL_REJECTED
     assert "quantity" in latest.executions[0].reason
 
@@ -2051,30 +2055,30 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             side=Side.BID,
             px=100.0,
             qty=400.0,
-            leaves_qty=800.0,
-            filled_qty=400.0,
+            leavesqty=800.0,
+            cumqty=400.0,
             state=State.FILLED,
-            exec_id="E1",
-            linked_events=[(placed.unix, placed.xhash)],
+            execid="E1",
+            linkedevents=[(placed.unix, placed.xhash)],
         )
     )
 
     latest = list(BookIterator.from_events([placed, remaining, fill], snapshot_every=0))[-1]
 
-    assert latest.bid_qty == 800.0 and latest.bid_depth == 1
+    assert latest.bidqty == 800.0 and latest.biddepth == 1
     assert latest.deltas[0].px == 100.0 and latest.deltas[0].qty == 800.0
-    assert latest.deltas[0].prev_qty == 1_200.0
-    assert latest.deltas[0].version == 1 and latest.deltas[0].prev_unix == placed.unix
+    assert latest.deltas[0].prevqty == 1_200.0
+    assert latest.deltas[0].version == 1 and latest.deltas[0].prevunix == placed.unix
     assert latest.executions[0].qty == 400.0
 
 
 def test_a_book_says_which_instrument_it_is_of_readably_and_by_hash() -> None:
     """A hash joins and a person reads, so a book row carries both."""
     events = _resting_stream()
-    assert [one.instrument_code for one in events] == [BTC.symbol, BTC.symbol]
+    assert [one.instrumentcode for one in events] == [BTC.symbol, BTC.symbol]
     books = list(BookIterator.from_events(events, snapshot_every=0))
-    assert {one.instrument_code for one in books} == {BTC.symbol}
-    assert {one.instrument_xhash for one in books} == {BTC.xhash}
+    assert {one.instrumentcode for one in books} == {BTC.symbol}
+    assert {one.instrumentxhash for one in books} == {BTC.xhash}
 
 
 # -- what happens to what is still resting when the stream ends ---------------
@@ -2092,7 +2096,7 @@ def test_orders_still_resting_at_the_end_are_kept_by_default() -> None:
     """A run that will be resumed from its snapshots wants them exactly as they are."""
     books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0))
     last = books[-1]
-    assert (last.bid_depth, last.ask_depth) == (1, 1)
+    assert (last.biddepth, last.askdepth) == (1, 1)
     assert [one.state for one in last.deltas] == [State.NEW]
 
 
@@ -2103,7 +2107,7 @@ def test_purge_alive_ends_them_as_auditable_versions() -> None:
     assert len(purged) == 2, "one terminal version per side, and no more"
     assert {one.qty for one in purged} == {0.0}
     assert all("still resting when the stream ended" in (one.reason or "") for one in purged)
-    assert (books[-1].bid_depth, books[-1].ask_depth) == (0, 0)
+    assert (books[-1].biddepth, books[-1].askdepth) == (0, 0)
 
 
 def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
@@ -2111,7 +2115,7 @@ def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
     books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
     last = books[-1]
     purged = [one for one in last.deltas if one.state is State.INTERNAL_EXPIRED]
-    linked = {xhash for _, xhash in last.linked_events}
+    linked = {xhash for _, xhash in last.linkedevents}
     assert {one.xhash for one in purged} <= linked
 
 
@@ -2136,27 +2140,27 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     registry = FixRegistry(cache_dir=DATA, offline=True)
     plain = FixMsg(
         unix=BASE + 1,
-        unix_source="TransactTime",
-        BeginString="FIX.4.4",
-        MsgType="D",
-        Symbol="ETH-USD",
+        unixsource="TransactTime",
+        beginstring="FIX.4.4",
+        msgtype="D",
+        symbol="ETH-USD",
         mic=MIC.from_str("XPAR"),
-        ClOrdID="C-1",
-        Side="1",
-        OrdType="2",
-        OrderQty=10.0,
-        Price=100.0,
+        clordid="C-1",
+        side="1",
+        ordtype="2",
+        orderqty=10.0,
+        price=100.0,
     )
     identified = dataclasses.replace(
         plain,
-        ClOrdID="C-2",
-        SecurityAltID=[SecurityAltIDEntry(SecurityAltID="US0378331005", SecurityAltIDSource="4")],
+        clordid="C-2",
+        securityaltid=[SecurityAltIDEntry(securityaltid="US0378331005", securityaltidsource="4")],
     )
     # A refused extraction -- the count lies -- leaves the group in `entries`
     # and the column null, so this row rides the pre-existing entries check.
     refused = dataclasses.replace(
         plain,
-        ClOrdID="C-3",
+        clordid="C-3",
         entries=[(555, "9"), (600, "AAPL"), (624, "1")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
@@ -2181,7 +2185,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry)
         if event_type is Order
     ]
-    assert [order.client_order_id for order in expected] == ["C-1", "C-2", "C-3"]
+    assert [order.clordid for order in expected] == ["C-1", "C-2", "C-3"]
     expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
     assert pyarrow.Table.from_batches(found).equals(expected_table)
 
@@ -2193,41 +2197,41 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     registry = FixRegistry(cache_dir=DATA, offline=True)
     linked = FixMsg(
         unix=BASE + 1,
-        unix_source="TransactTime",
-        BeginString="FIX.4.4",
-        MsgType="D",
-        Symbol="ETH-USD",
+        unixsource="TransactTime",
+        beginstring="FIX.4.4",
+        msgtype="D",
+        symbol="ETH-USD",
         mic=MIC.from_str("XPAR"),
-        ClOrdID="C-1",
-        Side="1",
-        OrdType="2",
-        OrderQty=10.0,
-        Price=100.0,
-        ParentClOrdID="P-1",
-        ParentOrderID="V-9",
+        clordid="C-1",
+        side="1",
+        ordtype="2",
+        orderqty=10.0,
+        price=100.0,
+        parentclordid="P-1",
+        parentorderid="V-9",
         entries=[(583, "LINK-1")],
     )
     rejected = dataclasses.replace(
         linked,
-        MsgType="9",
-        ClOrdID="C-2",
-        OrigClOrdID="C-1",
-        OrdStatus="2",
-        ParentClOrdID=None,
-        ParentOrderID=None,
+        msgtype="9",
+        clordid="C-2",
+        origclordid="C-1",
+        ordstatus="2",
+        parentclordid=None,
+        parentorderid=None,
         entries=None,
     )
     settled = FixMsg(
         unix=BASE + 3,
-        unix_source="TransactTime",
-        BeginString="FIX.4.4",
-        MsgType="AE",
-        Symbol="ETH-USD",
+        unixsource="TransactTime",
+        beginstring="FIX.4.4",
+        msgtype="AE",
+        symbol="ETH-USD",
         mic=MIC.from_str("XPAR"),
-        ExecID="E-1",
-        Side="2",
-        LastPx=99.5,
-        LastQty=3.0,
+        execid="E-1",
+        side="2",
+        lastpx=99.5,
+        lastqty=3.0,
         entries=[(64, "20260818"), (63, "W2"), (120, "USD"), (156, "M")],
     )
     schema = FixMsg.into_field().into_arrow_schema()
@@ -2239,16 +2243,16 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     assert translated is not None, "every row here is flat-eligible"
     orders, executions = translated
 
-    assert orders.column("clord_link_id").to_pylist() == ["LINK-1", None]
-    assert orders.column("parent_client_order_id").to_pylist() == ["P-1", None]
-    assert orders.column("parent_order_id").to_pylist() == ["V-9", None]
+    assert orders.column("clordlinkid").to_pylist() == ["LINK-1", None]
+    assert orders.column("parentclordid").to_pylist() == ["P-1", None]
+    assert orders.column("parentorderid").to_pylist() == ["V-9", None]
     assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
         "the reject reads where the order stands from OrdStatus"
     )
-    assert executions.column("settl_date").to_pylist() == [datetime.date(2026, 8, 18)]
-    assert executions.column("settl_type").to_pylist() == ["W2"]
-    assert executions.column("settl_currency").to_pylist() == ["USD"]
-    assert executions.column("settl_curr_fx_rate_calc").to_pylist() == ["M"]
+    assert executions.column("settldate").to_pylist() == [datetime.date(2026, 8, 18)]
+    assert executions.column("settltype").to_pylist() == ["W2"]
+    assert executions.column("settlcurrency").to_pylist() == ["USD"]
+    assert executions.column("settlcurrfxratecalc").to_pylist() == ["M"]
 
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):

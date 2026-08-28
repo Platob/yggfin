@@ -1,20 +1,21 @@
 # End-to-end run
 
-Measured on 2026-08-23, this run executed the code cells from all six task
-notebooks against a fresh local Iceberg warehouse, then replayed the same
-interval. It is a correctness fixture; the larger focused measurements remain
-on [Benchmarks](../../storage/benchmarks.md).
+A correctness fixture, measured 2026-08-23: all six task notebooks against a
+fresh local Iceberg warehouse, then the same interval replayed. Throughput
+measurements live on [Benchmarks](../../storage/benchmarks.md). The stage table
+covers the five downstream notebooks — `parse_messages` read the 13 generated
+rows and wrote all of them.
 
-![End-to-end execution architecture](../../assets/workflow-run.svg)
+![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
+![End-to-end execution architecture](../../assets/workflow-run-light.svg#only-light)
 
 Only `fix.market` continues into market readers. `fix.misc` and
 `fix.unknown` are terminal routes; a route with no rows need not create a table.
 
 ## Run the workflow locally
 
-From the repository root, run the task documents in dependency order. The
-first command uses the checked-in sample log; replace its `source` override for
-your own capture.
+From the repository root, in dependency order. The first command uses the
+checked-in sample log; replace its `source` override for your own capture.
 
 ```bash
 uv run --project python --with papermill rekep task run \
@@ -43,9 +44,9 @@ uv run --project python --with papermill rekep task run \
   --output flatten_executions.executed.ipynb
 ```
 
-Each command preserves its executed notebook for inspection. The task YAML
-selects the catalog, branch, tables, and commit sizes; repeatable
-`--parameter NAME=VALUE` options override those values for one run.
+Each command keeps its executed notebook. The YAML selects catalog, branch,
+tables and commit sizes; repeatable `--parameter NAME=VALUE` overrides them for
+one run.
 
 ## Run context
 
@@ -147,7 +148,7 @@ only the exact `FixMsg` to `Instrument` projection.
 | Symbol | Venue / currency | Enrichment | `xhash` |
 | --- | --- | --- | --- |
 | `BTC-USD` | `XCME / USD` | synthetic market identity | `7683678321830537938` |
-| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, tick `0.01`, lot `1`, label `Apple Inc.` | `-9052458260103799025` |
+| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, `minpriceincrement` `0.01`, `roundlot` `1`, `securitydesc` `Apple Inc.` | `-9052458260103799025` |
 | `MSFT` | `XNAS / USD` | synthetic market identity | `-1664556628408186290` |
 
 ### Books
@@ -159,7 +160,7 @@ only the exact `FixMsg` to `Instrument` projection.
 | `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` |
 
 The BTC book relates both source order lifecycles with their event times in
-`linked_events` and both source versions in `parent_hash`. Bid and ask levels
+`linkedevents` and both source versions in `parenthash`. Bid and ask levels
 remain best-price ordered.
 
 ### Orders
@@ -178,27 +179,24 @@ remain best-price ordered.
 | `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, timed order link |
 | `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link |
 
-Flattening appends the carrying `Book.hash` to each event's `parent_hash`;
-`linked_events` retains the event time and lifecycle linkage between executions
+Flattening appends the carrying `Book.hash` to each event's `parenthash`;
+`linkedevents` retains the event time and lifecycle linkage between executions
 and orders.
 
 ## Schema lineage
 
-![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg)
+![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg#only-dark)
+![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
-| Contract | Primary key | Partitions | Nested payloads |
-| --- | --- | --- | --- |
-| `Message` | `unix, hash` | `unix_partition` | generic ordered `entries`, event lineage and `codes` |
-| `FixMsg` | `unix, hash` | `unix_partition` | `entries`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID`, `Legs`, `codes` |
-| `Instrument` | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
-| `Book` | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
-| `Order` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
-| `Execution` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
+All six are keyed `(unix, hash)` and partitioned on `unixpartition` alone.
+Their columns and nested payloads are on the [product](../../products/index.md)
+pages.
 
 The hour is the only partition. An instrument identity is a 64-bit hash, so
 bucketing it multiplies the files inside each hour without pruning a read the
 hour and the sort order do not already prune.
 
-The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
-types and metadata between stages, Iceberg owns table ids and snapshots, and
-the [binary identity contract](../../contracts/identity.md) keeps hashes cross-language stable.
+`schemas/rekep/` is the portable source. Arrow owns types and metadata between
+stages, Iceberg owns table ids and snapshots, and the
+[binary identity contract](../../contracts/identity.md) keeps hashes
+cross-language stable.

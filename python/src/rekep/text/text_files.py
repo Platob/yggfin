@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import io
+import logging
 import os
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -23,6 +24,7 @@ from rekep.filesystems import resolve
 from rekep.text.text_file import (
     DEFAULT_BATCH_BYTE_SIZE,
     DEFAULT_BATCH_ROW_SIZE,
+    DEFAULT_MAX_ROW_BYTE_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
@@ -36,6 +38,8 @@ from rekep.text.text_file import (
     static_columns_of,
 )
 from rekep.urls import Url
+
+LOGGER = logging.getLogger(__name__)
 
 #: Cuts a path into its digit runs and everything between them, so ordering
 #: can compare a run as a number: `app.9.txt` before `app.10.txt`, which a
@@ -420,6 +424,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         fold_continuations: bool = True,
         *,
         batch_byte_size: int = DEFAULT_BATCH_BYTE_SIZE,
+        max_row_byte_size: int = DEFAULT_MAX_ROW_BYTE_SIZE,
         include_regexes: Sequence[str] = (),
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
@@ -434,12 +439,13 @@ class TextFiles(Dataset, io.BufferedIOBase):
         excludes = _regexes("exclude_regexes", exclude_regexes)
         included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
         excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
-        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size)
+        _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size, max_row_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
             batch_row_size,
             read_byte_size,
             batch_byte_size,
+            max_row_byte_size,
             fold_continuations,
             includes,
             excludes,
@@ -465,6 +471,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
         self.__dict__.setdefault("_arrow_batches", set()).add(batches)
         try:
             yield from batches
+            # A generator closed from outside stops here exactly as an
+            # exhausted one does, and a reader told the set ended would report
+            # a capture read short as a capture read whole.
+            self._check_open()
         finally:
             close = getattr(batches, "close", None)
             if close is not None:
@@ -478,6 +488,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         batch_row_size: int,
         read_byte_size: int,
         batch_byte_size: int,
+        max_row_byte_size: int,
         fold_continuations: bool,
         include_regexes: Sequence[str],
         exclude_regexes: Sequence[str],
@@ -488,11 +499,17 @@ class TextFiles(Dataset, io.BufferedIOBase):
     ) -> Iterator[pyarrow.RecordBatch]:
         """Filtered per-file batches, leaving set-wide windowing to the caller."""
         for log in self.into_files():
+            # Per file, and the rows it yielded after it closes. Per batch
+            # would be one record per `batch_row_size` rows, which on a capture
+            # is thousands of them saying nothing a total does not.
+            LOGGER.debug("reading %s", log.url)
+            rows = 0
             with log:
                 batches = log._filtered_batches(
                     batch_row_size,
                     read_byte_size,
                     batch_byte_size,
+                    max_row_byte_size,
                     fold_continuations,
                     include_regexes,
                     exclude_regexes,
@@ -501,7 +518,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
                     start_unix,
                     end_unix,
                 )
-                yield from batches
+                for batch in batches:
+                    rows += batch.num_rows
+                    yield batch
+            LOGGER.debug("read %d rows from %s", rows, log.url)
 
     def into_byte_chunks(
         self,

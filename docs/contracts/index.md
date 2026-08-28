@@ -1,24 +1,31 @@
 # Schema contracts
 
 ![One declaration produces Arrow, a portable contract, and an Iceberg
-table](../assets/compatibility-tree.svg)
+table](../assets/compatibility-tree.svg#only-dark)
+![One declaration produces Arrow, a portable contract, and an Iceberg
+table](../assets/compatibility-tree-light.svg#only-light)
 
 `schemas/rekep/` publishes every persisted pipeline shape:
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 2 | Source records with a promoted message discriminator and residual arguments. |
-| `fixmsg.yaml` | 2 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
-| `instrument.yaml` | 2 | Versioned and hourly instrument state. |
-| `book.yaml` | 2 | Book deltas, executions, and recovery state. |
-| `order.yaml` | 2 | Flattened auditable order events. |
-| `execution.yaml` | 2 | Flattened auditable executions. |
+| `message.yaml` | 1 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
+| `fixmsg.yaml` | 1 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
+| `instrument.yaml` | 1 | Versioned and hourly instrument state. |
+| `book.yaml` | 1 | Book deltas, executions, and recovery state. |
+| `order.yaml` | 1 | Flattened auditable order events. |
+| `execution.yaml` | 1 | Flattened auditable executions. |
 
 ```python
 from rekep import Field
 
 message = Field.from_yaml("schemas/rekep/message.yaml")
-reader = message.cast_arrow(reader)
+schema = message.into_arrow_schema()          # what a producer writes
+print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
+```
+
+```text
+56 56
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -35,9 +42,46 @@ YAML and JSON use the same document model; the extension selects the codec.
 The document maps are restored to Arrow's collision-safe `iceberg:*`, `fix:*`,
 and `enum:*` metadata keys when loaded.
 
-Promoted FIX columns use the registry's spelling directly, for example
-`OrigClOrdID` with `fix: { name: OrigClOrdID }`. Protocol-neutral and analytical
-columns retain their own lower-case names.
+## Names
+
+Every column in every contract is **folded**: lowercase, with everything that
+is not a letter or a digit dropped. `OrigClOrdID` is `origclordid`,
+`SourceURL` is `sourceurl`, `bid_levels` is `bidlevels`. One name serves as
+the Arrow column, the Python attribute and the stored document's, so a grep
+for a column reaches its declaration, its parser and its test.
+
+The fold is also how a name is *matched*: a spelling is looked up by what it
+folds to, which is what makes `MsgType`, `msgtype` and `MSGTYPE` one field
+against the FIX registry rather than three.
+
+What the fold throws away is kept, not lost. Every column carries
+`fix: { display: ... }` — the name a reader is shown. A FIX column displays
+the dictionary's own spelling (`OrigClOrdID`); every other column displays
+title case with acronyms preserved (`sourceurl` → `Source URL`, `altids` →
+`Alt IDs`, `mic` → `MIC`).
+
+```python
+from rekep import Field
+
+order = Field.from_yaml("schemas/rekep/order.yaml")
+for name in ("clordid", "px", "unixpartition"):
+    print(f"{name:16} {order.field(name).fix.display}")
+```
+
+```text
+clordid          ClOrdID
+px               Price
+unixpartition    Unix Partition
+```
+
+A column that reads a FIX field is named after that field, so a reader who
+knows the dictionary knows the column: `ClOrdID <11>` is `clordid`,
+`MinPriceIncrement <969>` is `minpriceincrement`. Two names stay generic on
+purpose. `px` and `qty` are the one slot every market row shares — which FIX
+field they hold is the row's kind to say, `Price <44>` on an order and
+`LastPx <31>` on a report — and a nested struct drops the prefix the wire
+needs, so a leg's `LegCFICode <608>` is `cficode`, exactly as its instrument's
+`CFICode <461>` is.
 
 ## Evolution
 
@@ -49,16 +93,19 @@ nullable. Dropping or retyping a field requires a new contract version.
 Producers cast before writing; consumers load the same contract and may use
 `merge_schema=True` to retain additive fields from a newer producer.
 
-### Version 2: codes are mnemonics
+**Every contract is at 1.** The numbers used to count the shapes each one had
+been through, which was a history no reader could act on: nothing in the
+package reads a stored version, nothing branches on one, and there is no
+migration path -- a store, a registry document or an Iceberg table written by
+an earlier release is rebuilt rather than read or appended to. So the counters
+were reset to where they are useful, which is the first number a consumer of
+*this* shape will see change.
 
-Version 2 recodes every stable code. A code is now the ASCII mnemonic it
-reads as, packed left-justified into its column, so `state` holds `41FILLED`
-rather than `410`; `etype`, `state` and both `kind` flavours widened from
-`int` to `long` to hold eight bytes.
-
-There is no in-package migration. `from_int` reads version 2 values and
-nothing else, so a store, a registry document or an Iceberg table written by
-an earlier version must be rebuilt rather than read or appended to.
+The version is not part of a table's identity either: PyIceberg carries no
+schema-level metadata, so it never survives the round trip and no write is
+refused over it. What a reader actually depends on is the columns, and
+`parse_fix` says so directly -- it refuses a source missing `MsgType`,
+`entries` or `protocolcode` rather than reporting an empty successful run.
 
 ## Publishing
 

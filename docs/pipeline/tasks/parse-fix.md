@@ -21,6 +21,9 @@ uv run --project python --with papermill rekep task run \
   --output parse_fix.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 To replay only one half-open recording interval, add
 `--parameter start=2026-08-21T10:00:00Z` and
 `--parameter end=2026-08-21T11:00:00Z` before `--output`.
@@ -35,7 +38,7 @@ batch it:
 4. lifts declared fields and structured components;
 5. derives the venue, transaction time and identities.
 
-`Message.etype`, `Message.MsgType`, and `Message.protocol_code` pass through
+`Message.etype`, `Message.MsgType`, and `Message.protocolcode` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
@@ -82,6 +85,6 @@ metadata is read by `parse_messages` because `etype` is part of `Message`, so
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
-The projected conversion requires the version 1 `MsgType`, `entries`, and
-`protocol_code` columns, and refuses an older source table with a rebuild
-instruction.
+The projected conversion requires the `MsgType`, `entries` and
+`protocolcode` columns of the [Message contract](../../contracts/index.md),
+and refuses a source without them rather than reporting an empty run.

@@ -43,9 +43,8 @@ from rekep.fix.entries import (
     folded_values,
     newest_of,
     record_copy,
-    record_document,
     record_for,
-    record_of,
+    refuse_record,
     slug_of,
 )
 from rekep.fix.quickfix import is_reference, walk
@@ -565,7 +564,10 @@ class ShardedLayout:
             if name in self.documents.names():
                 self.__dict__.setdefault("_torn", set()).add(name)
             return {}
-        return {_record_key(key): record_of(record) for key, record in document.items()}
+        return {
+            _record_key(key): refuse_record(Field.from_dict(record))
+            for key, record in document.items()
+        }
 
     @property
     def field_records(self) -> dict[int | str, Field]:
@@ -811,14 +813,12 @@ def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
 
     Keyed by the tag, or by the *canonical* name for a field FIX never
     numbered -- the key is what a person reads first, and folding it there
-    would spell `AMON.ISINCODE` in a case nothing else in the document uses.
+    would spell `AMON.isincode` in a case nothing else in the document uses.
     """
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))
     return {
-        (str(key) if isinstance(key, int) else shard[key].fix.canonical): record_document(
-            shard[key]
-        )
+        (str(key) if isinstance(key, int) else shard[key].fix.canonical): shard[key].into_dict()
         for key in (*tags, *names)
     }
 

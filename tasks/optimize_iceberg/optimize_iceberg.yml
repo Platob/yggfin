@@ -1,6 +1,15 @@
 name: optimize_iceberg
 notebook: optimize_iceberg.ipynb
 parameters:
+  # AWS Glue with an S3 warehouse (replace the active local block):
+  # catalog: rekep-production
+  # catalog_properties:
+  #   type: glue
+  #   warehouse: s3://example-bucket/rekep/warehouse
+  #   glue.region: eu-west-1
+  #   s3.region: eu-west-1
+  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
+  # S3_* process defaults and the standard AWS credential chain are supported.
   catalog: rekep
   catalog_properties:
     type: sql
@@ -18,3 +27,5 @@ parameters:
   orphan_age_days: 3
   remove_orphans: true
   metadata: true
+  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  log_level: INFO

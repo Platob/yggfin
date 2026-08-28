@@ -27,7 +27,8 @@ from rekep.fix.classify import (
     count_files,
     count_reader,
 )
-from rekep.fix.entries import ANY_VERSION, Alias, record_kind, record_of
+from rekep.fix.entries import ANY_VERSION, Alias, record_kind
+from rekep.fix.fields import namespaced_field
 from rekep.fix.registry import FixRegistry
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -149,7 +150,7 @@ def test_a_reader_of_batches_is_counted_one_batch_at_a_time() -> None:
     batch = pyarrow.record_batch(
         {
             "message": pyarrow.array(["toBridge #CLORDID=ORD-TEST-01|#SIDE=1"] * 3),
-            "plugin_code": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
+            "plugincode": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
         }
     )
     assert count_reader(batch).lines == 3
@@ -158,7 +159,7 @@ def test_a_reader_of_batches_is_counted_one_batch_at_a_time() -> None:
 
 
 def test_a_batch_with_no_message_column_is_refused() -> None:
-    batch = pyarrow.record_batch({"plugin_code": pyarrow.array(["ULBridge"])})
+    batch = pyarrow.record_batch({"plugincode": pyarrow.array(["ULBridge"])})
     with pytest.raises(ValueError, match="needs a 'message' column"):
         count_reader(batch)
 
@@ -360,15 +361,8 @@ def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     """The bridge between a count and a registry verb, on its own."""
     count = KeyCount(name="FAKE.VENDOR.CODE", marked=7, sources=("brk",))
     row = Classified(count, NAMESPACE)
-    assert row.into_entry() == record_of(
-        {
-            "name": "FAKE.VENDOR.CODE",
-            "kind": NAMESPACE,
-            "versions": [ANY_VERSION],
-            "type": "String",
-        }
-    )
-    assert row.into_entry(column="fake_vendor_code").fix.column == "fake_vendor_code", (
+    assert row.into_entry() == namespaced_field("FAKE.VENDOR.CODE", "String")
+    assert row.into_entry(column="fakevendorcode").fix.column == "fakevendorcode", (
         "a caller that already knows the column declares it in the same record"
     )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(

@@ -1,5 +1,7 @@
 # State
 
+[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+
 ```python
 from rekep.enums import State
 

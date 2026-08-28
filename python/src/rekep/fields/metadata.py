@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING, Any
 
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
+from rekep.fields.names import column_name
 
 if TYPE_CHECKING:
     from rekep.fields.field import Field
@@ -255,6 +256,25 @@ def encodings_of(values: tuple[FixFieldValue, ...]) -> Any:
     return MappingProxyType(found), MappingProxyType(dropped)
 
 
+@functools.lru_cache(maxsize=8192)
+def symbols_of(values: tuple[FixFieldValue, ...]) -> Mapping[str, str]:
+    """`{wire value: the symbolic name the dictionary gives it}`.
+
+    The inverse of `encodings_of`, for a caller that stores what a value *is*
+    rather than the character the wire carried -- an alternative identifier
+    keyed by its scheme, a code rendered in a report. The spec's own symbol
+    where it declares one, because that is the name every other FIX tool
+    prints; the value itself where the dictionary names it nothing, so a key
+    always exists.
+
+    Cached on the values tuple exactly as `encodings_of` is, and for the same
+    reason: one field is asked this once per parse, not once per row.
+    """
+    return MappingProxyType(
+        {one.value: (one.aliases[0] if one.aliases else one.value) for one in values}
+    )
+
+
 class ProtocolMetadata(MutableMapping):
     """One protocol's keys in a field's metadata: `prefix:key = value`."""
 
@@ -327,6 +347,21 @@ class _Text:
             view.pop(self.key, None)
 
 
+class _Folded(_Text):
+    """A key holding a *column* name, which is folded however it is spelled.
+
+    A column a person declared and the column a lift produces are one name, so
+    the fold happens here rather than at each place that reads or writes one.
+    """
+
+    def __get__(self, view: ProtocolMetadata | None, owner: type | None = None) -> Any:
+        found = super().__get__(view, owner)
+        return found if view is None else column_name(found)
+
+    def __set__(self, view: ProtocolMetadata, value: Any) -> None:
+        super().__set__(view, column_name(value) if value else value)
+
+
 class _Number:
     """One integer key as an attribute: `None` when absent, dropped on `None`."""
 
@@ -388,6 +423,47 @@ def _enumerated(declared: str) -> tuple[FixFieldValue, ...]:
     return values_of(json.loads(declared))
 
 
+def _json_mapping(declared: str | None) -> Mapping[str, Any]:
+    """One stored JSON object, or nothing where a record declares none."""
+    if not declared:
+        return {}
+    found = json.loads(declared)
+    return found if isinstance(found, Mapping) else {}
+
+
+def enum_member(enum_type: Any, value: Any) -> Any:
+    """One stored enum spelling as the member it names.
+
+    A member name, its packed code, or the member itself all read back. A
+    name or a code no member has raises rather than degrading to `UNKNOWN`:
+    a stored reading that quietly became "unknown" is a bug that ships.
+    """
+    if isinstance(value, enum_type):
+        return value
+    parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
+    if isinstance(parsed, str):
+        return enum_type[parsed.upper()]
+    member = enum_type(parsed)
+    if int(member) != int(parsed):
+        raise ValueError("no member stores this code")
+    return member
+
+
+def enum_map(enum_type: Any, declared: Any, keyed: str) -> dict[str, Any]:
+    """One stored `{wire value: member}` map, saying which key was unreadable."""
+    if not isinstance(declared, Mapping):
+        return {}
+    found: dict[str, Any] = {}
+    for key, value in declared.items():
+        try:
+            found[str(key)] = enum_member(enum_type, value)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"unknown {enum_type.__name__} {value!r} for {keyed} {key!r}"
+            ) from error
+    return found
+
+
 class FixMetadata(ProtocolMetadata):
     """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.enumerated`.
 
@@ -403,9 +479,13 @@ class FixMetadata(ProtocolMetadata):
     tag = _Number()
     type = _Text()
     name = _Text()
+    #: What this field is called for a reader: the dictionary's own spelling
+    #: where FIX has one, title case where it does not. The column's own name
+    #: is folded, so this is the half the fold throws away -- recorded once
+    #: rather than guessed at by every consumer that has to print it.
+    display = _Text()
     version = _Text()
-    kind = _Text()
-    column = _Text()
+    column = _Folded()
     note = _Text()
     component = _Text()
     #: The message type a declaration defines, where it defines one -- `"D"`,
@@ -447,34 +527,38 @@ class FixMetadata(ProtocolMetadata):
 
     @property
     def event_types(self) -> dict[str, EventType]:
-        """The `{MsgType: EventType}` map a MsgType record carries."""
-        declared = self.get("event_types")
-        if not declared:
-            return {}
-        return {key: EventType.from_int(value) for key, value in json.loads(declared).items()}
+        """The `{MsgType: EventType}` map a MsgType record carries.
+
+        Stored by member name. These documents are read and edited by hand,
+        and a packed ASCII code is a nineteen-digit integer that says nothing
+        to whoever opens the file.
+        """
+        return enum_map(EventType, _json_mapping(self.get("event_types")), "MsgType")
 
     @event_types.setter
     def event_types(self, value: Mapping[str, Any] | None) -> None:
         if not value:
             self.pop("event_types", None)
             return
-        rendered = {str(key): int(kind) for key, kind in dict(value).items()}
+        found = enum_map(EventType, value, "MsgType")
+        rendered = {key: member.name for key, member in found.items()}
         self["event_types"] = json.dumps(rendered, separators=(",", ":"))
 
     @property
     def states(self) -> dict[str, State]:
-        """The `{wire value: State}` map a lifecycle field carries."""
-        declared = self.get("states")
-        if not declared:
-            return {}
-        return {key: State.from_int(value) for key, value in json.loads(declared).items()}
+        """The `{wire value: State}` map a lifecycle field carries.
+
+        By name, for the reason `event_types` gives.
+        """
+        return enum_map(State, _json_mapping(self.get("states")), "value")
 
     @states.setter
     def states(self, value: Mapping[str, Any] | None) -> None:
         if not value:
             self.pop("states", None)
             return
-        rendered = {str(key): int(state) for key, state in dict(value).items()}
+        found = enum_map(State, value, "value")
+        rendered = {key: member.name for key, member in found.items()}
         self["states"] = json.dumps(rendered, separators=(",", ":"))
 
     # -- what the record is -------------------------------------------------
@@ -541,6 +625,16 @@ class FixMetadata(ProtocolMetadata):
     def encode(self, value: Any) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
+
+    @property
+    def symbols(self) -> Mapping[str, str]:
+        """`{wire value: its symbolic name}`, for storing the scheme not the character."""
+        return symbols_of(self.enumerated)
+
+    def symbol(self, value: Any) -> str:
+        """The symbolic name of one wire value, or the value where it has none."""
+        spelled = str(value)
+        return self.symbols.get(spelled, spelled)
 
     def value_of(self, value: Any) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""

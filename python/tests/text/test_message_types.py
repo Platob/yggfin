@@ -18,13 +18,36 @@ EVENT_TYPES = {
 #: own, spelled out rather than imported from `rekep.text.message` so a field
 #: quietly added to or dropped from the lift is a failure here.
 SESSION_COLUMNS = (
-    "BeginString",
-    "BodyLength",
-    "MsgType",
-    "MsgSeqNum",
-    "SenderCompID",
-    "TargetCompID",
-    "SendingTime",
+    "beginstring",
+    "bodylength",
+    "msgtype",
+    "sendercompid",
+    "sendersubid",
+    "senderlocationid",
+    "targetcompid",
+    "targetsubid",
+    "targetlocationid",
+    "onbehalfofcompid",
+    "onbehalfofsubid",
+    "onbehalfoflocationid",
+    "delivertocompid",
+    "delivertosubid",
+    "delivertolocationid",
+    "msgseqnum",
+    "lastmsgseqnumprocessed",
+    "possdupflag",
+    "possresend",
+    "sendingtime",
+    "origsendingtime",
+    "onbehalfofsendingtime",
+    "applverid",
+    "cstmapplverid",
+    "applextid",
+    "messageencoding",
+    "securedatalen",
+    "securedata",
+    "signaturelength",
+    "signature",
 )
 
 
@@ -36,7 +59,7 @@ def parsed(*messages: str | None) -> dict[str, object]:
 def test_a_mapped_message_type_assigns_its_registry_event_type() -> None:
     found = parsed("8=FIX.4.4|35=D|11=one|")
 
-    assert found["MsgType"].to_pylist() == ["D"]
+    assert found["msgtype"].to_pylist() == ["D"]
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
 
 
@@ -62,8 +85,8 @@ def test_a_spelling_no_event_kind_answers_to_is_refused() -> None:
 def test_a_wire_discriminator_without_begin_string_is_fix() -> None:
     found = parsed("35=D|11=one|")
 
-    assert found["MsgType"].to_pylist() == ["D"]
-    assert found["protocol_code"].to_pylist() == ["FIX"]
+    assert found["msgtype"].to_pylist() == ["D"]
+    assert found["protocolcode"].to_pylist() == ["FIX"]
 
 
 def test_no_message_type_is_misc_and_keeps_no_incidental_assignments() -> None:
@@ -75,7 +98,7 @@ def test_no_message_type_is_misc_and_keeps_no_incidental_assignments() -> None:
         "",
     )
 
-    assert found["MsgType"].to_pylist() == [None, None, None, None, None]
+    assert found["msgtype"].to_pylist() == [None, None, None, None, None]
     assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
     assert found["entries"].to_pylist() == [[], [], [], [], []]
 
@@ -83,7 +106,7 @@ def test_no_message_type_is_misc_and_keeps_no_incidental_assignments() -> None:
 def test_an_unregistered_message_type_remains_unknown() -> None:
     found = parsed("8=FIX.4.4|35=ZZ|Text=future|")
 
-    assert found["MsgType"].to_pylist() == ["ZZ"]
+    assert found["msgtype"].to_pylist() == ["ZZ"]
     assert found["etype"].to_pylist() == [int(EventType.UNKNOWN)]
     entry = found["entries"].to_pylist()[0][-1]
     assert (entry["key"], entry["value"]) == ("Text", "future")
@@ -92,7 +115,7 @@ def test_an_unregistered_message_type_remains_unknown() -> None:
 def test_named_message_types_use_the_same_registry_mapping() -> None:
     found = parsed("MsgType=8|Text=rendered|", "#MSGTYPE=W|#Text=marked|")
 
-    assert found["MsgType"].to_pylist() == ["8", "W"]
+    assert found["msgtype"].to_pylist() == ["8", "W"]
     assert found["etype"].to_pylist() == [
         int(EventType.EXECUTION),
         int(EventType.BOOK),
@@ -102,8 +125,8 @@ def test_named_message_types_use_the_same_registry_mapping() -> None:
 def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
-    assert found["MsgType"].to_pylist() == ["D"]
-    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
+    assert found["msgtype"].to_pylist() == ["D"]
+    assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
     assert [entry["key"] for entry in residual] == ["SIDE"]
 
@@ -111,14 +134,14 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
 def test_a_regular_wire_kind_stays_authoritative_over_named_noise() -> None:
     found = parsed("8=FIX.4.4|35=8|58=quoted #MSGTYPE=D|10=000|")
 
-    assert found["MsgType"].to_pylist() == ["8"]
+    assert found["msgtype"].to_pylist() == ["8"]
     assert found["etype"].to_pylist() == [int(EventType.EXECUTION)]
 
 
 def test_only_an_uppercase_user_wire_kind_falls_back_to_the_named_kind() -> None:
     found = parsed("35=UL|MsgType=D|", "35=uL|MsgType=D|")
 
-    assert found["MsgType"].to_pylist() == ["D", "uL"]
+    assert found["msgtype"].to_pylist() == ["D", "uL"]
     assert found["etype"].to_pylist() == [
         int(EventType.ORDER),
         int(EventType.UNKNOWN),
@@ -134,12 +157,12 @@ def test_message_type_is_read_from_tokens_not_prose_values_or_the_trailer() -> N
         "8=FIX.4.4|10=000|MsgType=D|",
     )
 
-    assert found["MsgType"].to_pylist() == [None] * 5
+    assert found["msgtype"].to_pylist() == [None] * 5
     assert found["etype"].to_pylist() == [int(EventType.MISC)] * 5
     # Every header field is measured against the same boundary: `8` precedes
     # the checksum in the last two rows and so is lifted, while the
     # discriminator written behind it is not.
-    assert found["BeginString"].to_pylist() == [None, None, None, "FIX.4.4", "FIX.4.4"]
+    assert found["beginstring"].to_pylist() == [None, None, None, "FIX.4.4", "FIX.4.4"]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         [],
@@ -155,13 +178,26 @@ def test_a_prefixed_marked_checksum_ends_discriminator_promotion() -> None:
         EVENT_TYPES,
     )
 
-    assert found["MsgType"].to_pylist() == [None]
+    assert found["msgtype"].to_pylist() == [None]
     assert found["etype"].to_pylist() == [int(EventType.MISC)]
     assert [entry["key"] for entry in found["entries"].to_pylist()[0]] == [
         "10",
         "MSGTYPE",
         "Text",
     ]
+
+
+def test_a_bridge_renders_a_tag_it_has_no_name_for_as_a_digit_key() -> None:
+    """`#35=D` is a marked key, so it is part of the message and not its prefix.
+
+    A rule that took only a letter-initial name put such a token in the prose
+    every reader of a bridge line cuts away, so the field was lost with it.
+    """
+    found = Message.parse_arrow(pyarrow.array(["toBridge #35=D|#55=IBM|#54=1|"]), EVENT_TYPES)
+
+    assert found["msgtype"].to_pylist() == ["D"]
+    assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+    assert [entry["key"] for entry in found["entries"].to_pylist()[0]] == ["55", "54"]
 
 
 def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
@@ -171,10 +207,10 @@ def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
         "8=FIXT.1.1^",
     )
 
-    assert found["MsgType"].to_pylist() == [None, None, None]
+    assert found["msgtype"].to_pylist() == [None, None, None]
     # The qualifying rows are the ones that reached the splitter at all, and
     # the begin string they spelled is now the column rather than an entry.
-    assert found["BeginString"].to_pylist() == [None, "FIX.4.4", "FIXT.1.1"]
+    assert found["beginstring"].to_pylist() == [None, "FIX.4.4", "FIXT.1.1"]
     assert [
         [(entry["key"], entry["value"]) for entry in row] for row in found["entries"].to_pylist()
     ] == [
@@ -187,7 +223,7 @@ def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
 def test_bare_caret_delimited_fields_are_tokens() -> None:
     found = parsed("35=D^Text=kept^")
 
-    assert found["MsgType"].to_pylist() == ["D"]
+    assert found["msgtype"].to_pylist() == ["D"]
     assert [(entry["key"], entry["value"]) for entry in found["entries"].to_pylist()[0]] == [
         ("Text", "kept")
     ]
@@ -208,8 +244,8 @@ def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
         int(EventType.ORDER),
         int(EventType.BOOK),
     ]
-    assert found["MsgType"].to_pylist() == [None, "D", "W"]
-    assert found["SenderCompID"].to_pylist() == [None, "BUYSIDE", None]
+    assert found["msgtype"].to_pylist() == [None, "D", "W"]
+    assert found["sendercompid"].to_pylist() == [None, "BUYSIDE", None]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         [],
         ["A"],
@@ -236,7 +272,7 @@ def test_plugin_codes_do_not_define_message_types() -> None:
     )
 
     assert found["etype"].to_pylist() == [int(EventType.ORDER)]
-    assert found["BeginString"].to_pylist() == ["FIX.4.4"]
+    assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
         ("11", "one"),
     ]
@@ -263,14 +299,14 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
     )
 
     assert classifier.seen == [heartbeat, market]
-    assert found["protocol_code"].to_pylist() == ["FIX", "FIX"]
+    assert found["protocolcode"].to_pylist() == ["FIX", "FIX"]
 
 
 def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
     stored = Message(
         message="8=FIX.4.4|35=0|58=" + "A=1|" * 1000,
-        protocol_code="MISC",
-        MsgType="0",
+        protocolcode="MISC",
+        msgtype="0",
         etype=EventType.MISC,
         entries=[],
     ).into_dict()
@@ -281,9 +317,9 @@ def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
     monkeypatch.setattr(Entry, "parse_arrow", classmethod(unexpected))
     restored = Message.from_dict(stored)
 
-    assert restored.MsgType == "0"
-    assert restored.BeginString is None, "a stored row's header is what it stored"
-    assert restored.protocol_code == "MISC"
+    assert restored.msgtype == "0"
+    assert restored.beginstring is None, "a stored row's header is what it stored"
+    assert restored.protocolcode == "MISC"
     assert restored.etype == EventType.MISC
     assert restored.entries == []
 

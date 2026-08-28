@@ -189,6 +189,55 @@ def test_a_hostname_without_a_port_is_still_a_store() -> None:
 
 
 @pytest.mark.parametrize(
+    "host",
+    [
+        "s3.eu.cloud.ovh.net",  # OVH
+        "gateway.storjshare.io",  # Storj
+        "sos-ch-dk-2.exo.io",  # Exoscale
+        "s3.fr-par.scw.cloud",  # Scaleway
+        "s3.wasabisys.com",  # Wasabi
+        "s3.us-west-000.backblazeb2.com",  # Backblaze B2
+        "nyc3.digitaloceanspaces.com",  # DigitalOcean Spaces
+        "storage.googleapis.com",  # Google's S3 interoperability endpoint
+        "abc123.r2.cloudflarestorage.com",  # Cloudflare R2
+        "objects.example.co.uk",  # a Ceph gateway on somebody's own domain
+        "192.168.1.10",  # and one addressed by number
+    ],
+)
+def test_an_s3_compatible_store_is_read_by_its_name_and_not_only_by_dot_com(
+    host: str,
+) -> None:
+    """The suffix `.com` is not what carries S3; a registered name is.
+
+    Every one of these answers on 443 with no port to tell it from a bucket,
+    and reading one as a bucket loses the real one -- `logs` -- into the key.
+    """
+    url = Url.from_string(f"s3://{host}/logs/2026/app.txt")
+    assert url.hosts_a_store is True
+    assert url.endpoint == host
+    assert (url.bucket, url.key) == ("logs", "2026/app.txt")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "s3://bucket/key",  # one label is a name nobody registered
+        "s3://MyBucket/key",
+        "s3://my.logs.2026/key",  # a numeric last label is no public suffix
+        "s3://logs.internal/key",  # and neither is a private-use one
+        "s3://logs.corp/key",
+        "s3://logs.local/key",
+    ],
+)
+def test_a_name_nobody_could_have_registered_is_still_a_bucket(text: str) -> None:
+    url = Url.from_string(text)
+    assert url.hosts_a_store is False
+    assert url.endpoint is None
+    assert url.bucket == url.host
+    assert url.key == "key"
+
+
+@pytest.mark.parametrize(
     ("text", "endpoint", "region"),
     [
         ("s3://logs.s3.amazonaws.com/a.txt", "s3.amazonaws.com", None),
@@ -590,6 +639,9 @@ def test_a_location_translates_into_the_properties_that_say_the_same() -> None:
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
+        # Named because the location did not, and PyIceberg with no region
+        # asks AWS which one hosts a bucket called `warehouse`.
+        "s3.region": "us-east-1",
     }
 
 
@@ -606,7 +658,8 @@ def test_an_aws_location_tells_a_catalog_its_region_and_not_its_endpoint() -> No
 
 def test_a_hosted_endpoint_reaches_a_catalog_with_the_scheme_it_is_served_on() -> None:
     assert properties_of(Url.from_string("s3://minio.corp.com/warehouse")) == {
-        "s3.endpoint": "https://minio.corp.com"
+        "s3.endpoint": "https://minio.corp.com",
+        "s3.region": "us-east-1",
     }
 
 
@@ -639,3 +692,142 @@ def test_s3_environment_translates_portable_defaults_and_endpoint_fallbacks() ->
 
 def test_empty_s3_environment_values_are_not_configuration() -> None:
     assert s3_environment({name: "" for name, _ in urls.S3_ENVIRONMENT}) == {}
+
+
+def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> None:
+    """The two switches that decide whether a store answers at all.
+
+    Arrow addresses an overridden endpoint path-style, which a store serving
+    only `bucket.endpoint` refuses; and a public bucket read with whatever the
+    credential chain found answers 403 rather than the data. pyiceberg spells
+    both the same way, so one location configures the catalog too.
+    """
+    url = Url.from_string("s3://k:s@s3.example.net/bucket/key?force_virtual_addressing=true")
+    assert dict(properties_of(url)) == {
+        "s3.endpoint": "https://s3.example.net",
+        "s3.access-key-id": "k",
+        "s3.secret-access-key": "s",
+        "s3.force-virtual-addressing": "true",
+        "s3.region": "us-east-1",
+    }
+    filesystem, path = url.into_filesystem()
+    assert isinstance(filesystem, pyarrow.fs.S3FileSystem)
+    assert path == "bucket/key"
+
+    public = Url.from_string("s3://s3.example.net/bucket/key?anonymous=true")
+    assert dict(properties_of(public)) == {
+        "s3.endpoint": "https://s3.example.net",
+        "s3.anonymous": "true",
+        "s3.region": "us-east-1",
+    }
+    assert isinstance(public.into_filesystem()[0], pyarrow.fs.S3FileSystem)
+
+
+def test_a_flag_is_on_only_where_it_is_spelled_true() -> None:
+    """A query is text, and a typo has to read as off."""
+    url = Url.from_string("s3://s3.example.net/bucket/key?anonymous=yes")
+    filesystem, _ = url.into_filesystem()
+    assert isinstance(filesystem, pyarrow.fs.S3FileSystem)
+
+
+def test_a_setting_arrow_s_uri_parser_refuses_is_built_here_instead() -> None:
+    """`s3://bucket/key?anonymous=true` is a public bucket, not a parse error.
+
+    Arrow's own URI parser accepts `region`, `scheme`, `endpoint_override` and
+    `allow_bucket_creation` as query keys and raises on the other two, so a
+    location carrying one of those has to have its filesystem built.
+    """
+    for text in (
+        "s3://bucket/key?anonymous=true",
+        "s3://bucket/key?force_virtual_addressing=true",
+    ):
+        filesystem, path = Url.from_string(text).into_filesystem()
+        assert isinstance(filesystem, pyarrow.fs.S3FileSystem), text
+        assert path == "bucket/key"
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "expected"),
+    [
+        ("minio:9000", ("http", "minio:9000")),
+        ("http://minio:9000", ("http", "minio:9000")),
+        ("https://s3.example.net", ("https", "s3.example.net")),
+        ("https://s3.example.net/", ("https", "s3.example.net")),
+    ],
+)
+def test_an_endpoint_override_carrying_its_own_transport_is_split_like_any_other(
+    endpoint: str, expected: tuple[str, str]
+) -> None:
+    """Arrow wants a connect string, and a person writes a URL.
+
+    Left whole it reached Arrow as `http://minio:9000` where `minio:9000`
+    belongs, and the catalog as `http://http://minio:9000`; `_plain` read the
+    `https` in front as the host, found no dot in it, and called TLS plaintext.
+    """
+    url = Url.from_string(f"s3://bucket/key?endpoint_override={endpoint}")
+    scheme, host = expected
+
+    assert dict(properties_of(url)) == {
+        "s3.endpoint": f"{scheme}://{host}",
+        "s3.region": "us-east-1",
+    }
+    settings = settings_of(url.into_filesystem()[0])
+    assert (settings["scheme"], settings["endpoint_override"]) == (scheme, host)
+
+
+def test_a_secret_that_did_not_survive_the_url_says_so_without_repeating_it() -> None:
+    """AWS's own example secret key carries two slashes."""
+    text = "s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY@bucket/key"
+
+    with pytest.raises(ValueError, match="percent-encode") as raised:
+        Url.from_string(text)
+
+    assert "wJalrXUtnFEMI" not in str(raised.value)
+    assert "s3://***@bucket/key" in str(raised.value)
+
+
+def test_a_hash_in_a_key_names_the_object_it_is_part_of() -> None:
+    """`#` is a legal S3 key character, and a fragment names a shorter object."""
+    url = Url.from_string("s3://bucket/rep#1/data.parquet")
+
+    assert (url.bucket, url.key) == ("bucket", "rep#1/data.parquet")
+    assert url.store_path == "bucket/rep#1/data.parquet"
+    assert Url.from_string(url.into_string()) == url
+    assert Url.from_string("file:///var/log/a#1.txt").path == "/var/log/a#1.txt"
+
+
+def test_a_region_nobody_could_answer_for_is_asked_again(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One blocked call at startup must not pin a bucket to the default region."""
+    urls._resolved_region.cache_clear()
+    calls: list[str] = []
+
+    def resolve_s3_region(bucket: str) -> str:
+        calls.append(bucket)
+        if len(calls) == 1:
+            raise OSError("transient network failure")
+        return "eu-west-1"
+
+    monkeypatch.setattr(urls.pyarrow.fs, "resolve_s3_region", resolve_s3_region)
+    try:
+        assert urls._region_of("logs") is None
+        assert urls._region_of("logs") == "eu-west-1"
+        assert urls._region_of("logs") == "eu-west-1"
+        assert calls == ["logs", "logs"]
+    finally:
+        urls._resolved_region.cache_clear()
+
+
+def test_one_location_reads_the_same_flag_on_both_paths() -> None:
+    """pyiceberg parses these with `strtobool`, which takes `yes`, `1` and `on`."""
+    url = Url.from_string("s3://s3.example.net/b/k?anonymous=yes&force_virtual_addressing=true")
+
+    assert dict(properties_of(url)) == {
+        "s3.endpoint": "https://s3.example.net",
+        "s3.anonymous": "false",
+        "s3.force-virtual-addressing": "true",
+        "s3.region": "us-east-1",
+    }
+    settings = settings_of(url.into_filesystem()[0])
+    assert settings["force_virtual_addressing"] is True

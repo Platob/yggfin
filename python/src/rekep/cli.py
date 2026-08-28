@@ -16,17 +16,16 @@ from rekep.filesystems import read_bytes
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files
 from rekep.fix.entries import (
     ANY_VERSION,
-    NAMESPACE,
-    STANDARD,
     Alias,
     ComponentRecord,
     record_copy,
-    record_document,
-    record_of,
+    refuse_record,
 )
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import document_of, field_document
+from rekep.logs import COMMAND_LEVEL, configure
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -71,6 +70,9 @@ def main(argv: list[str] | None = None) -> int:
     """Run one command; return the exit code rather than raising it."""
     parser = _parser()
     arguments = parser.parse_args(argv)
+    # Before the command runs, so a record from configuration-time work is not
+    # the one thing the level does not reach.
+    configure(arguments.log_level)
     try:
         return arguments.run(arguments)
     except (
@@ -212,7 +214,7 @@ def find_fields(arguments: argparse.Namespace) -> int:
         entry = registry.field(member.fix.get("tag") or member.name)
         if entry is not None:
             entries.append(entry)
-    _write_json([record_document(entry) for entry in entries])
+    _write_json([entry.into_dict() for entry in entries])
     return 0
 
 
@@ -222,7 +224,7 @@ def show_field(arguments: argparse.Namespace) -> int:
     if entry is None:
         CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
         return 1
-    _write_json(record_document(entry))
+    _write_json(entry.into_dict())
     return 0
 
 
@@ -390,27 +392,30 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
 def _field_entry(arguments: argparse.Namespace) -> Field:
     """One field identity out of the flags that describe it.
 
-    A record is a `Field` and no longer reads itself, so `--declaration` is
-    read the way the store reads its own documents: `FORMATS` above says which
-    spelling the name means, `document_of` decodes it, and `record_of` applies
-    every refusal a stored record meets. Its keys are the stored ones, which
-    is what a person writing that document has in front of them.
+    A record is a `Field`, so `--declaration` is the same document every other
+    declaration in this package is written as -- what `rekep fields dump`
+    writes and what a shard holds. `FORMATS` above says which spelling the
+    name means, `document_of` decodes it, and `refuse_record` applies every
+    refusal a stored record meets.
     """
     if arguments.declaration:
         payload = read_bytes(arguments.declaration)
-        return record_of(document_of(payload, f".{_format_of(arguments.declaration)}"))
-    return record_of(
-        {
-            "name": arguments.name,
-            "tag": arguments.tag,
-            "kind": STANDARD if arguments.tag else NAMESPACE,
-            "aliases": [{"name": alias} for alias in arguments.alias],
-            "versions": list(arguments.version or [ANY_VERSION]),
-            "type": arguments.type or "",
-            "description": arguments.description or "",
-            "column": arguments.column or "",
-        }
+        document = document_of(payload, f".{_format_of(arguments.declaration)}")
+        return refuse_record(Field.from_dict(document))
+    record = (
+        fix_field(arguments.name, int(arguments.tag), arguments.type or None)
+        if arguments.tag
+        else namespaced_field(arguments.name, arguments.type or None)
     )
+    fix = record.fix
+    fix.versions = list(arguments.version or [ANY_VERSION])
+    if arguments.description:
+        record.description = arguments.description
+    if arguments.column:
+        fix.column = arguments.column
+    if arguments.alias:
+        fix.named_aliases = [{"name": alias} for alias in arguments.alias]
+    return refuse_record(record)
 
 
 # -- classifying a capture's key names ---------------------------------------
@@ -516,6 +521,12 @@ def _parser() -> argparse.ArgumentParser:
   rekep fix shell --store data/fix""",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--log-level",
+        default=COMMAND_LEVEL,
+        choices=("DEBUG", "INFO", "WARNING", "ERROR"),
+        help=f"records this package writes to stderr; default {COMMAND_LEVEL}",
+    )
     commands = parser.add_subparsers(
         dest="command", required=True, title="commands", metavar="COMMAND"
     )
@@ -720,7 +731,7 @@ def _parser() -> argparse.ArgumentParser:
     counting.add_argument(
         "--plugins",
         default=None,
-        help="a regular expression a line's plugin_code must match, for instance ^UL",
+        help="a regular expression a line's plugincode must match, for instance ^UL",
     )
     counting.add_argument(
         "--limit", type=int, default=None, help="stop after this many lines, for a sample"

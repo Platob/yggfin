@@ -1,6397 +1,5055 @@
 {
  "2000": {
   "name": "UnderlyingReferenceEntityType",
-  "tag": 2000,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2000",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2001": {
   "name": "StrikeIndexSpread",
-  "tag": 2001,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2001",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2002": {
   "name": "ValuationSource",
-  "tag": 2002,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2002",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2003": {
   "name": "UnderlyingIndexSeries",
-  "tag": 2003,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2003",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2004": {
   "name": "UnderlyingIndexAnnexVersion",
-  "tag": 2004,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2004",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2005": {
   "name": "UnderlyingIndexAnnexDate",
-  "tag": 2005,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2005",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2006": {
   "name": "UnderlyingIndexAnnexSource",
-  "tag": 2006,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2006",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2007": {
   "name": "UnderlyingProductComplex",
-  "tag": 2007,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2007",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2008": {
   "name": "UnderlyingSecurityGroup",
-  "tag": 2008,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2008",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2009": {
   "name": "UnderlyingSettleOnOpenFlag",
-  "tag": 2009,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2009",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2010": {
   "name": "UnderlyingAssignmentMethod",
-  "tag": 2010,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2010",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2011": {
   "name": "UnderlyingSecurityStatus",
-  "tag": 2011,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2011",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2012": {
   "name": "UnderlyingObligationType",
-  "tag": 2012,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "BOND"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "CONVERTIBLE_BOND"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "MORTGAGE"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "LOAN"
-    ]
-   }
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2012",
+   "type": "STRING",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"BOND\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"CONVERTIBLE_BOND\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"MORTGAGE\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"LOAN\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2013": {
   "name": "UnderlyingAssetClass",
-  "tag": 2013,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2013",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2014": {
   "name": "UnderlyingAssetSubClass",
-  "tag": 2014,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2014",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2015": {
   "name": "UnderlyingAssetType",
-  "tag": 2015,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2015",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2016": {
   "name": "UnderlyingSwapClass",
-  "tag": 2016,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2016",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2017": {
   "name": "UnderlyingNthToDefault",
-  "tag": 2017,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2017",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2018": {
   "name": "UnderlyingMthToDefault",
-  "tag": 2018,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2018",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2019": {
   "name": "UnderlyingSettledEntityMatrixSource",
-  "tag": 2019,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2019",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2020": {
   "name": "UnderlyingSettledEntityMatrixPublicationDate",
-  "tag": 2020,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2020",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2021": {
   "name": "UnderlyingStrikeMultiplier",
-  "tag": 2021,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2021",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2022": {
   "name": "UnderlyingStrikeValue",
-  "tag": 2022,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2022",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2023": {
   "name": "UnderlyingStrikePriceDeterminationMethod",
-  "tag": 2023,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2023",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2024": {
   "name": "UnderlyingStrikePriceBoundaryMethod",
-  "tag": 2024,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2024",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2025": {
   "name": "UnderlyingStrikePriceBoundaryPrecision",
-  "tag": 2025,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2025",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2026": {
   "name": "UnderlyingMinPriceIncrement",
-  "tag": 2026,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2026",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2027": {
   "name": "UnderlyingMinPriceIncrementAmount",
-  "tag": 2027,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2027",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2028": {
   "name": "UnderlyingOptPayoutType",
-  "tag": 2028,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2028",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2029": {
   "name": "UnderlyingOptPayoutAmount",
-  "tag": 2029,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2029",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2030": {
   "name": "UnderlyingPriceQuoteMethod",
-  "tag": 2030,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2030",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2031": {
   "name": "UnderlyingValuationMethod",
-  "tag": 2031,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2031",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2032": {
   "name": "UnderlyingListMethod",
-  "tag": 2032,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2032",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2033": {
   "name": "UnderlyingCapPrice",
-  "tag": 2033,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2033",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2034": {
   "name": "UnderlyingFloorPrice",
-  "tag": 2034,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2034",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2035": {
   "name": "UnderlyingFlexibleIndicator",
-  "tag": 2035,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2035",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2036": {
   "name": "UnderlyingFlexProductEligibilityIndicator",
-  "tag": 2036,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2036",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2037": {
   "name": "UnderlyingPositionLimit",
-  "tag": 2037,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2037",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2038": {
   "name": "UnderlyingNTPositionLimit",
-  "tag": 2038,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2038",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2039": {
   "name": "UnderlyingPool",
-  "tag": 2039,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2039",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2040": {
   "name": "UnderlyingContractSettlMonth",
-  "tag": 2040,
-  "type": "MONTHYEAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2040",
+   "type": "MONTHYEAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2041": {
   "name": "UnderlyingDatedDate",
-  "tag": 2041,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2041",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2042": {
   "name": "UnderlyingInterestAccrualDate",
-  "tag": 2042,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2042",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2043": {
   "name": "UnderlyingShortSaleRestriction",
-  "tag": 2043,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2043",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2044": {
   "name": "UnderlyingRefTickTableID",
-  "tag": 2044,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2044",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2045": {
   "name": "NoUnderlyingComplexEvents",
-  "tag": 2045,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2045",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2046": {
   "name": "UnderlyingComplexEventType",
-  "tag": 2046,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2046",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2047": {
   "name": "UnderlyingComplexOptPayoutAmount",
-  "tag": 2047,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2047",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2048": {
   "name": "UnderlyingComplexEventPrice",
-  "tag": 2048,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2048",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2049": {
   "name": "UnderlyingComplexEventPriceBoundaryMethod",
-  "tag": 2049,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2049",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2050": {
   "name": "UnderlyingComplexEventPriceBoundaryPrecision",
-  "tag": 2050,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2050",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2051": {
   "name": "UnderlyingComplexEventPriceTimeType",
-  "tag": 2051,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2051",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2052": {
   "name": "UnderlyingComplexEventCondition",
-  "tag": 2052,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2052",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2053": {
   "name": "NoUnderlyingComplexEventDates",
-  "tag": 2053,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2053",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2054": {
   "name": "UnderlyingComplexEventStartDate",
-  "tag": 2054,
-  "type": "UTCDATEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2054",
+   "type": "UTCDATEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2055": {
   "name": "UnderlyingComplexEventEndDate",
-  "tag": 2055,
-  "type": "UTCDATEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2055",
+   "type": "UTCDATEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2056": {
   "name": "NoUnderlyingComplexEventTimes",
-  "tag": 2056,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2056",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2057": {
   "name": "UnderlyingComplexEventStartTime",
-  "tag": 2057,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2057",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2058": {
   "name": "UnderlyingComplexEventEndTime",
-  "tag": 2058,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2058",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2059": {
   "name": "NoLegEvents",
-  "tag": 2059,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2059",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2060": {
   "name": "LegEventType",
-  "tag": 2060,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2060",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2061": {
   "name": "LegEventDate",
-  "tag": 2061,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2061",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2062": {
   "name": "LegEventTime",
-  "tag": 2062,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2062",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2063": {
   "name": "LegEventTimeUnit",
-  "tag": 2063,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2063",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2064": {
   "name": "LegEventTimePeriod",
-  "tag": 2064,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2064",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2065": {
   "name": "LegEventPx",
-  "tag": 2065,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2065",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2066": {
   "name": "LegEventText",
-  "tag": 2066,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2066",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2067": {
   "name": "LegAssetClass",
-  "tag": 2067,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2067",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2068": {
   "name": "LegAssetSubClass",
-  "tag": 2068,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2068",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2069": {
   "name": "LegAssetType",
-  "tag": 2069,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2069",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2070": {
   "name": "LegSwapClass",
-  "tag": 2070,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2070",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2071": {
   "name": "UnderlyingEventText",
-  "tag": 2071,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2071",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2072": {
   "name": "EncodedUnderlyingEventTextLen",
-  "tag": 2072,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2072",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2073": {
   "name": "EncodedUnderlyingEventText",
-  "tag": 2073,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2073",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2074": {
   "name": "EncodedLegEventTextLen",
-  "tag": 2074,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2074",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2075": {
   "name": "EncodedLegEventText",
-  "tag": 2075,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2075",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2076": {
   "name": "NoLegSecondaryAssetClasses",
-  "tag": 2076,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2076",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2077": {
   "name": "LegSecondaryAssetClass",
-  "tag": 2077,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2077",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2078": {
   "name": "LegSecondaryAssetSubClass",
-  "tag": 2078,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2078",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2079": {
   "name": "LegSecondaryAssetType",
-  "tag": 2079,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2079",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2080": {
   "name": "NoUnderlyingSecondaryAssetClasses",
-  "tag": 2080,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2080",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2081": {
   "name": "UnderlyingSecondaryAssetClass",
-  "tag": 2081,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2081",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2082": {
   "name": "UnderlyingSecondaryAssetSubClass",
-  "tag": 2082,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2082",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2083": {
   "name": "UnderlyingSecondaryAssetType",
-  "tag": 2083,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2083",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2084": {
   "name": "PreviousClearingBusinessDate",
-  "tag": 2084,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2084",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2085": {
   "name": "ValuationDate",
-  "tag": 2085,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2085",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2086": {
   "name": "ValuationTime",
-  "tag": 2086,
-  "type": "LOCALMKTTIME",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2086",
+   "type": "LOCALMKTTIME",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2087": {
   "name": "ValuationBusinessCenter",
-  "tag": 2087,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2087",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2088": {
   "name": "MarginAmtFXRate",
-  "tag": 2088,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2088",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2089": {
   "name": "MarginAmtFXRateCalc",
-  "tag": 2089,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2089",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2090": {
   "name": "CollateralFXRate",
-  "tag": 2090,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2090",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2091": {
   "name": "CollateralFXRateCalc",
-  "tag": 2091,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2091",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2092": {
   "name": "CollateralAmountMarketSegmentID",
-  "tag": 2092,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2092",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2093": {
   "name": "CollateralAmountMarketID",
-  "tag": 2093,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2093",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2094": {
   "name": "PayCollectFXRate",
-  "tag": 2094,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2094",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2095": {
   "name": "PayCollectFXRateCalc",
-  "tag": 2095,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2095",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2096": {
   "name": "PosAmtStreamDesc",
-  "tag": 2096,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2096",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2097": {
   "name": "PositionFXRate",
-  "tag": 2097,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2097",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2098": {
   "name": "PositionFXRateCalc",
-  "tag": 2098,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2098",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2099": {
   "name": "PosAmtMarketSegmentID",
-  "tag": 2099,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2099",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2100": {
   "name": "PosAmtMarketID",
-  "tag": 2100,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2100",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2101": {
   "name": "TerminatedIndicator",
-  "tag": 2101,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2101",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2102": {
   "name": "ShortMarkingExemptIndicator",
-  "tag": 2102,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2102",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2103": {
   "name": "RelatedRegulatoryTradeIDSource",
-  "tag": 2103,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2103",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2104": {
   "name": "NoAttachments",
-  "tag": 2104,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2104",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2105": {
   "name": "AttachmentName",
-  "tag": 2105,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2105",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2106": {
   "name": "AttachmentMediaType",
-  "tag": 2106,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2106",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2107": {
   "name": "AttachmentClassification",
-  "tag": 2107,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2107",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2108": {
   "name": "AttachmentExternalURL",
-  "tag": 2108,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2108",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2109": {
   "name": "AttachmentEncodingType",
-  "tag": 2109,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "BASE64"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "RAW_BINARY"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2109",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"BASE64\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"RAW_BINARY\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2110": {
   "name": "UnencodedAttachmentLen",
-  "tag": 2110,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2110",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2111": {
   "name": "EncodedAttachmentLen",
-  "tag": 2111,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2111",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2112": {
   "name": "EncodedAttachment",
-  "tag": 2112,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2112",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2113": {
   "name": "NoAttachmentKeywords",
-  "tag": 2113,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2113",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2114": {
   "name": "AttachmentKeyword",
-  "tag": 2114,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2114",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2115": {
   "name": "NegotiationMethod",
-  "tag": 2115,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "AUTO_SPOT"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "NEGOTIATED_SPOT"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "PHONE_SPOT"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2115",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"AUTO_SPOT\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"NEGOTIATED_SPOT\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"PHONE_SPOT\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2116": {
   "name": "NextAuctionTime",
-  "tag": 2116,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2116",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2117": {
   "name": "ComplexOptPayoutPaySide",
-  "tag": 2117,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2117",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2118": {
   "name": "ComplexOptPayoutReceiveSide",
-  "tag": 2118,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2118",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2119": {
   "name": "ComplexOptPayoutUnderlier",
-  "tag": 2119,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2119",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2120": {
   "name": "ComplexOptPayoutPercentage",
-  "tag": 2120,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2120",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2121": {
   "name": "ComplexOptPayoutTime",
-  "tag": 2121,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "CLOSE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "OPEN"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "OFFICIAL_SETTL"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "VALUATION_TIME"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "EXCAHGNE_SETTL_TIME"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "DERIVATIVES_CLOSE"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "AS_SPECIFIED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2121",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"CLOSE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"OPEN\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"OFFICIAL_SETTL\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"VALUATION_TIME\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"EXCAHGNE_SETTL_TIME\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"DERIVATIVES_CLOSE\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"AS_SPECIFIED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2122": {
   "name": "ComplexOptPayoutCurrency",
-  "tag": 2122,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2122",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2123": {
   "name": "ComplexEventPricePercentage",
-  "tag": 2123,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2123",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2124": {
   "name": "ComplexEventCurrencyOne",
-  "tag": 2124,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2124",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2125": {
   "name": "ComplexEventCurrencyTwo",
-  "tag": 2125,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2125",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2126": {
   "name": "ComplexEventQuoteBasis",
-  "tag": 2126,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "CURRENCY1_PER_CURRENCY2"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "CURRENCY2_PER_CURRENCY1"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2126",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"CURRENCY1_PER_CURRENCY2\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"CURRENCY2_PER_CURRENCY1\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2127": {
   "name": "ComplexEventFixedFXRate",
-  "tag": 2127,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2127",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2128": {
   "name": "ComplexEventDeterminationMethod",
-  "tag": 2128,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2128",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2129": {
   "name": "ComplexEventCalculationAgent",
-  "tag": 2129,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2129",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2130": {
   "name": "ComplexEventStrikePrice",
-  "tag": 2130,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2130",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2131": {
   "name": "ComplexEventStrikeFactor",
-  "tag": 2131,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2131",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2132": {
   "name": "ComplexEventStrikeNumberOfOptions",
-  "tag": 2132,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2132",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2133": {
   "name": "ComplexEventCreditEventsXIDRef",
-  "tag": 2133,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2133",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2134": {
   "name": "ComplexEventCreditEventNotifyingParty",
-  "tag": 2134,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SELLER_NOTIFIES"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "BUYER_NOTIFIES"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "SELLER_OR_BUYER_NOTIFIES"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2134",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SELLER_NOTIFIES\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"BUYER_NOTIFIES\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"SELLER_OR_BUYER_NOTIFIES\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2135": {
   "name": "ComplexEventCreditEventBusinessCenter",
-  "tag": 2135,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2135",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2136": {
   "name": "ComplexEventCreditEventStandardSources",
-  "tag": 2136,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2136",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2137": {
   "name": "ComplexEventCreditEventMinimumSources",
-  "tag": 2137,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2137",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2138": {
   "name": "ComplexEventXID",
-  "tag": 2138,
-  "type": "XID",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2138",
+   "type": "XID",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2139": {
   "name": "ComplexEventXIDRef",
-  "tag": 2139,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2139",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2140": {
   "name": "ValuationReferenceModel",
-  "tag": 2140,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2140",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2141": {
   "name": "StrategyType",
-  "tag": 2141,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "STD",
-    "meaning": "",
-    "aliases": [
-     "STRADDLE"
-    ]
-   },
-   {
-    "value": "STG",
-    "meaning": "",
-    "aliases": [
-     "STRANGLE"
-    ]
-   },
-   {
-    "value": "BF",
-    "meaning": "",
-    "aliases": [
-     "BUTTERFLY"
-    ]
-   },
-   {
-    "value": "CNDR",
-    "meaning": "",
-    "aliases": [
-     "CONDOR"
-    ]
-   },
-   {
-    "value": "CISN",
-    "meaning": "",
-    "aliases": [
-     "CALLABLE_INVERSIBLE_SNOWBALL"
-    ]
-   },
-   {
-    "value": "OTHER",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2141",
+   "type": "STRING",
+   "values": "[{\"value\":\"STD\",\"meaning\":\"\",\"aliases\":[\"STRADDLE\"]},{\"value\":\"STG\",\"meaning\":\"\",\"aliases\":[\"STRANGLE\"]},{\"value\":\"BF\",\"meaning\":\"\",\"aliases\":[\"BUTTERFLY\"]},{\"value\":\"CNDR\",\"meaning\":\"\",\"aliases\":[\"CONDOR\"]},{\"value\":\"CISN\",\"meaning\":\"\",\"aliases\":[\"CALLABLE_INVERSIBLE_SNOWBALL\"]},{\"value\":\"OTHER\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2142": {
   "name": "CommonPricingIndicator",
-  "tag": 2142,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2142",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2143": {
   "name": "SettlDisruptionProvision",
-  "tag": 2143,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "NEGOTIATION"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "CANCELLATION"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2143",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"NEGOTIATION\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"CANCELLATION\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2144": {
   "name": "InstrumentRoundingDirection",
-  "tag": 2144,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2144",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2145": {
   "name": "InstrumentRoundingPrecision",
-  "tag": 2145,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2145",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2146": {
   "name": "LegSettleOnOpenFlag",
-  "tag": 2146,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2146",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2147": {
   "name": "LegInstrmtAssignmentMethod",
-  "tag": 2147,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2147",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2148": {
   "name": "LegSecurityStatus",
-  "tag": 2148,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2148",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2149": {
   "name": "LegRestructuringType",
-  "tag": 2149,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2149",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2150": {
   "name": "LegSeniority",
-  "tag": 2150,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2150",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2151": {
   "name": "LegNotionalPercentageOutstanding",
-  "tag": 2151,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2151",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2152": {
   "name": "LegOriginalNotionalPercentageOutstanding",
-  "tag": 2152,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2152",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2153": {
   "name": "LegAttachmentPoint",
-  "tag": 2153,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2153",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2154": {
   "name": "LegDetachmentPoint",
-  "tag": 2154,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2154",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2155": {
   "name": "LegObligationType",
-  "tag": 2155,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2155",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2156": {
   "name": "LegSwapSubClass",
-  "tag": 2156,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2156",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2157": {
   "name": "LegNthToDefault",
-  "tag": 2157,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2157",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2158": {
   "name": "LegMthToDefault",
-  "tag": 2158,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2158",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2159": {
   "name": "LegSettledEntityMatrixSource",
-  "tag": 2159,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2159",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2160": {
   "name": "LegSettledEntityMatrixPublicationDate",
-  "tag": 2160,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2160",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2161": {
   "name": "LegCouponType",
-  "tag": 2161,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2161",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2162": {
   "name": "LegTotalIssuedAmount",
-  "tag": 2162,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2162",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2163": {
   "name": "LegCouponFrequencyPeriod",
-  "tag": 2163,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2163",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2164": {
   "name": "LegCouponFrequencyUnit",
-  "tag": 2164,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2164",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2165": {
   "name": "LegCouponDayCount",
-  "tag": 2165,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2165",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2166": {
   "name": "LegConvertibleBondEquityID",
-  "tag": 2166,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2166",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2167": {
   "name": "LegConvertibleBondEquityIDSource",
-  "tag": 2167,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2167",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2168": {
   "name": "LegContractPriceRefMonth",
-  "tag": 2168,
-  "type": "MONTHYEAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2168",
+   "type": "MONTHYEAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2169": {
   "name": "LegLienSeniority",
-  "tag": 2169,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2169",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2170": {
   "name": "LegLoanFacility",
-  "tag": 2170,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2170",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2171": {
   "name": "LegReferenceEntityType",
-  "tag": 2171,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2171",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2172": {
   "name": "LegIndexSeries",
-  "tag": 2172,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2172",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2173": {
   "name": "LegIndexAnnexVersion",
-  "tag": 2173,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2173",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2174": {
   "name": "LegIndexAnnexDate",
-  "tag": 2174,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2174",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2175": {
   "name": "LegIndexAnnexSource",
-  "tag": 2175,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2175",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2176": {
   "name": "LegSettlRateIndex",
-  "tag": 2176,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2176",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2177": {
   "name": "LegSettlRateIndexLocation",
-  "tag": 2177,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2177",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2178": {
   "name": "LegOptionExpirationDesc",
-  "tag": 2178,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2178",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2179": {
   "name": "EncodedLegOptionExpirationDescLen",
-  "tag": 2179,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2179",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2180": {
   "name": "EncodedLegOptionExpirationDesc",
-  "tag": 2180,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2180",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2181": {
   "name": "LegStrikeMultiplier",
-  "tag": 2181,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2181",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2182": {
   "name": "LegStrikeValue",
-  "tag": 2182,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2182",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2183": {
   "name": "LegStrikeUnitOfMeasure",
-  "tag": 2183,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2183",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2184": {
   "name": "LegStrikeIndex",
-  "tag": 2184,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2184",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2185": {
   "name": "LegStrikeIndexSpread",
-  "tag": 2185,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2185",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2186": {
   "name": "LegStrikePriceDeterminationMethod",
-  "tag": 2186,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2186",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2187": {
   "name": "LegStrikePriceBoundaryMethod",
-  "tag": 2187,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2187",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2188": {
   "name": "LegStrikePriceBoundaryPrecision",
-  "tag": 2188,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2188",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2189": {
   "name": "LegUnderlyingPriceDeterminationMethod",
-  "tag": 2189,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2189",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2190": {
   "name": "LegMinPriceIncrement",
-  "tag": 2190,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2190",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2191": {
   "name": "LegMinPriceIncrementAmount",
-  "tag": 2191,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2191",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2192": {
   "name": "LegSettlMethod",
-  "tag": 2192,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2192",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2193": {
   "name": "LegOptPayoutType",
-  "tag": 2193,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2193",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2194": {
   "name": "LegOptPayoutAmount",
-  "tag": 2194,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2194",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2195": {
   "name": "LegPriceQuoteMethod",
-  "tag": 2195,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2195",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2196": {
   "name": "LegValuationMethod",
-  "tag": 2196,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2196",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2197": {
   "name": "LegValuationSource",
-  "tag": 2197,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2197",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2198": {
   "name": "LegValuationReferenceModel",
-  "tag": 2198,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2198",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2199": {
   "name": "LegListMethod",
-  "tag": 2199,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2199",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2200": {
   "name": "LegCapPrice",
-  "tag": 2200,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2200",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2201": {
   "name": "LegFloorPrice",
-  "tag": 2201,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2201",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2202": {
   "name": "LegFlexibleIndicator",
-  "tag": 2202,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2202",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2203": {
   "name": "LegFlexProductEligibilityIndicator",
-  "tag": 2203,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2203",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2204": {
   "name": "LegComplexEventStartTime",
-  "tag": 2204,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2204",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2205": {
   "name": "LegPositionLimit",
-  "tag": 2205,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2205",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2206": {
   "name": "LegNTPositionLimit",
-  "tag": 2206,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2206",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2207": {
   "name": "LegCPProgram",
-  "tag": 2207,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2207",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2208": {
   "name": "LegCPRegType",
-  "tag": 2208,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2208",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2209": {
   "name": "LegShortSaleRestriction",
-  "tag": 2209,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2209",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2210": {
   "name": "AssetGroup",
-  "tag": 2210,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "FINANCIALS"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "COMMODITIES"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "ALTERNATIVE_INVESTMENTS"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2210",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"FINANCIALS\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"COMMODITIES\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"ALTERNATIVE_INVESTMENTS\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2211": {
   "name": "LegStrategyType",
-  "tag": 2211,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2211",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2212": {
   "name": "LegCommonPricingIndicator",
-  "tag": 2212,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2212",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2213": {
   "name": "LegSettlDisruptionProvision",
-  "tag": 2213,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2213",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2214": {
   "name": "LegInstrumentRoundingDirection",
-  "tag": 2214,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2214",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2215": {
   "name": "LegInstrumentRoundingPrecision",
-  "tag": 2215,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2215",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2216": {
   "name": "MiscFeeRate",
-  "tag": 2216,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2216",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2217": {
   "name": "MiscFeeAmountDue",
-  "tag": 2217,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2217",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2218": {
   "name": "NoLegComplexEvents",
-  "tag": 2218,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2218",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2219": {
   "name": "LegComplexEventType",
-  "tag": 2219,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2219",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2220": {
   "name": "LegComplexOptPayoutPaySide",
-  "tag": 2220,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2220",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2221": {
   "name": "LegComplexOptPayoutReceiveSide",
-  "tag": 2221,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2221",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2222": {
   "name": "LegComplexOptPayoutUnderlier",
-  "tag": 2222,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2222",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2223": {
   "name": "LegComplexOptPayoutAmount",
-  "tag": 2223,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2223",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2224": {
   "name": "LegComplexOptPayoutPercentage",
-  "tag": 2224,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2224",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2225": {
   "name": "LegComplexOptPayoutTime",
-  "tag": 2225,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2225",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2226": {
   "name": "LegComplexOptPayoutCurrency",
-  "tag": 2226,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2226",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2227": {
   "name": "LegComplexEventPrice",
-  "tag": 2227,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2227",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2228": {
   "name": "LegComplexEventPricePercentage",
-  "tag": 2228,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2228",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2229": {
   "name": "LegComplexEventPriceBoundaryMethod",
-  "tag": 2229,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2229",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2230": {
   "name": "LegComplexEventPriceBoundaryPrecision",
-  "tag": 2230,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2230",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2231": {
   "name": "LegComplexEventPriceTimeType",
-  "tag": 2231,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2231",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2232": {
   "name": "LegComplexEventCondition",
-  "tag": 2232,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2232",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2233": {
   "name": "LegComplexEventCurrencyOne",
-  "tag": 2233,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2233",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2234": {
   "name": "LegComplexEventCurrencyTwo",
-  "tag": 2234,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2234",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2235": {
   "name": "LegComplexEventQuoteBasis",
-  "tag": 2235,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2235",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2236": {
   "name": "LegComplexEventFixedFXRate",
-  "tag": 2236,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2236",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2237": {
   "name": "LegComplexEventDeterminationMethod",
-  "tag": 2237,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2237",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2238": {
   "name": "LegComplexEventCalculationAgent",
-  "tag": 2238,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2238",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2239": {
   "name": "LegComplexEventStrikePrice",
-  "tag": 2239,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2239",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2240": {
   "name": "LegComplexEventStrikeFactor",
-  "tag": 2240,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2240",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2241": {
   "name": "LegComplexEventStrikeNumberOfOptions",
-  "tag": 2241,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2241",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2242": {
   "name": "LegComplexEventCreditEventsXIDRef",
-  "tag": 2242,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2242",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2243": {
   "name": "LegComplexEventCreditEventNotifyingParty",
-  "tag": 2243,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2243",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2244": {
   "name": "LegComplexEventCreditEventBusinessCenter",
-  "tag": 2244,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2244",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2245": {
   "name": "LegComplexEventCreditEventStandardSources",
-  "tag": 2245,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2245",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2246": {
   "name": "LegComplexEventCreditEventMinimumSources",
-  "tag": 2246,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2246",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2247": {
   "name": "LegComplexEventEndTime",
-  "tag": 2247,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2247",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2248": {
   "name": "LegComplexEventXID",
-  "tag": 2248,
-  "type": "XID",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2248",
+   "type": "XID",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2249": {
   "name": "LegComplexEventXIDRef",
-  "tag": 2249,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2249",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2250": {
   "name": "NoLegComplexEventDates",
-  "tag": 2250,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2250",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2251": {
   "name": "LegComplexEventStartDate",
-  "tag": 2251,
-  "type": "UTCDATEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2251",
+   "type": "UTCDATEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2252": {
   "name": "LegComplexEventEndDate",
-  "tag": 2252,
-  "type": "UTCDATEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2252",
+   "type": "UTCDATEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2253": {
   "name": "NoLegComplexEventTimes",
-  "tag": 2253,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2253",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2254": {
   "name": "NoLegInstrumentParties",
-  "tag": 2254,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2254",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2255": {
   "name": "LegInstrumentPartyID",
-  "tag": 2255,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2255",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2256": {
   "name": "LegInstrumentPartyIDSource",
-  "tag": 2256,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2256",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2257": {
   "name": "LegInstrumentPartyRole",
-  "tag": 2257,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2257",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2258": {
   "name": "NoLegInstrumentPartySubIDs",
-  "tag": 2258,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2258",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2259": {
   "name": "LegInstrumentPartySubID",
-  "tag": 2259,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2259",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2260": {
   "name": "LegInstrumentPartySubIDType",
-  "tag": 2260,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2260",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2261": {
   "name": "UnderlyingComplexOptPayoutPaySide",
-  "tag": 2261,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2261",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2262": {
   "name": "UnderlyingComplexOptPayoutReceiveSide",
-  "tag": 2262,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2262",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2263": {
   "name": "UnderlyingComplexOptPayoutUnderlier",
-  "tag": 2263,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2263",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2264": {
   "name": "UnderlyingComplexOptPayoutPercentage",
-  "tag": 2264,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2264",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2265": {
   "name": "UnderlyingComplexOptPayoutTime",
-  "tag": 2265,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2265",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2266": {
   "name": "UnderlyingComplexOptPayoutCurrency",
-  "tag": 2266,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2266",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2267": {
   "name": "UnderlyingComplexEventPricePercentage",
-  "tag": 2267,
-  "type": "PERCENTAGE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2267",
+   "type": "PERCENTAGE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2268": {
   "name": "UnderlyingComplexEventCurrencyOne",
-  "tag": 2268,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2268",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2269": {
   "name": "UnderlyingComplexEventCurrencyTwo",
-  "tag": 2269,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2269",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2270": {
   "name": "UnderlyingComplexEventQuoteBasis",
-  "tag": 2270,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2270",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2271": {
   "name": "UnderlyingComplexEventFixedFXRate",
-  "tag": 2271,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2271",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2272": {
   "name": "UnderlyingComplexEventDeterminationMethod",
-  "tag": 2272,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2272",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2273": {
   "name": "UnderlyingComplexEventCalculationAgent",
-  "tag": 2273,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2273",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2274": {
   "name": "UnderlyingComplexEventStrikePrice",
-  "tag": 2274,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2274",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2275": {
   "name": "UnderlyingComplexEventStrikeFactor",
-  "tag": 2275,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2275",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2276": {
   "name": "UnderlyingComplexEventStrikeNumberOfOptions",
-  "tag": 2276,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2276",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2277": {
   "name": "UnderlyingComplexEventCreditEventsXIDRef",
-  "tag": 2277,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2277",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2278": {
   "name": "UnderlyingComplexEventCreditEventNotifyingParty",
-  "tag": 2278,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2278",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2279": {
   "name": "UnderlyingComplexEventCreditEventBusinessCenter",
-  "tag": 2279,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2279",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2280": {
   "name": "UnderlyingComplexEventCreditEventStandardSources",
-  "tag": 2280,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2280",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2281": {
   "name": "UnderlyingComplexEventCreditEventMinimumSources",
-  "tag": 2281,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2281",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2282": {
   "name": "UnderlyingComplexEventXID",
-  "tag": 2282,
-  "type": "XID",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2282",
+   "type": "XID",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2283": {
   "name": "UnderlyingComplexEventXIDRef",
-  "tag": 2283,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2283",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2284": {
   "name": "UnderlyingSettlRateIndex",
-  "tag": 2284,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2284",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2285": {
   "name": "UnderlyingSettlRateIndexLocation",
-  "tag": 2285,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2285",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2286": {
   "name": "UnderlyingOptionExpirationDesc",
-  "tag": 2286,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2286",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2287": {
   "name": "EncodedUnderlyingOptionExpirationDescLen",
-  "tag": 2287,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2287",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2288": {
   "name": "EncodedUnderlyingOptionExpirationDesc",
-  "tag": 2288,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2288",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2289": {
   "name": "UnderlyingSwapSubClass",
-  "tag": 2289,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2289",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2290": {
   "name": "UnderlyingStrikeUnitOfMeasure",
-  "tag": 2290,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2290",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2291": {
   "name": "UnderlyingStrikeIndex",
-  "tag": 2291,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2291",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2292": {
   "name": "UnderlyingStrikeIndexSpread",
-  "tag": 2292,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2292",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2293": {
   "name": "UnderlyingValuationSource",
-  "tag": 2293,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2293",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2294": {
   "name": "UnderlyingValuationReferenceModel",
-  "tag": 2294,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2294",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2295": {
   "name": "UnderlyingStrategyType",
-  "tag": 2295,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2295",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2296": {
   "name": "UnderlyingCommonPricingIndicator",
-  "tag": 2296,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2296",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2297": {
   "name": "UnderlyingSettlDisruptionProvision",
-  "tag": 2297,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2297",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2298": {
   "name": "UnderlyingInstrumentRoundingDirection",
-  "tag": 2298,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2298",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2299": {
   "name": "UnderlyingInstrumentRoundingPrecision",
-  "tag": 2299,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2299",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2300": {
   "name": "AllocGrossTradeAmt",
-  "tag": 2300,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2300",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2301": {
   "name": "LastQtyChanged",
-  "tag": 2301,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2301",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2302": {
   "name": "TradeVersion",
-  "tag": 2302,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2302",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2303": {
   "name": "HistoricalReportIndicator",
-  "tag": 2303,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2303",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2304": {
   "name": "NoAssetAttributes",
-  "tag": 2304,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2304",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2305": {
   "name": "AssetAttributeType",
-  "tag": 2305,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2305",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2306": {
   "name": "AssetAttributeValue",
-  "tag": 2306,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2306",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2307": {
   "name": "AssetAttributeLimit",
-  "tag": 2307,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2307",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2308": {
   "name": "NoLegAssetAttributes",
-  "tag": 2308,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2308",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2309": {
   "name": "LegAssetAttributeType",
-  "tag": 2309,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2309",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2310": {
   "name": "LegAssetAttributeValue",
-  "tag": 2310,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2310",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2311": {
   "name": "LegAssetAttributeLimit",
-  "tag": 2311,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2311",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2312": {
   "name": "NoUnderlyingAssetAttributes",
-  "tag": 2312,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2312",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2313": {
   "name": "UnderlyingAssetAttributeType",
-  "tag": 2313,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2313",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2314": {
   "name": "UnderlyingAssetAttributeValue",
-  "tag": 2314,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2314",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2315": {
   "name": "UnderlyingAssetAttributeLimit",
-  "tag": 2315,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2315",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2316": {
   "name": "RiskLimitReportStatus",
-  "tag": 2316,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2316",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2317": {
   "name": "RiskLimitReportRejectReason",
-  "tag": 2317,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "UNK_RISK_LMT_RPRT_ID"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "UNK_PTY"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2317",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"UNK_RISK_LMT_RPRT_ID\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"UNK_PTY\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2318": {
   "name": "RiskLimitCheckRequestID",
-  "tag": 2318,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2318",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2319": {
   "name": "RiskLimitCheckID",
-  "tag": 2319,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2319",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2320": {
   "name": "RiskLimitCheckTransType",
-  "tag": 2320,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NEW"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "CANCEL"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REPLACE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2320",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NEW\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"CANCEL\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REPLACE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2321": {
   "name": "RiskLimitCheckType",
-  "tag": 2321,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUBMIT"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "LIMIT_CONSUMED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2321",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUBMIT\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"LIMIT_CONSUMED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2322": {
   "name": "RiskLimitCheckRequestRefID",
-  "tag": 2322,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2322",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2323": {
   "name": "RiskLimitCheckRequestType",
-  "tag": 2323,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "ALL_OR_NONE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "PARTIAL"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2323",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"ALL_OR_NONE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"PARTIAL\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2324": {
   "name": "RiskLimitCheckAmount",
-  "tag": 2324,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2324",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2325": {
   "name": "RiskLimitCheckRequestStatus",
-  "tag": 2325,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "APPROVED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "PARTIALLY_APPROVED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "APPROVAL_PENDING"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "CANCELLED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2325",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"APPROVED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"PARTIALLY_APPROVED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"APPROVAL_PENDING\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"CANCELLED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2326": {
   "name": "RiskLimitCheckRequestResult",
-  "tag": 2326,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUCCESSFUL"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "INVALID_PARTY"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REQ_EXCEEDS_CREDIT_LIMIT"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "REQ_EXCEEDS_CLIP_SIZE_LIMIT"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "REQ_EXCEEDS_MAX_NOTIONAL"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2326",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUCCESSFUL\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"INVALID_PARTY\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REQ_EXCEEDS_CREDIT_LIMIT\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"REQ_EXCEEDS_CLIP_SIZE_LIMIT\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"REQ_EXCEEDS_MAX_NOTIONAL\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2327": {
   "name": "RiskLimitApprovedAmount",
-  "tag": 2327,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2327",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2328": {
   "name": "PartyActionRequestID",
-  "tag": 2328,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2328",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2329": {
   "name": "PartyActionType",
-  "tag": 2329,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUSPEND"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "HALT_TRADING"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REINSTATE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2329",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUSPEND\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"HALT_TRADING\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REINSTATE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2330": {
   "name": "ApplTestMessageIndicator",
-  "tag": 2330,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2330",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2331": {
   "name": "PartyActionReportID",
-  "tag": 2331,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2331",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2332": {
   "name": "PartyActionResponse",
-  "tag": 2332,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "COMPLETED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2332",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"COMPLETED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2333": {
   "name": "PartyActionRejectReason",
-  "tag": 2333,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "INVALID_PARTY"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "UNK_REQ_PARTY"
-    ]
-   },
-   {
-    "value": "98",
-    "meaning": "",
-    "aliases": [
-     "NOT_AUTHORIZED"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2333",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"INVALID_PARTY\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"UNK_REQ_PARTY\"]},{\"value\":\"98\",\"meaning\":\"\",\"aliases\":[\"NOT_AUTHORIZED\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2334": {
   "name": "RefRiskLimitCheckID",
-  "tag": 2334,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2334",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2335": {
   "name": "RefRiskLimitCheckIDType",
-  "tag": 2335,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "RISK_LIMIT_REQUEST_ID"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "RISK_LIMIT_CHECK_ID"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "OUT_OF_BAND_ID"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2335",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"RISK_LIMIT_REQUEST_ID\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"RISK_LIMIT_CHECK_ID\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"OUT_OF_BAND_ID\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2336": {
   "name": "RiskLimitVelocityPeriod",
-  "tag": 2336,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2336",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2337": {
   "name": "RiskLimitVelocityUnit",
-  "tag": 2337,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2337",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2338": {
   "name": "RequestingPartyRoleQualifier",
-  "tag": 2338,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2338",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2339": {
   "name": "RiskLimitCheckModelType",
-  "tag": 2339,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NONE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "PLUS_ONE_MODEL"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "PING_MODEL"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "PUSH_MODEL"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2339",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NONE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"PLUS_ONE_MODEL\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"PING_MODEL\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"PUSH_MODEL\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2340": {
   "name": "EventMonthYear",
-  "tag": 2340,
-  "type": "MONTHYEAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2340",
+   "type": "MONTHYEAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2341": {
   "name": "LegEventMonthYear",
-  "tag": 2341,
-  "type": "MONTHYEAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2341",
+   "type": "MONTHYEAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2342": {
   "name": "UnderlyingEventMonthYear",
-  "tag": 2342,
-  "type": "MONTHYEAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2342",
+   "type": "MONTHYEAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2343": {
   "name": "RiskLimitCheckStatus",
-  "tag": 2343,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "CLAIM_REQUIRED"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "PRE_DEFINED_LIMIT_CHECK_SUCCEEDED"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "PRE_DEFINED_LIMIT_CHECK_FAILED"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "PRE_DEFINED_AUTO_ACCEPT_RULE_INVOKED"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "PRE_DEFINED_AUTO_REJECT_RULE_INVOKED"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED_BY_CLEARING_FIRM"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "REJECTED_BY_CLEARING_FIRM"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "PENDING"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED_BY_CREDIT_HUB"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "REJECTED_BY_CREDIT_HUB"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "PENDING_CREDIT_HUB_CHECK"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED_BY_EXEC_VENUE"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "REJECTED_BY_EXEC_VENUE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2343",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"CLAIM_REQUIRED\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"PRE_DEFINED_LIMIT_CHECK_SUCCEEDED\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"PRE_DEFINED_LIMIT_CHECK_FAILED\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"PRE_DEFINED_AUTO_ACCEPT_RULE_INVOKED\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"PRE_DEFINED_AUTO_REJECT_RULE_INVOKED\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED_BY_CLEARING_FIRM\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"REJECTED_BY_CLEARING_FIRM\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"PENDING\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED_BY_CREDIT_HUB\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"REJECTED_BY_CREDIT_HUB\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"PENDING_CREDIT_HUB_CHECK\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED_BY_EXEC_VENUE\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"REJECTED_BY_EXEC_VENUE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2344": {
   "name": "SideRiskLimitCheckStatus",
-  "tag": 2344,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2344",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2345": {
   "name": "NoEntitlementTypes",
-  "tag": 2345,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2345",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2346": {
   "name": "LegMidPx",
-  "tag": 2346,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2346",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2347": {
   "name": "RegulatoryTransactionType",
-  "tag": 2347,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NONE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "SEF_REQUIRED_TRANSACTION"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "SEF_PERMITTED_TRANSACTION"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2347",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NONE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"SEF_REQUIRED_TRANSACTION\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"SEF_PERMITTED_TRANSACTION\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2348": {
   "name": "LegAssetGroup",
-  "tag": 2348,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2348",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2349": {
   "name": "PricePrecision",
-  "tag": 2349,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2349",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2350": {
   "name": "CollateralPortfolioID",
-  "tag": 2350,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2350",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2351": {
   "name": "EncodedComplianceTextLen",
-  "tag": 2351,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2351",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2352": {
   "name": "EncodedComplianceText",
-  "tag": 2352,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2352",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2353": {
   "name": "TradingUnitPeriodMultiplier",
-  "tag": 2353,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2353",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2354": {
   "name": "LegTradingUnitPeriodMultiplier",
-  "tag": 2354,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2354",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2355": {
   "name": "PartyRiskLimitStatus",
-  "tag": 2355,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "DISABLED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ENABLED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2355",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"DISABLED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ENABLED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2356": {
   "name": "RemunerationIndicator",
-  "tag": 2356,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NO_REMUNERATION_PAID"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "REMUNERATION_PAID"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2356",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NO_REMUNERATION_PAID\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"REMUNERATION_PAID\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2357": {
   "name": "LegTotalTradeQty",
-  "tag": 2357,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2357",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2358": {
   "name": "LegLastMultipliedQty",
-  "tag": 2358,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2358",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2359": {
   "name": "LegTotalGrossTradeAmt",
-  "tag": 2359,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2359",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2360": {
   "name": "LegTotalTradeMultipliedQty",
-  "tag": 2360,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2360",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2361": {
   "name": "CompressionGroupID",
-  "tag": 2361,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2361",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2362": {
   "name": "SelfMatchPreventionID",
-  "tag": 2362,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2362",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2363": {
   "name": "UnderlyingTradingUnitPeriodMultiplier",
-  "tag": 2363,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2363",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2364": {
   "name": "PosReportAction",
-  "tag": 2364,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2364",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2365": {
   "name": "SettlForwardPoints",
-  "tag": 2365,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2365",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2366": {
   "name": "SettlPriceFxRateCalc",
-  "tag": 2366,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2366",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2367": {
   "name": "TotalTradeQty",
-  "tag": 2367,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2367",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2368": {
   "name": "LastMultipliedQty",
-  "tag": 2368,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2368",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2369": {
   "name": "TotalGrossTradeAmt",
-  "tag": 2369,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2369",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2370": {
   "name": "TotalTradeMultipliedQty",
-  "tag": 2370,
-  "type": "QTY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2370",
+   "type": "QTY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2371": {
   "name": "EncodedTradeContinuationText",
-  "tag": 2371,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2371",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2372": {
   "name": "EncodedTradeContinuationTextLen",
-  "tag": 2372,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2372",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2373": {
   "name": "IntraFirmTradeIndicator",
-  "tag": 2373,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2373",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2374": {
   "name": "TradeContinuationText",
-  "tag": 2374,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2374",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2375": {
   "name": "TaxonomyType",
-  "tag": 2375,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "I",
-    "meaning": "",
-    "aliases": [
-     "ISIN_OR_ALT_INSTRMT_ID"
-    ]
-   },
-   {
-    "value": "E",
-    "meaning": "",
-    "aliases": [
-     "INTERIM_TAXONOMY"
-    ]
-   }
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2375",
+   "type": "CHAR",
+   "values": "[{\"value\":\"I\",\"meaning\":\"\",\"aliases\":[\"ISIN_OR_ALT_INSTRMT_ID\"]},{\"value\":\"E\",\"meaning\":\"\",\"aliases\":[\"INTERIM_TAXONOMY\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2376": {
   "name": "PartyRoleQualifier",
-  "tag": 2376,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2376",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2377": {
   "name": "DerivativeInstrumentPartyRoleQualifier",
-  "tag": 2377,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2377",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2378": {
   "name": "InstrumentPartyRoleQualifier",
-  "tag": 2378,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2378",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2379": {
   "name": "LegInstrumentPartyRoleQualifier",
-  "tag": 2379,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2379",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2380": {
   "name": "LegProvisionPartyRoleQualifier",
-  "tag": 2380,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2380",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2381": {
   "name": "Nested2PartyRoleQualifier",
-  "tag": 2381,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2381",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2382": {
   "name": "Nested3PartyRoleQualifier",
-  "tag": 2382,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2382",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2383": {
   "name": "Nested4PartyRoleQualifier",
-  "tag": 2383,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2383",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2384": {
   "name": "NestedPartyRoleQualifier",
-  "tag": 2384,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2384",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2385": {
   "name": "ProvisionPartyRoleQualifier",
-  "tag": 2385,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2385",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2386": {
   "name": "RequestedPartyRoleQualifier",
-  "tag": 2386,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2386",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2387": {
   "name": "TradeContingency",
-  "tag": 2387,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "DOES_NOT_APPLY"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "CONTINGENT_TRADE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "NON_CONTINGENT_TRADE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2387",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"DOES_NOT_APPLY\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"CONTINGENT_TRADE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"NON_CONTINGENT_TRADE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2388": {
   "name": "RootPartyRoleQualifier",
-  "tag": 2388,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2388",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2389": {
   "name": "SettlPartyRoleQualifier",
-  "tag": 2389,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2389",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2390": {
   "name": "TradeConfirmationReferenceID",
-  "tag": 2390,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2390",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2391": {
   "name": "UnderlyingInstrumentPartyRoleQualifier",
-  "tag": 2391,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2391",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2392": {
   "name": "AllocRefRiskLimitCheckID",
-  "tag": 2392,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2392",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2393": {
   "name": "AllocRefRiskLimitCheckIDType",
-  "tag": 2393,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2393",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2394": {
   "name": "LimitUtilizationAmt",
-  "tag": 2394,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2394",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2395": {
   "name": "LimitAmt",
-  "tag": 2395,
-  "type": "AMT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2395",
+   "type": "AMT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2396": {
   "name": "LimitRole",
-  "tag": 2396,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2396",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2397": {
   "name": "RegulatoryTradeIDScope",
-  "tag": 2397,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "CLEARING_MEMBER"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "CLIENT"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2397",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"CLEARING_MEMBER\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"CLIENT\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2398": {
   "name": "SideRegulatoryTradeIDScope",
-  "tag": 2398,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2398",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2399": {
   "name": "AllocRegulatoryTradeIDScope",
-  "tag": 2399,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2399",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2400": {
   "name": "EffectiveBusinessDate",
-  "tag": 2400,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2400",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2401": {
   "name": "ListManualOrderIndicator",
-  "tag": 2401,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2401",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2402": {
   "name": "EntitlementSubType",
-  "tag": 2402,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ORDER_ENTRY"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "H_IT_LIFT"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "VIEW_INDICATIVE_PX"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "VIEW_EXECUTABLE_PX"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "SINGLE_QUOTE"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "STREAMING_QUOTES"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "SINGLE_BROKER"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "MULTI_BROKERS"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2402",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ORDER_ENTRY\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"H_IT_LIFT\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"VIEW_INDICATIVE_PX\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"VIEW_EXECUTABLE_PX\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"SINGLE_QUOTE\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"STREAMING_QUOTES\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"SINGLE_BROKER\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"MULTI_BROKERS\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2403": {
   "name": "QuoteModelType",
-  "tag": 2403,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "QUOTE_ENTRY"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "QUOTE_MODIFICATION"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2403",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"QUOTE_ENTRY\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"QUOTE_MODIFICATION\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2404": {
   "name": "ComplianceText",
-  "tag": 2404,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2404",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2405": {
   "name": "ExecMethod",
-  "tag": 2405,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "UNSPECIFIED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "MANUAL"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "AUTOMATED"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "VOICE_BROKERED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2405",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"UNSPECIFIED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"MANUAL\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"AUTOMATED\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"VOICE_BROKERED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2406": {
   "name": "AllocRegulatoryLegRefID",
-  "tag": 2406,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2406",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2407": {
   "name": "ComplexEventSpotRate",
-  "tag": 2407,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2407",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2408": {
   "name": "ComplexEventForwardPoints",
-  "tag": 2408,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2408",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2409": {
   "name": "LegComplexEventSpotRate",
-  "tag": 2409,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2409",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2410": {
   "name": "LegComplexEventForwardPoints",
-  "tag": 2410,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2410",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2411": {
   "name": "RegulatoryLegRefID",
-  "tag": 2411,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2411",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2412": {
   "name": "RateSourceReferemcePageHeading",
-  "tag": 2412,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2412",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2413": {
   "name": "RelatedToSecurityID",
-  "tag": 2413,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2413",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2414": {
   "name": "RelatedToSecurityIDSource",
-  "tag": 2414,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2414",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2415": {
   "name": "RelatedToStreamXIDRef",
-  "tag": 2415,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2415",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2416": {
   "name": "SideRegulatoryLegRefID",
-  "tag": 2416,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2416",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2417": {
   "name": "RelatedToDividendPeriodXIDRef",
-  "tag": 2417,
-  "type": "XIDREF",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2417",
+   "type": "XIDREF",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2418": {
   "name": "FirmTradeEventID",
-  "tag": 2418,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2418",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2419": {
   "name": "UnderlyingComplexEventSpotRate",
-  "tag": 2419,
-  "type": "PRICE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2419",
+   "type": "PRICE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2420": {
   "name": "UnderlyingComplexEventForwardPoints",
-  "tag": 2420,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2420",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2421": {
   "name": "FillRefID",
-  "tag": 2421,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2421",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2422": {
   "name": "OrderRequestID",
-  "tag": 2422,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2422",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2423": {
   "name": "MassOrderRequestID",
-  "tag": 2423,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2423",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2424": {
   "name": "MassOrderReportID",
-  "tag": 2424,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2424",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2425": {
   "name": "MassOrderRequestStatus",
-  "tag": 2425,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED_WITH_ADDITIONAL_EVENTS"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2425",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED_WITH_ADDITIONAL_EVENTS\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2426": {
   "name": "MassOrderRequestResult",
-  "tag": 2426,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUCCESSFUL"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "RESPONSE_LEVEL_NOT_SUPPORTED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "INVALID_MARKET"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "INVALID_MARKET_SEGMENT"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2426",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUCCESSFUL\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"RESPONSE_LEVEL_NOT_SUPPORTED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"INVALID_MARKET\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"INVALID_MARKET_SEGMENT\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2427": {
   "name": "OrderResponseLevel",
-  "tag": 2427,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NO_ACK"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "MINIMUM_ACK"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "ACK_EACH"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "SUMMARY_ACK"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2427",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NO_ACK\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"MINIMUM_ACK\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"ACK_EACH\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"SUMMARY_ACK\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2428": {
   "name": "NoOrderEntries",
-  "tag": 2428,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2428",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2429": {
   "name": "OrderEntryAction",
-  "tag": 2429,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ADD"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "MODIFY"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "DELETE"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "SUSPEND"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "RELEASE"
-    ]
-   }
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2429",
+   "type": "CHAR",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ADD\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"MODIFY\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"DELETE\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"SUSPEND\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"RELEASE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2430": {
   "name": "OrderEntryID",
-  "tag": 2430,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2430",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2431": {
   "name": "ExecTypeReason",
-  "tag": 2431,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ORD_ADDED_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "ORD_REPLACED_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "ORD_CXLD_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "UNSOLICITED_ORD_CXL"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "NON_RESTING_ORD_ADDED_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "ORD_REPLACED_WITH_NON_RESTING_ORD_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "TRIGGER_ORD_REPLACED_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "SUSPENDED_ORD_REPLACED_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "SUSPENDED_ORD_CXLD_ON_REQUEST"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "ORD_CXL_PENDING"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "PENDING_CXL_EXECUTED"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "RESTING_ORD_TRIGGERED"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "SUSPENDED_ORD_ACTIVATED"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "ACTIVE_ORD_SUSPENDED"
-    ]
-   },
-   {
-    "value": "15",
-    "meaning": "",
-    "aliases": [
-     "ORD_EXPIRED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2431",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ORD_ADDED_ON_REQUEST\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"ORD_REPLACED_ON_REQUEST\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"ORD_CXLD_ON_REQUEST\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"UNSOLICITED_ORD_CXL\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"NON_RESTING_ORD_ADDED_ON_REQUEST\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"ORD_REPLACED_WITH_NON_RESTING_ORD_ON_REQUEST\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"TRIGGER_ORD_REPLACED_ON_REQUEST\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"SUSPENDED_ORD_REPLACED_ON_REQUEST\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"SUSPENDED_ORD_CXLD_ON_REQUEST\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"ORD_CXL_PENDING\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"PENDING_CXL_EXECUTED\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"RESTING_ORD_TRIGGERED\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"SUSPENDED_ORD_ACTIVATED\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"ACTIVE_ORD_SUSPENDED\"]},{\"value\":\"15\",\"meaning\":\"\",\"aliases\":[\"ORD_EXPIRED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2432": {
   "name": "TotNoOrderEntries",
-  "tag": 2432,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2432",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2433": {
   "name": "NoTargetPartySubIDs",
-  "tag": 2433,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2433",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2434": {
   "name": "TargetPartySubID",
-  "tag": 2434,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2434",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2435": {
   "name": "TargetPartySubIDType",
-  "tag": 2435,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2435",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2436": {
   "name": "TransferInstructionID",
-  "tag": 2436,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2436",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2437": {
   "name": "TransferID",
-  "tag": 2437,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2437",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2438": {
   "name": "TransferReportID",
-  "tag": 2438,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2438",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2439": {
   "name": "TransferTransType",
-  "tag": 2439,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "NEW"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "REPLACE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "CANCEL"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2439",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"NEW\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"REPLACE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"CANCEL\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2440": {
   "name": "TransferType",
-  "tag": 2440,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "REQUEST_TRANSFER"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ACCEPT_TRANSFER"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "DECLINE_TRANSFER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2440",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"REQUEST_TRANSFER\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ACCEPT_TRANSFER\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"DECLINE_TRANSFER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2441": {
   "name": "TransferScope",
-  "tag": 2441,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "INTER_FIRM_TRANSFER"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "INTRA_FIRM_TRANSFER"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "CMTA"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2441",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"INTER_FIRM_TRANSFER\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"INTRA_FIRM_TRANSFER\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"CMTA\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2442": {
   "name": "TransferStatus",
-  "tag": 2442,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "RECEIVED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "REJECTED_BY_INTERMEDIARY"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "ACCEPT_PENDING"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "DECLINED"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "CANCELLED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2442",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"RECEIVED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"REJECTED_BY_INTERMEDIARY\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"ACCEPT_PENDING\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"DECLINED\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"CANCELLED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2443": {
   "name": "TransferRejectReason",
-  "tag": 2443,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUCCESS"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "INVALID_PARTY"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_INSTRUMENT"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "UNAUTHORIZED_TO_SUBMIT_XFER"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_POSITION"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2443",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUCCESS\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"INVALID_PARTY\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_INSTRUMENT\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"UNAUTHORIZED_TO_SUBMIT_XFER\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_POSITION\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2444": {
   "name": "TransferReportType",
-  "tag": 2444,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUBMIT"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ALLEGED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2444",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUBMIT\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ALLEGED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2445": {
   "name": "AggressorTime",
-  "tag": 2445,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2445",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2446": {
   "name": "AggressorSide",
-  "tag": 2446,
-  "type": "CHAR",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2446",
+   "type": "CHAR",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2447": {
   "name": "FastMarketIndicator",
-  "tag": 2447,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2447",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2448": {
   "name": "LinkageHandlingIndicator",
-  "tag": 2448,
-  "type": "BOOLEAN",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "bool",
+  "nullable": true,
+  "fix": {
+   "tag": "2448",
+   "type": "BOOLEAN",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2449": {
   "name": "NumberOfBuyOrders",
-  "tag": 2449,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2449",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2450": {
   "name": "NumberOfSellOrders",
-  "tag": 2450,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2450",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2451": {
   "name": "SettlPriceDeterminationMethod",
-  "tag": 2451,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2451",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2452": {
   "name": "MDStatisticReqID",
-  "tag": 2452,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2452",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2453": {
   "name": "MDStatisticRptID",
-  "tag": 2453,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2453",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2454": {
   "name": "MDStatisticName",
-  "tag": 2454,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2454",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2455": {
   "name": "MDStatisticDesc",
-  "tag": 2455,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2455",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2456": {
   "name": "MDStatisticType",
-  "tag": 2456,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "COUNT"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "AVERAGE_VOLUME"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "TOTAL_VOLUME"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "DISTRIBUTION"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "RATIO"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "LIQUIDITY"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "VWAP"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "VOLATILITY"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "DURATION"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "TICK"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "AVERAGE_VALUE"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "TOTAL_VALUE"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "HIGH"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "LOW"
-    ]
-   },
-   {
-    "value": "15",
-    "meaning": "",
-    "aliases": [
-     "MIDPOINT"
-    ]
-   },
-   {
-    "value": "16",
-    "meaning": "",
-    "aliases": [
-     "FIRST"
-    ]
-   },
-   {
-    "value": "17",
-    "meaning": "",
-    "aliases": [
-     "LAST"
-    ]
-   },
-   {
-    "value": "18",
-    "meaning": "",
-    "aliases": [
-     "FINAL"
-    ]
-   },
-   {
-    "value": "19",
-    "meaning": "",
-    "aliases": [
-     "EXCHANGE_BEST"
-    ]
-   },
-   {
-    "value": "20",
-    "meaning": "",
-    "aliases": [
-     "EXCHANGE_BEST_WITH_VOLUME"
-    ]
-   },
-   {
-    "value": "21",
-    "meaning": "",
-    "aliases": [
-     "CONSOLIDATED_BEST"
-    ]
-   },
-   {
-    "value": "22",
-    "meaning": "",
-    "aliases": [
-     "CONSOLIDATED_BEST_WITH_VOLUME"
-    ]
-   },
-   {
-    "value": "23",
-    "meaning": "",
-    "aliases": [
-     "TWAP"
-    ]
-   },
-   {
-    "value": "24",
-    "meaning": "",
-    "aliases": [
-     "AVERAGE_DURATION"
-    ]
-   },
-   {
-    "value": "25",
-    "meaning": "",
-    "aliases": [
-     "AVERAGE_PRICE"
-    ]
-   },
-   {
-    "value": "26",
-    "meaning": "",
-    "aliases": [
-     "TOTAL_FEES"
-    ]
-   },
-   {
-    "value": "27",
-    "meaning": "",
-    "aliases": [
-     "TOTAL_BENEFITS"
-    ]
-   },
-   {
-    "value": "28",
-    "meaning": "",
-    "aliases": [
-     "MEDIAN_VALUE"
-    ]
-   },
-   {
-    "value": "29",
-    "meaning": "",
-    "aliases": [
-     "AVERAGE_LIQUIDITY"
-    ]
-   },
-   {
-    "value": "30",
-    "meaning": "",
-    "aliases": [
-     "MEDIAN_DURATION"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2456",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"COUNT\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"AVERAGE_VOLUME\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"TOTAL_VOLUME\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"DISTRIBUTION\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"RATIO\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"LIQUIDITY\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"VWAP\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"VOLATILITY\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"DURATION\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"TICK\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"AVERAGE_VALUE\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"TOTAL_VALUE\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"HIGH\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"LOW\"]},{\"value\":\"15\",\"meaning\":\"\",\"aliases\":[\"MIDPOINT\"]},{\"value\":\"16\",\"meaning\":\"\",\"aliases\":[\"FIRST\"]},{\"value\":\"17\",\"meaning\":\"\",\"aliases\":[\"LAST\"]},{\"value\":\"18\",\"meaning\":\"\",\"aliases\":[\"FINAL\"]},{\"value\":\"19\",\"meaning\":\"\",\"aliases\":[\"EXCHANGE_BEST\"]},{\"value\":\"20\",\"meaning\":\"\",\"aliases\":[\"EXCHANGE_BEST_WITH_VOLUME\"]},{\"value\":\"21\",\"meaning\":\"\",\"aliases\":[\"CONSOLIDATED_BEST\"]},{\"value\":\"22\",\"meaning\":\"\",\"aliases\":[\"CONSOLIDATED_BEST_WITH_VOLUME\"]},{\"value\":\"23\",\"meaning\":\"\",\"aliases\":[\"TWAP\"]},{\"value\":\"24\",\"meaning\":\"\",\"aliases\":[\"AVERAGE_DURATION\"]},{\"value\":\"25\",\"meaning\":\"\",\"aliases\":[\"AVERAGE_PRICE\"]},{\"value\":\"26\",\"meaning\":\"\",\"aliases\":[\"TOTAL_FEES\"]},{\"value\":\"27\",\"meaning\":\"\",\"aliases\":[\"TOTAL_BENEFITS\"]},{\"value\":\"28\",\"meaning\":\"\",\"aliases\":[\"MEDIAN_VALUE\"]},{\"value\":\"29\",\"meaning\":\"\",\"aliases\":[\"AVERAGE_LIQUIDITY\"]},{\"value\":\"30\",\"meaning\":\"\",\"aliases\":[\"MEDIAN_DURATION\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2457": {
   "name": "MDStatisticScope",
-  "tag": 2457,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "BID_PRICES"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "OFFER_PRICES"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "BID_DEPTH"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "OFFER_DEPTH"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "ORDERS"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "QUOTES"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "ORDERS_AND_QUOTES"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "TRADES"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "TRADE_PRICES"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "AUCTION_PRICES"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "OPENING_PRICES"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "CLOSING_PRICES"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "SETTLEMENT_PRICES"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "UNDERLYING_PRICES"
-    ]
-   },
-   {
-    "value": "15",
-    "meaning": "",
-    "aliases": [
-     "OPEN_INTEREST"
-    ]
-   },
-   {
-    "value": "16",
-    "meaning": "",
-    "aliases": [
-     "INDEX_VALUES"
-    ]
-   },
-   {
-    "value": "17",
-    "meaning": "",
-    "aliases": [
-     "MARGIN_RATES"
-    ]
-   },
-   {
-    "value": "18",
-    "meaning": "",
-    "aliases": [
-     "OUTAGES"
-    ]
-   },
-   {
-    "value": "19",
-    "meaning": "",
-    "aliases": [
-     "SCHEDULED_AUCTIONS"
-    ]
-   },
-   {
-    "value": "20",
-    "meaning": "",
-    "aliases": [
-     "REFERENCE_PRICES"
-    ]
-   },
-   {
-    "value": "21",
-    "meaning": "",
-    "aliases": [
-     "TRADE_VALUE"
-    ]
-   },
-   {
-    "value": "22",
-    "meaning": "",
-    "aliases": [
-     "MARKET_DATA_FEE_ITEMS"
-    ]
-   },
-   {
-    "value": "23",
-    "meaning": "",
-    "aliases": [
-     "REBATES"
-    ]
-   },
-   {
-    "value": "24",
-    "meaning": "",
-    "aliases": [
-     "DISCOUNTS"
-    ]
-   },
-   {
-    "value": "25",
-    "meaning": "",
-    "aliases": [
-     "PAYMENTS"
-    ]
-   },
-   {
-    "value": "26",
-    "meaning": "",
-    "aliases": [
-     "TAXES"
-    ]
-   },
-   {
-    "value": "27",
-    "meaning": "",
-    "aliases": [
-     "LEVIES"
-    ]
-   },
-   {
-    "value": "28",
-    "meaning": "",
-    "aliases": [
-     "BENEFITS"
-    ]
-   },
-   {
-    "value": "29",
-    "meaning": "",
-    "aliases": [
-     "FEES"
-    ]
-   },
-   {
-    "value": "30",
-    "meaning": "",
-    "aliases": [
-     "ORDERS_RF_QS"
-    ]
-   },
-   {
-    "value": "31",
-    "meaning": "",
-    "aliases": [
-     "MARKET_MAKERS"
-    ]
-   },
-   {
-    "value": "32",
-    "meaning": "",
-    "aliases": [
-     "TRADING_INTERRUPTIONS"
-    ]
-   },
-   {
-    "value": "33",
-    "meaning": "",
-    "aliases": [
-     "TRADING_SUSPENSIONS"
-    ]
-   },
-   {
-    "value": "34",
-    "meaning": "",
-    "aliases": [
-     "NO_QUOTES"
-    ]
-   },
-   {
-    "value": "35",
-    "meaning": "",
-    "aliases": [
-     "REQUEST_FOR_QUOTES"
-    ]
-   },
-   {
-    "value": "36",
-    "meaning": "",
-    "aliases": [
-     "TRADE_VOLUME"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2457",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"BID_PRICES\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"OFFER_PRICES\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"BID_DEPTH\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"OFFER_DEPTH\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"ORDERS\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"QUOTES\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"ORDERS_AND_QUOTES\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"TRADES\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"TRADE_PRICES\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"AUCTION_PRICES\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"OPENING_PRICES\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"CLOSING_PRICES\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"SETTLEMENT_PRICES\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"UNDERLYING_PRICES\"]},{\"value\":\"15\",\"meaning\":\"\",\"aliases\":[\"OPEN_INTEREST\"]},{\"value\":\"16\",\"meaning\":\"\",\"aliases\":[\"INDEX_VALUES\"]},{\"value\":\"17\",\"meaning\":\"\",\"aliases\":[\"MARGIN_RATES\"]},{\"value\":\"18\",\"meaning\":\"\",\"aliases\":[\"OUTAGES\"]},{\"value\":\"19\",\"meaning\":\"\",\"aliases\":[\"SCHEDULED_AUCTIONS\"]},{\"value\":\"20\",\"meaning\":\"\",\"aliases\":[\"REFERENCE_PRICES\"]},{\"value\":\"21\",\"meaning\":\"\",\"aliases\":[\"TRADE_VALUE\"]},{\"value\":\"22\",\"meaning\":\"\",\"aliases\":[\"MARKET_DATA_FEE_ITEMS\"]},{\"value\":\"23\",\"meaning\":\"\",\"aliases\":[\"REBATES\"]},{\"value\":\"24\",\"meaning\":\"\",\"aliases\":[\"DISCOUNTS\"]},{\"value\":\"25\",\"meaning\":\"\",\"aliases\":[\"PAYMENTS\"]},{\"value\":\"26\",\"meaning\":\"\",\"aliases\":[\"TAXES\"]},{\"value\":\"27\",\"meaning\":\"\",\"aliases\":[\"LEVIES\"]},{\"value\":\"28\",\"meaning\":\"\",\"aliases\":[\"BENEFITS\"]},{\"value\":\"29\",\"meaning\":\"\",\"aliases\":[\"FEES\"]},{\"value\":\"30\",\"meaning\":\"\",\"aliases\":[\"ORDERS_RF_QS\"]},{\"value\":\"31\",\"meaning\":\"\",\"aliases\":[\"MARKET_MAKERS\"]},{\"value\":\"32\",\"meaning\":\"\",\"aliases\":[\"TRADING_INTERRUPTIONS\"]},{\"value\":\"33\",\"meaning\":\"\",\"aliases\":[\"TRADING_SUSPENSIONS\"]},{\"value\":\"34\",\"meaning\":\"\",\"aliases\":[\"NO_QUOTES\"]},{\"value\":\"35\",\"meaning\":\"\",\"aliases\":[\"REQUEST_FOR_QUOTES\"]},{\"value\":\"36\",\"meaning\":\"\",\"aliases\":[\"TRADE_VOLUME\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2458": {
   "name": "MDStatisticSubScope",
-  "tag": 2458,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "VISIBLE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "HIDDEN"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "INDICATIVE"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "TRADEABLE"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "PASSIVE"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "MARKET_CONSENSUS"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "POWER"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "HARDWARE_ERROR"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "SOFTWARE_ERROR"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "NETWORK_ERROR"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "FAILED"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "EXECUTED"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "ENTERED"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "MODIFIED"
-    ]
-   },
-   {
-    "value": "15",
-    "meaning": "",
-    "aliases": [
-     "CANCELLED"
-    ]
-   },
-   {
-    "value": "16",
-    "meaning": "",
-    "aliases": [
-     "MARKET_DATA_ACCESS"
-    ]
-   },
-   {
-    "value": "17",
-    "meaning": "",
-    "aliases": [
-     "TERMINAL_ACCESS"
-    ]
-   },
-   {
-    "value": "18",
-    "meaning": "",
-    "aliases": [
-     "VOLUME"
-    ]
-   },
-   {
-    "value": "19",
-    "meaning": "",
-    "aliases": [
-     "CLEARED"
-    ]
-   },
-   {
-    "value": "20",
-    "meaning": "",
-    "aliases": [
-     "SETTLED"
-    ]
-   },
-   {
-    "value": "21",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   },
-   {
-    "value": "22",
-    "meaning": "",
-    "aliases": [
-     "MONETARY"
-    ]
-   },
-   {
-    "value": "23",
-    "meaning": "",
-    "aliases": [
-     "NON_MONETARY"
-    ]
-   },
-   {
-    "value": "24",
-    "meaning": "",
-    "aliases": [
-     "GROSS"
-    ]
-   },
-   {
-    "value": "25",
-    "meaning": "",
-    "aliases": [
-     "LARGE_IN_SCALE"
-    ]
-   },
-   {
-    "value": "26",
-    "meaning": "",
-    "aliases": [
-     "NEITHER_HIDDEN_NOR_LARGE_IN_SCALE"
-    ]
-   },
-   {
-    "value": "27",
-    "meaning": "",
-    "aliases": [
-     "CORPORATE_ACTION"
-    ]
-   },
-   {
-    "value": "28",
-    "meaning": "",
-    "aliases": [
-     "VENUE_DECISION"
-    ]
-   },
-   {
-    "value": "29",
-    "meaning": "",
-    "aliases": [
-     "MINIMUM_TIME_PERIOD"
-    ]
-   },
-   {
-    "value": "30",
-    "meaning": "",
-    "aliases": [
-     "OPEN"
-    ]
-   },
-   {
-    "value": "31",
-    "meaning": "",
-    "aliases": [
-     "NOT_EXECUTED"
-    ]
-   },
-   {
-    "value": "32",
-    "meaning": "",
-    "aliases": [
-     "AGGRESSIVE"
-    ]
-   },
-   {
-    "value": "33",
-    "meaning": "",
-    "aliases": [
-     "DIRECTED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2458",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"VISIBLE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"HIDDEN\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"INDICATIVE\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"TRADEABLE\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"PASSIVE\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"MARKET_CONSENSUS\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"POWER\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"HARDWARE_ERROR\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"SOFTWARE_ERROR\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"NETWORK_ERROR\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"FAILED\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"EXECUTED\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"ENTERED\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"MODIFIED\"]},{\"value\":\"15\",\"meaning\":\"\",\"aliases\":[\"CANCELLED\"]},{\"value\":\"16\",\"meaning\":\"\",\"aliases\":[\"MARKET_DATA_ACCESS\"]},{\"value\":\"17\",\"meaning\":\"\",\"aliases\":[\"TERMINAL_ACCESS\"]},{\"value\":\"18\",\"meaning\":\"\",\"aliases\":[\"VOLUME\"]},{\"value\":\"19\",\"meaning\":\"\",\"aliases\":[\"CLEARED\"]},{\"value\":\"20\",\"meaning\":\"\",\"aliases\":[\"SETTLED\"]},{\"value\":\"21\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]},{\"value\":\"22\",\"meaning\":\"\",\"aliases\":[\"MONETARY\"]},{\"value\":\"23\",\"meaning\":\"\",\"aliases\":[\"NON_MONETARY\"]},{\"value\":\"24\",\"meaning\":\"\",\"aliases\":[\"GROSS\"]},{\"value\":\"25\",\"meaning\":\"\",\"aliases\":[\"LARGE_IN_SCALE\"]},{\"value\":\"26\",\"meaning\":\"\",\"aliases\":[\"NEITHER_HIDDEN_NOR_LARGE_IN_SCALE\"]},{\"value\":\"27\",\"meaning\":\"\",\"aliases\":[\"CORPORATE_ACTION\"]},{\"value\":\"28\",\"meaning\":\"\",\"aliases\":[\"VENUE_DECISION\"]},{\"value\":\"29\",\"meaning\":\"\",\"aliases\":[\"MINIMUM_TIME_PERIOD\"]},{\"value\":\"30\",\"meaning\":\"\",\"aliases\":[\"OPEN\"]},{\"value\":\"31\",\"meaning\":\"\",\"aliases\":[\"NOT_EXECUTED\"]},{\"value\":\"32\",\"meaning\":\"\",\"aliases\":[\"AGGRESSIVE\"]},{\"value\":\"33\",\"meaning\":\"\",\"aliases\":[\"DIRECTED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2459": {
   "name": "MDStatisticScopeType",
-  "tag": 2459,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ENTRY_RATE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "MODIFICATION_RATE"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "CANCEL_RATE"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "DOWNWARD_MOVE"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "UPWARD_MOVE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2459",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ENTRY_RATE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"MODIFICATION_RATE\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"CANCEL_RATE\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"DOWNWARD_MOVE\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"UPWARD_MOVE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2460": {
   "name": "MDStatisticFrequencyPeriod",
-  "tag": 2460,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2460",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2461": {
   "name": "MDStatisticFrequencyUnit",
-  "tag": 2461,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2461",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2462": {
   "name": "MDStatisticDelayPeriod",
-  "tag": 2462,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2462",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2463": {
   "name": "MDStatisticDelayUnit",
-  "tag": 2463,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2463",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2464": {
   "name": "MDStatisticIntervalType",
-  "tag": 2464,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "SLIDING_WINDOW"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "SLIDING_WINDOW_PEAK"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "FIXED_DATE_RANGE"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "FIXED_TIME_RANGE"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "CURRENT_TIME_UNIT"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "PREVIOUS_TIME_UNIT"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "MAXIMUM_RANGE"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2464",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"SLIDING_WINDOW\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"SLIDING_WINDOW_PEAK\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"FIXED_DATE_RANGE\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"FIXED_TIME_RANGE\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"CURRENT_TIME_UNIT\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"PREVIOUS_TIME_UNIT\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"MAXIMUM_RANGE\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2465": {
   "name": "MDStatisticIntervalTypeUnit",
-  "tag": 2465,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2465",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2466": {
   "name": "MDStatisticIntervalPeriod",
-  "tag": 2466,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2466",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2467": {
   "name": "MDStatisticIntervalUnit",
-  "tag": 2467,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2467",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2468": {
   "name": "MDStatisticStartDate",
-  "tag": 2468,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2468",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2469": {
   "name": "MDStatisticEndDate",
-  "tag": 2469,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2469",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2470": {
   "name": "MDStatisticStartTime",
-  "tag": 2470,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2470",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2471": {
   "name": "MDStatisticEndTime",
-  "tag": 2471,
-  "type": "UTCTIMEONLY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2471",
+   "type": "UTCTIMEONLY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2472": {
   "name": "MDStatisticRatioType",
-  "tag": 2472,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "BUYERS_TO_SELLERS"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "UPTICKS_TO_DOWNTICKS"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "MARKET_MAKER_TO_NON_MARKET_MAKER"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "AUTOMATED_TO_NON_AUTOMATED"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "ORDERS_TO_TRADES"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "QUOTES_TO_TRADES"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "ORDERS_AND_QUOTES_TO_TRADES"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "FAILED_TO_TOTAL_TRADED_VALUE"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "BENEFITS_TO_TOTAL_TRADED_VALUE"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "FEES_TO_TOTAL_TRADED_VALUE"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "ORDERS_TO_TOTAL_NUMBER_ORDERS"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2472",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"BUYERS_TO_SELLERS\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"UPTICKS_TO_DOWNTICKS\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"MARKET_MAKER_TO_NON_MARKET_MAKER\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"AUTOMATED_TO_NON_AUTOMATED\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"ORDERS_TO_TRADES\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"QUOTES_TO_TRADES\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"ORDERS_AND_QUOTES_TO_TRADES\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"FAILED_TO_TOTAL_TRADED_VALUE\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"BENEFITS_TO_TOTAL_TRADED_VALUE\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"FEES_TO_TOTAL_TRADED_VALUE\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"ORDERS_TO_TOTAL_NUMBER_ORDERS\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2473": {
   "name": "MDStatisticRequestResult",
-  "tag": 2473,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "SUCCESSFUL"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_MARKET"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_MARKET_SEGMENT"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_SECURITY_LIST"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_INSTRUMENTS"
-    ]
-   },
-   {
-    "value": "5",
-    "meaning": "",
-    "aliases": [
-     "INVALID_PARTIES"
-    ]
-   },
-   {
-    "value": "6",
-    "meaning": "",
-    "aliases": [
-     "TRADE_DATE_OUT_OF_SUPPORTED_RANGE"
-    ]
-   },
-   {
-    "value": "7",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_STATISTIC_TYPE"
-    ]
-   },
-   {
-    "value": "8",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_SCOPE_OR_SUB_SCOPE"
-    ]
-   },
-   {
-    "value": "9",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_SCOPE_TYPE"
-    ]
-   },
-   {
-    "value": "10",
-    "meaning": "",
-    "aliases": [
-     "MARKET_DEPTH_NOT_SUPPORTED"
-    ]
-   },
-   {
-    "value": "11",
-    "meaning": "",
-    "aliases": [
-     "FREQUENCY_NOT_SUPPORTED"
-    ]
-   },
-   {
-    "value": "12",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_STATISTIC_INTERVAL"
-    ]
-   },
-   {
-    "value": "13",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_STATISTIC_DATE_RANGE"
-    ]
-   },
-   {
-    "value": "14",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_STATISTIC_TIME_RANGE"
-    ]
-   },
-   {
-    "value": "15",
-    "meaning": "",
-    "aliases": [
-     "UNSUPPORTED_RATIO_TYPE"
-    ]
-   },
-   {
-    "value": "16",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_TRADE_INPUT_SOURCE"
-    ]
-   },
-   {
-    "value": "17",
-    "meaning": "",
-    "aliases": [
-     "INVALID_OR_UNKNOWN_TRADING_SESSION"
-    ]
-   },
-   {
-    "value": "18",
-    "meaning": "",
-    "aliases": [
-     "UNAUTHORIZED_FOR_STATISTIC_REQUEST"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2473",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"SUCCESSFUL\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_MARKET\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_MARKET_SEGMENT\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_SECURITY_LIST\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_INSTRUMENTS\"]},{\"value\":\"5\",\"meaning\":\"\",\"aliases\":[\"INVALID_PARTIES\"]},{\"value\":\"6\",\"meaning\":\"\",\"aliases\":[\"TRADE_DATE_OUT_OF_SUPPORTED_RANGE\"]},{\"value\":\"7\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_STATISTIC_TYPE\"]},{\"value\":\"8\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_SCOPE_OR_SUB_SCOPE\"]},{\"value\":\"9\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_SCOPE_TYPE\"]},{\"value\":\"10\",\"meaning\":\"\",\"aliases\":[\"MARKET_DEPTH_NOT_SUPPORTED\"]},{\"value\":\"11\",\"meaning\":\"\",\"aliases\":[\"FREQUENCY_NOT_SUPPORTED\"]},{\"value\":\"12\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_STATISTIC_INTERVAL\"]},{\"value\":\"13\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_STATISTIC_DATE_RANGE\"]},{\"value\":\"14\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_STATISTIC_TIME_RANGE\"]},{\"value\":\"15\",\"meaning\":\"\",\"aliases\":[\"UNSUPPORTED_RATIO_TYPE\"]},{\"value\":\"16\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_TRADE_INPUT_SOURCE\"]},{\"value\":\"17\",\"meaning\":\"\",\"aliases\":[\"INVALID_OR_UNKNOWN_TRADING_SESSION\"]},{\"value\":\"18\",\"meaning\":\"\",\"aliases\":[\"UNAUTHORIZED_FOR_STATISTIC_REQUEST\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2474": {
   "name": "NoMDStatistics",
-  "tag": 2474,
-  "type": "NUMINGROUP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2474",
+   "type": "NUMINGROUP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2475": {
   "name": "MDStatisticID",
-  "tag": 2475,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2475",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2476": {
   "name": "MDStatisticTime",
-  "tag": 2476,
-  "type": "UTCTIMESTAMP",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2476",
+   "type": "UTCTIMESTAMP",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2477": {
   "name": "MDStatisticStatus",
-  "tag": 2477,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ACTIVE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "INACTIVE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2477",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ACTIVE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"INACTIVE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2478": {
   "name": "MDStatisticValue",
-  "tag": 2478,
-  "type": "FLOAT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2478",
+   "type": "FLOAT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2479": {
   "name": "MDStatisticValueType",
-  "tag": 2479,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "ABSOLUTE"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "PERCENTAGE"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2479",
+   "type": "INT",
+   "values": "[{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"ABSOLUTE\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"PERCENTAGE\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2480": {
   "name": "MDStatisticValueUnit",
-  "tag": 2480,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2480",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2481": {
   "name": "EncodedMDStatisticDescLen",
-  "tag": 2481,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2481",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2482": {
   "name": "EncodedMDStatisticDesc",
-  "tag": 2482,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2482",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2483": {
   "name": "AllocRiskLimitCheckStatus",
-  "tag": 2483,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2483",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2484": {
   "name": "FirmTransactionID",
-  "tag": 2484,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2484",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2485": {
   "name": "TransactionID",
-  "tag": 2485,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2485",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2486": {
   "name": "WireReference",
-  "tag": 2486,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2486",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2487": {
   "name": "CollRptRejectReason",
-  "tag": 2487,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_TRADE"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_INSTRUMENT"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_COUNTERPARTY"
-    ]
-   },
-   {
-    "value": "3",
-    "meaning": "",
-    "aliases": [
-     "UNKNOWN_POSITION"
-    ]
-   },
-   {
-    "value": "4",
-    "meaning": "",
-    "aliases": [
-     "UNACCEPTABLE_COLLATERAL"
-    ]
-   },
-   {
-    "value": "99",
-    "meaning": "",
-    "aliases": [
-     "OTHER"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2487",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_TRADE\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_INSTRUMENT\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_COUNTERPARTY\"]},{\"value\":\"3\",\"meaning\":\"\",\"aliases\":[\"UNKNOWN_POSITION\"]},{\"value\":\"4\",\"meaning\":\"\",\"aliases\":[\"UNACCEPTABLE_COLLATERAL\"]},{\"value\":\"99\",\"meaning\":\"\",\"aliases\":[\"OTHER\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2488": {
   "name": "CollRptStatus",
-  "tag": 2488,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ],
-  "values": [
-   {
-    "value": "0",
-    "meaning": "",
-    "aliases": [
-     "ACCEPTED"
-    ]
-   },
-   {
-    "value": "1",
-    "meaning": "",
-    "aliases": [
-     "RECEIVED"
-    ]
-   },
-   {
-    "value": "2",
-    "meaning": "",
-    "aliases": [
-     "REJECTED"
-    ]
-   }
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2488",
+   "type": "INT",
+   "values": "[{\"value\":\"0\",\"meaning\":\"\",\"aliases\":[\"ACCEPTED\"]},{\"value\":\"1\",\"meaning\":\"\",\"aliases\":[\"RECEIVED\"]},{\"value\":\"2\",\"meaning\":\"\",\"aliases\":[\"REJECTED\"]}]",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2489": {
   "name": "PackageID",
-  "tag": 2489,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2489",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2490": {
   "name": "TradeNumber",
-  "tag": 2490,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2490",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2491": {
   "name": "UnderlyingAssetGroup",
-  "tag": 2491,
-  "type": "INT",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "2491",
+   "type": "INT",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2492": {
   "name": "LegDifferentialPrice",
-  "tag": 2492,
-  "type": "PRICEOFFSET",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "double",
+  "nullable": true,
+  "fix": {
+   "tag": "2492",
+   "type": "PRICEOFFSET",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2493": {
   "name": "EncodedLegDocumentationText",
-  "tag": 2493,
-  "type": "DATA",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "binary",
+  "nullable": true,
+  "fix": {
+   "tag": "2493",
+   "type": "DATA",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2494": {
   "name": "EncodedLegDocumentationTextLen",
-  "tag": 2494,
-  "type": "LENGTH",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "int64",
+  "nullable": true,
+  "fix": {
+   "tag": "2494",
+   "type": "LENGTH",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2495": {
   "name": "LegAgreementCurrency",
-  "tag": 2495,
-  "type": "CURRENCY",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2495",
+   "type": "CURRENCY",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2496": {
   "name": "LegAgreementDate",
-  "tag": 2496,
-  "type": "LOCALMKTDATE",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "timestamp[ns]",
+  "nullable": true,
+  "fix": {
+   "tag": "2496",
+   "type": "LOCALMKTDATE",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2497": {
   "name": "LegAgreementDesc",
-  "tag": 2497,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2497",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2498": {
   "name": "LegAgreementID",
-  "tag": 2498,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2498",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  },
  "2499": {
   "name": "LegAgreementVersion",
-  "tag": 2499,
-  "type": "STRING",
-  "versions": [
-   "5.0.SP2"
-  ]
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "2499",
+   "type": "STRING",
+   "versions": "[\"5.0.SP2\"]"
+  }
  }
 }

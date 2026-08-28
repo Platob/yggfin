@@ -66,7 +66,7 @@ class Stamped:
 
     #: The structured column this rung reads, and the two members of an entry
     #: it reads: the one holding the instant and the one saying which instant
-    #: it is. These are the exact names in the FIX registry and parsed schema.
+    #: it is. These are column names, so they are folded as a schema folds them.
     column: str = ""
     instant: str = ""
     kind: str = ""
@@ -141,7 +141,7 @@ class Stamped:
 
     @staticmethod
     def member(entry: Any, name: str) -> Any:
-        """One member of a typed entry, spelled as the FIX registry names it."""
+        """One member of a typed entry, spelled as its column is."""
         if isinstance(entry, Mapping):
             return entry.get(name)
         return getattr(entry, name, None)
@@ -308,21 +308,21 @@ A_DAY = SECONDS_A_DAY * NANOS
 TRANSACTED: tuple[Stamped, ...] = (
     Stamped(
         name="TrdRegTimestamps",
-        column="TrdRegTimestamps",
-        instant="TrdRegTimestamp",
-        kind="TrdRegTimestampType",
+        column="trdregtimestamps",
+        instant="trdregtimestamp",
+        kind="trdregtimestamptype",
     ),
     Stamped(
         name="SideTrdRegTS",
-        column="SideTrdRegTS",
-        instant="SideTrdRegTimestamp",
-        kind="SideTrdRegTimestampType",
+        column="sidetrdregts",
+        instant="sidetrdregtimestamp",
+        kind="sidetrdregtimestamptype",
     ),
-    Stamped(name="TransactTime", fields=("TransactTime",)),
-    Stamped(name="MDEntry", fields=("MDEntryDate", "MDEntryTime")),
-    Stamped(name="OrigTime", fields=("OrigTime",)),
-    Stamped(name="OrigSendingTime", fields=("OrigSendingTime",)),
-    Stamped(name="SendingTime", fields=("SendingTime",)),
+    Stamped(name="TransactTime", fields=("transacttime",)),
+    Stamped(name="MDEntry", fields=("mdentrydate", "mdentrytime")),
+    Stamped(name="OrigTime", fields=("origtime",)),
+    Stamped(name="OrigSendingTime", fields=("origsendingtime",)),
+    Stamped(name="SendingTime", fields=("sendingtime",)),
 )
 
 #: What `resolve` records when no clock the message carries answered, and the
@@ -432,7 +432,7 @@ def resolve(
 
 
 def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple[Any, Any]:
-    """`(unix, unix_source)` for a whole batch of parsed rows.
+    """`(unix, unixsource)` for a whole batch of parsed rows.
 
     The columnar execution of `resolve`, over the columns a parsed row already
     carries: the rungs are walked best-first and each one fills only the rows

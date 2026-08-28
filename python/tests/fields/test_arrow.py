@@ -258,8 +258,8 @@ def test_class_summary_becomes_schema_metadata(schema: pyarrow.Schema) -> None:
     assert schema.metadata[b"name"] == b"Book"
 
 
-def test_an_undescribed_field_carries_no_metadata(schema: pyarrow.Schema) -> None:
-    assert schema.field("opened").metadata is None
+def test_an_undescribed_field_carries_no_description(schema: pyarrow.Schema) -> None:
+    assert b"description" not in schema.field("opened").metadata
 
 
 def test_an_explicit_description_beats_the_docstring() -> None:
@@ -305,7 +305,7 @@ def test_a_wrapped_attribute_docstring_is_folded() -> None:
 
 
 def test_a_comment_is_not_a_description() -> None:
-    assert members(Instrument)["currency"].metadata == {}
+    assert members(Instrument)["currency"].metadata == {"fix:display": "Currency"}
 
 
 def test_an_attribute_docstring_beats_the_class_docstring() -> None:
@@ -359,7 +359,7 @@ def test_a_class_without_readable_source_still_projects() -> None:
 
     schema = namespace["Generated"].into_field().into_arrow_schema()
     assert schema.names == ["value"]
-    assert schema.field("value").metadata is None
+    assert schema.field("value").metadata == {b"fix:display": b"Value"}
 
 
 # -- refusals ---------------------------------------------------------------

@@ -8,7 +8,7 @@ wins and the collapse is reported, which is the only judgement the shape asks
 for.
 
 The same shape holds fields FIX never numbered -- a bridge's rendered
-`AMON.ISINCODE`, a vendor's `TECH.CLIENTID` -- with no tag and `ANY_VERSION`
+`AMON.isincode`, a vendor's `TECH.CLIENTID` -- with no tag and `ANY_VERSION`
 for their version list. They are aliased and looked up exactly like numbered
 tags, rather than living in a second incompatible mapping.
 """
@@ -19,7 +19,6 @@ import dataclasses
 import json
 import re
 from collections.abc import Mapping, Sequence
-from types import MappingProxyType
 from typing import Any, Self
 
 import pyarrow
@@ -27,48 +26,22 @@ import pyarrow
 from rekep.convert import Convertible
 from rekep.entries import fold
 from rekep.enums import EventType, State
-from rekep.fields import Field
+from rekep.fields import Field, column_name
 from rekep.fields.metadata import (
     ANY_VERSION,
     Alias,
     FixFieldValue,
     canonical_versions,
     newest_of,
-    values_of,
 )
 from rekep.fix import quickfix
-from rekep.fix.fields import fix_field
 
 #: What a field record is: a numbered FIX tag, or a name a renderer prints with
-#: no tag behind it. Stored so a reader never has to infer it from a null tag,
-#: and so a projection or a report can select one kind without guessing.
+#: no tag behind it. Derived from the tag by `record_kind` rather than stored,
+#: because a record carrying both could contradict itself; these two names are
+#: what a projection or a report selects on.
 STANDARD = "standard"
 NAMESPACE = "namespace"
-KINDS: frozenset[str] = frozenset({STANDARD, NAMESPACE})
-
-#: What `NAMESPACE` used to be called, still read out of a store somebody's
-#: cache already holds. Written back under the current name, so a store
-#: converts itself the first time anything rewrites it.
-_RENAMED_KINDS: Mapping[str, str] = MappingProxyType({"vendor": NAMESPACE})
-
-#: Every key a stored field record may carry. One reading, and the versions
-#: that declare it -- there is no per-version object to differ from.
-RECORD_KEYS: tuple[str, ...] = (
-    "name",
-    "tag",
-    "kind",
-    "column",
-    "note",
-    "type",
-    "description",
-    "versions",
-    "values",
-    "event_types",
-    "states",
-    "used_in",
-    "components",
-    "aliases",
-)
 
 _SLUG_SPLIT = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", re.ASCII)
 _SLUG_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
@@ -90,7 +63,7 @@ def name_of(text: str) -> str:
 def slug_of(name: str) -> str:
     """The file name one component is stored under: `Parties` -> `parties`.
 
-    Dots and case become underscores, so `AMON.ISINCODE` is `amon_isincode`
+    Dots and case become underscores, so `AMON.isincode` is `amon_isincode`
     and `NoPartyIDs` is `no_party_ids`. Two identities that slug alike are a
     collision the store refuses rather than one silently overwriting the other.
     """
@@ -103,26 +76,6 @@ def slug_of(name: str) -> str:
     return slug
 
 
-#: Where a FIX name splits into words: an acronym before a capitalised word,
-#: and a lowercase or digit before a capital.
-_SNAKE_SPLIT = re.compile(r"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-z0-9])(?=[A-Z])", re.ASCII)
-
-
-def snake_of(name: str) -> str:
-    """FIX's canonical name as a public Arrow name: `NoPartyIDs` -> `no_party_ids`.
-
-    One rule for a lifted column and for a component member, so the flat column
-    and the nested one of the same field are spelled alike.
-    """
-    return _SNAKE_SPLIT.sub("_", re.sub(r"IDs$", "Ids", name)).lower()
-
-
-def _kind_of(stored: Any) -> str:
-    """One stored `kind`, under whatever name the store spelled it."""
-    kind = str(stored or STANDARD)
-    return _RENAMED_KINDS.get(kind, kind)
-
-
 # -- a field record, which is a field ---------------------------------------
 #
 # A record used to be a dataclass beside the `Field` it projected into. It is
@@ -132,84 +85,25 @@ def _kind_of(stored: Any) -> str:
 # document it holds on disk, and the version a caller asked about.
 
 
-def record_of(mapping: Mapping[str, Any]) -> Field:
-    """One stored field document as the record it is, refusing what cannot resolve.
+def refuse_record(record: Field) -> Field:
+    """Refuse a field record no lookup could answer for; return it otherwise.
 
-    The document's keys are unprefixed because that is what a shard has always
-    held; they land under `fix:` where the rest of the package reads them.
+    Whether a record is standard or namespaced is the presence of its tag,
+    so the two used to be checked against each other and now cannot disagree.
+    What is left is what a document can still get wrong.
     """
-    unknown = sorted(set(mapping) - set(RECORD_KEYS))
-    if unknown:
-        raise ValueError(f"a FIX field record declares unknown {unknown}")
-    stored = mapping.get("tag")
-    tag = int(stored) if stored is not None else None
-    name = str(mapping.get("name") or "")
-    kind = _kind_of(mapping.get("kind"))
-    versions = canonical_versions(str(version) for version in mapping.get("versions") or ())
-    _refuse_record(name, tag, kind, versions, mapping.get("event_types"))
-    built = fix_field(
-        name,
-        tag or 0,
-        str(mapping.get("type") or "") or None,
-        description=str(mapping.get("description") or "") or None,
-        values=values_of(mapping.get("values")),
-    )
-    fix = built.fix
-    if tag is None:
-        # A namespaced field has no tag, and a `0` where one goes would
-        # collide with every other one of them in a tag index.
-        fix.tag = None
-        fix.kind = NAMESPACE
-    fix.versions = versions
-    fix.column = str(mapping.get("column") or "")
-    fix.note = str(mapping.get("note") or "")
-    fix.event_types = _event_types(mapping.get("event_types"))
-    fix.states = _states(mapping.get("states"))
-    fix.msgtypes = [str(one) for one in mapping.get("used_in") or ()]
-    fix.components = [str(one) for one in mapping.get("components") or ()]
-    fix.named_aliases = _aliases_of(mapping.get("aliases"))
-    return built
-
-
-def _refuse_record(
-    name: str, tag: int | None, kind: str, versions: Sequence[str], event_types: Any
-) -> None:
-    """Every reason a field record could answer no lookup, said once."""
+    fix = record.fix
+    name = fix.canonical
     if not name.strip():
         raise ValueError("a FIX field record has no name")
-    if kind not in KINDS:
-        raise ValueError(f"unknown FIX field kind {kind!r}; one of {sorted(KINDS)}")
-    if kind == STANDARD and not tag:
-        raise ValueError(f"standard FIX field {name!r} has no tag")
-    if kind == NAMESPACE and tag:
-        raise ValueError(f"namespaced FIX field {name!r} must not claim tag {tag}")
-    if not versions:
+    if not fix.versions:
         raise ValueError(f"FIX field {name!r} is declared for no version")
-    if event_types and tag != 35:
+    # The one tag written down rather than asked for. This runs while the
+    # store is being read, and asking the registry which tag `MsgType` is
+    # would re-enter the read that is calling it.
+    if fix.event_types and fix.tag != 35:
         raise ValueError("FIX event types belong to MsgType <35>")
-
-
-def record_document(record: Field) -> dict[str, Any]:
-    """One record as its shard holds it, under the unprefixed keys it has always used."""
-    fix = record.fix
-    return _document(
-        {
-            "name": fix.canonical,
-            "tag": fix.tag,
-            "kind": "" if record_kind(record) == STANDARD else record_kind(record),
-            "column": fix.column,
-            "note": fix.note,
-            "type": fix.type,
-            "description": record.description,
-            "versions": list(fix.versions),
-            "values": [one.into_dict() for one in fix.enumerated],
-            "event_types": _enum_document(fix.event_types),
-            "states": _enum_document(fix.states),
-            "used_in": list(fix.msgtypes),
-            "components": list(fix.components),
-            "aliases": [alias.into_dict() for alias in fix.named_aliases],
-        }
-    )
+    return record
 
 
 def record_kind(record: Field) -> str:
@@ -286,8 +180,8 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     for member in members:
         for one in member.fix.enumerated:
             values[one.value] = merged_value(values.get(one.value), one)
-        event_types.update(_event_types(_json_any(member.fix.get("event_types"))))
-        states.update(_states(_json_any(member.fix.get("states"))))
+        event_types.update(member.fix.event_types)
+        states.update(member.fix.states)
     # Newest first, unlike the values: where a field is used is a list and not
     # a mapping, so the newest version's reading leads it rather than
     # correcting it key by key.
@@ -307,9 +201,9 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     fix.pop("version", None)
     # The same refusals a stored document meets: a collapse is a write, and a
     # record no lookup could answer for must not reach a shard from either side.
-    _refuse_record(fix.canonical, fix.tag, record_kind(built), fix.versions, event_types)
-    fix.enumerated = tuple(values.values())
     fix.event_types = event_types
+    refuse_record(built)
+    fix.enumerated = tuple(values.values())
     fix.states = states
     fix.msgtypes = used_in
     fix.components = components
@@ -424,10 +318,14 @@ class ComponentRecord(Convertible):
             return None
         members = _component_fields(self.declaration, types or {}, components or {}, frozenset())
         return Field(
-            name=snake_of(self.name),
+            name=column_name(self.name),
             dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
             nullable=True,
-            metadata={"fix:component": self.name, "fix:version": version},
+            metadata={
+                "fix:component": self.name,
+                "fix:version": version,
+                "fix:display": self.name,
+            },
         )
 
     def paths(self) -> dict[str, tuple[str, ...]]:
@@ -524,17 +422,17 @@ def _component_fields(
             item = _component_fields(entry, types, components, seen)
             built.append(
                 Field(
-                    name=snake_of(member.name),
+                    name=column_name(member.name),
                     dtype=pyarrow.list_(
                         Field(
-                            name=snake_of(entry.name),
+                            name=column_name(entry.name),
                             dtype=pyarrow.struct([one.into_arrow_field() for one in item]),
                             nullable=False,
-                            metadata={"fix:name": entry.name},
+                            metadata={"fix:name": entry.name, "fix:display": entry.name},
                         ).into_arrow_field()
                     ),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name},
+                    metadata={"fix:name": member.name, "fix:display": member.name},
                 )
             )
         elif quickfix.is_reference(member):
@@ -546,10 +444,10 @@ def _component_fields(
         else:
             built.append(
                 Field(
-                    name=snake_of(member.name),
+                    name=column_name(member.name),
                     dtype=types.get(member.name) or pyarrow.string(),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name},
+                    metadata={"fix:name": member.name, "fix:display": member.name},
                 )
             )
     return built
@@ -600,65 +498,6 @@ def folded_values(
     for one in newest:
         found[one.value] = merged_value(found.get(one.value), one)
     return tuple(found.values())
-
-
-def _event_types(mapping: Any) -> dict[str, EventType]:
-    """One stored `{MsgType: EventType}` map, accepting enum names or codes."""
-    if not isinstance(mapping, Mapping):
-        return {}
-    found: dict[str, EventType] = {}
-    for key, value in mapping.items():
-        try:
-            found[str(key)] = _enum_value(EventType, value)
-        except (KeyError, TypeError, ValueError) as error:
-            raise ValueError(f"unknown EventType {value!r} for MsgType {key!r}") from error
-    return found
-
-
-def _states(mapping: Any) -> dict[str, State]:
-    """One stored `{wire value: State}` map, accepting enum names or codes."""
-    if not isinstance(mapping, Mapping):
-        return {}
-    found: dict[str, State] = {}
-    for key, value in mapping.items():
-        try:
-            found[str(key)] = _enum_value(State, value)
-        except (KeyError, TypeError, ValueError) as error:
-            raise ValueError(f"unknown State {value!r} for value {key!r}") from error
-    return found
-
-
-def _enum_value(enum_type: Any, value: Any) -> Any:
-    """Read an enum name, id, or the explicit pair stored in registry JSON.
-
-    The name and the id must agree; an id no member stores is refused rather
-    than read as a degraded member.
-    """
-    if isinstance(value, Mapping):
-        if set(value) != {"name", "id"}:
-            raise ValueError("an enum object needs name and id")
-        name = value["name"]
-        identifier = value["id"]
-        if type(name) is not str or not name.strip():
-            raise ValueError("an enum object needs a nonempty string name")
-        if type(identifier) is not int:
-            raise ValueError("an enum object needs an integer id")
-        named = enum_type[name.upper()]
-        if identifier != int(named):
-            raise ValueError("an enum name and id disagree")
-        return named
-    parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
-    if isinstance(parsed, str):
-        return enum_type[parsed.upper()]
-    member = enum_type(parsed)
-    if int(member) != int(parsed):
-        raise ValueError("no member stores this id")
-    return member
-
-
-def _enum_document(mapping: Mapping[str, Any]) -> dict[str, dict[str, str | int]]:
-    """Enum mappings with a readable name and stable integer id."""
-    return {str(key): {"name": value.name, "id": int(value)} for key, value in mapping.items()}
 
 
 def _json(value: Any) -> str:

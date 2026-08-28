@@ -16,7 +16,6 @@
   --rekep-border: #27272a;
   --rekep-border-subtle: #1c1c1f;
   --rekep-muted: #a1a1aa;
-  --rekep-subtle: #71717a;
   --md-default-bg-color: var(--rekep-black);
   --md-default-fg-color: var(--rekep-white);
   --md-default-fg-color--light: #d4d4d8;
@@ -29,6 +28,19 @@
   --md-accent-fg-color: var(--rekep-orange);
   --md-code-bg-color: #0c0c0e;
   --md-code-fg-color: #e4e4e7;
+  --md-code-hl-number-color: #fdba74;
+  --md-code-hl-special-color: #f87171;
+  --md-code-hl-function-color: #f4f4f5;
+  --md-code-hl-constant-color: #fb923c;
+  --md-code-hl-keyword-color: #fb923c;
+  --md-code-hl-string-color: #d4d4d8;
+  --md-code-hl-name-color: #fafafa;
+  --md-code-hl-operator-color: #a1a1aa;
+  --md-code-hl-punctuation-color: #7d7d86;
+  --md-code-hl-comment-color: #7d7d86;
+  --md-code-hl-generic-color: #e4e4e7;
+  --md-code-hl-variable-color: #f4f4f5;
+  --rekep-hero: #070708;
   --md-footer-bg-color: #070708;
   --md-footer-bg-color--dark: #050505;
 }
@@ -41,7 +53,6 @@
   --rekep-border: #e4e4e7;
   --rekep-border-subtle: #f0f0f2;
   --rekep-muted: #52525b;
-  --rekep-subtle: #71717a;
   --md-default-bg-color: #fff;
   --md-default-fg-color: #09090b;
   --md-default-fg-color--light: #3f3f46;
@@ -50,24 +61,38 @@
   --md-primary-fg-color: #09090b;
   --md-primary-bg-color: #fafafa;
   --md-accent-fg-color: #c2410c;
-  --md-code-bg-color: #18181b;
-  --md-code-fg-color: #f4f4f5;
+  --rekep-hero: #fafafa;
+  --md-code-bg-color: #f4f4f5;
+  --md-code-fg-color: #18181b;
+  --md-code-hl-number-color: #b45309;
+  --md-code-hl-special-color: #b91c1c;
+  --md-code-hl-function-color: #18181b;
+  --md-code-hl-constant-color: #c2410c;
+  --md-code-hl-keyword-color: #c2410c;
+  --md-code-hl-string-color: #3f3f46;
+  --md-code-hl-name-color: #18181b;
+  --md-code-hl-operator-color: #52525b;
+  --md-code-hl-punctuation-color: #63636b;
+  --md-code-hl-comment-color: #63636b;
+  --md-code-hl-generic-color: #27272a;
+  --md-code-hl-variable-color: #18181b;
 }
 
+/* Only what genuinely reads the same over either ground belongs here. The
+   twelve syntax colours that used to live in this block did not: one palette
+   tuned for a dark card, applied to both schemes, put near-black tokens on a
+   near-black light-mode code block. */
 [data-md-color-scheme] {
   --md-code-hl-color: rgb(249 115 22 / 12%);
-  --md-code-hl-number-color: #fdba74;
-  --md-code-hl-special-color: #f87171;
-  --md-code-hl-function-color: #f4f4f5;
-  --md-code-hl-constant-color: #fb923c;
-  --md-code-hl-keyword-color: #fb923c;
-  --md-code-hl-string-color: #d4d4d8;
-  --md-code-hl-name-color: #fafafa;
-  --md-code-hl-operator-color: #a1a1aa;
-  --md-code-hl-punctuation-color: #71717a;
-  --md-code-hl-comment-color: #71717a;
-  --md-code-hl-generic-color: #e4e4e7;
-  --md-code-hl-variable-color: #f4f4f5;
+}
+
+/* Material hides the variant that does not match the scheme, and it does so at
+   the same specificity as a `.md-typeset .thing img` layout rule -- which the
+   project stylesheets carry, and which load after it. Stated once here, above
+   both, so a page never shows a diagram twice. */
+[data-md-color-scheme="default"] .md-typeset img[src$="#only-dark"],
+[data-md-color-scheme="slate"] .md-typeset img[src$="#only-light"] {
+  display: none;
 }
 
 body,
@@ -89,7 +114,6 @@ pre {
 }
 
 .md-header {
-  background: #050505;
   border-bottom: 1px solid #202023;
   box-shadow: none;
 }
@@ -110,7 +134,6 @@ pre {
 }
 
 .md-tabs {
-  background: #070708;
   border-bottom: 1px solid #202023;
 }
 

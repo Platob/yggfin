@@ -7,6 +7,7 @@ import datetime
 import decimal
 import functools
 import json
+import logging
 import re
 import struct
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -32,6 +33,9 @@ from rekep.fields.metadata import (
     IcebergMetadata,
     ProtocolMetadata,
 )
+from rekep.fields.names import column_name
+
+LOGGER = logging.getLogger(__name__)
 
 #: Metadata key a documentation line lands under -- the one Arrow, parquet and
 #: every viewer downstream read as the column comment.
@@ -58,6 +62,11 @@ FIX = "fix"
 ENUM = "enum"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
+
+#: Metadata key carrying what a column is *called* -- `SecurityID` for one
+#: stored as `securityid`, `Source URL` for one stored as `sourceurl`. Every
+#: column carries it, because a folded name is a key and not a label.
+DISPLAY = "fix:display"
 
 #: Iceberg identifies a column by id and never by name, so an id is part of
 #: what a schema *is* once a table exists. It rides under the protocol's own
@@ -369,6 +378,20 @@ class Field(Convertible):
         if isinstance(extra, str):
             return cls(metadata={DESCRIPTION: extra})
         return Field()
+
+    @classmethod
+    def column(cls, display: str = "", **declared: Any) -> Field:
+        """A declaration for a column the FIX dictionary does not name.
+
+        A column's name is folded -- lowercase letters and digits, nothing
+        else -- so `sourceurl` cannot spell the words it is made of. This is
+        where it spells them. A field the dictionary *does* name takes its
+        display from the dictionary instead, and says nothing here.
+        """
+        built = cls(**declared)
+        if display:
+            built.fix.display = display
+        return built
 
     @classmethod
     def primary_key(cls, **declared: Any) -> Field:
@@ -1187,14 +1210,26 @@ class StructField(Field):
 
     @functools.cached_property
     def _by_name(self) -> dict[str, Field]:
-        return {member.name: member for member in self.fields}
+        """Members by their own name, and by the fold every name matches on.
+
+        A column's name is already folded, so the two agree for anything this
+        package declares; the second key is what lets a caller ask for the
+        spelling it has -- `SecurityID` from the dictionary, `security_id`
+        from a bridge -- and reach the one column that is.
+        """
+        found = {member.name: member for member in self.fields}
+        for member in self.fields:
+            found.setdefault(column_name(member.name), member)
+        return found
 
     def field(self, name: str) -> Field:
-        """One member by name."""
-        try:
-            return self._by_name[name]
-        except KeyError:
-            raise KeyError(f"{self.name or 'struct'} has no member {name!r}") from None
+        """One member, by its name or by any spelling that folds onto it."""
+        found = self._by_name.get(name)
+        if found is None:
+            found = self._by_name.get(column_name(name))
+        if found is None:
+            raise KeyError(f"{self.name or 'struct'} has no member {name!r}")
+        return found
 
     @property
     def names(self) -> list[str]:
@@ -1505,6 +1540,14 @@ class StructField(Field):
             source, incoming = _peek_schema(source)
             if incoming is not None:
                 target = self.merged(incoming)
+        # Per stream, not per batch: `cast_arrow_batch` runs once per
+        # `batch_row_size` rows, which is thousands of records over one file.
+        LOGGER.debug(
+            "casting a stream onto %s: %d columns%s",
+            target.name or "an unnamed shape",
+            len(target.names),
+            " (widened by merge_schema)" if merge_schema and target is not self else "",
+        )
 
         def generate() -> Iterator[pyarrow.RecordBatch]:
             for batch in source:

@@ -64,8 +64,8 @@ def test_a_two_sided_quote_becomes_two_distinct_indicative_orders() -> None:
     assert (bid.side, bid.px, bid.qty) == (Side.BID, 100.0, 10.0)
     assert (ask.side, ask.px, ask.qty) == (Side.ASK, 101.0, 12.0)
     assert bid.kind is ask.kind is MarketKind.LIMIT_ORDER
-    assert bid.order_id == ask.order_id == "Q-1"
-    assert bid.client_order_id == ask.client_order_id == "REQ-1"
+    assert bid.orderid == ask.orderid == "Q-1"
+    assert bid.clordid == ask.clordid == "REQ-1"
     assert bid.xhash != ask.xhash
     assert bid.eunix == ask.eunix == unix_of("20260821-10:05:00")
     assert bid.metadata["537"] == ask.metadata["537"] == "1"
@@ -126,7 +126,7 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
         "299=ENTRY-2|55=MSFT|132=200|133=201|134=20|135=21|"
         "60=20260821-10:00:00"
     )
-    assert [(row.symbol, row.side, row.order_id) for row in rows] == [
+    assert [(row.symbol, row.side, row.orderid) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1"),
         ("AAPL", Side.ASK, "ENTRY-1"),
         ("MSFT", Side.BID, "ENTRY-2"),
@@ -145,7 +145,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     raw = next(
         iter(
             Message.into_arrow_reader(
-                [Message(message=line, MsgType="i", etype=EventType.QUOTE)],
+                [Message(message=line, msgtype="i", etype=EventType.QUOTE)],
                 batch_row_size=1,
             )
         )
@@ -158,7 +158,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     stored_events = list(stored.into_market_events(fix_version="4.4"))
 
     def project(event):
-        return event.symbol, event.side, event.px, event.qty, event.order_id
+        return event.symbol, event.side, event.px, event.qty, event.orderid
 
     assert [project(event) for event in stored_events] == [
         project(event) for event in direct_events
@@ -170,10 +170,10 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     def book(value):
         return (
             value.code,
-            value.bid_px,
-            value.bid_qty,
-            value.ask_px,
-            value.ask_qty,
+            value.bidpx,
+            value.bidqty,
+            value.askpx,
+            value.askqty,
             len(value.deltas),
         )
 
@@ -184,7 +184,7 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
     registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
     rows = list(FixEvents.from_text(mass_quote(registry), registry=registry, fix_version="4.4"))
 
-    assert [(row.symbol, row.side, row.order_id, row.px, row.qty) for row in rows] == [
+    assert [(row.symbol, row.side, row.orderid, row.px, row.qty) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1", 100.0, 10.0),
         ("AAPL", Side.ASK, "ENTRY-1", 101.0, 11.0),
         ("MSFT", Side.BID, "ENTRY-2", 200.0, 20.0),

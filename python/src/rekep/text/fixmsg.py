@@ -13,8 +13,8 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.enums import MIC, AssetKind, Currency, EventType, IdSource, OptionKind, Side
-from rekep.fields import Field, scalar
+from rekep.enums import MIC, AssetKind, Currency, EventType, OptionKind, Side
+from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
     build_map,
@@ -26,12 +26,16 @@ from rekep.fields.arrays import (
 )
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import (
-    DECLARATIONS,
+    DECLARED,
     ENTRIES,
     IDENTIFIER_FIELDS,
     ISIN_CODE,
+    ISIN_SCHEME,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
+    UNKNOWN_SCHEME,
+    id_scheme,
+    id_schemes,
 )
 from rekep.fix.components import (
     LEGS,
@@ -66,7 +70,7 @@ from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
 from rekep.text.message import SESSION_FIELDS, Message
 
 _EVENT_CODE = pyarrow.int64()
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 
@@ -213,16 +217,16 @@ class FixMsg(Message):
     def into_code_columns(cls) -> tuple[str, ...]:
         """Parsed columns tried for a lifecycle identifier, best first."""
         return (
-            "OrderID",
-            "OrigClOrdID",
-            "ClOrdID",
-            "ExecID",
-            "QuoteEntryID",
-            "QuoteID",
-            "QuoteReqID",
-            "SecurityID",
-            "ISINCODE",
-            "Symbol",
+            "orderid",
+            "origclordid",
+            "clordid",
+            "execid",
+            "quoteentryid",
+            "quoteid",
+            "quotereqid",
+            "securityid",
+            "isincode",
+            "symbol",
         )
 
     @classmethod
@@ -235,7 +239,7 @@ class FixMsg(Message):
     @functools.cache
     def into_symbol_columns(cls) -> tuple[str, ...]:
         """Instrument identifiers used when FIX omits `Symbol <55>`."""
-        return ("Symbol", "SecurityID", "ISINCODE")
+        return ("symbol", "securityid", "isincode")
 
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
@@ -243,22 +247,22 @@ class FixMsg(Message):
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if (
-            self.protocol_version is None
-            and self.protocol_code == NO_PROTOCOL
-            and (self.BeginString or self.entries)
+            self.protocolversion is None
+            and self.protocolcode == NO_PROTOCOL
+            and (self.beginstring or self.entries)
         ):
             evidence: list[tuple[str, Any]] = []
-            if self.BeginString:
-                evidence.append(("8", self.BeginString))
-            if self.ApplVerID:
-                evidence.append(("1128", self.ApplVerID))
+            if self.beginstring:
+                evidence.append(("8", self.beginstring))
+            if self.applverid:
+                evidence.append(("1128", self.applverid))
             evidence.extend(_stored_pairs(self.entries))
             version, source = infer_version_from_pairs(evidence)
             if version is not None:
-                self.protocol_version = version
-                self.protocol_version_source = source
-                if self.protocol_code == NO_PROTOCOL:
-                    self.protocol_code = "FIX"
+                self.protocolversion = version
+                self.protocolversionsource = source
+                if self.protocolcode == NO_PROTOCOL:
+                    self.protocolcode = "FIX"
 
     def identify(self) -> FixMsg:
         """Give the parsed event its lifecycle and version identities."""
@@ -273,29 +277,29 @@ class FixMsg(Message):
     message: str | None = None
     """Payload text; null where parsed columns retain every field."""
 
-    protocol_code: str = NO_PROTOCOL
+    protocolcode: Annotated[str, Field.column("Protocol Code")] = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
 
     # Without it nothing downstream can tell a real transaction time from a
     # print time, and that distinction is the whole point of resolving one.
     # Empty means no clock answered at all, which is a row with no time.
-    unix_source: str = ""
+    unixsource: Annotated[str, Field.column("Unix Source")] = ""
     """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
 
     # One column, not a FIX-specific one: every protocol with versions has a
     # version, and a `fix_version` beside it would duplicate itself the first
     # time a second versioned protocol appeared. Resolved once, at the message
     # stage, so nothing downstream re-derives it.
-    protocol_version: str | None = None
-    """Which version of `protocol_code` the line is read under; null when unresolved."""
+    protocolversion: Annotated[str | None, Field.column("Protocol Version")] = None
+    """Which version of `protocolcode` the line is read under; null when unresolved."""
 
     # Null because the message carried no version, or null because nothing
     # tried? A consumer cannot tell the two apart from the value, and they are
     # different facts about the row.
-    protocol_version_source: str = NO_SOURCE
-    """What resolved `protocol_version`: a BeginString, an application version, or nothing."""
+    protocolversionsource: Annotated[str, Field.column("Protocol Version Source")] = NO_SOURCE
+    """What resolved `protocolversion`: a BeginString, an application version, or nothing."""
 
-    MsgSeqNum: Annotated[int | None, DECLARATIONS[34]] = None
+    msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
     # A list preserves repeated keys and wire order. Null means no parsed
@@ -303,7 +307,7 @@ class FixMsg(Message):
     entries: list[Entry] | None = None
     """Unlifted fields and lossless raw audit sidecars for typed columns."""
 
-    Parties: Annotated[
+    parties: Annotated[
         list[Party] | None,
         Field(
             dtype=PARTIES,
@@ -312,7 +316,7 @@ class FixMsg(Message):
     ] = None
     """FIX Parties entries; null when the component is absent."""
 
-    TrdRegTimestamps: Annotated[
+    trdregtimestamps: Annotated[
         list[TrdRegTimestamp] | None,
         Field(
             dtype=TRD_REG_TIMESTAMPS,
@@ -321,7 +325,7 @@ class FixMsg(Message):
     ] = None
     """FIX TrdRegTimestamps entries; null when the component is absent."""
 
-    SideTrdRegTS: Annotated[
+    sidetrdregts: Annotated[
         list[SideTrdRegTimestamp] | None,
         Field(
             dtype=SIDE_TRD_REG_TIMESTAMPS,
@@ -330,13 +334,13 @@ class FixMsg(Message):
     ] = None
     """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
-    ISINCODE: Annotated[str | None, ISIN_CODE] = None
+    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISIN Code")] = None
     """ISIN carried by a rendered `ISINCODE` field."""
 
-    ParentClOrdID: Annotated[str | None, PARENT_CL_ORD_ID] = None
+    parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
     """Client order identity of the parent in a replace chain, bridge-rendered."""
 
-    ParentOrderID: Annotated[str | None, PARENT_ORDER_ID] = None
+    parentorderid: Annotated[str | None, PARENT_ORDER_ID] = None
     """Venue order identity of the parent in a replace chain, bridge-rendered."""
 
     # -- what a message says, flattened ---------------------------------------
@@ -346,261 +350,263 @@ class FixMsg(Message):
 
     # The envelope itself.
 
-    BeginString: Annotated[str | None, DECLARATIONS[8]] = None
+    beginstring: Annotated[str | None, DECLARED["BeginString"]] = None
     """`BeginString <8>`: which FIX version the message says it is."""
 
-    BodyLength: Annotated[int | None, DECLARATIONS[9]] = None
+    bodylength: Annotated[int | None, DECLARED["BodyLength"]] = None
     """`BodyLength <9>`, as the message counted it."""
 
-    MsgType: Annotated[str | None, DECLARATIONS[35]] = None
+    msgtype: Annotated[str | None, DECLARED["MsgType"]] = None
     """`MsgType <35>`: what the message is, on the wire."""
 
-    CheckSum: Annotated[str | None, DECLARATIONS[10]] = None
+    checksum: Annotated[str | None, DECLARED["CheckSum"]] = None
     """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
 
     # Who sent it, and to whom.
 
-    SenderCompID: Annotated[str | None, DECLARATIONS[49]] = None
+    sendercompid: Annotated[str | None, DECLARED["SenderCompID"]] = None
     """`SenderCompID <49>`: who sent it."""
 
-    SenderSubID: Annotated[str | None, DECLARATIONS[50]] = None
+    sendersubid: Annotated[str | None, DECLARED["SenderSubID"]] = None
     """`SenderSubID <50>`: which desk of theirs."""
 
-    SenderLocationID: Annotated[str | None, DECLARATIONS[142]] = None
+    senderlocationid: Annotated[str | None, DECLARED["SenderLocationID"]] = None
     """`SenderLocationID <142>`."""
 
-    TargetCompID: Annotated[str | None, DECLARATIONS[56]] = None
+    targetcompid: Annotated[str | None, DECLARED["TargetCompID"]] = None
     """`TargetCompID <56>`: who it was sent to."""
 
-    TargetSubID: Annotated[str | None, DECLARATIONS[57]] = None
+    targetsubid: Annotated[str | None, DECLARED["TargetSubID"]] = None
     """`TargetSubID <57>`."""
 
-    TargetLocationID: Annotated[str | None, DECLARATIONS[143]] = None
+    targetlocationid: Annotated[str | None, DECLARED["TargetLocationID"]] = None
     """`TargetLocationID <143>`."""
 
     # And on whose behalf, when a hub relayed it.
 
-    OnBehalfOfCompID: Annotated[str | None, DECLARATIONS[115]] = None
+    onbehalfofcompid: Annotated[str | None, DECLARED["OnBehalfOfCompID"]] = None
     """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
 
-    OnBehalfOfSubID: Annotated[str | None, DECLARATIONS[116]] = None
+    onbehalfofsubid: Annotated[str | None, DECLARED["OnBehalfOfSubID"]] = None
     """`OnBehalfOfSubID <116>`."""
 
-    OnBehalfOfLocationID: Annotated[str | None, DECLARATIONS[144]] = None
+    onbehalfoflocationid: Annotated[str | None, DECLARED["OnBehalfOfLocationID"]] = None
     """`OnBehalfOfLocationID <144>`."""
 
-    DeliverToCompID: Annotated[str | None, DECLARATIONS[128]] = None
+    delivertocompid: Annotated[str | None, DECLARED["DeliverToCompID"]] = None
     """`DeliverToCompID <128>`: who it is ultimately for."""
 
-    DeliverToSubID: Annotated[str | None, DECLARATIONS[129]] = None
+    delivertosubid: Annotated[str | None, DECLARED["DeliverToSubID"]] = None
     """`DeliverToSubID <129>`."""
 
-    DeliverToLocationID: Annotated[str | None, DECLARATIONS[145]] = None
+    delivertolocationid: Annotated[str | None, DECLARED["DeliverToLocationID"]] = None
     """`DeliverToLocationID <145>`."""
 
     # Where it sits in the session's stream, and whether it is a repeat.
 
-    LastMsgSeqNumProcessed: Annotated[int | None, DECLARATIONS[369]] = None
+    lastmsgseqnumprocessed: Annotated[int | None, DECLARED["LastMsgSeqNumProcessed"]] = None
     """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
 
-    PossDupFlag: Annotated[bool | None, DECLARATIONS[43]] = None
+    possdupflag: Annotated[bool | None, DECLARED["PossDupFlag"]] = None
     """`PossDupFlag <43>`: a retransmission of a message already sent."""
 
-    PossResend: Annotated[bool | None, DECLARATIONS[97]] = None
+    possresend: Annotated[bool | None, DECLARED["PossResend"]] = None
     """`PossResend <97>`: the same business content under a new sequence."""
 
     # FIX documents these instants as UTC; microseconds are Iceberg-compatible.
 
-    SendingTime: Annotated[datetime.datetime | None, DECLARATIONS[52]] = None
+    sendingtime: Annotated[datetime.datetime | None, DECLARED["SendingTime"]] = None
     """`SendingTime <52>`: when it was transmitted."""
 
-    OrigSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[122]] = None
+    origsendingtime: Annotated[datetime.datetime | None, DECLARED["OrigSendingTime"]] = None
     """`OrigSendingTime <122>`: the original transmission, on a resend."""
 
-    OnBehalfOfSendingTime: Annotated[datetime.datetime | None, DECLARATIONS[370]] = None
+    onbehalfofsendingtime: Annotated[
+        datetime.datetime | None, DECLARED["OnBehalfOfSendingTime"]
+    ] = None
     """`OnBehalfOfSendingTime <370>`."""
 
     # Which application version speaks, under FIXT.
 
-    ApplVerID: Annotated[str | None, DECLARATIONS[1128]] = None
+    applverid: Annotated[str | None, DECLARED["ApplVerID"]] = None
     """`ApplVerID <1128>`."""
 
-    CstmApplVerID: Annotated[str | None, DECLARATIONS[1129]] = None
+    cstmapplverid: Annotated[str | None, DECLARED["CstmApplVerID"]] = None
     """`CstmApplVerID <1129>`."""
 
-    ApplExtID: Annotated[int | None, DECLARATIONS[1156]] = None
+    applextid: Annotated[int | None, DECLARED["ApplExtID"]] = None
     """`ApplExtID <1156>`."""
 
     # How the payload is written, when it is not plain ASCII.
 
-    MessageEncoding: Annotated[str | None, DECLARATIONS[347]] = None
+    messageencoding: Annotated[str | None, DECLARED["MessageEncoding"]] = None
     """`MessageEncoding <347>`."""
 
-    XmlDataLen: Annotated[int | None, DECLARATIONS[212]] = None
+    xmldatalen: Annotated[int | None, DECLARED["XmlDataLen"]] = None
     """`XmlDataLen <212>`."""
 
-    XmlData: Annotated[bytes | None, DECLARATIONS[213]] = None
+    xmldata: Annotated[bytes | None, DECLARED["XmlData"]] = None
     """`XmlData <213>`, as the bytes it is."""
 
     # And how it is sealed.
 
-    SecureDataLen: Annotated[int | None, DECLARATIONS[90]] = None
+    securedatalen: Annotated[int | None, DECLARED["SecureDataLen"]] = None
     """`SecureDataLen <90>`."""
 
-    SecureData: Annotated[bytes | None, DECLARATIONS[91]] = None
+    securedata: Annotated[bytes | None, DECLARED["SecureData"]] = None
     """`SecureData <91>`, as the bytes it is."""
 
-    SignatureLength: Annotated[int | None, DECLARATIONS[93]] = None
+    signaturelength: Annotated[int | None, DECLARED["SignatureLength"]] = None
     """`SignatureLength <93>`."""
 
-    Signature: Annotated[bytes | None, DECLARATIONS[89]] = None
+    signature: Annotated[bytes | None, DECLARED["Signature"]] = None
     """`Signature <89>`, as the bytes it is."""
 
     # What was traded.
 
-    Symbol: Annotated[str | None, DECLARATIONS[55]] = None
+    symbol: Annotated[str | None, DECLARED["Symbol"]] = None
     """`Symbol <55>`: ticker symbol."""
 
-    SecurityID: Annotated[str | None, DECLARATIONS[48]] = None
+    securityid: Annotated[str | None, DECLARED["SecurityID"]] = None
     """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
 
-    SecurityIDSource: Annotated[str | None, DECLARATIONS[22]] = None
+    securityidsource: Annotated[str | None, DECLARED["SecurityIDSource"]] = None
     """`SecurityIDSource <22>`: which scheme `SecurityID` is in -- `4` is ISIN."""
 
-    SecurityType: Annotated[str | None, DECLARATIONS[167]] = None
+    securitytype: Annotated[str | None, DECLARED["SecurityType"]] = None
     """`SecurityType <167>`."""
 
-    CFICode: Annotated[str | None, DECLARATIONS[461]] = None
+    cficode: Annotated[str | None, DECLARED["CFICode"]] = None
     """`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells it."""
 
-    SecurityExchange: Annotated[str | None, DECLARATIONS[207]] = None
+    securityexchange: Annotated[str | None, DECLARED["SecurityExchange"]] = None
     """`SecurityExchange <207>`: the market the instrument is listed on."""
 
-    Currency: Annotated[str | None, DECLARATIONS[15]] = None
+    currency: Annotated[str | None, DECLARED["Currency"]] = None
     """`Currency <15>`, which is what the prices below are in."""
 
     # Who asked, and under which identifiers.
 
-    Account: Annotated[str | None, DECLARATIONS[1]] = None
+    account: Annotated[str | None, DECLARED["Account"]] = None
     """`Account <1>`."""
 
-    ClOrdID: Annotated[str | None, DECLARATIONS[11]] = None
+    clordid: Annotated[str | None, DECLARED["ClOrdID"]] = None
     """`ClOrdID <11>`: the client's own identifier for the order."""
 
-    OrigClOrdID: Annotated[str | None, DECLARATIONS[41]] = None
+    origclordid: Annotated[str | None, DECLARED["OrigClOrdID"]] = None
     """`OrigClOrdID <41>`: which order an amendment or cancel is about."""
 
-    OrderID: Annotated[str | None, DECLARATIONS[37]] = None
+    orderid: Annotated[str | None, DECLARED["OrderID"]] = None
     """`OrderID <37>`: the venue's identifier for it."""
 
-    ExecID: Annotated[str | None, DECLARATIONS[17]] = None
+    execid: Annotated[str | None, DECLARED["ExecID"]] = None
     """`ExecID <17>`: the venue's identifier for this execution report."""
 
     # On what terms.
 
-    Side: Annotated[str | None, DECLARATIONS[54]] = None
+    side: Annotated[str | None, DECLARED["Side"]] = None
     """`Side <54>`: `1` buy, `2` sell, and the rest of the standard's codes."""
 
-    OrdType: Annotated[str | None, DECLARATIONS[40]] = None
+    ordtype: Annotated[str | None, DECLARED["OrdType"]] = None
     """`OrdType <40>`: `1` market, `2` limit, ..."""
 
-    TimeInForce: Annotated[str | None, DECLARATIONS[59]] = None
+    timeinforce: Annotated[str | None, DECLARED["TimeInForce"]] = None
     """`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ..."""
 
     # Where it stands.
 
-    OrdStatus: Annotated[str | None, DECLARATIONS[39]] = None
+    ordstatus: Annotated[str | None, DECLARED["OrdStatus"]] = None
     """`OrdStatus <39>`: where the order stands."""
 
-    ExecType: Annotated[str | None, DECLARATIONS[150]] = None
+    exectype: Annotated[str | None, DECLARED["ExecType"]] = None
     """`ExecType <150>`: what this report is reporting."""
 
     # For how much, at what price.
 
-    OrderQty: Annotated[float | None, DECLARATIONS[38]] = None
+    orderqty: Annotated[float | None, DECLARED["OrderQty"]] = None
     """`OrderQty <38>`: how much was asked for."""
 
-    Price: Annotated[float | None, DECLARATIONS[44]] = None
+    price: Annotated[float | None, DECLARED["Price"]] = None
     """`Price <44>`: the limit, when there is one."""
 
-    AvgPx: Annotated[float | None, DECLARATIONS[6]] = None
+    avgpx: Annotated[float | None, DECLARED["AvgPx"]] = None
     """`AvgPx <6>`: the average of what has filled so far."""
 
-    CumQty: Annotated[float | None, DECLARATIONS[14]] = None
+    cumqty: Annotated[float | None, DECLARED["CumQty"]] = None
     """`CumQty <14>`: how much has filled."""
 
-    LeavesQty: Annotated[float | None, DECLARATIONS[151]] = None
+    leavesqty: Annotated[float | None, DECLARED["LeavesQty"]] = None
     """`LeavesQty <151>`: how much is still working."""
 
-    LastPx: Annotated[float | None, DECLARATIONS[31]] = None
+    lastpx: Annotated[float | None, DECLARED["LastPx"]] = None
     """`LastPx <31>`: the price of this fill."""
 
-    LastQty: Annotated[float | None, DECLARATIONS[32]] = None
+    lastqty: Annotated[float | None, DECLARED["LastQty"]] = None
     """`LastQty <32>`: the size of this fill."""
 
     # When it happened, and whatever was said about it.
 
-    TransactTime: Annotated[datetime.datetime | None, DECLARATIONS[60]] = None
+    transacttime: Annotated[datetime.datetime | None, DECLARED["TransactTime"]] = None
     """`TransactTime <60>`: when the business event happened, in UTC."""
 
-    Text: Annotated[str | None, DECLARATIONS[58]] = None
+    text: Annotated[str | None, DECLARED["Text"]] = None
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
     # in `entries`; a value is lifted only when it occurs once on the line.
 
-    QuoteID: Annotated[str | None, DECLARATIONS[117]] = None
+    quoteid: Annotated[str | None, DECLARED["QuoteID"]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
 
-    QuoteReqID: Annotated[str | None, DECLARATIONS[131]] = None
+    quotereqid: Annotated[str | None, DECLARED["QuoteReqID"]] = None
     """`QuoteReqID <131>`: request this quote answers."""
 
-    QuoteType: Annotated[int | None, DECLARATIONS[537]] = None
+    quotetype: Annotated[int | None, DECLARED["QuoteType"]] = None
     """`QuoteType <537>`: indicative, tradeable or restricted quote kind."""
 
-    QuoteStatus: Annotated[int | None, DECLARATIONS[297]] = None
+    quotestatus: Annotated[int | None, DECLARED["QuoteStatus"]] = None
     """`QuoteStatus <297>`: quote acknowledgement state."""
 
-    QuoteRejectReason: Annotated[int | None, DECLARATIONS[300]] = None
+    quoterejectreason: Annotated[int | None, DECLARED["QuoteRejectReason"]] = None
     """`QuoteRejectReason <300>` when a quote is rejected."""
 
-    QuoteRespType: Annotated[int | None, DECLARATIONS[694]] = None
+    quoteresptype: Annotated[int | None, DECLARED["QuoteRespType"]] = None
     """`QuoteRespType <694>`: quote response action."""
 
-    QuoteCancelType: Annotated[int | None, DECLARATIONS[298]] = None
+    quotecanceltype: Annotated[int | None, DECLARED["QuoteCancelType"]] = None
     """`QuoteCancelType <298>`: scope of a quote cancellation."""
 
-    BidPx: Annotated[float | None, DECLARATIONS[132]] = None
+    bidpx: Annotated[float | None, DECLARED["BidPx"]] = None
     """`BidPx <132>`: quoted bid price."""
 
-    OfferPx: Annotated[float | None, DECLARATIONS[133]] = None
+    offerpx: Annotated[float | None, DECLARED["OfferPx"]] = None
     """`OfferPx <133>`: quoted offer price."""
 
-    BidSize: Annotated[float | None, DECLARATIONS[134]] = None
+    bidsize: Annotated[float | None, DECLARED["BidSize"]] = None
     """`BidSize <134>`: quoted bid quantity."""
 
-    OfferSize: Annotated[float | None, DECLARATIONS[135]] = None
+    offersize: Annotated[float | None, DECLARED["OfferSize"]] = None
     """`OfferSize <135>`: quoted offer quantity."""
 
-    DefBidSize: Annotated[float | None, DECLARATIONS[293]] = None
+    defbidsize: Annotated[float | None, DECLARED["DefBidSize"]] = None
     """`DefBidSize <293>`: default bid quantity for a quote set."""
 
-    DefOfferSize: Annotated[float | None, DECLARATIONS[294]] = None
+    defoffersize: Annotated[float | None, DECLARED["DefOfferSize"]] = None
     """`DefOfferSize <294>`: default offer quantity for a quote set."""
 
-    ValidUntilTime: Annotated[datetime.datetime | None, DECLARATIONS[62]] = None
+    validuntiltime: Annotated[datetime.datetime | None, DECLARED["ValidUntilTime"]] = None
     """`ValidUntilTime <62>`: quote expiry in UTC."""
 
-    NoQuoteSets: Annotated[int | None, DECLARATIONS[296]] = None
+    noquotesets: Annotated[int | None, DECLARED["NoQuoteSets"]] = None
     """`NoQuoteSets <296>`: quote-set group count."""
 
-    NoQuoteEntries: Annotated[int | None, DECLARATIONS[295]] = None
+    noquoteentries: Annotated[int | None, DECLARED["NoQuoteEntries"]] = None
     """`NoQuoteEntries <295>`: quote-entry group count."""
 
-    QuoteSetID: Annotated[str | None, DECLARATIONS[302]] = None
+    quotesetid: Annotated[str | None, DECLARED["QuoteSetID"]] = None
     """`QuoteSetID <302>`: quote-set identifier."""
 
-    QuoteEntryID: Annotated[str | None, DECLARATIONS[299]] = None
+    quoteentryid: Annotated[str | None, DECLARED["QuoteEntryID"]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
     # Last, and lists: what the instrument's two repeating groups carry. Last
@@ -609,7 +615,7 @@ class FixMsg(Message):
     # member declared earlier would push flat columns past it. The three
     # components above predate the cutoff being crossed; new ones go here.
 
-    SecurityAltID: Annotated[
+    securityaltid: Annotated[
         list[SecurityAltIDEntry] | None,
         Field(
             dtype=SECURITY_ALT_IDS,
@@ -618,7 +624,7 @@ class FixMsg(Message):
     ] = None
     """FIX SecAltIDGrp entries -- every other identifier; null when absent."""
 
-    Legs: Annotated[
+    legs: Annotated[
         list[Leg] | None,
         Field(
             dtype=LEGS,
@@ -684,16 +690,16 @@ class FixMsg(Message):
             {
                 "message": source.message or None,
                 "entries": list(source.entries or ()),
-                "linked_events": list(source.linked_events),
+                "linkedevents": list(source.linkedevents),
                 "codes": dict(source.codes),
-                "parent_hash": None if source.parent_hash is None else list(source.parent_hash),
+                "parenthash": None if source.parenthash is None else list(source.parenthash),
                 "hash": NIL,
                 "xhash": NIL,
             }
         )
         values.update(_session_values(source))
         values.update(declared)
-        msg_type = values.get("MsgType")
+        msg_type = values.get("msgtype")
         if "etype" not in declared and msg_type is not None and source.etype == EventType.UNKNOWN:
             values["etype"] = (
                 (registry or cls.into_registry())
@@ -712,9 +718,9 @@ class FixMsg(Message):
         known = instrument if instrument.hash else dataclasses.replace(instrument).identify()
         staged = Message(
             **{member.name: getattr(known, member.name) for member in dataclasses.fields(Event)},
-            plugin_code=cls.into_instrument_plugin(),
-            protocol_code=cls.into_instrument_protocol(),
-            MsgType=cls.into_instrument_msg_type(),
+            plugincode=cls.into_instrument_plugin(),
+            protocolcode=cls.into_instrument_protocol(),
+            msgtype=cls.into_instrument_msg_type(),
             entries=_stored_entries(_instrument_pairs(known)) or [],
         )
         return cls.from_message(
@@ -727,14 +733,14 @@ class FixMsg(Message):
             xhash=known.xhash,
             message=None,
             etype=declared.pop("etype", EventType.INSTRUMENT),
-            Symbol=known.symbol or None,
-            SecurityID=known.security_id,
-            SecurityIDSource=known.security_id_source,
-            ISINCODE=known.isin_code,
-            SecurityType=known.security_type,
-            CFICode=known.cfi,
-            SecurityExchange=known.exchange,
-            Currency=None if known.currency is None else known.currency.into_fix(),
+            symbol=known.symbol or None,
+            securityid=known.securityid,
+            securityidsource=known.securityidsource,
+            isincode=known.isincode,
+            securitytype=known.securitytype,
+            cficode=known.cficode,
+            securityexchange=known.securityexchange,
+            currency=None if known.currency is None else known.currency.into_fix(),
             **declared,
         )
 
@@ -865,7 +871,7 @@ class FixMsg(Message):
         if not named:
             return fields, pairs, resolved
 
-        group_version = access.version or self.protocol_version
+        group_version = access.version or self.protocolversion
         if access.registry is not None and group_version is None:
             try:
                 group_version = infer_version_from_pairs(stored, access.registry)[0]
@@ -914,8 +920,8 @@ class FixMsg(Message):
 
     def resolved_version(self, registry: FixRegistry | None = None) -> str | None:
         """Which protocol version this row reads under, inferred when unresolved."""
-        if self.protocol_version is not None:
-            return self.protocol_version
+        if self.protocolversion is not None:
+            return self.protocolversion
         try:
             return infer_version_from_pairs(self.pairs, registry or self.registry)[0]
         except (OSError, ValueError):
@@ -1034,7 +1040,7 @@ class FixMsg(Message):
         are reinjected as FIX, and a consumer holding only the message has no
         `etype` to dispatch on. `MsgType <35>` survives that round trip.
         """
-        return self.MsgType == type(self).into_instrument_msg_type()
+        return self.msgtype == type(self).into_instrument_msg_type()
 
     # -- the FIX stage --------------------------------------------------------
 
@@ -1090,8 +1096,8 @@ class FixMsg(Message):
         columns.update(_session_batch_columns(columns))
         messages = columns.get("message")
         if messages is not None:
-            protocols = codec.categorise(messages, columns.get("plugin_code"))
-            stored_protocols = columns.get("protocol_code")
+            protocols = codec.categorise(messages, columns.get("plugincode"))
+            stored_protocols = columns.get("protocolcode")
             if stored_protocols is not None:
                 # The message stage classified these same rows once, from
                 # syntax the rules cannot always see: a rendered payload whose
@@ -1113,8 +1119,8 @@ class FixMsg(Message):
             # Direction reads the verb before the payload, so it is resolved
             # here, where the classification saying which token opens the
             # payload was just computed -- and written back onto the batch,
-            # appended where a stored batch predates the column, so the
-            # partial fast path's slices carry it too. Only a row that
+            # appended where the batch has no such column, so the partial
+            # fast path's slices carry it too. Only a row that
             # still has its text answers fresh: a projected row dropped the
             # message, and the stored answer is the only one there is.
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
@@ -1132,11 +1138,11 @@ class FixMsg(Message):
                     Message.into_field().into_arrow_schema().field("direction"), direction
                 )
         else:
-            protocols = columns.get("protocol_code")
+            protocols = columns.get("protocolcode")
             if protocols is None:
                 raise ValueError(
-                    "a projected Message batch needs protocol_code; reparse the v4 message "
-                    "contract before dropping message"
+                    "a projected Message batch needs protocolcode; reparse the "
+                    "messages before dropping message"
                 )
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
 
@@ -1214,14 +1220,14 @@ class FixMsg(Message):
                 parts.append(codec.into_message_entries(pairs))
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
-        protocol_version, protocol_version_source = codec.versions_of_entries(
-            entries, columns.get("BeginString")
+        protocolversion, protocolversionsource = codec.versions_of_entries(
+            entries, columns.get("beginstring"), columns.get("applverid")
         )
         columns.update(
             {
-                "protocol_code": protocols,
-                "protocol_version": protocol_version,
-                "protocol_version_source": protocol_version_source,
+                "protocolcode": protocols,
+                "protocolversion": protocolversion,
+                "protocolversionsource": protocolversionsource,
                 "entries": entries,
             }
         )
@@ -1234,17 +1240,22 @@ class FixMsg(Message):
 
     @classmethod
     def _message_schema(cls, source: pyarrow.Schema) -> pyarrow.Schema:
-        """The FixMsg contract followed by caller-declared raw columns."""
+        """The FixMsg contract followed by caller-declared raw columns.
+
+        A caller's column collides by what it folds to, not by how it is
+        spelled: `OrigClOrdID` and `origclordid` are one column asked for
+        twice, and appending both would leave the shape with two.
+        """
         schema = cls.into_field().into_arrow_schema()
-        own = set(schema.names)
-        raw = set(Message.into_field().names)
-        collisions = [name for name in source.names if name in own and name not in raw]
+        own = {column_name(name) for name in schema.names}
+        raw = {column_name(name) for name in Message.into_field().names}
+        collisions = [name for name in source.names if column_name(name) in own - raw]
         if collisions:
             raise ValueError(
                 f"raw message columns collide with FixMsg fields {collisions}; "
                 "rename the caller-declared columns"
             )
-        extra = [field for field in source if field.name not in own]
+        extra = [field for field in source if column_name(field.name) not in own]
         return pyarrow.schema([*schema, *extra], metadata=schema.metadata)
 
     @classmethod
@@ -1253,7 +1264,7 @@ class FixMsg(Message):
     ) -> dict[str, Any]:
         """Resolve each version-homogeneous slice and restore batch order."""
         compute = pyarrow.compute
-        versions = compute.fill_null(columns["protocol_version"], "")
+        versions = compute.fill_null(columns["protocolversion"], "")
         parts, positions = [], []
         for version, where in groups_of(versions):
             taken = {
@@ -1374,12 +1385,12 @@ class FixMsg(Message):
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
-        columns["Symbol"] = cls.symbol_arrow(columns, rows)
+        columns["symbol"] = cls.symbol_arrow(columns, rows)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["codes"] = cls.codes_arrow(columns, rows)
-        columns["reason"] = compute.coalesce(columns.get("Text"), columns["reason"])
-        columns["unix"], columns["unix_source"] = resolve_arrow(columns, columns["runix"], rows)
-        columns["unix_partition"] = unix_partition_arrow(columns["unix"])
+        columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
+        columns["unix"], columns["unixsource"] = resolve_arrow(columns, columns["runix"], rows)
+        columns["unixpartition"] = unix_partition_arrow(columns["unix"])
         columns["cunix"] = columns["unix"]
         columns["hash"] = cls.version_hash_arrow(columns, rows)
         linked = compute.not_equal(columns["code"], "")
@@ -1405,12 +1416,12 @@ class FixMsg(Message):
         """
         return (
             "unix",
-            "unix_source",
-            "source_url",
-            "source_rownum",
-            "protocol_code",
-            "protocol_version",
-            "MsgType",
+            "unixsource",
+            "sourceurl",
+            "sourcerownum",
+            "protocolcode",
+            "protocolversion",
+            "msgtype",
             "entries",
         )
 
@@ -1435,8 +1446,8 @@ class FixMsg(Message):
         recomputed = cls.txhash_arrow(
             clock,
             _digest_text(columns.get("message"), rows),
-            _digest_text(columns.get("source_url"), rows),
-            _digest_text(columns.get("source_rownum"), rows),
+            _digest_text(columns.get("sourceurl"), rows),
+            _digest_text(columns.get("sourcerownum"), rows),
         )
         incoming = columns.get("hash")
         raw = (
@@ -1482,7 +1493,10 @@ class FixMsg(Message):
         )
         available = []
         for stored, field, _ in identified:
-            promoted = columns.get(field)
+            # The column carries the folded name, which is what `stored` is;
+            # the residual is keyed by the dictionary's spelling, because that
+            # is what was asked of `entries`.
+            promoted = columns.get(stored)
             fallback = residual.get(field)
             if promoted is None and fallback is None:
                 continue
@@ -1575,8 +1589,8 @@ class FixMsg(Message):
         """
         from rekep.market.transacted import Transacted
 
-        if self.unix_source:
-            built.__dict__["transacted"] = Transacted(self.unix, self.unix_source)
+        if self.unixsource:
+            built.__dict__["transacted"] = Transacted(self.unix, self.unixsource)
         return built
 
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
@@ -1797,25 +1811,27 @@ class FixMsg(Message):
                 "etype": pyarrow.repeat(
                     pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE), batch.num_rows
                 ),
-                "symbol": pyarrow.compute.fill_null(batch.column("Symbol"), ""),
+                "symbol": pyarrow.compute.fill_null(batch.column("symbol"), ""),
                 "kind": _stored_code(normalized.first(_INSTRUMENT_KIND)),
-                "security_id": batch.column("SecurityID"),
-                "security_id_source": batch.column("SecurityIDSource"),
-                "isin_code": batch.column("ISINCODE"),
-                "alt_ids": normalized.alt_ids(target.field("alt_ids").dtype),
-                "security_type": batch.column("SecurityType"),
-                "cfi": batch.column("CFICode"),
-                "exchange": batch.column("SecurityExchange"),
-                "currency": _currency_arrow(batch.column("Currency")),
-                "multiplier": cast_arrow_fix(
+                "securityid": batch.column("securityid"),
+                "securityidsource": batch.column("securityidsource"),
+                "isincode": batch.column("isincode"),
+                "altids": normalized.altids(target.field("altids").dtype),
+                "securitytype": batch.column("securitytype"),
+                "cficode": batch.column("cficode"),
+                "securityexchange": batch.column("securityexchange"),
+                "currency": _currency_arrow(batch.column("currency")),
+                "contractmultiplier": cast_arrow_fix(
                     normalized.first("ContractMultiplier"), pyarrow.float64()
                 ),
-                "tick": cast_arrow_fix(normalized.first("MinPriceIncrement"), pyarrow.float64()),
-                "lot": cast_arrow_fix(normalized.first("RoundLot"), pyarrow.float64()),
-                "maturity": cast_arrow_fix(normalized.first("MaturityDate"), pyarrow.date32()),
-                "strike": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
-                "option_kind": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
-                "label": normalized.first("SecurityDesc"),
+                "minpriceincrement": cast_arrow_fix(
+                    normalized.first("MinPriceIncrement"), pyarrow.float64()
+                ),
+                "roundlot": cast_arrow_fix(normalized.first("RoundLot"), pyarrow.float64()),
+                "maturitydate": cast_arrow_fix(normalized.first("MaturityDate"), pyarrow.date32()),
+                "strikeprice": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
+                "putorcall": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
+                "securitydesc": normalized.first("SecurityDesc"),
                 "legs": normalized.legs(target.field("legs").dtype),
             }
         )
@@ -1828,18 +1844,18 @@ class FixMsg(Message):
         """Build only the instrument facts already promoted on this row."""
         from rekep.market.instrument import Instrument
 
-        symbol = self.Symbol or self.SecurityID or self.ISINCODE or ""
+        symbol = self.symbol or self.securityid or self.isincode or ""
         if not symbol:
             return None
         return Instrument(
             symbol=symbol,
-            security_id=self.SecurityID,
-            security_id_source=self.SecurityIDSource,
-            isin_code=self.ISINCODE,
-            security_type=self.SecurityType,
-            cfi=self.CFICode,
-            exchange=self.SecurityExchange,
-            currency=self.Currency,
+            securityid=self.securityid,
+            securityidsource=self.securityidsource,
+            isincode=self.isincode,
+            securitytype=self.securitytype,
+            cficode=self.cficode,
+            securityexchange=self.securityexchange,
+            currency=self.currency,
         )
 
     def _normalized_instrument(self) -> Any:
@@ -1855,7 +1871,7 @@ class FixMsg(Message):
         return dataclasses.replace(
             instrument,
             unix=self.unix,
-            unix_partition=self.unix_partition,
+            unixpartition=self.unixpartition,
             etype=EventType.INSTRUMENT,
             cunix=self.cunix,
             runix=self.runix,
@@ -1863,13 +1879,13 @@ class FixMsg(Message):
             sunix=self.sunix,
             hash=self.hash,
             xhash=self.xhash,
-            linked_events=list(self.linked_events),
+            linkedevents=list(self.linkedevents),
             version=self.version,
             state=self.state,
             code=self.code,
             codes=dict(self.codes),
-            prev_unix=self.prev_unix,
-            parent_hash=None if self.parent_hash is None else list(self.parent_hash),
+            prevunix=self.prevunix,
+            parenthash=None if self.parenthash is None else list(self.parenthash),
             mic=self.mic,
             reason=self.reason,
         )
@@ -1929,7 +1945,7 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     )
     explicit = [
         tags.get(30, missing),
-        columns.get("SecurityExchange", missing),
+        columns.get("securityexchange", missing),
         tags.get(100, missing),
         tags.get(275, missing),
         tags.get(1301, missing),
@@ -1941,8 +1957,8 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         stored_mic = pyarrow.nulls(rows, pyarrow.int32())
     elif stored_mic.type != pyarrow.int32():
         stored_mic = stored_mic.cast(pyarrow.int32(), safe=False)
-    sender_source = columns.get("SenderCompID", missing)
-    target_source = columns.get("TargetCompID", missing)
+    sender_source = columns.get("sendercompid", missing)
+    target_source = columns.get("targetcompid", missing)
     sender = (
         MIC.arrow_from_strings(sender_source)
         if sender_source.null_count < rows
@@ -2043,7 +2059,7 @@ class _NormalizedInstrumentFields:
             return pyarrow.nulls(len(roots), pyarrow.string())
         return compute.take(values, compute.index_in(roots, value_set=ids))
 
-    def alt_ids(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
+    def altids(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
         """Alternative identifiers as one nullable Arrow map per row."""
         assert dtype is not None
         roots, parents, values = self._roots("NoSecurityAltID", "SecurityAltID", nonblank=True)
@@ -2075,16 +2091,18 @@ class _NormalizedInstrumentFields:
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
             "kind": _stored_code(member("kind")),
-            "security_id": member("LegSecurityID"),
-            "security_id_source": member("LegSecurityIDSource"),
-            "cfi": member("LegCFICode"),
-            "security_type": member("LegSecurityType"),
-            "exchange": member("LegSecurityExchange"),
+            "securityid": member("LegSecurityID"),
+            "securityidsource": member("LegSecurityIDSource"),
+            "cficode": member("LegCFICode"),
+            "securitytype": member("LegSecurityType"),
+            "securityexchange": member("LegSecurityExchange"),
             "currency": _currency_arrow(member("LegCurrency")),
-            "multiplier": cast_arrow_fix(member("LegContractMultiplier"), pyarrow.float64()),
-            "maturity": cast_arrow_fix(member("LegMaturityDate"), pyarrow.date32()),
-            "strike": cast_arrow_fix(member("LegStrikePrice"), pyarrow.float64()),
-            "option_kind": _fix_enum_arrow(member("LegPutOrCall"), OptionKind),
+            "contractmultiplier": cast_arrow_fix(
+                member("LegContractMultiplier"), pyarrow.float64()
+            ),
+            "maturitydate": cast_arrow_fix(member("LegMaturityDate"), pyarrow.date32()),
+            "strikeprice": cast_arrow_fix(member("LegStrikePrice"), pyarrow.float64()),
+            "putorcall": _fix_enum_arrow(member("LegPutOrCall"), OptionKind),
         }
         entries = pyarrow.StructArray.from_arrays(
             [columns[item.field(index).name] for index in range(item.num_fields)],
@@ -2130,10 +2148,10 @@ def _fix_enum_arrow(values: pyarrow.Array, enum_type: type[Any]) -> pyarrow.Arra
 
 @functools.cache
 def _id_source_arrays() -> tuple[pyarrow.Array, pyarrow.Array]:
-    """FIX identifier-source spellings and their persisted names."""
-    declared = {spelling: member.name for member in IdSource if (spelling := member.into_fix())}
-    return pyarrow.array(declared, pyarrow.string()), pyarrow.array(
-        declared.values(), pyarrow.string()
+    """Identifier-scheme wire values and the names the dictionary gives them."""
+    declared = id_schemes()
+    return pyarrow.array(list(declared), pyarrow.string()), pyarrow.array(
+        list(declared.values()), pyarrow.string()
     )
 
 
@@ -2146,7 +2164,7 @@ def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
     fallback = compute.if_else(
         compute.fill_null(compute.greater(compute.binary_length(values), 0), False),
         values,
-        pyarrow.scalar(IdSource.UNKNOWN.name),
+        pyarrow.scalar(UNKNOWN_SCHEME),
     )
     return compute.coalesce(known, fallback)
 
@@ -2187,22 +2205,22 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
     """Registry-shaped fields not already promoted on a normalized FixMsg."""
     values = (
         (_INSTRUMENT_KIND, int(instrument.kind)),
-        ("ContractMultiplier", instrument.multiplier),
-        ("MinPriceIncrement", instrument.tick),
-        ("RoundLot", instrument.lot),
-        ("MaturityDate", instrument.maturity),
-        ("StrikePrice", instrument.strike),
-        ("PutOrCall", instrument.option_kind),
-        ("SecurityDesc", instrument.label),
+        ("ContractMultiplier", instrument.contractmultiplier),
+        ("MinPriceIncrement", instrument.minpriceincrement),
+        ("RoundLot", instrument.roundlot),
+        ("MaturityDate", instrument.maturitydate),
+        ("StrikePrice", instrument.strikeprice),
+        ("PutOrCall", instrument.putorcall),
+        ("SecurityDesc", instrument.securitydesc),
     )
     pairs = [(name, rendered) for name, value in values if (rendered := _fix_text(value))]
 
-    alternatives = dict(instrument.alt_ids or {})
-    if instrument.isin_code and not (
-        instrument.security_id == instrument.isin_code
-        and _id_source(instrument.security_id_source) == "4"
+    alternatives = dict(instrument.altids or {})
+    if instrument.isincode and not (
+        instrument.securityid == instrument.isincode
+        and id_scheme(instrument.securityidsource) == ISIN_SCHEME
     ):
-        alternatives.setdefault("ISIN", instrument.isin_code)
+        alternatives.setdefault(ISIN_SCHEME, instrument.isincode)
     if alternatives:
         pairs.append(("NoSecurityAltID", str(len(alternatives))))
         for index, (source, value) in enumerate(sorted(alternatives.items())):
@@ -2224,16 +2242,16 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
                 ("LegSymbol", leg.symbol),
                 ("LegSide", leg.side),
                 ("LegRatioQty", leg.ratio),
-                ("LegSecurityID", leg.security_id),
-                ("LegSecurityIDSource", leg.security_id_source),
-                ("LegCFICode", leg.cfi),
-                ("LegSecurityType", leg.security_type),
-                ("LegSecurityExchange", leg.exchange),
+                ("LegSecurityID", leg.securityid),
+                ("LegSecurityIDSource", leg.securityidsource),
+                ("LegCFICode", leg.cficode),
+                ("LegSecurityType", leg.securitytype),
+                ("LegSecurityExchange", leg.securityexchange),
                 ("LegCurrency", leg.currency),
-                ("LegContractMultiplier", leg.multiplier),
-                ("LegMaturityDate", leg.maturity),
-                ("LegStrikePrice", leg.strike),
-                ("LegPutOrCall", leg.option_kind),
+                ("LegContractMultiplier", leg.contractmultiplier),
+                ("LegMaturityDate", leg.maturitydate),
+                ("LegStrikePrice", leg.strikeprice),
+                ("LegPutOrCall", leg.putorcall),
             )
             pairs.extend(
                 (f"{root}.{name}", rendered)
@@ -2251,7 +2269,7 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 @functools.cache
 def _tags_by_name() -> Mapping[str, int]:
     """Canonical FIX names to the tags declared by this parsed-row contract."""
-    return MappingProxyType({member.name.casefold(): tag for tag, member in DECLARATIONS.items()})
+    return MappingProxyType({name.casefold(): member.fix.tag for name, member in DECLARED.items()})
 
 
 def _tag_of(name: str) -> int:
@@ -2317,12 +2335,20 @@ def _pair_identity(key: Any) -> tuple[str, int | str]:
 
 
 def _id_source(value: Any) -> str:
-    """An identifier scheme name or wire character as its FIX value."""
-    from rekep.enums import IdSource
+    """An identifier scheme, as the wire value the dictionary gives it.
 
+    A value the dictionary already spells as a wire code comes back unchanged,
+    so this is safe on either spelling.
+    """
     text = "" if value is None else str(value)
-    named = IdSource.__members__.get(text.strip().upper())
-    return named.into_fix() if named is not None and named.into_fix() else text
+    scheme = id_scheme(text)
+    return _scheme_values().get(scheme, text) if scheme else text
+
+
+@functools.cache
+def _scheme_values() -> Mapping[str, str]:
+    """`{scheme name: its wire value}` -- the inverse of `id_schemes()`."""
+    return MappingProxyType({name: value for value, name in id_schemes().items()})
 
 
 @functools.cache

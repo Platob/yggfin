@@ -2,7 +2,7 @@
 
 A caller holds a field one of four ways -- a numeric tag (``770``), a canonical
 name (``TrdRegTimestampType``), a component path
-(``NoTrdRegTimestamps[0].TrdRegTimestamp``) or a namespace-qualified key
+(``NoTrdRegTimestamps[0].trdregtimestamp``) or a namespace-qualified key
 (``TECH.CLIENTID``) -- and every one of them resolves here, against one rule
 table, to the same reading. The scalar execution is this module; the columnar
 one is `TagIndex` (fix/transcribe.py), which reads the same rules in Arrow
@@ -355,7 +355,7 @@ class FieldAccess:
         """What one value means, through the record's own `fix.meaning`.
 
         Encoded first, so a value spelled by its meaning still finds it:
-        `Side=Buy` and `Side=1` both mean "Buy".
+        `side=Buy` and `side=1` both mean "Buy".
         """
         if raw is None or not isinstance(raw, str):
             return None

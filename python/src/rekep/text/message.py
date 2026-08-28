@@ -6,54 +6,100 @@ import functools
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Annotated, Any, Self
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.enums import EventType
-from rekep.fields import scalar
+from rekep.fields import DISPLAY, Field, column_name, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
-from rekep.fix.message import parse_pairs
+from rekep.fix.columns import DECLARATIONS, SESSION
+from rekep.fix.message import NOT_SEPARATOR, parse_pairs
 from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
-#: Version 3 lifts the standard header out of `entries` into columns of its
-#: own; a table written under 2 still reads, because every reader here falls
-#: back to the list when the column is not there.
-_CONTRACT_METADATA = MappingProxyType({"version": "3"})
+#: The standard header is lifted out of `entries` into columns of its own,
+#: and a lifted column is read back out of the list wherever it is empty --
+#: a null column and a column a projection dropped being the same absence.
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
-_DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
-_TOKEN_START = r"(?:^|\^A|[\x01|^;#])"
+# Every separator `fix.message.SEPARATORS` declares, in that order: a
+# multi-character candidate leads anything it contains, and a discriminator the
+# raw stage cannot see is a MsgType filter that silently drops the row.
+_DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
+_TOKEN_START = r"(?:^|\x04\x03|\^A|[\x01|^;#])"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
 _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
 
-#: The standard header fields a raw row lifts out of `entries`, by the FIX tag
-#: each of them is written under. They are lifted here because they are
-#: *parsed* here -- on a
-#: fifteen-field NewOrderSingle they are nearly half of every entry the row
-#: carries, and the FIX stage would otherwise walk the same list again looking
-#: for the same seven facts it already has.
+#: The standard header and trailer a raw row lifts out of `entries`, by the FIX
+#: tag each of them is written under. They are lifted here because they are
+#: *parsed* here -- on a fifteen-field NewOrderSingle they are nearly half of
+#: every entry the row carries, and the FIX stage would otherwise walk the same
+#: list again looking for facts it already has.
 #:
-#: The trailer is deliberately not among them: `CheckSum` is the boundary this
-#: stage reads everything else against -- an eligible field is one before it --
-#: and a marker that lifted itself out could no longer say it was last.
+#: Two of what the standard declares this stage cannot lift, and both stay
+#: entries for the FIX stage to read from there like any other field:
 #:
-#: In the standard's own order, which is also the order they are re-emitted
-#: in: `BeginString` is always the first field of a message and `MsgType`
-#: always the third.
-SESSION_FIELDS: tuple[tuple[str, str], ...] = (
-    ("BeginString", "8"),
-    ("BodyLength", "9"),
-    ("MsgType", "35"),
-    ("MsgSeqNum", "34"),
-    ("SenderCompID", "49"),
-    ("TargetCompID", "56"),
-    ("SendingTime", "52"),
+#: `CheckSum <10>` is the boundary every other lift is measured against -- a
+#: field is eligible only where it stands in front of it -- and a marker that
+#: lifted itself out could no longer say it was last.
+#:
+#: `XmlData <213>` is a message more often than it is a document: real bridge
+#: traffic writes `key=value` pairs in it, and `FixCodec.into_payload_pairs`
+#: expands those in the place the tag sat. That expansion reads the tag out of
+#: the fields the row still carries, so lifting it here would leave a nested
+#: order unread and its own column holding the whole payload as bytes.
+#: `XmlDataLen <212>` leaves with it: a length says where the value after it
+#: ends, so the two are one token and lifting only the length would separate
+#: them the next time the row is written out.
+#:
+#: Which fields, and which tag each answers to, are the FIX stage's own
+#: declaration read once here rather than copied: `fix.columns` selects the
+#: session names this package promotes and takes every tag from the registry,
+#: so a tag is never written down twice. The order is that declaration's, so
+#: the two stages carry the header in the same order and the FIX stage reads
+#: it off the columns rather than walking `entries` again.
+#:
+#: Read at import and never per message. This stage still interprets nothing:
+#: a lift is a tag standing before the checksum, and the value it lands is the
+#: text the payload spelled.
+#: What the standard declares but this stage leaves in `entries`, and why is
+#: above. Named rather than tagged, because the reason is about the field.
+_UNLIFTED: frozenset[str] = frozenset({"CheckSum", "XmlDataLen", "XmlData"})
+
+SESSION_NAMES: tuple[tuple[str, str], ...] = tuple(
+    (DECLARATIONS[tag].fix.canonical, str(tag))
+    for tag, _ in SESSION
+    if DECLARATIONS[tag].fix.canonical not in _UNLIFTED
 )
+
+#: The same, as the columns carry them: folded, beside the tag. A column is
+#: matched by its fold, so the dictionary's spelling is kept once above and
+#: read back off `fix:display` rather than respelled at each use.
+SESSION_FIELDS: tuple[tuple[str, str], ...] = tuple(
+    (column_name(name), tag) for name, tag in SESSION_NAMES
+)
+
+#: The one session field whose value the standard constrains, and the one whose
+#: `U`-prefixed wire spelling defers to a rendered name beside it.
+_MSG_TYPE = column_name("MsgType")
+
+
+def _session(name: str) -> Field:
+    """One lifted header column: text as the payload spelled it, displayed as
+    the dictionary spells it.
+
+    The display and nothing else. This stage lifts by syntax -- a tag, before
+    the checksum -- and reads no dictionary, so the column claims no protocol
+    reading; what it does need is the spelling a reader knows the field by,
+    which the fold removed from its name.
+    """
+    return Field(metadata={DISPLAY: name})
+
 
 #: `{folded spelling: column}` for every session field, which is the lookup a
 #: parse actually does -- one probe per entry rather than one pass per field.
@@ -65,12 +111,9 @@ SESSION_FIELDS: tuple[tuple[str, str], ...] = (
 #: both, and it keeps doing so: a `35=U1` wrapper naming its real type beside
 #: it is the whole reason the rendered spelling is read at all.
 _SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
-    {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": "MsgType"}
+    {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": _MSG_TYPE}
 )
 
-#: The one session field whose value the standard constrains, and the one whose
-#: `U`-prefixed wire spelling defers to a rendered name beside it.
-_MSG_TYPE = "MsgType"
 _CHECKSUM_TOKEN = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?"
     rf"(?:10|checksum|trailer\.10|trailer\.checksum)[ \t\r\n\f\x0b]*="
@@ -87,9 +130,15 @@ _NAMED_MSG_TYPE = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?MsgType[ \t\r\n\f\x0b]*="
     rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
 )
+# The version is whatever the BeginString value holds, which is everything up
+# to the separator -- `NOT_SEPARATOR`, the same class the FIX parsers read one
+# with. A dotted version alone was stricter than the shipped classification
+# rule, so `8=FIX4` -- which this repository's own fixture writes -- reached
+# the store as OTHER with no direction while `Rules.into_default()` called it
+# FIX. One spelling of one rule.
 _FIX_BEGIN = (
     r"(?s)(?:^|[^A-Za-z0-9_.\-])#?8[ \t\r\n\f\x0b]*="
-    rf"[ \t\r\n\f\x0b]*FIXT?\.[0-9]+\.[0-9]+(?:SP[0-9]+)?{_DISCRIMINATOR_END}"
+    rf"[ \t\r\n\f\x0b]*FIXT?{NOT_SEPARATOR}*{_DISCRIMINATOR_END}"
 )
 
 
@@ -103,48 +152,119 @@ class Message(Event):
         """Contract metadata published with raw-message schemas."""
         return _CONTRACT_METADATA
 
-    source_url: str = ""
+    sourceurl: Annotated[str, Field.column("Source URL")] = ""
     """Path of the log the row came from, as its filesystem addresses it."""
 
-    source_rownum: int = 0
+    sourcerownum: Annotated[int, Field.column("Source Rownum")] = 0
     """1-based physical line number of the header; 0 when not read from a file."""
 
-    thread_name: str = ""
+    threadname: Annotated[str, Field.column("Thread Name")] = ""
     """Contents of the first bracketed header field."""
 
-    plugin_code: str = ""
+    plugincode: Annotated[str, Field.column("Plugin Code")] = ""
     """Contents of the second bracketed header field."""
 
     message: str = ""
     """Payload after the fixed log header, with continuation lines folded in."""
 
-    protocol_code: str = _NO_PROTOCOL
+    protocolcode: Annotated[str, Field.column("Protocol Code")] = _NO_PROTOCOL
     """Protocol syntax detected without interpreting its fields."""
 
-    # In the standard's order, because that is the order a row re-emits them
-    # in: `BeginString` is always a message's first field and `MsgType` its
-    # third. Every one of them is the text the payload spelled -- this stage
-    # reads no numbers and names no zone.
-    BeginString: str | None = None
+    # The whole standard header and trailer, in `SESSION_NAMES` order, which
+    # is the FIX stage's own -- so the two stages carry the header in the same
+    # order and the FIX stage reads it off these columns instead of walking
+    # `entries` again. Every one of them is the text the payload spelled: this
+    # stage reads no numbers, names no zone and decodes no flag, so a length
+    # is `"176"` and a flag is `"Y"`.
+    beginstring: Annotated[str | None, _session("BeginString")] = None
     """Protocol the session negotiated, as the payload spells it."""
 
-    BodyLength: str | None = None
+    bodylength: Annotated[str | None, _session("BodyLength")] = None
     """Declared body length, kept as text: this stage reads no numbers."""
 
-    MsgType: str | None = None
+    msgtype: Annotated[str | None, _session("MsgType")] = None
     """First FIX message discriminator when the payload names one."""
 
-    MsgSeqNum: str | None = None
-    """Sequence number the payload states, as text."""
-
-    SenderCompID: str | None = None
+    sendercompid: Annotated[str | None, _session("SenderCompID")] = None
     """Who the payload says sent it."""
 
-    TargetCompID: str | None = None
+    sendersubid: Annotated[str | None, _session("SenderSubID")] = None
+    """Which desk or trader of the sender the payload names."""
+
+    senderlocationid: Annotated[str | None, _session("SenderLocationID")] = None
+    """Where the payload says the sender sent it from."""
+
+    targetcompid: Annotated[str | None, _session("TargetCompID")] = None
     """Who the payload says it was for."""
 
-    SendingTime: str | None = None
+    targetsubid: Annotated[str | None, _session("TargetSubID")] = None
+    """Which desk or trader of the target the payload names."""
+
+    targetlocationid: Annotated[str | None, _session("TargetLocationID")] = None
+    """Where the payload says the target is."""
+
+    onbehalfofcompid: Annotated[str | None, _session("OnBehalfOfCompID")] = None
+    """Firm the message originated with, where a hub relayed it."""
+
+    onbehalfofsubid: Annotated[str | None, _session("OnBehalfOfSubID")] = None
+    """Which desk or trader of that originating firm the payload names."""
+
+    onbehalfoflocationid: Annotated[str | None, _session("OnBehalfOfLocationID")] = None
+    """Where the payload says that originating firm sent it from."""
+
+    delivertocompid: Annotated[str | None, _session("DeliverToCompID")] = None
+    """Firm the message is ultimately for, where a hub is to relay it."""
+
+    delivertosubid: Annotated[str | None, _session("DeliverToSubID")] = None
+    """Which desk or trader of that firm the payload names."""
+
+    delivertolocationid: Annotated[str | None, _session("DeliverToLocationID")] = None
+    """Where the payload says that firm is."""
+
+    msgseqnum: Annotated[str | None, _session("MsgSeqNum")] = None
+    """Sequence number the payload states, as text."""
+
+    lastmsgseqnumprocessed: Annotated[str | None, _session("LastMsgSeqNumProcessed")] = None
+    """Last sequence number the sender says it had processed, as text."""
+
+    possdupflag: Annotated[str | None, _session("PossDupFlag")] = None
+    """Whether the payload flags itself a possible retransmission, as spelled."""
+
+    possresend: Annotated[str | None, _session("PossResend")] = None
+    """Whether the payload flags itself a possible resend, as spelled."""
+
+    sendingtime: Annotated[str | None, _session("SendingTime")] = None
     """When the payload says it was sent, in the payload's own spelling."""
+
+    origsendingtime: Annotated[str | None, _session("OrigSendingTime")] = None
+    """When a resent payload says it first went out, as spelled."""
+
+    onbehalfofsendingtime: Annotated[str | None, _session("OnBehalfOfSendingTime")] = None
+    """When the originating firm sent it, where a relayed payload says."""
+
+    applverid: Annotated[str | None, _session("ApplVerID")] = None
+    """Application version a FIXT session names for this message."""
+
+    cstmapplverid: Annotated[str | None, _session("CstmApplVerID")] = None
+    """Custom application extension the payload names, where it names one."""
+
+    applextid: Annotated[str | None, _session("ApplExtID")] = None
+    """Extension pack the payload names, as text."""
+
+    messageencoding: Annotated[str | None, _session("MessageEncoding")] = None
+    """Encoding the payload declares for its `Encoded*` fields."""
+
+    securedatalen: Annotated[str | None, _session("SecureDataLen")] = None
+    """Declared length of `securedata`, kept as the text in front of it."""
+
+    securedata: Annotated[str | None, _session("SecureData")] = None
+    """Encrypted block the payload carried, taken by the length in front of it."""
+
+    signaturelength: Annotated[str | None, _session("SignatureLength")] = None
+    """Declared length of `signature`, kept as the text in front of it."""
+
+    signature: Annotated[str | None, _session("Signature")] = None
+    """Signature the payload carried, taken by the length in front of it."""
 
     entries: list[Entry] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""
@@ -166,25 +286,31 @@ class Message(Event):
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
-        if implicit_entries and self.message:
+        # `protocolcode` and `direction` are read off the raw *text*, so a row
+        # carrying one answers them whoever tokenized its arguments:
+        # `from_text(line, message=line)` stored `OTHER` and no direction
+        # because it had passed its own `entries` in. Everything else here is
+        # read off the arguments, and an explicit list of them is the answer.
+        if self.message and (implicit_entries or self.protocolcode == _NO_PROTOCOL):
             parsed = self.parse_arrow(pyarrow.array([self.message]))
+            if self.protocolcode == _NO_PROTOCOL:
+                self.protocolcode = parsed["protocolcode"][0].as_py()
+            if self.direction is None:
+                self.direction = parsed["direction"][0].as_py()
+        if implicit_entries and self.message:
             self.entries = parsed["entries"][0].as_py()
-            if self.protocol_code == _NO_PROTOCOL:
-                self.protocol_code = parsed["protocol_code"][0].as_py()
             for name, _ in SESSION_FIELDS:
                 if getattr(self, name) is None:
                     setattr(self, name, parsed[name][0].as_py())
             if self.etype == EventType.UNKNOWN:
                 self.etype = EventType(parsed["etype"][0].as_py())
-            if self.direction is None:
-                self.direction = parsed["direction"][0].as_py()
 
         self.entries = [Entry.from_stored(entry) for entry in self.entries]
         session, self.entries = _scalar_session_values(self.entries)
         for name, _ in SESSION_FIELDS:
             if getattr(self, name) is None:
                 setattr(self, name, session.get(name))
-        if self.MsgType is None and self.etype == EventType.UNKNOWN:
+        if self.msgtype is None and self.etype == EventType.UNKNOWN:
             self.etype = EventType.MISC
 
     @classmethod
@@ -199,10 +325,17 @@ class Message(Event):
     ) -> Self:
         """One payload's ordered fields as a raw row, discriminator promoted.
 
-        The scalar spelling of what `parse_arrow` does to a column: the
-        payload is tokenized once and `__post_init__` promotes `MsgType`
-        out of the arguments. The raw text itself is retained only where a
-        caller declares `message=` -- the pairs carry every field.
+        Tokenized by `parse_pairs`, which reads the payload as its protocol:
+        tag mode keeps only numeric keys, where the column parser's
+        protocol-neutral `Entry.parse_arrow` keeps every key it can split. The
+        two disagree on a wire message carrying a named enrichment key, and
+        that is the difference between the two readings, not a defect in
+        either.
+
+        The raw text itself is retained only where a caller declares
+        `message=` -- the pairs carry every field -- and the syntax columns
+        `protocolcode`, `etype` and `direction` are read off that text, so
+        they stay unset without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
         return cls(entries=list(pairs), **declared)
@@ -235,8 +368,8 @@ class Message(Event):
                     for name, _ in SESSION_FIELDS
                 },
                 "etype": pyarrow.chunked_array([part["etype"] for part in parts], _EVENT_CODE),
-                "protocol_code": pyarrow.chunked_array(
-                    [part["protocol_code"] for part in parts], pyarrow.string()
+                "protocolcode": pyarrow.chunked_array(
+                    [part["protocolcode"] for part in parts], pyarrow.string()
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
@@ -249,7 +382,7 @@ class Message(Event):
             return {
                 **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
                 "etype": pyarrow.array([], _EVENT_CODE),
-                "protocol_code": pyarrow.array([], pyarrow.string()),
+                "protocolcode": pyarrow.array([], pyarrow.string()),
                 "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], pyarrow.bool_()),
             }
@@ -287,8 +420,8 @@ class Message(Event):
         return {
             **session,
             "etype": event_types,
-            "protocol_code": protocols,
-            "MsgType": msg_types,
+            "protocolcode": protocols,
+            _MSG_TYPE: msg_types,
             "entries": entries,
             "direction": direction,
         }
@@ -331,7 +464,9 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
     """
     claimed: dict[str, list[int]] = {}
     residual: list[int] = []
-    wire = named = None
+    # The discriminator's two spellings are claimed apart, because each has to
+    # agree with itself before the rule between them applies.
+    spellings: dict[str, list[int]] = {"35": [], "msgtype": []}
     ended = False
     for index, entry in enumerate(entries):
         folded = entry.key.lower()
@@ -341,30 +476,38 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
         if column == _MSG_TYPE:
             if _MSG_TYPE_VALUE_RE.fullmatch(entry.value) is None:
                 column = None
-            elif folded == "35":
-                wire = entry.value if wire is None else wire
             else:
-                named = entry.value if named is None else named
+                spellings["35" if folded == "35" else "msgtype"].append(index)
         if column is None:
             residual.append(index)
         else:
             claimed.setdefault(column, []).append(index)
 
+    def agreed(where: list[int]) -> str | None:
+        """The one value those entries state, or None when they state two."""
+        values = {entries[index].value for index in where}
+        if len(values) == 1:
+            return values.pop()
+        # Two readings of one fact is not one statement of it: both stay where
+        # a reader can see them, and the column says nothing.
+        residual.extend(where)
+        return None
+
     found: dict[str, str] = {}
     for column, where in claimed.items():
-        values = [entries[index].value for index in where]
         if column == _MSG_TYPE:
             # The discriminator has a rule of its own for its two spellings, so
             # they disagreeing is expected rather than torn.
+            wire = agreed(spellings["35"]) if spellings["35"] else None
+            named = agreed(spellings["msgtype"]) if spellings["msgtype"] else None
             hybrid = wire and wire.startswith("U") and named
-            found[column] = named if hybrid else (wire or named)
+            value = named if hybrid else (wire or named)
+            if value is not None:
+                found[column] = value
             continue
-        if len(set(values)) > 1:
-            # Two readings of one fact is not one statement of it: both stay
-            # where a reader can see them, and the column says nothing.
-            residual.extend(where)
-            continue
-        found[column] = values[0]
+        value = agreed(where)
+        if value is not None:
+            found[column] = value
     residual.sort()
     return found, [entries[index] for index in residual]
 
@@ -413,10 +556,13 @@ def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], p
             # The discriminator has a rule of its own for its two spellings --
             # a `U`-prefixed wire type defers to a rendered name beside it --
             # so disagreement between them is expected rather than torn, and
-            # its value is the one the standard constrains.
+            # its value is the one the standard constrains. *Within* one
+            # spelling the general rule holds: `35=D` beside `35=8` is two
+            # readings of one fact, so neither leaves `entries` and the column
+            # falls back to the raw line's own first discriminator.
             eligible = compute.and_(eligible, named_values)
-            found[name] = _wire_or_named(values, parents, normalized, eligible, rows)
-            claimed = compute.or_(claimed, eligible)
+            found[name], mask = _wire_or_named(values, parents, normalized, eligible, rows)
+            claimed = compute.or_(claimed, mask)
             continue
         first, mask = _agreed_by_parent(values, parents, eligible, rows)
         found[name] = first
@@ -437,24 +583,29 @@ def _wire_or_named(
     normalized: pyarrow.Array,
     eligible: pyarrow.Array,
     rows: int,
-) -> pyarrow.Array:
-    """The discriminator, where a `U`-prefixed wire type defers to a rendered one.
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """`(the discriminator, which entries it claims)`, tag deferring to a name.
 
     A bridge that wraps its own message in `35=U1` and then names the real
-    type beside it means the name; everything else means the tag.
+    type beside it means the name; everything else means the tag. Each
+    spelling has to agree with itself first, so a row spelling `35=` twice
+    with two values leaves both where a reader can see them.
     """
     compute = pyarrow.compute
-    wire = _first_by_parent(
+    wire, wire_mask = _agreed_by_parent(
         values, parents, compute.and_(eligible, compute.equal(normalized, "35")), rows
     )
-    named = _first_by_parent(
+    named, named_mask = _agreed_by_parent(
         values, parents, compute.and_(eligible, compute.equal(normalized, "msgtype")), rows
     )
     wrapped = compute.and_(
         compute.fill_null(compute.starts_with(wire, "U"), False),
         compute.is_valid(named),
     )
-    return compute.if_else(wrapped, named, compute.coalesce(wire, named))
+    return (
+        compute.if_else(wrapped, named, compute.coalesce(wire, named)),
+        compute.or_(wire_mask, named_mask),
+    )
 
 
 def _agreed_by_parent(

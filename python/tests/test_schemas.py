@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from rekep import Field, FixMsg, Message
+from rekep import Field, FixMsg, FixRegistry, Message
+from rekep.fields import column_name, display_name
 from rekep.market import Book, Execution, Instrument, Order
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -12,16 +13,14 @@ CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
 #: What each contract's stored shape is on, so a bump is a deliberate edit
-#: here and not a number that drifted with a declaration.
-VERSIONS = {
-    "fixmsg.yaml": "2",
-    # 3 lifts the standard header out of `entries` into columns of its own.
-    "message.yaml": "3",
-    "instrument.yaml": "2",
-    "book.yaml": "2",
-    "order.yaml": "2",
-    "execution.yaml": "2",
-}
+#: here and not a number that drifted with a declaration. All six sit at 1:
+#: nothing reads a stored version and there is no migration path, so the
+#: numbers were a history of shapes nobody can still read rather than a fact
+#: about the shape being published.
+VERSIONS = dict.fromkeys(
+    ("fixmsg.yaml", "message.yaml", "instrument.yaml", "book.yaml", "order.yaml", "execution.yaml"),
+    "1",
+)
 
 PUBLISHED = {
     "fixmsg.yaml": FixMsg,
@@ -61,12 +60,12 @@ def test_contract_matches_its_declaration(name: str, shape: type) -> None:
 def test_message_contracts_keep_time_keys(name: str) -> None:
     message = Field.from_yaml(str(SCHEMAS / "rekep" / name))
     assert message.primary_keys() == ["unix", "hash"]
-    assert message.partition_keys() == {"unix_partition": "identity"}
+    assert message.partition_keys() == {"unixpartition": "identity"}
 
 
 def test_market_contract_keeps_protocol_metadata() -> None:
     order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
-    assert order.field("tif").fix["tag"] == "59"
+    assert order.field("timeinforce").fix["tag"] == "59"
     assert order.field("px").fix["name"] == "Price"
     assert order.field("side").fix["tag"] == "54"
     assert "fix:tag" not in order.field("code").metadata, "a lifecycle is not a FIX field"
@@ -80,3 +79,86 @@ def test_published_contracts_have_no_nested_table_keys() -> None:
             for inner in member.fields:
                 assert not inner.is_primary_key, f"{name}: {member.name}.{inner.name}"
                 assert not inner.is_partition_key, f"{name}: {member.name}.{inner.name}"
+
+
+# -- names ------------------------------------------------------------------
+#
+# A column name is folded, and the fold is also how a spelling is matched --
+# so these hold both halves of one rule, on the shapes that are published.
+
+#: What Arrow calls the parts of a container when nobody named them. They are
+#: not columns and nothing looks them up, so they are exempt from the rule.
+_CONTAINER_PARTS = frozenset({"item", "key", "value"})
+
+
+def _columns(field: Field) -> list[Field]:
+    """Every member of a contract, nested ones included, container parts aside."""
+    found = []
+    for member in field.fields:
+        if member.name not in _CONTAINER_PARTS:
+            found.append(member)
+        found.extend(_columns(member))
+    return found
+
+
+@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
+def test_every_column_is_folded(path: Path) -> None:
+    """The name a contract stores is the name a fold produces: lowercase, and
+    nothing that is not a letter or a digit. One name, so a reader who has the
+    column has the attribute and the document key too."""
+    for member in _columns(Field.from_(str(path))):
+        assert member.name == column_name(member.name), f"{path.name}: {member.name}"
+
+
+@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
+def test_every_column_says_what_it_is_called(path: Path) -> None:
+    """The fold drops information, so every column carries the spelling back.
+
+    A FIX column displays the dictionary's own name and an analytical one
+    displays what `display_name` writes -- and either folds back onto
+    something the column already is: its own name, or the FIX field it says it
+    reads. `px` displays `Price` because that is what tag 44 is called; it is
+    a spelling of the column's source, not a second name for the column.
+    """
+    for member in _columns(Field.from_(str(path))):
+        display = member.fix.display
+        assert display, f"{path.name}: {member.name} says nothing about its name"
+        spellings = {member.name, column_name(member.fix.name or member.name)}
+        assert column_name(display) in spellings, f"{path.name}: {member.name} -> {display}"
+
+
+@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
+def test_a_folded_column_matches_the_registry_by_its_own_name(path: Path) -> None:
+    """A column that reads a FIX field resolves in the registry spelled as the
+    column spells it -- which is the point of matching case-insensitively, and
+    of there being no snake-cased spelling to strip first."""
+    registry = FixRegistry.from_builtin()
+    for member in _columns(Field.from_(str(path))):
+        tag = member.fix.tag
+        if not tag or member.fix.name is None:
+            continue
+        found = registry.field(column_name(member.fix.name))
+        assert found is not None, f"{path.name}: {member.name} names no registry field"
+        assert found.fix.tag == tag, f"{path.name}: {member.name}"
+
+
+def test_a_registry_lookup_ignores_case_and_not_the_letters() -> None:
+    """One field however a feed spells it, and no fold across two fields."""
+    registry = FixRegistry.from_builtin()
+    for spelling in ("MsgType", "msgtype", "MSGTYPE", "mSgTyPe"):
+        found = registry.field(spelling)
+        assert found is not None and found.fix.tag == 35, spelling
+    assert FixMsg.into_field().field("MsgType") is FixMsg.into_field().field("msgtype")
+
+
+def test_a_display_is_the_words_a_fold_removed() -> None:
+    """`display_name` restores the separators the fold dropped, and keeps an
+    acronym an acronym rather than title-casing it into a word."""
+    assert display_name("source_url") == "Source URL"
+    assert display_name("prevbidpx") == "Prevbidpx", "nothing said where the words were"
+    assert display_name("prev_bid_px") == "Prev Bid Px"
+    assert display_name("alt_ids") == "Alt IDs"
+    assert display_name("mic") == "MIC"
+    assert display_name("SecurityID") == "SecurityID", "a name that spells itself is kept"
+    for name in ("source_url", "alt_ids", "mic", "SecurityID"):
+        assert column_name(display_name(name)) == column_name(name)

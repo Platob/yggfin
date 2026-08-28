@@ -14,12 +14,12 @@ from rekep.enums import (
     AssetKind,
     Currency,
     EventType,
-    IdSource,
     OptionKind,
     Side,
     State,
 )
 from rekep.fields import Field, scalar
+from rekep.fix.columns import ISIN_SCHEME, id_scheme
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import HOUR, Event
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -45,34 +45,34 @@ class Leg(MarketConvertible):
     kind: AssetKind = AssetKind.UNKNOWN
     """What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`."""
 
-    security_id: Annotated[str | None, fix_tag("LegSecurityID")] = None
-    """Identifier in the scheme `security_id_source` names."""
+    securityid: Annotated[str | None, fix_tag("LegSecurityID")] = None
+    """Identifier in the scheme `securityidsource` names."""
 
-    security_id_source: Annotated[str | None, fix_tag("LegSecurityIDSource")] = None
-    """Which scheme `security_id` is in, as FIX numbers them."""
+    securityidsource: Annotated[str | None, fix_tag("LegSecurityIDSource")] = None
+    """Which scheme `securityid` is in, as FIX numbers them."""
 
-    cfi: Annotated[str | None, fix_tag("LegCFICode")] = None
+    cficode: Annotated[str | None, fix_tag("LegCFICode")] = None
     """ISO 10962 classification of the leg."""
 
-    security_type: Annotated[str | None, fix_tag("LegSecurityType")] = None
+    securitytype: Annotated[str | None, fix_tag("LegSecurityType")] = None
     """What the venue calls this leg, from FIX's own list."""
 
-    exchange: Annotated[str | None, fix_tag("LegSecurityExchange")] = None
+    securityexchange: Annotated[str | None, fix_tag("LegSecurityExchange")] = None
     """Where the leg is listed, when it differs from the strategy's venue."""
 
     currency: Annotated[Currency | None, fix_tag("LegCurrency")] = None
     """ISO 4217 currency the leg is priced in."""
 
-    multiplier: Annotated[float | None, fix_tag("LegContractMultiplier")] = None
+    contractmultiplier: Annotated[float | None, fix_tag("LegContractMultiplier")] = None
     """Units of the underlying one leg contract represents."""
 
-    maturity: Annotated[datetime.date | None, fix_tag("LegMaturityDate")] = None
+    maturitydate: Annotated[datetime.date | None, fix_tag("LegMaturityDate")] = None
     """When the leg expires; null for anything that does not."""
 
-    strike: Annotated[float | None, fix_tag("LegStrikePrice")] = None
+    strikeprice: Annotated[float | None, fix_tag("LegStrikePrice")] = None
     """Exercise price, where the leg is an option."""
 
-    option_kind: Annotated[OptionKind, fix_tag("LegPutOrCall")] = OptionKind.UNKNOWN
+    putorcall: Annotated[OptionKind, fix_tag("LegPutOrCall")] = OptionKind.UNKNOWN
     """Which way the leg points, where it is an option."""
 
     def __post_init__(self) -> None:
@@ -110,18 +110,20 @@ class Instrument(Event):
     kind: AssetKind = AssetKind.UNKNOWN
     """What it settles as, read from the first character of the CFI code."""
 
-    security_id: Annotated[str | None, fix_tag("SecurityID")] = None
-    """Identifier in the scheme `security_id_source` names -- an ISIN, a CUSIP, a FIGI."""
+    securityid: Annotated[str | None, fix_tag("SecurityID")] = None
+    """Identifier in the scheme `securityidsource` names -- an ISIN, a CUSIP, a FIGI."""
 
-    security_id_source: Annotated[str | None, fix_tag("SecurityIDSource")] = None
-    """Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN)."""
+    securityidsource: Annotated[str | None, fix_tag("SecurityIDSource")] = None
+    """Which scheme `securityid` is in, as FIX numbers them (`4` is ISIN)."""
 
     # Flat, and derived from whichever of the two places FIX carries it in --
     # `SecurityID <48>` under source `4`, or an entry of the `NoSecurityAltID
     # <454>` group. Flat because it is what a human looks an instrument up by
     # and what a reference-data join keys on, and neither can reach into a map
     # on any engine below Arrow.
-    isin_code: Annotated[str | None, Field(metadata={"iso": "6166"})] = None
+    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISIN Code")] = (
+        None
+    )
     """ISO 6166 identifier, wherever the message carried it; null when it did not."""
 
     # A map and not a struct: which schemes a venue sends is not known when the
@@ -129,16 +131,16 @@ class Instrument(Event):
     # Nullable, like `MarketEvent.metadata` and for the same reason: most
     # instruments carry no alternative at all, and a null says that where an
     # empty map says "it sent an empty list of them".
-    alt_ids: dict[str, str] | None = None
-    """Every other identifier the message carried, keyed by `IdSource`'s name."""
+    altids: Annotated[dict[str, str] | None, Field.column("Alt IDs")] = None
+    """Every other identifier the message carried, keyed by its scheme's name."""
 
-    security_type: Annotated[str | None, fix_tag("SecurityType")] = None
+    securitytype: Annotated[str | None, fix_tag("SecurityType")] = None
     """What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`, `MLEG`."""
 
-    cfi: Annotated[str | None, fix_tag("CFICode")] = None
+    cficode: Annotated[str | None, fix_tag("CFICode")] = None
     """Full ISO 10962 classification; `kind` is its first character, decoded."""
 
-    exchange: Annotated[str | None, fix_tag("SecurityExchange")] = None
+    securityexchange: Annotated[str | None, fix_tag("SecurityExchange")] = None
     """ISO 10383 market identifier the instrument is listed on."""
 
     currency: Annotated[Currency | None, fix_tag("Currency")] = None
@@ -148,25 +150,25 @@ class Instrument(Event):
     # a quantity into money: without it every consumer of a notional needs the
     # reference table, and the ones that forget are wrong by a factor nobody
     # notices until settlement.
-    multiplier: Annotated[float | None, fix_tag("ContractMultiplier")] = None
+    contractmultiplier: Annotated[float | None, fix_tag("ContractMultiplier")] = None
     """Units of the underlying one contract represents; 1 for cash instruments."""
 
-    tick: Annotated[float | None, fix_tag("MinPriceIncrement")] = None
+    minpriceincrement: Annotated[float | None, fix_tag("MinPriceIncrement")] = None
     """Smallest price change the venue accepts, which is what makes a spread countable."""
 
-    lot: Annotated[float | None, fix_tag("RoundLot")] = None
+    roundlot: Annotated[float | None, fix_tag("RoundLot")] = None
     """Quantity increment the venue trades in."""
 
-    maturity: Annotated[datetime.date | None, fix_tag("MaturityDate")] = None
+    maturitydate: Annotated[datetime.date | None, fix_tag("MaturityDate")] = None
     """When the contract expires; null for anything that does not."""
 
-    strike: Annotated[float | None, fix_tag("StrikePrice")] = None
+    strikeprice: Annotated[float | None, fix_tag("StrikePrice")] = None
     """Exercise price of an option."""
 
-    option_kind: Annotated[OptionKind, fix_tag("PutOrCall")] = OptionKind.UNKNOWN
+    putorcall: Annotated[OptionKind, fix_tag("PutOrCall")] = OptionKind.UNKNOWN
     """Which way the option points; `UNKNOWN` for everything that is not one."""
 
-    label: Annotated[str | None, fix_tag("SecurityDesc")] = None
+    securitydesc: Annotated[str | None, fix_tag("SecurityDesc")] = None
     """Human description, as reference data publishes it."""
 
     # Last, and a list: a multileg instrument is a handful of legs and every
@@ -188,8 +190,8 @@ class Instrument(Event):
                 self.kind = AssetKind.CURRENCY
             if self.currency is None:
                 self.currency = quote
-        if self.isin_code is None:
-            self.isin_code = self.into_isin()
+        if self.isincode is None:
+            self.isincode = self.into_isin()
         self.xhash = self.into_xhash()
         self.code = self.symbol
         Event.__post_init__(self)
@@ -197,9 +199,9 @@ class Instrument(Event):
 
     def into_isin(self) -> str | None:
         """The ISO 6166 identifier this instrument carries, from either place."""
-        if self.security_id and IdSource.from_fix(self.security_id_source) is IdSource.ISIN:
-            return self.security_id
-        return (self.alt_ids or {}).get(IdSource.ISIN.name)
+        if self.securityid and id_scheme(self.securityidsource) == ISIN_SCHEME:
+            return self.securityid
+        return (self.altids or {}).get(ISIN_SCHEME)
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
         """This instrument plus whatever `other` knows and it does not, or None."""
@@ -411,21 +413,21 @@ class _InstrumentIterator:
 _INSTRUMENT_MEMBERS = (
     "symbol",
     "kind",
-    "security_id",
-    "security_id_source",
-    "isin_code",
-    "alt_ids",
-    "security_type",
-    "cfi",
-    "exchange",
+    "securityid",
+    "securityidsource",
+    "isincode",
+    "altids",
+    "securitytype",
+    "cficode",
+    "securityexchange",
     "currency",
-    "multiplier",
-    "tick",
-    "lot",
-    "maturity",
-    "strike",
-    "option_kind",
-    "label",
+    "contractmultiplier",
+    "minpriceincrement",
+    "roundlot",
+    "maturitydate",
+    "strikeprice",
+    "putorcall",
+    "securitydesc",
     "legs",
 )
 _LEG_MEMBERS = (
@@ -434,16 +436,16 @@ _LEG_MEMBERS = (
     "side",
     "ratio",
     "kind",
-    "security_id",
-    "security_id_source",
-    "cfi",
-    "security_type",
-    "exchange",
+    "securityid",
+    "securityidsource",
+    "cficode",
+    "securitytype",
+    "securityexchange",
     "currency",
-    "multiplier",
-    "maturity",
-    "strike",
-    "option_kind",
+    "contractmultiplier",
+    "maturitydate",
+    "strikeprice",
+    "putorcall",
 )
 
 
@@ -455,18 +457,18 @@ def _observed_at(
     return dataclasses.replace(
         instrument,
         unix=unix,
-        unix_partition=0,
+        unixpartition=0,
         etype=EventType.INSTRUMENT,
         cunix=instrument.cunix or unix,
         runix=instrument.runix or unix,
         eunix=None,
         sunix=None,
         hash=NIL,
-        linked_events=[],
+        linkedevents=[],
         version=0,
         state=State.OPEN,
-        prev_unix=None,
-        parent_hash=None,
+        prevunix=None,
+        parenthash=None,
         reason=None,
     )
 
@@ -477,7 +479,7 @@ def _instrument_parts(instrument: Instrument) -> tuple[Any, ...]:
     for name in _INSTRUMENT_MEMBERS:
         value = getattr(instrument, name)
         parts.append(name)
-        if name == "alt_ids":
+        if name == "altids":
             parts.extend(_map_parts(value))
         elif name == "legs":
             parts.extend(_legs_parts(value))

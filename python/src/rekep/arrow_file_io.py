@@ -7,6 +7,7 @@ import itertools
 import os
 import re
 import threading
+import urllib.parse
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Set
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
@@ -410,13 +411,24 @@ def canonical_location(location: str) -> str:
     url = Url.from_string(location)
     if url.scheme not in S3:
         return location
-    clean = url.copy()
-    clean.user = clean.password = None
-    clean.host = url.bucket
-    clean.port = None
-    clean.path = url.key
-    clean.query.clear()
-    return clean.into_string()
+    bucket, key = spelled_parts(location, url)
+    return f"{url.scheme}://{bucket}/{key}"
+
+
+def spelled_parts(location: str, url: Url | None = None) -> tuple[str, str]:
+    """`(bucket, key)` exactly as an S3 location spells them, escapes kept.
+
+    Iceberg escapes a partition value into the path -- `v=a%2Fb` -- and that
+    escape *is* the object key rather than a spelling of `a/b`. `Url` decodes,
+    because for everything else a URL is transport and the value is not; here
+    it would name a different object, one carrying a directory level no
+    manifest ever recorded, so a read misses it and the orphan sweep deletes
+    the live file it could not match.
+    """
+    url = url or Url.from_string(location)
+    spelled = url.copy()
+    spelled.path = urllib.parse.urlsplit(location, allow_fragments=False).path.lstrip("/")
+    return spelled.bucket, spelled.key
 
 
 def _location_properties(locations: Iterable[str]) -> tuple[dict[str, str], bool, bool]:
@@ -451,8 +463,40 @@ def location_properties(properties: Properties, *, locations: Iterable[str] = ()
     return {**inferred, **normalized}
 
 
+#: Iceberg's own server-side-encryption settings, which nothing under this can
+#: send. `pyarrow.fs.S3FileSystem` has no parameter for one and drops an
+#: `x-amz-server-side-encryption` handed to `default_metadata`; PyIceberg reads
+#: none of these names in either of its FileIOs. A store encrypts what this
+#: package writes through its *bucket's* default encryption instead, which also
+#: decrypts on read -- see `docs/storage/iceberg.md`.
+SSE_PROPERTIES = ("s3.sse.type", "s3.sse.key", "s3.sse.md5")
+
+#: The one value of them this can honour, because it asks for nothing.
+SSE_NONE = {"s3.sse.type": "none"}
+
+
+def _check_encryption(properties: Properties) -> None:
+    """Refuse an encryption this cannot request, rather than writing plaintext.
+
+    A catalog carrying `s3.sse.type` is saying its objects must be encrypted,
+    and a layer that ignores it writes them in the clear and reports success --
+    which is the one failure a reader of the table can never see.
+    """
+    requested = {name: properties[name] for name in SSE_PROPERTIES if name in properties}
+    if not requested or requested == SSE_NONE:
+        return
+    raise ValueError(
+        f"{sorted(requested)} asks for server-side encryption that neither pyarrow's S3 "
+        "filesystem nor pyiceberg can send, so setting it would write plaintext and report "
+        "success; turn on the bucket's default encryption, which encrypts every object this "
+        "writes and decrypts every one it reads, or name a FileIO that can send it with "
+        f"{DELEGATE_FILE_IO!r}"
+    )
+
+
 def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()) -> Properties:
     """`properties`, plus S3 process and explicit-location defaults."""
+    _check_encryption(properties)
     locations = tuple(locations)
     declared = [str(location) for name in LOCATION_PROPERTIES if (location := properties.get(name))]
     _, endpoint_decided, credentials_decided = _location_properties(
@@ -492,6 +536,9 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
                 self._content_cache = None
             else:
                 CONTENT_CACHE.resize(int(budget))
+        #: One filesystem per store a location described, so a sweep over a
+        #: table's files does not rebuild one per file.
+        self._described: dict[str, pyarrow.fs.FileSystem] = {}
         ArrowFile.__init__(
             self,
             location=location,
@@ -507,7 +554,8 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         if _WINDOWS and url.scheme == "file":
             return "file", "", url.path
         if url.scheme in S3:
-            return url.scheme, url.bucket, url.store_path
+            bucket, key = spelled_parts(location, url)
+            return url.scheme, bucket, "/".join(part for part in (bucket, key) if part)
         return PyArrowFileIO.parse_location(location, properties)
 
     def _new_openable(
@@ -535,7 +583,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
                 return "\0".join((canonical_scheme, endpoint, url.bucket, path))
         return None
 
-    def _content_identity(self, location: str) -> str:
+    def content_identity(self, location: str) -> str:
         """A cache key scoped to the S3-compatible store serving a location."""
         url = Url.from_string(location)
         if url.scheme not in S3:
@@ -545,18 +593,60 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         region = str(self.properties.get("s3.region", ""))
         return "\0".join(("s3", endpoint, access_key, region, url.bucket, url.key))
 
+    def _described_filesystem(self, location: str) -> pyarrow.fs.FileSystem | None:
+        """The store a location names itself, when it names one.
+
+        `parse_location` hands PyIceberg the *bucket* as the netloc, so an
+        endpoint, a port or credentials written into the location would be
+        discarded and the file opened against a default AWS filesystem. A table
+        this package wrote carries a canonical location and never comes here;
+        one written by another tool, or before those settings moved onto the
+        catalog, can -- and reading it has to reach the store it names.
+
+        The catalog fills what the location leaves unsaid, and the location
+        wins where they disagree.
+        """
+        url = Url.from_string(location)
+        if url.scheme not in S3 or (url.endpoint is None and url.user is None):
+            return None
+        # Everything but the key, so one filesystem serves every file on a
+        # store rather than one being built per file.
+        key = self.content_identity(location).rsplit("\0", 1)[0]
+        filesystem = self._described.get(key)
+        if filesystem is None:
+            described = PyArrowFileIO({**self.properties, **properties_of(url)})
+            filesystem = described.fs_by_scheme(url.scheme, url.bucket)
+            self._described[key] = filesystem
+        return filesystem
+
+    def _described_file(self, location: str) -> PyArrowFile | None:
+        """That store's own handle on the location, or None where it has none."""
+        filesystem = self._described_filesystem(location)
+        if filesystem is None:
+            return None
+        bucket, key = spelled_parts(location)
+        return PyArrowFile(
+            fs=filesystem,
+            location=location,
+            path="/".join(part for part in (bucket, key) if part),
+        )
+
     def new_input(self, location: str) -> InputFile:
-        inner = super().new_input(location)
+        # `is None`, not `or`: an input file's truthiness is its length, and
+        # asking for that is a HEAD request against the store.
+        described = self._described_file(location)
+        inner = super().new_input(location) if described is None else described
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedInputFile(inner, self._content_cache, self._content_identity(location))
+        return CachedInputFile(inner, self._content_cache, self.content_identity(location))
 
     def new_output(self, location: str) -> OutputFile:
         _record_output(location)
-        inner = super().new_output(location)
+        described = self._described_file(location)
+        inner = super().new_output(location) if described is None else described
         if self._content_cache is None or not _immutable(location):
             return inner
-        return CachedOutputFile(inner, self._content_cache, self._content_identity(location))
+        return CachedOutputFile(inner, self._content_cache, self.content_identity(location))
 
     def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
         """Copy one local file to a location through this configured Arrow filesystem."""
@@ -600,5 +690,9 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         # Evicted first, whether or not the store's delete then fails: a
         # cached copy of a file the caller wants gone is the copy that lies.
         name = location.location if isinstance(location, (InputFile, OutputFile)) else location
-        CONTENT_CACHE.evict(self._content_identity(name))
-        super().delete(location)
+        CONTENT_CACHE.evict(self.content_identity(name))
+        filesystem = self._described_filesystem(name)
+        if filesystem is None:
+            super().delete(location)
+            return
+        filesystem.delete_file(self.parse_location(name)[2])

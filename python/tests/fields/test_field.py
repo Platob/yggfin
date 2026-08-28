@@ -149,7 +149,10 @@ def test_a_field_holds_a_name_a_type_and_metadata() -> None:
     member = Venue.into_field().field("mic")
     assert member.name == "mic"
     assert member.dtype == pyarrow.string()
-    assert member.metadata == {"description": "ISO 10383 market identifier."}
+    assert member.metadata == {
+        "description": "ISO 10383 market identifier.",
+        "fix:display": "MIC",
+    }
     assert member.description == "ISO 10383 market identifier."
 
 
@@ -295,7 +298,12 @@ def test_a_dump_nests_rather_than_flattening() -> None:
     assert dumped["metadata"] == {"namespace": Book.__module__}
 
     by_name = {member["name"]: member for member in dumped["fields"]}
-    assert by_name["size"] == {"name": "size", "type": "int32", "metadata": {"unit": "lots"}}
+    assert by_name["size"] == {
+        "name": "size",
+        "type": "int32",
+        "metadata": {"unit": "lots"},
+        "fix": {"display": "Size"},
+    }
     assert by_name["root"]["nullable"] is True
     assert by_name["venues"]["item"]["type"] == "struct", "a list shows its item"
     assert by_name["limits"]["key"]["type"] == "string", "a map shows both halves"

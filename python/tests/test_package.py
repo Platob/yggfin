@@ -131,11 +131,11 @@ def test_every_codec_a_rule_may_name_is_one_the_parser_reads() -> None:
 
 def test_the_name_for_no_protocol_is_one_constant_and_not_three() -> None:
     """`OTHER` is the fall-through rule's protocol, a parsed line's default and
-    the value the `protocol_code` column holds for most of a capture. Spelled out at
+    the value the `protocolcode` column holds for most of a capture. Spelled out at
     each of those it would be three constants, and only one of them published.
     """
     assert Rule().protocol == NO_PROTOCOL
-    assert FixMsg().protocol_code == NO_PROTOCOL
+    assert FixMsg().protocolcode == NO_PROTOCOL
     assert Rules().rule("nothing declares this").protocol == NO_PROTOCOL
 
 

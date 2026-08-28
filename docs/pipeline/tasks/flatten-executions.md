@@ -3,7 +3,7 @@
 `tasks/flatten_executions/flatten_executions.ipynb`
 streams `Book.executions` into the existing `Execution` contract and
 writes `market.executions`. It retains order links and event identity, then
-appends the carrying `Book.hash` to `parent_hash`.
+appends the carrying `Book.hash` to `parenthash`.
 
 ## Run this step
 
@@ -15,6 +15,9 @@ uv run --project python --with papermill rekep task run \
   tasks/flatten_executions/flatten_executions.yml \
   --output flatten_executions.executed.ipynb
 ```
+
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
 
 The adjacent `flatten_executions.yml` sets the `[start, end)` interval,
 source, target, catalog, and commit size. Replay skips existing event keys

@@ -27,10 +27,9 @@ Descriptions are short contract facts. Protocol identity uses top-level
 their members as prefixed Arrow metadata. Repeated FIX data uses ordered lists
 rather than maps.
 
-Schema changes update declarations and generated contracts together while the
-project is pre-release, with no legacy aliases to maintain. After compatibility
-is established, add nullable fields and use a new version to drop or retype a
-field.
+Schema changes update declarations and generated contracts together. Add
+nullable fields; use a new version to drop or retype a field. There are no
+compatibility aliases in the contracts.
 
 Regenerate a package contract from its declaration and run
 `python/tests/test_schemas.py` before publishing it.

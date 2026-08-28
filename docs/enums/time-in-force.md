@@ -1,5 +1,7 @@
 # TimeInForce
 
+[`Ascii32`](ascii-codes.md){ .enum-base } — four bytes of printable ASCII packed left-justified into one `int32`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+
 ```python
 from rekep.enums import TimeInForce
 
@@ -8,9 +10,8 @@ assert lifetime is TimeInForce.IOC
 assert not lifetime.rests
 ```
 
-Time in force packs a readable mnemonic as big-endian ASCII in one `int32`,
-left-justified with trailing NULs like every other ASCII code. Ordering
-follows the declared lifetime rank rather than the packed integer.
+Ordering follows the declared lifetime rank rather than the packed integer:
+these codes sort by how long an order lives, which their spellings do not.
 
 | Key | Mnemonic | Stored value | FIX code | Meaning |
 | --- | --- | ---: | --- | --- |

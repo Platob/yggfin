@@ -1,37 +1,36 @@
 {
  "ISINCODE": {
   "name": "ISINCODE",
-  "kind": "namespace",
-  "column": "ISINCODE",
-  "type": "String",
+  "type": "string",
+  "nullable": true,
   "description": "ISIN carried by the rendered ISINCODE field.",
-  "versions": [
-   "*"
-  ],
-  "aliases": [
-   {
-    "name": "AMON.ISINCODE"
-   }
-  ]
+  "fix": {
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "isincode",
+   "aliases": "[{\"name\":\"AMON.ISINCODE\"}]"
+  }
  },
  "ParentClOrdID": {
   "name": "ParentClOrdID",
-  "kind": "namespace",
-  "column": "ParentClOrdID",
-  "type": "String",
+  "type": "string",
+  "nullable": true,
   "description": "Client order identity of the parent in a replace chain, as the bridge renders it.",
-  "versions": [
-   "*"
-  ]
+  "fix": {
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "parentclordid"
+  }
  },
  "ParentOrderID": {
   "name": "ParentOrderID",
-  "kind": "namespace",
-  "column": "ParentOrderID",
-  "type": "String",
+  "type": "string",
+  "nullable": true,
   "description": "Venue order identity of the parent in a replace chain, as the bridge renders it.",
-  "versions": [
-   "*"
-  ]
+  "fix": {
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "parentorderid"
+  }
  }
 }

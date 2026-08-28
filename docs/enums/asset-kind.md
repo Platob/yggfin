@@ -1,20 +1,29 @@
 # AssetKind
 
+[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+
 ```python
 from rekep.enums import AssetKind
 
-kind = AssetKind.from_fix("F")
+kind = AssetKind.from_cfi("F")
 assert kind is AssetKind.FUTURE
 assert kind.is_derivative
+assert kind.cfi_category == "F"
 assert int(kind) == int.from_bytes(b"FUTURE\0\0", "big")
 ```
 
 Asset kinds are grouped by settlement and instrument structure; the grouping
 rides in each member's rank, and the stored value is its readable mnemonic.
-Rows without a FIX code are band markers or normalized kinds without one
-unique wire spelling.
 
-| Key | Mnemonic | Stored value | Rank | FIX code |
+The letter is **ISO 10962's**, read off the front of `CFICode <461>` -- not a
+FIX value. `CFICode` is a six-character string the dictionary enumerates
+nothing for, so this is the one classification here the FIX registry cannot
+answer and the only one still written down. FIX's own classification of the
+same instruments is `SecurityType <167>`, which the market layer reads
+separately. Rows with no letter are band markers, or kinds ISO gives no
+category of its own.
+
+| Key | Mnemonic | Stored value | Rank | CFI |
 | --- | --- | ---: | ---: | --- |
 | `UNKNOWN` |  | 0 | 0 |  |
 | `CASH` | `CASH` | 4846246242730115072 | 100 |  |

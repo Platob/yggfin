@@ -13,6 +13,9 @@ uv run --project python --with papermill rekep task run \
   --output flatten_instruments.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 `parse_fix` already created, enriched, versioned, and snapshotted every
 normalized Instrument lifecycle row. This notebook filters those rows by
 `etype` and the internal plugin marker, converts each `FixMsg` back to its exact

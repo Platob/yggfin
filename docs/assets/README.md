@@ -1,9 +1,21 @@
 # Diagram assets
 
-`rkp-logo.svg`, `arrow-hub.svg`, `workflow-run.svg`, and `schema-lineage.svg`
+`rkp-logo.svg`, `arrow-hub.svg`, `workflow-run.svg`, `compatibility-tree.svg`,
+and `schema-lineage.svg`
 are original assets licensed with this repository under Apache-2.0. Third-party
 marks identify interoperability or pipeline dependencies only; no project
 endorses rekep.
+
+Each is authored once, for the dark scheme. `docs_hooks.py` derives the
+`-light.svg` beside it by inverting the lightness of every neutral, and the
+page names both with Material's `#only-dark` / `#only-light` fragments. Edit
+the authored file; the other one is built.
+
+The marks below are carried into the built diagrams as data, because a browser
+renders `<img src="a.svg">` in a context that loads no external resource -- a
+mark referenced by path never arrives. Their colours and geometry are
+unmodified either way, and the white plate each sits on is the one thing the
+derivation leaves alone.
 
 | Local asset | Primary source | Terms |
 | --- | --- | --- |

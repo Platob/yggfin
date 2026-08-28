@@ -78,10 +78,10 @@ def test_the_partition_is_the_hour_and_only_the_hour() -> None:
     64-bit hash multiplies the files in each hour without pruning anything more."""
     schema = Order.into_field().into_iceberg_schema()
     spec = Order.into_field().into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["unix_partition"]
+    assert [partition.name for partition in spec.fields] == ["unixpartition"]
     assert str(spec.fields[0].transform) == "identity"
-    assert schema.find_column_name(spec.fields[0].source_id) == "unix_partition"
-    assert str(schema.find_field("unix_partition").field_type) == "int"
+    assert schema.find_column_name(spec.fields[0].source_id) == "unixpartition"
+    assert str(schema.find_field("unixpartition").field_type) == "int"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
@@ -91,7 +91,7 @@ def test_the_table_is_laid_out_in_time_inside_the_partition() -> None:
     schema = Order.into_field().into_iceberg_schema()
     order = Order.into_field().into_iceberg_sort_order(schema)
     assert [schema.find_column_name(field.source_id) for field in order.fields] == [
-        "unix_partition",
+        "unixpartition",
         "unix",
     ]
     assert all(str(field.transform) == "identity" for field in order.fields)
@@ -108,8 +108,8 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         catalog="test",
         properties=catalog_properties(tmp_path),
     )
-    unix_partition = UNIX // SECOND
-    given = batch(shape, 3, unix_partition=[unix_partition] * 3)
+    unixpartition = UNIX // SECOND
+    given = batch(shape, 3, unixpartition=[unixpartition] * 3)
     # `append_`, not `overwrite_`: the fixture rows share a key, and what this
     # pins is the Arrow types surviving a round trip, not how rows are matched.
     dataset.append_arrow_table(pyarrow.Table.from_batches([given]))
@@ -119,11 +119,11 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     assert read.column("hash").to_pylist() == given.column("hash").to_pylist()
     assert read.column("state").type == pyarrow.int64(), "the code kept its own width"
     assert read.column("side").type == pyarrow.int32(), "and a four-byte code stayed narrow"
-    assert read.column("unix_partition").type == pyarrow.int32()
+    assert read.column("unixpartition").type == pyarrow.int32()
     assert read.column("hash").type == HASH, "and the identifier kept its stored width"
     written = [task.file for task in dataset.iceberg_table.scan().plan_files()]
-    assert {one.partition[0] for one in written} == {unix_partition}
-    assert all(f"unix_partition={unix_partition}" in one.file_path for one in written), (
+    assert {one.partition[0] for one in written} == {unixpartition}
+    assert all(f"unixpartition={unixpartition}" in one.file_path for one in written), (
         "the second-scale partition value keeps paths compact"
     )
 
@@ -142,7 +142,7 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         [{"px": 11.0, "qty": 6.0}],
     ]
     given = Book.summarise_arrow_batch(
-        batch(Book, 2, sunix=[1, 2], bid_levels=levels, ask_levels=levels)
+        batch(Book, 2, sunix=[1, 2], bidlevels=levels, asklevels=levels)
     )
     # `append_`, not `overwrite_`: the fixture rows share a key, and what this
     # pins is the Arrow types surviving a round trip, not how rows are matched.
@@ -150,12 +150,12 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     read = dataset.read_arrow_table()
 
     assert read.num_rows == 2
-    assert read.column("bid_px").to_pylist() == [10.0, 11.0], "derived, written and read back"
-    assert read.column("bid_depth").type == pyarrow.int32()
+    assert read.column("bidpx").to_pylist() == [10.0, 11.0], "derived, written and read back"
+    assert read.column("biddepth").type == pyarrow.int32()
     assert pyarrow.types.is_list(
-        read.schema.field("bid_levels").type
-    ) or pyarrow.types.is_large_list(read.schema.field("bid_levels").type)
-    assert read.column("bid_levels")[0][0]["qty"].as_py() == 5.0
+        read.schema.field("bidlevels").type
+    ) or pyarrow.types.is_large_list(read.schema.field("bidlevels").type)
+    assert read.column("bidlevels")[0][0]["qty"].as_py() == 5.0
 
 
 def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
@@ -176,5 +176,5 @@ def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
         for member in schema.fields
         if not str(member.field_type).startswith(("list", "map", "struct"))
     ]
-    assert {"spread", "vwap", "exec_px", "imbalance", "bid_px", "ask_px"} <= set(flat)
+    assert {"spread", "vwap", "execpx", "imbalance", "bidpx", "askpx"} <= set(flat)
     assert len(schema.fields) < 100, "no more top-level fields than the budget counts leaves"

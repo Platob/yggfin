@@ -28,24 +28,29 @@ enum name and the complete stored-value lookup under `enum:*` metadata.
 | Enum | Contract |
 | --- | --- |
 | [AssetKind](asset-kind.md) | Tradable asset class. |
-| [IdSource](id-source.md) | Instrument identifier scheme. |
 | [MIC](mic.md) | ISO 10383 market identifier. |
 | [Currency](currency.md) | ISO 4217 code packed into four bytes. |
 | [OptionKind](option-kind.md) | Put or call direction. |
 
-## Order codes
+## Market codes
+
+Generic across orders, executions and quotes: an execution carries a side and
+a market kind exactly as the order that caused it does.
 
 | Enum | Contract |
 | --- | --- |
-| [Side](side.md) | Order direction. |
+| [Side](side.md) | Direction. |
 | [MarketKind](market-kind.md) | Pricing and execution semantics. |
 | [TimeInForce](time-in-force.md) | Order lifetime. |
 
 Every code is built on one base -- the public `Ascii32` and its eight-byte
 `Ascii64` -- which packs the readable spelling left-justified into the stored
-integer and pads it with trailing NULs, so the integer orders exactly as the
-text does. `from_int` is the only reader of a stored value; there is no
-migration path from an earlier packing.
+integer. [ASCII codes](ascii-codes.md) is that rule, with an encoder on it.
+
+A vocabulary that is one FIX field read as a code -- `Side`, `TimeInForce`,
+`OptionKind` -- declares which field, and takes the wire codes from the
+dictionary rather than compiling a copy of them. A scheme the dictionary
+enumerates in full, such as `SecurityIDSource <22>`, has no enum here at all.
 
 Order is a separate fact from identity. A member may declare a *rank*, and a
 vocabulary ranked in hundred-wide bands answers "what does this broadly mean"
@@ -54,5 +59,12 @@ through `band` and "which codes rank at least this far" through
 storage scan pushes down.
 
 An enum's Arrow shape, `EnumName.into_arrow_type()`, is one cached dictionary
-type -- the packed integer indexing the readable codes -- while columns store
-the bare integer every engine reads.
+type -- its codes as values, indexed as wide as the packed integer a column
+stores, though the indices themselves are positions -- while columns store the
+bare integer every engine reads.
+
+An open vocabulary remembers a code it learnt at runtime, so the next read of
+the same value is the same member. That memory is bounded at 4,096 codes per
+enum and evicts the least recently registered, so `from_int(int(member)) is
+member` holds for what a batch is working with and not for every code a long
+process has ever seen.

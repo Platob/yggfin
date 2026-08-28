@@ -61,7 +61,7 @@ EXPECTED_BRIDGE_PAIRS = 15
 #: `tests/fix/test_columns.py` and the hop group's absence in
 #: `tests/fix/test_transcribe.py`, so a tag quietly leaving the list cannot
 #: take its column's assertions here with it.
-FLAT_NAMES = (*COLUMNS.values(), "ISINCODE")
+FLAT_NAMES = (*COLUMNS.values(), "isincode")
 
 #: The standard header the *raw* stage lifts out of `entries` into columns of
 #: its own, tag by column name. Spelled out rather than imported from
@@ -69,14 +69,51 @@ FLAT_NAMES = (*COLUMNS.values(), "ISINCODE")
 #: sides of an assertion together. A row answers to either spelling: the tag,
 #: or the rendered name case-insensitively.
 LIFTED_HEADER = {
-    "8": "BeginString",
-    "9": "BodyLength",
-    "34": "MsgSeqNum",
-    "35": "MsgType",
-    "49": "SenderCompID",
-    "52": "SendingTime",
-    "56": "TargetCompID",
+    "8": "beginstring",
+    "9": "bodylength",
+    "35": "msgtype",
+    "49": "sendercompid",
+    "50": "sendersubid",
+    "142": "senderlocationid",
+    "56": "targetcompid",
+    "57": "targetsubid",
+    "143": "targetlocationid",
+    "115": "onbehalfofcompid",
+    "116": "onbehalfofsubid",
+    "144": "onbehalfoflocationid",
+    "128": "delivertocompid",
+    "129": "delivertosubid",
+    "145": "delivertolocationid",
+    "34": "msgseqnum",
+    "369": "lastmsgseqnumprocessed",
+    "43": "possdupflag",
+    "97": "possresend",
+    "52": "sendingtime",
+    "122": "origsendingtime",
+    "370": "onbehalfofsendingtime",
+    "1128": "applverid",
+    "1129": "cstmapplverid",
+    "1156": "applextid",
+    "347": "messageencoding",
+    "90": "securedatalen",
+    "91": "securedata",
+    "93": "signaturelength",
+    "89": "signature",
 }
+
+#: The header fields this module's own wire lines actually write, in the
+#: order the value assertions below read them. A line states part of the
+#: header, not all of it, so what the *stage lifts* and what *this fixture
+#: carries* are two facts and are counted apart.
+WIRE_HEADER = (
+    "beginstring",
+    "bodylength",
+    "msgseqnum",
+    "msgtype",
+    "sendercompid",
+    "sendingtime",
+    "targetcompid",
+)
 
 #: `CheckSum <10>` is the boundary every lift is measured against -- a field is
 #: eligible only where it stands in front of it -- so it is deliberately not
@@ -182,13 +219,13 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
     assert raw_table.num_rows == EXPECTED_RECORDS
     assert raw_table.schema.names == Message.into_field().names
     assert not {
-        "protocol_version",
+        "protocolversion",
         "Parties",
     } & set(raw_table.schema.names)
-    assert {"protocol_code", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
+    assert {"protocolcode", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
     assert "CheckSum" not in raw_table.schema.names, "the boundary is not one of the lifted"
     # Protocol-neutral: this stage reads no numbers and no clocks, so every
-    # one of the seven is stored as the text the payload spelled.
+    # lifted column is stored as the text the payload spelled.
     for name in LIFTED_HEADER.values():
         assert pyarrow.types.is_string(raw_table.schema.field(name).type), name
     assert _keys(raw_table.column("entries")[PIPED]) == [
@@ -196,7 +233,7 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
         for token in WIRE.strip("|").split("|")
         if token.split("=", 1)[0] not in LIFTED_HEADER
     ]
-    assert [raw_table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [raw_table.column(name)[PIPED].as_py() for name in WIRE_HEADER] == [
         "FIX.4.2",
         "176",
         "1092",
@@ -210,13 +247,13 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
+    assert table.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS
 
 
 def test_the_column_and_the_line_agree_on_every_row(table: pyarrow.Table) -> None:
     """Scalar and vectorised, row for row, on the capture itself."""
     scalar = [Rules.into_default().categorise(one) for one in table.column("message").to_pylist()]
-    assert [rule.protocol for rule in scalar] == table.column("protocol_code").to_pylist()
+    assert [rule.protocol for rule in scalar] == table.column("protocolcode").to_pylist()
 
 
 # -- what a line carries -----------------------------------------------------
@@ -224,9 +261,9 @@ def test_the_column_and_the_line_agree_on_every_row(table: pyarrow.Table) -> Non
 
 def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Table) -> None:
     """The line has a prefix *and* a suffix, and neither is in the message."""
-    assert table.column("Symbol")[PIPED].as_py() == "TTF"
-    assert table.column("Side")[PIPED].as_py() == "1"
-    assert table.column("Price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
+    assert table.column("symbol")[PIPED].as_py() == "TTF"
+    assert table.column("side")[PIPED].as_py() == "1"
+    assert table.column("price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
     # `52` used to sit here too, as the sidecar an instant column cannot spell
     # back. The raw stage lifts it now, so it never reaches the FIX stage to
     # be audited and the trailing zeros of `44=41.2500` are the only text left.
@@ -257,16 +294,16 @@ def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     What separates the two is everything past the header: `FIX.4.4` types its
     body, and `FIX4` names no dictionary, so its body stays raw.
     """
-    assert table.column("BeginString")[SOHED].as_py() == "FIX.4.4"
-    assert table.column("MsgSeqNum")[SOHED].as_py() == 1094
-    assert table.column("CheckSum")[SOHED].as_py() == "118"
-    assert table.column("MsgType")[SOHED].as_py() == "8"
+    assert table.column("beginstring")[SOHED].as_py() == "FIX.4.4"
+    assert table.column("msgseqnum")[SOHED].as_py() == 1094
+    assert table.column("checksum")[SOHED].as_py() == "118"
+    assert table.column("msgtype")[SOHED].as_py() == "8"
     assert _tagged(table.column("entries")[SOHED]) == [(31, "41.2500"), (6, "41.2500")]
 
     assert _tagged(table.column("entries")[CARET]) == CARET_RESIDUAL_PAIRS
     assert _keys(table.column("entries")[CARET]) == [str(tag) for tag, _ in CARET_RESIDUAL_PAIRS]
     assert _named(table.column("entries")[CARET]) == []
-    assert [table.column(name)[CARET].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [table.column(name)[CARET].as_py() for name in WIRE_HEADER] == [
         "FIX4",
         61,
         1093,
@@ -319,8 +356,8 @@ def test_the_versionless_bridge_group_stays_raw_in_wire_order(table: pyarrow.Tab
     pairs = _named(table.column("entries")[BRIDGE])
     assert pairs[6:13] == BRIDGE_RAW_PAIRS[6:13]
     assert pairs[13] == ("TRANSACTTIME", "20260814-00:05:01.148")
-    assert table.column("TransactTime")[BRIDGE].as_py() is None
-    assert table.column("Parties")[BRIDGE].as_py() is None
+    assert table.column("transacttime")[BRIDGE].as_py() is None
+    assert table.column("parties")[BRIDGE].as_py() is None
     _assert_no_semantic_columns(table, BRIDGE)
 
 
@@ -344,7 +381,7 @@ def test_mixed_fix_versions_read_parties_through_one_declaration(
         messages.reverse()
 
     parsed = _lines(tmp_path / f"mixed-{reverse}.txt", codec, "FixSession", messages)
-    by_id = {row[0]["PartyID"]: row[0]["buffer"] for row in parsed.column("Parties").to_pylist()}
+    by_id = {row[0]["partyid"]: row[0]["buffer"] for row in parsed.column("parties").to_pylist()}
 
     assert by_id["P43"] == [("NoPartySubIDs[0].PartySubID", "SUB43")]
     assert by_id["P50"] == [
@@ -362,12 +399,12 @@ def test_a_bridge_message_in_a_fix_envelope_keeps_both_halves(table: pyarrow.Tab
     header that says what it is gets cut off with the log's prefix. So it is
     its own rule, and the message still starts at its BeginString.
     """
-    assert table.column("BeginString")[WRAPPED].as_py() == "FIX.4.2", "the wire header survives"
-    assert table.column("MsgType")[WRAPPED].as_py() == "UL"
-    assert table.column("Symbol")[WRAPPED].as_py() == "TTF", "and so do the names"
-    assert table.column("Side")[WRAPPED].as_py() == "1"
-    assert table.column("OrderQty")[WRAPPED].as_py() == 1200.0
-    assert table.column("ISINCODE")[WRAPPED].as_py() == "XX0000084733"
+    assert table.column("beginstring")[WRAPPED].as_py() == "FIX.4.2", "the wire header survives"
+    assert table.column("msgtype")[WRAPPED].as_py() == "UL"
+    assert table.column("symbol")[WRAPPED].as_py() == "TTF", "and so do the names"
+    assert table.column("side")[WRAPPED].as_py() == "1"
+    assert table.column("orderqty")[WRAPPED].as_py() == 1200.0
+    assert table.column("isincode")[WRAPPED].as_py() == "XX0000084733"
     assert _named(table.column("entries")[WRAPPED]) == []
 
 
@@ -395,7 +432,7 @@ def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -
         ("NOPARTYIDS[0].PARTYID", "BUYSIDE"),
         ("NOPARTYIDS[0].PARTYROLE", "1"),
     ]
-    assert table.column("Parties")[HASHED].as_py() is None
+    assert table.column("parties")[HASHED].as_py() is None
     _assert_no_semantic_columns(table, HASHED)
 
 
@@ -409,7 +446,7 @@ def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> No
 def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
     assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _keys(table.column("entries")[BRIDGE]) == [key for key, _ in BRIDGE_RAW_PAIRS]
-    assert table.column("ISINCODE")[BRIDGE].as_py() is None
+    assert table.column("isincode")[BRIDGE].as_py() is None
     _assert_no_semantic_columns(table, BRIDGE)
 
 
@@ -419,7 +456,7 @@ def test_a_line_carrying_no_message_has_no_pairs_at_all(table: pyarrow.Table) ->
         if protocol != NO_PROTOCOL:
             continue
         assert table.column("entries")[row].as_py() is None
-        assert table.column("Parties")[row].as_py() is None
+        assert table.column("parties")[row].as_py() is None
         assert _lifted(table, row) == 0
 
 
@@ -436,13 +473,13 @@ def test_a_stack_trace_still_folds_into_the_row_above_it(table: pyarrow.Table) -
 
 def test_a_wire_message_lands_its_header_and_trailer_in_columns(table: pyarrow.Table) -> None:
     """Who sent it, to whom, in what order and when -- what a reader filters on."""
-    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
-    assert table.column("BodyLength")[PIPED].as_py() == 176
-    assert table.column("MsgType")[PIPED].as_py() == "D"
-    assert table.column("MsgSeqNum")[PIPED].as_py() == 1092
-    assert table.column("SenderCompID")[PIPED].as_py() == "BUYSIDE"
-    assert table.column("TargetCompID")[PIPED].as_py() == "XPAR"
-    assert table.column("CheckSum")[PIPED].as_py() == "203"
+    assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("bodylength")[PIPED].as_py() == 176
+    assert table.column("msgtype")[PIPED].as_py() == "D"
+    assert table.column("msgseqnum")[PIPED].as_py() == 1092
+    assert table.column("sendercompid")[PIPED].as_py() == "BUYSIDE"
+    assert table.column("targetcompid")[PIPED].as_py() == "XPAR"
+    assert table.column("checksum")[PIPED].as_py() == "203"
 
 
 def test_a_header_field_written_twice_two_ways_is_lifted_by_neither(tmp_path: Path) -> None:
@@ -461,7 +498,7 @@ def test_a_header_field_written_twice_two_ways_is_lifted_by_neither(tmp_path: Pa
             "sending >> 8=FIX.4.4|9=99|35=D|34=7|49=BUYSIDE|34=7|55=TTF|10=002|",
         ],
     )
-    assert staged.column("MsgSeqNum").to_pylist() == [None, "7"]
+    assert staged.column("msgseqnum").to_pylist() == [None, "7"]
     assert _tagged(staged.column("entries")[0]) == [
         (34, "7"),
         (34, "8"),
@@ -469,7 +506,7 @@ def test_a_header_field_written_twice_two_ways_is_lifted_by_neither(tmp_path: Pa
         (10, "001"),
     ], "neither reading is lifted, so both are still there to be read"
     assert _tagged(staged.column("entries")[1]) == [(55, "TTF"), (10, "002")]
-    assert staged.column("SenderCompID").to_pylist() == ["BUYSIDE", "BUYSIDE"], (
+    assert staged.column("sendercompid").to_pylist() == ["BUYSIDE", "BUYSIDE"], (
         "and one torn field costs the six beside it nothing"
     )
 
@@ -488,9 +525,9 @@ def test_the_header_lift_stops_at_the_checksum_it_is_measured_against(
         "FixSession_XPAR",
         ["sending >> 8=FIX.4.4|9=99|35=D|34=9|55=TTF|10=003|49=LATE|52=20260814-09:30:00.000"],
     )
-    assert staged.column("SenderCompID")[0].as_py() is None
-    assert staged.column("SendingTime")[0].as_py() is None
-    assert staged.column("MsgSeqNum")[0].as_py() == "9", "what stood in front of it still lifted"
+    assert staged.column("sendercompid")[0].as_py() is None
+    assert staged.column("sendingtime")[0].as_py() is None
+    assert staged.column("msgseqnum")[0].as_py() == "9", "what stood in front of it still lifted"
     assert _tagged(staged.column("entries")[0]) == [
         (55, "TTF"),
         (10, "003"),
@@ -501,44 +538,44 @@ def test_the_header_lift_stops_at_the_checksum_it_is_measured_against(
 
 def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) -> None:
     """The other half of the flat layer: what a desk queries a fill by."""
-    assert table.column("Symbol")[SOHED].as_py() == "TTF"
-    assert table.column("OrderID")[SOHED].as_py() == "ORD-0000038106"
-    assert table.column("ExecID")[SOHED].as_py() == "EXE-0000091233"
-    assert table.column("OrdStatus")[SOHED].as_py() == "1"
-    assert table.column("ExecType")[SOHED].as_py() == "F"
-    assert table.column("LastPx")[SOHED].as_py() == 41.25
-    assert table.column("LastQty")[SOHED].as_py() == 400.0
-    assert table.column("LeavesQty")[SOHED].as_py() == 800.0
-    assert table.column("ClOrdID")[PIPED].as_py() == "ORD-0000038106"
-    assert table.column("OrdType")[PIPED].as_py() == "2"
-    assert table.column("TimeInForce")[PIPED].as_py() == "0"
+    assert table.column("symbol")[SOHED].as_py() == "TTF"
+    assert table.column("orderid")[SOHED].as_py() == "ORD-0000038106"
+    assert table.column("execid")[SOHED].as_py() == "EXE-0000091233"
+    assert table.column("ordstatus")[SOHED].as_py() == "1"
+    assert table.column("exectype")[SOHED].as_py() == "F"
+    assert table.column("lastpx")[SOHED].as_py() == 41.25
+    assert table.column("lastqty")[SOHED].as_py() == 400.0
+    assert table.column("leavesqty")[SOHED].as_py() == 800.0
+    assert table.column("clordid")[PIPED].as_py() == "ORD-0000038106"
+    assert table.column("ordtype")[PIPED].as_py() == "2"
+    assert table.column("timeinforce")[PIPED].as_py() == "0"
 
 
 def test_a_malformed_version_keeps_its_checksum_raw_and_lossless(table: pyarrow.Table) -> None:
     """Unknown `FIX4` cannot type fields, but raw CheckSum still keeps its zero."""
     assert dict(_tagged(table.column("entries")[CARET]))[10] == "017"
-    assert table.column("CheckSum")[CARET].as_py() is None
+    assert table.column("checksum")[CARET].as_py() is None
     _assert_no_semantic_columns(table, CARET)
 
 
 def test_a_stamp_lands_as_the_microsecond_utc_instant_it_spells(table: pyarrow.Table) -> None:
-    sending = table.column("SendingTime")[PIPED].as_py()
+    sending = table.column("sendingtime")[PIPED].as_py()
     assert sending == datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC)
     sending_ns = int(sending.timestamp()) * 1_000_000_000 + sending.microsecond * 1000
     # `unix` is when the transaction happened, and this line's only FIX clock
     # is its `SendingTime <52>` -- so that is the rung that answered, and the
     # header's own stamp is a millisecond later in `runix`.
     assert table.column("unix")[PIPED].as_py() == sending_ns
-    assert table.column("unix_source")[PIPED].as_py() == "SendingTime"
+    assert table.column("unixsource")[PIPED].as_py() == "SendingTime"
     assert table.column("runix")[PIPED].as_py() - sending_ns == 1_000_000
 
 
 def test_a_field_the_message_never_sent_is_null_and_never_a_default(table: pyarrow.Table) -> None:
     """A stamp nobody wrote must not read as the epoch, which a sort puts first."""
-    assert table.column("SendingTime")[SOHED].as_py() is None, "that line carries no tag 52"
-    assert table.column("PossDupFlag").null_count == EXPECTED_RECORDS
-    assert table.column("OnBehalfOfCompID").null_count == EXPECTED_RECORDS
-    assert table.column("LastQty")[PIPED].as_py() is None, "and an order has filled nothing"
+    assert table.column("sendingtime")[SOHED].as_py() is None, "that line carries no tag 52"
+    assert table.column("possdupflag").null_count == EXPECTED_RECORDS
+    assert table.column("onbehalfofcompid").null_count == EXPECTED_RECORDS
+    assert table.column("lastqty")[PIPED].as_py() is None, "and an order has filled nothing"
 
 
 def test_a_flag_the_wire_spells_with_a_letter_lands_as_a_boolean(
@@ -552,9 +589,9 @@ def test_a_flag_the_wire_spells_with_a_letter_lands_as_a_boolean(
         "sending >> 8=FIX.4.4|9=99|35=A|34=3|49=BUYSIDE|56=XPAR|"
         "52=20260814-00:05:01.147|43=Y|97=N|10=001|",
     )
-    assert parsed.column("PossDupFlag")[0].as_py() is True
-    assert parsed.column("PossResend")[0].as_py() is False
-    assert parsed.column("SendingTime")[0].as_py() == datetime(
+    assert parsed.column("possdupflag")[0].as_py() is True
+    assert parsed.column("possresend")[0].as_py() is False
+    assert parsed.column("sendingtime")[0].as_py() == datetime(
         2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC
     )
 
@@ -588,15 +625,15 @@ def test_a_tag_is_lifted_only_where_it_occurs_once_in_its_own_line(
         (55, "OTHER"),
         (44, "42.50"),
     ], "every occurrence of a repeated tag, in wire order"
-    assert parsed.column("Price")[0].as_py() is None, "no one price is the multi-leg order's"
-    assert parsed.column("Symbol")[0].as_py() is None, "nor one unambiguous symbol"
-    assert parsed.column("MsgSeqNum")[0].as_py() == 8, "while what was written once still lifted"
-    assert parsed.column("MsgType")[0].as_py() == "AB"
+    assert parsed.column("price")[0].as_py() is None, "no one price is the multi-leg order's"
+    assert parsed.column("symbol")[0].as_py() is None, "nor one unambiguous symbol"
+    assert parsed.column("msgseqnum")[0].as_py() == 8, "while what was written once still lifted"
+    assert parsed.column("msgtype")[0].as_py() == "AB"
 
     assert _tagged(parsed.column("entries")[1]) == [], "and the line beside it lifted all of it"
-    assert parsed.column("Symbol")[1].as_py() == "TTF"
-    assert parsed.column("Price")[1].as_py() == 41.25
-    assert parsed.column("MsgSeqNum")[1].as_py() == 9
+    assert parsed.column("symbol")[1].as_py() == "TTF"
+    assert parsed.column("price")[1].as_py() == 41.25
+    assert parsed.column("msgseqnum")[1].as_py() == 9
 
 
 def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
@@ -619,7 +656,7 @@ def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
     ]
     hops = [value for tag, value in _tagged(parsed.column("entries")[0]) if tag == 628]
     assert hops == ["HOP1", "HOP2"], "both of them, in the order they relayed it"
-    assert parsed.column("SenderCompID")[0].as_py() == "BUYSIDE", "and the scalars still lifted"
+    assert parsed.column("sendercompid")[0].as_py() == "BUYSIDE", "and the scalars still lifted"
 
 
 def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them(
@@ -648,7 +685,7 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
     # `SENDERCOMPID` stays in the list with the rest of them. The header lift
     # reads FIX's tags, not a bridge's names for them: which name a feed writes
     # is data, and a rendered spelling is kept exactly as it arrived.
-    assert parsed.column("SenderCompID")[0].as_py() is None
+    assert parsed.column("sendercompid")[0].as_py() is None
     _assert_no_semantic_columns(parsed, 0)
 
 
@@ -677,7 +714,7 @@ def test_the_capture_reparses_to_the_same_instants(
     ) as again:
         written = _parsed(again.read_arrow_table(), codec)
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
-    assert written.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
+    assert written.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS
     # Named rather than left to a `KeyError` from the loop below: a column the
     # flat layer declares and the shape does not is a missing column, and it
     # should fail as one.
@@ -704,18 +741,18 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
         protocol_rules=own.rules,
     ) as log:
         table = _parsed(log.read_arrow_table(), own)
-    found = table.column("protocol_code").to_pylist()
+    found = table.column("protocolcode").to_pylist()
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("entries")[PIPED].as_py() is None
-    assert _lifted(table, PIPED) == len(LIFTED_HEADER), (
+    assert _lifted(table, PIPED) == len(WIRE_HEADER), (
         "only the standard header the raw stage lifted before any rule ran survives"
     )
-    assert table.column("MsgType")[PIPED].as_py() == "D"
-    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
-    assert table.column("CheckSum")[PIPED].as_py() is None, "the trailer was never lifted"
-    assert table.column("Symbol")[PIPED].as_py() is None, "and no rule read the body"
+    assert table.column("msgtype")[PIPED].as_py() == "D"
+    assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("checksum")[PIPED].as_py() is None, "the trailer was never lifted"
+    assert table.column("symbol")[PIPED].as_py() is None, "and no rule read the body"
 
 
 def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
@@ -729,16 +766,16 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
         protocol_rules=quiet.rules,
     ) as log:
         table = _parsed(log.read_arrow_table(), quiet)
-    assert table.column("protocol_code").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
+    assert table.column("protocolcode").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
     assert table.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
-    assert table.column("Parties").to_pylist() == [None] * EXPECTED_RECORDS
-    assert table.column("Symbol").to_pylist() == [None] * EXPECTED_RECORDS
-    assert table.column("ISINCODE").to_pylist() == [None] * EXPECTED_RECORDS
+    assert table.column("parties").to_pylist() == [None] * EXPECTED_RECORDS
+    assert table.column("symbol").to_pylist() == [None] * EXPECTED_RECORDS
+    assert table.column("isincode").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("code").to_pylist() == [""] * EXPECTED_RECORDS
-    assert table.column("MsgType").null_count < EXPECTED_RECORDS
+    assert table.column("msgtype").null_count < EXPECTED_RECORDS
     # The header is not the rule set's to withhold: it was lifted upstream of
     # any protocol, so it stands here with no rule in sight.
-    assert [table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [table.column(name)[PIPED].as_py() for name in WIRE_HEADER] == [
         "FIX.4.2",
         176,
         1092,
@@ -747,7 +784,7 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
         datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
         "XPAR",
     ]
-    assert table.column("CheckSum").null_count == EXPECTED_RECORDS, (
+    assert table.column("checksum").null_count == EXPECTED_RECORDS, (
         "the trailer is nobody's header, so nothing lifted it"
     )
     assert all(
@@ -774,15 +811,15 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
     sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
-    assert parsed.column("Symbol")[0].as_py() is None
-    assert parsed.column("Parties")[0].as_py() is None
+    assert parsed.column("symbol")[0].as_py() is None
+    assert parsed.column("parties")[0].as_py() is None
     # `8` and `34` are gone from the list and `55` is not: a codec that lifts
     # nothing cannot suppress the header, because the raw stage lifted it
     # before this codec was asked anything.
     assert [tag for tag, _ in _tagged(parsed.column("entries")[0])] == [55]
-    assert parsed.column("MsgSeqNum")[0].as_py() == 7
-    assert parsed.column("BeginString")[0].as_py() == "FIX.4.4"
-    assert parsed.column("MsgType").to_pylist() == ["D"]
+    assert parsed.column("msgseqnum")[0].as_py() == 7
+    assert parsed.column("beginstring")[0].as_py() == "FIX.4.4"
+    assert parsed.column("msgtype").to_pylist() == ["D"]
 
 
 def test_quote_fields_are_typed_once_and_drive_log_correlation(
@@ -796,20 +833,20 @@ def test_quote_fields_are_typed_once_and_drive_log_correlation(
         "134=10|135=12|293=9|294=11|62=20260821-10:05:00|",
     )
 
-    assert parsed.column("MsgSeqNum").to_pylist() == [7]
+    assert parsed.column("msgseqnum").to_pylist() == [7]
     assert parsed.column("code").to_pylist() == ["Q-1"]
     assert parsed.column("code").to_pylist() == ["Q-1"]
-    assert parsed.column("QuoteID").to_pylist() == ["Q-1"]
-    assert parsed.column("QuoteReqID").to_pylist() == ["R-1"]
-    assert parsed.column("QuoteType").to_pylist() == [1]
-    assert parsed.column("QuoteStatus").to_pylist() == [0]
-    assert parsed.column("BidPx").to_pylist() == [100.0]
-    assert parsed.column("OfferPx").to_pylist() == [101.0]
-    assert parsed.column("BidSize").to_pylist() == [10.0]
-    assert parsed.column("OfferSize").to_pylist() == [12.0]
-    assert parsed.column("DefBidSize").to_pylist() == [9.0]
-    assert parsed.column("DefOfferSize").to_pylist() == [11.0]
-    assert parsed.column("ValidUntilTime").to_pylist() == [datetime(2026, 8, 21, 10, 5, tzinfo=UTC)]
+    assert parsed.column("quoteid").to_pylist() == ["Q-1"]
+    assert parsed.column("quotereqid").to_pylist() == ["R-1"]
+    assert parsed.column("quotetype").to_pylist() == [1]
+    assert parsed.column("quotestatus").to_pylist() == [0]
+    assert parsed.column("bidpx").to_pylist() == [100.0]
+    assert parsed.column("offerpx").to_pylist() == [101.0]
+    assert parsed.column("bidsize").to_pylist() == [10.0]
+    assert parsed.column("offersize").to_pylist() == [12.0]
+    assert parsed.column("defbidsize").to_pylist() == [9.0]
+    assert parsed.column("defoffersize").to_pylist() == [11.0]
+    assert parsed.column("validuntiltime").to_pylist() == [datetime(2026, 8, 21, 10, 5, tzinfo=UTC)]
     assert _tagged(parsed.column("entries")[0]) == [(62, "20260821-10:05:00")]
 
 
@@ -821,9 +858,9 @@ def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCo
         "8=FIX.4.4|35=i|295=2|299=Q-1|132=100|299=Q-2|132=101|",
     )
 
-    assert parsed.column("NoQuoteEntries").to_pylist() == [2]
-    assert parsed.column("QuoteEntryID").to_pylist() == [None]
-    assert parsed.column("BidPx").to_pylist() == [None]
+    assert parsed.column("noquoteentries").to_pylist() == [2]
+    assert parsed.column("quoteentryid").to_pylist() == [None]
+    assert parsed.column("bidpx").to_pylist() == [None]
     assert _tagged(parsed.column("entries")[0]) == [
         (295, "2"),
         (299, "Q-1"),
@@ -857,9 +894,9 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
         (59, "0"),
         (10, "203"),
     ]
-    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(LIFTED_HEADER)
-    assert table.column("BeginString")[PIPED].as_py() == "FIX.4.2"
-    assert table.column("MsgSeqNum")[PIPED].as_py() == 1092
+    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(WIRE_HEADER)
+    assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
+    assert table.column("msgseqnum")[PIPED].as_py() == 1092
     assert _tagged(table.column("entries")[BRIDGE]) == []
     assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert len(_keys(table.column("entries")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
@@ -882,12 +919,12 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     )
     table = _parsed(files.read_arrow_table(), codec)
     assert table.num_rows == EXPECTED_RECORDS * 2
-    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS * 2
+    assert table.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS * 2
     assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _named(table.column("entries")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
     _assert_no_semantic_columns(table, EXPECTED_RECORDS + BRIDGE)
-    sequences = table.column("MsgSeqNum").to_pylist()
+    sequences = table.column("msgseqnum").to_pylist()
     assert sequences[PIPED] == 1092, "the flat layer of the first file"
     assert sequences[EXPECTED_RECORDS + PIPED] == 1092, "and of the second, read the same way"
     assert table.schema.names[-1] == "bridge", "and a static column still lands last"
@@ -964,12 +1001,12 @@ def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
     """
     assert _lifted(table, row) == _semantic_floor(table, row)
     assert _component_fields(table, row) == 0
-    assert table.column("Parties")[row].as_py() is None
+    assert table.column("parties")[row].as_py() is None
 
 
 def _component_fields(table: pyarrow.Table, row: int) -> int:
     """Source fields represented by the structured Parties value."""
-    parties = table.column("Parties")[row].as_py()
+    parties = table.column("parties")[row].as_py()
     if parties is None:
         return 0
     return 1 + sum(
@@ -1064,16 +1101,16 @@ def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
     parsed = Message.parse_arrow(
         messages.column("message"),
         event_types(codec.registry),
-        messages.column("plugin_code"),
+        messages.column("plugincode"),
         protocol_rules=codec.rules,
     )
     messages = messages.set_column(
         messages.schema.get_field_index("etype"), "etype", parsed["etype"]
     )
     messages = messages.set_column(
-        messages.schema.get_field_index("protocol_code"),
-        "protocol_code",
-        parsed["protocol_code"],
+        messages.schema.get_field_index("protocolcode"),
+        "protocolcode",
+        parsed["protocolcode"],
     )
     return _parsed(messages, codec)
 
@@ -1130,7 +1167,7 @@ def test_unix_is_the_transaction_time_and_runix_is_when_it_was_recorded(
     transacted: pyarrow.Table,
 ) -> None:
     """The whole point: a row's `unix` is when it happened, not when it printed."""
-    assert transacted.column("unix_source").to_pylist() == TRANSACTED_SOURCES
+    assert transacted.column("unixsource").to_pylist() == TRANSACTED_SOURCES
     unix = transacted.column("unix").to_pylist()
     assert unix[0] == unix_of("20260814-09:29:00.000"), "the group, not TransactTime"
     assert unix[1] == unix_of("20260814-09:27:00.000"), "an order takes TIME_IN"
@@ -1147,7 +1184,7 @@ def test_the_group_and_transact_time_disagreeing_is_decided_by_the_chain(
     transacted: pyarrow.Table,
 ) -> None:
     """Both rows carry `TransactTime <60>` at 09:30 and neither is stamped with it."""
-    claimed = transacted.column("TransactTime").to_pylist()[:2]
+    claimed = transacted.column("transacttime").to_pylist()[:2]
     assert all(one is not None for one in claimed), "the claim is still stored"
     unix = transacted.column("unix").to_pylist()[:2]
     assert all(one != unix_of("20260814-09:30:00.000") for one in unix)
@@ -1159,7 +1196,7 @@ def test_unix_partition_follows_the_resolved_time_and_not_the_header(
     """A row moves partition with its transaction time, or a sorted read breaks."""
     for unix, hour in zip(
         transacted.column("unix").to_pylist(),
-        transacted.column("unix_partition").to_pylist(),
+        transacted.column("unixpartition").to_pylist(),
         strict=True,
     ):
         assert hour == (unix - unix % HOUR) // SECOND
@@ -1174,7 +1211,7 @@ def test_the_parse_and_the_translation_resolve_one_row_alike(
         found = row.into_fix_events().transacted
         if not row.message or "8=FIX" not in row.message:
             continue
-        assert (found.unix, found.source) == (row.unix, row.unix_source), row.message
+        assert (found.unix, found.source) == (row.unix, row.unixsource), row.message
 
 
 # -- the raw/parsed boundary -------------------------------------------------
@@ -1230,9 +1267,9 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     expected = [line.split("(INFO) ", 1)[1] for line in STAGED_LINES.splitlines()]
     assert staged.column("message").to_pylist() == expected
     assert "entries" in staged.schema.names
-    assert staged.column("MsgType").to_pylist() == ["D", "D", None, None]
+    assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
-    assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    assert staged.column("protocolcode").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
     # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
     # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
@@ -1243,7 +1280,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     # The second line spells its header in rendered names, which the lift does
     # not read: it answers to FIX's tags, and a bridge's own name for a field
     # stays in `entries` where the FIX stage decides what it is.
-    assert staged.column("BeginString").to_pylist() == ["FIX.4.4", None, None, None]
+    assert staged.column("beginstring").to_pylist() == ["FIX.4.4", None, None, None]
     assert _keys(staged.column("entries")[1]) == [
         "BEGINSTRING",
         "SIDE",
@@ -1253,7 +1290,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     ], "only `#MSGTYPE=` lifted; every other rendered name is untouched"
     # Protocol-neutral: this stage neither counts nor parses a clock, so the
     # trailer's `10=000` is text in `entries` and nothing was cast.
-    assert staged.column("MsgSeqNum").to_pylist() == [None] * 4
+    assert staged.column("msgseqnum").to_pylist() == [None] * 4
     assert staged.column("entries")[0].as_py()[-1]["value"] == "000"
 
 
@@ -1262,9 +1299,9 @@ def test_fix_conversion_adds_the_canonical_fix_contract(
 ) -> None:
     assert staged.schema.names == Message.into_field().names
     assert resolved.schema.names == FixMsg.into_field().names
-    assert resolved.column("MsgType").to_pylist() == ["D", "D", None, None]
-    assert resolved.column("Side").to_pylist() == ["1", "1", None, None]
-    assert resolved.column("Parties")[0].as_py()[0]["PartyID"] == "BUYSIDE"
+    assert resolved.column("msgtype").to_pylist() == ["D", "D", None, None]
+    assert resolved.column("side").to_pylist() == ["1", "1", None, None]
+    assert resolved.column("parties")[0].as_py()[0]["partyid"] == "BUYSIDE"
 
 
 def test_fix_conversion_never_parses_the_raw_message_again(
@@ -1294,7 +1331,7 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
     """
     rules = Rules()
     categories = rules.into_arrow_category_array(
-        resolved.column("protocol_code").combine_chunks(),
+        resolved.column("protocolcode").combine_chunks(),
         resolved.column("etype").combine_chunks(),
     )
     assert categories.to_pylist() == ["market", "market", "misc", "misc"]
@@ -1315,9 +1352,9 @@ def test_protocol_version_agrees_with_the_columns_it_derives_from(
 ) -> None:
     """A row where the stored version and its own evidence disagree is corrupt."""
     for version, begin, appl in zip(
-        resolved.column("protocol_version").to_pylist(),
-        resolved.column("BeginString").to_pylist(),
-        resolved.column("ApplVerID").to_pylist(),
+        resolved.column("protocolversion").to_pylist(),
+        resolved.column("beginstring").to_pylist(),
+        resolved.column("applverid").to_pylist(),
         strict=True,
     ):
         if begin is None:
@@ -1336,8 +1373,8 @@ def test_a_version_nothing_infers_stays_null_and_says_why(codec: FixCodec) -> No
         pyarrow.string(),
     )
     parsed = _parsed_lines(codec, *messages.to_pylist())
-    assert parsed.column("protocol_version").to_pylist() == [None, None]
-    assert parsed.column("protocol_version_source").to_pylist() == ["none", "none"], (
+    assert parsed.column("protocolversion").to_pylist() == [None, None]
+    assert parsed.column("protocolversionsource").to_pylist() == ["none", "none"], (
         "a FIXT header with no ApplVerID resolves nothing, and neither does a non-message"
     )
 
@@ -1346,8 +1383,8 @@ def test_a_fixt_message_resolves_through_its_application_version(codec: FixCodec
     """FIXT is the transport; `ApplVerID <1128>` says which application version."""
     messages = pyarrow.array(["8=FIXT.1.1|35=D|1128=9|11=C1|10=000"], pyarrow.string())
     parsed = _parsed_lines(codec, *messages.to_pylist())
-    assert parsed.column("protocol_version").to_pylist() == ["5.0.SP2"]
-    assert parsed.column("protocol_version_source").to_pylist() == ["application_version"]
+    assert parsed.column("protocolversion").to_pylist() == ["5.0.SP2"]
+    assert parsed.column("protocolversionsource").to_pylist() == ["application_version"]
 
 
 def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import ipaddress
 import os
 import re
 import urllib.parse
@@ -45,7 +46,29 @@ S3 = frozenset({"s3", "s3a", "s3n"})
 
 #: Query keys an S3 location may carry, and what they configure. Anything else
 #: is left in `query` for whoever put it there.
-S3_SETTINGS = ("region", "scheme", "endpoint_override", "allow_bucket_creation")
+#:
+#: `force_virtual_addressing` and `anonymous` are here because they decide
+#: whether a store answers at all: Arrow addresses an overridden endpoint
+#: path-style, which is what MinIO and Ceph want and what a store that only
+#: serves `bucket.endpoint` refuses, and a public bucket read with the
+#: credential chain's answer is a 403 rather than the data.
+S3_SETTINGS = (
+    "region",
+    "scheme",
+    "endpoint_override",
+    "allow_bucket_creation",
+    "force_virtual_addressing",
+    "anonymous",
+)
+
+#: Settings a query spells as text and Arrow takes as a flag. `true` is the one
+#: spelling that turns one on, so a typo reads as off rather than as on.
+S3_FLAGS = frozenset({"allow_bucket_creation", "force_virtual_addressing", "anonymous"})
+
+#: The settings Arrow's own S3 URI parser refuses -- it accepts the other four
+#: as query keys and raises on these. A location carrying one has to have its
+#: filesystem built here rather than handed over as a URI.
+S3_BUILT_SETTINGS = frozenset({"force_virtual_addressing", "anonymous"})
 
 #: Portable process defaults and their Iceberg property suffixes. AWS
 #: credentials stay in Arrow's provider chain; these names are the explicit
@@ -60,15 +83,36 @@ S3_ENVIRONMENT = (
 #: Endpoint defaults, from the store-specific spelling to AWS's global one.
 S3_ENDPOINT_ENVIRONMENT = ("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")
 
-#: A netloc that is a *hostname* rather than a bucket name. A bucket may carry
-#: dots -- `my.logs.2026` is a legal name -- so a dot decides nothing; what
-#: decides is the last label, because a name ending in a public suffix is
-#: something somebody registered and pointed at a store. `.com` is the one that
-#: carries S3: every AWS endpoint, R2, Spaces, Wasabi, Backblaze, and a MinIO
-#: behind a real certificate. A location whose bucket really *is* named for a
-#: domain -- the S3 static-website pattern, `s3://www.example.com/index.html` --
-#: says so with `?endpoint_override=`, which is a decision and beats a shape.
-STORE_HOST = re.compile(r"\.com$", re.IGNORECASE)
+#: What a store that does not care about the region is signed for. Arrow's own
+#: default, and every compatible store's. Named where an endpoint is configured
+#: and nothing says otherwise, because PyIceberg with no region asks *AWS*
+#: which region hosts a bucket of that name -- a blocking call that discloses
+#: the name, and one that answers for a stranger's bucket when an AWS bucket
+#: happens to share it, signing every request to the real store for its region.
+S3_DEFAULT_REGION = "us-east-1"
+
+#: Last labels that are not a public suffix: IANA's special-use names and
+#: ICANN's private-use `internal`. A netloc ending in one of them was never
+#: registered, so it names something on a private network -- or a bucket.
+PRIVATE_HOSTS = frozenset(
+    {
+        "internal",
+        "intranet",
+        "private",
+        "corp",
+        "home",
+        "lan",
+        "local",
+        "localdomain",
+        "localhost",
+        "alt",
+        "arpa",
+        "example",
+        "invalid",
+        "onion",
+        "test",
+    }
+)
 
 #: One of Amazon's own S3 hostnames, and the bucket in front of it when the
 #: location is spelled virtual-hosted style. Every published form is here:
@@ -131,6 +175,10 @@ class Url:
         for one. Everything after is split by `urllib`, and then decoded: the
         userinfo on its *first* colon, and user, password and path through
         `unquote`, because a URL is transport and the values are not.
+
+        Fragments are off: `#` is a legal object-key character, and reading one
+        as a fragment names a shorter object that a read then opens or a write
+        lands on. A local path taking the branch above keeps its `#` too.
         """
         text = os.fspath(text)
         matched = SCHEME.match(text)
@@ -139,7 +187,18 @@ class Url:
         scheme = matched["scheme"].lower()
         # `s3://host/path` has an authority to read; `file:/path` has none, and
         # reading one there would take the first segment for a host.
-        parsed = urllib.parse.urlsplit(f"//{matched['rest']}" if matched["slashes"] else text)
+        spelled = f"//{matched['rest']}" if matched["slashes"] else text
+        parsed = urllib.parse.urlsplit(spelled, allow_fragments=False)
+        try:
+            # A `/` in the secret truncates the authority, so urllib reads what
+            # is in front of it as a port -- and puts the secret's first
+            # segment in the message it raises with. Say what to do instead,
+            # about a location with the secret taken out.
+            port = parsed.port
+        except ValueError as error:
+            raise ValueError(
+                f"cannot parse {_masked_text(text)!r}: percent-encode ':' and '/' in the secret"
+            ) from error
         user, password = _credentials(parsed.netloc)
         path = urllib.parse.unquote(parsed.path)
         return cls(
@@ -147,7 +206,7 @@ class Url:
             user=user,
             password=password,
             host=_host(parsed),
-            port=parsed.port,
+            port=port,
             path=_drive_path(path) if scheme in LOCAL else path.lstrip("/"),
             query=dict(urllib.parse.parse_qsl(parsed.query)),
         )
@@ -325,8 +384,14 @@ class Url:
         if self.scheme in LOCAL:
             return pyarrow.fs.LocalFileSystem(), self._local_path()
         environment = s3_environment() if self.scheme in S3 else {}
+        # A setting Arrow's URI parser refuses is built here instead: a public
+        # bucket spelled `s3://bucket/key?anonymous=true` would otherwise fail
+        # to resolve at all rather than be read as nobody.
         if self.scheme in S3 and (
-            self.endpoint is not None or self.user is not None or environment
+            self.endpoint is not None
+            or self.user is not None
+            or environment
+            or not self.query.keys().isdisjoint(S3_BUILT_SETTINGS)
         ):
             return self._s3_filesystem(environment), self.store_path
         location = self.into_string()
@@ -371,9 +436,12 @@ class Url:
         endpoint = self.endpoint
         if endpoint is not None:
             if not _amazon(_bare(endpoint))[0]:
-                settings["endpoint_override"] = endpoint
+                # Through the same helper the process default goes through:
+                # Arrow wants a connect string, and `?endpoint_override=` is
+                # where somebody writes `http://minio:9000` by hand.
+                scheme, settings["endpoint_override"] = _endpoint_parts(endpoint)
                 if "scheme" not in self.query:
-                    settings["scheme"] = "http" if _plain(endpoint) else "https"
+                    settings["scheme"] = scheme
             else:
                 # Naming AWS in the location is an explicit store choice, so
                 # a process-wide compatible-store endpoint cannot survive it.
@@ -384,8 +452,8 @@ class Url:
             settings["region"] = _region_of(self.bucket)
             if settings["region"] is None:
                 settings.pop("region")
-        if "allow_bucket_creation" in settings:
-            settings["allow_bucket_creation"] = settings["allow_bucket_creation"] == "true"
+        for flag in S3_FLAGS & settings.keys():
+            settings[flag] = settings[flag] == "true"
         return pyarrow.fs.S3FileSystem(**settings)
 
     def _local_path(self) -> str:
@@ -423,6 +491,22 @@ class Url:
     def __repr__(self) -> str:
         """Masked, always: a `repr` is what a log and a traceback print."""
         return f"Url({self.masked!r})"
+
+
+def _masked_text(text: str) -> str:
+    """A location whose userinfo is `***`, for a message about one that would not parse.
+
+    Built from the text rather than from a `Url`, because this is what is said
+    when there is no `Url` -- the parse is what failed.
+    """
+    scheme, separator, rest = text.partition("://")
+    if not separator:
+        return text
+    # The *last* `@`: an unencoded `/` in the secret is exactly what puts the
+    # authority's end somewhere this cannot find, so everything before it is
+    # treated as userinfo. Masking too much is the safe direction here.
+    _, at, remainder = rest.rpartition("@")
+    return text if not at else f"{scheme}://***@{remainder}"
 
 
 def _credentials(netloc: str) -> tuple[str | None, str | None]:
@@ -494,9 +578,50 @@ def _split_host(host: str) -> tuple[str, str]:
         # store *is* the host, and slicing a length off it would take a
         # character of the hostname with it.
         return ("" if store == host else host[: len(host) - len(store) - 1]), store
-    if STORE_HOST.search(host):
+    if _registered(host):
         return "", host
     return host, ""
+
+
+def _registered(host: str) -> bool:
+    """Whether a netloc names a machine somebody registered rather than a bucket.
+
+    A bucket may carry dots -- `my.logs.2026` is a legal name -- so a dot
+    decides nothing; what decides is the last label. A name ending in a public
+    suffix was registered and pointed at something, and for an `s3://` location
+    that something is a store: `s3.eu.cloud.ovh.net`, `gateway.storjshare.io`,
+    `sos-ch-dk-2.exo.io`, `s3.fr-par.scw.cloud`, `minio.corp.example` and every
+    `.com` endpoint alike. A last label that is numeric was registered by
+    nobody, and one in `PRIVATE_HOSTS` cannot be.
+
+    An IP literal is a store whatever it ends in, because that is the one name
+    a bucket may never be formatted as -- S3's own rule.
+
+    A location whose bucket really *is* named for a domain -- the S3
+    static-website pattern, `s3://www.example.com/index.html` -- says so with
+    `?endpoint_override=`, which is a decision and beats a shape. So does a
+    third-party store addressed virtual-hosted style, `mybucket.s3.example.net`:
+    only Amazon publishes which of its leading labels is a bucket, so on any
+    other store the whole netloc is the endpoint and the bucket is in the path.
+    """
+    if _ip_literal(host):
+        return True
+    if "." not in host:
+        return False
+    label = host.rpartition(".")[2].lower()
+    if label in PRIVATE_HOSTS:
+        return False
+    # `xn--` is a registered name spelled in ASCII; the rest of it is not alpha.
+    return label.startswith("xn--") or (len(label) > 1 and label.isalpha())
+
+
+def _ip_literal(host: str) -> bool:
+    """Whether a netloc is an address rather than a name."""
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
 
 
 def _posix(path: str) -> str:
@@ -537,7 +662,6 @@ def _endpoint_parts(endpoint: str) -> tuple[str, str]:
     return ("http" if _plain(endpoint) else "https"), endpoint.rstrip("/")
 
 
-@functools.lru_cache(maxsize=64)
 def _region_of(bucket: str) -> str | None:
     """The region a bucket lives in, when Arrow can be asked and knows.
 
@@ -546,13 +670,23 @@ def _region_of(bucket: str) -> str | None:
     A resolution that cannot happen (no network, no such bucket, MinIO) is not
     an error here: Arrow's own default is what a caller who named no region
     would have got anyway.
+
+    Only an answer is remembered. One blocked call at startup is a second of
+    network, and memoizing its `None` would pin every later read of that bucket
+    to Arrow's default region for the life of the process.
     """
     if not bucket:
         return None
     try:
-        return pyarrow.fs.resolve_s3_region(bucket)
+        return _resolved_region(bucket)
     except Exception:  # noqa: BLE001 - any failure means "nobody knows", not "refuse"
         return None
+
+
+@functools.lru_cache(maxsize=64)
+def _resolved_region(bucket: str) -> str | None:
+    """What Arrow answers, cached -- and it raises rather than answering None."""
+    return pyarrow.fs.resolve_s3_region(bucket)
 
 
 def s3_environment(environ: Mapping[str, str] = os.environ, prefix: str = "s3") -> dict[str, str]:
@@ -587,12 +721,26 @@ def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
     # addressing. The region below is the part of such a location that has to
     # be carried, and it is carried.
     if endpoint is not None and not _amazon(_bare(endpoint))[0]:
-        scheme = url.query.get("scheme", "http" if _plain(endpoint) else "https")
-        settings[f"{prefix}.endpoint"] = f"{scheme}://{endpoint}"
+        # Through the same helper `_s3_filesystem` uses, because
+        # `?endpoint_override=` is where somebody writes `http://minio:9000`
+        # by hand and the transport is already in it.
+        transport, host = _endpoint_parts(endpoint)
+        settings[f"{prefix}.endpoint"] = f"{url.query.get('scheme', transport)}://{host}"
     if url.user is not None:
         settings[f"{prefix}.access-key-id"] = url.user
         settings[f"{prefix}.secret-access-key"] = url.password or ""
     region = url.region
     if region:
         settings[f"{prefix}.region"] = region
+    elif f"{prefix}.endpoint" in settings:
+        settings[f"{prefix}.region"] = S3_DEFAULT_REGION
+    # The two switches pyiceberg spells the same way this does, so one location
+    # configures the catalog's filesystem and direct Arrow access alike.
+    # Normalized here, because pyiceberg reads them with `strtobool` -- which
+    # takes `yes`, `1` and `on` -- where Arrow gets the `== "true"` reading
+    # below. One location has to mean one thing on both paths.
+    for flag in ("force_virtual_addressing", "anonymous"):
+        if flag in url.query:
+            spelled = str(url.query[flag] == "true").lower()
+            settings[f"{prefix}.{flag.replace('_', '-')}"] = spelled
     return settings

@@ -29,7 +29,8 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import ANY_VERSION, Alias, fold, record_of
+from rekep.fix.entries import Alias, fold
+from rekep.fix.fields import namespaced_field
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
@@ -244,15 +245,7 @@ class Classified(Convertible):
         caller that already knows it; the empty default leaves the record in
         the pairs, completable later through `FixRegistry.promote_field`.
         """
-        return record_of(
-            {
-                "name": self.name,
-                "kind": "namespace",
-                "versions": (ANY_VERSION,),
-                "type": "String",
-                "column": column,
-            }
-        )
+        return namespaced_field(self.name, "String", column=column)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -346,7 +339,7 @@ def _classified(
 def _member_name(name: str, containers: frozenset[str]) -> str:
     """The field a dotted key names, when the dots are a path and not a namespace.
 
-    `NoPartyIDs.PartyID` is `PartyID` sitting inside a group the dictionary
+    `NoPartyIDs.partyid` is `PartyID` sitting inside a group the dictionary
     knows, so the tail is the field. `TECH.CLIENTID` is a vendor's own
     namespace, and reading its tail as `ClientID <109>` would file an enrichment
     enrichment field under a standard tag it has nothing to do with. What
@@ -443,7 +436,7 @@ def count_reader(
     One batch at a time, and only the counts are kept: the batch that carried
     a value is released before the next one is read.
 
-    `plugins` is a regular expression the line's `plugin_code` must match --
+    `plugins` is a regular expression the line's `plugincode` must match --
     `^UL` for a bridge's own traffic -- so a report can be about the plugins
     that matter rather than about a whole estate.
     """
@@ -484,9 +477,7 @@ def _columns(batch: pyarrow.RecordBatch) -> tuple[Any, Any]:
     names = batch.schema.names
     if "message" not in names:
         raise ValueError(f"a batch of log lines needs a 'message' column; got {names}")
-    return batch.column("message"), (
-        batch.column("plugin_code") if "plugin_code" in names else None
-    )
+    return batch.column("message"), (batch.column("plugincode") if "plugincode" in names else None)
 
 
 def count_files(

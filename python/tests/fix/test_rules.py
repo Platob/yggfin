@@ -173,31 +173,6 @@ def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
         assert rules.into_arrow_protocol_array(messages).to_pylist() == [scalar]
 
 
-def test_a_stored_document_with_the_retired_patterns_list_still_reads() -> None:
-    """`patterns` collapsed into `pattern`; a document from that shape keeps
-    classifying the same lines rather than silently losing every regex past
-    the first, and a plural spelling stored as one string stays one branch."""
-    loaded = Rules.from_dict(
-        {
-            "rules": [
-                {"protocol": "OPS", "pattern": r"\bready\b", "patterns": [r"\bstopped\b"]},
-                {"protocol": "OWN", "patterns": r"paused|resumed"},
-                {"protocol": NO_PROTOCOL},
-            ]
-        }
-    )
-    assert loaded.rule("OPS").pattern == joined_pattern(r"\bready\b", r"\bstopped\b")
-    assert loaded.rule("OWN").pattern == joined_pattern(r"paused|resumed")
-    lines = ["service ready", "service stopped", "service paused", "service busy"]
-    assert [loaded.categorise(line).protocol for line in lines] == [
-        "OPS",
-        "OPS",
-        "OWN",
-        NO_PROTOCOL,
-    ]
-    assert Rules.from_dict(loaded.into_dict()) == loaded, "and the new shape round-trips"
-
-
 def test_the_misc_rule_recognises_known_operational_lines() -> None:
     messages = pyarrow.array(["heartbeat 7", "connection established", "opaque status"])
     assert DEFAULT.into_arrow_protocol_array(messages).to_pylist() == [

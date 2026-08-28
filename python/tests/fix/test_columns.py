@@ -98,3 +98,48 @@ def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
         assert registry.field(tag).dtype == pyarrow.timestamp("ns"), tag
     timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("ns")}
     assert timestamps == STAMPS, "and every lifted timestamp is in it"
+
+
+# -- a model annotates by name, and the tag stays in the dictionary -----------
+
+
+def test_no_model_writes_a_fix_tag_down() -> None:
+    """A column used to be annotated `DECLARATIONS[35]`, which states name-to-tag
+    a second time: the attribute beside it is already the FIX name, and a
+    mistyped number annotated a different field with nothing to catch it.
+
+    `DECLARED["MsgType"]` cannot be mistyped into another field -- a name this
+    registry has not got raises at import.
+    """
+    import re
+
+    literal = re.compile(r"DECLARATIONS\[\s*\d+\s*\]")
+    root = Path(__file__).resolve().parents[2] / "src" / "rekep"
+    found = {
+        f"{path.relative_to(root)}:{number}"
+        for path in sorted(root.rglob("*.py"))
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if literal.search(line)
+    }
+    assert found == set()
+
+
+def test_every_annotated_name_is_the_field_the_registry_answers_for() -> None:
+    """Which is what makes the name a safe key: it resolves, or the import fails."""
+    from rekep.fix.columns import DECLARATIONS, DECLARED
+
+    assert set(DECLARED) == {member.fix.canonical for member in DECLARATIONS.values()}
+    assert len(DECLARED) == len(DECLARATIONS), "one name per tag, and no name twice"
+    for name, member in DECLARED.items():
+        assert member.fix.canonical == name
+        assert DECLARATIONS[member.fix.tag] is member
+
+
+def test_the_scheme_of_an_identifier_is_the_dictionary_s_answer() -> None:
+    """`SecurityIDSource <22>` enumerates every scheme, so this package compiles none."""
+    from rekep.fix.columns import ISIN_SCHEME, id_scheme, id_schemes
+
+    assert len(id_schemes()) > 30, "the whole enumeration, not a subset written here"
+    assert id_scheme("4") == ISIN_SCHEME
+    assert id_scheme(ISIN_SCHEME) == ISIN_SCHEME, "by name as well as by wire value"
+    assert id_scheme("~") == "", "a scheme the dictionary does not declare names nothing"

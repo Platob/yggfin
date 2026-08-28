@@ -8,17 +8,23 @@ from rekep import FixMsg
 from rekep.fix import FixRegistry
 
 message = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
-message.get(35).raw  # 'D'
-message.get(55).raw  # 'IBM'
-message.into_fix_pairs()  # ordered entries
+print(message.get(35).raw, message.get(55).raw)
 
-registry = FixRegistry(offline=True)
-registry.field("OrigClOrdID", "4.4")
+registry = FixRegistry.from_builtin()
+print(registry.field("OrigClOrdID", "4.4").fix.tag)
 ```
 
-The separator is detected from the message. SOH, pipe, caret forms, and
-rendered `Name=Value` logs use the same ordered representation. Vectorized
-Arrow helpers split whole columns and resolve distinct rendered names once.
+```text
+D IBM
+41
+```
+
+The separator is detected from the message: the standard's SOH (`\x01`)
+first, then the substitutions tools write in its place -- `|`, EOT/ETX
+(`\x04\x03`), `^A`, `^`, `;` -- in that order, so a multi-character candidate
+is tried before anything it contains. Rendered `#Name=Value` bridge logs use
+the same ordered representation. Vectorized Arrow helpers split whole columns
+and resolve distinct rendered names once.
 
 ## Version selection
 
@@ -52,12 +58,29 @@ categorical filters, linked references, and repository source records.
 
 ### Every point in time is a timestamp
 
-A FIX temporal projects to `timestamp[ns]`, whatever width the standard writes
-it at: a date is midnight, a time-of-day is that clock on the epoch's day, and
-a zoned spelling is the instant its offset names. The reader already
-normalised all three to the same epoch nanoseconds -- only the projection was
-throwing the difference away, and a `date32` column is the one shape a
-timezone can no longer be applied to.
+Every width the standard writes lands on one Arrow type:
+
+```python
+from rekep.fix import FixRegistry
+
+registry = FixRegistry.from_builtin()
+for name in ("TransactTime", "MDEntryDate", "MDEntryTime", "MaturityMonthYear"):
+    field = registry.field(name, "4.4")
+    print(f"{field.fix.type:14} {field.dtype}")
+```
+
+```text
+UTCTimestamp   timestamp[ns]
+UTCDateOnly    timestamp[ns]
+UTCTimeOnly    timestamp[ns]
+MonthYear      string
+```
+
+A date is midnight, a time-of-day is that clock on the epoch's day, and a
+zoned spelling is the instant its offset names. The reader already normalised
+all three to the same epoch nanoseconds -- only the projection was throwing
+the difference away, and a `date32` column is the one shape a timezone can no
+longer be applied to.
 
 The parsed-log projection then says which zone it is: a datatype the standard
 fixes in UTC, or one whose value carries the offset that puts it there, lands
@@ -75,14 +98,23 @@ of versions that declare it -- so a store holds one *record* per identity and
 not one per version:
 
 ```json
-{"54": {"name": "Side", "tag": 54, "type": "char",
-        "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
-        "values": [{"value": "1", "meaning": "Buy", "aliases": ["BUY"]}]}}
+{"54": {"name": "Side", "type": "string", "nullable": true,
+        "description": "Side of order.",
+        "fix": {"tag": "54", "type": "char",
+                "versions": "[\"4.4\",\"4.3\",\"4.2\"]",
+                "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"BUY\"]}]"}}}
 ```
 
-One enumerated value is one record -- what the wire carries, what it means,
-and every other spelling naming it -- and the lookups a parse needs are
-derived from it, never stored beside it.
+A record is a `Field` document -- the Arrow reading at the top, the protocol's
+own keys under `fix`, and each key holding a list packed into one JSON string
+because Arrow field metadata is bytes to bytes. So is a component, a message
+and every file in `schemas/rekep/`: one shape to read and one to write, and no
+codec of its own to keep in step with the others.
+
+Having a tag is the whole of being a standard field, so nothing states the
+kind beside it. One enumerated value is one record -- what the wire carries,
+what it means, and every other spelling naming it -- and the lookups a parse
+needs are derived from it, never stored beside it.
 
 Records live in tag-range shards of five hundred, named by the shard index:
 
@@ -92,8 +124,8 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
 fields/named.json     the fields FIX never numbered
-components/parties.json          one component, declared as a Field
-components/new_order_single.json a message, declared the same way
+components/parties.json          one component
+components/new_order_single.json a message
 ```
 
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
@@ -113,10 +145,10 @@ with `FutSettDate` recorded as an alias carrying the version that spelled it --
 rather than two half-histories nobody diffs.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same record with `kind: namespace`, no tag, and `*`
-for its versions, and lives in `fields/named.json` because there is no tag to
-shard it on. One naming `fix:column` is lifted into that column of the parsed
-log.
+`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions,
+and lives in `fields/named.json` because there is no tag to shard it on.
+Having no tag is the whole of being one, so no record states it twice. One
+naming `fix:column` is lifted into that column of the parsed log.
 
 ### The collapse, and what it costs
 
@@ -164,8 +196,12 @@ value. The dropped keys are counted with the conflict report.
 
 ```python
 field = registry.resolve("TrdRegTimestampType")
-field.encode("Order Submission Time")  # '10'
-field.meaning("10")                     # 'Order Submission Time'
+
+print(field.fix.encode("ORDER_SUBMISSION_TIME"), field.fix.meaning("10"))
+```
+
+```text
+10 ORDER_SUBMISSION_TIME
 ```
 
 ### Resolving a name
@@ -296,8 +332,8 @@ a day stale parses every message, and one that raises parses none.
 
 `merged_fields()` and `component_records()` hand over the whole unified table
 in one call, where `scalar()` answers one key at a time. A component record is
-one record rather than one tree: `paths(version)`, `delimiters(version)` and
-`diff()` are the questions worth asking of it.
+one record rather than one tree: `paths()` and `delimiters()` are the questions
+worth asking of it.
 
 Protocol-specific code should normalize values, not duplicate registry tables.
 
@@ -336,15 +372,19 @@ through 4.2 and `AllocationInstruction` after).
 
 ```python
 single = registry.merged_component("D")
-single.msg_type                        # 'D'
-[member.name for member in single.members][:3]
-# ['ClOrdID', 'SecondaryClOrdID', 'ClOrdLinkID']
-registry.component_field("D", "4.4")   # the whole message as one Arrow field
+
+print(single.msg_type, [member.name for member in single.members][:3])
+print(len(registry.component_field("D", "4.4").fields), "columns")
+```
+
+```text
+D ['ClOrdID', 'OrderRequestID', 'SecondaryClOrdID']
+474 columns
 ```
 
 A reusable block omits `fix:msgtype` rather than writing it null, and carries
 `fix:msgtypes` instead: the messages whose trees reach it, derived on the
-collapse exactly as a field's `used_in` is scraped. `Parties` names the
+collapse exactly as a field's own `fix:msgtypes` is scraped. `Parties` names the
 ninety-odd messages that carry it; six blocks name none, because the standard
 reaches them from the session header (`HopGrp`, `MsgTypeGrp`) or no longer
 reaches them at all.
@@ -366,7 +406,8 @@ a struct with no members yet and that block's name in `fix:component`.
 So a component file reads like a contract file, because it is one -- the same
 document `Field.into_dict()` writes for `schemas/rekep/*.yaml` -- and there is
 no second tree to keep in step with the first. FIX's own names are what the
-declaration says; the Arrow projection snakes them when it builds columns.
+declaration says; the Arrow projection folds them when it builds columns, and
+records each one under `fix:display` so the spelling survives the fold.
 Whether a member is required is its nullability, which is the same fact under
 the name the rest of the package already uses for it.
 
@@ -384,10 +425,11 @@ whether a message must carry it, there is nothing left to write by hand:
 
 ```python
 Parties = registry.component_scalar("Parties", "4.4")
-Parties(no_party_ids=[Parties.NoPartyIds(party_id="BUY-A", party_role=3)])
+Parties(nopartyids=[Parties.PartyID(partyid="BUY-A", partyrole=3)])
 ```
 
-Group entries are classes named after the group they repeat, they hang off the
+Group entries are classes named after the entry a group repeats -- `NoPartyIDs`
+yields `Parties.PartyID` -- they hang off the
 class that declares them so a caller can build one, and a dictionary refresh
 moves all of it. A column Python cannot spell keeps its own name: FIX tag 236
 is `Yield`, and `yield` is a statement, so the attribute is `yield_` while the
@@ -460,6 +502,12 @@ one and which group each sits inside all come out of the tree. A
 `ComponentGroup` subclass adds only the shape:
 
 ```python
+import dataclasses
+from functools import cache
+
+from rekep.fix.components import ComponentGroup, TrdRegTimestamp
+
+
 @dataclasses.dataclass(eq=False)
 class TrdRegTimestamps(ComponentGroup):
     component: str = "TrdRegTimestamps"
@@ -557,12 +605,18 @@ one of four ways, and every one of them resolves to the same reading:
 | namespace-qualified key | `TECH.CLIENTID` |
 
 ```python
+from rekep import FixMsg
 from rekep.fix import FieldAccess, FixRegistry
 
+row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|38=125|10=000")
 access = FieldAccess.of(FixRegistry.from_builtin())
 found = access.reading(row.entries, "OrderQty")
-found.raw  # '125', the text the line carried
-found.value  # 125.0, what the dictionary makes of it
+
+print(repr(found.raw), repr(found.value))
+```
+
+```text
+'125' 125.0
 ```
 
 `Reading.meaning` is the third thing one call answers: what the value means

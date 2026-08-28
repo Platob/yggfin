@@ -7,9 +7,11 @@ import datetime
 import functools
 import itertools
 import json
+import logging
 import math
 import os
 import tempfile
+import time
 import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -31,10 +33,12 @@ from rekep.dataset import (
     semi_join,
 )
 from rekep.fields import Field, StructField, arrays
-from rekep.filesystems import resolve
+from rekep.filesystems import openable_parts, resolve
 from rekep.iceberg.catalog import IcebergCatalog
 from rekep.iceberg.fields import metrics_for
 from rekep.urls import S3, Url
+
+LOGGER = logging.getLogger(__name__)
 
 #: The physical root ref PyIceberg stores. Public callers may spell the same
 #: state ``root``, ``main``, or ``master`` without creating extra refs.
@@ -394,6 +398,13 @@ class IcebergDataset(Dataset):
         )
         self.field = field
         self.__dict__["iceberg_table"] = table
+        LOGGER.info(
+            "%s created at %s with %d columns, partitioned by %s",
+            self.name,
+            table.location(),
+            len(schema.fields),
+            field.partition_keys() or "nothing",
+        )
         return self
 
     def get_or_create_table(self) -> Any:
@@ -472,6 +483,7 @@ class IcebergDataset(Dataset):
         # without it would drop the new columns at the next write. Keep its
         # outer name because that is also this dataset's table identifier.
         self.field = target.with_name(self.name)
+        LOGGER.info("%s gained %d columns: %s", self.name, len(added), ", ".join(added))
         return added
 
     # -- reading ------------------------------------------------------------
@@ -622,6 +634,13 @@ class IcebergDataset(Dataset):
             stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
             if stored is not None:
                 wanted[stored] = name
+        LOGGER.debug(
+            "%s projects %d of %d declared columns; unfilled: %s",
+            self.name,
+            len(wanted),
+            len(target.names),
+            ", ".join(sorted(set(target.names) - set(wanted.values()))) or "none",
+        )
         # Nothing in common: one column is named because a scan must project
         # something, and what comes back is a table of no columns and no rows
         # -- which is pyiceberg's own answer to an empty projection too.
@@ -1383,7 +1402,12 @@ class IcebergDataset(Dataset):
 
     @contextmanager
     def _write(self, snapshot_expiry: SnapshotExpiry) -> Iterator[None]:
-        """Expire once after the outermost successful public write."""
+        """Expire once after the outermost successful public write.
+
+        The audit record is here for the same reason the expiry is: this is
+        the one place that knows an operation *finished*, whatever it commits
+        inside. A write that lands forty chunks is one record, not forty.
+        """
         depth = int(self.__dict__.get("_write_depth", 0))
         expiry = (
             self._resolved_snapshot_expiry(snapshot_expiry, self.get_or_create_table())
@@ -1392,6 +1416,7 @@ class IcebergDataset(Dataset):
         )
         self.__dict__["_write_depth"] = depth + 1
         succeeded = False
+        started = time.monotonic()
         try:
             yield
             succeeded = True
@@ -1403,6 +1428,27 @@ class IcebergDataset(Dataset):
                 self.__dict__.pop("_write_depth", None)
             if succeeded and depth == 0:
                 self.expire_snapshots(expiry)
+            if depth == 0:
+                LOGGER.info(
+                    "%s %s branch=%s snapshot=%s in %.0fms",
+                    self.name,
+                    "wrote" if succeeded else "failed",
+                    self._branch_name(None),
+                    self._logged_snapshot(),
+                    (time.monotonic() - started) * 1000,
+                )
+
+    def _logged_snapshot(self) -> Any:
+        """The snapshot a finished write left, or None if there is not one yet.
+
+        Read defensively: this runs in a `finally`, where the table may not
+        exist because the write is what would have created it.
+        """
+        try:
+            table = self.iceberg_table
+        except Exception:
+            return None
+        return getattr(table.metadata, "current_snapshot_id", None)
 
     def _resolved_snapshot_expiry(
         self, value: SnapshotExpiry, table: Any
@@ -1543,11 +1589,19 @@ class IcebergDataset(Dataset):
             # main instead and calling it the answer would be a lie.
             scan = scan.use_ref(reference)
         tasks = list(scan.plan_files())
-        return {
+        planned = {
             "files": len(tasks),
             "rows": sum(task.file.record_count for task in tasks),
             "bytes": sum(task.file.file_size_in_bytes for task in tasks),
         }
+        LOGGER.debug(
+            "%s planned %d files, %d rows, %d bytes",
+            self.name,
+            planned["files"],
+            planned["rows"],
+            planned["bytes"],
+        )
+        return planned
 
     def compaction_plan(
         self, min_files: int = 2, *, branch: str | None = None
@@ -1677,6 +1731,13 @@ class IcebergDataset(Dataset):
             touched.append(key)
         if touched and row_filter is None:
             self._mark_settled(reference, touched)
+        LOGGER.info(
+            "%s compacted %d parts into %d rows on %s",
+            self.name,
+            len(touched),
+            rewritten,
+            reference,
+        )
         return rewritten
 
     def _mark_settled(self, reference: str, keys: Sequence[str]) -> None:
@@ -1729,12 +1790,26 @@ class IcebergDataset(Dataset):
             # `metadata_location` has moved before this line. Reloading would
             # be a catalog round trip to learn what we just did.
         if not remove_orphans:
+            LOGGER.info(
+                "%s expired %d snapshots, orphans left alone%s",
+                self.name,
+                report["expired"],
+                " (dry run)" if dry_run else "",
+            )
             return report
         orphans = self._orphans(orphan_age, metadata=metadata)
         report["deleted"] = len(orphans)
         report["bytes"] = int(sum(size for *_, size in orphans))
         if not dry_run:
             self._sweep(orphans)
+        LOGGER.info(
+            "%s expired %d snapshots and swept %d files (%d bytes)%s",
+            self.name,
+            report["expired"],
+            report["deleted"],
+            report["bytes"],
+            " (dry run)" if dry_run else "",
+        )
         return report
 
     def orphan_files(
@@ -1767,7 +1842,7 @@ class IcebergDataset(Dataset):
 
         found: dict[str, tuple[Any, str, str, int]] = {}
         for directory in directories:
-            filesystem, base = resolve(directory)
+            filesystem, base = _store_of(table, directory)
             bases = (directory.rstrip("/"), base.rstrip("/"), _path_of(directory).rstrip("/"))
             # Reduced against *these* bases, which is what makes a live file in
             # another directory comparable at all: a metadata location under a
@@ -1825,8 +1900,12 @@ class IcebergDataset(Dataset):
         # module has to import without the extra installed.
         from rekep.arrow_file_io import CONTENT_CACHE
 
+        # Evicted by the key the FileIO stored under, which on an object store
+        # is not the location: a cached copy of a file the sweep just deleted
+        # is the copy that lies about the file still being there.
+        identity = getattr(self.iceberg_table.io, "content_identity", None)
         for filesystem, path, location, _ in orphans:
-            CONTENT_CACHE.evict(location)
+            CONTENT_CACHE.evict(identity(location) if identity else location)
             try:
                 filesystem.delete_file(path)
             except FileNotFoundError:
@@ -1942,7 +2021,9 @@ def _ordered_reader(
     from pyiceberg.conversions import from_bytes
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
-    target = schema_to_pyarrow(scan.projection())
+    from rekep.iceberg.fields import narrowed
+
+    target = narrowed(schema_to_pyarrow(scan.projection()))
     primary, primary_direction = columns[0]
     field = scan.projection().find_field(primary)
     floating_primary = pyarrow.types.is_floating(target.field(primary).type)
@@ -2261,7 +2342,9 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
     """Read bounded task groups under one global scan limit."""
     from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
 
-    target = schema_to_pyarrow(scan.projection())
+    from rekep.iceberg.fields import narrowed
+
+    target = narrowed(schema_to_pyarrow(scan.projection()))
 
     def arrow(limit: int | None) -> Any:
         return ArrowScan(
@@ -2283,7 +2366,7 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
             )
             try:
                 for batch in batches:
-                    yield batch
+                    yield batch if batch.schema.equals(target) else _narrow_batch(batch, target)
                     taken += batch.num_rows
             finally:
                 close = getattr(batches, "close", None)
@@ -2293,6 +2376,19 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
                 return
 
     return OwnedRecordBatchReader(target, generate(), lambda: None)
+
+
+def _narrow_batch(batch: pyarrow.RecordBatch, target: pyarrow.Schema) -> pyarrow.RecordBatch:
+    """One batch under the reader's declared width.
+
+    A reader promises a schema and a consumer is entitled to it, so the cast
+    happens whether or not the store agreed: pyiceberg decodes to
+    `large_string` and the declared shape says `string`, and a batch that
+    disagreed with its own reader is what a downstream `concat` refuses.
+    """
+    return pyarrow.RecordBatch.from_struct_array(
+        batch.to_struct_array().cast(pyarrow.struct(list(target)))
+    )
 
 
 def _task_batches(scan: Any, io: Any, tasks: Sequence[Any]) -> Iterator[pyarrow.RecordBatch]:
@@ -3348,6 +3444,7 @@ class _PartitionStager:
 
     def _close_file(self, *, upload: bool) -> None:
         writer, local, target = self._writer, self._local, self._target
+        rows = self._file_rows
         self._writer = self._local = self._target = None
         self._file_rows = 0
         self._last_key = None
@@ -3368,6 +3465,7 @@ class _PartitionStager:
                     copier(local, target)
                 self.paths.append(target)
                 self.data_files.append(data_file)
+                LOGGER.debug("staged %d rows to %s", rows, target)
         finally:
             try:
                 os.unlink(local)
@@ -3763,6 +3861,24 @@ def _always_true() -> Any:
     from pyiceberg.expressions import AlwaysTrue
 
     return AlwaysTrue()
+
+
+def _store_of(table: Any, directory: str) -> tuple[Any, str]:
+    """The store the table's own FileIO reaches, and the directory on it.
+
+    Not `resolve`: that reads the location and the process environment, and a
+    location this package canonicalized has had the endpoint and the
+    credentials taken out of it -- so a maintenance sweep resolved that way
+    looks on AWS for a bucket that lives on the store the catalog was
+    configured with. A FileIO that is not Arrow-backed has nothing to read
+    here, and the location is then all there is.
+    """
+    file_io = getattr(table, "io", None)
+    if file_io is not None:
+        parts = openable_parts(file_io.new_input(directory))
+        if parts is not None:
+            return parts
+    return resolve(directory)
 
 
 def _path_of(location: str) -> str:

@@ -16,31 +16,74 @@ from typing import Any, Self
 
 from rekep.enums.ascii_codes import Ascii32, Ascii64
 
+#: ISO 10962's category letter -- the first character of a `CFICode <461>` --
+#: for each kind that has one.
+#:
+#: Not a FIX code, which is why it is a table and not a lookup: `CFICode` is a
+#: six-character string and the dictionary enumerates no values for it at all,
+#: so this classification is ISO 10962's and the registry cannot answer it.
+#: FIX's own classification of the same instruments is `SecurityType <167>`,
+#: read separately in `rekep.market.fix`.
+_CFI_CATEGORIES: Mapping[str, str] = MappingProxyType(
+    {
+        "EQUITY": "E",
+        "DEBT": "D",
+        "FUND": "C",
+        "CURRENCY": "T",
+        "COMMODITY": "J",
+        "INDEX": "M",
+        "FUTURE": "F",
+        "OPTION": "O",
+        "SWAP": "S",
+        "WARRANT": "R",
+    }
+)
+
 
 class AssetKind(Ascii64):
     """Tradable asset kind, banded by settlement."""
 
     UNKNOWN = 0
-    CASH = "CASH", "", 100
-    EQUITY = "EQUITY", "E", 110
-    DEBT = "DEBT", "D", 120
-    FUND = "FUND", "C", 130
-    CURRENCY = "CURRENCY", "T", 140
-    COMMODITY = "COMMDTY", "J", 150
-    INDEX = "INDEX", "M", 160
-    DERIVATIVE = "DERIV", "", 200
-    FUTURE = "FUTURE", "F", 210
-    OPTION = "OPTION", "O", 220
-    SWAP = "SWAP", "S", 230
-    WARRANT = "WARRANT", "R", 240
-    FORWARD = "FORWARD", "", 250
-    STRUCTURED = "STRUCTD", "", 300
-    SPREAD = "SPREAD", "", 310
-    MULTILEG = "MULTILEG", "", 320
-    BASKET = "BASKET", "", 330
-    FINANCING = "FINANCE", "", 400
-    REPO = "REPO", "", 410
-    LOAN = "LOAN", "", 420
+    CASH = "CASH", 100
+    EQUITY = "EQUITY", 110
+    DEBT = "DEBT", 120
+    FUND = "FUND", 130
+    CURRENCY = "CURRENCY", 140
+    COMMODITY = "COMMDTY", 150
+    INDEX = "INDEX", 160
+    DERIVATIVE = "DERIV", 200
+    FUTURE = "FUTURE", 210
+    OPTION = "OPTION", 220
+    SWAP = "SWAP", 230
+    WARRANT = "WARRANT", 240
+    FORWARD = "FORWARD", 250
+    STRUCTURED = "STRUCTD", 300
+    SPREAD = "SPREAD", 310
+    MULTILEG = "MULTILEG", 320
+    BASKET = "BASKET", 330
+    FINANCING = "FINANCE", 400
+    REPO = "REPO", 410
+    LOAN = "LOAN", 420
+
+    @property
+    def cfi_category(self) -> str:
+        """ISO 10962's category letter for this kind, or empty where it has none."""
+        return _CFI_CATEGORIES.get(self.name, "")
+
+    @classmethod
+    @functools.cache
+    def _by_cfi(cls) -> Mapping[str, AssetKind]:
+        return MappingProxyType({letter: cls[name] for name, letter in _CFI_CATEGORIES.items()})
+
+    @classmethod
+    def from_cfi(cls, category: Any) -> AssetKind:
+        """The kind one ISO 10962 category letter names, or `UNKNOWN`.
+
+        Spelled apart from `from_fix` because a CFI letter is not a FIX value:
+        `E` is an equity to ISO 10962 and nothing at all to the dictionary.
+        """
+        letter = str(category or "").strip().upper()[:1]
+        return cls._by_cfi().get(letter, cls.UNKNOWN)
 
     @property
     def is_derivative(self) -> bool:
@@ -59,16 +102,16 @@ class EventType(Ascii64):
     """
 
     UNKNOWN = 0
-    MISC = "MISC", "", 10
-    INTENT = "INTENT", "", 100
-    ORDER = "ORDER", "", 110
-    QUOTE = "QUOTE", "", 120
-    FACT = "FACT", "", 200
-    EXECUTION = "EXECUTED", "", 210
-    STATE = "STATE", "", 300
-    BOOK = "BOOK", "", 320
-    INSTRUMENT_STATE = "ISTATE", "", 400
-    INSTRUMENT = "INSTRMT", "", 410
+    MISC = "MISC", 10
+    INTENT = "INTENT", 100
+    ORDER = "ORDER", 110
+    QUOTE = "QUOTE", 120
+    FACT = "FACT", 200
+    EXECUTION = "EXECUTED", 210
+    STATE = "STATE", 300
+    BOOK = "BOOK", 320
+    INSTRUMENT_STATE = "ISTATE", 400
+    INSTRUMENT = "INSTRMT", 410
 
     @property
     def is_snapshot(self) -> bool:
@@ -76,75 +119,37 @@ class EventType(Ascii64):
         return self._rank >= EventType.STATE._rank
 
 
-class IdSource(Ascii64):
-    """Instrument identifier scheme, banded by issuer."""
-
-    UNKNOWN = 0
-    REGISTERED = "REGISTRD", "", 100
-    ISIN = "ISIN", "4", 110
-    CUSIP = "CUSIP", "1", 120
-    SEDOL = "SEDOL", "2", 130
-    COMMON = "COMMON", "G", 140
-    VENDOR = "VENDOR", "", 200
-    RIC = "RIC", "5", 210
-    BLOOMBERG = "BLOOMBRG", "A", 220
-    LOCAL = "LOCAL", "", 300
-    WERTPAPIER = "WERTPAPR", "B", 310
-    DUTCH = "DUTCH", "C", 320
-    VALOREN = "VALOREN", "D", 330
-    SICOVAM = "SICOVAM", "E", 340
-    BELGIAN = "BELGIAN", "F", 350
-    QUIK = "QUIK", "3", 360
-    VENUE = "VENUE", "", 400
-    EXCHANGE = "EXCHANGE", "8", 410
-    CTA = "CTA", "9", 420
-    OPRA = "OPRA", "J", 430
-    CLEARING = "CLEARING", "H", 440
-    MARKETPLACE = "MKTPLACE", "M", 450
-    OTHER = "OTHER", "", 500
-    CURRENCY = "CURRENCY", "6", 510
-    COUNTRY = "COUNTRY", "7", 520
-    ISDA_SPEC = "ISDASPEC", "I", 530
-    ISDA_URL = "ISDAURL", "K", 540
-    CREDIT_LETTER = "CRDTLTTR", "L", 550
-
-    @property
-    def is_registered(self) -> bool:
-        """Whether identifiers in this scheme are globally issued."""
-        return self.band is IdSource.REGISTERED
-
-
 class MarketKind(Ascii64):
     """Order pricing and execution semantics, in stable bands."""
 
     UNKNOWN = 0
-    MARKET = "MARKET", "", 100
-    MARKET_ORDER = "MKTORDER", "", 110
-    MARKET_IF_TOUCHED = "MKTIFTCH", "", 120
-    MARKET_TO_LIMIT = "MKTTOLMT", "", 130
-    LIMIT = "LIMIT", "", 200
-    LIMIT_ORDER = "LMTORDER", "", 210
-    LIMIT_ON_CLOSE = "LMTCLOSE", "", 220
-    LIMIT_OR_BETTER = "LMTBETTR", "", 230
-    STOP = "STOP", "", 300
-    STOP_ORDER = "STPORDER", "", 310
-    STOP_LIMIT = "STOPLMT", "", 320
-    PEGGED = "PEGGED", "", 400
-    PEGGED_ORDER = "PEGORDER", "", 410
-    PREVIOUSLY_QUOTED = "PREVQUOT", "", 420
-    PREVIOUSLY_INDICATED = "PREVINDC", "", 430
-    EXECUTION = "EXEC", "", 500
-    ORDER_STATUS = "ORDSTAT", "", 510
-    TRADE = "TRADE", "", 520
-    TRADE_CORRECT = "TRDCORRC", "", 530
-    TRADE_CANCEL = "TRDCANCL", "", 540
-    LOCKED = "LOCKED", "", 550
-    RELEASED = "RELEASED", "", 560
-    CLEARING = "CLEARING", "", 600
-    CLEARING_HOLD = "CLRHOLD", "", 610
-    RELEASED_TO_CLEARING = "RELTOCLR", "", 620
-    ACTIVATION = "ACTIVATN", "", 700
-    TRIGGERED = "TRIGGERD", "", 710
+    MARKET = "MARKET", 100
+    MARKET_ORDER = "MKTORDER", 110
+    MARKET_IF_TOUCHED = "MKTIFTCH", 120
+    MARKET_TO_LIMIT = "MKTTOLMT", 130
+    LIMIT = "LIMIT", 200
+    LIMIT_ORDER = "LMTORDER", 210
+    LIMIT_ON_CLOSE = "LMTCLOSE", 220
+    LIMIT_OR_BETTER = "LMTBETTR", 230
+    STOP = "STOP", 300
+    STOP_ORDER = "STPORDER", 310
+    STOP_LIMIT = "STOPLMT", 320
+    PEGGED = "PEGGED", 400
+    PEGGED_ORDER = "PEGORDER", 410
+    PREVIOUSLY_QUOTED = "PREVQUOT", 420
+    PREVIOUSLY_INDICATED = "PREVINDC", 430
+    EXECUTION = "EXEC", 500
+    ORDER_STATUS = "ORDSTAT", 510
+    TRADE = "TRADE", 520
+    TRADE_CORRECT = "TRDCORRC", 530
+    TRADE_CANCEL = "TRDCANCL", 540
+    LOCKED = "LOCKED", 550
+    RELEASED = "RELEASED", 560
+    CLEARING = "CLEARING", 600
+    CLEARING_HOLD = "CLRHOLD", 610
+    RELEASED_TO_CLEARING = "RELTOCLR", 620
+    ACTIVATION = "ACTIVATN", 700
+    TRIGGERED = "TRIGGERD", 710
 
     @classmethod
     def fix_mapping(cls) -> dict[int, dict[str, MarketKind]]:
@@ -257,9 +262,11 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 class OptionKind(Ascii64):
     """Option direction read from FIX `PutOrCall <201>`."""
 
+    FIX_FIELD = enum.nonmember("PutOrCall")
+
     UNKNOWN = 0
-    PUT = "PUT", "0", 100
-    CALL = "CALL", "1", 200
+    PUT = "PUT", 100
+    CALL = "CALL", 200
 
 
 class State(Ascii64):
@@ -278,51 +285,51 @@ class State(Ascii64):
 
     UNKNOWN = 0
     """Nothing has been stated."""
-    PENDING = "10PENDNG", "", 100
+    PENDING = "10PENDNG", 100
     """Band floor: requested but not acknowledged."""
-    PENDING_NEW = "11PNDNEW", "", 110
+    PENDING_NEW = "11PNDNEW", 110
     """Awaiting first venue acknowledgement."""
-    OPEN = "20OPEN", "", 200
+    OPEN = "20OPEN", 200
     """Band floor: live at the venue."""
-    NEW = "21NEW", "", 210
+    NEW = "21NEW", 210
     """Acknowledged and working."""
-    ACCEPTED = "22ACCEPT", "", 220
+    ACCEPTED = "22ACCEPT", 220
     """Accepted but not yet working."""
-    PENDING_REPLACE = "23PNDRPL", "", 230
+    PENDING_REPLACE = "23PNDRPL", 230
     """Amendment pending while the original remains live."""
-    PENDING_CANCEL = "24PNDCNL", "", 240
+    PENDING_CANCEL = "24PNDCNL", 240
     """Cancellation pending while the order remains live."""
-    SUSPENDED = "25SUSPND", "", 250
+    SUSPENDED = "25SUSPND", 250
     """Held by the venue and resumable."""
-    STOPPED = "26STOPPD", "", 260
+    STOPPED = "26STOPPD", 260
     """Stopped at a price awaiting a trade."""
-    PARTIAL = "30PARTL", "", 300
+    PARTIAL = "30PARTL", 300
     """Band floor: live and partly complete."""
-    PARTIALLY_FILLED = "31PRTFIL", "", 310
+    PARTIALLY_FILLED = "31PRTFIL", 310
     """Some quantity traded; the rest remains live."""
-    DONE = "40DONE", "", 400
+    DONE = "40DONE", 400
     """Band floor and first terminal state."""
-    FILLED = "41FILLED", "", 410
+    FILLED = "41FILLED", 410
     """Every share traded."""
-    DONE_FOR_DAY = "42DONEDY", "", 420
+    DONE_FOR_DAY = "42DONEDY", 420
     """Over for the session."""
-    CALCULATED = "43CALCD", "", 430
+    CALCULATED = "43CALCD", 430
     """Priced and closed by the venue."""
-    CLOSED = "50CLOSED", "", 500
+    CLOSED = "50CLOSED", 500
     """Band floor: over without completion."""
-    CANCELLED = "51CANCLD", "", 510
+    CANCELLED = "51CANCLD", 510
     """Withdrawn before completion."""
-    REPLACED = "52REPLCD", "", 520
+    REPLACED = "52REPLCD", 520
     """Superseded by an amendment."""
-    EXPIRED = "53EXPIRD", "", 530
+    EXPIRED = "53EXPIRD", 530
     """Reached expiry while live."""
-    INTERNAL_EXPIRED = "54INTEXP", "", 540
+    INTERNAL_EXPIRED = "54INTEXP", 540
     """Expired locally after one day without a newer observation."""
-    FAILED = "60FAILED", "", 600
+    FAILED = "60FAILED", 600
     """Band floor: refused."""
-    REJECTED = "61REJCTD", "", 610
+    REJECTED = "61REJCTD", 610
     """Refused; reason fields explain why."""
-    INTERNAL_REJECTED = "62INTREJ", "", 620
+    INTERNAL_REJECTED = "62INTREJ", 620
     """Refused by this pipeline before it could change market state."""
 
     @classmethod
@@ -447,7 +454,7 @@ class MIC(Ascii32):
 
     _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9]{4}$"))
 
-    UNKNOWN = 0, ""
+    UNKNOWN = 0
     """No valid market identifier was present."""
 
     XOFF = "XOFF"
@@ -531,7 +538,7 @@ class Currency(Ascii32):
     def schema_metadata(cls) -> dict[str, str]:
         return {**super().schema_metadata(), "pattern": "[A-Z]{3}"}
 
-    UNKNOWN = 0, ""
+    UNKNOWN = 0
     """No currency was present."""
 
     USD = "USD"
@@ -568,43 +575,45 @@ class Currency(Ascii32):
 class Side(Ascii32):
     """Direction stored as a four-byte ASCII mnemonic."""
 
+    FIX_FIELD = enum.nonmember("Side")
+
     UNKNOWN = 0
     """No side stated."""
-    BUY = "BUY", "1"
+    BUY = "BUY"
     """Buying and book bid."""
-    BID = "BUY", "1"
+    BID = "BUY"
     """Alias of `BUY`."""
-    BUY_MINUS = "BYMN", "3"
+    BUY_MINUS = "BYMN"
     """Buy not above the last differing price."""
-    BORROW = "BORR", "G"
+    BORROW = "BORR"
     """Borrowing collateral."""
-    SUBSCRIBE = "SUBS", "D"
+    SUBSCRIBE = "SUBS"
     """Subscribing to a fund."""
-    SELL = "SELL", "2"
+    SELL = "SELL"
     """Selling and book ask."""
-    ASK = "SELL", "2"
+    ASK = "SELL"
     """Alias of `SELL`."""
-    SELL_PLUS = "SLPL", "4"
+    SELL_PLUS = "SLPL"
     """Sell not below the last differing price."""
-    SELL_SHORT = "SHRT", "5"
+    SELL_SHORT = "SHRT"
     """Selling stock not held."""
-    SELL_SHORT_EXEMPT = "SHEX", "6"
+    SELL_SHORT_EXEMPT = "SHEX"
     """Exempt short sale."""
-    LEND = "LEND", "F"
+    LEND = "LEND"
     """Lending collateral."""
-    REDEEM = "REDM", "E"
+    REDEEM = "REDM"
     """Redeeming a fund holding."""
-    CROSS = "CROS", "8"
+    CROSS = "CROS"
     """Both sides are the same participant."""
-    CROSS_SHORT = "CRSH", "9"
+    CROSS_SHORT = "CRSH"
     """Cross with a short sell leg."""
-    CROSS_SHORT_EXEMPT = "CRSE", "A"
+    CROSS_SHORT_EXEMPT = "CRSE"
     """Cross with an exempt short leg."""
-    AS_DEFINED = "ASDF", "B"
+    AS_DEFINED = "ASDF"
     """Direction defined by the multileg instrument."""
-    OPPOSITE = "OPPO", "C"
+    OPPOSITE = "OPPO"
     """Opposite of the multileg definition."""
-    UNDISCLOSED = "UNDS", "7"
+    UNDISCLOSED = "UNDS"
     """Direction withheld."""
 
     @classmethod
@@ -640,43 +649,51 @@ class Side(Ascii32):
 class TimeInForce(Ascii32):
     """Order lifetime stored as a ranked four-byte ASCII mnemonic."""
 
-    UNKNOWN = 0, "", 0
+    FIX_FIELD = enum.nonmember("TimeInForce")
+
+    UNKNOWN = 0, 0
     """Venue default."""
-    IMMEDIATE = "IMMD", "", 100
+    IMMEDIATE = "IMMD", 100
     """Ordering marker for non-resting instructions."""
-    IOC = "IOC", "3", 110
+    IOC = "IOC", 110
     """Trade what can immediately and cancel the rest."""
-    FOK = "FOK", "4", 120
+    FOK = "FOK", 120
     """Trade all immediately or none."""
-    SESSION = "SESS", "", 200
+    SESSION = "SESS", 200
     """Ordering marker for session-valid instructions."""
-    DAY = "DAY", "0", 210
+    DAY = "DAY", 210
     """Good for the session."""
-    AT_OPEN = "OPEN", "2", 220
+    AT_OPEN = "OPEN", 220
     """Opening auction only."""
-    AT_CLOSE = "CLOS", "7", 230
+    AT_CLOSE = "CLOS", 230
     """Closing auction only."""
-    GTX = "GTX", "5", 240
+    GTX = "GTX", 240
     """Good until crossing."""
-    GOOD_THROUGH_CROSSING = "GTCR", "8", 250
+    GOOD_THROUGH_CROSSING = "GTCR", 250
     """Valid through the next crossing phase."""
-    AT_CROSSING = "ATCR", "9", 260
+    AT_CROSSING = "ATCR", 260
     """Valid only during crossing."""
-    GFA = "GFA", "B", 270
+    GFA = "GFA", 270
     """Good for one auction."""
-    RESTING = "REST", "", 300
+    RESTING = "REST", 300
     """Ordering marker for cross-session instructions."""
-    GTC = "GTC", "1", 310
+    GTC = "GTC", 310
     """Good until cancelled."""
-    GTD = "GTD", "6", 320
+    GTD = "GTD", 320
     """Good until `Event.eunix`."""
-    GFT = "GFT", "A", 330
+    GFT = "GFT", 330
     """Good for a duration resolved into `Event.eunix`."""
-    GFM = "GFM", "C", 340
+    GFM = "GFM", 340
     """Good for the current month."""
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:
+        """Spellings this vocabulary answers to beside its own member names.
+
+        The five the dictionary uses that this package abbreviates are here
+        because a spelling is an enum's business; the wire code each one
+        reaches is the dictionary's, and is read from it.
+        """
         return {
             "IMMEDIATE_OR_CANCEL": "IOC",
             "FILL_OR_KILL": "FOK",
@@ -684,6 +701,11 @@ class TimeInForce(Ascii32):
             "GOOD_TILL_CANCELLED": "GTC",
             "GOOD_TIL_DATE": "GTD",
             "GOOD_TILL_DATE": "GTD",
+            "AT_THE_OPENING": "AT_OPEN",
+            "AT_THE_CLOSE": "AT_CLOSE",
+            "GOOD_FOR_AUCTION": "GFA",
+            "GOOD_FOR_TIME": "GFT",
+            "GOOD_FOR_MONTH": "GFM",
         }
 
     def _rank_of(self, other: Any) -> int | Any:

@@ -14,6 +14,7 @@ import pytest
 from rekep.enums import MarketKind, Side, State, TimeInForce
 from rekep.fields import (
     DESCRIPTION,
+    DISPLAY,
     PARTITION_KEY,
     PRIMARY_KEY,
     Field,
@@ -116,7 +117,7 @@ def test_every_market_code_column_of_every_shape_matches_its_enum() -> None:
 
 def test_the_instrument_is_one_flat_event_contract() -> None:
     assert Instrument.into_field().primary_keys() == ["unix", "hash"]
-    assert Instrument.into_field().partition_keys() == {"unix_partition": "identity"}
+    assert Instrument.into_field().partition_keys() == {"unixpartition": "identity"}
     for shape in (Book, Order, MarketEvent):
         assert "instrument" not in shape.into_field().names
 
@@ -126,7 +127,7 @@ def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
     for shape in SHAPES:
         assert shape.into_field().primary_keys(), shape.__name__
     assert Book.into_field().primary_keys() == ["unix", "hash"]
-    assert Book.into_field().partition_keys() == {"unix_partition": "identity"}
+    assert Book.into_field().partition_keys() == {"unixpartition": "identity"}
     assert Book.into_field().sort_keys() == {"unix": "asc"}
 
 
@@ -137,22 +138,29 @@ def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavou
     stripped = unkeyed(inside)
     assert type(stripped) is type(inside)
     assert str(stripped).split("<", 1)[0] == str(inside).split("<", 1)[0]
-    assert keys_in(inside) == {PRIMARY_KEY.encode(), PARTITION_KEY.encode(), DESCRIPTION.encode()}
-    assert keys_in(stripped) == {DESCRIPTION.encode()}, "the comments must survive the strip"
+    assert keys_in(inside) == {
+        PRIMARY_KEY.encode(),
+        PARTITION_KEY.encode(),
+        DESCRIPTION.encode(),
+        DISPLAY.encode(),
+    }
+    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}, (
+        "the comments must survive the strip"
+    )
 
 
 def test_a_fixed_size_list_keeps_the_width_that_is_part_of_its_type() -> None:
     inside = pyarrow.list_(pyarrow.field("item", Keyed.into_field().dtype), 3)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_fixed_size_list(stripped) and stripped.list_size == 3
-    assert keys_in(stripped) == {DESCRIPTION.encode()}
+    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}
 
 
 def test_a_key_inside_a_map_is_stripped_on_both_halves() -> None:
     inside = pyarrow.map_(pyarrow.string(), Keyed.into_field().dtype, keys_sorted=True)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_map(stripped) and stripped.keys_sorted
-    assert keys_in(stripped) == {DESCRIPTION.encode()}
+    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}
 
 
 def test_a_leaf_comes_back_untouched() -> None:
@@ -189,7 +197,7 @@ def test_the_builder_is_not_a_dataclass_member() -> None:
 
 def test_contract_metadata_cannot_be_changed_through_the_hook() -> None:
     with pytest.raises(TypeError):
-        Event.into_field_metadata()["version"] = "2"
+        Event.into_field_metadata()["version"] = "9"
 
 
 # -- what an enum means, in the schema ---------------------------------------

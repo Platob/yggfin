@@ -39,10 +39,10 @@ from rekep.fix.entries import (
     name_of,
     record_copy,
     record_kind,
-    record_of,
     records_for,
+    refuse_record,
 )
-from rekep.fix.fields import fix_field
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SpecField,
@@ -178,7 +178,8 @@ _NO_TAG = 1 << 31
 
 
 def builtin_projection() -> str:
-    """Where the packaged projection lives: 900 entries against the whole 6802.
+    """Where the packaged projection lives: 180 of the dictionary's 6,074 field
+    records, and every one of its 900 components.
 
     `rekep.fix.publish` calls it a projection because that is what it is -- it
     parses common traffic and misses the long tail -- and nothing here ever
@@ -580,29 +581,20 @@ class FixRegistry(Convertible):
                 for stored, record in document.items():
                     if not isinstance(record, Mapping):
                         raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
-                    record_versions = record.get("versions")
-                    if (
-                        type(record.get("name")) is not str
-                        or not isinstance(record_versions, list)
-                        or any(type(version) is not str for version in record_versions)
-                        or not set(record_versions).issubset(known_versions | {ANY_VERSION})
-                        or not isinstance(record.get("aliases", []), list)
-                        or any(
-                            key in record and not isinstance(record[key], Mapping)
-                            for key in ("event_types", "states")
-                        )
-                        or any(
-                            key in record and not isinstance(record[key], list)
-                            for key in ("values", "used_in", "components")
-                        )
-                    ):
-                        raise ValueError(f"FIX field {stored!r} in {name!r} has invalid metadata")
+                    # A record validates by being read, the way a component's
+                    # declaration does: a document `Field` cannot parse is not
+                    # one, and `refuse_record` says the rest.
                     try:
-                        entry = record_of(record)
+                        entry = refuse_record(Field.from_dict(record))
                     except (AttributeError, KeyError, TypeError, ValueError) as error:
                         raise ValueError(
                             f"FIX field {stored!r} in {name!r} is invalid: {error}"
                         ) from error
+                    if not set(entry.fix.versions).issubset(known_versions | {ANY_VERSION}):
+                        raise ValueError(
+                            f"FIX field {stored!r} in {name!r} names a version this store "
+                            "does not declare"
+                        )
                     declared_tag = entry.fix.tag
                     expected_key = (
                         str(declared_tag) if declared_tag is not None else entry.fix.canonical
@@ -1198,6 +1190,10 @@ class FixRegistry(Convertible):
                             (100 + distance, order, int(member.fix.get("tag") or _NO_TAG), member)
                         )
         ranked.sort(key=lambda entry: entry[:3])
+        if ranked and ranked[0][0] < _BY_DESCRIPTION:
+            # Something answered the query by name or by tag, so nothing that
+            # only mentions it in prose is an answer to the same question.
+            ranked = [entry for entry in ranked if entry[0] < _BY_DESCRIPTION]
         found: list[Field] = []
         seen: set[int | str] = set()
         for *_, member in ranked:
@@ -1314,13 +1310,13 @@ class FixRegistry(Convertible):
     def resolve(self, name: str) -> Field | None:
         """The identity a rendered name means, or None when nothing here is it.
 
-        Deterministic, in three tiers, and the tiers are the whole rule:
+        Deterministic, in the two tiers `TIERS` names, and they are the whole rule:
 
         1. the canonical name of an identity;
-        2. a name some version spells for it (tag 64 is `FutSettDate` through
-           4.3 and `SettlDate` after, and both are that identity);
-        3. a declared alias -- a rendered or namespaced spelling, a legacy name, a
-           near miss confirmed against a capture.
+        2. a declared alias -- a rendered or namespaced spelling, a near miss
+           confirmed against a capture, or the name an older version gave the
+           tag (64 is `FutSettDate` through 4.3 and `SettlDate` after, and both
+           are that identity).
 
         A later tier is only consulted when every earlier one missed, so
         adding an alias can never take a name away from a field that already
@@ -1527,16 +1523,12 @@ class FixRegistry(Convertible):
             )
         if held is None:
             return self.add_field(
-                record_of(
-                    {
-                        "name": name,
-                        "kind": NAMESPACE,
-                        "versions": [ANY_VERSION],
-                        "type": type or "String",
-                        "description": description,
-                        "aliases": [one.into_dict() for one in added],
-                        "column": column,
-                    }
+                namespaced_field(
+                    name,
+                    type or "String",
+                    description=description,
+                    column=column,
+                    aliases=added,
                 )
             )
         fix = held.fix
@@ -2342,17 +2334,32 @@ def _is_tag(key: Any) -> bool:
     return isinstance(key, int) or str(key).strip().isdigit()
 
 
+#: The rank a match by *description* gets, and so the first rank that is not a
+#: match on the identity itself. A query that named something -- a tag, a name,
+#: part of one -- has been answered, and padding the answer with fields whose
+#: prose happens to contain it buries what was asked for: `54` named `Side`,
+#: and nine fields whose descriptions mention 54 followed it.
+_BY_DESCRIPTION = 3
+
+
 def _rank(member: Field, wanted: str) -> int | None:
-    """How well one field matches a lowercased query; None is not at all."""
+    """How well one field matches a lowercased query; None is not at all.
+
+    A query of several words is every one of them, so `settlement date` reaches
+    `UnderlyingSettlementDate` by its name rather than by prose that happens to
+    spell the two together. The browser's registry ranks by this same rule.
+    """
     name = member.name.lower()
     if wanted == member.fix.get("tag") or wanted == name:
         return 0
     if name.startswith(wanted):
         return 1
-    if wanted in name:
+    parts = wanted.split()
+    if all(part in name for part in parts):
         return 2
-    if wanted in member.description.lower():
-        return 3
+    described = member.description.lower()
+    if all(part in described for part in parts):
+        return _BY_DESCRIPTION
     return None
 
 

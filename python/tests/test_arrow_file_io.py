@@ -61,6 +61,25 @@ def test_s3_locations_store_only_the_bucket_and_key(scheme: str) -> None:
     assert canonical_location(location) == f"{scheme}://bucket/table"
 
 
+@pytest.mark.parametrize("scheme", ("s3", "s3a", "s3n"))
+def test_an_escaped_partition_value_names_the_object_iceberg_wrote(scheme: str) -> None:
+    """Iceberg escapes a partition value into the path, and the escape is the key.
+
+    `quote_plus(value, safe="")` writes `v=a%2Fb` so the value's own slash does
+    not become a directory. Decoding it names `v=a/b/...` -- an object the
+    manifest never recorded, which a read misses and the orphan sweep deletes
+    the live file for.
+    """
+    location = f"{scheme}://bucket/wh/db/t/data/v=a%2Fb/x.parquet"
+    key = "wh/db/t/data/v=a%2Fb/x.parquet"
+
+    assert ArrowFileIO.parse_location(location) == (scheme, "bucket", f"bucket/{key}")
+    assert canonical_location(location) == f"{scheme}://bucket/{key}"
+    assert canonical_location(f"{scheme}://k:s@minio:9000/bucket/{key}") == (
+        f"{scheme}://bucket/{key}"
+    )
+
+
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
     assert ArrowFileIO.parse_location("file:///C:/warehouse/t") == ("file", "", "/C:/warehouse/t")
 
@@ -109,6 +128,7 @@ def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> 
         "s3.endpoint": "https://minio.corp.com",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
+        "s3.region": "us-east-1",
     }
 
 
@@ -121,6 +141,10 @@ def test_a_warehouse_url_configures_the_filesystem_it_names(scheme: str) -> None
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "sec:ret",
+        # A store reached by an endpoint is signed for the region every
+        # compatible one defaults to, rather than the one AWS answers with
+        # for a bucket that is not on it.
+        "s3.region": "us-east-1",
     }
 
 
@@ -222,6 +246,64 @@ def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
     settings = filesystem.__reduce__()[1][0]
     assert settings["endpoint_override"] == "http://minio:9000"
     assert settings["access_key"] == "key"
+
+
+def test_a_location_that_names_its_own_store_reaches_that_store() -> None:
+    """`parse_location` hands PyIceberg the bucket as the netloc, so an endpoint
+    or credentials written into the location would be discarded and the file
+    opened against a default AWS filesystem. A table another tool wrote records
+    exactly such a location."""
+    io = ArrowFileIO({})
+    described = io.new_input("s3://key:secret@minio:9000/wh/db/t/metadata/x.avro")
+    settings = described._inner._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "http://minio:9000"
+    assert settings["access_key"] == "key"
+    # One filesystem per store, not one per file.
+    again = io.new_input("s3://key:secret@minio:9000/wh/db/t/metadata/y.avro")
+    assert again._inner._filesystem is described._inner._filesystem
+
+
+def test_the_catalog_fills_what_such_a_location_leaves_unsaid() -> None:
+    """It names the store; the credentials stay where a deployment put them."""
+    io = ArrowFileIO({"s3.access-key-id": "ck", "s3.secret-access-key": "cs"})
+    settings = io.new_input("s3://s3.example.net/wh/t.parquet")._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "https://s3.example.net"
+    assert settings["access_key"] == "ck"
+
+
+def test_a_plain_bucket_location_still_takes_the_catalog_s_own_filesystem() -> None:
+    """Nothing in it describes a store, so there is nothing to build from."""
+    io = ArrowFileIO({"s3.endpoint": "http://minio:9000"})
+    settings = io.new_input("s3://bucket/wh/t.parquet")._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "http://minio:9000"
+
+
+def test_an_encryption_this_cannot_send_is_refused_rather_than_ignored() -> None:
+    """A catalog carrying `s3.sse.type` says its objects must be encrypted.
+
+    Neither `pyarrow.fs.S3FileSystem` nor pyiceberg reads any of these names,
+    so honouring the setting is impossible and ignoring it writes plaintext and
+    reports success -- the one failure a reader of the table can never see.
+    """
+    for asked in (
+        {"s3.sse.type": "kms", "s3.sse.key": "arn:aws:kms:eu-west-1:1:key/abc"},
+        {"s3.sse.type": "s3"},
+        {"s3.sse.type": "custom", "s3.sse.key": "base64key", "s3.sse.md5": "digest"},
+        {"s3.sse.key": "base64key"},
+    ):
+        with pytest.raises(ValueError, match="server-side encryption"):
+            inferred_properties({"warehouse": "s3://bucket/wh", **asked})
+        with pytest.raises(ValueError, match="server-side encryption"):
+            ArrowFileIO(asked)
+
+
+def test_the_one_encryption_setting_that_asks_for_nothing_is_honoured() -> None:
+    """`none` is satisfied by doing nothing, which is what this does."""
+    assert inferred_properties({"s3.sse.type": "none"}) == {"s3.sse.type": "none"}
+    assert ArrowFileIO({"s3.sse.type": "none"}).properties["s3.sse.type"] == "none"
 
 
 # -- staged uploads ---------------------------------------------------------

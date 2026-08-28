@@ -12,7 +12,7 @@ parameters:
   protocols: null
   pattern: "*.log*"
   # The fixed header every line opens with, as a regex naming `timestamp`,
-  # `thread_name`, `plugin_code` and `message`. Null reads the shipped one.
+  # `threadname`, `plugincode` and `message`. Null reads the shipped one.
   header: null
   recursive: true
   # False streams compressed objects directly. True stages their raw compressed
@@ -41,6 +41,8 @@ parameters:
   #   s3.region: eu-west-1
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
   # S3_* process defaults and the standard AWS credential chain are supported.
+  # Encryption at rest is the bucket's own default; `s3.sse.*` is refused
+  # rather than ignored, because nothing below here can send it.
   catalog: rekep
   catalog_properties:
     type: sql
@@ -48,13 +50,29 @@ parameters:
     warehouse: file://data/warehouse
   table_properties:
     history.expire.max-snapshot-age-ms: "604800000"
+    # A commit writes a new `*.metadata.json` and keeps every earlier one, so a
+    # pipeline committing every `commit_row_size` rows grows that directory
+    # without bound: measured over 40 appends, 41 files with these absent and
+    # 21 with them. `optimize` already retrofits both -- these are the same two
+    # values -- but only from the pass that runs them, and only onto a table it
+    # has reached. Declared here, a table has them from the commit that creates
+    # it, and `optimize` finds them present and spends no commit setting them.
+    write.metadata.previous-versions-max: "20"
+    write.metadata.delete-after-commit.enabled: "true"
   # root, main, and master name the same Iceberg root branch.
   branch: root
   # Retained so protocol parsers can be rerun without reading the source files.
   target: logs.messages
   merge_by: true
   batch_row_size: 65536
-  # Also bounds batches between records; one logical record is never split.
+  # Also bounds batches between records; a record is cut only at the row bound.
   batch_byte_size: 67108864
+  # Retained bytes per record, including folded continuations. A capture
+  # truncated mid-write has no next newline, so without this a single record
+  # would hold the rest of the file. What is past it is dropped and counted in
+  # `reason`.
+  max_row_byte_size: 67108864
   commit_row_size: 250000
   limit: null
+  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  log_level: INFO
