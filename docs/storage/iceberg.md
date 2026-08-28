@@ -127,6 +127,47 @@ configuration does not depend on an organization's default-branch spelling.
 A producer that does not provide Iceberg ids is numbered at creation, while a
 contract that already carries ids keeps them.
 
+### Table properties
+
+The tasks declare three, and every write task declares the same three:
+
+```yaml
+table_properties:
+  history.expire.max-snapshot-age-ms: "604800000"   # a week of time travel
+  write.metadata.previous-versions-max: "20"
+  write.metadata.delete-after-commit.enabled: "true"
+```
+
+The last two bound the metadata directory. A commit writes a new
+`*.metadata.json` and keeps every earlier one, so a pipeline committing every
+`commit_row_size` rows grows that directory for as long as it runs. Over 40
+appends to one table:
+
+| declared | `*.metadata.json` | `*.avro` |
+| --- | ---: | ---: |
+| neither | 41 | 80 |
+| both | 21 | 80 |
+
+`optimize` retrofits the same two values onto a table that lacks them, so this
+is not a second mechanism -- it is the same one, applied from the commit that
+creates the table rather than from the first maintenance pass to reach it. A
+table that already carries them costs `optimize` no commit to set.
+
+Four more are worth knowing about and are deliberately **not** declared:
+
+| property | why not |
+| --- | --- |
+| `commit.manifest-merge.enabled` | measured *worse* at write time -- 84 manifests against 80 -- because a merge writes new ones and the originals stay until expiry. `optimize` sets it for the pass that also compacts and expires, which is where it pays. |
+| `write.parquet.compression-codec` | PyIceberg already defaults to `zstd`. |
+| `downcast-ns-timestamp-to-us-on-write` | every temporal column in these contracts is already `timestamp[us, tz=UTC]`, so nothing is downcast. |
+| `pyarrow.use-large-types-on-read` | PyIceberg 0.11 returns plain `string`, and this package reads either width, so neither setting changes a result. |
+
+`write.object-storage.enabled` inserts a hashed prefix before each data file
+(`data/0010/0011/1010/10110100/…`), which spreads writes across S3 prefixes.
+The tables partition hourly and commit far below S3's per-prefix request
+ceiling, so it is off; turning it on changes every future data path and does
+not move existing files.
+
 ## Filesystems
 
 Local and object-store locations resolve through `pyarrow.fs`. Credentials,
@@ -212,6 +253,42 @@ location, and the catalog fills what the location leaves unsaid.
 | `anonymous` | `anonymous` | `s3.anonymous` |
 | `allow_bucket_creation` | `allow_bucket_creation` | -- |
 
+Beyond what a location spells, these PyIceberg catalog properties reach Arrow
+through this FileIO. A production Glue catalog:
+
+```yaml
+catalog: rekep-production
+catalog_properties:
+  type: glue
+  warehouse: s3://example-bucket/rekep/warehouse
+  glue.region: eu-west-1
+  s3.region: eu-west-1
+  s3.connect-timeout: "10.0"      # seconds
+  s3.request-timeout: "60.0"      # seconds
+  s3.role-arn: arn:aws:iam::123456789012:role/rekep-writer
+  s3.role-session-name: rekep
+```
+
+Verify what any of them become:
+
+```python
+from rekep.arrow_file_io import ArrowFileIO
+
+filesystem = ArrowFileIO({"s3.region": "eu-west-1", "s3.connect-timeout": "12.5"})
+print(filesystem.fs_by_scheme("s3", "bucket").__reduce__()[1][0]["connect_timeout"])
+```
+
+```text
+12.5
+```
+
+`s3.connect-timeout`, `s3.request-timeout`, `s3.role-arn`,
+`s3.role-session-name`, `s3.proxy-uri`, `s3.retry-strategy-impl` and
+`s3.resolve-region` all arrive. `s3.profile-name` and the `s3.signer.*` names
+do **not**: PyIceberg's Arrow FileIO never reads them, so a catalog that names
+a profile is signed by whatever the credential chain found instead. Name the
+credentials, a role, or the environment.
+
 Two catalog properties are this package's own: `rekep.io.cache-bytes` sizes the
 immutable-content cache below, and `rekep.io.delegate-file-io` names a FileIO
 to wrap when `py-io-impl` is not this one, so a failed commit still owns every
@@ -227,7 +304,8 @@ print(dict(properties_of(Url.from_string(warehouse))))
 
 ```text
 {'s3.endpoint': 'https://minio.example.net', 's3.access-key-id': 'key',
- 's3.secret-access-key': 'secret', 's3.force-virtual-addressing': 'true'}
+ 's3.secret-access-key': 'secret', 's3.region': 'us-east-1',
+ 's3.force-virtual-addressing': 'true'}
 ```
 
 A secret is read from the userinfo and percent-decoded, so one containing

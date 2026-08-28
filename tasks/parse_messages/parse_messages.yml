@@ -50,6 +50,15 @@ parameters:
     warehouse: file://data/warehouse
   table_properties:
     history.expire.max-snapshot-age-ms: "604800000"
+    # A commit writes a new `*.metadata.json` and keeps every earlier one, so a
+    # pipeline committing every `commit_row_size` rows grows that directory
+    # without bound: measured over 40 appends, 41 files with these absent and
+    # 21 with them. `optimize` already retrofits both -- these are the same two
+    # values -- but only from the pass that runs them, and only onto a table it
+    # has reached. Declared here, a table has them from the commit that creates
+    # it, and `optimize` finds them present and spends no commit setting them.
+    write.metadata.previous-versions-max: "20"
+    write.metadata.delete-after-commit.enabled: "true"
   # root, main, and master name the same Iceberg root branch.
   branch: root
   # Retained so protocol parsers can be rerun without reading the source files.
