@@ -16,7 +16,6 @@
   --rekep-border: #27272a;
   --rekep-border-subtle: #1c1c1f;
   --rekep-muted: #a1a1aa;
-  --rekep-subtle: #71717a;
   --md-default-bg-color: var(--rekep-black);
   --md-default-fg-color: var(--rekep-white);
   --md-default-fg-color--light: #d4d4d8;
@@ -54,7 +53,6 @@
   --rekep-border: #e4e4e7;
   --rekep-border-subtle: #f0f0f2;
   --rekep-muted: #52525b;
-  --rekep-subtle: #71717a;
   --md-default-bg-color: #fff;
   --md-default-fg-color: #09090b;
   --md-default-fg-color--light: #3f3f46;
@@ -116,7 +114,6 @@ pre {
 }
 
 .md-header {
-  background: #050505;
   border-bottom: 1px solid #202023;
   box-shadow: none;
 }
@@ -137,7 +134,6 @@ pre {
 }
 
 .md-tabs {
-  background: #070708;
   border-bottom: 1px solid #202023;
 }
 
