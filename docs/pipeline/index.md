@@ -60,6 +60,7 @@ parameters:
 The six [products](../products/index.md) are what the pipeline persists.
 Arrow readers carry each stream; Iceberg stores the boundaries.
 
+- [Deploy from scratch](operations/deploy.md)
 - [Parse messages](tasks/parse-messages.md)
 - [Parse FIX](tasks/parse-fix.md)
 - [End-to-end run](operations/run.md)

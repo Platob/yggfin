@@ -210,7 +210,7 @@ Four more are worth knowing about and are deliberately **not** declared:
 | `commit.manifest-merge.enabled` | measured *worse* at write time -- 84 manifests against 80 -- because a merge writes new ones and the originals stay until expiry. `optimize` sets it for the pass that also compacts and expires, which is where it pays. |
 | `write.parquet.compression-codec` | PyIceberg already defaults to `zstd`. |
 | `downcast-ns-timestamp-to-us-on-write` | every temporal column in these contracts is already `timestamp[us, tz=UTC]`, so nothing is downcast. |
-| `pyarrow.use-large-types-on-read` | PyIceberg 0.11 returns plain `string`, and this package reads either width, so neither setting changes a result. |
+| `pyarrow.use-large-types-on-read` | 0.11.1 reads it nowhere, so neither value changes anything. The width is decided in this package instead -- see [Arrow widths on read](#arrow-widths-on-read). |
 
 `write.object-storage.enabled` inserts a hashed prefix before each data file
 (`data/0010/0011/1010/10110100/…`), which spreads writes across S3 prefixes.

@@ -21,6 +21,9 @@ uv run --project python --with papermill rekep task run \
   --output parse_fix.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 To replay only one half-open recording interval, add
 `--parameter start=2026-08-21T10:00:00Z` and
 `--parameter end=2026-08-21T11:00:00Z` before `--output`.

@@ -107,6 +107,7 @@ nav:
   - Pipeline:
       - Overview: pipeline/index.md
       - Operations:
+          - Deploy from scratch: pipeline/operations/deploy.md
           - Airflow deployment: pipeline/operations/airflow.md
           - End-to-end run: pipeline/operations/run.md
       - Tasks:

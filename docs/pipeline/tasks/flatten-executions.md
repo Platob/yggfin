@@ -16,6 +16,9 @@ uv run --project python --with papermill rekep task run \
   --output flatten_executions.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 The adjacent `flatten_executions.yml` sets the `[start, end)` interval,
 source, target, catalog, and commit size. Replay skips existing event keys
 when `merge_by` is enabled.

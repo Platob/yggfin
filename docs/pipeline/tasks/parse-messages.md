@@ -14,6 +14,9 @@ uv run --project python --with papermill rekep task run \
   --output parse_messages.executed.ipynb
 ```
 
+The package, a FIX registry and a catalog have to exist first:
+[deploy from scratch](../operations/deploy.md).
+
 Each [`Message`](../../products/message.md) row carries the recording time in
 `unix` with its `unix_partition`, `source_url` and the 1-based physical
 `source_rownum`, `thread_name` and `plugin_code` from the configured header,
