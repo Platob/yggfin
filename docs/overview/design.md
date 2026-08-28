@@ -10,9 +10,15 @@ not drift between notebooks, Iceberg, Python, or a later Rust stage.
 from rekep import Book
 
 shape = Book.into_field()
-shape.into_arrow_schema()
-shape.into_iceberg_schema()
-shape.cast_arrow(reader)
+empty = shape.into_arrow_schema().empty_table()
+
+print(len(shape.into_arrow_schema()), len(shape.into_iceberg_schema().fields))
+print(shape.cast_arrow(empty).num_columns)
+```
+
+```text
+53 53
+53
 ```
 
 Shape changes use Arrow kernels. Data-sized Python collections or row loops do

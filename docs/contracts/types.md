@@ -29,10 +29,15 @@ class Quote(Convertible):
 
 ```python
 field = Quote.into_field()
-field.names
-field.primary_keys()
-field.partition_keys()
-field.cast_arrow(batch)
+batch = field.into_arrow_schema().empty_table()
+
+print(field.primary_keys(), field.partition_keys())
+print(field.cast_arrow(batch).num_columns, len(field.names))
+```
+
+```text
+['symbol'] {'day': 'identity'}
+4 4
 ```
 
 The annotation owns nullability. `str` is non-null, `str | None` is nullable,
@@ -74,7 +79,11 @@ wrapped value a pyarrow or numpy scalar hands back, and the named instants `now`
 ```python
 from rekep import unix_of
 
-lower, upper = unix_of(start), unix_of(end, upper=True)
+print(unix_of("2026-08-14"), unix_of("2026-08-14", upper=True))
+```
+
+```text
+1786665600000000000 1786752000000000000
 ```
 
 A naive instant is read as UTC. `upper=True` treats a value naming a whole

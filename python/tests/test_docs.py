@@ -10,6 +10,7 @@ of `rekep` for the price of walking a dozen files.
 from __future__ import annotations
 
 import ast
+import builtins
 import importlib
 import re
 from pathlib import Path
@@ -122,6 +123,56 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
     assert f"tasks/{task_name}/{task_name}.yml" in page
     assert f"--output {task_name}.executed.ipynb" in page
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
+
+
+def _bound(tree: ast.AST) -> set[str]:
+    """Every name a fence binds: assignments, imports, definitions, parameters."""
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            names.add(node.id)
+        elif isinstance(node, ast.Import | ast.ImportFrom):
+            names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            names.add(node.name)
+        elif isinstance(node, ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            names.add(node.name)
+    return names
+
+
+def pages() -> list[tuple[str, list[str]]]:
+    """`(page, its python fences in order)` -- in order, because a later fence
+    on a page continues the one above it and a reader runs them that way."""
+    found = []
+    for page in sorted(DOCS.rglob("*.md")):
+        fences = [m[2] for m in _FENCE.finditer(page.read_text()) if m[1] == "python"]
+        if fences:
+            found.append((str(page.relative_to(DOCS)), fences))
+    return found
+
+
+@pytest.mark.parametrize(("page", "fences"), pages(), ids=[one for one, _ in pages()])
+def test_a_page_never_reads_a_name_nothing_on_it_wrote(page: str, fences: list[str]) -> None:
+    """An example naming a variable no fence ever assigns cannot be run by the
+    reader it was written for, and nothing else here would notice: compiling
+    accepts a free name, and every one of these pages compiled while
+    `shape.cast_arrow(reader)` had no `reader` anywhere on it.
+
+    Names carry forward between fences on one page and never between pages.
+    """
+    carried: set[str] = set(dir(builtins))
+    for index, source in enumerate(fences):
+        tree = ast.parse(source, filename=f"{page}#{index}")
+        used = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        free = sorted(used - _bound(tree) - carried)
+        assert not free, f"{page}#{index} reads {free}, which no fence on this page writes"
+        carried |= _bound(tree)
 
 
 @pytest.mark.parametrize(("where", "source"), EXAMPLES, ids=[one for one, _ in EXAMPLES])

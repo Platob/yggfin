@@ -452,34 +452,26 @@ expires old snapshots once. `snapshot_expiry` accepts a `timedelta` relative to
 now, a `datetime`, or a parseable instant string. When omitted, the dataset
 reads `history.expire.max-snapshot-age-ms` and then Iceberg's default.
 
-The checked-in project tasks set that table property to seven days. Writers do
-not compact or sweep files; call those operations explicitly, or run the
-scheduled maintenance described below.
+Writers do not compact or sweep files. Expiration removes history from the
+current metadata JSON -- it permanently removes time travel and rollback to an
+expired state, and PyIceberg 0.11 deletes no physical files during it.
 
-Snapshot expiration itself removes history from the current metadata JSON. It
-does not remove rows visible in a retained snapshot, but it permanently removes
-time travel and rollback to an expired state. PyIceberg 0.11 does not delete
-physical files during that operation.
+`cleanup` follows that commit with rekep's reachability sweep. Only files
+unreferenced by every retained snapshot, branch, tag, statistics entry and
+current metadata version are eligible: obsolete Parquet, manifest-list Avro,
+manifest Avro and untracked metadata JSON. A live file whose recorded spelling
+the sweep cannot reduce against the table's directories is kept, never deleted.
+`orphan_age` is a grace period for files an in-flight writer produced but never
+committed.
 
-`cleanup` follows the metadata commit with rekep's reachability sweep: only
-files unreferenced by every retained snapshot, branch, tag, statistics entry,
-and current metadata version are eligible -- obsolete Parquet data,
-manifest-list Avro, manifest Avro, and untracked metadata JSON. A live file
-whose recorded spelling the sweep cannot reduce against the table's directories
-is kept, never deleted. The orphan age is a grace period for files an in-flight
-writer produced but never committed.
+`optimize` compacts, then cleans, and returns counts for each. It also
+retrofits absent manifest-merge and metadata-retention properties; an explicit
+table property still wins.
 
-`optimize` compacts, then cleans, returning counts for each action. It also
-supplies absent manifest merging and metadata JSON retention properties to
-existing tables; an explicit table property still wins.
-
-The Airflow deployment runs `optimize_iceberg` daily at 02:30 UTC. Its
-checked-in policy keeps at least 24 snapshots and seven days, waits three days
-before deleting unreachable files, and visits nested namespaces, which gives
-idle tables another sweep after their grace period has elapsed.
-
-Run it when ordinary writers are quiet; catalog commit conflicts fail safely
-and are retried, but avoiding overlap prevents wasted rewrites.
+The shipped schedule and policy live in the
+[Airflow deployment](../pipeline/operations/airflow.md#run-iceberg-maintenance)
+guide. Run it when ordinary writers are quiet: commit conflicts fail safely and
+retry, but avoiding overlap prevents wasted rewrites.
 
 ## Testing and benchmark
 

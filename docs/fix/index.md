@@ -464,6 +464,12 @@ one and which group each sits inside all come out of the tree. A
 `ComponentGroup` subclass adds only the shape:
 
 ```python
+import dataclasses
+from functools import cache
+
+from rekep.fix.components import ComponentGroup, TrdRegTimestamp
+
+
 @dataclasses.dataclass(eq=False)
 class TrdRegTimestamps(ComponentGroup):
     component: str = "TrdRegTimestamps"
@@ -561,12 +567,18 @@ one of four ways, and every one of them resolves to the same reading:
 | namespace-qualified key | `TECH.CLIENTID` |
 
 ```python
+from rekep import FixMsg
 from rekep.fix import FieldAccess, FixRegistry
 
+row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|38=125|10=000")
 access = FieldAccess.of(FixRegistry.from_builtin())
 found = access.reading(row.entries, "OrderQty")
-found.raw  # '125', the text the line carried
-found.value  # 125.0, what the dictionary makes of it
+
+print(repr(found.raw), repr(found.value))
+```
+
+```text
+'125' 125.0
 ```
 
 `Reading.meaning` is the third thing one call answers: what the value means

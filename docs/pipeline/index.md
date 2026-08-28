@@ -36,29 +36,29 @@ Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` writes `Message` rows, tokenizes generic key/value syntax
-once, and assigns `MsgType` and `etype`. `parse_fix` pushes the market-event
-selection to Iceberg, then owns protocol and dictionary resolution from those
-ordered arguments.
+`parse_messages` tokenizes once and assigns `MsgType` and `etype`;
+`parse_fix` pushes the market-event selection to Iceberg and owns protocol and
+dictionary resolution from there. Keeping `logs.messages` is what lets a field
+or protocol change rerun FIX resolution without reopening the source logs --
+only a MsgType event-metadata change rebuilds it, because that changes its
+stored `etype`.
 
-The retained message table lets field and protocol changes rerun FIX
-resolution without reopening source logs or splitting payloads again; MsgType
-event-metadata changes rebuild `logs.messages` because they change its stored
-`etype`.
+`parse_fix` resumes Instrument lifecycles from the prior Instrument table.
+There is no dependency cycle: both downstream notebooks read the normalized
+Instrument rows already committed inside `fix.market`.
 
-`parse_fix` resumes Instrument lifecycles from the prior completed Instrument
-table. The current run has no dependency cycle: both downstream notebooks read
-the normalized Instrument rows already committed inside `fix.market`.
+`books: false` skips the fold and writes only the Order and Execution events
+each FIX message carries -- and so creates no snapshots, no synthetic
+expiries, no book validation changes and no carrying `Book.hash` parent:
 
-The default market path folds books and then flattens their deltas. With
-`books: false`, `parse_market` skips the fold and writes only the Order and
-Execution events carried by each FIX message. This path deliberately
-does not create snapshots, synthetic expiries, book validation changes, or a
-carrying `Book.hash` parent.
+```yaml
+# tasks/parse_market/parse_market.yml
+parameters:
+  books: false
+```
 
-The persisted products are `Message`, `FixMsg`, `Instrument`, `Book`, `Order`,
-and `Execution` rows. Arrow readers carry each stream; Iceberg stores the
-boundaries.
+The six [products](../products/index.md) are what the pipeline persists.
+Arrow readers carry each stream; Iceberg stores the boundaries.
 
 - [Parse messages](tasks/parse-messages.md)
 - [Parse FIX](tasks/parse-fix.md)
@@ -68,30 +68,3 @@ boundaries.
 - [Parse market](tasks/parse-market.md)
 - [Flatten orders](tasks/flatten-orders.md)
 - [Flatten executions](tasks/flatten-executions.md)
-- [Airflow](#airflow)
-
-## Airflow
-
-`tasks/airflow/market_pipeline.py` uses
-`apache-airflow-providers-papermill`. Airflow injects its half-open data
-interval and its two DAG parameters, `branch` and `books`, into each notebook.
-`root`, `main`, and `master` all select Iceberg's root ref.
-
-Each notebook publishes its result through Scrapbook. Branch tasks inspect
-attempted/read counts from that result: an empty capture skips `parse_fix`, a
-FIX interval without market rows skips both market consumers, and direct
-market mode skips the two book flatteners through zero `flatten` counts.
-
-In book mode Order and Execution flatteners route independently from the
-number of nested rows the selected Books carry. The routes deliberately do not
-use `written`; a replay can write zero while still needing downstream work
-after parsing or schema logic changes.
-
-Install the provider in the scheduler environment, not as a `rekep` runtime
-dependency. Set `REKEP_ROOT` to the checkout and `REKEP_NOTEBOOK_OUTPUT` to an
-existing directory visible to every worker; the routing tasks read the
-executed notebooks from there.
-
-The [Airflow deployment and operations guide](operations/airflow.md) covers the complete
-runtime installation, local validation, scheduled runs, backfills, Iceberg
-branches, production storage, monitoring, retries, and troubleshooting.

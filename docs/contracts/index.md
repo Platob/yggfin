@@ -18,8 +18,12 @@ table](../assets/compatibility-tree.svg)
 from rekep import Field
 
 message = Field.from_yaml("schemas/rekep/message.yaml")
-message.into_arrow_schema()          # what a producer writes
-message.cast_arrow(reader)           # what a consumer reads it back as
+schema = message.into_arrow_schema()          # what a producer writes
+print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
+```
+
+```text
+33 33
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
