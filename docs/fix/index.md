@@ -8,12 +8,15 @@ from rekep import FixMsg
 from rekep.fix import FixRegistry
 
 message = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
-message.get(35).raw  # 'D'
-message.get(55).raw  # 'IBM'
-message.into_fix_pairs()  # ordered entries
+print(message.get(35).raw, message.get(55).raw)
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
-registry.field("OrigClOrdID", "4.4")
+registry = FixRegistry.from_builtin()
+print(registry.field("OrigClOrdID", "4.4").fix.tag)
+```
+
+```text
+D IBM
+41
 ```
 
 The separator is detected from the message: the standard's SOH (`\x01`)
@@ -55,12 +58,29 @@ categorical filters, linked references, and repository source records.
 
 ### Every point in time is a timestamp
 
-A FIX temporal projects to `timestamp[ns]`, whatever width the standard writes
-it at: a date is midnight, a time-of-day is that clock on the epoch's day, and
-a zoned spelling is the instant its offset names. The reader already
-normalised all three to the same epoch nanoseconds -- only the projection was
-throwing the difference away, and a `date32` column is the one shape a
-timezone can no longer be applied to.
+Every width the standard writes lands on one Arrow type:
+
+```python
+from rekep.fix import FixRegistry
+
+registry = FixRegistry.from_builtin()
+for name in ("TransactTime", "MDEntryDate", "MDEntryTime", "MaturityMonthYear"):
+    field = registry.field(name, "4.4")
+    print(f"{field.fix.type:14} {field.dtype}")
+```
+
+```text
+UTCTimestamp   timestamp[ns]
+UTCDateOnly    timestamp[ns]
+UTCTimeOnly    timestamp[ns]
+MonthYear      string
+```
+
+A date is midnight, a time-of-day is that clock on the epoch's day, and a
+zoned spelling is the instant its offset names. The reader already normalised
+all three to the same epoch nanoseconds -- only the projection was throwing
+the difference away, and a `date32` column is the one shape a timezone can no
+longer be applied to.
 
 The parsed-log projection then says which zone it is: a datatype the standard
 fixes in UTC, or one whose value carries the offset that puts it there, lands
@@ -167,8 +187,12 @@ value. The dropped keys are counted with the conflict report.
 
 ```python
 field = registry.resolve("TrdRegTimestampType")
-field.fix.encode("ORDER_SUBMISSION_TIME")  # '10'
-field.fix.meaning("10")                    # 'ORDER_SUBMISSION_TIME'
+
+print(field.fix.encode("ORDER_SUBMISSION_TIME"), field.fix.meaning("10"))
+```
+
+```text
+10 ORDER_SUBMISSION_TIME
 ```
 
 ### Resolving a name
@@ -339,10 +363,14 @@ through 4.2 and `AllocationInstruction` after).
 
 ```python
 single = registry.merged_component("D")
-single.msg_type                        # 'D'
-[member.name for member in single.members][:3]
-# ['ClOrdID', 'OrderRequestID', 'SecondaryClOrdID']
-registry.component_field("D", "4.4")   # the whole message as one Arrow field
+
+print(single.msg_type, [member.name for member in single.members][:3])
+print(len(registry.component_field("D", "4.4").fields), "columns")
+```
+
+```text
+D ['ClOrdID', 'OrderRequestID', 'SecondaryClOrdID']
+474 columns
 ```
 
 A reusable block omits `fix:msgtype` rather than writing it null, and carries
