@@ -36,3 +36,5 @@ parameters:
   branch: root
   merge_by: true
   commit_row_size: 250000
+  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  log_level: INFO

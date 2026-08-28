@@ -18,3 +18,5 @@ parameters:
   orphan_age_days: 3
   remove_orphans: true
   metadata: true
+  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  log_level: INFO

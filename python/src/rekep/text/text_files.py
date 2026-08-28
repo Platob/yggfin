@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import io
+import logging
 import os
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -37,6 +38,8 @@ from rekep.text.text_file import (
     static_columns_of,
 )
 from rekep.urls import Url
+
+LOGGER = logging.getLogger(__name__)
 
 #: Cuts a path into its digit runs and everything between them, so ordering
 #: can compare a run as a number: `app.9.txt` before `app.10.txt`, which a
@@ -496,6 +499,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
     ) -> Iterator[pyarrow.RecordBatch]:
         """Filtered per-file batches, leaving set-wide windowing to the caller."""
         for log in self.into_files():
+            # Per file, and the rows it yielded after it closes. Per batch
+            # would be one record per `batch_row_size` rows, which on a capture
+            # is thousands of them saying nothing a total does not.
+            LOGGER.debug("reading %s", log.url)
+            rows = 0
             with log:
                 batches = log._filtered_batches(
                     batch_row_size,
@@ -510,7 +518,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
                     start_unix,
                     end_unix,
                 )
-                yield from batches
+                for batch in batches:
+                    rows += batch.num_rows
+                    yield batch
+            LOGGER.debug("read %d rows from %s", rows, log.url)
 
     def into_byte_chunks(
         self,

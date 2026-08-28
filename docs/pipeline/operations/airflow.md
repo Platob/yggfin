@@ -248,7 +248,8 @@ offset are interpreted inside the source logs.
 
 Executed notebooks are retained under `REKEP_NOTEBOOK_OUTPUT`, named by task
 and run timestamp. `log_output=True` also places notebook cell output in the
-Airflow task log.
+Airflow task log — including the package's own records, which each task
+document sets the level of. See [Logs](logs.md).
 
 ## Start scheduled runs
 

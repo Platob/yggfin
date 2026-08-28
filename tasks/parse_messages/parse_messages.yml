@@ -74,3 +74,5 @@ parameters:
   max_row_byte_size: 67108864
   commit_row_size: 250000
   limit: null
+  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  log_level: INFO

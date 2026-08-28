@@ -27,6 +27,7 @@ from rekep.fix.entries import (
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import document_of, field_document
+from rekep.logs import COMMAND_LEVEL, configure
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -71,6 +72,9 @@ def main(argv: list[str] | None = None) -> int:
     """Run one command; return the exit code rather than raising it."""
     parser = _parser()
     arguments = parser.parse_args(argv)
+    # Before the command runs, so a record from configuration-time work is not
+    # the one thing the level does not reach.
+    configure(arguments.log_level)
     try:
         return arguments.run(arguments)
     except (
@@ -516,6 +520,12 @@ def _parser() -> argparse.ArgumentParser:
   rekep fix shell --store data/fix""",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--log-level",
+        default=COMMAND_LEVEL,
+        choices=("DEBUG", "INFO", "WARNING", "ERROR"),
+        help=f"records this package writes to stderr; default {COMMAND_LEVEL}",
+    )
     commands = parser.add_subparsers(
         dest="command", required=True, title="commands", metavar="COMMAND"
     )

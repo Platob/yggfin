@@ -7,6 +7,7 @@ import datetime
 import decimal
 import functools
 import json
+import logging
 import re
 import struct
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -32,6 +33,8 @@ from rekep.fields.metadata import (
     IcebergMetadata,
     ProtocolMetadata,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 #: Metadata key a documentation line lands under -- the one Arrow, parquet and
 #: every viewer downstream read as the column comment.
@@ -1505,6 +1508,14 @@ class StructField(Field):
             source, incoming = _peek_schema(source)
             if incoming is not None:
                 target = self.merged(incoming)
+        # Per stream, not per batch: `cast_arrow_batch` runs once per
+        # `batch_row_size` rows, which is thousands of records over one file.
+        LOGGER.debug(
+            "casting a stream onto %s: %d columns%s",
+            target.name or "an unnamed shape",
+            len(target.names),
+            " (widened by merge_schema)" if merge_schema and target is not self else "",
+        )
 
         def generate() -> Iterator[pyarrow.RecordBatch]:
             for batch in source:

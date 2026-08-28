@@ -110,6 +110,7 @@ nav:
           - Deploy from scratch: pipeline/operations/deploy.md
           - Airflow deployment: pipeline/operations/airflow.md
           - End-to-end run: pipeline/operations/run.md
+          - Logs: pipeline/operations/logs.md
       - Tasks:
           - Parse messages: pipeline/tasks/parse-messages.md
           - Parse FIX: pipeline/tasks/parse-fix.md

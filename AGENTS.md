@@ -52,6 +52,12 @@ and every bit of that degrades on its own.
 
 - `rekep.console.Console` owns colour, box drawing, spinners and tables.
   Nothing else writes an escape sequence.
+- `Console` renders for the person who just typed a command; `rekep.logs`
+  records what the library did for whoever reads the run afterwards. One fact
+  belongs to one of them. INFO is a completed operation -- one record per
+  public verb, whatever it commits inside; DEBUG is the detail under it, per
+  stream and per file, never per batch. Modules hold
+  `logging.getLogger(__name__)` and nothing configures logging at import.
 - The shell uses the documentation palette: white for primary values, yellow
   for success and selected values, orange for interaction and warnings, red
   for failures, and grey only for secondary context. Do not add another hue.
@@ -222,6 +228,7 @@ python/src/rekep/
   tasks/        notebook configuration only
   arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
   console.py    terminal styling: colour, boxes, tables, spinners
+  logs.py       the level policy, and where a run's records go
   times.py      one reading of "an instant", whatever spelled it
 schemas/rekep/  the six persisted output contracts
 data/fix/       the FIX dictionary: tag-range shards, components, messages
