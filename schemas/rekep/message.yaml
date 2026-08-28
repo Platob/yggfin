@@ -256,16 +256,6 @@ fields:
   nullable: true
   description: Encoding the payload declares for its `Encoded*` fields.
   fix: {display: MessageEncoding}
-- name: xmldatalen
-  type: string
-  nullable: true
-  description: Declared length of `xmldata`, kept as the text in front of it.
-  fix: {display: XmlDataLen}
-- name: xmldata
-  type: string
-  nullable: true
-  description: XML block the payload carried, taken by the length in front of it.
-  fix: {display: XmlData}
 - name: securedatalen
   type: string
   nullable: true

@@ -73,8 +73,6 @@ LINE = [
     "cstmapplverid",
     "applextid",
     "messageencoding",
-    "xmldatalen",
-    "xmldata",
     "securedatalen",
     "securedata",
     "signaturelength",
@@ -137,8 +135,6 @@ LIFTED_HEADER = {
     "cstmapplverid": "1129",
     "applextid": "1156",
     "messageencoding": "347",
-    "xmldatalen": "212",
-    "xmldata": "213",
     "securedatalen": "90",
     "securedata": "91",
     "signaturelength": "93",
@@ -160,8 +156,6 @@ RETYPED_HEADER = {
     "origsendingtime": pyarrow.timestamp("us", tz="UTC"),
     "onbehalfofsendingtime": pyarrow.timestamp("us", tz="UTC"),
     "applextid": pyarrow.int32(),
-    "xmldatalen": pyarrow.int64(),
-    "xmldata": pyarrow.binary(),
     "securedatalen": pyarrow.int64(),
     "securedata": pyarrow.binary(),
     "signaturelength": pyarrow.int64(),
@@ -1643,6 +1637,58 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
         assert actual.fix.display == expected.name, column
         assert actual.metadata == {**expected.metadata, DISPLAY: expected.name}, column
         assert actual.description == expected.description, column
+
+
+def test_a_nested_message_in_xmldata_survives_the_standard_header_lift(
+    registry: FixRegistry,
+) -> None:
+    """`XmlData <213>` is the one field of the standard header the raw stage
+    leaves in `entries`, and this is why: bridges put a `key=value` message in
+    it, and `into_payload_pairs` expands that in the place the tag sat. Lifting
+    it would have taken the tag out of the list that expansion reads, leaving a
+    nested order unread and the column holding the whole payload as bytes.
+
+    The codec's own tests read the expansion off pairs, which is upstream of
+    the lift and could not see this -- so it is pinned here, on the pipeline.
+    """
+    body = "ClOrdID=ORD-TEST-01|Side=1|Account=ACCT-TEST-01"
+    line = f"8=FIX.4.4|35=8|212={len(body)}|213={body}|10=000"
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert parsed.column("clordid").to_pylist() == ["ORD-TEST-01"]
+    assert parsed.column("side").to_pylist() == ["1"]
+    assert parsed.column("account").to_pylist() == ["ACCT-TEST-01"]
+    assert parsed.column("xmldata").to_pylist() == [None], "expanded, so nothing is left over"
+
+
+def test_an_xmldata_document_still_lands_in_its_own_column(registry: FixRegistry) -> None:
+    """A payload that reads as XML rather than as pairs has nothing to expand,
+    so the FIX stage fills the column from `entries` exactly as it always did."""
+    document = '<order id="1"/>'
+    line = f"8=FIX.4.4|35=8|212={len(document)}|213={document}|10=000"
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert parsed.column("xmldata").to_pylist() == [document.encode()]
+    assert parsed.column("clordid").to_pylist() == [None]
+
+
+def test_the_two_fields_the_standard_header_lift_leaves_alone() -> None:
+    """Both are structural. `CheckSum <10>` is the boundary eligibility is
+    measured against; `XmlData <213>` carries a message the FIX stage expands,
+    and `XmlDataLen <212>` is the length that says where it ends, so the two
+    are one token and neither half may be lifted without the other."""
+    from rekep.text.message import SESSION_NAMES
+
+    lifted = {name for name, _ in SESSION_NAMES}
+    assert {"CheckSum", "XmlData", "XmlDataLen"}.isdisjoint(lifted)
+    assert {"SecureDataLen", "SecureData", "SignatureLength", "Signature"} <= lifted, (
+        "the other two length-prefixed pairs lift whole, so they stay adjacent"
+    )
+    assert not {"xmldata", "xmldatalen", "checksum"} & set(Message.into_field().names)
 
 
 def test_rendered_isincode_keeps_its_source_identity() -> None:

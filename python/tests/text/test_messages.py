@@ -71,12 +71,49 @@ FLAT_NAMES = (*COLUMNS.values(), "isincode")
 LIFTED_HEADER = {
     "8": "beginstring",
     "9": "bodylength",
-    "34": "msgseqnum",
     "35": "msgtype",
     "49": "sendercompid",
-    "52": "sendingtime",
+    "50": "sendersubid",
+    "142": "senderlocationid",
     "56": "targetcompid",
+    "57": "targetsubid",
+    "143": "targetlocationid",
+    "115": "onbehalfofcompid",
+    "116": "onbehalfofsubid",
+    "144": "onbehalfoflocationid",
+    "128": "delivertocompid",
+    "129": "delivertosubid",
+    "145": "delivertolocationid",
+    "34": "msgseqnum",
+    "369": "lastmsgseqnumprocessed",
+    "43": "possdupflag",
+    "97": "possresend",
+    "52": "sendingtime",
+    "122": "origsendingtime",
+    "370": "onbehalfofsendingtime",
+    "1128": "applverid",
+    "1129": "cstmapplverid",
+    "1156": "applextid",
+    "347": "messageencoding",
+    "90": "securedatalen",
+    "91": "securedata",
+    "93": "signaturelength",
+    "89": "signature",
 }
+
+#: The header fields this module's own wire lines actually write, in the
+#: order the value assertions below read them. A line states part of the
+#: header, not all of it, so what the *stage lifts* and what *this fixture
+#: carries* are two facts and are counted apart.
+WIRE_HEADER = (
+    "beginstring",
+    "bodylength",
+    "msgseqnum",
+    "msgtype",
+    "sendercompid",
+    "sendingtime",
+    "targetcompid",
+)
 
 #: `CheckSum <10>` is the boundary every lift is measured against -- a field is
 #: eligible only where it stands in front of it -- so it is deliberately not
@@ -188,7 +225,7 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
     assert {"protocolcode", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
     assert "CheckSum" not in raw_table.schema.names, "the boundary is not one of the lifted"
     # Protocol-neutral: this stage reads no numbers and no clocks, so every
-    # one of the seven is stored as the text the payload spelled.
+    # lifted column is stored as the text the payload spelled.
     for name in LIFTED_HEADER.values():
         assert pyarrow.types.is_string(raw_table.schema.field(name).type), name
     assert _keys(raw_table.column("entries")[PIPED]) == [
@@ -196,7 +233,7 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
         for token in WIRE.strip("|").split("|")
         if token.split("=", 1)[0] not in LIFTED_HEADER
     ]
-    assert [raw_table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [raw_table.column(name)[PIPED].as_py() for name in WIRE_HEADER] == [
         "FIX.4.2",
         "176",
         "1092",
@@ -266,7 +303,7 @@ def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
     assert _tagged(table.column("entries")[CARET]) == CARET_RESIDUAL_PAIRS
     assert _keys(table.column("entries")[CARET]) == [str(tag) for tag, _ in CARET_RESIDUAL_PAIRS]
     assert _named(table.column("entries")[CARET]) == []
-    assert [table.column(name)[CARET].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [table.column(name)[CARET].as_py() for name in WIRE_HEADER] == [
         "FIX4",
         61,
         1093,
@@ -709,7 +746,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("entries")[PIPED].as_py() is None
-    assert _lifted(table, PIPED) == len(LIFTED_HEADER), (
+    assert _lifted(table, PIPED) == len(WIRE_HEADER), (
         "only the standard header the raw stage lifted before any rule ran survives"
     )
     assert table.column("msgtype")[PIPED].as_py() == "D"
@@ -738,7 +775,7 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
     assert table.column("msgtype").null_count < EXPECTED_RECORDS
     # The header is not the rule set's to withhold: it was lifted upstream of
     # any protocol, so it stands here with no rule in sight.
-    assert [table.column(name)[PIPED].as_py() for name in LIFTED_HEADER.values()] == [
+    assert [table.column(name)[PIPED].as_py() for name in WIRE_HEADER] == [
         "FIX.4.2",
         176,
         1092,
@@ -857,7 +894,7 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
         (59, "0"),
         (10, "203"),
     ]
-    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(LIFTED_HEADER)
+    assert len(_keys(table.column("entries")[PIPED])) == EXPECTED_WIRE_FIELDS - len(WIRE_HEADER)
     assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
     assert table.column("msgseqnum")[PIPED].as_py() == 1092
     assert _tagged(table.column("entries")[BRIDGE]) == []

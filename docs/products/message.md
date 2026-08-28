@@ -29,10 +29,14 @@ FIX 8 7 VENUE DESK
     Message.from_text(line, message=line).protocolcode  # 'FIX'
     ```
 
-The whole standard header and trailer are lifted, in the order the FIX stage
+The standard header and trailer are lifted, in the order the FIX stage
 declares them, so a reader who has the header does not have to walk `entries`
-for it. `CheckSum <10>` is the one exception and cannot be otherwise: it is
-the boundary every other lift is measured against, so it stays an entry.
+for it. Two fields stay entries and cannot do otherwise. `CheckSum <10>` is
+the boundary every other lift is measured against. And `XmlData <213>` is a
+message more often than it is a document — bridges write `key=value` pairs in
+it, which the FIX stage expands in the place the tag sat — so it stays where
+that expansion can still see it, with `XmlDataLen <212>` beside it because a
+length and the value it measures are one token.
 
 Which fields, and which tag each answers to, come from `rekep.fix.columns` —
 the FIX stage's own declaration, with every tag read from the registry — so
@@ -45,7 +49,7 @@ print([name for name, tag in SESSION_FIELDS])
 ```
 
 ```text
-['beginstring', 'bodylength', 'msgtype', 'sendercompid', 'sendersubid', 'senderlocationid', 'targetcompid', 'targetsubid', 'targetlocationid', 'onbehalfofcompid', 'onbehalfofsubid', 'onbehalfoflocationid', 'delivertocompid', 'delivertosubid', 'delivertolocationid', 'msgseqnum', 'lastmsgseqnumprocessed', 'possdupflag', 'possresend', 'sendingtime', 'origsendingtime', 'onbehalfofsendingtime', 'applverid', 'cstmapplverid', 'applextid', 'messageencoding', 'xmldatalen', 'xmldata', 'securedatalen', 'securedata', 'signaturelength', 'signature']
+['beginstring', 'bodylength', 'msgtype', 'sendercompid', 'sendersubid', 'senderlocationid', 'targetcompid', 'targetsubid', 'targetlocationid', 'onbehalfofcompid', 'onbehalfofsubid', 'onbehalfoflocationid', 'delivertocompid', 'delivertosubid', 'delivertolocationid', 'msgseqnum', 'lastmsgseqnumprocessed', 'possdupflag', 'possresend', 'sendingtime', 'origsendingtime', 'onbehalfofsendingtime', 'applverid', 'cstmapplverid', 'applextid', 'messageencoding', 'securedatalen', 'securedata', 'signaturelength', 'signature']
 ```
 
 ## Lineage

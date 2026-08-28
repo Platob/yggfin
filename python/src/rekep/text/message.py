@@ -41,11 +41,21 @@ _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
 #: every entry the row carries, and the FIX stage would otherwise walk the same
 #: list again looking for facts it already has.
 #:
-#: `CheckSum <10>` is the one the standard declares that this stage cannot
-#: lift: it is the boundary every other lift is measured against -- a field is
-#: eligible only where it stands in front of it -- and a marker that lifted
-#: itself out could no longer say it was last. It stays an entry, and the FIX
-#: stage reads it from there like any other.
+#: Two of what the standard declares this stage cannot lift, and both stay
+#: entries for the FIX stage to read from there like any other field:
+#:
+#: `CheckSum <10>` is the boundary every other lift is measured against -- a
+#: field is eligible only where it stands in front of it -- and a marker that
+#: lifted itself out could no longer say it was last.
+#:
+#: `XmlData <213>` is a message more often than it is a document: real bridge
+#: traffic writes `key=value` pairs in it, and `FixCodec.into_payload_pairs`
+#: expands those in the place the tag sat. That expansion reads the tag out of
+#: the fields the row still carries, so lifting it here would leave a nested
+#: order unread and its own column holding the whole payload as bytes.
+#: `XmlDataLen <212>` leaves with it: a length says where the value after it
+#: ends, so the two are one token and lifting only the length would separate
+#: them the next time the row is written out.
 #:
 #: Which fields, and which tag each answers to, are the FIX stage's own
 #: declaration read once here rather than copied: `fix.columns` selects the
@@ -57,10 +67,14 @@ _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
 #: Read at import and never per message. This stage still interprets nothing:
 #: a lift is a tag standing before the checksum, and the value it lands is the
 #: text the payload spelled.
+#: What the standard declares but this stage leaves in `entries`, and why is
+#: above. Named rather than tagged, because the reason is about the field.
+_UNLIFTED: frozenset[str] = frozenset({"CheckSum", "XmlDataLen", "XmlData"})
+
 SESSION_NAMES: tuple[tuple[str, str], ...] = tuple(
     (DECLARATIONS[tag].fix.canonical, str(tag))
     for tag, _ in SESSION
-    if DECLARATIONS[tag].fix.canonical != "CheckSum"
+    if DECLARATIONS[tag].fix.canonical not in _UNLIFTED
 )
 
 #: The same, as the columns carry them: folded, beside the tag. A column is
@@ -239,12 +253,6 @@ class Message(Event):
 
     messageencoding: Annotated[str | None, _session("MessageEncoding")] = None
     """Encoding the payload declares for its `Encoded*` fields."""
-
-    xmldatalen: Annotated[str | None, _session("XmlDataLen")] = None
-    """Declared length of `xmldata`, kept as the text in front of it."""
-
-    xmldata: Annotated[str | None, _session("XmlData")] = None
-    """XML block the payload carried, taken by the length in front of it."""
 
     securedatalen: Annotated[str | None, _session("SecureDataLen")] = None
     """Declared length of `securedata`, kept as the text in front of it."""

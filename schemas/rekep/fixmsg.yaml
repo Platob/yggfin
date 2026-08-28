@@ -257,16 +257,6 @@ fields:
   nullable: true
   description: Type of message encoding (non-ASCII (non-English) characters) used in a message’s "Encoded" fields.
   fix: {tag: '347', type: String, values: '[{"value":"EUC-JP","meaning":"","aliases":["EUCJP"]},{"value":"ISO-2022-JP","meaning":"","aliases":["ISO2022_JP"]},{"value":"Shift_JIS","meaning":"","aliases":["SHIFT_JIS"]},{"value":"UTF-8","meaning":"","aliases":["UTF8"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: MessageEncoding, version: 5.0.SP2, display: MessageEncoding}
-- name: xmldatalen
-  type: int64
-  nullable: true
-  description: Length of the XmlData <213> data block.
-  fix: {tag: '212', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlDataLen, version: 5.0.SP2, display: XmlDataLen}
-- name: xmldata
-  type: binary
-  nullable: true
-  description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
-  fix: {tag: '213', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlData, version: 5.0.SP2, display: XmlData}
 - name: securedatalen
   type: int64
   nullable: true
@@ -455,6 +445,16 @@ fields:
   nullable: true
   description: 'Three byte, simple checksum (see FIXT.1.1: "CheckSum Calculation" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)'
   fix: {tag: '10', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: CheckSum, version: 5.0.SP2, display: CheckSum}
+- name: xmldatalen
+  type: int64
+  nullable: true
+  description: Length of the XmlData <213> data block.
+  fix: {tag: '212', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlDataLen, version: 5.0.SP2, display: XmlDataLen}
+- name: xmldata
+  type: binary
+  nullable: true
+  description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
+  fix: {tag: '213', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlData, version: 5.0.SP2, display: XmlData}
 - name: symbol
   type: string
   nullable: true

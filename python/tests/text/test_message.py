@@ -43,8 +43,6 @@ LIFTED_HEADER = {
     "cstmapplverid": "1129",
     "applextid": "1156",
     "messageencoding": "347",
-    "xmldatalen": "212",
-    "xmldata": "213",
     "securedatalen": "90",
     "securedata": "91",
     "signaturelength": "93",

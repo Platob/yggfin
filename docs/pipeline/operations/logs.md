@@ -65,7 +65,7 @@ payload.
 Eleven rows through `parse_messages`, at `INFO`:
 
 ```text
-INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 33 columns, partitioned by {'unixpartition': 'identity'}
+INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 56 columns, partitioned by {'unixpartition': 'identity'}
 INFO rekep.iceberg.dataset logs.messages wrote branch=main snapshot=2257423558696136046 in 97ms
 ```
 
@@ -73,7 +73,7 @@ Two records, because two things finished. The same run at `DEBUG` adds the
 cast and the staged file:
 
 ```text
-DEBUG rekep.fields.field casting a stream onto Message: 33 columns
+DEBUG rekep.fields.field casting a stream onto Message: 56 columns
 DEBUG rekep.iceberg.dataset staged 11 rows to file://data/warehouse/logs/messages/data/unixpartition=1786658400/…
 ```
 

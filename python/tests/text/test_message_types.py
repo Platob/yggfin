@@ -44,8 +44,6 @@ SESSION_COLUMNS = (
     "cstmapplverid",
     "applextid",
     "messageencoding",
-    "xmldatalen",
-    "xmldata",
     "securedatalen",
     "securedata",
     "signaturelength",
