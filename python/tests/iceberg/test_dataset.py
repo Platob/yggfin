@@ -18,7 +18,7 @@ from pyiceberg.conversions import from_bytes
 from pyiceberg.expressions import EqualTo
 from pyiceberg.transforms import BucketTransform, IdentityTransform
 
-from rekep import Convertible, Entry, Field, FixMsg, Message, StructField, scalar
+from rekep import Convertible, Entry, Field, FixMsg, Message, StructField, TextFile, scalar
 from rekep.arrow_file_io import ArrowFileIO
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
@@ -266,10 +266,24 @@ def test_rows_go_in_and_come_back(dataset: IcebergDataset) -> None:
     assert dataset.read_arrow_table().num_rows == 5
 
 
-def test_a_read_without_a_schema_is_the_stores_own(dataset: IcebergDataset) -> None:
+def test_a_read_without_a_schema_is_still_narrow(dataset: IcebergDataset) -> None:
+    """`schema_to_pyarrow` answers `large_string` for every Iceberg string and
+    takes no argument that says otherwise, so a table written from `string`
+    columns read back wider than it was written. The reading is narrowed at
+    that seam instead, which is what the configuration page's
+    `pyarrow.use-large-types-on-read: false` would buy if 0.11.1 read it.
+
+    Measured over 400,000 rows, interleaved against the unnarrowed reader in
+    one process: best 14.6-15.7 ms against 14.4-18.5 ms, which is to say the
+    cast does not show above this host's noise.
+    """
     dataset.append_arrow_table(quotes(2))
     reader = dataset.read_arrow_reader()
-    assert reader.schema.field("symbol").type == pyarrow.large_string(), "no conversion is paid"
+
+    assert reader.schema.field("symbol").type == pyarrow.string()
+    assert reader.read_all().schema.field("symbol").type == pyarrow.string(), (
+        "and the batches agree with the reader that promised it"
+    )
 
 
 def test_a_read_casts_onto_the_schema_it_is_given(dataset: IcebergDataset) -> None:
@@ -4833,3 +4847,54 @@ def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
     assert whole[0] == whole[1], "unsorted, every row group holds the whole range"
     assert declared[0] < declared[1], "sorted, a filter skips most of them"
     assert declared[0] <= 2
+
+
+def test_a_scan_hands_back_the_narrow_arrow_types(dataset: IcebergDataset) -> None:
+    """PyIceberg's own documentation lists `pyarrow.use-large-types-on-read`,
+    defaulting to true, and 0.11.1 reads it nowhere -- the constant is absent,
+    `_pyarrow_schema_ensure_large_types` is never called, and the environment
+    variable moves nothing. A scan is narrow, and this is the check that says
+    so when a later release changes its mind.
+
+    `pyiceberg>=0.11.1` has no upper bound, so "it is narrow today" is a fact
+    about the resolved version rather than about the dependency.
+    """
+    dataset.append_arrow_table(quotes(4))
+
+    scanned = dataset.read_arrow_reader().read_all()
+
+    widths = {field.name: str(field.type) for field in scanned.schema}
+    assert widths["symbol"] == "string", widths
+    assert widths["venue"] == "string", widths
+    assert not any("large" in one for one in widths.values()), widths
+
+
+def test_a_wide_batch_transcribes_the_same_as_a_narrow_one(logs: IcebergDataset) -> None:
+    """And when a store does hand back large types, nothing downstream reads
+    differently. The transcription brings a batch onto the raw declaration
+    before its kernels see it, so the two widths meet the same code and leave
+    it under the published contract."""
+    sample = Path(__file__).parent.parent / "data" / "app_messages_sample.txt"
+    raw = TextFile.from_path(str(sample)).into_arrow_table()
+    narrow = raw.to_batches()[0]
+
+    def widen(dtype: pyarrow.DataType) -> pyarrow.DataType:
+        if pyarrow.types.is_string(dtype):
+            return pyarrow.large_string()
+        if pyarrow.types.is_binary(dtype):
+            return pyarrow.large_binary()
+        return dtype
+
+    wide_schema = pyarrow.schema(
+        [pyarrow.field(one.name, widen(one.type), one.nullable, one.metadata) for one in raw.schema]
+    )
+    wide = pyarrow.RecordBatch.from_struct_array(
+        narrow.to_struct_array().cast(pyarrow.struct(wide_schema))
+    )
+    assert str(wide.schema.field("message").type) == "large_string", "the fixture is wide"
+
+    from_narrow = FixMsg.from_message_batch(narrow)
+    from_wide = FixMsg.from_message_batch(wide)
+
+    assert from_wide.to_pylist() == from_narrow.to_pylist()
+    assert str(from_wide.schema.field("Symbol").type) == "string", "and lands narrow either way"

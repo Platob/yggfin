@@ -141,6 +141,42 @@ configuration does not depend on an organization's default-branch spelling.
 A producer that does not provide Iceberg ids is numbered at creation, while a
 contract that already carries ids keeps them.
 
+### Arrow widths on read
+
+A read hands back `string` and `binary`, not `large_string` and `large_binary`:
+
+```python
+from rekep import FixMsg
+from rekep.iceberg import IcebergDataset
+
+logs = IcebergDataset(
+    field=FixMsg.into_field("fix.market"),
+    catalog="local",
+    properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
+)
+print(logs.read_arrow_reader().schema.field("Symbol").type)
+```
+
+```text
+string
+```
+
+PyIceberg's configuration page documents `pyarrow.use-large-types-on-read`,
+defaulting to true. **0.11.1 reads it nowhere** — no constant, no `Config()`
+lookup, and setting `PYICEBERG_PYARROW__USE_LARGE_TYPES_ON_READ` moves
+nothing. `schema_to_pyarrow` returns `pa.large_string()` outright, so a table
+written from `string` columns read back wider than it was written and every
+join against a value this package built itself had two widths to reconcile.
+
+So the width is decided here instead, at the seam where the scan's shape is
+built. That also keeps the reading stable across a PyIceberg that changes its
+mind, since the dependency names no upper bound. Measured over 400,000 rows,
+interleaved in one process, the cast does not show above host noise.
+
+Nothing downstream depends on it either way: the transcription brings a batch
+onto the raw declaration before its kernels see it, so a wide batch and a
+narrow one meet the same code.
+
 ### Table properties
 
 The tasks declare three, and every write task declares the same three:

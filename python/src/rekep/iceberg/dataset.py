@@ -1946,7 +1946,9 @@ def _ordered_reader(
     from pyiceberg.conversions import from_bytes
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
-    target = schema_to_pyarrow(scan.projection())
+    from rekep.iceberg.fields import narrowed
+
+    target = narrowed(schema_to_pyarrow(scan.projection()))
     primary, primary_direction = columns[0]
     field = scan.projection().find_field(primary)
     floating_primary = pyarrow.types.is_floating(target.field(primary).type)
@@ -2265,7 +2267,9 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
     """Read bounded task groups under one global scan limit."""
     from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
 
-    target = schema_to_pyarrow(scan.projection())
+    from rekep.iceberg.fields import narrowed
+
+    target = narrowed(schema_to_pyarrow(scan.projection()))
 
     def arrow(limit: int | None) -> Any:
         return ArrowScan(
@@ -2287,7 +2291,7 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
             )
             try:
                 for batch in batches:
-                    yield batch
+                    yield batch if batch.schema.equals(target) else _narrow_batch(batch, target)
                     taken += batch.num_rows
             finally:
                 close = getattr(batches, "close", None)
@@ -2297,6 +2301,19 @@ def _scan_reader(scan: Any, groups: Iterable[Sequence[Any]]) -> pyarrow.RecordBa
                 return
 
     return OwnedRecordBatchReader(target, generate(), lambda: None)
+
+
+def _narrow_batch(batch: pyarrow.RecordBatch, target: pyarrow.Schema) -> pyarrow.RecordBatch:
+    """One batch under the reader's declared width.
+
+    A reader promises a schema and a consumer is entitled to it, so the cast
+    happens whether or not the store agreed: pyiceberg decodes to
+    `large_string` and the declared shape says `string`, and a batch that
+    disagreed with its own reader is what a downstream `concat` refuses.
+    """
+    return pyarrow.RecordBatch.from_struct_array(
+        batch.to_struct_array().cast(pyarrow.struct(list(target)))
+    )
 
 
 def _task_batches(scan: Any, io: Any, tasks: Sequence[Any]) -> Iterator[pyarrow.RecordBatch]:

@@ -145,7 +145,7 @@ def iceberg_struct_field(
     require("pyiceberg", "iceberg")
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
-    arrow = _described(schema_to_pyarrow(schema, include_field_ids=True))
+    arrow = _described(narrowed(schema_to_pyarrow(schema, include_field_ids=True)))
     field = Field.from_arrow_schema(arrow, name)
     for field_id in schema.identifier_field_ids:
         column = schema.find_column_name(field_id)
@@ -222,6 +222,47 @@ def _document(field: pyarrow.Field) -> pyarrow.Field:
     return pyarrow.field(
         field.name, _document_type(field.type), nullable=field.nullable, metadata=metadata
     )
+
+
+def narrowed(schema: pyarrow.Schema) -> pyarrow.Schema:
+    """A scan's shape with Arrow's 32-bit offsets rather than its 64-bit ones.
+
+    `schema_to_pyarrow` answers `large_string` and `large_binary` for every
+    Iceberg string and binary, with nothing to ask it otherwise:
+    `_ConvertToArrowSchema` returns them outright, and the
+    `pyarrow.use-large-types-on-read` the configuration page documents is read
+    nowhere in 0.11.1. So a table written from `string` columns read back as
+    `large_string`, and every join against a value this package built itself
+    needed the two widths reconciled somewhere.
+
+    Reconciled here, once, at the seam where the width is chosen -- which is
+    also what makes the reading stable across a pyiceberg that changes its
+    mind, since `pyiceberg>=0.11.1` names no upper bound.
+    """
+    return pyarrow.schema([_narrow(field) for field in schema], metadata=schema.metadata)
+
+
+def _narrow(field: pyarrow.Field) -> pyarrow.Field:
+    return pyarrow.field(
+        field.name, _narrow_type(field.type), nullable=field.nullable, metadata=field.metadata
+    )
+
+
+def _narrow_type(dtype: pyarrow.DataType) -> pyarrow.DataType:
+    kinds = pyarrow.types
+    if kinds.is_large_string(dtype):
+        return pyarrow.string()
+    if kinds.is_large_binary(dtype):
+        return pyarrow.binary()
+    if kinds.is_struct(dtype):
+        return pyarrow.struct([_narrow(dtype.field(index)) for index in range(dtype.num_fields)])
+    if kinds.is_large_list(dtype):
+        return pyarrow.list_(_narrow(dtype.field(0)))
+    if kinds.is_list(dtype):
+        return pyarrow.list_(_narrow(dtype.field(0)))
+    if kinds.is_map(dtype):
+        return pyarrow.map_(_narrow(dtype.key_field), _narrow(dtype.item_field))
+    return dtype
 
 
 def _document_type(dtype: pyarrow.DataType) -> pyarrow.DataType:
