@@ -195,6 +195,12 @@ Everything derived from the location follows that reading: the Arrow
 and `s3.region` a catalog is configured with, the FileIO cache identity, and
 the spill identity.
 
+A location this package writes into table metadata is canonical -- scheme,
+bucket and key, with the endpoint and credentials moved onto the catalog. One
+that is *not* -- written by another tool, or before those settings moved --
+still reaches the store it names: the FileIO builds a filesystem from the
+location, and the catalog fills what the location leaves unsaid.
+
 ### Settings a location carries
 
 | query key | Arrow argument | catalog property |

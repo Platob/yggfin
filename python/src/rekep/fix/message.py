@@ -83,6 +83,7 @@ DATA_TAG_TOKEN = (
     + r")[ \t\r\n\f\x0b]*="
 )
 
+#: The same probe compiled, for the scalar reading of one payload.
 _DATA_TAG_KEY = re.compile(DATA_TAG_TOKEN.replace(r"(?s)", "", 1), re.DOTALL)
 
 #: A top-level numeric MsgType token is enough to identify FIX even when a

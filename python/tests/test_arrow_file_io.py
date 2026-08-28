@@ -248,6 +248,39 @@ def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
     assert settings["access_key"] == "key"
 
 
+def test_a_location_that_names_its_own_store_reaches_that_store() -> None:
+    """`parse_location` hands PyIceberg the bucket as the netloc, so an endpoint
+    or credentials written into the location would be discarded and the file
+    opened against a default AWS filesystem. A table another tool wrote records
+    exactly such a location."""
+    io = ArrowFileIO({})
+    described = io.new_input("s3://key:secret@minio:9000/wh/db/t/metadata/x.avro")
+    settings = described._inner._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "http://minio:9000"
+    assert settings["access_key"] == "key"
+    # One filesystem per store, not one per file.
+    again = io.new_input("s3://key:secret@minio:9000/wh/db/t/metadata/y.avro")
+    assert again._inner._filesystem is described._inner._filesystem
+
+
+def test_the_catalog_fills_what_such_a_location_leaves_unsaid() -> None:
+    """It names the store; the credentials stay where a deployment put them."""
+    io = ArrowFileIO({"s3.access-key-id": "ck", "s3.secret-access-key": "cs"})
+    settings = io.new_input("s3://s3.example.net/wh/t.parquet")._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "https://s3.example.net"
+    assert settings["access_key"] == "ck"
+
+
+def test_a_plain_bucket_location_still_takes_the_catalog_s_own_filesystem() -> None:
+    """Nothing in it describes a store, so there is nothing to build from."""
+    io = ArrowFileIO({"s3.endpoint": "http://minio:9000"})
+    settings = io.new_input("s3://bucket/wh/t.parquet")._filesystem.__reduce__()[1][0]
+
+    assert settings["endpoint_override"] == "http://minio:9000"
+
+
 # -- staged uploads ---------------------------------------------------------
 
 

@@ -504,6 +504,9 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
                 self._content_cache = None
             else:
                 CONTENT_CACHE.resize(int(budget))
+        #: One filesystem per store a location described, so a sweep over a
+        #: table's files does not rebuild one per file.
+        self._described: dict[str, pyarrow.fs.FileSystem] = {}
         ArrowFile.__init__(
             self,
             location=location,
@@ -558,15 +561,50 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         region = str(self.properties.get("s3.region", ""))
         return "\0".join(("s3", endpoint, access_key, region, url.bucket, url.key))
 
+    def _described_filesystem(self, location: str) -> pyarrow.fs.FileSystem | None:
+        """The store a location names itself, when it names one.
+
+        `parse_location` hands PyIceberg the *bucket* as the netloc, so an
+        endpoint, a port or credentials written into the location would be
+        discarded and the file opened against a default AWS filesystem. A table
+        this package wrote carries a canonical location and never comes here;
+        one written by another tool, or before those settings moved onto the
+        catalog, can -- and reading it has to reach the store it names.
+
+        The catalog fills what the location leaves unsaid, and the location
+        wins where they disagree.
+        """
+        url = Url.from_string(location)
+        if url.scheme not in S3 or (url.endpoint is None and url.user is None):
+            return None
+        key = self.content_identity(location).rsplit("\0", 1)[0]
+        filesystem = self._described.get(key)
+        if filesystem is None:
+            described = PyArrowFileIO({**self.properties, **properties_of(url)})
+            filesystem = described.fs_by_scheme(url.scheme, url.bucket)
+            self._described[key] = filesystem
+        return filesystem
+
+    def _described_file(self, location: str) -> PyArrowFile | None:
+        """That store's own handle on the location, or None where it has none."""
+        filesystem = self._described_filesystem(location)
+        if filesystem is None:
+            return None
+        return PyArrowFile(fs=filesystem, location=location, path=self.parse_location(location)[2])
+
     def new_input(self, location: str) -> InputFile:
-        inner = super().new_input(location)
+        # `is None`, not `or`: an input file's truthiness is its length, and
+        # asking for that is a HEAD request against the store.
+        described = self._described_file(location)
+        inner = super().new_input(location) if described is None else described
         if self._content_cache is None or not _immutable(location):
             return inner
         return CachedInputFile(inner, self._content_cache, self.content_identity(location))
 
     def new_output(self, location: str) -> OutputFile:
         _record_output(location)
-        inner = super().new_output(location)
+        described = self._described_file(location)
+        inner = super().new_output(location) if described is None else described
         if self._content_cache is None or not _immutable(location):
             return inner
         return CachedOutputFile(inner, self._content_cache, self.content_identity(location))
@@ -614,4 +652,8 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         # cached copy of a file the caller wants gone is the copy that lies.
         name = location.location if isinstance(location, (InputFile, OutputFile)) else location
         CONTENT_CACHE.evict(self.content_identity(name))
-        super().delete(location)
+        filesystem = self._described_filesystem(name)
+        if filesystem is None:
+            super().delete(location)
+            return
+        filesystem.delete_file(self.parse_location(name)[2])
