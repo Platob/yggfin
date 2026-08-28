@@ -12,7 +12,7 @@ message.get(35).raw  # 'D'
 message.get(55).raw  # 'IBM'
 message.into_fix_pairs()  # ordered entries
 
-registry = FixRegistry(offline=True)
+registry = FixRegistry(cache_dir="data/fix", offline=True)
 registry.field("OrigClOrdID", "4.4")
 ```
 
