@@ -42,9 +42,37 @@ YAML and JSON use the same document model; the extension selects the codec.
 The document maps are restored to Arrow's collision-safe `iceberg:*`, `fix:*`,
 and `enum:*` metadata keys when loaded.
 
-Promoted FIX columns use the registry's spelling directly, for example
-`OrigClOrdID` with `fix: { name: OrigClOrdID }`. Protocol-neutral and analytical
-columns retain their own lower-case names.
+## Names
+
+Every column in every contract is **folded**: lowercase, with everything that
+is not a letter or a digit dropped. `OrigClOrdID` is `origclordid`,
+`SourceURL` is `sourceurl`, `bid_levels` is `bidlevels`. One name serves as
+the Arrow column, the Python attribute and the stored document's, so a grep
+for a column reaches its declaration, its parser and its test.
+
+The fold is also how a name is *matched*: a spelling is looked up by what it
+folds to, which is what makes `MsgType`, `msgtype` and `MSGTYPE` one field
+against the FIX registry rather than three.
+
+What the fold throws away is kept, not lost. Every column carries
+`fix: { display: ... }` — the name a reader is shown. A FIX column displays
+the dictionary's own spelling (`OrigClOrdID`); every other column displays
+title case with acronyms preserved (`sourceurl` → `Source URL`, `altids` →
+`Alt IDs`, `mic` → `MIC`).
+
+```python
+from rekep import Field
+
+order = Field.from_yaml("schemas/rekep/order.yaml")
+for name in ("clientorderid", "px", "unixpartition"):
+    print(f"{name:16} {order.field(name).fix.display}")
+```
+
+```text
+clientorderid    ClOrdID
+px               Price
+unixpartition    Unix Partition
+```
 
 ## Evolution
 
@@ -68,7 +96,7 @@ The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is
 refused over it. What a reader actually depends on is the columns, and
 `parse_fix` says so directly -- it refuses a source missing `MsgType`,
-`entries` or `protocol_code` rather than reporting an empty successful run.
+`entries` or `protocolcode` rather than reporting an empty successful run.
 
 ## Publishing
 

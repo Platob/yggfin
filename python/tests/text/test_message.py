@@ -7,6 +7,7 @@ import pyarrow
 import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile
 from rekep.enums import EventType
+from rekep.fields import DISPLAY
 from rekep.market import Event, hash_bytes
 from rekep.market.identity import hash_int_of
 
@@ -16,13 +17,13 @@ from rekep.market.identity import hash_int_of
 #: a field quietly leaving that tuple cannot move both sides of an assertion
 #: together.
 LIFTED_HEADER = {
-    "BeginString": "8",
-    "BodyLength": "9",
-    "MsgType": "35",
-    "MsgSeqNum": "34",
-    "SenderCompID": "49",
-    "TargetCompID": "56",
-    "SendingTime": "52",
+    "beginstring": "8",
+    "bodylength": "9",
+    "msgtype": "35",
+    "msgseqnum": "34",
+    "sendercompid": "49",
+    "targetcompid": "56",
+    "sendingtime": "52",
 }
 
 #: `CheckSum <10>` is the boundary every lift is measured against -- a field is
@@ -35,12 +36,12 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
     assert issubclass(Message, Event)
     assert Message.into_field().names == [
         *Event.into_field().names,
-        "source_url",
-        "source_rownum",
-        "thread_name",
-        "plugin_code",
+        "sourceurl",
+        "sourcerownum",
+        "threadname",
+        "plugincode",
         "message",
-        "protocol_code",
+        "protocolcode",
         *LIFTED_HEADER,
         "entries",
         "direction",
@@ -51,13 +52,15 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
     )
     # Protocol-neutral columns: this stage reads no numbers and names no zone,
     # so each of the seven keeps the text the payload spelled, and none of them
-    # carries the `fix:` metadata a dictionary-typed column would.
+    # carries the `fix:` metadata a dictionary-typed column would -- beyond the
+    # display every column carries, which says what it is called, not how it
+    # reads.
     for name in LIFTED_HEADER:
         field = Message.into_field().field(name)
         assert field.dtype == pyarrow.string(), name
         assert field.nullable is True, name
     assert all(
-        not any(key.startswith("fix:") for key in field.metadata)
+        not any(key.startswith("fix:") for key in field.metadata if key != DISPLAY)
         for field in Message.into_field().fields
     )
 
@@ -186,8 +189,8 @@ def test_a_payload_parses_scalar_like_the_column_path() -> None:
     staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", runix=7)
     column = Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01")
 
-    assert staged.MsgType == column.MsgType == "D"
-    assert staged.BeginString == column.BeginString == "FIX.4.4"
+    assert staged.msgtype == column.msgtype == "D"
+    assert staged.beginstring == column.beginstring == "FIX.4.4"
     assert staged.runix == 7
     assert staged.message == ""
     # `8` and `35` are standard header and leave for columns of their own; `11`
@@ -209,7 +212,7 @@ def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> N
         ]
     )
 
-    assert message.MsgType == "D"
+    assert message.msgtype == "D"
     assert [(entry.key, entry.value) for entry in message.entries] == [
         ("Symbol", "IBM"),
         ("msg_type", "not-the-fix-name"),
@@ -217,9 +220,9 @@ def test_a_message_promotes_the_first_message_type_and_removes_every_copy() -> N
 
 
 def test_an_explicit_message_type_still_strips_it_from_generic_arguments() -> None:
-    message = Message(MsgType="8", entries=[("MsgType", "D"), ("Text", "kept")])
+    message = Message(msgtype="8", entries=[("MsgType", "D"), ("Text", "kept")])
 
-    assert message.MsgType == "8"
+    assert message.msgtype == "8"
     assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
 
 
@@ -227,7 +230,7 @@ def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_argument
     message = Message(message="a very long diagnostic with A=1 inside it")
 
     assert message.etype is EventType.MISC
-    assert message.MsgType is None
+    assert message.msgtype is None
     assert message.entries == []
 
 
@@ -244,15 +247,15 @@ def test_a_piped_message_without_a_discriminator_keeps_generic_arguments() -> No
 def test_an_explicit_empty_argument_list_is_authoritative() -> None:
     message = Message(message="35=D|Text=not-parsed|", entries=[])
 
-    assert message.MsgType is None
+    assert message.msgtype is None
     assert message.entries == []
 
 
 def test_a_user_wrapper_promotes_its_named_message_kind() -> None:
     message = Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
-    assert message.MsgType == "D"
-    assert message.BeginString == "FIX.4.4"
+    assert message.msgtype == "D"
+    assert message.beginstring == "FIX.4.4"
     # Both spellings of the discriminator leave together: the wrapper `35=UL`
     # is what the rendered name was read to correct, so neither is left behind
     # to be read again.
@@ -263,9 +266,9 @@ def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> Non
     lower = Message(entries=[("35", "uL"), ("MsgType", "D")])
     after_checksum = Message(entries=[("10", "000"), ("35", "D")])
 
-    assert lower.MsgType == "uL"
+    assert lower.msgtype == "uL"
     assert lower.entries == []
-    assert after_checksum.MsgType is None
+    assert after_checksum.msgtype is None
     assert [(entry.key, entry.value) for entry in after_checksum.entries] == [
         ("10", "000"),
         ("35", "D"),
@@ -284,13 +287,13 @@ def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
     )
 
     assert {name: getattr(message, name) for name in LIFTED_HEADER} == {
-        "BeginString": "FIX.4.4",
-        "BodyLength": "176",
-        "MsgType": "D",
-        "MsgSeqNum": "1092",
-        "SenderCompID": "BUYSIDE",
-        "TargetCompID": "XPAR",
-        "SendingTime": "20260814-09:30:00.000",
+        "beginstring": "FIX.4.4",
+        "bodylength": "176",
+        "msgtype": "D",
+        "msgseqnum": "1092",
+        "sendercompid": "BUYSIDE",
+        "targetcompid": "XPAR",
+        "sendingtime": "20260814-09:30:00.000",
     }
     assert [(entry.key, entry.value) for entry in message.entries] == [
         ("55", "IBM"),
@@ -308,7 +311,7 @@ def test_a_header_field_stated_twice_two_ways_is_lifted_by_neither() -> None:
     """
     torn = Message(message="8=FIX.4.4|49=A|49=B|55=IBM|10=000")
 
-    assert torn.SenderCompID is None
+    assert torn.sendercompid is None
     assert [(entry.key, entry.value) for entry in torn.entries] == [
         ("49", "A"),
         ("49", "B"),
@@ -318,18 +321,18 @@ def test_a_header_field_stated_twice_two_ways_is_lifted_by_neither() -> None:
 
     repeated = Message(message="8=FIX.4.4|49=A|49=A|55=IBM|10=000")
 
-    assert repeated.SenderCompID == "A", "one fact stated twice is still stated once"
+    assert repeated.sendercompid == "A", "one fact stated twice is still stated once"
     assert [(entry.key, entry.value) for entry in repeated.entries] == [
         ("55", "IBM"),
         ("10", "000"),
     ], "and every occurrence of it leaves"
-    assert repeated.BeginString == torn.BeginString == "FIX.4.4", (
+    assert repeated.beginstring == torn.beginstring == "FIX.4.4", (
         "one torn field is not the six beside it"
     )
 
     scalar = Message.from_text("8=FIX.4.4|49=A|49=B|55=IBM|10=000")
 
-    assert scalar.SenderCompID is None
+    assert scalar.sendercompid is None
     assert [(entry.key, entry.value) for entry in scalar.entries] == [
         (entry.key, entry.value) for entry in torn.entries
     ], "the rule is the tokenizer's, not the column kernel's"
@@ -340,14 +343,14 @@ def test_the_header_lift_stops_at_the_checksum() -> None:
     tagged = Message(entries=[("8", "FIX.4.4"), ("10", "000"), ("49", "AFTER"), ("52", "LATE")])
     rendered = Message(entries=[("CheckSum", "000"), ("52", "LATE")])
 
-    assert tagged.BeginString == "FIX.4.4"
-    assert (tagged.SenderCompID, tagged.SendingTime) == (None, None)
+    assert tagged.beginstring == "FIX.4.4"
+    assert (tagged.sendercompid, tagged.sendingtime) == (None, None)
     assert [(entry.key, entry.value) for entry in tagged.entries] == [
         ("10", "000"),
         ("49", "AFTER"),
         ("52", "LATE"),
     ], "the trailer stays, and so does everything the row wrote behind it"
-    assert rendered.SendingTime is None
+    assert rendered.sendingtime is None
     assert [(entry.key, entry.value) for entry in rendered.entries] == [
         ("CheckSum", "000"),
         ("52", "LATE"),
@@ -358,8 +361,8 @@ def test_only_the_discriminator_value_is_constrained_to_letters_and_digits() -> 
     """The standard constrains `MsgType` alone; the rest carry punctuation."""
     message = Message(entries=[("8", "FIX.4.4"), ("35", "D-1"), ("52", "20260814-09:30:00.000")])
 
-    assert message.MsgType is None
-    assert (message.BeginString, message.SendingTime) == (
+    assert message.msgtype is None
+    assert (message.beginstring, message.sendingtime) == (
         "FIX.4.4",
         "20260814-09:30:00.000",
     )
@@ -377,8 +380,8 @@ def test_only_the_discriminator_answers_to_a_rendered_name() -> None:
         message="#BeginString=FIX.4.4|#SendingTime=20260814-09:30:00.000|#MsgType=D|#Side=1"
     )
 
-    assert message.MsgType == "D"
-    assert (message.BeginString, message.SendingTime) == (None, None)
+    assert message.msgtype == "D"
+    assert (message.beginstring, message.sendingtime) == (None, None)
     assert [(entry.key, entry.value) for entry in message.entries] == [
         ("BeginString", "FIX.4.4"),
         ("SendingTime", "20260814-09:30:00.000"),
@@ -389,9 +392,9 @@ def test_only_the_discriminator_answers_to_a_rendered_name() -> None:
 def test_an_explicit_header_column_still_strips_its_entry() -> None:
     """What a caller declares stands, and the payload's own copy still leaves --
     the same rule the discriminator has always followed."""
-    message = Message(BeginString="FIX.4.2", entries=[("8", "FIX.4.4"), ("Text", "kept")])
+    message = Message(beginstring="FIX.4.2", entries=[("8", "FIX.4.4"), ("Text", "kept")])
 
-    assert message.BeginString == "FIX.4.2"
+    assert message.beginstring == "FIX.4.2"
     assert [(entry.key, entry.value) for entry in message.entries] == [("Text", "kept")]
 
 
@@ -584,9 +587,9 @@ def test_generic_arguments_do_not_apply_fix_checksum_semantics() -> None:
 
 
 def test_raw_identity_depends_only_on_the_payload() -> None:
-    first = Message(message="same", source_url="one.log", source_rownum=2).identify()
-    copied = Message(message="same", source_url="two.log", source_rownum=9).identify()
-    changed = Message(message="different", source_url="one.log", source_rownum=2).identify()
+    first = Message(message="same", sourceurl="one.log", sourcerownum=2).identify()
+    copied = Message(message="same", sourceurl="two.log", sourcerownum=9).identify()
+    changed = Message(message="different", sourceurl="one.log", sourcerownum=2).identify()
 
     assert first.hash == copied.hash == first.xhash == hash_bytes(b"same")
     assert changed.hash != first.hash
@@ -635,8 +638,8 @@ def test_the_log_s_own_prose_does_not_decide_the_payload_s_separator() -> None:
 
     parsed = Message.parse_arrow(pyarrow.array([line]))
 
-    assert parsed["BeginString"][0].as_py() == "FIX.4.2"
-    assert parsed["MsgType"][0].as_py() == "D"
+    assert parsed["beginstring"][0].as_py() == "FIX.4.2"
+    assert parsed["msgtype"][0].as_py() == "D"
     assert [(entry["key"], entry["value"]) for entry in parsed["entries"][0].as_py()] == [
         ("55", "TTF"),
         ("10", "203"),
@@ -660,9 +663,9 @@ def test_the_raw_stage_reads_every_separator_the_fix_parsers_declare() -> None:
 
     parsed = Message.parse_arrow(pyarrow.array([line]))
 
-    assert parsed["protocol_code"][0].as_py() == "FIX"
-    assert parsed["MsgType"][0].as_py() == "D"
-    assert parsed["SenderCompID"][0].as_py() == "SEND"
+    assert parsed["protocolcode"][0].as_py() == "FIX"
+    assert parsed["msgtype"][0].as_py() == "D"
+    assert parsed["sendercompid"][0].as_py() == "SEND"
     assert Message.msg_types_arrow(pyarrow.array([line]))[0].as_py() == "D"
     assert [(entry["key"], entry["value"]) for entry in parsed["entries"][0].as_py()] == [
         ("55", "IBM"),
@@ -679,26 +682,26 @@ def test_a_begin_string_needs_no_dotted_version_to_be_fix() -> None:
     """
     parsed = Message.parse_arrow(pyarrow.array(["sending >> 8=FIX4|9=61|34=1|49=A|10=1"]))
 
-    assert parsed["protocol_code"][0].as_py() == "FIX"
+    assert parsed["protocolcode"][0].as_py() == "FIX"
     assert parsed["direction"][0].as_py() is True
-    assert parsed["BeginString"][0].as_py() == "FIX4"
+    assert parsed["beginstring"][0].as_py() == "FIX4"
 
 
 def test_prose_that_merely_contains_fix_is_not_a_message() -> None:
     """The BeginString value stops at a separator, and prose has none there."""
     parsed = Message.parse_arrow(pyarrow.array(["the 8=FIXTURE cost 12"]))
 
-    assert parsed["protocol_code"][0].as_py() == "OTHER"
+    assert parsed["protocolcode"][0].as_py() == "OTHER"
 
 
 def test_a_row_carrying_its_text_answers_the_syntax_columns_either_way() -> None:
     """Whoever tokenized its arguments -- `from_text` passes its own in."""
     line = "8=FIX.4.2|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|11=ORD-1|10=203"
 
-    assert Message.from_text(line, message=line).protocol_code == "FIX"
-    assert Message(message=line).protocol_code == "FIX"
+    assert Message.from_text(line, message=line).protocolcode == "FIX"
+    assert Message(message=line).protocolcode == "FIX"
     # Without the text there is nothing to read a syntax column off.
-    assert Message.from_text(line).protocol_code == "OTHER"
+    assert Message.from_text(line).protocolcode == "OTHER"
 
 
 def test_the_discriminator_agrees_with_itself_before_it_is_lifted() -> None:
@@ -717,18 +720,18 @@ def test_the_discriminator_agrees_with_itself_before_it_is_lifted() -> None:
         ("55", "A"),
         ("10", "001"),
     ]
-    assert Message.from_text(torn).MsgType is None
+    assert Message.from_text(torn).msgtype is None
     assert [(e.key, e.value) for e in Message.from_text(agreed).entries] == [
         ("55", "A"),
         ("10", "001"),
     ]
-    assert Message.from_text(agreed).MsgType == "D"
+    assert Message.from_text(agreed).msgtype == "D"
 
     # The column path keeps both readings too; its column then falls back to
     # the raw line's own first discriminator, which the scalar row has no text
     # to read.
     found = Message.parse_arrow(pyarrow.array([torn, agreed]))
-    assert found["MsgType"].to_pylist() == ["D", "D"]
+    assert found["msgtype"].to_pylist() == ["D", "D"]
     assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
         ["35", "35", "55", "10"],
         ["55", "10"],
@@ -739,5 +742,5 @@ def test_the_two_discriminator_spellings_still_have_their_own_rule() -> None:
     """A `U`-prefixed wire type defers to a rendered name beside it."""
     message = Message.from_text("8=FIX.4.4|35=U1|#MSGTYPE=D|55=A|10=1")
 
-    assert message.MsgType == "D"
+    assert message.msgtype == "D"
     assert [(entry.key, entry.value) for entry in message.entries] == [("55", "A"), ("10", "1")]

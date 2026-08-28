@@ -8,7 +8,7 @@ wins and the collapse is reported, which is the only judgement the shape asks
 for.
 
 The same shape holds fields FIX never numbered -- a bridge's rendered
-`AMON.ISINCODE`, a vendor's `TECH.CLIENTID` -- with no tag and `ANY_VERSION`
+`AMON.isincode`, a vendor's `TECH.CLIENTID` -- with no tag and `ANY_VERSION`
 for their version list. They are aliased and looked up exactly like numbered
 tags, rather than living in a second incompatible mapping.
 """
@@ -26,7 +26,7 @@ import pyarrow
 from rekep.convert import Convertible
 from rekep.entries import fold
 from rekep.enums import EventType, State
-from rekep.fields import Field
+from rekep.fields import Field, column_name
 from rekep.fields.metadata import (
     ANY_VERSION,
     Alias,
@@ -63,7 +63,7 @@ def name_of(text: str) -> str:
 def slug_of(name: str) -> str:
     """The file name one component is stored under: `Parties` -> `parties`.
 
-    Dots and case become underscores, so `AMON.ISINCODE` is `amon_isincode`
+    Dots and case become underscores, so `AMON.isincode` is `amon_isincode`
     and `NoPartyIDs` is `no_party_ids`. Two identities that slug alike are a
     collision the store refuses rather than one silently overwriting the other.
     """
@@ -74,20 +74,6 @@ def slug_of(name: str) -> str:
     if not slug:
         raise ValueError(f"{name!r} does not spell a FIX registry entry name")
     return slug
-
-
-#: Where a FIX name splits into words: an acronym before a capitalised word,
-#: and a lowercase or digit before a capital.
-_SNAKE_SPLIT = re.compile(r"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-z0-9])(?=[A-Z])", re.ASCII)
-
-
-def snake_of(name: str) -> str:
-    """FIX's canonical name as a public Arrow name: `NoPartyIDs` -> `no_party_ids`.
-
-    One rule for a lifted column and for a component member, so the flat column
-    and the nested one of the same field are spelled alike.
-    """
-    return _SNAKE_SPLIT.sub("_", re.sub(r"IDs$", "Ids", name)).lower()
 
 
 # -- a field record, which is a field ---------------------------------------
@@ -332,10 +318,14 @@ class ComponentRecord(Convertible):
             return None
         members = _component_fields(self.declaration, types or {}, components or {}, frozenset())
         return Field(
-            name=snake_of(self.name),
+            name=column_name(self.name),
             dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
             nullable=True,
-            metadata={"fix:component": self.name, "fix:version": version},
+            metadata={
+                "fix:component": self.name,
+                "fix:version": version,
+                "fix:display": self.name,
+            },
         )
 
     def paths(self) -> dict[str, tuple[str, ...]]:
@@ -432,17 +422,17 @@ def _component_fields(
             item = _component_fields(entry, types, components, seen)
             built.append(
                 Field(
-                    name=snake_of(member.name),
+                    name=column_name(member.name),
                     dtype=pyarrow.list_(
                         Field(
-                            name=snake_of(entry.name),
+                            name=column_name(entry.name),
                             dtype=pyarrow.struct([one.into_arrow_field() for one in item]),
                             nullable=False,
-                            metadata={"fix:name": entry.name},
+                            metadata={"fix:name": entry.name, "fix:display": entry.name},
                         ).into_arrow_field()
                     ),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name},
+                    metadata={"fix:name": member.name, "fix:display": member.name},
                 )
             )
         elif quickfix.is_reference(member):
@@ -454,10 +444,10 @@ def _component_fields(
         else:
             built.append(
                 Field(
-                    name=snake_of(member.name),
+                    name=column_name(member.name),
                     dtype=types.get(member.name) or pyarrow.string(),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name},
+                    metadata={"fix:name": member.name, "fix:display": member.name},
                 )
             )
     return built

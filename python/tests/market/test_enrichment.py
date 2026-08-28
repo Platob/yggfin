@@ -32,24 +32,24 @@ HEAD = "35=D|49=XCME|52=20260821-10:30:00.000|11=CL-1|60=20260821-10:30:00.000"
 def test_the_isin_is_read_from_the_identifier_the_instrument_leads_with() -> None:
     """`SecurityID <48>` under `SecurityIDSource <22>` of `4`."""
     found = instrument_of(f"{HEAD}|55=AAPL|48=US0378331005|22=4")
-    assert found.isin_code == "US0378331005"
+    assert found.isincode == "US0378331005"
 
 
 def test_the_isin_is_read_from_the_alternative_identifiers_too() -> None:
     """A venue uses whichever of the two places it prefers, and both are FIX."""
     found = instrument_of(f"{HEAD}|55=AAPL|48=037833100|22=1|454=1|455=US0378331005|456=4")
-    assert found.isin_code == "US0378331005"
-    assert found.security_id == "037833100", "and what it led with is still there"
+    assert found.isincode == "US0378331005"
+    assert found.securityid == "037833100", "and what it led with is still there"
 
 
 def test_an_identifier_in_no_scheme_is_not_an_isin() -> None:
-    assert instrument_of(f"{HEAD}|55=AAPL|48=US0378331005").isin_code is None
-    assert instrument_of(f"{HEAD}|55=AAPL|48=037833100|22=1").isin_code is None
+    assert instrument_of(f"{HEAD}|55=AAPL|48=US0378331005").isincode is None
+    assert instrument_of(f"{HEAD}|55=AAPL|48=037833100|22=1").isincode is None
 
 
 def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() -> None:
-    """Keyed by the name, because `alt_ids[ISIN_SCHEME]` is a question and
-    `alt_ids["4"]` is a lookup table away from being one.
+    """Keyed by the name, because `altids[ISIN_SCHEME]` is a question and
+    `altids["4"]` is a lookup table away from being one.
 
     The name is the dictionary's own symbol for the scheme, not a spelling
     this package chose: it used to compile twenty-two of them as an enum, and
@@ -58,7 +58,7 @@ def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() 
     found = instrument_of(
         f"{HEAD}|55=AAPL|454=3|455=US0378331005|456=4|455=037833100|456=1|455=AAPL.OQ|456=5"
     )
-    assert found.alt_ids == {
+    assert found.altids == {
         "ISIN_NUMBER": "US0378331005",
         "CUSIP": "037833100",
         "RIC_CODE": "AAPL.OQ",
@@ -68,12 +68,12 @@ def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() 
 def test_a_scheme_this_build_has_never_seen_keeps_the_character_it_came_as() -> None:
     """The only honest key left for it, and better than dropping the identifier."""
     found = instrument_of(f"{HEAD}|55=AAPL|454=1|455=whatever|456=Z")
-    assert found.alt_ids == {"Z": "whatever"}
+    assert found.altids == {"Z": "whatever"}
 
 
 def test_an_instrument_with_no_alternatives_carries_a_null_rather_than_an_empty_map() -> None:
     """Which says "none carried" where an empty map says "it sent an empty list"."""
-    assert instrument_of(f"{HEAD}|55=AAPL").alt_ids is None
+    assert instrument_of(f"{HEAD}|55=AAPL").altids is None
 
 
 def test_the_two_identifier_source_tags_share_one_enumeration() -> None:
@@ -202,7 +202,7 @@ def test_a_leg_is_read_with_the_same_rules_as_the_instrument_it_is_of() -> None:
     assert near.kind is AssetKind.FUTURE and near.multiplier == 50.0
     assert near.maturity == datetime.date(2026, 12, 1), "its month-year, read the same way"
     assert far.maturity == datetime.date(2027, 3, 20)
-    assert far.strike == 4500.0 and far.option_kind is OptionKind.CALL
+    assert far.strike == 4500.0 and far.optionkind is OptionKind.CALL
     assert near.currency is Currency.USD and near.exchange == "XCME"
 
 
@@ -212,7 +212,7 @@ def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> Non
     assert (
         near.xhash
         == Instrument(
-            symbol="ESZ6", exchange="XCME", security_id="US1234567890", security_id_source="4"
+            symbol="ESZ6", exchange="XCME", securityid="US1234567890", securityidsource="4"
         ).xhash
     )
 

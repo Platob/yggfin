@@ -168,21 +168,22 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     the contract cannot take the printed number quietly with it.
 
     `entries` is the one line the renderer has to spell out of a nested type,
-    and `CheckSum` pins registry-exact FIX naming, so together they cover the shape.
+    and `checksum` pins the folded spelling of a FIX name, so together they
+    cover the shape.
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
     assert len(FixMsg.into_field().names) == 114
     assert "FixMsg: 114 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
-    assert "unix_partition: int32  [partition identity]" in printed
+    assert "unixpartition: int32  [partition identity]" in printed
     assert (
         "entries: list<item: struct<tag: int32 not null, key: string not null, "
         "value: string not null, namespace: string, comp: string> not null>"
         "  [nullable]"
     ) in printed
-    assert "Parties: list<item: struct<PartyID: string" in printed
-    assert "CheckSum: string  [nullable]" in printed
+    assert "parties: list<item: struct<partyid: string" in printed
+    assert "checksum: string  [nullable]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 
 
@@ -311,7 +312,7 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
             "--description",
             "A vendor's own code.",
             "--column",
-            "fake_vendor_code",
+            "fakevendorcode",
             "--alias",
             "FAKEVENDORCODE",
         )
@@ -319,7 +320,7 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
     )
     entry = reopened(store).resolve("FAKE.VENDOR.CODE")
     assert record_kind(entry) == "namespace" and entry.fix.tag is None
-    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.column == "fakevendorcode"
     assert reopened(store).resolve("FAKEVENDORCODE").fix.canonical == "FAKE.VENDOR.CODE"
 
     assert (
@@ -365,7 +366,7 @@ def test_a_rendered_field_is_promoted_in_one_call(
             "--name",
             "FAKE.VENDOR.CODE",
             "--column",
-            "fake_vendor_code",
+            "fakevendorcode",
             "--description",
             "A vendor's own code.",
             "--alias",
@@ -375,7 +376,7 @@ def test_a_rendered_field_is_promoted_in_one_call(
     )
     entry = reopened(store).resolve("FAKE.VENDOR.CODE")
     assert record_kind(entry) == "namespace" and entry.fix.tag is None
-    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.column == "fakevendorcode"
     assert entry.fix.type == "String", "the datatype String goes without saying"
     assert reopened(store).resolve("FAKEVENDORCODE").fix.canonical == "FAKE.VENDOR.CODE"
 
@@ -394,7 +395,7 @@ def test_a_rendered_field_is_promoted_in_one_call(
         == 1
     ), "moving an assigned column is a conflict, not an update"
     assert "already lifted into" in capsys.readouterr().err
-    assert reopened(store).resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
+    assert reopened(store).resolve("FAKE.VENDOR.CODE").fix.column == "fakevendorcode"
 
 
 def test_promoting_a_standard_field_is_refused(store: Path, capsys: pytest.CaptureFixture) -> None:
@@ -408,7 +409,7 @@ def test_promoting_a_standard_field_is_refused(store: Path, capsys: pytest.Captu
             "--name",
             "FakeRole",
             "--column",
-            "fake_role",
+            "fakerole",
         )
         == 1
     )
@@ -631,7 +632,7 @@ def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: P
     )
     stored = reopened(store).resolve("FAKE.VENUE.CODE")
     assert stored.fix.enumerated == values_of({"A": "Alpha"})
-    assert stored.fix.column == "fake_venue_code"
+    assert stored.fix.column == "fakevenuecode"
 
 
 def test_registry_components_and_dump_are_scriptable(

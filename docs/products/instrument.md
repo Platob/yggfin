@@ -12,7 +12,7 @@ line = (
     "55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"
 )
 for row in Instrument.from_fixmsgs([FixMsg.from_text(line)]):
-    print(row.symbol, row.code, row.kind.name, row.currency.name, row.exchange, row.security_id)
+    print(row.symbol, row.code, row.kind.name, row.currency.name, row.exchange, row.securityid)
 ```
 
 ```text

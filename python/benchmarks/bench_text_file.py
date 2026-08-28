@@ -493,7 +493,7 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
     print(f"    {'implementation':>34} {'lines/s':>12}")
     indices = tuple(
         HEADER_PATTERN.groupindex[name]
-        for name in ("timestamp", "thread_name", "plugin_code", "message")
+        for name in ("timestamp", "threadname", "plugincode", "message")
     )
 
     def by_loop() -> list[tuple[bytes, ...]]:
@@ -529,8 +529,8 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
         keep = compute.greater_equal(grouped.column("row"), 0)
         return (
             compute.filter(stamps, header),
-            compute.filter(compute.struct_field(found, "thread_name"), header),
-            compute.filter(compute.struct_field(found, "plugin_code"), header),
+            compute.filter(compute.struct_field(found, "threadname"), header),
+            compute.filter(compute.struct_field(found, "plugincode"), header),
             compute.filter(compute.binary_join(grouped.column("message_list"), "\n"), keep),
         )
 

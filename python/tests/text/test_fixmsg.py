@@ -7,6 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message
+from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.market import HASH, MIC, BookIterator, Event, EventType
@@ -20,7 +21,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: The envelope every event carries, then log-only source ordering and content.
 ENVELOPE = [
     "unix",
-    "unix_partition",
+    "unixpartition",
     "etype",
     "cunix",
     "runix",
@@ -28,59 +29,59 @@ ENVELOPE = [
     "sunix",
     "hash",
     "xhash",
-    "linked_events",
+    "linkedevents",
     "version",
     "state",
     "code",
     "codes",
-    "prev_unix",
-    "parent_hash",
+    "prevunix",
+    "parenthash",
     "mic",
     "reason",
 ]
 SOURCE: list[str] = []
 LINE = [
-    "source_url",
-    "source_rownum",
-    "thread_name",
-    "plugin_code",
+    "sourceurl",
+    "sourcerownum",
+    "threadname",
+    "plugincode",
     "message",
-    "protocol_code",
+    "protocolcode",
     # The standard header, which the raw stage lifts out of `entries` into
     # columns of its own -- so it arrives here already parsed, and this stage
     # declares the same seven names in the same places, in the standard's own
     # order: `BeginString` is a message's first field and `MsgType` its third.
-    "BeginString",
-    "BodyLength",
-    "MsgType",
-    "MsgSeqNum",
-    "SenderCompID",
-    "TargetCompID",
-    "SendingTime",
+    "beginstring",
+    "bodylength",
+    "msgtype",
+    "msgseqnum",
+    "sendercompid",
+    "targetcompid",
+    "sendingtime",
     "entries",
     "direction",
 ]
 MESSAGE = [
-    "unix_source",
-    "protocol_version",
-    "protocol_version_source",
-    "Parties",
-    "TrdRegTimestamps",
-    "SideTrdRegTS",
-    "ISINCODE",
-    "ParentClOrdID",
-    "ParentOrderID",
+    "unixsource",
+    "protocolversion",
+    "protocolversionsource",
+    "parties",
+    "trdregtimestamps",
+    "sidetrdregts",
+    "isincode",
+    "parentclordid",
+    "parentorderid",
 ]
 #: Structured components declared after every flat column: Iceberg collects
 #: bounds for leaf columns in declaration order, and this contract crosses
 #: that cutoff -- a list declared earlier would push flat columns past it.
 TRAILING_COMPONENTS = [
-    "SecurityAltID",
-    "Legs",
+    "securityaltid",
+    "legs",
 ]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
-RAW_TAGS = {55: "Symbol", 34: "MsgSeqNum"}
+RAW_TAGS = {55: "symbol", 34: "msgseqnum"}
 
 #: The standard header the raw stage lifts out of `entries` into columns of its
 #: own, and the tag each is lifted by. Only the discriminator answers to a
@@ -89,13 +90,13 @@ RAW_TAGS = {55: "Symbol", 34: "MsgSeqNum"}
 #: imported from `rekep.text.message.SESSION_FIELDS`, so a field quietly leaving
 #: that tuple cannot move both sides of an assertion together.
 LIFTED_HEADER = {
-    "BeginString": "8",
-    "BodyLength": "9",
-    "MsgType": "35",
-    "MsgSeqNum": "34",
-    "SenderCompID": "49",
-    "TargetCompID": "56",
-    "SendingTime": "52",
+    "beginstring": "8",
+    "bodylength": "9",
+    "msgtype": "35",
+    "msgseqnum": "34",
+    "sendercompid": "49",
+    "targetcompid": "56",
+    "sendingtime": "52",
 }
 
 #: The three of the seven the two stages hold differently: the raw stage is
@@ -104,9 +105,9 @@ LIFTED_HEADER = {
 #: on both sides. `CheckSum <10>` is not lifted at all -- it is the boundary the
 #: lift is measured against -- so it reaches this stage inside `entries`.
 RETYPED_HEADER = {
-    "BodyLength": pyarrow.int64(),
-    "MsgSeqNum": pyarrow.int64(),
-    "SendingTime": pyarrow.timestamp("us", tz="UTC"),
+    "bodylength": pyarrow.int64(),
+    "msgseqnum": pyarrow.int64(),
+    "sendingtime": pyarrow.timestamp("us", tz="UTC"),
 }
 
 #: The flattened message layer, derived from the module that names it and
@@ -185,19 +186,21 @@ def test_the_lifted_header_arrives_as_text_and_is_typed_here() -> None:
     parsed = FixMsg.into_field()
     for name, tag in LIFTED_HEADER.items():
         assert raw.field(name).nullable and raw.field(name).dtype == pyarrow.string(), name
-        assert not [key for key in raw.field(name).metadata if key.startswith("fix:")], name
+        assert [key for key in raw.field(name).metadata if key.startswith("fix:")] == [
+            "fix:display"
+        ], name
         assert parsed.field(name).fix["tag"] == tag, name
         assert parsed.field(name).dtype == RETYPED_HEADER.get(name, pyarrow.string()), name
-    assert "CheckSum" not in raw.names, "the boundary the lift is measured against is not lifted"
+    assert "checksum" not in raw.names, "the boundary the lift is measured against is not lifted"
     assert parsed.field("CheckSum").fix["tag"] == "10"
 
 
 def test_a_line_always_says_which_protocol_it_carries() -> None:
     """`OTHER` is an answer and not a missing one -- it is most of a capture --
     so the column is NOT NULL and the fall-through is what a line starts as."""
-    assert not FixMsg.into_field().field("protocol_code").nullable
-    assert FixMsg.into_field().field("protocol_code").dtype == pyarrow.string()
-    assert FixMsg().protocol_code == NO_PROTOCOL
+    assert not FixMsg.into_field().field("protocolcode").nullable
+    assert FixMsg.into_field().field("protocolcode").dtype == pyarrow.string()
+    assert FixMsg().protocolcode == NO_PROTOCOL
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
@@ -230,7 +233,7 @@ def test_a_stored_field_always_says_what_it_is() -> None:
 
 def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
     reader = FixMsg(
-        MsgType="D",
+        msgtype="D",
         entries=[
             (55, "A"),
             [55, "B"],
@@ -266,13 +269,13 @@ def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
     """`from_text` is `from_message` over `Message.from_text`: one seam, and
     the raw row's provenance and envelope carry over whole."""
     line = "8=FIX.4.4|35=D|11=C1|54=1|10=000"
-    staged = Message.from_text(line, source_url="s3://x/y.log", source_rownum=4, runix=9)
+    staged = Message.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, runix=9)
     row = FixMsg.from_message(staged)
 
-    assert row == FixMsg.from_text(line, source_url="s3://x/y.log", source_rownum=4, runix=9)
-    assert (row.source_url, row.source_rownum, row.runix) == ("s3://x/y.log", 4, 9)
+    assert row == FixMsg.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, runix=9)
+    assert (row.sourceurl, row.sourcerownum, row.runix) == ("s3://x/y.log", 4, 9)
     assert row.etype == FixRegistry.from_builtin().msg_type_event_types()["D"]
-    assert row.protocol_version == "4.4"
+    assert row.protocolversion == "4.4"
     assert FixMsg.from_(staged) == row, "the generic builder reaches the same seam"
 
 
@@ -304,8 +307,8 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
     assert from_rows.equals(FixMsg.from_message_batch(rows, FixRegistry.from_builtin())), (
         "a registry is all the conversion needs; the codec derives from it"
     )
-    assert from_rows.column("ClOrdID").to_pylist() == ["C1", None]
-    assert from_rows.column("protocol_version").to_pylist() == ["4.4", None]
+    assert from_rows.column("clordid").to_pylist() == ["C1", None]
+    assert from_rows.column("protocolversion").to_pylist() == ["4.4", None]
 
     empty = FixMsg.from_message_batch([])
     assert empty.num_rows == 0
@@ -357,14 +360,14 @@ def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
     projected = raw.select([name for name in raw.schema.names if name != "message"])
     parsed = FixMsg.from_message_batch(_widened(projected))
     assert "message" not in parsed.schema.names or parsed.column("message").null_count == 1
-    assert parsed.column("ClOrdID").to_pylist() == ["C1"], "the stored entries still parse"
+    assert parsed.column("clordid").to_pylist() == ["C1"], "the stored entries still parse"
 
 
 def test_a_stored_field_reads_through_its_own_structure() -> None:
     """A stored argument's split -- tag, name, namespace -- is the read's:
     no spelling is rendered and re-split on the way to an answer."""
     row = FixMsg(
-        MsgType="D",
+        msgtype="D",
         entries=[
             {"tag": 55, "key": "Symbol", "value": "IBM"},
             {"tag": 0, "key": "CLIENTID", "value": "A1", "namespace": "TECH"},
@@ -381,7 +384,7 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
     index, a dotted key under an explicit lead, and a double lead all render
     exactly as stored -- and still answer the accessor under that spelling."""
     row = FixMsg(
-        MsgType="D",
+        msgtype="D",
         entries=[
             {"key": "Side[03]", "value": "1"},
             {"key": "a.b[0]", "namespace": "X", "value": "2"},
@@ -406,7 +409,7 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
 
 def test_a_component_buffer_key_renders_verbatim() -> None:
     """A member kept as text keeps its spelling: `007` is not tag `7`."""
-    row = FixMsg(Parties=[{"PartyID": "A", "buffer": {"007": "x", "[0]": "y"}}])
+    row = FixMsg(parties=[{"partyid": "A", "buffer": {"007": "x", "[0]": "y"}}])
 
     assert row.pairs == [("453", "1"), ("448", "A"), ("007", "x"), ("[0]", "y")]
 
@@ -441,15 +444,15 @@ def test_the_translator_links_its_dictionary_onto_its_message(registry: FixRegis
 def test_scalar_parsing_resolves_the_fix_version_once_on_the_message() -> None:
     row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000")
 
-    assert row.protocol_code == "FIX"
-    assert row.protocol_version == "4.4"
-    assert row.protocol_version_source == "begin_string"
+    assert row.protocolcode == "FIX"
+    assert row.protocolversion == "4.4"
+    assert row.protocolversionsource == "begin_string"
 
 
 def test_scalar_hybrid_projection_prefers_named_registry_identity() -> None:
     row = FixMsg.from_("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|11=C1|10=000|")
 
-    assert row.MsgType == "D"
+    assert row.msgtype == "D"
     assert row.into_fix_events(fix_version="4.4").by_tag["55"] == "named"
 
 
@@ -498,7 +501,7 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
     )
     party = FixMsg.from_dict(party_batch.to_pylist()[0])
 
-    assert party_batch.column("Parties")[0].as_py()[0]["PartyID"] == "GROUP"
+    assert party_batch.column("parties")[0].as_py()[0]["partyid"] == "GROUP"
     assert party.group(453) == [[("448", "GROUP"), ("447", "D"), ("452", "1")]]
 
     depth_line = (
@@ -529,17 +532,17 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    alt_ids = batch.column("SecurityAltID")[0].as_py()
-    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+    altids = batch.column("securityaltid")[0].as_py()
+    assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
         ("037833100", "1"),
     ]
-    legs = batch.column("Legs")[0].as_py()
-    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+    legs = batch.column("legs")[0].as_py()
+    assert [(entry["legsymbol"], entry["legside"], entry["legratioqty"]) for entry in legs] == [
         ("AAPL", "1", 1.0),
         ("MSFT", "2", 2.0),
     ]
-    assert legs[0]["LegMaturityDate"] == datetime.datetime(2027, 1, 15), (
+    assert legs[0]["legmaturitydate"] == datetime.datetime(2027, 1, 15), (
         "a FIX date projects as an instant, like every other temporal datatype"
     )
     assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
@@ -554,8 +557,8 @@ def test_instrument_groups_resolve_into_their_structured_columns(
 
     instrument = next(iter(stored.into_fix_events().into_instruments()))
     direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
-    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
-    assert instrument.isin_code == "XS123", "the primary ISIN outranks the alternative"
+    assert instrument.altids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.isincode == "XS123", "the primary ISIN outranks the alternative"
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
@@ -579,13 +582,13 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    assert batch.column("protocol_code")[0].as_py() == "UL"
-    alt_ids = batch.column("SecurityAltID")[0].as_py()
-    assert [(entry["SecurityAltID"], entry["SecurityAltIDSource"]) for entry in alt_ids] == [
+    assert batch.column("protocolcode")[0].as_py() == "UL"
+    altids = batch.column("securityaltid")[0].as_py()
+    assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
     ]
-    legs = batch.column("Legs")[0].as_py()
-    assert [(entry["LegSymbol"], entry["LegSide"], entry["LegRatioQty"]) for entry in legs] == [
+    legs = batch.column("legs")[0].as_py()
+    assert [(entry["legsymbol"], entry["legside"], entry["legratioqty"]) for entry in legs] == [
         ("AAPL", "1", 1.0),
         ("MSFT", "2", 2.0),
     ]
@@ -593,7 +596,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005"}
+    assert instrument.altids == {"ISIN_NUMBER": "US0378331005"}
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
@@ -617,14 +620,14 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    assert batch.column("SecurityAltID")[0].as_py() is None
+    assert batch.column("securityaltid")[0].as_py() is None
     assert 454 in [entry["tag"] for entry in batch.column("entries")[0].as_py()]
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line, "|")
-    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    found = [(one.symbol, one.altids) for one in stored.into_fix_events().into_instruments()]
     assert found == [
-        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+        (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
     ]
     assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN_NUMBER": "US0378331005"})]
 
@@ -642,13 +645,13 @@ def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    assert batch.column("SecurityAltID")[0].as_py() is None
+    assert batch.column("securityaltid")[0].as_py() is None
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line, "|")
-    found = [(one.symbol, one.alt_ids) for one in stored.into_fix_events().into_instruments()]
+    found = [(one.symbol, one.altids) for one in stored.into_fix_events().into_instruments()]
     assert found == [
-        (one.symbol, one.alt_ids) for one in direct.into_fix_events().into_instruments()
+        (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
     ]
     assert found == [("AAA", None), ("BBB", {"CUSIP": "037833100"})]
 
@@ -657,7 +660,7 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
     registry: FixRegistry,
 ) -> None:
     """4.3 declares `SecAltIDGrp` and no legs component, so one stored row must
-    read `alt_ids` off the resolved column while `legs` still walk the pairs."""
+    read `altids` off the resolved column while `legs` still walk the pairs."""
     line = (
         "8=FIX.4.3|35=d|55=SPREAD|454=1|455=US0378331005|456=4|"
         "555=2|600=AAPL|624=1|623=1|600=MSFT|624=2|623=2|10=000"
@@ -666,16 +669,16 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    assert [entry["SecurityAltID"] for entry in batch.column("SecurityAltID")[0].as_py()] == [
+    assert [entry["securityaltid"] for entry in batch.column("securityaltid")[0].as_py()] == [
         "US0378331005"
     ]
-    assert batch.column("Legs")[0].as_py() is None
+    assert batch.column("legs")[0].as_py() is None
     assert 555 in [entry["tag"] for entry in batch.column("entries")[0].as_py()]
 
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.alt_ids == {"ISIN_NUMBER": "US0378331005"}
+    assert instrument.altids == {"ISIN_NUMBER": "US0378331005"}
     assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
         ("AAPL", "BUY"),
         ("MSFT", "SELL"),
@@ -705,7 +708,7 @@ def test_typed_timestamps_keep_direct_and_stored_book_outputs_equal(
 
 
 def test_market_projection_keeps_typed_fix_timestamp_spelling() -> None:
-    row = FixMsg(SendingTime=datetime.datetime(2026, 8, 25, 9, 30, 1, 250000))
+    row = FixMsg(sendingtime=datetime.datetime(2026, 8, 25, 9, 30, 1, 250000))
 
     assert ("52", "20260825-09:30:01.250000") in row.into_fix_pairs()
 
@@ -726,9 +729,11 @@ def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
     for tag, name in ((448, "PartyID"), (447, "PartyIDSource"), (452, "PartyRole")):
         expected = registry.scalar(tag)
         actual = Party.into_field().field(name)
+        assert actual.name == column_name(expected.name)
         assert actual.fix["name"] == expected.name
+        assert actual.fix.display == expected.name, "folded to store, spelled to read"
         assert actual.dtype == expected.dtype
-        assert actual.metadata == expected.metadata
+        assert actual.metadata == {**expected.metadata, DISPLAY: expected.name}
         assert actual.description == expected.description
     assert Party.into_field().field("buffer").dtype == pyarrow.map_(
         pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
@@ -748,16 +753,16 @@ def test_the_key_is_the_moment_and_the_line() -> None:
 
 def test_the_partition_is_the_hour_the_line_falls_in() -> None:
     """An identity partition on an integer, so every engine below reads it alike."""
-    assert FixMsg.into_field().partition_keys() == {"unix_partition": "identity"}
-    assert FixMsg.into_field().field("unix_partition").dtype == pyarrow.int32()
+    assert FixMsg.into_field().partition_keys() == {"unixpartition": "identity"}
+    assert FixMsg.into_field().field("unixpartition").dtype == pyarrow.int32()
 
 
 def test_every_unix_column_declares_its_unit() -> None:
-    for name in ("unix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
+    for name in ("unix", "cunix", "runix", "eunix", "sunix", "prevunix"):
         metadata = FixMsg.into_field().field(name).metadata
         assert metadata["unit"] == "ns", name
         assert metadata["epoch"] == "1970-01-01", name
-    partition_metadata = FixMsg.into_field().field("unix_partition").metadata
+    partition_metadata = FixMsg.into_field().field("unixpartition").metadata
     assert partition_metadata["unit"] == "second"
     assert partition_metadata["epoch"] == "1970-01-01"
 
@@ -779,10 +784,8 @@ def test_a_line_is_unclassified_until_something_classifies_it() -> None:
 def test_the_hour_is_derived_from_the_instant() -> None:
     built = FixMsg(unix=3 * HOUR + 5)
     hour_seconds = HOUR // SECOND
-    assert built.unix_partition == 3 * hour_seconds
-    assert FixMsg(unix=-1).unix_partition == -hour_seconds, (
-        "and it floors, either side of the epoch"
-    )
+    assert built.unixpartition == 3 * hour_seconds
+    assert FixMsg(unix=-1).unixpartition == -hour_seconds, "and it floors, either side of the epoch"
 
 
 def test_the_schema_says_which_class_it_came_from() -> None:
@@ -799,23 +802,23 @@ def _stored(tag: int, key: str, value: str) -> dict[str, object]:
 def test_a_row_round_trips_as_a_document() -> None:
     """The message layer preserves checksums and repeated ordered pairs."""
     row = FixMsg(
-        source_url="a.txt",
+        sourceurl="a.txt",
         unix=2,
         hash=3,
         xhash=3,
         etype=EventType.ORDER,
-        thread_name="t",
-        plugin_code="d",
+        threadname="t",
+        plugincode="d",
         message="m",
-        protocol_code="FIX",
+        protocolcode="FIX",
         entries=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
         + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
-        MsgSeqNum=7,
-        Symbol="TTF",
-        SendingTime=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
-        PossDupFlag=True,
-        CheckSum="010",
+        msgseqnum=7,
+        symbol="TTF",
+        sendingtime=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
+        possdupflag=True,
+        checksum="010",
         mic=MIC.from_str("XPAR"),
         reason="test reject",
     )
@@ -824,7 +827,7 @@ def test_a_row_round_trips_as_a_document() -> None:
 
 def test_typed_components_share_stored_access_and_group_projection() -> None:
     row = FixMsg(
-        Parties=[Party(PartyID="P1", PartyIDSource="D", PartyRole=1)],
+        parties=[Party(partyid="P1", partyidsource="D", partyrole=1)],
         entries=[],
     )
     restored = FixMsg.from_json(row.into_json())
@@ -873,30 +876,30 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
                 "8=FIX.4.4|35=D|34=7|41=ROOT|55=IBM|461=EXXXXX|6=12.5|"
                 "453=1|448=BUYSIDE|447=D|452=1|10=000|"
             ),
-            source_url="capture.log",
-            source_rownum=1,
-            plugin_code="fix",
+            sourceurl="capture.log",
+            sourcerownum=1,
+            plugincode="fix",
         ),
         Message(
             etype=EventType.EXECUTION,
             message=(
                 "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=8|#ORIGCLORDID=OLD|#ISINCODE=XX0000084733|"
             ),
-            source_url="capture.log",
-            source_rownum=2,
-            plugin_code="ULBridge",
+            sourceurl="capture.log",
+            sourcerownum=2,
+            plugincode="ULBridge",
         ),
         Message(
             message="plain text",
-            source_url="capture.log",
-            source_rownum=3,
-            plugin_code="misc",
+            sourceurl="capture.log",
+            sourcerownum=3,
+            plugincode="misc",
         ),
     )
 
     assert raw.schema.names == Message.into_field().names
-    assert raw.column("MsgType").to_pylist() == ["D", "8", None]
-    assert raw.column("BeginString").to_pylist() == ["FIX.4.4", None, None], (
+    assert raw.column("msgtype").to_pylist() == ["D", "8", None]
+    assert raw.column("beginstring").to_pylist() == ["FIX.4.4", None, None], (
         "the tag is lifted; the bridge's rendered `#BEGINSTRING=` stays an argument"
     )
     assert [entry["key"] for entry in raw.column("entries")[1].as_py()] == [
@@ -904,8 +907,8 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         "ORIGCLORDID",
         "ISINCODE",
     ], "only the discriminator answers to a rendered header name"
-    assert raw.column("MsgSeqNum").to_pylist() == ["7", None, None], "text, until this stage"
-    assert raw.column("protocol_code").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert raw.column("msgseqnum").to_pylist() == ["7", None, None], "text, until this stage"
+    assert raw.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
@@ -915,23 +918,23 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         int(EventType.EXECUTION),
         int(EventType.MISC),
     ]
-    assert parsed.column("protocol_code").to_pylist() == ["FIX", "UL", "OTHER"]
-    assert parsed.column("protocol_version").to_pylist() == ["4.4", "4.4", None]
-    assert parsed.column("MsgType").to_pylist() == ["D", "8", None]
-    assert parsed.column("MsgSeqNum").to_pylist() == [7, None, None]
-    assert parsed.column("OrigClOrdID").to_pylist() == ["ROOT", "OLD", None]
-    assert parsed.column("CFICode").to_pylist() == ["EXXXXX", None, None]
-    assert parsed.column("AvgPx").to_pylist() == [12.5, None, None]
-    assert parsed.column("ISINCODE").to_pylist() == [None, "XX0000084733", None]
-    assert parsed.column("Parties").to_pylist()[0] == [
+    assert parsed.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4", None]
+    assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
+    assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
+    assert parsed.column("origclordid").to_pylist() == ["ROOT", "OLD", None]
+    assert parsed.column("cficode").to_pylist() == ["EXXXXX", None, None]
+    assert parsed.column("avgpx").to_pylist() == [12.5, None, None]
+    assert parsed.column("isincode").to_pylist() == [None, "XX0000084733", None]
+    assert parsed.column("parties").to_pylist()[0] == [
         {
-            "PartyID": "BUYSIDE",
-            "PartyIDSource": "D",
-            "PartyRole": 1,
+            "partyid": "BUYSIDE",
+            "partyidsource": "D",
+            "partyrole": 1,
             "buffer": None,
         }
     ]
-    assert parsed.column("codes").to_pylist()[0] == [("orig_cl_ord_id", "ROOT")]
+    assert parsed.column("codes").to_pylist()[0] == [("origclordid", "ROOT")]
 
 
 def test_fixmsg_preserves_the_message_stage_type_and_event_code(
@@ -940,14 +943,14 @@ def test_fixmsg_preserves_the_message_stage_type_and_event_code(
     raw = _raw_batch(
         Message(
             message="8=FIX.4.4|35=D|11=A|10=000|ExecutionReport",
-            MsgType="D",
+            msgtype="D",
             etype=EventType.QUOTE,
         )
     )
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("MsgType").to_pylist() == ["D"]
+    assert parsed.column("msgtype").to_pylist() == ["D"]
     assert parsed.column("etype").to_pylist() == [int(EventType.QUOTE)]
 
 
@@ -963,8 +966,8 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
         raw.select([name for name in raw.schema.names if name != "message"]), codec
     )
 
-    assert whole.column("protocol_code").to_pylist() == ["FIX", "UL"]
-    assert projected.column("protocol_code").equals(whole.column("protocol_code"))
+    assert whole.column("protocolcode").to_pylist() == ["FIX", "UL"]
+    assert projected.column("protocolcode").equals(whole.column("protocolcode"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert projected.column("message").null_count == projected.num_rows
@@ -980,17 +983,17 @@ def test_staged_protocol_matching_the_codec_survives_projection(
 ) -> None:
     raw = _raw_batch(Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#CLORDID=A|10=000|"))
     codec = FixCodec(registry=registry)
-    at = raw.schema.get_field_index("protocol_code")
-    staged = codec.categorise(raw.column("message"), raw.column("plugin_code"))
+    at = raw.schema.get_field_index("protocolcode")
+    staged = codec.categorise(raw.column("message"), raw.column("plugincode"))
     raw = raw.set_column(at, raw.schema.field(at), staged)
 
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert whole.column("protocol_code").to_pylist() == ["UL"]
-    assert whole.column("ClOrdID").to_pylist() == ["A"]
-    assert projected.column("protocol_code").equals(whole.column("protocol_code"))
-    assert projected.column("ClOrdID").equals(whole.column("ClOrdID"))
+    assert whole.column("protocolcode").to_pylist() == ["UL"]
+    assert whole.column("clordid").to_pylist() == ["A"]
+    assert projected.column("protocolcode").equals(whole.column("protocolcode"))
+    assert projected.column("clordid").equals(whole.column("clordid"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
 
@@ -1004,7 +1007,7 @@ def test_wire_discriminator_without_begin_string_survives_projection(
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert raw.column("protocol_code").to_pylist() == ["FIX"]
+    assert raw.column("protocolcode").to_pylist() == ["FIX"]
     assert [(entry["key"], entry["value"]) for entry in whole.column("entries")[0].as_py()] == [
         ("11", "A")
     ]
@@ -1016,8 +1019,8 @@ def test_unread_message_identity_survives_raw_message_projection(
     registry: FixRegistry,
 ) -> None:
     raw = _raw_batch(
-        Message(message="alpha prose", source_url="capture.log", source_rownum=1).identify(),
-        Message(message="beta prose", source_url="capture.log", source_rownum=1).identify(),
+        Message(message="alpha prose", sourceurl="capture.log", sourcerownum=1).identify(),
+        Message(message="beta prose", sourceurl="capture.log", sourcerownum=1).identify(),
     )
     codec = FixCodec(registry=registry)
 
@@ -1074,7 +1077,7 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
 
     assert activated == [True]
     assert translated.equals(reference, check_metadata=True)
-    assert translated.column("Side").to_pylist()[0] == "1"
+    assert translated.column("side").to_pylist()[0] == "1"
     assert translated.column("mic").null_count == 5
 
 
@@ -1093,7 +1096,7 @@ def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
     reference = FixMsg.from_message_batch(source, codec)
 
     assert fast.equals(reference, check_metadata=True)
-    assert fast.column("AvgPx").to_pylist() == [10.5, 10.5]
+    assert fast.column("avgpx").to_pylist() == [10.5, 10.5]
     assert fast.column("hash")[0].as_py() != fast.column("hash")[1].as_py()
     assert [
         [(entry["tag"], entry["value"]) for entry in row if entry["tag"] == 6]
@@ -1122,8 +1125,8 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
     translated = FixMsg.from_message_batch(source, FixCodec(registry=registry))
 
     assert activated == [False, True]
-    assert translated.column("ClOrdID").to_pylist() == ["A", None]
-    assert translated.column("Symbol").to_pylist() == ["IBM", None]
+    assert translated.column("clordid").to_pylist() == ["A", None]
+    assert translated.column("symbol").to_pylist() == ["IBM", None]
     assert [entry["tag"] for entry in translated.column("entries")[1].as_py()] == [11, 55, 10]
 
 
@@ -1159,7 +1162,7 @@ def test_mixed_fixmsg_batch_keeps_flat_rows_fast_and_scatters_exactly(
 
     assert activated == [False, True]
     assert translated.equals(reference, check_metadata=True)
-    assert translated.column("ClOrdID").to_pylist() == [
+    assert translated.column("clordid").to_pylist() == [
         "A",
         "UL-1",
         "B",
@@ -1213,35 +1216,35 @@ def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
 
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == ["11", "55", "10"]
     assert {name: raw.column(name).to_pylist()[0] for name in LIFTED_HEADER} == {
-        "BeginString": "FIX.4.4",
-        "BodyLength": "61",
-        "MsgSeqNum": "7",
-        "MsgType": "D",
-        "SenderCompID": "ME",
-        "SendingTime": "20260814-09:30:00.000",
-        "TargetCompID": "YOU",
+        "beginstring": "FIX.4.4",
+        "bodylength": "61",
+        "msgseqnum": "7",
+        "msgtype": "D",
+        "sendercompid": "ME",
+        "sendingtime": "20260814-09:30:00.000",
+        "targetcompid": "YOU",
     }
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("BeginString").to_pylist() == ["FIX.4.4"]
-    assert parsed.column("BodyLength").to_pylist() == [61]
-    assert parsed.column("MsgSeqNum").to_pylist() == [7]
-    assert parsed.column("SenderCompID").to_pylist() == ["ME"]
-    assert parsed.column("TargetCompID").to_pylist() == ["YOU"]
-    assert parsed.column("SendingTime").to_pylist() == [
+    assert parsed.column("beginstring").to_pylist() == ["FIX.4.4"]
+    assert parsed.column("bodylength").to_pylist() == [61]
+    assert parsed.column("msgseqnum").to_pylist() == [7]
+    assert parsed.column("sendercompid").to_pylist() == ["ME"]
+    assert parsed.column("targetcompid").to_pylist() == ["YOU"]
+    assert parsed.column("sendingtime").to_pylist() == [
         datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
     ]
-    assert parsed.column("protocol_version").to_pylist() == ["4.4"]
-    assert parsed.column("protocol_version_source").to_pylist() == ["begin_string"]
-    assert parsed.column("CheckSum").to_pylist() == ["000"], "the trailer is read, not lifted"
+    assert parsed.column("protocolversion").to_pylist() == ["4.4"]
+    assert parsed.column("protocolversionsource").to_pylist() == ["begin_string"]
+    assert parsed.column("checksum").to_pylist() == ["000"], "the trailer is read, not lifted"
 
     # One row at a time reaches the same seven, cast the same way: the scalar
     # path lifts what the vectorized one lifts, and leaves what it leaves.
     scalar = FixMsg.from_text(line)
-    assert (scalar.BeginString, scalar.BodyLength, scalar.MsgType) == ("FIX.4.4", 61, "D")
-    assert (scalar.MsgSeqNum, scalar.SenderCompID, scalar.TargetCompID) == (7, "ME", "YOU")
-    assert scalar.SendingTime == datetime.datetime(2026, 8, 14, 9, 30), (
+    assert (scalar.beginstring, scalar.bodylength, scalar.msgtype) == ("FIX.4.4", 61, "D")
+    assert (scalar.msgseqnum, scalar.sendercompid, scalar.targetcompid) == (7, "ME", "YOU")
+    assert scalar.sendingtime == datetime.datetime(2026, 8, 14, 9, 30), (
         "the instant the column holds, read one value at a time and left naive"
     )
     assert [(entry.tag, entry.value) for entry in scalar.entries or ()] == [
@@ -1268,8 +1271,8 @@ def test_a_header_field_spelled_two_ways_stays_where_a_reader_can_see_it(
         )
     )
 
-    assert raw.column("SendingTime").to_pylist() == [None]
-    assert raw.column("MsgSeqNum").to_pylist() == ["7"]
+    assert raw.column("sendingtime").to_pylist() == [None]
+    assert raw.column("msgseqnum").to_pylist() == ["7"]
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
         "52",
         "52",
@@ -1279,8 +1282,8 @@ def test_a_header_field_spelled_two_ways_stays_where_a_reader_can_see_it(
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("SendingTime").to_pylist() == [None]
-    assert parsed.column("MsgSeqNum").to_pylist() == [7]
+    assert parsed.column("sendingtime").to_pylist() == [None]
+    assert parsed.column("msgseqnum").to_pylist() == [7]
     assert [(entry["tag"], entry["value"]) for entry in parsed.column("entries")[0].as_py()] == [
         (52, "20260814-09:30:00.000"),
         (52, "20260814-09:31:00.000"),
@@ -1318,20 +1321,20 @@ def test_a_header_column_that_is_empty_is_read_back_out_of_the_entries(
 
     read = FixMsg.from_message_batch(legacy, codec)
     absent = FixMsg.from_message_batch(
-        legacy.drop_columns([name for name in LIFTED_HEADER if name != "MsgType"]), codec
+        legacy.drop_columns([name for name in LIFTED_HEADER if name != "msgtype"]), codec
     )
 
     for batch in (read, absent):
-        assert batch.column("MsgType").to_pylist() == ["D"]
-        assert batch.column("MsgSeqNum").to_pylist() == [7]
-        assert batch.column("SenderCompID").to_pylist() == ["ME"]
-        assert batch.column("TargetCompID").to_pylist() == ["YOU"]
-        assert batch.column("SendingTime").to_pylist() == [
+        assert batch.column("msgtype").to_pylist() == ["D"]
+        assert batch.column("msgseqnum").to_pylist() == [7]
+        assert batch.column("sendercompid").to_pylist() == ["ME"]
+        assert batch.column("targetcompid").to_pylist() == ["YOU"]
+        assert batch.column("sendingtime").to_pylist() == [
             datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
         ]
-        assert batch.column("protocol_version").to_pylist() == ["4.4"]
-        assert batch.column("protocol_version_source").to_pylist() == ["begin_string"]
-        assert batch.column("ClOrdID").to_pylist() == ["C1"]
+        assert batch.column("protocolversion").to_pylist() == ["4.4"]
+        assert batch.column("protocolversionsource").to_pylist() == ["begin_string"]
+        assert batch.column("clordid").to_pylist() == ["C1"]
 
 
 def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
@@ -1343,14 +1346,14 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
     )
     assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
     assert raw.column("entries")[1].as_py()[-1]["key"] == "52"
-    assert raw.column("SendingTime").to_pylist() == [None, None], (
+    assert raw.column("sendingtime").to_pylist() == [None, None], (
         "the header is lifted before the checksum, so a field behind it is not lifted either"
     )
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("Symbol").to_pylist() == [None, None]
-    assert parsed.column("SendingTime").to_pylist() == [None, None]
+    assert parsed.column("symbol").to_pylist() == [None, None]
+    assert parsed.column("sendingtime").to_pylist() == [None, None]
     assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
 
 
@@ -1359,8 +1362,8 @@ def test_fixmsg_consumes_a_hash_delimited_wire_message(registry: FixRegistry) ->
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("MsgType").to_pylist() == ["D"]
-    assert parsed.column("Symbol").to_pylist() == ["TTF"]
+    assert parsed.column("msgtype").to_pylist() == ["D"]
+    assert parsed.column("symbol").to_pylist() == ["TTF"]
 
 
 def test_hybrid_named_fields_shadow_numeric_copies(registry: FixRegistry) -> None:
@@ -1376,8 +1379,8 @@ def test_hybrid_named_fields_shadow_numeric_copies(registry: FixRegistry) -> Non
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     residual = parsed.column("entries")[0].as_py()
 
-    assert parsed.column("MsgType").to_pylist() == ["D"]
-    assert parsed.column("Symbol").to_pylist() == ["named"]
+    assert parsed.column("msgtype").to_pylist() == ["D"]
+    assert parsed.column("symbol").to_pylist() == ["named"]
     assert [entry["value"] for entry in residual if entry["tag"] in {9998, 9999}] == [
         "before",
         "after",
@@ -1421,7 +1424,7 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
 
     parsed = FixMsg.from_message_batch(raw, codec)
 
-    assert raw.column("BeginString").to_pylist() == ["FIX.4.2", "FIX.4.2"], (
+    assert raw.column("beginstring").to_pylist() == ["FIX.4.2", "FIX.4.2"], (
         "the envelope left `entries` for its own column, and is not gone"
     )
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == [
@@ -1434,9 +1437,9 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
         "55",
         "10",
     ]
-    assert expected_columns["Side"].to_pylist() == [None, None]
-    assert parsed.column("Side").to_pylist() == [None, "2"]
-    assert parsed.column("Symbol").to_pylist() == expected_columns["Symbol"].to_pylist()
+    assert expected_columns["side"].to_pylist() == [None, None]
+    assert parsed.column("side").to_pylist() == [None, "2"]
+    assert parsed.column("symbol").to_pylist() == expected_columns["symbol"].to_pylist()
     assert parsed.column("entries").to_pylist() == [[], []]
 
 
@@ -1482,21 +1485,30 @@ def test_fix_names_do_not_alias_the_generic_event_envelope() -> None:
     assert FixMsg.into_field().field("MsgSeqNum").fix["tag"] == "34"
 
 
-def test_every_promoted_name_is_the_registrys_exact_spelling() -> None:
+def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
+    """One name, folded to store and spelled to read: the fold is the column and
+    the dictionary's own spelling is what the column says it is called."""
     names = [field.name for field in DECLARATIONS.values()]
     assert len(names) == 110
-    assert all(field.name == field.fix["name"] for field in DECLARATIONS.values())
+    assert all(field.name == column_name(field.fix["name"]) for field in DECLARATIONS.values())
+    assert all(field.fix.display == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
+        6: "avgpx",
+        35: "msgtype",
+        41: "origclordid",
+        461: "cficode",
+    }
+    assert {tag: DECLARATIONS[tag].fix["name"] for tag in (6, 35, 41, 461)} == {
         6: "AvgPx",
         35: "MsgType",
         41: "OrigClOrdID",
         461: "CFICode",
     }
     assert {tag: DECLARATIONS[tag].name for tag in (453, 802)} == {
-        453: "NoPartyIDs",
-        802: "NoPartySubIDs",
+        453: "nopartyids",
+        802: "nopartysubids",
     }
-    assert Party.into_field().names == ["PartyID", "PartyIDSource", "PartyRole", "buffer"]
+    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole", "buffer"]
 
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
@@ -1563,15 +1575,17 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
     for tag, column in FLAT:
         expected = registry.scalar(tag)
         actual = FixMsg.into_field().field(column)
+        assert actual.name == column_name(expected.name), column
         assert actual.fix["name"] == expected.name, column
-        assert actual.metadata == expected.metadata, column
+        assert actual.fix.display == expected.name, column
+        assert actual.metadata == {**expected.metadata, DISPLAY: expected.name}, column
         assert actual.description == expected.description, column
 
 
 def test_rendered_isincode_keeps_its_source_identity() -> None:
-    field = FixMsg.into_field().field("ISINCODE")
+    field = FixMsg.into_field().field("isincode")
     assert field.dtype == pyarrow.string()
-    assert field.fix == {"name": "ISINCODE", "type": "String"}
+    assert field.fix == {"name": "ISINCODE", "type": "String", "display": "ISIN Code"}
 
 
 def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegistry) -> None:
@@ -1585,35 +1599,35 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
         message="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
         "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
     )
-    assert echo.protocol_code == "UL", "the syntax probe already said so"
+    assert echo.protocolcode == "UL", "the syntax probe already said so"
     heartbeat = Message(message="heartbeat emitted seq=7")
-    assert heartbeat.protocol_code == "OTHER", "the probe has no MISC vocabulary"
+    assert heartbeat.protocolcode == "OTHER", "the probe has no MISC vocabulary"
     wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
-    assert wrapped.protocol_code == "FIX", "the probe reads only the envelope"
+    assert wrapped.protocolcode == "FIX", "the probe reads only the envelope"
 
     batch = FixMsg.from_message_batch(
         _raw_batch(echo, heartbeat, wrapped), FixCodec(registry=registry)
     )
-    assert batch.column("protocol_code").to_pylist() == ["UL", "MISC", "UL"]
-    assert batch.column("ClOrdID").to_pylist()[0] == "PL024819", "promoted, not dropped"
-    assert batch.column("Account").to_pylist()[0] == "807768.001"
-    assert batch.column("MsgType").to_pylist()[0] == "D"
-    assert batch.column("protocol_version").to_pylist()[0] == "4.4"
+    assert batch.column("protocolcode").to_pylist() == ["UL", "MISC", "UL"]
+    assert batch.column("clordid").to_pylist()[0] == "PL024819", "promoted, not dropped"
+    assert batch.column("account").to_pylist()[0] == "807768.001"
+    assert batch.column("msgtype").to_pylist()[0] == "D"
+    assert batch.column("protocolversion").to_pylist()[0] == "4.4"
     assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
     # Without a version the registry cannot resolve the spellings, but the
     # rescued row still keeps its arguments and its identities -- both were
     # simply null while the row read as OTHER.
     bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
-    assert bare.protocol_code == "UL"
+    assert bare.protocolcode == "UL"
     lone = FixMsg.from_message_batch(_raw_batch(bare), FixCodec(registry=registry))
-    assert lone.column("protocol_code").to_pylist() == ["UL"]
+    assert lone.column("protocolcode").to_pylist() == ["UL"]
     assert [(entry["key"], entry["value"]) for entry in lone.column("entries").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
         ("CLORDID", "PL9"),
         ("SIDE", "2"),
     ]
-    assert ("cl_ord_id", "PL9") in lone.column("codes").to_pylist()[0]
+    assert ("clordid", "PL9") in lone.column("codes").to_pylist()[0]
 
 
 def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:
@@ -1659,15 +1673,15 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     # payload anchor, and an unanchored verb answers nothing rather than
     # answering from anywhere.
     rescued = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
-    assert rescued.protocol_code == "UL"
+    assert rescued.protocolcode == "UL"
     anchorless = FixMsg.from_message_batch(_raw_batch(rescued), FixCodec(registry=registry))
-    assert anchorless.column("protocol_code").to_pylist() == ["UL"]
+    assert anchorless.column("protocolcode").to_pylist() == ["UL"]
     assert anchorless.column("direction").to_pylist() == [None]
 
     # A projected row reparsed without its raw message keeps the resolved
     # answer: direction is the message stage's fact, and nothing recomputes
     # it where the text that carried the verb is gone.
-    projected = Message(message="", protocol_code="FIX", direction=True).into_row()
+    projected = Message(message="", protocolcode="FIX", direction=True).into_row()
     projected["message"] = None
     projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
     again = FixMsg.from_message_batch(

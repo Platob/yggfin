@@ -214,13 +214,13 @@ def test_add_builds_one_identity_from_answered_questions(store: Offline) -> None
         "9.1",  # version
         "String",  # type
         "A venue of ours.",  # description
-        "fake_venue",  # column
+        "fakevenue",  # column
         "y",  # write it
         "quit",
     )
     assert "added FakeVenue" in printed
     entry = store.resolve("FakeVenue")
-    assert (entry.fix.tag, entry.fix.column) == (90004, "fake_venue")
+    assert (entry.fix.tag, entry.fix.column) == (90004, "fakevenue")
     assert entry.description == "A venue of ours." and entry.fix.versions == ("9.1",)
 
 
@@ -238,12 +238,12 @@ def test_nothing_is_written_until_the_whole_entry_has_been_shown_back(store: Off
 
 def test_edit_keeps_every_part_left_unanswered(store: Offline) -> None:
     """A bare Enter is "as it was", which is what makes editing one field one answer."""
-    _run(store, "edit FakeRole", "", "", "", "", "", "renamed_column", "y", "quit")
+    _run(store, "edit FakeRole", "", "", "", "", "", "renamedcolumn", "y", "quit")
     entry = store.resolve("FakeRole")
     assert (entry.fix.canonical, entry.fix.tag, entry.fix.column) == (
         "FakeRole",
         90001,
-        "renamed_column",
+        "renamedcolumn",
     )
     assert entry.fix.type == "int", "and the type it already had"
 

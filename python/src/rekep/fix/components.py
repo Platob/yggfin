@@ -22,13 +22,13 @@ from rekep.fix.quickfix import entry_of, is_group, is_reference, members_of
 class Party:
     """One entry of FIX's Parties component."""
 
-    PartyID: Annotated[str | None, DECLARED["PartyID"]] = None
+    partyid: Annotated[str | None, DECLARED["PartyID"]] = None
     """Party identifier."""
 
-    PartyIDSource: Annotated[str | None, DECLARED["PartyIDSource"]] = None
+    partyidsource: Annotated[str | None, DECLARED["PartyIDSource"]] = None
     """Scheme or class of `PartyID`."""
 
-    PartyRole: Annotated[int | None, DECLARED["PartyRole"]] = None
+    partyrole: Annotated[int | None, DECLARED["PartyRole"]] = None
     """Role the party has in the transaction."""
 
     buffer: dict[str, str] | None = None
@@ -39,13 +39,13 @@ class Party:
 class TrdRegTimestamp:
     """One entry of FIX's TrdRegTimestamps component."""
 
-    TrdRegTimestamp: Annotated[datetime.datetime | None, DECLARED["TrdRegTimestamp"]] = None
+    trdregtimestamp: Annotated[datetime.datetime | None, DECLARED["TrdRegTimestamp"]] = None
     """The regulatory instant itself."""
 
-    TrdRegTimestampType: Annotated[int | None, DECLARED["TrdRegTimestampType"]] = None
+    trdregtimestamptype: Annotated[int | None, DECLARED["TrdRegTimestampType"]] = None
     """Which regulatory instant it is."""
 
-    TrdRegTimestampOrigin: Annotated[str | None, DECLARED["TrdRegTimestampOrigin"]] = None
+    trdregtimestamporigin: Annotated[str | None, DECLARED["TrdRegTimestampOrigin"]] = None
     """Who or what stamped it."""
 
     buffer: dict[str, str] | None = None
@@ -63,13 +63,13 @@ class SideTrdRegTimestamp:
     preference table reads both.
     """
 
-    SideTrdRegTimestamp: Annotated[datetime.datetime | None, DECLARED["SideTrdRegTimestamp"]] = None
+    sidetrdregtimestamp: Annotated[datetime.datetime | None, DECLARED["SideTrdRegTimestamp"]] = None
     """The regulatory instant for this side."""
 
-    SideTrdRegTimestampType: Annotated[int | None, DECLARED["SideTrdRegTimestampType"]] = None
+    sidetrdregtimestamptype: Annotated[int | None, DECLARED["SideTrdRegTimestampType"]] = None
     """Which regulatory instant it is, in `TrdRegTimestampType`'s codes."""
 
-    SideTrdRegTimestampSrc: Annotated[str | None, DECLARED["SideTrdRegTimestampSrc"]] = None
+    sidetrdregtimestampsrc: Annotated[str | None, DECLARED["SideTrdRegTimestampSrc"]] = None
     """Who or what stamped it."""
 
     buffer: dict[str, str] | None = None
@@ -80,10 +80,10 @@ class SideTrdRegTimestamp:
 class SecurityAltID:
     """One entry of FIX's SecAltIDGrp component: one alternative identifier."""
 
-    SecurityAltID: Annotated[str | None, DECLARED["SecurityAltID"]] = None
+    securityaltid: Annotated[str | None, DECLARED["SecurityAltID"]] = None
     """The alternative identifier itself."""
 
-    SecurityAltIDSource: Annotated[str | None, DECLARED["SecurityAltIDSource"]] = None
+    securityaltidsource: Annotated[str | None, DECLARED["SecurityAltIDSource"]] = None
     """Scheme or class of `SecurityAltID`, in `SecurityIDSource`'s codes."""
 
     buffer: dict[str, str] | None = None
@@ -100,46 +100,46 @@ class Leg:
     sends with a leg stays in `buffer` under its unique FIX name.
     """
 
-    LegSymbol: Annotated[str | None, DECLARED["LegSymbol"]] = None
+    legsymbol: Annotated[str | None, DECLARED["LegSymbol"]] = None
     """Identifier as the venue spells the leg; what opens an entry."""
 
-    LegSecurityID: Annotated[str | None, DECLARED["LegSecurityID"]] = None
+    legsecurityid: Annotated[str | None, DECLARED["LegSecurityID"]] = None
     """Identifier in the scheme `LegSecurityIDSource` names."""
 
-    LegSecurityIDSource: Annotated[str | None, DECLARED["LegSecurityIDSource"]] = None
+    legsecurityidsource: Annotated[str | None, DECLARED["LegSecurityIDSource"]] = None
     """Which scheme `LegSecurityID` is in, as FIX numbers them."""
 
-    LegSecurityType: Annotated[str | None, DECLARED["LegSecurityType"]] = None
+    legsecuritytype: Annotated[str | None, DECLARED["LegSecurityType"]] = None
     """What the venue calls this leg, from FIX's own list."""
 
-    LegCFICode: Annotated[str | None, DECLARED["LegCFICode"]] = None
+    legcficode: Annotated[str | None, DECLARED["LegCFICode"]] = None
     """ISO 10962 classification of the leg."""
 
-    LegSecurityExchange: Annotated[str | None, DECLARED["LegSecurityExchange"]] = None
+    legsecurityexchange: Annotated[str | None, DECLARED["LegSecurityExchange"]] = None
     """Where the leg is listed, when it differs from the strategy's venue."""
 
-    LegMaturityDate: Annotated[datetime.date | None, DECLARED["LegMaturityDate"]] = None
+    legmaturitydate: Annotated[datetime.date | None, DECLARED["LegMaturityDate"]] = None
     """When the leg expires; null for anything that does not."""
 
-    LegMaturityMonthYear: Annotated[str | None, DECLARED["LegMaturityMonthYear"]] = None
+    legmaturitymonthyear: Annotated[str | None, DECLARED["LegMaturityMonthYear"]] = None
     """The older month-resolution way to say when the leg expires."""
 
-    LegStrikePrice: Annotated[float | None, DECLARED["LegStrikePrice"]] = None
+    legstrikeprice: Annotated[float | None, DECLARED["LegStrikePrice"]] = None
     """Exercise price, where the leg is an option."""
 
-    LegPutOrCall: Annotated[int | None, DECLARED["LegPutOrCall"]] = None
+    legputorcall: Annotated[int | None, DECLARED["LegPutOrCall"]] = None
     """Which way the leg points, where it is an option."""
 
-    LegContractMultiplier: Annotated[float | None, DECLARED["LegContractMultiplier"]] = None
+    legcontractmultiplier: Annotated[float | None, DECLARED["LegContractMultiplier"]] = None
     """Units of the underlying one leg contract represents."""
 
-    LegCurrency: Annotated[str | None, DECLARED["LegCurrency"]] = None
+    legcurrency: Annotated[str | None, DECLARED["LegCurrency"]] = None
     """ISO 4217 currency the leg is priced in."""
 
-    LegSide: Annotated[str | None, DECLARED["LegSide"]] = None
+    legside: Annotated[str | None, DECLARED["LegSide"]] = None
     """Which way the strategy takes this leg, in `Side <54>`'s codes."""
 
-    LegRatioQty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
+    legratioqty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
     """How many of this leg one unit of the strategy is; the leg's weight."""
 
     buffer: dict[str, str] | None = None

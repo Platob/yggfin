@@ -65,7 +65,7 @@ payload.
 Eleven rows through `parse_messages`, at `INFO`:
 
 ```text
-INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 33 columns, partitioned by {'unix_partition': 'identity'}
+INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 33 columns, partitioned by {'unixpartition': 'identity'}
 INFO rekep.iceberg.dataset logs.messages wrote branch=main snapshot=2257423558696136046 in 97ms
 ```
 
@@ -74,7 +74,7 @@ cast and the staged file:
 
 ```text
 DEBUG rekep.fields.field casting a stream onto Message: 33 columns
-DEBUG rekep.iceberg.dataset staged 11 rows to file://data/warehouse/logs/messages/data/unix_partition=1786658400/…
+DEBUG rekep.iceberg.dataset staged 11 rows to file://data/warehouse/logs/messages/data/unixpartition=1786658400/…
 ```
 
 A write that commits forty chunks is still one `INFO`. The per-chunk work is

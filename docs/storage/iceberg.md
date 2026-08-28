@@ -27,8 +27,8 @@ The field name is the full table identifier; `logs.namespace` is `"fix"`.
 ```python
 reader = logs.read_arrow_reader(
     row_filter="Symbol = 'IBM'",
-    columns=["unix", "hash", "MsgSeqNum", "Symbol"],
-    order_by=["unix", "MsgSeqNum", "hash"],
+    columns=["unix", "hash", "msgseqnum", "symbol"],
+    order_by=["unix", "msgseqnum", "hash"],
     snapshot_id=None,
     branch="root",
 )
@@ -37,11 +37,11 @@ print(reader.schema.names)
 
 def rows():
     """One fresh reader per call: a stream is consumed by whoever reads it."""
-    return logs.read_arrow_reader(columns=["unix", "hash", "MsgSeqNum", "Symbol"])
+    return logs.read_arrow_reader(columns=["unix", "hash", "msgseqnum", "symbol"])
 ```
 
 ```text
-['unix', 'hash', 'MsgSeqNum', 'Symbol']
+['unix', 'hash', 'msgseqnum', 'symbol']
 ```
 
 Every `order_by` column must be projected — sorting on one the reader will not
@@ -143,7 +143,7 @@ logs = IcebergDataset(
     catalog="local",
     properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
 )
-print(logs.read_arrow_reader().schema.field("Symbol").type)
+print(logs.read_arrow_reader().schema.field("symbol").type)
 ```
 
 ```text

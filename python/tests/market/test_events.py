@@ -80,27 +80,27 @@ def test_the_base_event_claims_to_be_nothing_in_particular() -> None:
 def test_the_hour_is_derived_from_the_timestamp_and_never_given() -> None:
     """Denormalised for the partition, so one authority rather than two columns."""
     unix = 1710374400_000000000 + 5
-    assert Order(unix=unix).unix_partition == 1710374400
-    assert Order(unix=unix, unix_partition=999).unix_partition == 1710374400, (
+    assert Order(unix=unix).unixpartition == 1710374400
+    assert Order(unix=unix, unixpartition=999).unixpartition == 1710374400, (
         "what is given is ignored"
     )
-    assert 0 <= unix - Order(unix=unix).unix_partition * SECOND < HOUR
+    assert 0 <= unix - Order(unix=unix).unixpartition * SECOND < HOUR
 
 
 def test_the_hour_floors_on_both_sides_of_the_epoch() -> None:
     """Integer division truncates towards zero in most languages and floors in Python."""
     hour_seconds = HOUR // SECOND
-    assert Order(unix=0).unix_partition == 0
-    assert Order(unix=HOUR - 1).unix_partition == 0
-    assert Order(unix=HOUR).unix_partition == hour_seconds
-    assert Order(unix=-1).unix_partition == -hour_seconds, "a pre-epoch instant"
-    assert Order(unix=-HOUR - 1).unix_partition == -2 * hour_seconds
+    assert Order(unix=0).unixpartition == 0
+    assert Order(unix=HOUR - 1).unixpartition == 0
+    assert Order(unix=HOUR).unixpartition == hour_seconds
+    assert Order(unix=-1).unixpartition == -hour_seconds, "a pre-epoch instant"
+    assert Order(unix=-HOUR - 1).unixpartition == -2 * hour_seconds
 
 
 def test_the_partition_clock_is_narrower_than_the_instant() -> None:
-    assert Order.into_field().field("unix_partition").dtype == pyarrow.int32()
+    assert Order.into_field().field("unixpartition").dtype == pyarrow.int32()
     assert Order.into_field().field("unix").dtype == pyarrow.int64()
-    assert Order.into_field().field("unix_partition").metadata["unit"] == "second"
+    assert Order.into_field().field("unixpartition").metadata["unit"] == "second"
     assert Order.into_field().field("unix").metadata["unit"] == "ns"
 
 
@@ -116,33 +116,33 @@ def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:
 def test_a_snapshot_drops_previous_market_values_because_they_are_a_delta() -> None:
     current = Book(
         unix=1,
-        prev_px=10.0,
-        prev_qty=20.0,
-        prev_notional=200.0,
-        prev_bid_px=9.0,
-        prev_bid_qty=4.0,
-        prev_ask_px=11.0,
-        prev_ask_qty=6.0,
-        exec_px=10.5,
-        prev_exec_px=10.0,
+        prevpx=10.0,
+        prevqty=20.0,
+        prevnotional=200.0,
+        prevbidpx=9.0,
+        prevbidqty=4.0,
+        prevaskpx=11.0,
+        prevaskqty=6.0,
+        execpx=10.5,
+        prevexecpx=10.0,
     )
     snapshot = current.make_snapshot(2)
     assert snapshot is not None
-    assert (snapshot.prev_px, snapshot.prev_qty, snapshot.prev_notional) == (None, None, None)
+    assert (snapshot.prevpx, snapshot.prevqty, snapshot.prevnotional) == (None, None, None)
     assert (
-        snapshot.prev_bid_px,
-        snapshot.prev_bid_qty,
-        snapshot.prev_ask_px,
-        snapshot.prev_ask_qty,
-        snapshot.prev_exec_px,
+        snapshot.prevbidpx,
+        snapshot.prevbidqty,
+        snapshot.prevaskpx,
+        snapshot.prevaskqty,
+        snapshot.prevexecpx,
     ) == (None, None, None, None, None)
-    assert snapshot.exec_px == 10.5
+    assert snapshot.execpx == 10.5
 
 
 def test_an_unchanged_state_expires_once_after_one_day() -> None:
     current = Book(
         unix=1,
-        instrument_xhash=1,
+        instrumentxhash=1,
         code="AAPL",
         state=State.OPEN,
     ).identify()
@@ -155,7 +155,7 @@ def test_an_unchanged_state_expires_once_after_one_day() -> None:
 
 
 def test_a_finished_state_does_not_emit_an_unchanged_snapshot() -> None:
-    closed = Book(unix=1, instrument_xhash=1, state=State.CLOSED).identify()
+    closed = Book(unix=1, instrumentxhash=1, state=State.CLOSED).identify()
     assert closed.make_snapshot(HOUR) is None
 
 
@@ -180,8 +180,8 @@ def test_event_object_streams_cross_the_arrow_boundary_in_bounded_batches() -> N
         Order(
             unix=1,
             code="A",
-            codes={"order_id": "A", "client_order_id": "C1"},
-            linked_events=[(0, 7)],
+            codes={"orderid": "A", "clientorderid": "C1"},
+            linkedevents=[(0, 7)],
             side=Side.BUY,
         ).identify(),
         Order(unix=2, code="B", side=Side.SELL).identify(),
@@ -204,17 +204,17 @@ def test_an_empty_event_stream_still_declares_its_schema() -> None:
 
 
 def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
-    unix, instrument_xhash = 1_710_374_400_000_000_123, 42
-    built = Book(unix=unix, instrument_xhash=instrument_xhash).identify()
+    unix, instrumentxhash = 1_710_374_400_000_000_123, 42
+    built = Book(unix=unix, instrumentxhash=instrumentxhash).identify()
 
-    assert built.version_parts() == (unix, hash_bytes_of(instrument_xhash), 0, 0)
+    assert built.version_parts() == (unix, hash_bytes_of(instrumentxhash), 0, 0)
     assert built.hash == built.txhash_of(*built.version_parts())
     assert [
         hash_int_of(one)
         for one in Book.txhash_arrow(
             pyarrow.array([unix], pyarrow.int64()),
             pyarrow.array([unix], pyarrow.int64()),
-            arrow_of([instrument_xhash]),
+            arrow_of([instrumentxhash]),
             pyarrow.array([0], pyarrow.int64()),
             pyarrow.array([0], pyarrow.int64()),
         ).to_pylist()
@@ -224,7 +224,7 @@ def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
 def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> None:
     """`hash` is NOT NULL, so an unsaved row is a visible repeat, not a late failure."""
     assert Order().hash == NIL and Order().xhash == NIL
-    assert Order().state is State.UNKNOWN and Order().prev_unix is None
+    assert Order().state is State.UNKNOWN and Order().prevunix is None
 
 
 def test_mic_and_reason_distinguish_otherwise_identical_event_versions() -> None:
@@ -255,7 +255,7 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(declared.names)
     assert declared.names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
-    assert "symbol" not in MarketEvent.into_field().names, "instrument_code is the flat spelling"
+    assert "symbol" not in MarketEvent.into_field().names, "instrumentcode is the flat spelling"
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
@@ -263,9 +263,9 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
     instrument = Instrument(symbol="BTC-USD", currency=Currency.USD)
     assert instrument.xhash != NIL
     built = shape().attach_instrument(instrument)
-    scoped = shape(instrument_xhash=7, code="given").attach_instrument(instrument)
-    assert built.instrument_xhash == instrument.xhash and built.symbol == instrument.symbol
-    assert scoped.instrument_xhash == 7 and scoped.code == "given"
+    scoped = shape(instrumentxhash=7, code="given").attach_instrument(instrument)
+    assert built.instrumentxhash == instrument.xhash and built.symbol == instrument.symbol
+    assert scoped.instrumentxhash == 7 and scoped.code == "given"
     assert scoped.symbol == instrument.symbol, "a lifecycle code never displaces the symbol"
     assert built.ccy is instrument.currency
     assert "instrument" not in shape.into_field().names
@@ -274,8 +274,8 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
 
 def test_a_row_that_names_no_instrument_keeps_the_hash_it_was_handed() -> None:
     """A projection reading back the flat column alone must not lose it to a NIL."""
-    assert Order(instrument_xhash=7).instrument_xhash == 7
-    assert Order().instrument_xhash == NIL, "and unset really is unset"
+    assert Order(instrumentxhash=7).instrumentxhash == 7
+    assert Order().instrumentxhash == NIL, "and unset really is unset"
 
 
 def test_market_currency_input_is_normalized_to_its_compact_enum() -> None:
@@ -301,7 +301,7 @@ def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> 
 
 def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> None:
     """The hour prunes an instrument read already; bucketing a hash only adds files."""
-    identity = Order.into_field().field("instrument_xhash")
+    identity = Order.into_field().field("instrumentxhash")
     assert not identity.nullable
     assert not identity.is_partition_key
-    assert not Order.into_field().field("instrument_code").nullable
+    assert not Order.into_field().field("instrumentcode").nullable

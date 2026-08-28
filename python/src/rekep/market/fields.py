@@ -131,9 +131,15 @@ def _row_value(name: str, value: Any) -> Any:
 
 
 def fix_tag(name: str, **declared: Any) -> Field:
-    """A model annotation backed by the packaged FIX registry."""
+    """A model annotation backed by the packaged FIX registry.
+
+    The member it annotates carries the folded name; the dictionary's spelling
+    of it is kept as the display.
+    """
     registry = FixRegistry.from_builtin().scalar(name, dtype=None)
-    return registry.merge(Field(**declared))
+    built = registry.merge(Field(**declared))
+    built.fix.display = registry.fix.canonical
+    return built
 
 
 def unkeyed(dtype: pyarrow.DataType) -> pyarrow.DataType:

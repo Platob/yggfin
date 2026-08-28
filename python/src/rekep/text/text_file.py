@@ -39,7 +39,7 @@ _TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 #: payload to `message`::
 #:
 #:     2026-08-14 00:05:01.167_520 [77-e72:9ef:72503] [ModuleFoo] (DEBUG) Found code
-#:     ^timestamp                  ^thread_name       ^plugin_code ^level ^message
+#:     ^timestamp                  ^threadname       ^plugincode ^level ^message
 #:
 #: `level` is optional -- some plugins print none -- and the fraction is one
 #: to nine digits or absent: the same capture writes `01.147`, `01,147`,
@@ -59,8 +59,8 @@ _TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 HEADER_PATTERN = re.compile(
     rb"^(?:\xef\xbb\xbf)?[ \t]*"
     rb"(?P<timestamp>" + _TIMESTAMP.encode() + rb")[ \t]+"
-    rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
-    rb"\[(?P<plugin_code>[^\]]*)\][ \t]*"
+    rb"\[(?P<threadname>[^\]]*)\][ \t]+"
+    rb"\[(?P<plugincode>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
     rb"(?P<message>.*)$",
     re.DOTALL,
@@ -126,7 +126,7 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 DEFAULT_MAX_ROW_BYTE_SIZE = 1 << 26
 
 # Columns a line physically carries; the rest of the parsed row is derived.
-_RENDERED = ("unix", "thread_name", "plugin_code", "message")
+_RENDERED = ("unix", "threadname", "plugincode", "message")
 
 
 def compiled_header(source: re.Pattern[bytes] | str | bytes) -> re.Pattern[bytes]:
@@ -177,7 +177,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: configures its own by handing over the pattern source: a `str` or
     #: `bytes` is compiled here, so a log whose header this package has never
     #: seen is a document change and not a code change. It must name the same
-    #: groups -- `timestamp`, `thread_name`, `plugin_code`, `message`.
+    #: groups -- `timestamp`, `threadname`, `plugincode`, `message`.
     header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
@@ -559,7 +559,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Parse bounded raw rows only after their payload and time survive."""
         groups = self.header_pattern.groupindex
         indices = tuple(
-            groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
+            groups[name] for name in ("timestamp", "threadname", "plugincode", "message")
         )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | bytearray | None]] = []
         row_byte_sizes: list[int] = []
@@ -713,7 +713,7 @@ class TextFile(Dataset, io.BufferedIOBase):
 
         columns: dict[str, Any] = {
             "unix": unix,
-            "unix_partition": unix_partition_arrow(unix),
+            "unixpartition": unix_partition_arrow(unix),
             "cunix": unix,
             "runix": unix,
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
@@ -722,21 +722,21 @@ class TextFile(Dataset, io.BufferedIOBase):
             "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
             "codes": pyarrow.repeat(pyarrow.scalar({}, CODES_TYPE), count),
-            "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
-            "parent_hash": pyarrow.nulls(count, PARENTS),
+            "prevunix": pyarrow.nulls(count, pyarrow.int64()),
+            "parenthash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
             "reason": reasons,
-            "source_url": pyarrow.repeat(self.url, count),
-            "source_rownum": rownums_array,
-            "thread_name": pyarrow.compute.fill_null(_utf8(threads), ""),
-            "plugin_code": pyarrow.compute.fill_null(_utf8(plugins), ""),
+            "sourceurl": pyarrow.repeat(self.url, count),
+            "sourcerownum": rownums_array,
+            "threadname": pyarrow.compute.fill_null(_utf8(threads), ""),
+            "plugincode": pyarrow.compute.fill_null(_utf8(plugins), ""),
             "message": messages,
         }
         columns.update(
             self.into_row().parse_arrow(
                 messages,
                 self.msg_type_event_types,
-                columns["plugin_code"],
+                columns["plugincode"],
                 self.protocol_rules,
             )
         )
@@ -746,9 +746,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
-        linked_events = schema.field("linked_events")
+        linkedevents = schema.field("linkedevents")
         columns.setdefault(
-            "linked_events", pyarrow.repeat(pyarrow.scalar([], type=linked_events.type), count)
+            "linkedevents", pyarrow.repeat(pyarrow.scalar([], type=linkedevents.type), count)
         )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable
@@ -929,9 +929,9 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     lines = compute.binary_join_element_wise(
         stamps.cast(pyarrow.string()),
         " [",
-        rows.column("thread_name").cast(pyarrow.string()),
+        rows.column("threadname").cast(pyarrow.string()),
         "] [",
-        rows.column("plugin_code").cast(pyarrow.string()),
+        rows.column("plugincode").cast(pyarrow.string()),
         "] ",
         rows.column("message").cast(pyarrow.string()),
         "",

@@ -813,7 +813,7 @@ def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
 
     Keyed by the tag, or by the *canonical* name for a field FIX never
     numbered -- the key is what a person reads first, and folding it there
-    would spell `AMON.ISINCODE` in a case nothing else in the document uses.
+    would spell `AMON.isincode` in a case nothing else in the document uses.
     """
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))

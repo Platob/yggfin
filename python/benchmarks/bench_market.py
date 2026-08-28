@@ -330,10 +330,10 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
         unix=UNIX,
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        security_id="FR0000000001",
-        security_id_source="4",
-        alt_ids={"RIC": "CAL.N"},
-        security_type="MLEG",
+        securityid="FR0000000001",
+        securityidsource="4",
+        altids={"RIC": "CAL.N"},
+        securitytype="MLEG",
         exchange="XPAR",
         currency=Currency.EUR,
         multiplier=10.0,
@@ -344,14 +344,14 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
                 symbol="JUN-27",
                 side=Side.BUY,
                 kind=AssetKind.FUTURE,
-                security_type="FUT",
+                securitytype="FUT",
             )
         ],
     ).with_previous(None)
     assert instrument is not None
     # The registry leg is deliberately FIX.4.4; protocol reads never infer a
     # version when neither BeginString nor FIXT application-version tags exist.
-    log = instrument.into_fixmsg(BeginString="FIX.4.4")
+    log = instrument.into_fixmsg(beginstring="FIX.4.4")
     source = next(
         iter(FixMsg.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
     )
@@ -410,23 +410,23 @@ def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
     return {
         "unix": [UNIX] * rows,
-        "unix_partition": [UNIX_PARTITION] * rows,
+        "unixpartition": [UNIX_PARTITION] * rows,
         "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,
         "hash": [index + 1 for index in range(rows)],
         "xhash": [index + 1 for index in range(rows)],
-        "linked_events": [[] for _ in range(rows)],
+        "linkedevents": [[] for _ in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "code": [f"S{index % 5000}" for index in range(rows)],
         "codes": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
-        "instrument_xhash": [index % 5000 + 1 for index in range(rows)],
-        "instrument_code": [f"S{index % 5000}" for index in range(rows)],
+        "instrumentxhash": [index % 5000 + 1 for index in range(rows)],
+        "instrumentcode": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
-        "px_unit": ["USD"] * rows,
-        "qty_unit": ["SHARES"] * rows,
+        "pxunit": ["USD"] * rows,
+        "qtyunit": ["SHARES"] * rows,
     }
 
 
@@ -434,14 +434,14 @@ def books(rows: int, depth: int) -> pyarrow.RecordBatch:
     """A batch of snapshots, both sides flat and only their levels filled in."""
     given = envelope(rows) | {
         "sunix": [UNIX] * rows,
-        "bid_depth": [depth] * rows,
-        "ask_depth": [depth] * rows,
-        "bid_levels": [levels(depth, 100.0)] * rows,
-        "ask_levels": [levels(depth, 100.5)] * rows,
+        "biddepth": [depth] * rows,
+        "askdepth": [depth] * rows,
+        "bidlevels": [levels(depth, 100.0)] * rows,
+        "asklevels": [levels(depth, 100.5)] * rows,
         "deltas": [[] for _ in range(rows)],
         "executions": [[] for _ in range(rows)],
-        "bid_alive": [[] for _ in range(rows)],
-        "ask_alive": [[] for _ in range(rows)],
+        "bidalive": [[] for _ in range(rows)],
+        "askalive": [[] for _ in range(rows)],
     }
     return Book.into_field().cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
@@ -461,7 +461,7 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
     def crossed() -> object:
         return pyarrow.compute.mean(
             pyarrow.compute.divide(
-                pyarrow.compute.add(filled.column("bid_px"), filled.column("ask_px")),
+                pyarrow.compute.add(filled.column("bidpx"), filled.column("askpx")),
                 pyarrow.scalar(2.0),
             )
         )
@@ -469,11 +469,11 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
     crossed_time, _ = timed(crossed, repeat)
 
     assert filled.column("spread")[0].as_py() is not None, "nothing was derived"
-    assert filled.column("bid_depth")[0].as_py() == depth, "the sides were not derived"
+    assert filled.column("biddepth")[0].as_py() == depth, "the sides were not derived"
 
     report("Book.summarise: both sides, then mid/spread/vwap", summarised, rows)
     report("read the stored vwap column", flat, rows, against=summarised)
-    report("recompute a mid from the stored bid_px/ask_px", crossed_time, rows, against=summarised)
+    report("recompute a mid from the stored bidpx/askpx", crossed_time, rows, against=summarised)
 
 
 # -- 4: enum storage ---------------------------------------------------------
@@ -593,7 +593,7 @@ def stream(events: int) -> list[object]:
                         px=100.0 + generate.randrange(-20, 20) * 0.01,
                         qty=1.0,
                         state=State.FILLED,
-                        exec_id=f"E{index}",
+                        execid=f"E{index}",
                     )
                 )
             )
@@ -606,7 +606,7 @@ def stream(events: int) -> list[object]:
                     side=side,
                     px=float("nan") if index % 20 == 0 else quoted,
                     qty=float(generate.randrange(1, 50)),
-                    order_id=named,
+                    orderid=named,
                     state=State.CANCELLED if shape == 2 else State.NEW,
                     kind=MarketKind.LIMIT_ORDER if index % 20 == 0 else MarketKind.UNKNOWN,
                 )
@@ -634,7 +634,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
             side=Side.BID,
             px=100.0 - level * 0.01,
             qty=1.0 + cycle % 2,
-            order_id=f"M{slot}",
+            orderid=f"M{slot}",
             state=State.NEW,
         )
         built = event.attach_instrument(instrument).with_previous(None)
@@ -657,7 +657,7 @@ def fold_shape(events: int, live_levels: int, orders_per_level: int) -> tuple[Co
         counts["books"] += 1
         counts["deltas"] += len(book.deltas)
         counts["executions"] += len(book.executions)
-        counts["materialized_levels"] += len(book.bid_levels) + len(book.ask_levels)
+        counts["materialized_levels"] += len(book.bidlevels) + len(book.asklevels)
         counts["snapshots"] += book.sunix is not None
     state = next(iter(folding.folding.values()))
     counts["live_orders"] = len(state.bid.orders) + len(state.ask.orders)
@@ -685,8 +685,8 @@ def bench_standing(rows: int, repeat: int) -> None:
                         "secondary_order_id": f"V{index}",
                         "secondary_cl_ord_id": f"C{index}",
                     },
-                    order_id=f"O{index}",
-                    client_order_id=f"CL{index}",
+                    orderid=f"O{index}",
+                    clientorderid=f"CL{index}",
                     side=Side.BID,
                     px=100.0,
                     qty=1.0,
@@ -696,7 +696,7 @@ def bench_standing(rows: int, repeat: int) -> None:
         target = side.orders[live // 2 + 1]
         cases = (
             ("exact xhash", Order(xhash=target.xhash)),
-            ("linked xhash", Execution(linked_events=[(UNIX, target.xhash)])),
+            ("linked xhash", Execution(linkedevents=[(UNIX, target.xhash)])),
             ("venue code", Order(codes={"secondary_order_id": f"V{live // 2}"})),
             ("client code", Order(codes={"secondary_cl_ord_id": f"C{live // 2}"})),
             ("code miss", Order(codes={"secondary_order_id": "missing"})),
@@ -704,7 +704,7 @@ def bench_standing(rows: int, repeat: int) -> None:
 
         def linear(event: Order | Execution, side: _Side = side) -> Order | None:
             identities = ([event.xhash] if event.is_order() and event.xhash else []) + [
-                identity for _, identity in event.linked_events
+                identity for _, identity in event.linkedevents
             ]
             if identities:
                 return next(
@@ -749,7 +749,7 @@ def bench_operation_counts(rows: int) -> None:
                 raise AssertionError("the representative live book did not snapshot")
             snapshot = folding._books.pop()
             output["snapshots"] += 1
-            output["snapshot_alive"] += len(snapshot.bid_alive) + len(snapshot.ask_alive)
+            output["snapshot_alive"] += len(snapshot.bidalive) + len(snapshot.askalive)
         _, peak = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
@@ -812,7 +812,7 @@ def bench_snapshot(rows: int, repeat: int) -> None:
 
     snapshot_seconds, snapshot = timed(materialize, repeat)
     assert not snapshot.deltas and not snapshot.executions
-    assert len(snapshot.bid_alive) + len(snapshot.ask_alive) == live
+    assert len(snapshot.bidalive) + len(snapshot.askalive) == live
 
     def recover() -> BookIterator:
         return BookIterator(snapshots=(snapshot,), snapshot_every=0, max_order_age_ns=None)
@@ -893,7 +893,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 hash=index + 1,
                 code=f"O{index}",
                 codes={"symbol": "BTC-USD"},
-                order_id=f"O{index}",
+                orderid=f"O{index}",
                 side=Side.BID,
                 px=100.0,
                 qty=1.0,
@@ -944,7 +944,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 hash=index + 1,
                 code=f"O{index}",
                 codes={"symbol": "BTC-USD"},
-                order_id=f"O{index}",
+                orderid=f"O{index}",
                 side=Side.BID,
                 px=float(live - index),
                 qty=1.0,
@@ -1112,15 +1112,15 @@ def _pipeline_message_batches(
         count = stop - start
         columns: dict[str, pyarrow.Array] = {
             "unix": unix,
-            "unix_partition": unix_partition_arrow(unix),
+            "unixpartition": unix_partition_arrow(unix),
             "etype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
             "cunix": unix,
             "runix": unix,
-            "source_url": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),
-            "source_rownum": pyarrow.array(range(start + 1, stop + 1), pyarrow.int64()),
+            "sourceurl": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),
+            "sourcerownum": pyarrow.array(range(start + 1, stop + 1), pyarrow.int64()),
             "message": pyarrow.repeat(pyarrow.scalar(""), count),
-            "protocol_code": pyarrow.array(protocols),
-            "MsgType": pyarrow.array(msg_types),
+            "protocolcode": pyarrow.array(protocols),
+            "msgtype": pyarrow.array(msg_types),
             "entries": pyarrow.array(entries, schema.field("entries").type),
         }
         arrays = []

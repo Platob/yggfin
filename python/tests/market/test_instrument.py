@@ -23,7 +23,7 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
     variants = (
         Instrument(symbol="AAPL"),
         Instrument(symbol="AAPL", exchange="XNAS"),
-        Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4"),
+        Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4"),
         Instrument(symbol="AAPL", xhash=7, code="US0378331005"),
     )
     assert {(built.xhash, built.code) for built in variants} == {(expected, "AAPL")}
@@ -31,17 +31,17 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
 
 def test_two_venues_using_the_same_symbol_agree() -> None:
     one = Instrument(
-        symbol="AAPL", exchange="XNAS", security_id="US0378331005", security_id_source="4"
+        symbol="AAPL", exchange="XNAS", securityid="US0378331005", securityidsource="4"
     )
     other = Instrument(
-        symbol="AAPL", exchange="XPAR", security_id="FR0000000001", security_id_source="4"
+        symbol="AAPL", exchange="XPAR", securityid="FR0000000001", securityidsource="4"
     )
     assert one.xhash == other.xhash
 
 
 def test_two_symbols_for_the_same_registered_identifier_stay_distinct() -> None:
-    one = Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4")
-    other = Instrument(symbol="AAPL.OQ", security_id="US0378331005", security_id_source="4")
+    one = Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4")
+    other = Instrument(symbol="AAPL.OQ", securityid="US0378331005", securityidsource="4")
     assert one.xhash != other.xhash
 
 
@@ -71,8 +71,8 @@ def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
         code="US0378331005",
         exchange="XCME",
         currency="USD",
-        security_id="US0378331005",
-        security_id_source="4",
+        securityid="US0378331005",
+        securityidsource="4",
     )
     assert (unidentified.xhash, unidentified.code) == (NIL, "")
 
@@ -106,9 +106,9 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
 ) -> None:
     log = FixMsg(
         unix=1,
-        BeginString="FIX.4.4",
-        MsgType="d",
-        Symbol="FAKE-SYM",
+        beginstring="FIX.4.4",
+        msgtype="d",
+        symbol="FAKE-SYM",
         entries=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
@@ -147,10 +147,10 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
         unix=1_000,
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        security_id="FR0000000001",
-        security_id_source="4",
-        alt_ids={"RIC_CODE": "CAL.N"},
-        security_type="MLEG",
+        securityid="FR0000000001",
+        securityidsource="4",
+        altids={"RIC_CODE": "CAL.N"},
+        securitytype="MLEG",
         exchange="XPAR",
         currency=Currency.EUR,
         multiplier=10.0,
@@ -158,7 +158,7 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
         lot=1.0,
         maturity=datetime.date(2027, 6, 18),
         strike=42.0,
-        option_kind=OptionKind.CALL,
+        optionkind=OptionKind.CALL,
         label="Calendar spread",
         legs=[
             Leg(
@@ -198,13 +198,13 @@ def test_normalized_instrument_batches_decode_without_python_rows(
             unix=1_000,
             cunix=900,
             runix=1_100,
-            parent_hash=[11, 12],
+            parenthash=[11, 12],
             symbol="CAL-27",
             kind=AssetKind.MULTILEG,
-            security_id="FR0000000001",
-            security_id_source="4",
-            alt_ids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N", "Z": "vendor"},
-            security_type="MLEG",
+            securityid="FR0000000001",
+            securityidsource="4",
+            altids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N", "Z": "vendor"},
+            securitytype="MLEG",
             exchange="XPAR",
             currency=Currency.EUR,
             multiplier=10.0,
@@ -212,7 +212,7 @@ def test_normalized_instrument_batches_decode_without_python_rows(
             lot=1.0,
             maturity=datetime.date(2027, 6, 18),
             strike=42.0,
-            option_kind=OptionKind.CALL,
+            optionkind=OptionKind.CALL,
             label="Calendar spread",
             legs=[
                 Leg(
@@ -295,13 +295,13 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
     first = Instrument(
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
-        alt_ids={"RIC_CODE": "CAL.N", "ISIN_NUMBER": "FR0000000001"},
+        altids={"RIC_CODE": "CAL.N", "ISIN_NUMBER": "FR0000000001"},
         maturity=maturity,
         legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturity=maturity)],
     )
     reordered = dataclasses.replace(
         first,
-        alt_ids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N"},
+        altids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N"},
     )
 
     one = dataclasses.replace(first, unix=1).with_previous(None)
@@ -309,6 +309,6 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
 
     assert one is not None and two is not None
     assert one.hash == two.hash
-    empty = dataclasses.replace(first, unix=1, alt_ids={}, hash=0).identify().hash
-    absent = dataclasses.replace(first, unix=1, alt_ids=None, hash=0).identify().hash
+    empty = dataclasses.replace(first, unix=1, altids={}, hash=0).identify().hash
+    absent = dataclasses.replace(first, unix=1, altids=None, hash=0).identify().hash
     assert empty != absent

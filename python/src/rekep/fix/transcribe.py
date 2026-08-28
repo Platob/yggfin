@@ -915,11 +915,11 @@ class FixCodec(Convertible):
         """
         return MappingProxyType(
             {
-                "Parties": Parties,
-                "TrdRegTimestamps": TrdRegTimestamps,
-                "SideTrdRegTS": SideTrdRegTimestamps,
-                "SecurityAltID": SecurityAltIDs,
-                "Legs": Legs,
+                "parties": Parties,
+                "trdregtimestamps": TrdRegTimestamps,
+                "sidetrdregts": SideTrdRegTimestamps,
+                "securityaltid": SecurityAltIDs,
+                "legs": Legs,
             }
         )
 
@@ -1094,7 +1094,7 @@ class FixCodec(Convertible):
 
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
-        return self.component_of("Parties", version)  # type: ignore[return-value]
+        return self.component_of("parties", version)  # type: ignore[return-value]
 
     def component_of(self, column: str, version: str | None = None) -> ComponentGroup:
         """Version-aware extractor for one structured component, cached per version."""
@@ -1655,7 +1655,7 @@ def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
     """`(tag and folded spelling, the value it names)` for one version.
 
     The dictionary's own `encoded`, as the value set one kernel probes:
-    `Side=Buy` and `Side=BUY` both reach `1`, and a spelling two values share
+    `side=Buy` and `side=BUY` both reach `1`, and a spelling two values share
     reaches neither -- which is the record's rule, applied here rather than
     reimplemented.
     """

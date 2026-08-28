@@ -128,7 +128,7 @@ def test_every_annotated_name_is_the_field_the_registry_answers_for() -> None:
     """Which is what makes the name a safe key: it resolves, or the import fails."""
     from rekep.fix.columns import DECLARATIONS, DECLARED
 
-    assert set(DECLARED) == {member.name for member in DECLARATIONS.values()}
+    assert set(DECLARED) == {member.fix.canonical for member in DECLARATIONS.values()}
     assert len(DECLARED) == len(DECLARATIONS), "one name per tag, and no name twice"
     for name, member in DECLARED.items():
         assert member.fix.canonical == name

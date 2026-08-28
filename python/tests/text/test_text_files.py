@@ -367,11 +367,11 @@ def test_msgtype_filters_are_forwarded_to_every_file(tmp_path: Path) -> None:
     )
 
     files = TextFiles.from_folder(tmp_path)
-    assert files.read_arrow_table().column("MsgType").to_pylist() == ["0", "D", "1", "8"]
+    assert files.read_arrow_table().column("msgtype").to_pylist() == ["0", "D", "1", "8"]
 
     table = files.read_arrow_table(exclude_msgtypes=("0", "1"))
 
-    assert table.column("MsgType").to_pylist() == ["D", "8"]
+    assert table.column("msgtype").to_pylist() == ["D", "8"]
 
 
 def test_duration_windows_are_shared_across_file_boundaries(tmp_path: Path) -> None:
@@ -414,7 +414,7 @@ def test_time_bounds_are_forwarded_to_every_file(tmp_path: Path) -> None:
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     walked = list(TextFiles.from_folder(capture, pattern="*.txt*").into_urls())
-    read = files.into_arrow_table().column("source_url").to_pylist()
+    read = files.into_arrow_table().column("sourceurl").to_pylist()
     assert read[::EXPECTED_RECORDS] == walked
 
     # Every file's rows are contiguous: a set never interleaves two logs. Cut

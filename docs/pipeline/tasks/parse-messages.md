@@ -18,9 +18,9 @@ The package, a FIX registry and a catalog have to exist first:
 [deploy from scratch](../operations/deploy.md).
 
 Each [`Message`](../../products/message.md) row carries the recording time in
-`unix` with its `unix_partition`, `source_url` and the 1-based physical
-`source_rownum`, `thread_name` and `plugin_code` from the configured header,
-the unsplit payload in `message`, the syntax-only `protocol_code`, residual
+`unix` with its `unixpartition`, `sourceurl` and the 1-based physical
+`sourcerownum`, `threadname` and `plugincode` from the configured header,
+the unsplit payload in `message`, the syntax-only `protocolcode`, residual
 ordered `entries` with repeated keys retained, the unambiguous `MsgType` and
 registry-mapped `etype`, and `hash` — the XXH3-64 identity of the exact UTF-8
 payload.
@@ -118,11 +118,11 @@ from rekep import TextFile
 
 log = TextFile.from_path("app.log")
 table = log.into_arrow_table(max_row_byte_size=1 << 20)
-table.filter(table.column("reason").is_valid()).select(["source_rownum", "reason"])
+table.filter(table.column("reason").is_valid()).select(["sourcerownum", "reason"])
 ```
 
 ```text
-source_rownum  reason
+sourcerownum  reason
 1              row truncated at max_row_byte_size; dropped bytes: 66060331
 ```
 
@@ -144,11 +144,11 @@ allocation.
 
 The standard header — `BeginString`, `BodyLength`, `MsgType`, `MsgSeqNum`,
 `SenderCompID`, `TargetCompID`, `SendingTime` — is lifted out of `entries`
-into columns of its own, beside `protocol_code` and the early `etype`. A
+into columns of its own, beside `protocolcode` and the early `etype`. A
 lifted column is read back out of `entries` wherever it is empty, so a row
 that carried the field only in the list still answers.
 
-`parse_fix` refuses a source missing `MsgType`, `entries` or `protocol_code`
+`parse_fix` refuses a source missing `MsgType`, `entries` or `protocolcode`
 rather than reporting an empty successful run. There is no migration: a table
 without those columns is rebuilt.
 

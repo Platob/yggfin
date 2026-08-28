@@ -6,13 +6,13 @@ import functools
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Annotated, Any, Self
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.enums import EventType
-from rekep.fields import scalar
+from rekep.fields import DISPLAY, Field, column_name, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
 from rekep.fix.message import NOT_SEPARATOR, parse_pairs
 from rekep.market.event import Event
@@ -48,7 +48,7 @@ _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
 #: In the standard's own order, which is also the order they are re-emitted
 #: in: `BeginString` is always the first field of a message and `MsgType`
 #: always the third.
-SESSION_FIELDS: tuple[tuple[str, str], ...] = (
+SESSION_NAMES: tuple[tuple[str, str], ...] = (
     ("BeginString", "8"),
     ("BodyLength", "9"),
     ("MsgType", "35"),
@@ -57,6 +57,30 @@ SESSION_FIELDS: tuple[tuple[str, str], ...] = (
     ("TargetCompID", "56"),
     ("SendingTime", "52"),
 )
+
+#: The same, as the columns carry them: folded, beside the tag. A column is
+#: matched by its fold, so the dictionary's spelling is kept once above and
+#: read back off `fix:display` rather than respelled at each use.
+SESSION_FIELDS: tuple[tuple[str, str], ...] = tuple(
+    (column_name(name), tag) for name, tag in SESSION_NAMES
+)
+
+#: The one session field whose value the standard constrains, and the one whose
+#: `U`-prefixed wire spelling defers to a rendered name beside it.
+_MSG_TYPE = column_name("MsgType")
+
+
+def _session(name: str) -> Field:
+    """One lifted header column: text as the payload spelled it, displayed as
+    the dictionary spells it.
+
+    The display and nothing else. This stage lifts by syntax -- a tag, before
+    the checksum -- and reads no dictionary, so the column claims no protocol
+    reading; what it does need is the spelling a reader knows the field by,
+    which the fold removed from its name.
+    """
+    return Field(metadata={DISPLAY: name})
+
 
 #: `{folded spelling: column}` for every session field, which is the lookup a
 #: parse actually does -- one probe per entry rather than one pass per field.
@@ -68,12 +92,9 @@ SESSION_FIELDS: tuple[tuple[str, str], ...] = (
 #: both, and it keeps doing so: a `35=U1` wrapper naming its real type beside
 #: it is the whole reason the rendered spelling is read at all.
 _SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
-    {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": "MsgType"}
+    {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": _MSG_TYPE}
 )
 
-#: The one session field whose value the standard constrains, and the one whose
-#: `U`-prefixed wire spelling defers to a rendered name beside it.
-_MSG_TYPE = "MsgType"
 _CHECKSUM_TOKEN = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?"
     rf"(?:10|checksum|trailer\.10|trailer\.checksum)[ \t\r\n\f\x0b]*="
@@ -112,47 +133,47 @@ class Message(Event):
         """Contract metadata published with raw-message schemas."""
         return _CONTRACT_METADATA
 
-    source_url: str = ""
+    sourceurl: Annotated[str, Field.column("Source URL")] = ""
     """Path of the log the row came from, as its filesystem addresses it."""
 
-    source_rownum: int = 0
+    sourcerownum: Annotated[int, Field.column("Source Rownum")] = 0
     """1-based physical line number of the header; 0 when not read from a file."""
 
-    thread_name: str = ""
+    threadname: Annotated[str, Field.column("Thread Name")] = ""
     """Contents of the first bracketed header field."""
 
-    plugin_code: str = ""
+    plugincode: Annotated[str, Field.column("Plugin Code")] = ""
     """Contents of the second bracketed header field."""
 
     message: str = ""
     """Payload after the fixed log header, with continuation lines folded in."""
 
-    protocol_code: str = _NO_PROTOCOL
+    protocolcode: Annotated[str, Field.column("Protocol Code")] = _NO_PROTOCOL
     """Protocol syntax detected without interpreting its fields."""
 
     # In the standard's order, because that is the order a row re-emits them
     # in: `BeginString` is always a message's first field and `MsgType` its
     # third. Every one of them is the text the payload spelled -- this stage
     # reads no numbers and names no zone.
-    BeginString: str | None = None
+    beginstring: Annotated[str | None, _session("BeginString")] = None
     """Protocol the session negotiated, as the payload spells it."""
 
-    BodyLength: str | None = None
+    bodylength: Annotated[str | None, _session("BodyLength")] = None
     """Declared body length, kept as text: this stage reads no numbers."""
 
-    MsgType: str | None = None
+    msgtype: Annotated[str | None, _session("MsgType")] = None
     """First FIX message discriminator when the payload names one."""
 
-    MsgSeqNum: str | None = None
+    msgseqnum: Annotated[str | None, _session("MsgSeqNum")] = None
     """Sequence number the payload states, as text."""
 
-    SenderCompID: str | None = None
+    sendercompid: Annotated[str | None, _session("SenderCompID")] = None
     """Who the payload says sent it."""
 
-    TargetCompID: str | None = None
+    targetcompid: Annotated[str | None, _session("TargetCompID")] = None
     """Who the payload says it was for."""
 
-    SendingTime: str | None = None
+    sendingtime: Annotated[str | None, _session("SendingTime")] = None
     """When the payload says it was sent, in the payload's own spelling."""
 
     entries: list[Entry] = None  # type: ignore[assignment]
@@ -175,15 +196,15 @@ class Message(Event):
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
-        # `protocol_code` and `direction` are read off the raw *text*, so a row
+        # `protocolcode` and `direction` are read off the raw *text*, so a row
         # carrying one answers them whoever tokenized its arguments:
         # `from_text(line, message=line)` stored `OTHER` and no direction
         # because it had passed its own `entries` in. Everything else here is
         # read off the arguments, and an explicit list of them is the answer.
-        if self.message and (implicit_entries or self.protocol_code == _NO_PROTOCOL):
+        if self.message and (implicit_entries or self.protocolcode == _NO_PROTOCOL):
             parsed = self.parse_arrow(pyarrow.array([self.message]))
-            if self.protocol_code == _NO_PROTOCOL:
-                self.protocol_code = parsed["protocol_code"][0].as_py()
+            if self.protocolcode == _NO_PROTOCOL:
+                self.protocolcode = parsed["protocolcode"][0].as_py()
             if self.direction is None:
                 self.direction = parsed["direction"][0].as_py()
         if implicit_entries and self.message:
@@ -199,7 +220,7 @@ class Message(Event):
         for name, _ in SESSION_FIELDS:
             if getattr(self, name) is None:
                 setattr(self, name, session.get(name))
-        if self.MsgType is None and self.etype == EventType.UNKNOWN:
+        if self.msgtype is None and self.etype == EventType.UNKNOWN:
             self.etype = EventType.MISC
 
     @classmethod
@@ -223,7 +244,7 @@ class Message(Event):
 
         The raw text itself is retained only where a caller declares
         `message=` -- the pairs carry every field -- and the syntax columns
-        `protocol_code`, `etype` and `direction` are read off that text, so
+        `protocolcode`, `etype` and `direction` are read off that text, so
         they stay unset without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
@@ -257,8 +278,8 @@ class Message(Event):
                     for name, _ in SESSION_FIELDS
                 },
                 "etype": pyarrow.chunked_array([part["etype"] for part in parts], _EVENT_CODE),
-                "protocol_code": pyarrow.chunked_array(
-                    [part["protocol_code"] for part in parts], pyarrow.string()
+                "protocolcode": pyarrow.chunked_array(
+                    [part["protocolcode"] for part in parts], pyarrow.string()
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
@@ -271,7 +292,7 @@ class Message(Event):
             return {
                 **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
                 "etype": pyarrow.array([], _EVENT_CODE),
-                "protocol_code": pyarrow.array([], pyarrow.string()),
+                "protocolcode": pyarrow.array([], pyarrow.string()),
                 "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], pyarrow.bool_()),
             }
@@ -309,8 +330,8 @@ class Message(Event):
         return {
             **session,
             "etype": event_types,
-            "protocol_code": protocols,
-            "MsgType": msg_types,
+            "protocolcode": protocols,
+            _MSG_TYPE: msg_types,
             "entries": entries,
             "direction": direction,
         }

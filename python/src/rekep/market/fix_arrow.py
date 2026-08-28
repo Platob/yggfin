@@ -10,6 +10,7 @@ import pyarrow.compute as compute
 
 from rekep.enums import Currency, EventType, MarketKind, Side, State, TimeInForce
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
+from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.market.fix import (
@@ -95,14 +96,14 @@ _SIDE_CODES = {**Side.worded_codes(), **Side._fix_codes()}
 _TIF_CODES = {**TimeInForce.worded_codes(), **TimeInForce._fix_codes()}
 #: Resolved component columns whose presence sends a row to the scalar
 #: translator. The regulatory clocks steer transaction time; the instrument
-#: groups feed `alt_ids` and `legs` -- their count tags in `entries` used to
+#: groups feed `altids` and `legs` -- their count tags in `entries` used to
 #: mark these rows, and the resolved column is where that presence lives now.
 #: `Parties` is deliberately absent: order and execution rows never read it.
 _COMPONENT_EXCLUSIONS = (
-    "TrdRegTimestamps",
-    "SideTrdRegTS",
-    "SecurityAltID",
-    "Legs",
+    "trdregtimestamps",
+    "sidetrdregts",
+    "securityaltid",
+    "legs",
 )
 
 
@@ -129,8 +130,8 @@ def flat_market_parts(
     if set(declared) - {"registry", "fix_version"} or not batch.num_rows:
         return None
     columns = {name: batch.column(name) for name in batch.schema.names}
-    msg_type = columns.get("MsgType")
-    version = columns.get("protocol_version")
+    msg_type = columns.get("msgtype")
+    version = columns.get("protocolversion")
     entries = columns.get("entries")
     if msg_type is None or version is None or entries is None:
         return None
@@ -244,8 +245,8 @@ def flat_market_positions(
     if set(declared) - {"registry", "fix_version"} or not batch.num_rows:
         return
     columns = {name: batch.column(name) for name in batch.schema.names}
-    msg_type = columns.get("MsgType")
-    versions = columns.get("protocol_version")
+    msg_type = columns.get("msgtype")
+    versions = columns.get("protocolversion")
     entries = columns.get("entries")
     if msg_type is None or versions is None or entries is None:
         return
@@ -357,7 +358,7 @@ def _eligible_market_rows(
         value = values.number(name)
         eligible = compute.and_(eligible, compute.fill_null(compute.is_finite(value), True))
 
-    msg_type = columns["MsgType"]
+    msg_type = columns["msgtype"]
     reports = pyarrow.array(
         [kind for kind, handler in tags.handlers.items() if handler == EXECUTION_REPORT_HANDLER]
     )
@@ -410,12 +411,18 @@ class _Values:
         self._cache: dict[tuple[str, str], pyarrow.Array] = {}
 
     def raw(self, name: str, dtype: pyarrow.DataType) -> pyarrow.Array:
+        """One FIX field, from its own column or from what `entries` still holds.
+
+        Asked for by the dictionary's spelling and found under the folded one:
+        a column is `parentclordid` and the field is `ParentClOrdID`, and the
+        residual read is keyed by the name the caller asked with.
+        """
         key = (name, str(dtype))
         found = self._cache.get(key)
         if found is not None:
             return found
         available = []
-        for column in (self.columns.get(name), self.residual.get(name)):
+        for column in (self.columns.get(column_name(name)), self.residual.get(name)):
             if column is not None:
                 available.append(cast_arrow_fix(column, dtype))
         found = compute.coalesce(*available) if available else pyarrow.nulls(self.rows, dtype)
@@ -446,13 +453,13 @@ class _Shared:
         rows = values.rows
         self.rows = rows
         self.unix = columns["unix"].cast(pyarrow.int64(), safe=False)
-        self.unix_partition = columns["unix_partition"].cast(pyarrow.int32(), safe=False)
+        self.unixpartition = columns["unixpartition"].cast(pyarrow.int32(), safe=False)
         runix = columns["runix"].cast(pyarrow.int64(), safe=False)
         self.runix = compute.if_else(compute.equal(runix, 0), self.unix, runix)
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
         self.mic = columns["mic"].cast(pyarrow.int32(), safe=False)
         self.symbol = values.text("Symbol", fallback="")
-        self.instrument_xhash = compute.if_else(
+        self.instrumentxhash = compute.if_else(
             compute.equal(self.symbol, ""),
             pyarrow.scalar(NIL_BYTES, HASH),
             hash_arrow("symbol", "", self.symbol),
@@ -460,7 +467,7 @@ class _Shared:
         self.codes = FixMsg.codes_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
         currency = values.text("Currency")
-        self.ccy, self.px_unit = _currencies(currency)
+        self.ccy, self.pxunit = _currencies(currency)
 
     def take(self, value: pyarrow.Array, where: pyarrow.Array) -> pyarrow.Array:
         return compute.take(value, where)
@@ -473,7 +480,7 @@ def _orders(
     where: pyarrow.Array,
     report_types: pyarrow.Array,
 ) -> pyarrow.RecordBatch:
-    msg_type = compute.take(values.columns["MsgType"], where)
+    msg_type = compute.take(values.columns["msgtype"], where)
     unix = shared.take(shared.unix, where)
     state = _mapped(msg_type, tags.ordered, State.UNKNOWN)
     ord_status = shared.take(
@@ -531,18 +538,18 @@ def _orders(
         pyarrow.scalar(None, pyarrow.float64()),
     )
     hidden = compute.if_else(terminal, pyarrow.scalar(0.0), hidden)
-    order_id = shared.take(values.text("OrderID"), where)
+    orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    named = _first_nonempty(order_id, previous_client_id, client_id, fallback="")
+    named = _first_nonempty(orderid, previous_client_id, client_id, fallback="")
     symbol = shared.take(shared.symbol, where)
     code = named
-    instrument_xhash = shared.take(shared.instrument_xhash, where)
+    instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
-        Order.hash_arrow(instrument_xhash, mic, named, side),
+        Order.hash_arrow(instrumentxhash, mic, named, side),
         pyarrow.scalar(NIL_BYTES, HASH),
     )
     px = shared.take(values.number("Price"), where)
@@ -575,45 +582,45 @@ def _orders(
     )
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
-        "unix_partition": shared.take(shared.unix_partition, where),
+        "unixpartition": shared.take(shared.unixpartition, where),
         "etype": _constant(len(where), int(EventType.ORDER), pyarrow.int64()),
         "cunix": unix,
         "runix": shared.take(shared.runix, where),
         "eunix": eunix,
         "hash": event_hash,
         "xhash": xhash,
-        "linked_events": _empty_lists(len(where), Order.into_field().field("linked_events").dtype),
+        "linkedevents": _empty_lists(len(where), Order.into_field().field("linkedevents").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
         "codes": shared.take(shared.codes, where),
         "mic": mic,
         "reason": reason,
-        "instrument_xhash": instrument_xhash,
-        "instrument_code": symbol,
+        "instrumentxhash": instrumentxhash,
+        "instrumentcode": symbol,
         "kind": kind,
         "side": side,
         "px": px,
-        "px_unit": shared.take(shared.px_unit, where),
+        "pxunit": shared.take(shared.pxunit, where),
         "ccy": ccy,
         "qty": current,
-        "prev_qty": previous,
-        "qty_unit": _constant(len(where), "", pyarrow.string()),
+        "prevqty": previous,
+        "qtyunit": _constant(len(where), "", pyarrow.string()),
         "metadata": shared.take(shared.metadata, where),
         "tif": tif,
-        "stop_px": shared.take(values.number("StopPx"), where),
-        "hidden_qty": hidden,
+        "stoppx": shared.take(values.number("StopPx"), where),
+        "hiddenqty": hidden,
         "vwap": vwap,
         "indicative": _constant(len(where), False, pyarrow.bool_()),
-        "order_id": order_id,
-        "client_order_id": client_id,
-        "prev_client_order_id": previous_client_id,
+        "orderid": orderid,
+        "clientorderid": client_id,
+        "prevclientorderid": previous_client_id,
         # The reject-only columns stay null here: a row carrying either is
         # `_REASON_FIELDS`-complex and translates through the scalar path.
-        "clord_link_id": shared.take(values.text("ClOrdLinkID"), where),
+        "clordlinkid": shared.take(values.text("ClOrdLinkID"), where),
         # Namespace identities live in their resolved columns, never as tags.
-        "parent_client_order_id": shared.take(values.text("ParentClOrdID"), where),
-        "parent_order_id": shared.take(values.text("ParentOrderID"), where),
+        "parentclientorderid": shared.take(values.text("ParentClOrdID"), where),
+        "parentorderid": shared.take(values.text("ParentOrderID"), where),
     }
     return _batch(Order, columns, len(where))
 
@@ -628,17 +635,15 @@ def _executions(
     order_at: pyarrow.Array,
 ) -> pyarrow.RecordBatch:
     rows = len(where)
-    msg_type = compute.take(values.columns["MsgType"], where)
+    msg_type = compute.take(values.columns["msgtype"], where)
     reported = compute.is_in(msg_type, value_set=report_types)
     unix = shared.take(shared.unix, where)
     state = shared.take(values.mapped("ExecType", tags.execution_states, State.UNKNOWN), where)
     side = shared.take(values.mapped("Side", _SIDE_CODES, Side.UNKNOWN), where)
     kind = shared.take(values.mapped("ExecType", tags.execution_kinds, MarketKind.UNKNOWN), where)
-    exec_id = shared.take(values.text("ExecID"), where)
-    exec_ref_id = shared.take(values.text("ExecRefID"), where)
-    trade_id = shared.take(
-        _first_nonempty(values.text("TradeID"), values.text("TrdMatchID")), where
-    )
+    execid = shared.take(values.text("ExecID"), where)
+    execrefid = shared.take(values.text("ExecRefID"), where)
+    tradeid = shared.take(_first_nonempty(values.text("TradeID"), values.text("TrdMatchID")), where)
     corrected = compute.and_(
         compute.is_in(
             state,
@@ -646,22 +651,22 @@ def _executions(
                 [int(State.REPLACED), int(State.CANCELLED)], _code_type(State.UNKNOWN)
             ),
         ),
-        compute.fill_null(compute.not_equal(exec_ref_id, ""), False),
+        compute.fill_null(compute.not_equal(execrefid, ""), False),
     )
     named = compute.fill_null(
-        compute.if_else(corrected, exec_ref_id, _first_nonempty(exec_id, trade_id)), ""
+        compute.if_else(corrected, execrefid, _first_nonempty(execid, tradeid)), ""
     )
     symbol = shared.take(shared.symbol, where)
     code = named
-    instrument_xhash = shared.take(shared.instrument_xhash, where)
+    instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
-        Execution.hash_arrow(instrument_xhash, mic, named, side),
+        Execution.hash_arrow(instrumentxhash, mic, named, side),
         pyarrow.scalar(NIL_BYTES, HASH),
     )
-    order_id = shared.take(values.text("OrderID"), where)
+    orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
     px = shared.take(values.number("LastPx"), where)
@@ -698,12 +703,12 @@ def _executions(
         compute.filter(order_unix, reported), compute.filter(order_xhash, reported)
     )
     linked = build_list(
-        Execution.into_field().field("linked_events").dtype,
+        Execution.into_field().field("linkedevents").dtype,
         linked_sizes,
         linked_values,
     )
     parent = build_list(
-        Execution.into_field().field("parent_hash").dtype,
+        Execution.into_field().field("parenthash").dtype,
         linked_sizes,
         compute.filter(order_hash, reported),
     )
@@ -728,7 +733,7 @@ def _executions(
         null_float,
         null_float,
         null_float,
-        exec_id,
+        execid,
         filled,
         vwap,
     )
@@ -752,51 +757,51 @@ def _executions(
         null_float,
         null_float,
         null_float,
-        exec_id,
+        execid,
         filled,
         vwap,
     )
     event_hash = compute.if_else(reported, linked_hash, no_link_hash)
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
-        "unix_partition": shared.take(shared.unix_partition, where),
+        "unixpartition": shared.take(shared.unixpartition, where),
         "etype": _constant(rows, int(EventType.EXECUTION), pyarrow.int64()),
         "cunix": unix,
         "runix": shared.take(shared.runix, where),
         "hash": event_hash,
         "xhash": xhash,
-        "linked_events": linked,
+        "linkedevents": linked,
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
         "codes": shared.take(shared.codes, where),
-        "parent_hash": parent,
+        "parenthash": parent,
         "mic": mic,
         "reason": reason,
-        "instrument_xhash": instrument_xhash,
-        "instrument_code": symbol,
+        "instrumentxhash": instrumentxhash,
+        "instrumentcode": symbol,
         "kind": kind,
         "side": side,
         "px": px,
-        "px_unit": shared.take(shared.px_unit, where),
+        "pxunit": shared.take(shared.pxunit, where),
         "ccy": ccy,
         "qty": qty,
-        "qty_unit": _constant(rows, "", pyarrow.string()),
+        "qtyunit": _constant(rows, "", pyarrow.string()),
         "metadata": shared.take(shared.metadata, where),
-        "exec_id": exec_id,
-        "exec_ref_id": exec_ref_id,
-        "trade_id": trade_id,
-        "order_id": order_id,
-        "client_order_id": client_id,
-        "prev_client_order_id": previous_client_id,
-        "filled_qty": filled,
-        "leaves_qty": leaves,
+        "execid": execid,
+        "execrefid": execrefid,
+        "tradeid": tradeid,
+        "orderid": orderid,
+        "clientorderid": client_id,
+        "prevclientorderid": previous_client_id,
+        "filledqty": filled,
+        "leavesqty": leaves,
         "vwap": vwap,
         "aggressor": aggressor,
-        "settl_date": shared.take(values.raw("SettlDate", pyarrow.date32()), where),
-        "settl_type": shared.take(values.text("SettlType"), where),
-        "settl_currency": shared.take(values.text("SettlCurrency"), where),
-        "settl_curr_fx_rate_calc": shared.take(values.text("SettlCurrFxRateCalc"), where),
+        "settldate": shared.take(values.raw("SettlDate", pyarrow.date32()), where),
+        "settltype": shared.take(values.text("SettlType"), where),
+        "settlcurrency": shared.take(values.text("SettlCurrency"), where),
+        "settlcurrfxratecalc": shared.take(values.text("SettlCurrFxRateCalc"), where),
     }
     return _batch(Execution, columns, rows)
 

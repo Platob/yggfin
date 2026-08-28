@@ -254,8 +254,8 @@ def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None
     row = FixMsg(
         unix=1,
         hash=1,
-        Side="1",
-        OrderQty=125.0,
+        side="1",
+        orderqty=125.0,
         entries=[
             {
                 "tag": 448,

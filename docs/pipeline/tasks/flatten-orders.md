@@ -3,7 +3,7 @@
 `tasks/flatten_orders/flatten_orders.ipynb`
 streams `Book.deltas` into the existing `Order` contract and writes
 `market.orders`. It retains event identity and appends the carrying `Book.hash`
-to `parent_hash`.
+to `parenthash`.
 
 ## Run this step
 

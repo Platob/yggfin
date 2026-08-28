@@ -101,7 +101,7 @@ def test_generic_building_dispatches_text_to_the_message_parser() -> None:
 def test_generic_text_that_looks_like_a_document_is_still_a_fix_payload() -> None:
     parsed = FixMsg.from_("35=D|Text=report.json")
 
-    assert parsed.MsgType == "D"
+    assert parsed.msgtype == "D"
     assert parsed.get("Text").raw == "report.json"
 
 
@@ -317,7 +317,7 @@ def test_a_user_defined_wire_wrapper_prefers_its_named_payload() -> None:
     wins the `U1` wrapper and re-emits canonically, at the wire's position."""
     parsed = FixMsg.from_text("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|10=000|")
 
-    assert parsed.MsgType == "D"
+    assert parsed.msgtype == "D"
     assert parsed.pairs == [
         ("8", "FIX.4.4"),
         ("35", "D"),

@@ -16,7 +16,7 @@ execution = [
     for event in FixMsg.from_text(line).into_market_events(fix_version="4.4")
     if type(event).__name__ == "Execution"
 ][0]
-print(execution.qty, execution.px, execution.exec_id, execution.order_id, execution.state.name)
+print(execution.qty, execution.px, execution.execid, execution.orderid, execution.state.name)
 ```
 
 ```text

@@ -70,11 +70,11 @@ def into_flat_fixmsg_batch(
     ):
         return None
 
-    protocol_version, protocol_version_source = _versions(
-        codec, entries, tags, values, rows, columns.get("BeginString")
+    protocolversion, protocolversionsource = _versions(
+        codec, entries, tags, values, rows, columns.get("beginstring")
     )
-    versions = compute.drop_null(compute.unique(protocol_version))
-    if protocol_version.null_count or len(versions) != 1:
+    versions = compute.drop_null(compute.unique(protocolversion))
+    if protocolversion.null_count or len(versions) != 1:
         return None
     version = versions[0].as_py()
     group_tags = codec.registry.group_count_tags(version)
@@ -97,9 +97,9 @@ def into_flat_fixmsg_batch(
     output = dict(columns)
     output.update(
         {
-            "protocol_code": protocols,
-            "protocol_version": protocol_version,
-            "protocol_version_source": protocol_version_source,
+            "protocolcode": protocols,
+            "protocolversion": protocolversion,
+            "protocolversionsource": protocolversionsource,
             "entries": residual,
             **promoted,
         }
@@ -151,7 +151,7 @@ def flat_fixmsg_positions(
     misplaced = _misplaced_checksum_rows(entries, parents, tags)
     eligible = compute.and_(eligible, compute.invert(misplaced))
 
-    versions, _ = _versions(codec, entries, tags, values, rows, columns.get("BeginString"))
+    versions, _ = _versions(codec, entries, tags, values, rows, columns.get("beginstring"))
     eligible = compute.and_(eligible, compute.is_valid(versions))
     positions = sequence(rows)
     for version in compute.drop_null(compute.unique(compute.filter(versions, eligible))).sort():

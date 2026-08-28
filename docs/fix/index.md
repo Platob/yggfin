@@ -406,7 +406,8 @@ a struct with no members yet and that block's name in `fix:component`.
 So a component file reads like a contract file, because it is one -- the same
 document `Field.into_dict()` writes for `schemas/rekep/*.yaml` -- and there is
 no second tree to keep in step with the first. FIX's own names are what the
-declaration says; the Arrow projection snakes them when it builds columns.
+declaration says; the Arrow projection folds them when it builds columns, and
+records each one under `fix:display` so the spelling survives the fold.
 Whether a member is required is its nullability, which is the same fact under
 the name the rest of the package already uses for it.
 
@@ -424,11 +425,11 @@ whether a message must carry it, there is nothing left to write by hand:
 
 ```python
 Parties = registry.component_scalar("Parties", "4.4")
-Parties(no_party_ids=[Parties.PartyId(party_id="BUY-A", party_role=3)])
+Parties(nopartyids=[Parties.PartyID(partyid="BUY-A", partyrole=3)])
 ```
 
 Group entries are classes named after the entry a group repeats -- `NoPartyIDs`
-yields `Parties.PartyId` -- they hang off the
+yields `Parties.PartyID` -- they hang off the
 class that declares them so a caller can build one, and a dictionary refresh
 moves all of it. A column Python cannot spell keeps its own name: FIX tag 236
 is `Yield`, and `yield` is a statement, so the attribute is `yield_` while the

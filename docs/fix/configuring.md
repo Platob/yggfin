@@ -28,8 +28,8 @@ document. It must name the same four groups.
 from rekep import TextFile
 
 VENDOR = (
-    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<thread_name>[^|]*)\|"
-    r"(?P<plugin_code>[^|]*)\|(?P<message>.*)$"
+    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
+    r"(?P<plugincode>[^|]*)\|(?P<message>.*)$"
 )
 
 with TextFile.from_path("vendor.log", header_pattern=VENDOR) as log:
@@ -195,10 +195,10 @@ null_values: ["", "null", "<null>", "n/a"]
 | `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
-| `technical_plugins` | parsed `plugin_code` filter before persistence | `parse_messages` |
+| `technical_plugins` | parsed `plugincode` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
-| `protocols` | `Message.protocol_code`, then `FixCodec.rules` | both parse stages |
+| `protocols` | `Message.protocolcode`, then `FixCodec.rules` | both parse stages |
 | `null_values` | `FixCodec.null_values` | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |
 | `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |

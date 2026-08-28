@@ -160,7 +160,7 @@ only the exact `FixMsg` to `Instrument` projection.
 | `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` |
 
 The BTC book relates both source order lifecycles with their event times in
-`linked_events` and both source versions in `parent_hash`. Bid and ask levels
+`linkedevents` and both source versions in `parenthash`. Bid and ask levels
 remain best-price ordered.
 
 ### Orders
@@ -179,8 +179,8 @@ remain best-price ordered.
 | `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, timed order link |
 | `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link |
 
-Flattening appends the carrying `Book.hash` to each event's `parent_hash`;
-`linked_events` retains the event time and lifecycle linkage between executions
+Flattening appends the carrying `Book.hash` to each event's `parenthash`;
+`linkedevents` retains the event time and lifecycle linkage between executions
 and orders.
 
 ## Schema lineage
@@ -188,7 +188,7 @@ and orders.
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg#only-dark)
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
-All six are keyed `(unix, hash)` and partitioned on `unix_partition` alone.
+All six are keyed `(unix, hash)` and partitioned on `unixpartition` alone.
 Their columns and nested payloads are on the [product](../../products/index.md)
 pages.
 

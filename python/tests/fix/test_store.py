@@ -255,7 +255,7 @@ def test_one_layout_is_all_that_is_left_of_the_store() -> None:
 
 def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Offline) -> None:
     """It has no tag to shard on, so it shares the one document those live in."""
-    store.add_field(_record("FAKE.VENDOR.CODE", column="fake_vendor_code"))
+    store.add_field(_record("FAKE.VENDOR.CODE", column="fakevendorcode"))
     assert (Path(store.cache_dir) / NAMED_FILE).exists()
     assert list(json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())) == [
         "FAKE.VENDOR.CODE"
@@ -363,10 +363,10 @@ def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None
     entry = _record(
         "FAKE.VENDOR.CODE",
         description="A vendor's own.",
-        column="fake_vendor_code",
+        column="fakevendorcode",
     )
     store.add_field(entry)
-    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fakevendorcode"
     assert record_kind(store.field("FAKE.VENDOR.CODE", "9.1")) == NAMESPACE
 
     renamed = record_copy(entry)
@@ -383,7 +383,7 @@ def test_promoting_registers_a_rendered_name_and_its_column_in_one_call(store: O
     """The one-step path: a name never seen becomes a namespaced entry with a column."""
     entry = store.promote_field(
         "FAKE.VENDOR.TS",
-        "fake_vendor_ts",
+        "fakevendorts",
         type="UTCTimestamp",
         description="A vendor's own stamp.",
         aliases=("FAKEVENDORTS",),
@@ -391,8 +391,8 @@ def test_promoting_registers_a_rendered_name_and_its_column_in_one_call(store: O
     assert record_kind(entry) == NAMESPACE and entry.fix.tag is None
     assert entry.fix.versions == (ANY_VERSION,)
     assert entry.fix.type == "UTCTimestamp"
-    assert entry.fix.column == "fake_vendor_ts"
-    assert store.resolve("FAKE.VENDOR.TS").fix.column == "fake_vendor_ts"
+    assert entry.fix.column == "fakevendorts"
+    assert store.resolve("FAKE.VENDOR.TS").fix.column == "fakevendorts"
     assert store.resolve("FAKEVENDORTS").fix.canonical == "FAKE.VENDOR.TS"
     assert store.check() == []
 
@@ -408,11 +408,11 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
     )
     entry = store.promote_field(
         "FAKE.VENDOR.CODE",
-        "fake_vendor_code",
+        "fakevendorcode",
         description="A vendor's own code.",
         aliases=("FAKEVENDORCODE", "FAKE_VENDOR_CODE"),
     )
-    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.column == "fakevendorcode"
     assert entry.description == "A vendor's own code."
     assert [alias.name for alias in entry.fix.named_aliases] == [
         "FAKEVENDORCODE",
@@ -420,17 +420,17 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
     ]
     assert entry.fix.named_aliases[0].occurrences == 7, "the recorded count survived the promotion"
 
-    again = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
-    assert again.fix.column == "fake_vendor_code", "the same answer twice is not a conflict"
+    again = store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode")
+    assert again.fix.column == "fakevendorcode", "the same answer twice is not a conflict"
     assert again.fix.type == "String", "a type left unsaid keeps what the entry holds"
-    aliased = store.promote_field("FAKEVENDORCODE", "fake_vendor_code")
+    aliased = store.promote_field("FAKEVENDORCODE", "fakevendorcode")
     assert aliased.fix.canonical == "FAKE.VENDOR.CODE", (
         "any name the entry answers to names it here too"
     )
-    retyped = store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code", type="UTCTimestamp")
+    retyped = store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode", type="UTCTimestamp")
     assert retyped.fix.type == "UTCTimestamp", "and a type said here is the newest reading"
     reworded = store.promote_field(
-        "FAKE.VENDOR.CODE", "fake_vendor_code", description="A vendor's code, reconfirmed."
+        "FAKE.VENDOR.CODE", "fakevendorcode", description="A vendor's code, reconfirmed."
     )
     assert reworded.description == "A vendor's code, reconfirmed.", "so is a said description"
 
@@ -444,33 +444,33 @@ def test_promoting_normalizes_the_column_and_folds_repeated_aliases(store: Offli
         "  fake_vendor_code  ",
         aliases=("FAKEVENDORCODE", "FakeVendorCode"),
     )
-    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.column == "fakevendorcode"
     assert [alias.name for alias in entry.fix.named_aliases] == ["FAKEVENDORCODE"]
-    assert store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code").fix.column == (
-        "fake_vendor_code"
+    assert store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode").fix.column == (
+        "fakevendorcode"
     ), "and the unpadded spelling names the same column"
 
 
 def test_promoting_a_standard_field_is_refused(store: Offline) -> None:
     """A tagged field's column is the dictionary's to declare, not this verb's."""
     with pytest.raises(KeyError, match="standard, with tag 90001"):
-        store.promote_field("FakeRole", "fake_role")
+        store.promote_field("FakeRole", "fakerole")
     assert store.resolve("FakeRole").fix.column == "", "unchanged, because it was refused"
 
 
 def test_promoting_refuses_moving_an_assigned_column(store: Offline) -> None:
     """Two runs disagreeing about where a field lands is a conflict, not an update."""
-    store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
-    with pytest.raises(ValueError, match="already lifted into 'fake_vendor_code'"):
+    store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode")
+    with pytest.raises(ValueError, match="already lifted into 'fakevendorcode'"):
         store.promote_field("FAKE.VENDOR.CODE", "elsewhere")
-    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fakevendorcode"
 
 
 def test_promoting_refuses_a_column_another_field_landed_in(store: Offline) -> None:
     """One parsed-log column holds one field; a second claimant is a conflict."""
-    store.promote_field("FAKE.VENDOR.CODE", "fake_vendor_code")
+    store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode")
     with pytest.raises(ValueError, match="two fields cannot land in one column"):
-        store.promote_field("FAKE.OTHER.CODE", "fake_vendor_code")
+        store.promote_field("FAKE.OTHER.CODE", "fakevendorcode")
     assert store.resolve("FAKE.OTHER.CODE") is None, "nothing was written"
 
 
@@ -478,7 +478,7 @@ def test_promoting_requires_a_name_and_a_column(store: Offline) -> None:
     with pytest.raises(ValueError, match="requires the column"):
         store.promote_field("FAKE.VENDOR.CODE", "   ")
     with pytest.raises(ValueError, match="requires its name"):
-        store.promote_field(" ", "fake_vendor_code")
+        store.promote_field(" ", "fakevendorcode")
     assert store.resolve("FAKE.VENDOR.CODE") is None, "nothing was written"
 
 
@@ -1223,12 +1223,12 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
             "FAKE.VENDOR.CODE",
             named_aliases=[Alias(name="FAKEVENDORCODE", source="brk", occurrences=5)],
             description="A vendor's own code.",
-            column="fake_vendor_code",
+            column="fakevendorcode",
         )
     )
 
     # Declared, so the registry answers for it by every spelling it has.
-    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
+    assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fakevendorcode"
     assert store.resolve("fakevendorcode").fix.canonical == "FAKE.VENDOR.CODE"
     assert record_kind(store.field("FAKE.VENDOR.CODE", "9.1")) == NAMESPACE
     assert "FAKE.VENDOR.CODE" not in store.tags(), "it has no tag to be mapped to"
@@ -1246,7 +1246,7 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
             "fix": {
                 "type": "String",
                 "versions": '["*"]',
-                "column": "fake_vendor_code",
+                "column": "fakevendorcode",
                 "aliases": '[{"name":"FAKEVENDORCODE","source":"brk","occurrences":5}]',
             },
         }
@@ -1265,10 +1265,10 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     )
     entry = projected.resolve("FAKE.VENDOR.CODE")
     assert entry.fix.versions == (ANY_VERSION,), "it holds for every version, not for 9.1"
-    assert entry.fix.column == "fake_vendor_code"
+    assert entry.fix.column == "fakevendorcode"
 
     merged = projected.merged_fields()["FAKE.VENDOR.CODE"]
-    assert merged.fix["column"] == "fake_vendor_code"
+    assert merged.fix["column"] == "fakevendorcode"
     assert json.loads(merged.fix["aliases"])[0]["name"] == "FAKEVENDORCODE"
 
     # And lifted, by a codec reading that registry, out of a rendered line --
@@ -1288,14 +1288,14 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     columns, rest = codec.into_lifted_columns(
         codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
-    assert columns["fake_vendor_code"].to_pylist() == ["FAKE-CODE-0001"]
+    assert columns["fakevendorcode"].to_pylist() == ["FAKE-CODE-0001"]
     assert [key for key, _ in _pairs(rest)] == ["FAKEROLE", "UNRESOLVED"], "and nothing else moved"
 
     dotted = codec.into_entries(
         codec.into_pairs(pyarrow.array(["toBridge #FAKE.VENDOR.CODE=FAKE-CODE-0002|#X=1"]), "UL"),
         "9.1",
     )
-    assert codec.into_lifted_columns(dotted, "9.1")[0]["fake_vendor_code"].to_pylist() == [
+    assert codec.into_lifted_columns(dotted, "9.1")[0]["fakevendorcode"].to_pylist() == [
         "FAKE-CODE-0002"
     ]
 
@@ -1319,7 +1319,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
     dotted segment -- which is what the parser does for a component path --
     would make one of them answer for the other's values.
     """
-    for vendor, column in (("FAKEA", "fake_a_client"), ("FAKEB", "fake_b_client")):
+    for vendor, column in (("FAKEA", "fakeaclient"), ("FAKEB", "fakebclient")):
         store.add_field(_record(f"{vendor}.CLIENTID", column=column))
     codec = FixCodec(registry=store)
     assert set(codec.named_fields()) == {"fakea.clientid", "fakeb.clientid"}
@@ -1331,8 +1331,8 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
     columns, rest = codec.into_lifted_columns(
         codec.into_entries(codec.into_pairs(pyarrow.array([line]), "UL"), "9.1"), "9.1"
     )
-    assert columns["fake_a_client"].to_pylist() == ["ACCT-TEST-01"]
-    assert columns["fake_b_client"].to_pylist() == ["ACCT-TEST-02"]
+    assert columns["fakeaclient"].to_pylist() == ["ACCT-TEST-01"]
+    assert columns["fakebclient"].to_pylist() == ["ACCT-TEST-02"]
     assert [key for key, _ in _pairs(rest)] == ["CLIENTID"], "the bare one is nobody's"
 
 
@@ -1343,9 +1343,9 @@ def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offl
     """`required` is the whole rule: a member a message must carry is NOT NULL."""
     field = store.component_field("FakeParties", "9.1")
     (group,) = field.fields
-    assert group.name == "no_fake_parties"
+    assert group.name == "nofakeparties"
     assert group.nullable, "the group itself is optional in this declaration"
-    member = group.item.field("fake_role")
+    member = group.item.field("fakerole")
     assert not member.nullable, "and its one member is required"
     assert member.dtype == pyarrow.int32(), "typed from the dictionary, not guessed"
 
@@ -1362,7 +1362,7 @@ def test_a_component_materialises_as_a_class_the_declaration_wrote(store: Offlin
 
     assert built.__name__ == "FakeParties"
     assert entry.__name__ == "FakeParty", "`NoFakeParties` repeats one `FakeParty`"
-    assert built(no_fake_parties=[entry(fake_role=7)]).into_dict() == {
-        "no_fake_parties": [{"fake_role": 7}]
+    assert built(nofakeparties=[entry(fakerole=7)]).into_dict() == {
+        "nofakeparties": [{"fakerole": 7}]
     }
     assert built.into_field().dtype == store.component_field("FakeParties", "9.1").dtype

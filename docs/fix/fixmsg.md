@@ -32,7 +32,7 @@ than tokenizing the payload again. A batch arriving from Iceberg carries
 `parse_fix` projects `message` away and filling it back in would invent text
 the reader deliberately left behind.
 
-Classification uses the codec's rules; the stored `protocol_code` fills only
+Classification uses the codec's rules; the stored `protocolcode` fills only
 the rows those rules call `OTHER`.
 
 ```yaml
@@ -43,25 +43,42 @@ exclude_msgtypes: ["0", "1"]
 
 ## Names
 
-Promoted fields use their canonical registry names as both Python and Arrow
-names — `MsgSeqNum`, `OrigClOrdID`, `TransactTime`, `CFICode`, `AvgPx`. There
-is no snake-case alias beside them. Field metadata retains the tag, datatype,
-description, versions and enumerated values. FIX UTC timestamps become Arrow
-timestamps at microsecond precision; one whose timezone is undocumented stays
-naive.
+A column is named by folding its FIX name: lowercase, with every separator
+dropped. `MsgSeqNum` is `msgseqnum`, `OrigClOrdID` is `origclordid`,
+`CFICode` is `cficode`. One name everywhere — the Arrow column, the Python
+attribute and the stored document all spell it the same way — and no
+snake-case alias beside it.
 
-Structured components keep their FIX spellings too:
+The dictionary's own spelling is not lost: every column carries it as
+`fix:display`, which is what a reader is shown.
+
+```python
+from rekep import FixMsg
+
+column = FixMsg.into_field().field("origclordid")
+print(column.name, column.fix.display, column.fix.tag)
+```
+
+```text
+origclordid OrigClOrdID 41
+```
+
+Field metadata retains the tag, datatype, description, versions and
+enumerated values. FIX UTC timestamps become Arrow timestamps at microsecond
+precision; one whose timezone is undocumented stays naive.
+
+Structured components fold their members the same way:
 
 ```python
 from rekep import FixMsg, Message
 
 line = "8=FIX.4.4|35=D|11=C1|453=1|448=BUY-A|447=D|452=3|10=000"
 staged = Message.from_text(line, message=line)
-print(FixMsg.from_message_batch([staged]).to_pylist()[0]["Parties"])
+print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 ```
 
 ```text
-[{'PartyID': 'BUY-A', 'PartyIDSource': 'D', 'PartyRole': 3, 'buffer': None}]
+[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3, 'buffer': None}]
 ```
 
 `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs` each

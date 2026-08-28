@@ -7,7 +7,7 @@
   "fix": {
    "type": "String",
    "versions": "[\"*\"]",
-   "column": "ISINCODE",
+   "column": "isincode",
    "aliases": "[{\"name\":\"AMON.ISINCODE\"}]"
   }
  },
@@ -19,7 +19,7 @@
   "fix": {
    "type": "String",
    "versions": "[\"*\"]",
-   "column": "ParentClOrdID"
+   "column": "parentclordid"
   }
  },
  "ParentOrderID": {
@@ -30,7 +30,7 @@
   "fix": {
    "type": "String",
    "versions": "[\"*\"]",
-   "column": "ParentOrderID"
+   "column": "parentorderid"
   }
  }
 }

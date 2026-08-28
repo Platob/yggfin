@@ -12,7 +12,7 @@ parameters:
   protocols: null
   pattern: "*.log*"
   # The fixed header every line opens with, as a regex naming `timestamp`,
-  # `thread_name`, `plugin_code` and `message`. Null reads the shipped one.
+  # `threadname`, `plugincode` and `message`. Null reads the shipped one.
   header: null
   recursive: true
   # False streams compressed objects directly. True stages their raw compressed

@@ -100,6 +100,21 @@ and every bit of that degrades on its own.
 - Portable contracts live in `schemas/<namespace>/<name>.yaml` and round-trip
   losslessly through Arrow.
 
+### Column names
+
+Every column name is folded: `column_name` lowercases it and drops everything
+that is not a letter or a digit. `OrigClOrdID` is `origclordid`, `source_url`
+is `sourceurl`. One name serves the Arrow column, the Python attribute and the
+stored document, and there is no snake-case alias beside it.
+
+The fold is also the match: a spelling resolves against the FIX registry by
+what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
+
+Every column carries `fix:display`, the name a reader is shown -- the
+dictionary's spelling for a FIX column, `display_name`'s title case for
+everything else. `tests/test_schemas.py` holds both halves for every published
+contract.
+
 ### Description budget
 
 Descriptions are contract text, not tutorials. Use one short factual sentence
@@ -153,7 +168,7 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 ## Market data
 
 - Events are immutable versions. `hash` identifies a version; `xhash` a
-  lifecycle; `linked_events` relates lifecycles with their event times.
+  lifecycle; `linkedevents` relates lifecycles with their event times.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
   Every identity is stored as sixteen big-endian bytes -- `fixed_size_binary(16)`

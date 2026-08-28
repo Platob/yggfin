@@ -107,7 +107,7 @@ class Rule(Convertible):
     Empty matches every line, which is what makes a fall-through rule."""
 
     plugin_pattern: str | None = None
-    """Matched against `plugin_code` as well, when the plugin is what tells them apart."""
+    """Matched against `plugincode` as well, when the plugin is what tells them apart."""
 
     separator: str | None = None
     """What the message writes between fields; null detects it per column."""

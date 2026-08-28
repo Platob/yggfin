@@ -197,7 +197,9 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         tags.add(fix["tag"])
         assert set(fix["versions"]) <= set(VERSIONS), key
     assert vendor == 3, "ISINCODE and the parent identities the log gives columns"
-    assert stored_fix(held["ISINCODE"])["column"] == "ISINCODE"
+    assert stored_fix(held["ISINCODE"])["column"] == "isincode", (
+        "a declared column is stored folded, the way the lift names it"
+    )
     assert [alias["name"] for alias in stored_fix(held["ISINCODE"])["aliases"]] == ["AMON.ISINCODE"]
 
 

@@ -13,18 +13,18 @@ line = (
 staged = Message.from_text(line, message=line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
-for name in ("protocol_version", "Symbol", "Side", "LastPx", "OrdStatus", "unix", "unix_source"):
+for name in ("protocolversion", "symbol", "side", "lastpx", "ordstatus", "unix", "unixsource"):
     print(f"{name:17} {row[name]!r}")
 ```
 
 ```text
-protocol_version  '4.4'
-Symbol            'BTC-USD'
-Side              '1'
-LastPx            100.25
-OrdStatus         '2'
+protocolversion   '4.4'
+symbol            'BTC-USD'
+side              '1'
+lastpx            100.25
+ordstatus         '2'
 unix              1767261600000000000
-unix_source       'TransactTime'
+unixsource        'TransactTime'
 ```
 
 !!! note "Batch transcribes; scalar lifts"
@@ -35,11 +35,11 @@ unix_source       'TransactTime'
     `into_market_events` reads.
 
     ```python
-    FixMsg.from_text(line).MsgType   # '8'
-    FixMsg.from_text(line).Symbol    # None -- body stays in entries
+    FixMsg.from_text(line).msgtype   # '8'
+    FixMsg.from_text(line).symbol    # None -- body stays in entries
     ```
 
-`unix_source` names which rung answered, so a transaction time and a print
+`unixsource` names which rung answered, so a transaction time and a print
 time are never confused. The chain is in
 [market lifecycle](../market/index.md#when-it-happened).
 

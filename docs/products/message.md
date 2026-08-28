@@ -7,9 +7,9 @@ every other field stays in `entries` in wire order.
 from rekep import Message
 
 line = "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|55=BTC-USD|54=1|10=000"
-row = Message.from_text(line, message=line, source_url="s3://logs/capture.log", source_rownum=1)
+row = Message.from_text(line, message=line, sourceurl="s3://logs/capture.log", sourcerownum=1)
 
-print(row.protocol_code, row.MsgType, row.MsgSeqNum, row.SenderCompID, row.TargetCompID)
+print(row.protocolcode, row.msgtype, row.msgseqnum, row.sendercompid, row.targetcompid)
 print([(entry.tag, entry.value) for entry in row.entries])
 ```
 
@@ -20,13 +20,13 @@ FIX 8 7 VENUE DESK
 
 !!! warning "`message=` is what makes the syntax columns answer"
 
-    `protocol_code`, `etype` and `direction` are read off the raw text, not
+    `protocolcode`, `etype` and `direction` are read off the raw text, not
     off the pairs. Staged without it they stay unset and the FIX codec does
     not claim the row.
 
     ```python
-    Message.from_text(line).protocol_code            # 'OTHER'
-    Message.from_text(line, message=line).protocol_code  # 'FIX'
+    Message.from_text(line).protocolcode            # 'OTHER'
+    Message.from_text(line, message=line).protocolcode  # 'FIX'
     ```
 
 Seven header fields are lifted; `CheckSum <10>` is the boundary they are
@@ -39,7 +39,7 @@ print([name for name, tag in SESSION_FIELDS])
 ```
 
 ```text
-['BeginString', 'BodyLength', 'MsgType', 'MsgSeqNum', 'SenderCompID', 'TargetCompID', 'SendingTime']
+['beginstring', 'bodylength', 'msgtype', 'msgseqnum', 'sendercompid', 'targetcompid', 'sendingtime']
 ```
 
 ## Lineage

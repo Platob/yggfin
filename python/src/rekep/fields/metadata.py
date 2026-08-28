@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING, Any
 
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
+from rekep.fields.names import column_name
 
 if TYPE_CHECKING:
     from rekep.fields.field import Field
@@ -346,6 +347,21 @@ class _Text:
             view.pop(self.key, None)
 
 
+class _Folded(_Text):
+    """A key holding a *column* name, which is folded however it is spelled.
+
+    A column a person declared and the column a lift produces are one name, so
+    the fold happens here rather than at each place that reads or writes one.
+    """
+
+    def __get__(self, view: ProtocolMetadata | None, owner: type | None = None) -> Any:
+        found = super().__get__(view, owner)
+        return found if view is None else column_name(found)
+
+    def __set__(self, view: ProtocolMetadata, value: Any) -> None:
+        super().__set__(view, column_name(value) if value else value)
+
+
 class _Number:
     """One integer key as an attribute: `None` when absent, dropped on `None`."""
 
@@ -463,8 +479,13 @@ class FixMetadata(ProtocolMetadata):
     tag = _Number()
     type = _Text()
     name = _Text()
+    #: What this field is called for a reader: the dictionary's own spelling
+    #: where FIX has one, title case where it does not. The column's own name
+    #: is folded, so this is the half the fold throws away -- recorded once
+    #: rather than guessed at by every consumer that has to print it.
+    display = _Text()
     version = _Text()
-    column = _Text()
+    column = _Folded()
     note = _Text()
     component = _Text()
     #: The message type a declaration defines, where it defines one -- `"D"`,

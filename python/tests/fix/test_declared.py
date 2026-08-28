@@ -49,17 +49,17 @@ def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
 
 def test_a_declared_type_changes_how_the_text_is_read(registry: FixRegistry) -> None:
     """`TransactTime` read as a day is that day's midnight, not its clock."""
-    plain = lifted(codec_of(registry))["TransactTime"].to_pylist()[0]
+    plain = lifted(codec_of(registry))["transacttime"].to_pylist()[0]
     assert plain.hour == 10
     declared = {"rules": [{"field": "TransactTime", "type": "date32[day]"}]}
-    dated = lifted(codec_of(registry, declared))["TransactTime"].to_pylist()[0]
+    dated = lifted(codec_of(registry, declared))["transacttime"].to_pylist()[0]
     assert (dated.hour, dated.minute, dated.day) == (0, 0, 21)
 
 
 def test_a_rule_may_name_its_field_by_tag_or_by_name(registry: FixRegistry) -> None:
     by_tag = codec_of(registry, {"rules": [{"field": "60", "type": "date32[day]"}]})
     by_name = codec_of(registry, {"rules": [{"field": "TransactTime", "type": "date32[day]"}]})
-    assert lifted(by_tag)["TransactTime"] == lifted(by_name)["TransactTime"]
+    assert lifted(by_tag)["transacttime"] == lifted(by_name)["transacttime"]
 
 
 def test_a_declared_reading_that_leaves_text_still_lands_in_its_column(
@@ -67,7 +67,7 @@ def test_a_declared_reading_that_leaves_text_still_lands_in_its_column(
 ) -> None:
     """The column keeps its contract type, so the second cast must not raise."""
     declared = {"rules": [{"field": "60", "type": "string"}]}
-    found = lifted(codec_of(registry, declared))["TransactTime"]
+    found = lifted(codec_of(registry, declared))["transacttime"]
     assert found.to_pylist()[0].hour == 10
 
 
@@ -145,8 +145,8 @@ def test_a_codec_carries_its_declared_readings(registry: FixRegistry) -> None:
 #: A capture whose header is not the one this package ships: a pipe-delimited
 #: preamble, which no shipped pattern reads.
 VENDOR_HEADER = (
-    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<thread_name>[^|]*)\|"
-    r"(?P<plugin_code>[^|]*)\|(?P<message>.*)$"
+    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
+    r"(?P<plugincode>[^|]*)\|(?P<message>.*)$"
 )
 
 
@@ -163,9 +163,9 @@ def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: Fix
         [FixMsg.from_message_batch(batch, codec_of(registry)) for batch in messages.to_batches()]
     )
     assert messages.num_rows == 1
-    assert messages.column("plugin_code").to_pylist() == ["VendorBridge"]
-    assert messages.column("MsgType").to_pylist() == ["D"]
-    assert rows.column("MsgType").to_pylist() == ["D"]
+    assert messages.column("plugincode").to_pylist() == ["VendorBridge"]
+    assert messages.column("msgtype").to_pylist() == ["D"]
+    assert rows.column("msgtype").to_pylist() == ["D"]
 
 
 def test_the_shipped_header_reads_that_capture_as_no_row_at_all(tmp_path) -> None:

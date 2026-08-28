@@ -22,7 +22,7 @@ flowchart LR
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
 Every one of them is keyed `(unix, hash)`, sorted by `unix` and partitioned on
-`unix_partition` alone:
+`unixpartition` alone:
 
 ```bash
 rekep fields load --target schemas/rekep/order.yaml | tail -2
@@ -30,7 +30,7 @@ rekep fields load --target schemas/rekep/order.yaml | tail -2
 
 ```text
   primary keys: ['unix', 'hash']
-  partition keys: {'unix_partition': 'identity'}
+  partition keys: {'unixpartition': 'identity'}
 ```
 
 Declarations are dumped from the classes, so a document is never the contract:

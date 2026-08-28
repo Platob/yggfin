@@ -80,15 +80,15 @@ line = (
 # logs.messages: protocol-neutral source record
 message = Message(
     message=line,
-    source_url="capture.log",
-    source_rownum=1,
+    sourceurl="capture.log",
+    sourcerownum=1,
 ).identify()
 
 # fix.market: registry-resolved FIX record
 fixmsg = FixMsg.from_text(
     message.message,
-    source_url=message.source_url,
-    source_rownum=message.source_rownum,
+    sourceurl=message.sourceurl,
+    sourcerownum=message.sourcerownum,
 )
 
 # market.orders and market.executions
@@ -101,8 +101,8 @@ instrument = fixmsg.into_instrument(fix_version="4.4")
 book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 
 assert message.MsgType == fixmsg.MsgType == "8"
-assert (order.client_order_id, order.qty) == ("CL-7", 6.0)
-assert (execution.exec_id, execution.qty, execution.px) == ("EX-3", 4.0, 100.25)
+assert (order.clientorderid, order.qty) == ("CL-7", 6.0)
+assert (execution.execid, execution.qty, execution.px) == ("EX-3", 4.0, 100.25)
 assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
 ```
 

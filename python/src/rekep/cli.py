@@ -731,7 +731,7 @@ def _parser() -> argparse.ArgumentParser:
     counting.add_argument(
         "--plugins",
         default=None,
-        help="a regular expression a line's plugin_code must match, for instance ^UL",
+        help="a regular expression a line's plugincode must match, for instance ^UL",
     )
     counting.add_argument(
         "--limit", type=int, default=None, help="stop after this many lines, for a sample"

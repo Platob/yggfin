@@ -19,7 +19,7 @@ events = [
     for event in FixMsg.from_text(line).into_market_events(fix_version="4.4")
 ]
 for book in BookIterator.from_events(events):
-    print(book.bid_px, book.bid_qty, book.ask_px, book.ask_qty, book.spread, book.px)
+    print(book.bidpx, book.bidqty, book.askpx, book.askqty, book.spread, book.px)
 ```
 
 ```text
@@ -43,7 +43,7 @@ which is what a run resumed from its snapshots wants.
 
 Deltas and snapshots are told apart by `sunix`, not by a nullable list:
 
-| row | `deltas`, `executions` | level lists | `bid_alive`, `ask_alive` |
+| row | `deltas`, `executions` | level lists | `bidalive`, `askalive` |
 | --- | --- | --- | --- |
 | delta | what changed | changed levels only | empty |
 | snapshot | empty | complete living state | complete living state |

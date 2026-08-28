@@ -3,7 +3,7 @@
 `tasks/flatten_executions/flatten_executions.ipynb`
 streams `Book.executions` into the existing `Execution` contract and
 writes `market.executions`. It retains order links and event identity, then
-appends the carrying `Book.hash` to `parent_hash`.
+appends the carrying `Book.hash` to `parenthash`.
 
 ## Run this step
 
