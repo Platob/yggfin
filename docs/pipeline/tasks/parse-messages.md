@@ -120,8 +120,7 @@ ordered by these windows.
 `max_row_byte_size` bounds one record: the header line plus every continuation
 folded into it. A newline is the writer's promise that a record ended, and a
 capture cut mid-write, a binary blob logged by accident or a runaway diagnostic
-never makes it -- so without the bound one record holds the rest of the file,
-and past 2 GiB Arrow's 32-bit binary offsets cannot hold the record at all.
+never makes it -- so without the bound one record holds the rest of the file.
 Bytes past the bound are read in `read_byte_size` pieces and dropped rather
 than held, and the row says how many it lost:
 
@@ -137,6 +136,14 @@ table.filter(table.column("reason").is_valid()).select(["source_rownum", "reason
 source_rownum  reason
 1              row truncated at max_row_byte_size; dropped bytes: 66060331
 ```
+
+Every dropped byte reaches a `reason` or the read is refused: a bound so small
+that it cuts a line before the header can match leaves no row to carry what it
+dropped, and raises rather than reading a whole log as no rows at all.
+
+`batch_byte_size` and `max_row_byte_size` are both capped at 2,147,483,647 --
+what one Arrow 32-bit binary offset addresses over a whole array, and so over
+the batch as well as the record inside it.
 
 Only payloads with a discriminator, a FIX BeginString, or at least two
 pipe/SOH/caret/caret-A/semicolon/hash-delimited assignments enter the generic key/value

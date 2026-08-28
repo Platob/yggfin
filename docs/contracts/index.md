@@ -7,7 +7,7 @@ table](../assets/compatibility-tree.svg)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 2 | Source records with a promoted message discriminator and residual arguments. |
+| `message.yaml` | 3 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
 | `fixmsg.yaml` | 2 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
 | `instrument.yaml` | 2 | Versioned and hourly instrument state. |
 | `book.yaml` | 2 | Book deltas, executions, and recovery state. |
@@ -18,7 +18,8 @@ table](../assets/compatibility-tree.svg)
 from rekep import Field
 
 message = Field.from_yaml("schemas/rekep/message.yaml")
-reader = message.cast_arrow(reader)
+message.into_arrow_schema()          # what a producer writes
+message.cast_arrow(reader)           # what a consumer reads it back as
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -48,6 +49,13 @@ After compatibility is established, ordinary evolution is additive and
 nullable. Dropping or retyping a field requires a new contract version.
 Producers cast before writing; consumers load the same contract and may use
 `merge_schema=True` to retain additive fields from a newer producer.
+
+### Version 3: the standard header is columns
+
+`Message` alone is at 3. Version 3 lifts `BeginString`, `BodyLength`,
+`MsgType`, `MsgSeqNum`, `SenderCompID`, `TargetCompID` and `SendingTime` out of
+`entries` into columns of their own; every reader here falls back to the list
+where a column is absent, so a table written under 2 still reads.
 
 ### Version 2: codes are mnemonics
 

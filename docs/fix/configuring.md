@@ -202,7 +202,7 @@ null_values: ["", "null", "<null>", "n/a"]
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
 | `technical_plugins` | parsed `plugin_code` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
-| `batch_row_size`, `batch_byte_size` | `TextFile` parser bounds | `parse_messages` |
+| `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
 | `protocols` | `Message.protocol_code`, then `FixCodec.rules` | both parse stages |
 | `null_values` | `FixCodec.null_values` | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |

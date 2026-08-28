@@ -7,10 +7,12 @@ same declaration, so width, order, nullability, metadata, and nested types do
 not drift between notebooks, Iceberg, Python, or a later Rust stage.
 
 ```python
-shape = Quote.into_field()
+from rekep import Book
+
+shape = Book.into_field()
 shape.into_arrow_schema()
-shape.cast_arrow(reader)
 shape.into_iceberg_schema()
+shape.cast_arrow(reader)
 ```
 
 Shape changes use Arrow kernels. Data-sized Python collections or row loops do

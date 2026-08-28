@@ -49,8 +49,15 @@ _TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 #: `20260824100001123`. Matching is done on bytes so lines never have to be
 #: decoded just to be classified; a line that does not match is a wrapped
 #: continuation of the row above it.
+#:
+#: The optional byte order mark is on the *first* line of a capture a .NET or
+#: Java writer produced, and it is a byte the encoding declares rather than one
+#: the record carries. Skipped like indentation, because a first record read as
+#: a continuation of nothing is a first record dropped without a row to say so;
+#: a job supplying its own `header_pattern` inherits that trap and should skip
+#: it the same way.
 HEADER_PATTERN = re.compile(
-    rb"^[ \t]*"
+    rb"^(?:\xef\xbb\xbf)?[ \t]*"
     rb"(?P<timestamp>" + _TIMESTAMP.encode() + rb")[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
     rb"\[(?P<plugin_code>[^\]]*)\][ \t]*"
@@ -570,6 +577,16 @@ class TextFile(Dataset, io.BufferedIOBase):
             rownum += 1
             match = match_header(line)
             if match is None:
+                if dropped and not rows:
+                    # Every dropped byte is on some row's `reason` or it is
+                    # refused: there is no row here to carry this one, and a
+                    # bound this far below a header reads a whole log as no
+                    # rows at all.
+                    raise ValueError(
+                        f"max_row_byte_size of {max_row_byte_size} cut line {rownum} of "
+                        f"{self.url} before the header pattern could match it, and no row can "
+                        "carry what it dropped; raise the bound"
+                    )
                 if fold_continuations and rows:
                     # The newline the fold puts back counts against the bound
                     # with the line it separates, so a row can never exceed it.
@@ -766,11 +783,16 @@ class TextFile(Dataset, io.BufferedIOBase):
                 # A line that fills the bound may or may not be the whole line;
                 # what says which is the newline, and only EOF ends one without.
                 # The terminator is not content, so draining exactly it -- a
-                # line the bound fits precisely -- drops nothing.
+                # line the bound fits precisely -- drops nothing. Only the
+                # chunk that ends on the newline carries one: another ended
+                # because `read_byte_size` ran out, and its last byte is
+                # payload however much it looks like half a terminator.
                 while not line.endswith(b"\n") and (rest := buffered.readline(read_byte_size)):
+                    if not rest.endswith(b"\n"):
+                        dropped += len(rest)
+                        continue
                     dropped += len(rest.removesuffix(b"\n").removesuffix(b"\r"))
-                    if rest.endswith(b"\n"):
-                        break
+                    break
                 line = line.removesuffix(b"\n")
                 # A `\r` is the other half of a terminator only where one is;
                 # on a line the bound cut, it is the payload's own byte.
@@ -1098,16 +1120,23 @@ def _validate_read_sizes(
     ):
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             raise ValueError(f"{name} must be a positive integer number of {unit}")
-    # An int32 offset addresses the bytes of one binary array, and one row is
-    # one value in it: a bound above that is a bound Arrow cannot build.
-    if max_row_byte_size > _BINARY_OFFSET_MAX:
-        raise ValueError(
-            f"max_row_byte_size must be at most {_BINARY_OFFSET_MAX} bytes, which is what an "
-            "Arrow binary offset addresses"
-        )
+    # An int32 offset addresses the bytes of a whole binary array, so it bounds
+    # the batch **and** the one row inside it. A bound above it is a bound
+    # Arrow cannot build, and it fails while concatenating rather than at the
+    # row that overflowed it.
+    for name, value in (
+        ("batch_byte_size", batch_byte_size),
+        ("max_row_byte_size", max_row_byte_size),
+    ):
+        if value > _BINARY_OFFSET_MAX:
+            raise ValueError(
+                f"{name} must be at most {_BINARY_OFFSET_MAX} bytes, which is what an Arrow "
+                "binary offset addresses"
+            )
 
 
-#: What one 32-bit binary offset reaches, and so the longest row Arrow can hold.
+#: What one 32-bit binary offset reaches, and so the most bytes a batch of them
+#: can hold -- one row included, since a row is one value in that array.
 _BINARY_OFFSET_MAX = (1 << 31) - 1
 
 

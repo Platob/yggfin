@@ -1276,13 +1276,78 @@ def test_a_row_that_exactly_fills_the_bound_is_not_reported_as_truncated(
         assert table.column("reason").to_pylist() == [None], name
 
 
-def test_the_row_bound_is_validated_before_the_source_is_read(tmp_path: Path) -> None:
+def test_the_byte_bounds_are_validated_before_the_source_is_read(tmp_path: Path) -> None:
+    """An int32 offset addresses a whole binary array, so it bounds both."""
     log = _timed_log(tmp_path / "messages.txt", ("2026-08-14 00:05:01.000", "row"))
 
     with pytest.raises(ValueError, match="max_row_byte_size must be a positive integer"):
         log.into_arrow_batches(max_row_byte_size=0)
     with pytest.raises(ValueError, match="max_row_byte_size must be at most"):
         log.into_arrow_batches(max_row_byte_size=1 << 31)
+    with pytest.raises(ValueError, match="batch_byte_size must be at most"):
+        log.into_arrow_batches(batch_byte_size=1 << 31)
+
+
+def test_a_bound_below_the_header_is_refused_rather_than_read_as_no_rows(
+    tmp_path: Path,
+) -> None:
+    """Every dropped byte is on a row's `reason` or it is refused."""
+    log = _timed_log(
+        tmp_path / "messages.txt",
+        ("2026-08-14 00:05:01.000", "first"),
+        ("2026-08-14 00:05:02.000", "second"),
+    )
+
+    with pytest.raises(ValueError, match="before the header pattern could match it"):
+        log.into_arrow_table(max_row_byte_size=30)
+
+
+def test_a_leading_fragment_that_fits_is_still_only_a_continuation(tmp_path: Path) -> None:
+    """A rotated capture opens mid-record, and that fragment belongs to no row."""
+    path = tmp_path / "rotated.txt"
+    path.write_text(
+        "fragment of a record the previous file ended in\n"
+        "2026-08-14 00:05:02.000 [t] [M] (INFO) second\n",
+        encoding="utf-8",
+    )
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table()
+
+    assert table.column("message").to_pylist() == ["second"]
+
+
+def test_a_byte_order_mark_is_not_part_of_the_first_record(tmp_path: Path) -> None:
+    """A .NET or Java writer opens the file with one, and it is encoding, not data."""
+    path = tmp_path / "bom.txt"
+    path.write_bytes(
+        b"\xef\xbb\xbf"
+        + b"2026-08-14 00:05:01.000 [t] [M] (INFO) first\n"
+        + b"2026-08-14 00:05:02.000 [t] [M] (INFO) second\n"
+    )
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table()
+
+    assert table.column("message").to_pylist() == ["first", "second"]
+    assert table.column("source_rownum").to_pylist() == [1, 2]
+
+
+def test_a_drained_chunk_ending_on_a_payload_return_is_counted_whole(
+    tmp_path: Path,
+) -> None:
+    """A chunk that ran out of `read_byte_size` carries no terminator to strip."""
+    path = tmp_path / "cut.txt"
+    header = "2026-08-14 00:05:00.000 [t] [M] (INFO) "
+    path.write_bytes(f"{header}KEEPabc\rdefg\n".encode())
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table(max_row_byte_size=len(header) + 4, read_byte_size=4)
+
+    assert table.column("message").to_pylist() == ["KEEP"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 8"
+    ]
 
 
 def test_one_long_compressed_line_streams_across_tiny_reads(tmp_path: Path) -> None:
