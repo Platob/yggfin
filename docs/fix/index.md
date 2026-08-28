@@ -105,10 +105,10 @@ not one per version:
                 "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"BUY\"]}]"}}}
 ```
 
-A field record is a `Field` document -- the same one a component file and
-`schemas/rekep/*.yaml` are written in: the Arrow reading at the top, the
-protocol's own keys under `fix`, and each key that holds a list packed into
-one JSON string because Arrow field metadata is bytes to bytes. There is no
+A record is a `Field` document -- the Arrow reading at the top, the protocol's
+own keys under `fix`, and each key holding a list packed into one JSON string
+because Arrow field metadata is bytes to bytes. So is a component, a message
+and every file in `schemas/rekep/`: one shape to read and one to write, and no
 codec of its own to keep in step with the others.
 
 Having a tag is the whole of being a standard field, so nothing states the
@@ -124,8 +124,8 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
 fields/named.json     the fields FIX never numbered
-components/parties.json          one component, declared as a Field
-components/new_order_single.json a message, declared the same way
+components/parties.json          one component
+components/new_order_single.json a message
 ```
 
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
@@ -384,7 +384,7 @@ D ['ClOrdID', 'OrderRequestID', 'SecondaryClOrdID']
 
 A reusable block omits `fix:msgtype` rather than writing it null, and carries
 `fix:msgtypes` instead: the messages whose trees reach it, derived on the
-collapse exactly as a field's `used_in` is scraped. `Parties` names the
+collapse exactly as a field's own `fix:msgtypes` is scraped. `Parties` names the
 ninety-odd messages that carry it; six blocks name none, because the standard
 reaches them from the session header (`HopGrp`, `MsgTypeGrp`) or no longer
 reaches them at all.
