@@ -1,0 +1,153 @@
+/* The lineage widget reuses the registry's chrome -- status, summary tiles,
+   scrolling table -- through `.fix-registry`, so only what a lineage adds is
+   here: the stage strip and the four kinds of cell a column row draws. */
+
+.product-lineage__form {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.product-lineage__form textarea {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--rekep-border);
+  border-radius: var(--rekep-radius);
+  background: var(--rekep-card);
+  color: inherit;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.product-lineage__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.product-lineage__controls select,
+.product-lineage__controls button {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--rekep-border);
+  border-radius: var(--rekep-radius);
+  background: var(--rekep-card);
+  color: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.product-lineage__controls button:hover,
+.product-lineage__stages button:hover {
+  border-color: var(--rekep-orange);
+}
+
+/* The chain a row travels, upstream first. A horizontal scroll rather than a
+   wrap: the order is the meaning, and a stage that wrapped onto its own line
+   read as a branch. */
+.product-lineage__stages {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0 0 0.3rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.product-lineage__stages li {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.product-lineage__stages li + li::before {
+  content: "→";
+  margin-right: 0.5rem;
+  color: var(--rekep-muted);
+}
+
+.product-lineage__stages button {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--rekep-border);
+  border-radius: var(--rekep-radius);
+  background: var(--rekep-card);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-lineage__stages button[aria-current="step"] {
+  border-color: var(--rekep-orange);
+  background: color-mix(in srgb, var(--rekep-orange) 12%, var(--rekep-card));
+}
+
+.product-lineage__stage-name {
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.product-lineage__stage-count,
+.product-lineage__type,
+.product-lineage__marks span,
+.product-lineage__meaning {
+  color: var(--rekep-muted);
+  font-size: 0.68rem;
+}
+
+.product-lineage__table th[scope="row"] {
+  white-space: nowrap;
+  text-align: left;
+  font-weight: 400;
+}
+
+.product-lineage__type {
+  display: block;
+}
+
+/* A carried column is the one the reader is looking for: the line put a value
+   in it. Marked on the row so the eye finds them without a filter. */
+.product-lineage__table tr[data-carried] {
+  background: color-mix(in srgb, var(--rekep-orange) 7%, transparent);
+}
+
+.product-lineage__tag {
+  color: var(--rekep-muted);
+}
+
+.product-lineage__meaning {
+  display: block;
+}
+
+.product-lineage__derived,
+.product-lineage__absent {
+  color: var(--rekep-muted);
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.product-lineage__table td p {
+  margin: 0;
+  font-size: 0.74rem;
+}
+
+.product-lineage__marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem !important;
+}
+
+.product-lineage__marks span {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--rekep-border);
+  border-radius: var(--rekep-radius);
+}
+
+.product-lineage__wire {
+  max-height: 14rem;
+  overflow: auto;
+}

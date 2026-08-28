@@ -42,11 +42,14 @@ extra_css:
   - stylesheets/home.css
   - stylesheets/fix-registry.css
   - stylesheets/fix-transcribe.css
+  - stylesheets/product-lineage.css
 
 extra_javascript:
   - javascripts/fix-declaration.js
   - javascripts/fix-registry.js
   - javascripts/fix-transcribe.js
+  # Reads the decoder `fix-transcribe.js` publishes, so it is loaded after it.
+  - javascripts/product-lineage.js
 
 hooks:
   - docs_hooks.py
@@ -57,11 +60,19 @@ nav:
       - Foundations:
           - Why Arrow: overview/arrow.md
           - Design rules: overview/design.md
-  - Schemas:
+  - Products:
+      - Overview: products/index.md
+      - Text:
+          - Message: products/message.md
+          - FixMsg: products/fixmsg.md
+      - Market:
+          - Instrument: products/instrument.md
+          - Order: products/order.md
+          - Execution: products/execution.md
+          - Book: products/book.md
       - Declarations:
           - Types: contracts/types.md
           - Schema contracts: contracts/index.md
-      - Identity:
           - Binary identities: contracts/identity.md
           - Time-anchored hashes: contracts/txhash.md
   - Enums:
