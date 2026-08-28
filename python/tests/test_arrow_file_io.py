@@ -281,6 +281,31 @@ def test_a_plain_bucket_location_still_takes_the_catalog_s_own_filesystem() -> N
     assert settings["endpoint_override"] == "http://minio:9000"
 
 
+def test_an_encryption_this_cannot_send_is_refused_rather_than_ignored() -> None:
+    """A catalog carrying `s3.sse.type` says its objects must be encrypted.
+
+    Neither `pyarrow.fs.S3FileSystem` nor pyiceberg reads any of these names,
+    so honouring the setting is impossible and ignoring it writes plaintext and
+    reports success -- the one failure a reader of the table can never see.
+    """
+    for asked in (
+        {"s3.sse.type": "kms", "s3.sse.key": "arn:aws:kms:eu-west-1:1:key/abc"},
+        {"s3.sse.type": "s3"},
+        {"s3.sse.type": "custom", "s3.sse.key": "base64key", "s3.sse.md5": "digest"},
+        {"s3.sse.key": "base64key"},
+    ):
+        with pytest.raises(ValueError, match="server-side encryption"):
+            inferred_properties({"warehouse": "s3://bucket/wh", **asked})
+        with pytest.raises(ValueError, match="server-side encryption"):
+            ArrowFileIO(asked)
+
+
+def test_the_one_encryption_setting_that_asks_for_nothing_is_honoured() -> None:
+    """`none` is satisfied by doing nothing, which is what this does."""
+    assert inferred_properties({"s3.sse.type": "none"}) == {"s3.sse.type": "none"}
+    assert ArrowFileIO({"s3.sse.type": "none"}).properties["s3.sse.type"] == "none"
+
+
 # -- staged uploads ---------------------------------------------------------
 
 

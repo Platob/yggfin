@@ -463,8 +463,40 @@ def location_properties(properties: Properties, *, locations: Iterable[str] = ()
     return {**inferred, **normalized}
 
 
+#: Iceberg's own server-side-encryption settings, which nothing under this can
+#: send. `pyarrow.fs.S3FileSystem` has no parameter for one and drops an
+#: `x-amz-server-side-encryption` handed to `default_metadata`; PyIceberg reads
+#: none of these names in either of its FileIOs. A store encrypts what this
+#: package writes through its *bucket's* default encryption instead, which also
+#: decrypts on read -- see `docs/storage/iceberg.md`.
+SSE_PROPERTIES = ("s3.sse.type", "s3.sse.key", "s3.sse.md5")
+
+#: The one value of them this can honour, because it asks for nothing.
+SSE_NONE = {"s3.sse.type": "none"}
+
+
+def _check_encryption(properties: Properties) -> None:
+    """Refuse an encryption this cannot request, rather than writing plaintext.
+
+    A catalog carrying `s3.sse.type` is saying its objects must be encrypted,
+    and a layer that ignores it writes them in the clear and reports success --
+    which is the one failure a reader of the table can never see.
+    """
+    requested = {name: properties[name] for name in SSE_PROPERTIES if name in properties}
+    if not requested or requested == SSE_NONE:
+        return
+    raise ValueError(
+        f"{sorted(requested)} asks for server-side encryption that neither pyarrow's S3 "
+        "filesystem nor pyiceberg can send, so setting it would write plaintext and report "
+        "success; turn on the bucket's default encryption, which encrypts every object this "
+        "writes and decrypts every one it reads, or name a FileIO that can send it with "
+        f"{DELEGATE_FILE_IO!r}"
+    )
+
+
 def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()) -> Properties:
     """`properties`, plus S3 process and explicit-location defaults."""
+    _check_encryption(properties)
     locations = tuple(locations)
     declared = [str(location) for name in LOCATION_PROPERTIES if (location := properties.get(name))]
     _, endpoint_decided, credentials_decided = _location_properties(

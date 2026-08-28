@@ -215,7 +215,8 @@ location, and the catalog fills what the location leaves unsaid.
 Two catalog properties are this package's own: `rekep.io.cache-bytes` sizes the
 immutable-content cache below, and `rekep.io.delegate-file-io` names a FileIO
 to wrap when `py-io-impl` is not this one, so a failed commit still owns every
-output it created.
+output it created. Iceberg's `s3.sse.*` are refused rather than ignored -- see
+[Encryption at rest](#encryption-at-rest).
 
 ```python
 from rekep.urls import Url, properties_of
@@ -263,6 +264,35 @@ share it -- signing every request to your store for that bucket's region.
 
 PyIceberg is configured with the package-level
 `rekep.arrow_file_io.ArrowFileIO` implementation.
+
+### Encryption at rest
+
+Turn it on at the **bucket**. A bucket whose default encryption is SSE-S3 or
+SSE-KMS encrypts every object this package writes -- Parquet data, manifests,
+manifest lists and metadata JSON alike -- and decrypts every one it reads, with
+no configuration here and no change to a read or a write.
+
+```bash
+aws s3api put-bucket-encryption --bucket rekep-warehouse \
+  --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":
+    {"SSEAlgorithm":"aws:kms","KMSMasterKeyID":"arn:aws:kms:eu-west-1:111122223333:key/…"}}]}'
+```
+
+Per-*request* encryption is not available. `pyarrow.fs.S3FileSystem` has no
+parameter for it and drops an `x-amz-server-side-encryption` handed to
+`default_metadata`; PyIceberg reads none of Iceberg's `s3.sse.*` names in
+either of its FileIOs. So SSE-C -- a customer-provided key, which must travel
+on every GET as well as every PUT -- cannot be used at all, and a bucket policy
+that *denies* a PUT without the header refuses every write.
+
+A catalog that names `s3.sse.type`, `s3.sse.key` or `s3.sse.md5` is refused
+rather than ignored: the setting says those objects must be encrypted, and a
+layer that quietly drops it writes them in the clear and reports success.
+`s3.sse.type: none` is the one value honoured, because it asks for nothing.
+
+Where per-request encryption is a requirement, `rekep.io.delegate-file-io`
+names a FileIO to use in place of this one; it is wrapped for output ownership
+and everything else on this page still applies.
 
 ### Immutable content cache
 

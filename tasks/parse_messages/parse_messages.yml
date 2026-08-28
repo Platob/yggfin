@@ -41,6 +41,8 @@ parameters:
   #   s3.region: eu-west-1
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
   # S3_* process defaults and the standard AWS credential chain are supported.
+  # Encryption at rest is the bucket's own default; `s3.sse.*` is refused
+  # rather than ignored, because nothing below here can send it.
   catalog: rekep
   catalog_properties:
     type: sql
