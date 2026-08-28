@@ -506,10 +506,35 @@ SESSION_COLUMNS = [
     "beginstring",
     "bodylength",
     "msgtype",
-    "msgseqnum",
     "sendercompid",
+    "sendersubid",
+    "senderlocationid",
     "targetcompid",
+    "targetsubid",
+    "targetlocationid",
+    "onbehalfofcompid",
+    "onbehalfofsubid",
+    "onbehalfoflocationid",
+    "delivertocompid",
+    "delivertosubid",
+    "delivertolocationid",
+    "msgseqnum",
+    "lastmsgseqnumprocessed",
+    "possdupflag",
+    "possresend",
     "sendingtime",
+    "origsendingtime",
+    "onbehalfofsendingtime",
+    "applverid",
+    "cstmapplverid",
+    "applextid",
+    "messageencoding",
+    "xmldatalen",
+    "xmldata",
+    "securedatalen",
+    "securedata",
+    "signaturelength",
+    "signature",
 ]
 
 MESSAGE_COLUMNS = [
@@ -591,11 +616,15 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
         None,
     ]
 
+    # `SenderSubID <50>`, `OnBehalfOfCompID <115>` and `PossDupFlag <43>` are
+    # header too, so they leave `entries` with the rest of it and answer from
+    # columns of their own.
+    assert [
+        table.column(name).to_pylist()[0]
+        for name in ("sendersubid", "onbehalfofcompid", "possdupflag")
+    ] == ["DESK1", "CLIENTA", "Y"]
     first = table.column("entries")[0].as_py()
     assert [entry["key"] for entry in first] == [
-        "50",
-        "115",
-        "43",
         "11",
         "55",
         "54",
@@ -604,8 +633,7 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
         "60",
         "58",
         "10",
-    ], "entries keeps every token but the seven the standard header lifts"
-    assert [entry["value"] for entry in first[:3]] == ["DESK1", "CLIENTA", "Y"]
+    ], "entries keeps every token the standard header does not lift"
     assert first[-1] == {
         "tag": 10,
         "key": "10",

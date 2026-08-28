@@ -147,7 +147,7 @@ class Order(MarketEvent):
     prevqty: Annotated[float | None, Field.column("Prev Qty")] = None
     """Quantity before this transition, reconstructed when no prior Order was observed."""
 
-    tif: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
+    timeinforce: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
     """How long it lives. `GTD` expires at `eunix`, where every expiry here lives."""
 
     stoppx: Annotated[float | None, fix_tag("StopPx")] = None
@@ -165,10 +165,10 @@ class Order(MarketEvent):
     orderid: Annotated[str | None, fix_tag("OrderID")] = None
     """Identifier the venue gave the order."""
 
-    clientorderid: Annotated[str | None, fix_tag("ClOrdID")] = None
+    clordid: Annotated[str | None, fix_tag("ClOrdID")] = None
     """Identifier the sender gave this version of the order."""
 
-    prevclientorderid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
+    origclordid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
     """Identifier the sender gave the version this one replaced."""
 
     clordlinkid: Annotated[str | None, fix_tag("ClOrdLinkID")] = None
@@ -176,7 +176,7 @@ class Order(MarketEvent):
 
     # Bridge-rendered identities FIX never numbered: the same registry
     # annotation, resolved through a namespace record rather than a tag.
-    parentclientorderid: Annotated[str | None, fix_tag("ParentClOrdID")] = None
+    parentclordid: Annotated[str | None, fix_tag("ParentClOrdID")] = None
     """Client order identity of the parent in a replace chain, where a bridge says it."""
 
     parentorderid: Annotated[str | None, fix_tag("ParentOrderID")] = None
@@ -211,12 +211,12 @@ class Order(MarketEvent):
             )
             if displayed is not None and self.qty is not None:
                 self.hiddenqty = max(self.qty - displayed, 0.0)
-        _carry_code(self, previous, "tif")
-        named = getattr(previous, "clientorderid", None)
-        if self.clientorderid is None:
-            self.clientorderid = named
-        elif self.prevclientorderid is None and named not in (None, self.clientorderid):
-            self.prevclientorderid = named
+        _carry_code(self, previous, "timeinforce")
+        named = getattr(previous, "clordid", None)
+        if self.clordid is None:
+            self.clordid = named
+        elif self.origclordid is None and named not in (None, self.clordid):
+            self.origclordid = named
         anchor = (
             previous.code or previous.life_code()
             if same_named_life
@@ -250,7 +250,7 @@ class Order(MarketEvent):
     @property
     def expires_on_arrival(self) -> bool:
         """Whether FIX says unfilled quantity can never rest."""
-        return TimeInForce.IMMEDIATE <= self.tif < TimeInForce.SESSION
+        return TimeInForce.IMMEDIATE <= self.timeinforce < TimeInForce.SESSION
 
     def life_parts(self) -> tuple[Any, ...]:
         """An order's lifecycle is the identifier that survives its amendments."""
@@ -282,8 +282,8 @@ class Order(MarketEvent):
         candidates = [
             (VENUE_ORDER_CODE, getattr(event, "orderid", None)),
             *(key for key in parsed if key[0] == VENUE_ORDER_CODE),
-            (CLIENT_ORDER_CODE, getattr(event, "prevclientorderid", None)),
-            (CLIENT_ORDER_CODE, getattr(event, "clientorderid", None)),
+            (CLIENT_ORDER_CODE, getattr(event, "origclordid", None)),
+            (CLIENT_ORDER_CODE, getattr(event, "clordid", None)),
             *(key for key in parsed if key[0] == CLIENT_ORDER_CODE),
         ]
         for namespace, value in candidates:
@@ -298,10 +298,10 @@ class Order(MarketEvent):
         if self.orderid and previous.orderid and self.orderid != previous.orderid:
             return False
         same_order = self.orderid and self.orderid == previous.orderid
-        same_client_version = self.clientorderid and self.clientorderid == previous.clientorderid
-        amends_client_version = self.prevclientorderid and self.prevclientorderid in (
-            previous.clientorderid,
-            previous.prevclientorderid,
+        same_client_version = self.clordid and self.clordid == previous.clordid
+        amends_client_version = self.origclordid and self.origclordid in (
+            previous.clordid,
+            previous.origclordid,
         )
         return bool(same_order or same_client_version or amends_client_version)
 
@@ -314,11 +314,11 @@ class Order(MarketEvent):
         candidates = dict.fromkeys(
             (
                 self.orderid,
-                self.prevclientorderid,
-                self.clientorderid,
+                self.origclordid,
+                self.clordid,
                 getattr(previous, "orderid", None),
-                getattr(previous, "prevclientorderid", None),
-                getattr(previous, "clientorderid", None),
+                getattr(previous, "origclordid", None),
+                getattr(previous, "clordid", None),
             )
         )
         for candidate in candidates:
@@ -339,7 +339,7 @@ class Order(MarketEvent):
         """An order's version moves with what it asked for, and how far it got."""
         return (
             *MarketEvent.version_parts(self),
-            self.clientorderid,
+            self.clordid,
             self.hiddenqty,
             self.vwap,
             self.indicative,
@@ -381,13 +381,13 @@ class Execution(MarketEvent):
     orderid: Annotated[str | None, fix_tag("OrderID")] = None
     """Identifier the venue gave that order."""
 
-    clientorderid: Annotated[str | None, fix_tag("ClOrdID")] = None
+    clordid: Annotated[str | None, fix_tag("ClOrdID")] = None
     """Identifier the sender gave the version of the order that traded."""
 
-    prevclientorderid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
+    origclordid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
     """Identifier the sender gave the preceding order version."""
 
-    filledqty: Annotated[float | None, fix_tag("CumQty")] = None
+    cumqty: Annotated[float | None, fix_tag("CumQty")] = None
     """Quantity done on the order as of this report, including this fill."""
 
     leavesqty: Annotated[float | None, fix_tag("LeavesQty")] = None
@@ -396,7 +396,7 @@ class Execution(MarketEvent):
     vwap: float | None = None
     """Average price of everything done on the order, as of this report."""
 
-    aggressor: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
+    aggressorindicator: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
     """Whether this side took liquidity; null when the venue does not say."""
 
     # How the trade settles. Common on real TradeCaptureReports, and money is
@@ -410,7 +410,7 @@ class Execution(MarketEvent):
     """How the settlement date was chosen, in FIX's own codes."""
 
     settlcurrency: Annotated[str | None, fix_tag("SettlCurrency")] = None
-    """ISO 4217 currency the trade settles in, when it differs from `ccy`."""
+    """ISO 4217 currency the trade settles in, when it differs from `currency`."""
 
     settlcurrfxratecalc: Annotated[str | None, fix_tag("SettlCurrFxRateCalc")] = None
     """Whether the settlement FX rate multiplies or divides."""
@@ -423,9 +423,9 @@ class Execution(MarketEvent):
             self,
             previous,
             "orderid",
-            "clientorderid",
-            "prevclientorderid",
-            "aggressor",
+            "clordid",
+            "origclordid",
+            "aggressorindicator",
         )
         same_report_life = (
             isinstance(previous, Execution)
@@ -462,12 +462,12 @@ class Execution(MarketEvent):
                     )
                 )
         elif self.state is State.FILLED and self.qty is not None:
-            if known_done is None and self.filledqty is not None and self.filledqty >= self.qty:
-                known_done = self.filledqty - self.qty
+            if known_done is None and self.cumqty is not None and self.cumqty >= self.qty:
+                known_done = self.cumqty - self.qty
             delta = self.qty
             revised_average = _weighted(average, known_done, self.px, self.qty)
-        if self.filledqty is None:
-            self.filledqty = (
+        if self.cumqty is None:
+            self.cumqty = (
                 max(known_done + delta, 0.0)
                 if delta is not None and known_done is not None
                 else known_done
@@ -500,7 +500,7 @@ class Execution(MarketEvent):
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""
-        return (*MarketEvent.version_parts(self), self.execid, self.filledqty, self.vwap)
+        return (*MarketEvent.version_parts(self), self.execid, self.cumqty, self.vwap)
 
 
 def _carry(into: Event, previous: Event, *names: str) -> None:
@@ -538,7 +538,7 @@ def _totals_of(previous: MarketEvent) -> tuple[float | None, float | None, float
         # total; an execution must then use the source's explicit totals.
         done = 0.0 if previous.prevqty is None and previous.state.is_live else None
         return done, previous.qty, previous.vwap
-    return previous.filledqty, previous.leavesqty, previous.vwap
+    return previous.cumqty, previous.leavesqty, previous.vwap
 
 
 def _weighted(

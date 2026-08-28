@@ -273,8 +273,8 @@ class Book(MarketEvent):
                     self.attach_instrument(instrument)
             if not self.pxunit:
                 self.pxunit = previous.pxunit
-            if self.ccy is None:
-                self.ccy = previous.ccy
+            if self.currency is None:
+                self.currency = previous.currency
             if not self.qtyunit:
                 self.qtyunit = previous.qtyunit
             if self.execpx is None:
@@ -1060,7 +1060,7 @@ class _Side:
             "hiddenqty",
             "notional",
             "eunix",
-            "tif",
+            "timeinforce",
             "stoppx",
             "kind",
         ):
@@ -1875,14 +1875,14 @@ class BookIterator:
             unix=event.unix,
             instrumentxhash=event.instrumentxhash,
             codes=dict(event.codes),
-            ccy=event.ccy,
+            currency=event.currency,
         )
         parsed = event.into_instrument()
         instrument = (
             stored
             if stored is not None
             else parsed
-            or Instrument(xhash=event.instrumentxhash, symbol=event.symbol, currency=event.ccy)
+            or Instrument(xhash=event.instrumentxhash, symbol=event.symbol, currency=event.currency)
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
@@ -2209,7 +2209,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         code=state.code,
         codes=dict(about.codes),
         pxunit=about.pxunit,
-        ccy=about.ccy,
+        currency=about.currency,
         qtyunit=about.qtyunit,
         mic=about.mic,
         state=State.OPEN if (state.bid.keys or state.ask.keys) else State.CLOSED,

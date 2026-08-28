@@ -20,8 +20,8 @@ from rekep.market import (
 from rekep.market.book import _Side
 from rekep.market.identity import hash_bytes_of
 
-BTC = Instrument(symbol="BTC-USD", exchange="XCME", currency="USD")
-ETH = Instrument(symbol="ETH-USD", exchange="XCME", currency="USD")
+BTC = Instrument(symbol="BTC-USD", securityexchange="XCME", currency="USD")
+ETH = Instrument(symbol="ETH-USD", securityexchange="XCME", currency="USD")
 
 
 def initial[EventT: MarketEvent](event: EventT, instrument: Instrument = BTC) -> EventT:
@@ -526,7 +526,7 @@ def test_a_fill_tries_linked_lifecycles_in_order() -> None:
 
 @pytest.mark.parametrize(
     ("name", "value"),
-    (("orderid", "B1"), ("clientorderid", "C1"), ("prevclientorderid", "C0")),
+    (("orderid", "B1"), ("clordid", "C1"), ("origclordid", "C0")),
 )
 def test_a_fill_falls_back_to_each_source_order_identifier(name: str, value: str) -> None:
     placed = order(
@@ -535,8 +535,8 @@ def test_a_fill_falls_back_to_each_source_order_identifier(name: str, value: str
         100.0,
         5.0,
         "B1",
-        clientorderid="C1",
-        prevclientorderid="C0",
+        clordid="C1",
+        origclordid="C0",
     )
     offered = order(10, Side.ASK, 100.5, 7.0, "A1")
     _, second = books([placed, offered, trade(20, 100.5, 2.0, **{name: value})])
@@ -926,7 +926,7 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            clientorderid="42",
+            clordid="42",
             codes={"clordid": "42"},
             state=State.NEW,
         )
@@ -966,7 +966,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
             side=Side.BID,
             px=99.0,
             qty=4.0,
-            clientorderid="CLIENT",
+            clordid="CLIENT",
             codes={"clordid": "CLIENT"},
             state=State.NEW,
         )
@@ -976,7 +976,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
 
     found = side.standing(
         Order(
-            prevclientorderid="CLIENT",
+            origclordid="CLIENT",
             codes={"secondaryorderid": "VENUE"},
         )
     )
@@ -1028,7 +1028,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 side=Side.BID,
                 px=100.0,
                 qty=5.0,
-                clientorderid="CL-1",
+                clordid="CL-1",
                 codes={"clordid": "CL-1"},
                 state=State.NEW,
             )
@@ -1039,8 +1039,8 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 side=Side.BID,
                 px=100.0,
                 qty=4.0,
-                clientorderid="CL-2",
-                prevclientorderid="CL-1",
+                clordid="CL-2",
+                origclordid="CL-1",
                 codes={"origclordid": "CL-1", "clordid": "CL-2"},
                 state=State.OPEN,
             )
@@ -1051,8 +1051,8 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 side=Side.BID,
                 px=100.0,
                 qty=3.0,
-                clientorderid="CL-3",
-                prevclientorderid="CL-2",
+                clordid="CL-3",
+                origclordid="CL-2",
                 codes={"origclordid": "CL-2", "clordid": "CL-3"},
                 state=State.OPEN,
             )
@@ -1064,8 +1064,8 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 px=100.0,
                 qty=2.0,
                 orderid="ORD-1",
-                clientorderid="CL-3",
-                prevclientorderid="CL-2",
+                clordid="CL-3",
+                origclordid="CL-2",
                 codes={
                     "orderid": "ORD-1",
                     "origclordid": "CL-2",
@@ -1096,7 +1096,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 unix=50,
                 side=Side.BID,
                 orderid="ORD-1",
-                clientorderid="CL-3",
+                clordid="CL-3",
                 codes={"orderid": "ORD-1", "clordid": "CL-3"},
                 state=State.CANCELLED,
             )
@@ -1117,7 +1117,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
                 side=Side.BID,
                 px=100.0,
                 qty=5.0,
-                clientorderid=root,
+                clordid=root,
                 codes={"secondaryclordid": f"S{version}"},
                 state=State.NEW if version == 0 else State.OPEN,
             )
@@ -1130,7 +1130,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
     assert standing.codes["secondaryclordid"] == "S99"
     assert side.standing(Order(codes={"secondaryclordid": "S99"})).xhash == lifecycle
     assert side.standing(Order(codes={"secondaryclordid": "S98"})).xhash == lifecycle
-    assert side.standing(Order(clientorderid=root)).xhash == lifecycle
+    assert side.standing(Order(clordid=root)).xhash == lifecycle
     assert len(side.aliases[lifecycle]) <= book_module._ORDER_ALIAS_LIMIT
 
 
@@ -1288,7 +1288,7 @@ def test_a_zero_side_bound_keeps_only_the_audit() -> None:
 
 @pytest.mark.parametrize("tif", [TimeInForce.IOC, TimeInForce.FOK])
 def test_immediate_orders_are_audited_but_never_rest(tif: TimeInForce) -> None:
-    immediate = order(10, Side.BID, 100.0, 5.0, "I1", tif=tif)
+    immediate = order(10, Side.BID, 100.0, 5.0, "I1", timeinforce=tif)
 
     (book,) = BookIterator.from_events([immediate], snapshot_every=0)
 

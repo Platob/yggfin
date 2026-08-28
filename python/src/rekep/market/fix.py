@@ -81,7 +81,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     # The group a multi-sided TradeCaptureReport splits by: each entry is one
     # Execution, so the count is read and is not an extra.
     "NoSides",
-    # The older way to say when a contract expires, which `maturity` falls back
+    # The older way to say when a contract expires, which `maturitydate` falls back
     # to. A venue that sends it usually sends no `MaturityDate <541>` at all.
     "MaturityMonthYear",
     "LegMaturityMonthYear",
@@ -1025,7 +1025,7 @@ class FixEvents(Convertible):
         """The order this message is about, in the state the message puts it in."""
         get = self.get
         unix = self.unix
-        tif = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
+        timeinforce = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
         if state is State.UNKNOWN:
@@ -1055,21 +1055,21 @@ class FixEvents(Convertible):
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                eunix=self._expires(tif, unix, duration),
+                eunix=self._expires(timeinforce, unix, duration),
                 state=transition.state,
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("Price")),
                 qty=transition.current_qty,
                 prevqty=transition.previous_qty,
                 kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
-                tif=tif,
+                timeinforce=timeinforce,
                 stoppx=_number(get("StopPx")),
                 hiddenqty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
                 orderid=get("OrderID"),
-                clientorderid=get("ClOrdID"),
-                prevclientorderid=get("OrigClOrdID"),
+                clordid=get("ClOrdID"),
+                origclordid=get("OrigClOrdID"),
                 clordlinkid=get("ClOrdLinkID"),
-                parentclientorderid=get("ParentClOrdID"),
+                parentclordid=get("ParentClOrdID"),
                 parentorderid=get("ParentOrderID"),
                 cxlrejreason=_integer(get("CxlRejReason")),
                 cxlrejresponseto=get("CxlRejResponseTo"),
@@ -1101,7 +1101,7 @@ class FixEvents(Convertible):
                 kind=MarketKind.LIMIT_ORDER,
                 indicative=True,
                 orderid=get("QuoteEntryID") or get("QuoteID"),
-                clientorderid=get("QuoteReqID"),
+                clordid=get("QuoteReqID"),
                 **self._shared(),
             )
         )
@@ -1128,11 +1128,11 @@ class FixEvents(Convertible):
                 ),
                 parenthash=[order.hash] if order is not None and order.hash else [],
                 orderid=get("OrderID"),
-                clientorderid=get("ClOrdID"),
-                prevclientorderid=get("OrigClOrdID"),
-                filledqty=_number(get("CumQty")),
+                clordid=get("ClOrdID"),
+                origclordid=get("OrigClOrdID"),
+                cumqty=_number(get("CumQty")),
                 leavesqty=_number(get("LeavesQty")),
-                aggressor=_flag(get("AggressorIndicator")),
+                aggressorindicator=_flag(get("AggressorIndicator")),
                 settldate=_date(get("SettlDate")),
                 settltype=get("SettlType"),
                 settlcurrency=get("SettlCurrency"),
@@ -1221,16 +1221,16 @@ class FixEvents(Convertible):
             securityidsource=get("SecurityIDSource"),
             altids=self.into_alt_ids() or None,
             securitytype=securitytype,
-            cfi=cfi,
-            exchange=get("SecurityExchange") or get("ExDestination"),
+            cficode=cfi,
+            securityexchange=get("SecurityExchange") or get("ExDestination"),
             currency=_currency(get("Currency")),
-            multiplier=_number(get("ContractMultiplier")),
-            tick=_number(get("MinPriceIncrement")),
-            lot=_number(get("RoundLot")),
-            maturity=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
-            strike=_number(get("StrikePrice")),
-            optionkind=OptionKind.from_fix(get("PutOrCall"), OptionKind.UNKNOWN),
-            label=get("SecurityDesc"),
+            contractmultiplier=_number(get("ContractMultiplier")),
+            minpriceincrement=_number(get("MinPriceIncrement")),
+            roundlot=_number(get("RoundLot")),
+            maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
+            strikeprice=_number(get("StrikePrice")),
+            putorcall=OptionKind.from_fix(get("PutOrCall"), OptionKind.UNKNOWN),
+            securitydesc=get("SecurityDesc"),
             legs=self.into_legs() or None,
         )
 
@@ -1272,15 +1272,15 @@ class FixEvents(Convertible):
                     kind=_classified(cfi, securitytype),
                     securityid=entry.get("LegSecurityID"),
                     securityidsource=entry.get("LegSecurityIDSource"),
-                    cfi=cfi,
+                    cficode=cfi,
                     securitytype=securitytype,
-                    exchange=entry.get("LegSecurityExchange"),
+                    securityexchange=entry.get("LegSecurityExchange"),
                     currency=_currency(entry.get("LegCurrency")),
-                    multiplier=_number(entry.get("LegContractMultiplier")),
-                    maturity=_date(entry.get("LegMaturityDate"))
+                    contractmultiplier=_number(entry.get("LegContractMultiplier")),
+                    maturitydate=_date(entry.get("LegMaturityDate"))
                     or _month_year(entry.get("LegMaturityMonthYear")),
-                    strike=_number(entry.get("LegStrikePrice")),
-                    optionkind=OptionKind.from_fix(entry.get("LegPutOrCall"), OptionKind.UNKNOWN),
+                    strikeprice=_number(entry.get("LegStrikePrice")),
+                    putorcall=OptionKind.from_fix(entry.get("LegPutOrCall"), OptionKind.UNKNOWN),
                 )
             )
         return built
@@ -1368,12 +1368,12 @@ class FixEvents(Convertible):
             return None
         return registry.msg_type_event_types().get(self._message_kind)
 
-    def _expires(self, tif: TimeInForce, unix: int, duration: int | None) -> int | None:
+    def _expires(self, timeinforce: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
         explicit = unix_of(self.get("ExpireTime"))
         if explicit is not None:
             return explicit
-        if tif is not TimeInForce.GFT or duration is None or duration <= 0:
+        if timeinforce is not TimeInForce.GFT or duration is None or duration <= 0:
             return None
         raw_unit = self.get("ExposureDurationUnit")
         unit = 0 if raw_unit is None else _integer(raw_unit)
@@ -1394,7 +1394,7 @@ class FixEvents(Convertible):
             "reason": self._reason(),
             "instrumentxhash": instrument.xhash,
             "pxunit": instrument.currency.into_str() if instrument.currency else "",
-            "ccy": instrument.currency,
+            "currency": instrument.currency,
         }
 
     @functools.cached_property

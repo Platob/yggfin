@@ -134,7 +134,7 @@ fields:
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
   fix: {display: Px Unit}
-- name: ccy
+- name: currency
   type: int32
   nullable: true
   description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See Appendix 6-A: Valid Currency Codes for information on obtaining'
@@ -174,7 +174,7 @@ fields:
   value:
     type: string
     fix: {display: Value}
-- name: tif
+- name: timeinforce
   type: int32
   description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
   fix: {tag: '59', type: char, values: '[{"value":"0","meaning":"Day (or session)","aliases":["DAY"]},{"value":"1","meaning":"Good Till Cancel (GTC)","aliases":["GOOD_TILL_CANCEL"]},{"value":"2","meaning":"At the Opening (OPG)","aliases":["AT_THE_OPENING"]},{"value":"3","meaning":"Immediate Or Cancel (IOC)","aliases":["IMMEDIATE_OR_CANCEL"]},{"value":"4","meaning":"Fill Or Kill (FOK)","aliases":["FILL_OR_KILL"]},{"value":"5","meaning":"Good Till Crossing (GTX)","aliases":["GOOD_TILL_CROSSING"]},{"value":"6","meaning":"Good Till Date (GTD)","aliases":["GOOD_TILL_DATE"]},{"value":"7","meaning":"At the Close","aliases":["AT_THE_CLOSE"]},{"value":"8","meaning":"Good Through Crossing","aliases":["GOOD_THROUGH_CROSSING"]},{"value":"9","meaning":"At Crossing","aliases":["AT_CROSSING"]},{"value":"A","meaning":"","aliases":["GOOD_FOR_TIME"]},{"value":"B","meaning":"","aliases":["GOOD_FOR_AUCTION"]},{"value":"C","meaning":"","aliases":["GOOD_FOR_MONTH"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","NewOrderList","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","MDFullGrp","MDIncGrp","TimeInForceRules","TradeReportOrderDetail"]', name: TimeInForce, version: 5.0.SP2, display: TimeInForce}
@@ -203,12 +203,12 @@ fields:
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
   fix: {tag: '37', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","TradeCaptureReportRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","Email","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","DontKnowTradeDK","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","TradeCaptureReport","Confirmation","AllocationReport","ConfirmationRequest","AllocationInstruction","DontKnowTrade","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]', name: OrderID, version: 5.0.SP2, display: OrderID}
-- name: clientorderid
+- name: clordid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID <49> or OnBehalfOfCompID <115> as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID <11> field.
   fix: {tag: '11', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","OrderMassActionReport","Email","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","RegistrationInstructions","RegistrationInstructionsResponse","OrderMassCancelRequest","OrderMassCancelReport","QuoteRequest","SettlementInstructions","TradeCaptureReport","Confirmation","AllocationReport","ConfirmationRequest","NewOrderList","AllocationInstruction","ListStrikePrice","ListStatus","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]', name: ClOrdID, version: 5.0.SP2, display: ClOrdID}
-- name: prevclientorderid
+- name: origclordid
   type: string
   nullable: true
   description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
@@ -218,7 +218,7 @@ fields:
   nullable: true
   description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
   fix: {tag: '583', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]', msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","NewOrderList","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, version: 5.0.SP2, display: ClOrdLinkID}
-- name: parentclientorderid
+- name: parentclordid
   type: string
   nullable: true
   description: Client order identity of the parent in a replace chain, as the bridge renders it.

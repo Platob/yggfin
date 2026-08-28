@@ -20,10 +20,35 @@ LIFTED_HEADER = {
     "beginstring": "8",
     "bodylength": "9",
     "msgtype": "35",
-    "msgseqnum": "34",
     "sendercompid": "49",
+    "sendersubid": "50",
+    "senderlocationid": "142",
     "targetcompid": "56",
+    "targetsubid": "57",
+    "targetlocationid": "143",
+    "onbehalfofcompid": "115",
+    "onbehalfofsubid": "116",
+    "onbehalfoflocationid": "144",
+    "delivertocompid": "128",
+    "delivertosubid": "129",
+    "delivertolocationid": "145",
+    "msgseqnum": "34",
+    "lastmsgseqnumprocessed": "369",
+    "possdupflag": "43",
+    "possresend": "97",
     "sendingtime": "52",
+    "origsendingtime": "122",
+    "onbehalfofsendingtime": "370",
+    "applverid": "1128",
+    "cstmapplverid": "1129",
+    "applextid": "1156",
+    "messageencoding": "347",
+    "xmldatalen": "212",
+    "xmldata": "213",
+    "securedatalen": "90",
+    "securedata": "91",
+    "signaturelength": "93",
+    "signature": "89",
 }
 
 #: `CheckSum <10>` is the boundary every lift is measured against -- a field is
@@ -276,23 +301,31 @@ def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> Non
 
 
 def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
-    """Seven columns; `entries` keeps the body and the boundary.
+    """A column each; `entries` keeps the body and the boundary.
 
     Every one of them is the text the payload spelled -- `9=176` is the three
-    characters, not a number -- because this stage reads no dictionary.
+    characters and `43=Y` is the letter -- because this stage reads no
+    dictionary. What the payload does not state stays null: the whole header
+    is declared, and a message states the part of it that it states.
     """
     message = Message(
-        message="8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|"
-        "52=20260814-09:30:00.000|55=IBM|10=000"
+        message="8=FIX.4.4|9=176|35=D|34=1092|49=BUYSIDE|50=DESK|56=XPAR|115=ORIG|"
+        "43=Y|52=20260814-09:30:00.000|55=IBM|10=000"
     )
 
-    assert {name: getattr(message, name) for name in LIFTED_HEADER} == {
+    stated = {
+        name: found for name in LIFTED_HEADER if (found := getattr(message, name)) is not None
+    }
+    assert stated == {
         "beginstring": "FIX.4.4",
         "bodylength": "176",
         "msgtype": "D",
-        "msgseqnum": "1092",
         "sendercompid": "BUYSIDE",
+        "sendersubid": "DESK",
         "targetcompid": "XPAR",
+        "onbehalfofcompid": "ORIG",
+        "msgseqnum": "1092",
+        "possdupflag": "Y",
         "sendingtime": "20260814-09:30:00.000",
     }
     assert [(entry.key, entry.value) for entry in message.entries] == [
@@ -608,15 +641,15 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
 
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == [payload]
-    assert [table.column(name).to_pylist() for name in LIFTED_HEADER] == [
-        ["FIX.4.4"],
-        [None],
-        ["D"],
-        [None],
-        ["XPAR"],
-        ["BUY"],
-        [None],
-    ], "the four this payload states, and null for the three it does not"
+    stated = {
+        name: found for name in LIFTED_HEADER if (found := table.column(name).to_pylist()) != [None]
+    }
+    assert stated == {
+        "beginstring": ["FIX.4.4"],
+        "msgtype": ["D"],
+        "sendercompid": ["XPAR"],
+        "targetcompid": ["BUY"],
+    }, "the four this payload states; every other header column is null"
     assert [(entry["key"], entry["value"]) for entry in table.column("entries")[0].as_py()] == [
         ("55", "IBM"),
         ("10", "000"),

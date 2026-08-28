@@ -180,7 +180,7 @@ def test_event_object_streams_cross_the_arrow_boundary_in_bounded_batches() -> N
         Order(
             unix=1,
             code="A",
-            codes={"orderid": "A", "clientorderid": "C1"},
+            codes={"orderid": "A", "clordid": "C1"},
             linkedevents=[(0, 7)],
             side=Side.BUY,
         ).identify(),
@@ -267,7 +267,7 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
     assert built.instrumentxhash == instrument.xhash and built.symbol == instrument.symbol
     assert scoped.instrumentxhash == 7 and scoped.code == "given"
     assert scoped.symbol == instrument.symbol, "a lifecycle code never displaces the symbol"
-    assert built.ccy is instrument.currency
+    assert built.currency is instrument.currency
     assert "instrument" not in shape.into_field().names
     assert built.into_instrument() is instrument
 
@@ -279,7 +279,7 @@ def test_a_row_that_names_no_instrument_keeps_the_hash_it_was_handed() -> None:
 
 
 def test_market_currency_input_is_normalized_to_its_compact_enum() -> None:
-    assert Order(ccy=" usd ").ccy is Currency.USD
+    assert Order(currency=" usd ").currency is Currency.USD
 
 
 def test_market_float_members_match_their_arrow_physical_type_before_hashing() -> None:

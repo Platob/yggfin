@@ -467,7 +467,7 @@ class _Shared:
         self.codes = FixMsg.codes_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
         currency = values.text("Currency")
-        self.ccy, self.pxunit = _currencies(currency)
+        self.currency, self.pxunit = _currencies(currency)
 
     def take(self, value: pyarrow.Array, where: pyarrow.Array) -> pyarrow.Array:
         return compute.take(value, where)
@@ -525,9 +525,9 @@ def _orders(
     current = compute.if_else(terminal, pyarrow.scalar(0.0), current)
     side = shared.take(values.mapped("Side", _SIDE_CODES, Side.UNKNOWN), where)
     kind = shared.take(values.mapped("OrdType", tags.order_kinds, MarketKind.UNKNOWN), where)
-    tif = shared.take(values.mapped("TimeInForce", _TIF_CODES, TimeInForce.DAY), where)
+    timeinforce = shared.take(values.mapped("TimeInForce", _TIF_CODES, TimeInForce.DAY), where)
     immediate = compute.is_in(
-        tif,
+        timeinforce,
         value_set=pyarrow.array([int(TimeInForce.IOC), int(TimeInForce.FOK)], pyarrow.int32()),
     )
     eunix = compute.if_else(immediate, unix, pyarrow.nulls(len(where), pyarrow.int64()))
@@ -553,7 +553,7 @@ def _orders(
         pyarrow.scalar(NIL_BYTES, HASH),
     )
     px = shared.take(values.number("Price"), where)
-    ccy = shared.take(shared.ccy, where)
+    currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
     vwap = pyarrow.nulls(len(where), pyarrow.float64())
     null_float = pyarrow.nulls(len(where), pyarrow.float64())
@@ -570,7 +570,7 @@ def _orders(
         side,
         px,
         null_float,
-        ccy,
+        currency,
         current,
         previous,
         null_float,
@@ -602,24 +602,24 @@ def _orders(
         "side": side,
         "px": px,
         "pxunit": shared.take(shared.pxunit, where),
-        "ccy": ccy,
+        "currency": currency,
         "qty": current,
         "prevqty": previous,
         "qtyunit": _constant(len(where), "", pyarrow.string()),
         "metadata": shared.take(shared.metadata, where),
-        "tif": tif,
+        "timeinforce": timeinforce,
         "stoppx": shared.take(values.number("StopPx"), where),
         "hiddenqty": hidden,
         "vwap": vwap,
         "indicative": _constant(len(where), False, pyarrow.bool_()),
         "orderid": orderid,
-        "clientorderid": client_id,
-        "prevclientorderid": previous_client_id,
+        "clordid": client_id,
+        "origclordid": previous_client_id,
         # The reject-only columns stay null here: a row carrying either is
         # `_REASON_FIELDS`-complex and translates through the scalar path.
         "clordlinkid": shared.take(values.text("ClOrdLinkID"), where),
         # Namespace identities live in their resolved columns, never as tags.
-        "parentclientorderid": shared.take(values.text("ParentClOrdID"), where),
+        "parentclordid": shared.take(values.text("ParentClOrdID"), where),
         "parentorderid": shared.take(values.text("ParentOrderID"), where),
     }
     return _batch(Order, columns, len(where))
@@ -685,7 +685,7 @@ def _executions(
     aggressor_head = compute.utf8_upper(
         compute.utf8_slice_codeunits(compute.utf8_trim_whitespace(aggressor_text), 0, 1)
     )
-    aggressor = compute.if_else(
+    aggressorindicator = compute.if_else(
         compute.equal(aggressor_head, "Y"),
         pyarrow.scalar(True),
         compute.if_else(
@@ -712,7 +712,7 @@ def _executions(
         linked_sizes,
         compute.filter(order_hash, reported),
     )
-    ccy = shared.take(shared.ccy, where)
+    currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
     null_float = pyarrow.nulls(rows, pyarrow.float64())
     no_link_hash = Execution.txhash_arrow(
@@ -728,7 +728,7 @@ def _executions(
         side,
         px,
         null_float,
-        ccy,
+        currency,
         qty,
         null_float,
         null_float,
@@ -752,7 +752,7 @@ def _executions(
         side,
         px,
         null_float,
-        ccy,
+        currency,
         qty,
         null_float,
         null_float,
@@ -784,7 +784,7 @@ def _executions(
         "side": side,
         "px": px,
         "pxunit": shared.take(shared.pxunit, where),
-        "ccy": ccy,
+        "currency": currency,
         "qty": qty,
         "qtyunit": _constant(rows, "", pyarrow.string()),
         "metadata": shared.take(shared.metadata, where),
@@ -792,12 +792,12 @@ def _executions(
         "execrefid": execrefid,
         "tradeid": tradeid,
         "orderid": orderid,
-        "clientorderid": client_id,
-        "prevclientorderid": previous_client_id,
-        "filledqty": filled,
+        "clordid": client_id,
+        "origclordid": previous_client_id,
+        "cumqty": filled,
         "leavesqty": leaves,
         "vwap": vwap,
-        "aggressor": aggressor,
+        "aggressorindicator": aggressorindicator,
         "settldate": shared.take(values.raw("SettlDate", pyarrow.date32()), where),
         "settltype": shared.take(values.text("SettlType"), where),
         "settlcurrency": shared.take(values.text("SettlCurrency"), where),
@@ -1050,11 +1050,11 @@ def _currencies(source: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
         )
     members = [Currency.from_fix(value.as_py()) for value in unique]
     positions = compute.index_in(source, value_set=unique)
-    ccy = compute.take(
+    currency = compute.take(
         pyarrow.array([int(member) for member in members], _code_type(Currency.UNKNOWN)), positions
     )
     unit = compute.take(pyarrow.array([member.into_str() for member in members]), positions)
-    return ccy, compute.fill_null(unit, "")
+    return currency, compute.fill_null(unit, "")
 
 
 def _ranked_at_least(codes: pyarrow.Array, floor: Any) -> pyarrow.Array:

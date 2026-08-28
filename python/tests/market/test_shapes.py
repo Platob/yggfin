@@ -52,7 +52,7 @@ PRICED = [
     "px",
     "prevpx",
     "pxunit",
-    "ccy",
+    "currency",
     "qty",
     "prevqty",
     "qtyunit",
@@ -147,7 +147,10 @@ def test_a_market_event_is_an_event_and_an_order_is_both() -> None:
 def test_a_subclass_builds_its_own_projection_rather_than_its_bases() -> None:
     """The descriptor is per class; sharing one would give `Order` a `Book`'s columns."""
     assert Order.into_field() is not MarketEvent.into_field()
-    assert "tif" in Order.into_field().names and "tif" not in Execution.into_field().names
+    assert (
+        "timeinforce" in Order.into_field().names
+        and "timeinforce" not in Execution.into_field().names
+    )
     assert "bidpx" in Book.into_field().names and "bidpx" not in Execution.into_field().names
 
 
@@ -162,7 +165,7 @@ def test_hot_persisted_rows_are_slotted_and_round_trip_through_arrow(shape: type
 
 
 def test_transient_instrument_uses_a_slot_but_not_a_market_column() -> None:
-    instrument = Instrument(symbol="AAPL", multiplier=2.0)
+    instrument = Instrument(symbol="AAPL", contractmultiplier=2.0)
     order = Order(px=3.0, qty=4.0).attach_instrument(instrument)
     assert order.into_instrument() is instrument
     assert order.into_notional() == 24.0
@@ -173,15 +176,15 @@ def test_transient_instrument_uses_a_slot_but_not_a_market_column() -> None:
 
 
 def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
-    assert {"kind", "tif", "stoppx", "hiddenqty", "vwap", "indicative"} <= set(
+    assert {"kind", "timeinforce", "stoppx", "hiddenqty", "vwap", "indicative"} <= set(
         Order.into_field().names
     )
-    assert not {"display_qty", "filledqty", "leavesqty"} & set(Order.into_field().names)
-    assert "prevclientorderid" in Order.into_field().names
+    assert not {"display_qty", "cumqty", "leavesqty"} & set(Order.into_field().names)
+    assert "origclordid" in Order.into_field().names
 
 
 def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
-    ccy = MarketEvent.into_field().field("ccy")
+    ccy = MarketEvent.into_field().field("currency")
     assert ccy.nullable and ccy.dtype == pyarrow.int32()
     assert ccy.fix["name"] == "Currency" and ccy.fix["tag"] == "15"
     assert ccy.fix["type"] == "Currency", "the newest reading, and 4.0's char is collapsed"
@@ -203,7 +206,7 @@ def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
 
 
 def test_an_execution_carries_each_source_order_identifier() -> None:
-    assert {"orderid", "clientorderid", "prevclientorderid"} <= set(Execution.into_field().names)
+    assert {"orderid", "clordid", "origclordid"} <= set(Execution.into_field().names)
 
 
 def test_a_level_carries_only_price_and_quantity() -> None:

@@ -47,17 +47,38 @@ LINE = [
     "plugincode",
     "message",
     "protocolcode",
-    # The standard header, which the raw stage lifts out of `entries` into
-    # columns of its own -- so it arrives here already parsed, and this stage
-    # declares the same seven names in the same places, in the standard's own
-    # order: `BeginString` is a message's first field and `MsgType` its third.
     "beginstring",
     "bodylength",
     "msgtype",
-    "msgseqnum",
     "sendercompid",
+    "sendersubid",
+    "senderlocationid",
     "targetcompid",
+    "targetsubid",
+    "targetlocationid",
+    "onbehalfofcompid",
+    "onbehalfofsubid",
+    "onbehalfoflocationid",
+    "delivertocompid",
+    "delivertosubid",
+    "delivertolocationid",
+    "msgseqnum",
+    "lastmsgseqnumprocessed",
+    "possdupflag",
+    "possresend",
     "sendingtime",
+    "origsendingtime",
+    "onbehalfofsendingtime",
+    "applverid",
+    "cstmapplverid",
+    "applextid",
+    "messageencoding",
+    "xmldatalen",
+    "xmldata",
+    "securedatalen",
+    "securedata",
+    "signaturelength",
+    "signature",
     "entries",
     "direction",
 ]
@@ -93,10 +114,35 @@ LIFTED_HEADER = {
     "beginstring": "8",
     "bodylength": "9",
     "msgtype": "35",
-    "msgseqnum": "34",
     "sendercompid": "49",
+    "sendersubid": "50",
+    "senderlocationid": "142",
     "targetcompid": "56",
+    "targetsubid": "57",
+    "targetlocationid": "143",
+    "onbehalfofcompid": "115",
+    "onbehalfofsubid": "116",
+    "onbehalfoflocationid": "144",
+    "delivertocompid": "128",
+    "delivertosubid": "129",
+    "delivertolocationid": "145",
+    "msgseqnum": "34",
+    "lastmsgseqnumprocessed": "369",
+    "possdupflag": "43",
+    "possresend": "97",
     "sendingtime": "52",
+    "origsendingtime": "122",
+    "onbehalfofsendingtime": "370",
+    "applverid": "1128",
+    "cstmapplverid": "1129",
+    "applextid": "1156",
+    "messageencoding": "347",
+    "xmldatalen": "212",
+    "xmldata": "213",
+    "securedatalen": "90",
+    "securedata": "91",
+    "signaturelength": "93",
+    "signature": "89",
 }
 
 #: The three of the seven the two stages hold differently: the raw stage is
@@ -107,7 +153,19 @@ LIFTED_HEADER = {
 RETYPED_HEADER = {
     "bodylength": pyarrow.int64(),
     "msgseqnum": pyarrow.int64(),
+    "lastmsgseqnumprocessed": pyarrow.int64(),
+    "possdupflag": pyarrow.bool_(),
+    "possresend": pyarrow.bool_(),
     "sendingtime": pyarrow.timestamp("us", tz="UTC"),
+    "origsendingtime": pyarrow.timestamp("us", tz="UTC"),
+    "onbehalfofsendingtime": pyarrow.timestamp("us", tz="UTC"),
+    "applextid": pyarrow.int32(),
+    "xmldatalen": pyarrow.int64(),
+    "xmldata": pyarrow.binary(),
+    "securedatalen": pyarrow.int64(),
+    "securedata": pyarrow.binary(),
+    "signaturelength": pyarrow.int64(),
+    "signature": pyarrow.binary(),
 }
 
 #: The flattened message layer, derived from the module that names it and
@@ -1207,7 +1265,7 @@ def test_fixmsg_conversion_preserves_static_extra_columns(
 def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
     registry: FixRegistry,
 ) -> None:
-    """Seven header fields leave `entries` upstream, and this stage reads them
+    """The standard header leaves `entries` upstream, and this stage reads it
     off the columns rather than walking the list again for facts already in
     hand. `CheckSum <10>` is the boundary they are lifted before, so it is not
     one of them and still arrives as an argument like any other."""
@@ -1215,7 +1273,12 @@ def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
     raw = _raw_batch(Message(message=line))
 
     assert [entry["key"] for entry in raw.column("entries")[0].as_py()] == ["11", "55", "10"]
-    assert {name: raw.column(name).to_pylist()[0] for name in LIFTED_HEADER} == {
+    stated = {
+        name: found
+        for name in LIFTED_HEADER
+        if (found := raw.column(name).to_pylist()[0]) is not None
+    }
+    assert stated == {
         "beginstring": "FIX.4.4",
         "bodylength": "61",
         "msgseqnum": "7",
@@ -1223,7 +1286,7 @@ def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
         "sendercompid": "ME",
         "sendingtime": "20260814-09:30:00.000",
         "targetcompid": "YOU",
-    }
+    }, "what the line states; every other header column is null"
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 

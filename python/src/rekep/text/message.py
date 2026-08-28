@@ -14,6 +14,7 @@ import pyarrow.compute
 from rekep.enums import EventType
 from rekep.fields import DISPLAY, Field, column_name, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
+from rekep.fix.columns import DECLARATIONS, SESSION
 from rekep.fix.message import NOT_SEPARATOR, parse_pairs
 from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
@@ -34,28 +35,32 @@ _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
 _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
 
-#: The standard header fields a raw row lifts out of `entries`, by the FIX tag
-#: each of them is written under. They are lifted here because they are
-#: *parsed* here -- on a
-#: fifteen-field NewOrderSingle they are nearly half of every entry the row
-#: carries, and the FIX stage would otherwise walk the same list again looking
-#: for the same seven facts it already has.
+#: The standard header and trailer a raw row lifts out of `entries`, by the FIX
+#: tag each of them is written under. They are lifted here because they are
+#: *parsed* here -- on a fifteen-field NewOrderSingle they are nearly half of
+#: every entry the row carries, and the FIX stage would otherwise walk the same
+#: list again looking for facts it already has.
 #:
-#: The trailer is deliberately not among them: `CheckSum` is the boundary this
-#: stage reads everything else against -- an eligible field is one before it --
-#: and a marker that lifted itself out could no longer say it was last.
+#: `CheckSum <10>` is the one the standard declares that this stage cannot
+#: lift: it is the boundary every other lift is measured against -- a field is
+#: eligible only where it stands in front of it -- and a marker that lifted
+#: itself out could no longer say it was last. It stays an entry, and the FIX
+#: stage reads it from there like any other.
 #:
-#: In the standard's own order, which is also the order they are re-emitted
-#: in: `BeginString` is always the first field of a message and `MsgType`
-#: always the third.
-SESSION_NAMES: tuple[tuple[str, str], ...] = (
-    ("BeginString", "8"),
-    ("BodyLength", "9"),
-    ("MsgType", "35"),
-    ("MsgSeqNum", "34"),
-    ("SenderCompID", "49"),
-    ("TargetCompID", "56"),
-    ("SendingTime", "52"),
+#: Which fields, and which tag each answers to, are the FIX stage's own
+#: declaration read once here rather than copied: `fix.columns` selects the
+#: session names this package promotes and takes every tag from the registry,
+#: so a tag is never written down twice. The order is that declaration's, so
+#: the two stages carry the header in the same order and the FIX stage reads
+#: it off the columns rather than walking `entries` again.
+#:
+#: Read at import and never per message. This stage still interprets nothing:
+#: a lift is a tag standing before the checksum, and the value it lands is the
+#: text the payload spelled.
+SESSION_NAMES: tuple[tuple[str, str], ...] = tuple(
+    (DECLARATIONS[tag].fix.canonical, str(tag))
+    for tag, _ in SESSION
+    if DECLARATIONS[tag].fix.canonical != "CheckSum"
 )
 
 #: The same, as the columns carry them: folded, beside the tag. A column is
@@ -151,10 +156,12 @@ class Message(Event):
     protocolcode: Annotated[str, Field.column("Protocol Code")] = _NO_PROTOCOL
     """Protocol syntax detected without interpreting its fields."""
 
-    # In the standard's order, because that is the order a row re-emits them
-    # in: `BeginString` is always a message's first field and `MsgType` its
-    # third. Every one of them is the text the payload spelled -- this stage
-    # reads no numbers and names no zone.
+    # The whole standard header and trailer, in `SESSION_NAMES` order, which
+    # is the FIX stage's own -- so the two stages carry the header in the same
+    # order and the FIX stage reads it off these columns instead of walking
+    # `entries` again. Every one of them is the text the payload spelled: this
+    # stage reads no numbers, names no zone and decodes no flag, so a length
+    # is `"176"` and a flag is `"Y"`.
     beginstring: Annotated[str | None, _session("BeginString")] = None
     """Protocol the session negotiated, as the payload spells it."""
 
@@ -164,17 +171,92 @@ class Message(Event):
     msgtype: Annotated[str | None, _session("MsgType")] = None
     """First FIX message discriminator when the payload names one."""
 
-    msgseqnum: Annotated[str | None, _session("MsgSeqNum")] = None
-    """Sequence number the payload states, as text."""
-
     sendercompid: Annotated[str | None, _session("SenderCompID")] = None
     """Who the payload says sent it."""
+
+    sendersubid: Annotated[str | None, _session("SenderSubID")] = None
+    """Which desk or trader of the sender the payload names."""
+
+    senderlocationid: Annotated[str | None, _session("SenderLocationID")] = None
+    """Where the payload says the sender sent it from."""
 
     targetcompid: Annotated[str | None, _session("TargetCompID")] = None
     """Who the payload says it was for."""
 
+    targetsubid: Annotated[str | None, _session("TargetSubID")] = None
+    """Which desk or trader of the target the payload names."""
+
+    targetlocationid: Annotated[str | None, _session("TargetLocationID")] = None
+    """Where the payload says the target is."""
+
+    onbehalfofcompid: Annotated[str | None, _session("OnBehalfOfCompID")] = None
+    """Firm the message originated with, where a hub relayed it."""
+
+    onbehalfofsubid: Annotated[str | None, _session("OnBehalfOfSubID")] = None
+    """Which desk or trader of that originating firm the payload names."""
+
+    onbehalfoflocationid: Annotated[str | None, _session("OnBehalfOfLocationID")] = None
+    """Where the payload says that originating firm sent it from."""
+
+    delivertocompid: Annotated[str | None, _session("DeliverToCompID")] = None
+    """Firm the message is ultimately for, where a hub is to relay it."""
+
+    delivertosubid: Annotated[str | None, _session("DeliverToSubID")] = None
+    """Which desk or trader of that firm the payload names."""
+
+    delivertolocationid: Annotated[str | None, _session("DeliverToLocationID")] = None
+    """Where the payload says that firm is."""
+
+    msgseqnum: Annotated[str | None, _session("MsgSeqNum")] = None
+    """Sequence number the payload states, as text."""
+
+    lastmsgseqnumprocessed: Annotated[str | None, _session("LastMsgSeqNumProcessed")] = None
+    """Last sequence number the sender says it had processed, as text."""
+
+    possdupflag: Annotated[str | None, _session("PossDupFlag")] = None
+    """Whether the payload flags itself a possible retransmission, as spelled."""
+
+    possresend: Annotated[str | None, _session("PossResend")] = None
+    """Whether the payload flags itself a possible resend, as spelled."""
+
     sendingtime: Annotated[str | None, _session("SendingTime")] = None
     """When the payload says it was sent, in the payload's own spelling."""
+
+    origsendingtime: Annotated[str | None, _session("OrigSendingTime")] = None
+    """When a resent payload says it first went out, as spelled."""
+
+    onbehalfofsendingtime: Annotated[str | None, _session("OnBehalfOfSendingTime")] = None
+    """When the originating firm sent it, where a relayed payload says."""
+
+    applverid: Annotated[str | None, _session("ApplVerID")] = None
+    """Application version a FIXT session names for this message."""
+
+    cstmapplverid: Annotated[str | None, _session("CstmApplVerID")] = None
+    """Custom application extension the payload names, where it names one."""
+
+    applextid: Annotated[str | None, _session("ApplExtID")] = None
+    """Extension pack the payload names, as text."""
+
+    messageencoding: Annotated[str | None, _session("MessageEncoding")] = None
+    """Encoding the payload declares for its `Encoded*` fields."""
+
+    xmldatalen: Annotated[str | None, _session("XmlDataLen")] = None
+    """Declared length of `xmldata`, kept as the text in front of it."""
+
+    xmldata: Annotated[str | None, _session("XmlData")] = None
+    """XML block the payload carried, taken by the length in front of it."""
+
+    securedatalen: Annotated[str | None, _session("SecureDataLen")] = None
+    """Declared length of `securedata`, kept as the text in front of it."""
+
+    securedata: Annotated[str | None, _session("SecureData")] = None
+    """Encrypted block the payload carried, taken by the length in front of it."""
+
+    signaturelength: Annotated[str | None, _session("SignatureLength")] = None
+    """Declared length of `signature`, kept as the text in front of it."""
+
+    signature: Annotated[str | None, _session("Signature")] = None
+    """Signature the payload carried, taken by the length in front of it."""
 
     entries: list[Entry] = None  # type: ignore[assignment]
     """Ordered payload arguments other than the promoted message discriminator."""

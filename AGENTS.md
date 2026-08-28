@@ -115,6 +115,17 @@ dictionary's spelling for a FIX column, `display_name`'s title case for
 everything else. `tests/test_schemas.py` holds both halves for every published
 contract.
 
+A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
+`clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
+`minpriceincrement`. Two exceptions, both deliberate:
+
+- `px` and `qty` are the abstract slot every market row shares. One attribute,
+  and which FIX field it holds is the subclass's to declare -- `Price <44>` on
+  an order, `LastPx <31>` on a report, `MDEntryPx <270>` on a level.
+- A nested struct takes the *generic* spelling, because the nesting already
+  says whose it is: a leg's `LegCFICode <608>` is `cficode`, the same name its
+  instrument's `CFICode <461>` has, not `legcficode`.
+
 ### Description budget
 
 Descriptions are contract text, not tutorials. Use one short factual sentence

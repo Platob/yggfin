@@ -37,11 +37,15 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
 BASE = (1_787_000_000_000_000_000 // HOUR) * HOUR
 
-BTC = Instrument(symbol="BTC-USD", exchange="XCME")
-ETH = Instrument(symbol="ETH-USD", exchange="XCME")
+BTC = Instrument(symbol="BTC-USD", securityexchange="XCME")
+ETH = Instrument(symbol="ETH-USD", securityexchange="XCME")
 #: The same instrument, as a later message spells it: more is known.
 BTC_RICH = Instrument(
-    symbol="BTC-USD", exchange="XCME", currency="USD", cfi="FFICSX", kind=AssetKind.FUTURE
+    symbol="BTC-USD",
+    securityexchange="XCME",
+    currency="USD",
+    cficode="FFICSX",
+    kind=AssetKind.FUTURE,
 )
 
 
@@ -834,13 +838,13 @@ def test_an_out_of_order_rotated_segment_keeps_a_distinct_instrument() -> None:
 def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None:
     first = Instrument(
         symbol="ABC",
-        exchange="XPAR",
+        securityexchange="XPAR",
         securityid="111111111",
         securityidsource="1",
     )
     second = Instrument(
         symbol="ABC",
-        exchange="XPAR",
+        securityexchange="XPAR",
         securityid="222222222",
         securityidsource="1",
     )
@@ -859,10 +863,10 @@ def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None
 
 
 def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
-    weak = Instrument(symbol="ABC", exchange="XPAR")
+    weak = Instrument(symbol="ABC", securityexchange="XPAR")
     strong = Instrument(
         symbol="ABC",
-        exchange="XPAR",
+        securityexchange="XPAR",
         securityid="111111111",
         securityidsource="1",
     )
@@ -988,8 +992,8 @@ def test_a_message_that_knows_more_publishes_another_version() -> None:
         order(BASE + 10, BTC_RICH, Side.BID, 99.0, 5.0, "B2"),
     ]
     bare, rich = Instrument.from_events(events)
-    assert bare.cfi is None and bare.kind is AssetKind.UNKNOWN
-    assert rich.cfi == "FFICSX" and rich.kind is AssetKind.FUTURE
+    assert bare.cficode is None and bare.kind is AssetKind.UNKNOWN
+    assert rich.cficode == "FFICSX" and rich.kind is AssetKind.FUTURE
     assert rich.currency is Currency.USD
     assert rich.xhash == bare.xhash, "the same instrument, and an identity that did not move"
     assert rich.version == bare.version + 1 and rich.prevunix == bare.unix
@@ -1004,7 +1008,7 @@ def test_learning_never_retracts_what_was_already_known() -> None:
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
     ]
     (only,) = Instrument.from_events(events)
-    assert only.cfi == "FFICSX"
+    assert only.cficode == "FFICSX"
 
 
 def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
@@ -1012,7 +1016,7 @@ def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
 ) -> None:
     """The equality shortcut must still notice the last reference-data member."""
     repeated = dataclasses.replace(BTC)
-    richer = dataclasses.replace(BTC, label="Bitcoin future")
+    richer = dataclasses.replace(BTC, securitydesc="Bitcoin future")
     enriched_with = Instrument.enriched_with
     examined: list[Instrument] = []
 
@@ -1030,7 +1034,7 @@ def test_equal_reference_repeats_skip_enrichment_but_a_late_field_does_not(
     found = list(Instrument.from_events(events))
 
     assert examined == [richer], "initial and equal states need no enrichment walk"
-    assert [one.label for one in found] == [None, "Bitcoin future"]
+    assert [one.securitydesc for one in found] == [None, "Bitcoin future"]
 
 
 # -- the hourly grid ----------------------------------------------------------
@@ -1076,7 +1080,7 @@ def test_instrument_state_is_published_on_every_book_boundary() -> None:
         BASE + 3 * HOUR,
     ]
     assert {one.unix for one in instruments if one.sunix is not None} == boundaries
-    assert all(one.cfi == BTC_RICH.cfi for one in instruments)
+    assert all(one.cficode == BTC_RICH.cficode for one in instruments)
 
 
 def test_expiry_delta_does_not_skip_the_instrument_boundary() -> None:
@@ -1113,12 +1117,12 @@ def test_recovery_continues_full_instrument_snapshots() -> None:
 
     recovered = list(resumed)
     assert [one.unix for one in recovered] == [BASE + 2 * HOUR, BASE + 3 * HOUR]
-    assert all(one.cfi == BTC_RICH.cfi for one in recovered)
+    assert all(one.cficode == BTC_RICH.cficode for one in recovered)
 
 
 def test_instrument_recovery_breaks_equal_versions_by_hash() -> None:
     def seed(unix: int, label: str) -> Instrument:
-        known = dataclasses.replace(BTC, unix=unix, label=label).with_previous(None)
+        known = dataclasses.replace(BTC, unix=unix, securitydesc=label).with_previous(None)
         assert known is not None
         return known
 
@@ -1132,7 +1136,7 @@ def test_instrument_recovery_breaks_equal_versions_by_hash() -> None:
         snapshot_until=BASE + HOUR + 1,
     )
 
-    assert snapshot.label == high.label
+    assert snapshot.securitydesc == high.securitydesc
 
 
 def test_every_instrument_gets_the_hour_and_not_only_the_one_that_traded() -> None:
@@ -1513,7 +1517,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            clientorderid="client-1",
+            clordid="client-1",
             state=State.NEW,
         ),
         BTC,
@@ -1523,7 +1527,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     # There is deliberately no linear fallback when the required index is corrupt.
     side.named.clear()
 
-    found = side.standing(Order(clientorderid="client-1"))
+    found = side.standing(Order(clordid="client-1"))
 
     assert found is None
 
@@ -1549,7 +1553,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            clientorderid="CL-1",
+            clordid="CL-1",
             codes={"clordid": "CL-1"},
             state=State.NEW,
         ),
@@ -1562,8 +1566,8 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             px=100.0,
             qty=4.0,
             orderid="ORD-1",
-            clientorderid="CL-2",
-            prevclientorderid="CL-1",
+            clordid="CL-2",
+            origclordid="CL-1",
             codes={
                 "orderid": "ORD-1",
                 "origclordid": "CL-1",
@@ -1702,13 +1706,13 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
 def test_different_symbol_references_do_not_alias_one_book() -> None:
     first = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
+        securityexchange="XCME",
         securityid="US1234567890",
         securityidsource="4",
     )
     second = Instrument(
         symbol="XBT-USD",
-        exchange="XCME",
+        securityexchange="XCME",
         securityid="US1234567890",
         securityidsource="4",
     )
@@ -1728,10 +1732,10 @@ def test_different_symbol_references_do_not_alias_one_book() -> None:
 
 
 def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity() -> None:
-    canonical = Instrument(symbol="BTC-USD", exchange="XCME")
+    canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
+        securityexchange="XCME",
         securityid="US1234567890",
         securityidsource="4",
     )
@@ -1756,10 +1760,10 @@ def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity
 
 
 def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
-    canonical = Instrument(symbol="BTC-USD", exchange="XCME")
+    canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
-        exchange="XCME",
+        securityexchange="XCME",
         securityid="US1234567890",
         securityidsource="4",
     )
@@ -2052,7 +2056,7 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             px=100.0,
             qty=400.0,
             leavesqty=800.0,
-            filledqty=400.0,
+            cumqty=400.0,
             state=State.FILLED,
             execid="E1",
             linkedevents=[(placed.unix, placed.xhash)],
@@ -2181,7 +2185,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry)
         if event_type is Order
     ]
-    assert [order.clientorderid for order in expected] == ["C-1", "C-2", "C-3"]
+    assert [order.clordid for order in expected] == ["C-1", "C-2", "C-3"]
     expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
     assert pyarrow.Table.from_batches(found).equals(expected_table)
 
@@ -2240,7 +2244,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     orders, executions = translated
 
     assert orders.column("clordlinkid").to_pylist() == ["LINK-1", None]
-    assert orders.column("parentclientorderid").to_pylist() == ["P-1", None]
+    assert orders.column("parentclordid").to_pylist() == ["P-1", None]
     assert orders.column("parentorderid").to_pylist() == ["V-9", None]
     assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
         "the reject reads where the order stands from OrdStatus"

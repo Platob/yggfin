@@ -142,26 +142,151 @@ fields:
   nullable: true
   description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) Note: A "U" as the first character in the MsgType field (i.e. U, U2, etc) indicates that the message format is privately defined between the sender and receiver. *** Note the use of lower case letters ***'
   fix: {tag: '35', type: String, values: '[{"value":"0","meaning":"Heartbeat","aliases":["HEARTBEAT"]},{"value":"1","meaning":"TestRequest","aliases":["TEST_REQUEST"]},{"value":"2","meaning":"ResendRequest","aliases":["RESEND_REQUEST"]},{"value":"3","meaning":"Reject","aliases":["REJECT"]},{"value":"4","meaning":"SequenceReset","aliases":["SEQUENCE_RESET"]},{"value":"5","meaning":"Logout","aliases":["LOGOUT"]},{"value":"6","meaning":"IOI","aliases":["IOI"]},{"value":"7","meaning":"Advertisement","aliases":["ADVERTISEMENT"]},{"value":"8","meaning":"ExecutionReport","aliases":["EXECUTION_REPORT"]},{"value":"9","meaning":"OrderCancelReject","aliases":["ORDER_CANCEL_REJECT"]},{"value":"A","meaning":"Logon","aliases":["LOGON"]},{"value":"AA","meaning":"DerivativeSecurityList","aliases":["DERIVATIVE_SECURITY_LIST"]},{"value":"AB","meaning":"NewOrderMultileg","aliases":["NEW_ORDER_MULTILEG"]},{"value":"AC","meaning":"MultilegOrderCancelReplace","aliases":["MULTILEG_ORDER_CANCEL_REPLACE"]},{"value":"AD","meaning":"TradeCaptureReportRequest","aliases":["TRADE_CAPTURE_REPORT_REQUEST"]},{"value":"AE","meaning":"TradeCaptureReport","aliases":["TRADE_CAPTURE_REPORT"]},{"value":"AF","meaning":"OrderMassStatusRequest","aliases":["ORDER_MASS_STATUS_REQUEST"]},{"value":"AG","meaning":"QuoteRequestReject","aliases":["QUOTE_REQUEST_REJECT"]},{"value":"AH","meaning":"RFQRequest","aliases":["RFQ_REQUEST"]},{"value":"AI","meaning":"QuoteStatusReport","aliases":["QUOTE_STATUS_REPORT"]},{"value":"AJ","meaning":"QuoteResponse","aliases":["QUOTE_RESPONSE"]},{"value":"AK","meaning":"Confirmation","aliases":["CONFIRMATION"]},{"value":"AL","meaning":"PositionMaintenanceRequest","aliases":["POSITION_MAINTENANCE_REQUEST"]},{"value":"AM","meaning":"PositionMaintenanceReport","aliases":["POSITION_MAINTENANCE_REPORT"]},{"value":"AN","meaning":"RequestForPositions","aliases":["REQUEST_FOR_POSITIONS"]},{"value":"AO","meaning":"RequestForPositionsAck","aliases":["REQUEST_FOR_POSITIONS_ACK"]},{"value":"AP","meaning":"PositionReport","aliases":["POSITION_REPORT"]},{"value":"AQ","meaning":"TradeCaptureReportRequestAck","aliases":["TRADE_CAPTURE_REPORT_REQUEST_ACK"]},{"value":"AR","meaning":"TradeCaptureReportAck","aliases":["TRADE_CAPTURE_REPORT_ACK"]},{"value":"AS","meaning":"AllocationReport","aliases":["ALLOCATION_REPORT"]},{"value":"AT","meaning":"AllocationReportAck","aliases":["ALLOCATION_REPORT_ACK"]},{"value":"AU","meaning":"ConfirmationAck","aliases":["CONFIRMATION_ACK"]},{"value":"AV","meaning":"SettlementInstructionRequest","aliases":["SETTLEMENT_INSTRUCTION_REQUEST"]},{"value":"AW","meaning":"AssignmentReport","aliases":["ASSIGNMENT_REPORT"]},{"value":"AX","meaning":"CollateralRequest","aliases":["COLLATERAL_REQUEST"]},{"value":"AY","meaning":"CollateralAssignment","aliases":["COLLATERAL_ASSIGNMENT"]},{"value":"AZ","meaning":"CollateralResponse","aliases":["COLLATERAL_RESPONSE"]},{"value":"B","meaning":"News","aliases":["NEWS"]},{"value":"BA","meaning":"CollateralReport","aliases":["COLLATERAL_REPORT"]},{"value":"BB","meaning":"CollateralInquiry","aliases":["COLLATERAL_INQUIRY"]},{"value":"BC","meaning":"NetworkCounterpartySystemStatusRequest","aliases":["NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST"]},{"value":"BD","meaning":"NetworkCounterpartySystemStatusResponse","aliases":["NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE"]},{"value":"BE","meaning":"UserRequest","aliases":["USER_REQUEST"]},{"value":"BF","meaning":"UserResponse","aliases":["USER_RESPONSE"]},{"value":"BG","meaning":"CollateralInquiryAck","aliases":["COLLATERAL_INQUIRY_ACK"]},{"value":"BH","meaning":"ConfirmationRequest","aliases":["CONFIRMATION_REQUEST"]},{"value":"BI","meaning":"TradingSessionListRequest","aliases":["TRADING_SESSION_LIST_REQUEST"]},{"value":"BJ","meaning":"TradingSessionList","aliases":["TRADING_SESSION_LIST"]},{"value":"BK","meaning":"SecurityListUpdateReport","aliases":["SECURITY_LIST_UPDATE_REPORT"]},{"value":"BL","meaning":"AdjustedPositionReport","aliases":["ADJUSTED_POSITION_REPORT"]},{"value":"BM","meaning":"AllocationInstructionAlert","aliases":["ALLOCATION_INSTRUCTION_ALERT"]},{"value":"BN","meaning":"ExecutionAcknowledgement","aliases":["EXECUTION_ACK"]},{"value":"BO","meaning":"ContraryIntentionReport","aliases":["CONTRARY_INTENTION_REPORT"]},{"value":"BP","meaning":"SecurityDefinitionUpdateReport","aliases":["SECURITY_DEFINITION_UPDATE_REPORT"]},{"value":"BQ","meaning":"SettlementObligationReport","aliases":["SETTLEMENT_OBLIGATION_REPORT"]},{"value":"BR","meaning":"DerivativeSecurityListUpdateReport","aliases":["DERIVATIVE_SECURITY_LIST_UPDATE_REPORT"]},{"value":"BS","meaning":"TradingSessionListUpdateReport","aliases":["TRADING_SESSION_LIST_UPDATE_REPORT"]},{"value":"BT","meaning":"MarketDefinitionRequest","aliases":["MARKET_DEFINITION_REQUEST"]},{"value":"BU","meaning":"MarketDefinition","aliases":["MARKET_DEFINITION"]},{"value":"BV","meaning":"MarketDefinitionUpdateReport","aliases":["MARKET_DEFINITION_UPDATE_REPORT"]},{"value":"BW","meaning":"ApplicationMessageRequest","aliases":["APPLICATION_MESSAGE_REQUEST"]},{"value":"BX","meaning":"ApplicationMessageRequestAck","aliases":["APPLICATION_MESSAGE_REQUEST_ACK"]},{"value":"BY","meaning":"ApplicationMessageReport","aliases":["APPLICATION_MESSAGE_REPORT"]},{"value":"BZ","meaning":"OrderMassActionReport","aliases":["ORDER_MASS_ACTION_REPORT"]},{"value":"C","meaning":"Email","aliases":["EMAIL"]},{"value":"CA","meaning":"OrderMassActionRequest","aliases":["ORDER_MASS_ACTION_REQUEST"]},{"value":"CB","meaning":"UserNotification","aliases":["USER_NOTIFICATION"]},{"value":"CC","meaning":"StreamAssignmentRequest","aliases":["STREAM_ASSIGNMENT_REQUEST"]},{"value":"CD","meaning":"StreamAssignmentReport","aliases":["STREAM_ASSIGNMENT_REPORT"]},{"value":"CE","meaning":"StreamAssignmentReportACK","aliases":["STREAM_ASSIGNMENT_REPORT_ACK"]},{"value":"CF","meaning":"PartyDetailsListRequest","aliases":["PARTY_DETAILS_LIST_REQUEST"]},{"value":"CG","meaning":"PartyDetailsListReport","aliases":["PARTY_DETAILS_LIST_REPORT"]},{"value":"D","meaning":"NewOrderSingle","aliases":["NEW_ORDER_SINGLE"]},{"value":"E","meaning":"NewOrderList","aliases":["NEW_ORDER_LIST"]},{"value":"F","meaning":"OrderCancelRequest","aliases":["ORDER_CANCEL_REQUEST"]},{"value":"G","meaning":"OrderCancelReplaceRequest","aliases":["ORDER_CANCEL_REPLACE_REQUEST"]},{"value":"H","meaning":"OrderStatusRequest","aliases":["ORDER_STATUS_REQUEST"]},{"value":"J","meaning":"AllocationInstruction","aliases":["ALLOCATION_INSTRUCTION"]},{"value":"K","meaning":"ListCancelRequest","aliases":["LIST_CANCEL_REQUEST"]},{"value":"L","meaning":"ListExecute","aliases":["LIST_EXECUTE"]},{"value":"M","meaning":"ListStatusRequest","aliases":["LIST_STATUS_REQUEST"]},{"value":"N","meaning":"ListStatus","aliases":["LIST_STATUS"]},{"value":"P","meaning":"AllocationInstructionAck","aliases":["ALLOCATION_INSTRUCTION_ACK"]},{"value":"Q","meaning":"DontKnowTrade","aliases":["DONT_KNOW_TRADE"]},{"value":"R","meaning":"QuoteRequest","aliases":["QUOTE_REQUEST"]},{"value":"S","meaning":"Quote","aliases":["QUOTE"]},{"value":"T","meaning":"SettlementInstructions","aliases":["SETTLEMENT_INSTRUCTIONS"]},{"value":"V","meaning":"MarketDataRequest","aliases":["MARKET_DATA_REQUEST"]},{"value":"W","meaning":"MarketDataSnapshotFullRefresh","aliases":["MARKET_DATA_SNAPSHOT_FULL_REFRESH"]},{"value":"X","meaning":"MarketDataIncrementalRefresh","aliases":["MARKET_DATA_INCREMENTAL_REFRESH"]},{"value":"Y","meaning":"MarketDataRequestReject","aliases":["MARKET_DATA_REQUEST_REJECT"]},{"value":"Z","meaning":"QuoteCancel","aliases":["QUOTE_CANCEL"]},{"value":"a","meaning":"QuoteStatusRequest","aliases":["QUOTE_STATUS_REQUEST"]},{"value":"b","meaning":"MassQuoteAcknowledgement","aliases":["MASS_QUOTE_ACK"]},{"value":"c","meaning":"SecurityDefinitionRequest","aliases":["SECURITY_DEFINITION_REQUEST"]},{"value":"d","meaning":"SecurityDefinition","aliases":["SECURITY_DEFINITION"]},{"value":"e","meaning":"SecurityStatusRequest","aliases":["SECURITY_STATUS_REQUEST"]},{"value":"f","meaning":"SecurityStatus","aliases":["SECURITY_STATUS"]},{"value":"g","meaning":"TradingSessionStatusRequest","aliases":["TRADING_SESSION_STATUS_REQUEST"]},{"value":"h","meaning":"TradingSessionStatus","aliases":["TRADING_SESSION_STATUS"]},{"value":"i","meaning":"MassQuote","aliases":["MASS_QUOTE"]},{"value":"j","meaning":"BusinessMessageReject","aliases":["BUSINESS_MESSAGE_REJECT"]},{"value":"k","meaning":"BidRequest","aliases":["BID_REQUEST"]},{"value":"l","meaning":"BidResponse","aliases":["BID_RESPONSE"]},{"value":"m","meaning":"ListStrikePrice","aliases":["LIST_STRIKE_PRICE"]},{"value":"n","meaning":"XMLnonFIX","aliases":["XM_LNON_FIX"]},{"value":"o","meaning":"RegistrationInstructions","aliases":["REGISTRATION_INSTRUCTIONS"]},{"value":"p","meaning":"RegistrationInstructionsResponse","aliases":["REGISTRATION_INSTRUCTIONS_RESPONSE"]},{"value":"q","meaning":"OrderMassCancelRequest","aliases":["ORDER_MASS_CANCEL_REQUEST"]},{"value":"r","meaning":"OrderMassCancelReport","aliases":["ORDER_MASS_CANCEL_REPORT"]},{"value":"s","meaning":"NewOrderCross","aliases":["NEW_ORDER_CROSS"]},{"value":"t","meaning":"CrossOrderCancelReplaceRequest","aliases":["CROSS_ORDER_CANCEL_REPLACE_REQUEST"]},{"value":"u","meaning":"CrossOrderCancelRequest","aliases":["CROSS_ORDER_CANCEL_REQUEST"]},{"value":"v","meaning":"SecurityTypeRequest","aliases":["SECURITY_TYPE_REQUEST"]},{"value":"w","meaning":"SecurityTypes","aliases":["SECURITY_TYPES"]},{"value":"x","meaning":"SecurityListRequest","aliases":["SECURITY_LIST_REQUEST"]},{"value":"y","meaning":"SecurityList","aliases":["SECURITY_LIST"]},{"value":"z","meaning":"DerivativeSecurityListRequest","aliases":["DERIVATIVE_SECURITY_LIST_REQUEST"]},{"value":"CH","meaning":"","aliases":["MARGIN_REQUIREMENT_INQUIRY"]},{"value":"CI","meaning":"","aliases":["MARGIN_REQUIREMENT_INQUIRY_ACK"]},{"value":"CJ","meaning":"","aliases":["MARGIN_REQUIREMENT_REPORT"]},{"value":"CK","meaning":"","aliases":["PARTY_DETAILS_LIST_UPDATE_REPORT"]},{"value":"CL","meaning":"","aliases":["PARTY_RISK_LIMITS_REQUEST"]},{"value":"CM","meaning":"","aliases":["PARTY_RISK_LIMITS_REPORT"]},{"value":"CN","meaning":"","aliases":["SECURITY_MASS_STATUS_REQUEST"]},{"value":"CO","meaning":"","aliases":["SECURITY_MASS_STATUS"]},{"value":"CQ","meaning":"","aliases":["ACCOUNT_SUMMARY_REPORT"]},{"value":"CR","meaning":"","aliases":["PARTY_RISK_LIMITS_UPDATE_REPORT"]},{"value":"CS","meaning":"","aliases":["PARTY_RISK_LIMITS_DEFINITION_REQUEST"]},{"value":"CT","meaning":"","aliases":["PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK"]},{"value":"CU","meaning":"","aliases":["PARTY_ENTITLEMENTS_REQUEST"]},{"value":"CV","meaning":"","aliases":["PARTY_ENTITLEMENTS_REPORT"]},{"value":"CW","meaning":"","aliases":["QUOTE_ACK"]},{"value":"CX","meaning":"","aliases":["PARTY_DETAILS_DEFINITION_REQUEST"]},{"value":"CY","meaning":"","aliases":["PARTY_DETAILS_DEFINITION_REQUEST_ACK"]},{"value":"CZ","meaning":"","aliases":["PARTY_ENTITLEMENTS_UPDATE_REPORT"]},{"value":"DA","meaning":"","aliases":["PARTY_ENTITLEMENTS_DEFINITION_REQUEST"]},{"value":"DB","meaning":"","aliases":["PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK"]},{"value":"DC","meaning":"","aliases":["TRADE_MATCH_REPORT"]},{"value":"DD","meaning":"","aliases":["TRADE_MATCH_REPORT_ACK"]},{"value":"DE","meaning":"","aliases":["PARTY_RISK_LIMITS_REPORT_ACK"]},{"value":"DF","meaning":"","aliases":["PARTY_RISK_LIMIT_CHECK_REQUEST"]},{"value":"DG","meaning":"","aliases":["PARTY_RISK_LIMIT_CHECK_REQUEST_ACK"]},{"value":"DH","meaning":"","aliases":["PARTY_ACTION_REQUEST"]},{"value":"DI","meaning":"","aliases":["PARTY_ACTION_REPORT"]},{"value":"DJ","meaning":"","aliases":["MASS_ORDER"]},{"value":"DK","meaning":"","aliases":["MASS_ORDER_ACK"]},{"value":"DL","meaning":"","aliases":["POSITION_TRANSFER_INSTRUCTION"]},{"value":"DM","meaning":"","aliases":["POSITION_TRANSFER_INSTRUCTION_ACK"]},{"value":"DN","meaning":"","aliases":["POSITION_TRANSFER_REPORT"]},{"value":"DO","meaning":"","aliases":["MARKET_DATA_STATISTICS_REQUEST"]},{"value":"DP","meaning":"","aliases":["MARKET_DATA_STATISTICS_REPORT"]},{"value":"DQ","meaning":"","aliases":["COLLATERAL_REPORT_ACK"]},{"value":"DR","meaning":"","aliases":["MARKET_DATA_REPORT"]},{"value":"DS","meaning":"","aliases":["CROSS_REQUEST"]},{"value":"DT","meaning":"","aliases":["CROSS_REQUEST_ACK"]},{"value":"DU","meaning":"","aliases":["ALLOCATION_INSTRUCTION_ALERT_REQUEST"]},{"value":"DV","meaning":"","aliases":["ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK"]},{"value":"DW","meaning":"","aliases":["TRADE_AGGREGATION_REQUEST"]},{"value":"DX","meaning":"","aliases":["TRADE_AGGREGATION_REPORT"]},{"value":"EA","meaning":"","aliases":["PAY_MANAGEMENT_REPORT"]},{"value":"EB","meaning":"","aliases":["PAY_MANAGEMENT_REPORT_ACK"]},{"value":"DY","meaning":"","aliases":["PAY_MANAGEMENT_REQUEST"]},{"value":"DZ","meaning":"","aliases":["PAY_MANAGEMENT_REQUEST_ACK"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', event_types: '{"8":"EXECUTION","9":"ORDER","AE":"EXECUTION","D":"ORDER","F":"ORDER","G":"ORDER","W":"BOOK","X":"BOOK","AG":"QUOTE","AH":"QUOTE","AI":"QUOTE","AJ":"QUOTE","R":"QUOTE","S":"QUOTE","Z":"QUOTE","a":"QUOTE","b":"QUOTE","i":"QUOTE","d":"INSTRUMENT"}', states: '{"D":"PENDING_NEW","F":"PENDING_CANCEL","G":"PENDING_REPLACE","9":"UNKNOWN"}', components: '["StandardHeader"]', name: MsgType, version: 5.0.SP2, display: MsgType}
-- name: msgseqnum
-  type: int64
-  nullable: true
-  description: Integer message sequence number.
-  fix: {tag: '34', type: SeqNum, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: MsgSeqNum, version: 5.0.SP2, display: MsgSeqNum}
 - name: sendercompid
   type: string
   nullable: true
   description: Assigned value used to identify firm sending message.
   fix: {tag: '49', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SenderCompID, version: 5.0.SP2, display: SenderCompID}
+- name: sendersubid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message originator (desk, trader, etc.)
+  fix: {tag: '50', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SenderSubID, version: 5.0.SP2, display: SenderSubID}
+- name: senderlocationid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message originator’s location (i.e. geographic location and/or desk, trader)
+  fix: {tag: '142', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: SenderLocationID, version: 5.0.SP2, display: SenderLocationID}
 - name: targetcompid
   type: string
   nullable: true
   description: Assigned value used to identify receiving firm.
   fix: {tag: '56', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: TargetCompID, version: 5.0.SP2, display: TargetCompID}
+- name: targetsubid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific individual or unit intended to receive message. "ADMIN" reserved for administrative messages not intended for a specific user.
+  fix: {tag: '57', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: TargetSubID, version: 5.0.SP2, display: TargetSubID}
+- name: targetlocationid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message destination’s location (i.e. geographic location and/or desk, trader)
+  fix: {tag: '143', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: TargetLocationID, version: 5.0.SP2, display: TargetLocationID}
+- name: onbehalfofcompid
+  type: string
+  nullable: true
+  description: Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID <49> field and the firm originating the message in this field.
+  fix: {tag: '115', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfCompID, version: 5.0.SP2, display: OnBehalfOfCompID}
+- name: onbehalfofsubid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party.
+  fix: {tag: '116', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfSubID, version: 5.0.SP2, display: OnBehalfOfSubID}
+- name: onbehalfoflocationid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message originator’s location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
+  fix: {tag: '144', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfLocationID, version: 5.0.SP2, display: OnBehalfOfLocationID}
+- name: delivertocompid
+  type: string
+  nullable: true
+  description: Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field.
+  fix: {tag: '128', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToCompID, version: 5.0.SP2, display: DeliverToCompID}
+- name: delivertosubid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party
+  fix: {tag: '129', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToSubID, version: 5.0.SP2, display: DeliverToSubID}
+- name: delivertolocationid
+  type: string
+  nullable: true
+  description: Assigned value used to identify specific message recipient’s location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
+  fix: {tag: '145', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToLocationID, version: 5.0.SP2, display: DeliverToLocationID}
+- name: msgseqnum
+  type: int64
+  nullable: true
+  description: Integer message sequence number.
+  fix: {tag: '34', type: SeqNum, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: MsgSeqNum, version: 5.0.SP2, display: MsgSeqNum}
+- name: lastmsgseqnumprocessed
+  type: int64
+  nullable: true
+  description: The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.
+  fix: {tag: '369', type: SeqNum, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: LastMsgSeqNumProcessed, version: 5.0.SP2, display: LastMsgSeqNumProcessed}
+- name: possdupflag
+  type: bool
+  nullable: true
+  description: Indicates possible retransmission of message with this sequence number
+  fix: {tag: '43', type: Boolean, values: '[{"value":"N","meaning":"Original transmission","aliases":["NO"]},{"value":"Y","meaning":"Possible duplicate","aliases":["YES"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: PossDupFlag, version: 5.0.SP2, display: PossDupFlag}
+- name: possresend
+  type: bool
+  nullable: true
+  description: Indicates that message may contain information that has been sent under another sequence number.
+  fix: {tag: '97', type: Boolean, values: '[{"value":"N","meaning":"Original Transmission","aliases":["NO"]},{"value":"Y","meaning":"Possible Resend","aliases":["YES"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: PossResend, version: 5.0.SP2, display: PossResend}
 - name: sendingtime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT")
   fix: {tag: '52', type: UTCTimestamp, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SendingTime, version: 5.0.SP2, display: SendingTime}
+- name: origsendingtime
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT") when transmitting orders as the result of a resend request.
+  fix: {tag: '122', type: UTCTimestamp, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OrigSendingTime, version: 5.0.SP2, display: OrigSendingTime}
+- name: onbehalfofsendingtime
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: 'Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a ''hub'' or ''service bureau''. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as ''GMT'')'
+  fix: {tag: '370', type: UTCTimestamp, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]', note: no longer used, name: OnBehalfOfSendingTime, version: 5.0.SP2, display: OnBehalfOfSendingTime}
+- name: applverid
+  type: string
+  nullable: true
+  description: Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release
+  fix: {tag: '1128', type: String, values: '[{"value":"0","meaning":"FIX27","aliases":["FIX27"]},{"value":"1","meaning":"FIX30","aliases":["FIX30"]},{"value":"2","meaning":"FIX40","aliases":["FIX40"]},{"value":"3","meaning":"FIX41","aliases":["FIX41"]},{"value":"4","meaning":"FIX42","aliases":["FIX42"]},{"value":"5","meaning":"FIX43","aliases":["FIX43"]},{"value":"6","meaning":"FIX44","aliases":["FIX44"]},{"value":"7","meaning":"FIX50","aliases":["FIX50"]},{"value":"8","meaning":"FIX50SP1","aliases":["FIX50_SP1"]},{"value":"9","meaning":"FIX50SP2","aliases":["FIX50_SP2"]},{"value":"10","meaning":"","aliases":["FIX_LATEST"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]', components: '["StandardHeader"]', name: ApplVerID, version: 5.0.SP2, display: ApplVerID}
+- name: cstmapplverid
+  type: string
+  nullable: true
+  description: Specifies a custom extension to a message being applied at the message level. Enumerated field
+  fix: {tag: '1129', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]', components: '["StandardHeader"]', name: CstmApplVerID, version: 5.0.SP2, display: CstmApplVerID}
+- name: applextid
+  type: int32
+  nullable: true
+  description: The extension pack number associated with an application message.
+  fix: {tag: '1156', type: int, versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]', components: '["StandardHeader"]', name: ApplExtID, version: 5.0.SP2, display: ApplExtID}
+- name: messageencoding
+  type: string
+  nullable: true
+  description: Type of message encoding (non-ASCII (non-English) characters) used in a message’s "Encoded" fields.
+  fix: {tag: '347', type: String, values: '[{"value":"EUC-JP","meaning":"","aliases":["EUCJP"]},{"value":"ISO-2022-JP","meaning":"","aliases":["ISO2022_JP"]},{"value":"Shift_JIS","meaning":"","aliases":["SHIFT_JIS"]},{"value":"UTF-8","meaning":"","aliases":["UTF8"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: MessageEncoding, version: 5.0.SP2, display: MessageEncoding}
+- name: xmldatalen
+  type: int64
+  nullable: true
+  description: Length of the XmlData <213> data block.
+  fix: {tag: '212', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlDataLen, version: 5.0.SP2, display: XmlDataLen}
+- name: xmldata
+  type: binary
+  nullable: true
+  description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
+  fix: {tag: '213', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlData, version: 5.0.SP2, display: XmlData}
+- name: securedatalen
+  type: int64
+  nullable: true
+  description: Deprecated in FIXT 1.1 Length of encrypted message
+  fix: {tag: '90', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SecureDataLen, version: 5.0.SP2, display: SecureDataLen}
+- name: securedata
+  type: binary
+  nullable: true
+  description: Deprecated in FIXT 1.1 Actual encrypted data stream
+  fix: {tag: '91', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SecureData, version: 5.0.SP2, display: SecureData}
+- name: signaturelength
+  type: int64
+  nullable: true
+  description: Deprecated in FIXT 1.1 Number of bytes in signature field
+  fix: {tag: '93', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: SignatureLength, version: 5.0.SP2, display: SignatureLength}
+- name: signature
+  type: binary
+  nullable: true
+  description: Deprecated in FIXT 1.1 Electronic signature
+  fix: {tag: '89', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: Signature, version: 5.0.SP2, display: Signature}
 - name: entries
   type: list
   nullable: true
@@ -330,131 +455,6 @@ fields:
   nullable: true
   description: 'Three byte, simple checksum (see FIXT.1.1: "CheckSum Calculation" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)'
   fix: {tag: '10', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: CheckSum, version: 5.0.SP2, display: CheckSum}
-- name: sendersubid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message originator (desk, trader, etc.)
-  fix: {tag: '50', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SenderSubID, version: 5.0.SP2, display: SenderSubID}
-- name: senderlocationid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message originator’s location (i.e. geographic location and/or desk, trader)
-  fix: {tag: '142', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: SenderLocationID, version: 5.0.SP2, display: SenderLocationID}
-- name: targetsubid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific individual or unit intended to receive message. "ADMIN" reserved for administrative messages not intended for a specific user.
-  fix: {tag: '57', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: TargetSubID, version: 5.0.SP2, display: TargetSubID}
-- name: targetlocationid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message destination’s location (i.e. geographic location and/or desk, trader)
-  fix: {tag: '143', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: TargetLocationID, version: 5.0.SP2, display: TargetLocationID}
-- name: onbehalfofcompid
-  type: string
-  nullable: true
-  description: Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID <49> field and the firm originating the message in this field.
-  fix: {tag: '115', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfCompID, version: 5.0.SP2, display: OnBehalfOfCompID}
-- name: onbehalfofsubid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party.
-  fix: {tag: '116', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfSubID, version: 5.0.SP2, display: OnBehalfOfSubID}
-- name: onbehalfoflocationid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message originator’s location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
-  fix: {tag: '144', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: OnBehalfOfLocationID, version: 5.0.SP2, display: OnBehalfOfLocationID}
-- name: delivertocompid
-  type: string
-  nullable: true
-  description: Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field.
-  fix: {tag: '128', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToCompID, version: 5.0.SP2, display: DeliverToCompID}
-- name: delivertosubid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party
-  fix: {tag: '129', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToSubID, version: 5.0.SP2, display: DeliverToSubID}
-- name: delivertolocationid
-  type: string
-  nullable: true
-  description: Assigned value used to identify specific message recipient’s location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
-  fix: {tag: '145', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]', components: '["StandardHeader"]', name: DeliverToLocationID, version: 5.0.SP2, display: DeliverToLocationID}
-- name: lastmsgseqnumprocessed
-  type: int64
-  nullable: true
-  description: The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.
-  fix: {tag: '369', type: SeqNum, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: LastMsgSeqNumProcessed, version: 5.0.SP2, display: LastMsgSeqNumProcessed}
-- name: possdupflag
-  type: bool
-  nullable: true
-  description: Indicates possible retransmission of message with this sequence number
-  fix: {tag: '43', type: Boolean, values: '[{"value":"N","meaning":"Original transmission","aliases":["NO"]},{"value":"Y","meaning":"Possible duplicate","aliases":["YES"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: PossDupFlag, version: 5.0.SP2, display: PossDupFlag}
-- name: possresend
-  type: bool
-  nullable: true
-  description: Indicates that message may contain information that has been sent under another sequence number.
-  fix: {tag: '97', type: Boolean, values: '[{"value":"N","meaning":"Original Transmission","aliases":["NO"]},{"value":"Y","meaning":"Possible Resend","aliases":["YES"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: PossResend, version: 5.0.SP2, display: PossResend}
-- name: origsendingtime
-  type: timestamp[us, tz=UTC]
-  nullable: true
-  description: Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT") when transmitting orders as the result of a resend request.
-  fix: {tag: '122', type: UTCTimestamp, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: OrigSendingTime, version: 5.0.SP2, display: OrigSendingTime}
-- name: onbehalfofsendingtime
-  type: timestamp[us, tz=UTC]
-  nullable: true
-  description: 'Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a ''hub'' or ''service bureau''. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as ''GMT'')'
-  fix: {tag: '370', type: UTCTimestamp, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]', note: no longer used, name: OnBehalfOfSendingTime, version: 5.0.SP2, display: OnBehalfOfSendingTime}
-- name: applverid
-  type: string
-  nullable: true
-  description: Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release
-  fix: {tag: '1128', type: String, values: '[{"value":"0","meaning":"FIX27","aliases":["FIX27"]},{"value":"1","meaning":"FIX30","aliases":["FIX30"]},{"value":"2","meaning":"FIX40","aliases":["FIX40"]},{"value":"3","meaning":"FIX41","aliases":["FIX41"]},{"value":"4","meaning":"FIX42","aliases":["FIX42"]},{"value":"5","meaning":"FIX43","aliases":["FIX43"]},{"value":"6","meaning":"FIX44","aliases":["FIX44"]},{"value":"7","meaning":"FIX50","aliases":["FIX50"]},{"value":"8","meaning":"FIX50SP1","aliases":["FIX50_SP1"]},{"value":"9","meaning":"FIX50SP2","aliases":["FIX50_SP2"]},{"value":"10","meaning":"","aliases":["FIX_LATEST"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]', components: '["StandardHeader"]', name: ApplVerID, version: 5.0.SP2, display: ApplVerID}
-- name: cstmapplverid
-  type: string
-  nullable: true
-  description: Specifies a custom extension to a message being applied at the message level. Enumerated field
-  fix: {tag: '1129', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]', components: '["StandardHeader"]', name: CstmApplVerID, version: 5.0.SP2, display: CstmApplVerID}
-- name: applextid
-  type: int32
-  nullable: true
-  description: The extension pack number associated with an application message.
-  fix: {tag: '1156', type: int, versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]', components: '["StandardHeader"]', name: ApplExtID, version: 5.0.SP2, display: ApplExtID}
-- name: messageencoding
-  type: string
-  nullable: true
-  description: Type of message encoding (non-ASCII (non-English) characters) used in a message’s "Encoded" fields.
-  fix: {tag: '347', type: String, values: '[{"value":"EUC-JP","meaning":"","aliases":["EUCJP"]},{"value":"ISO-2022-JP","meaning":"","aliases":["ISO2022_JP"]},{"value":"Shift_JIS","meaning":"","aliases":["SHIFT_JIS"]},{"value":"UTF-8","meaning":"","aliases":["UTF8"]}]', versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: MessageEncoding, version: 5.0.SP2, display: MessageEncoding}
-- name: xmldatalen
-  type: int64
-  nullable: true
-  description: Length of the XmlData <213> data block.
-  fix: {tag: '212', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlDataLen, version: 5.0.SP2, display: XmlDataLen}
-- name: xmldata
-  type: binary
-  nullable: true
-  description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
-  fix: {tag: '213', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]', components: '["StandardHeader"]', name: XmlData, version: 5.0.SP2, display: XmlData}
-- name: securedatalen
-  type: int64
-  nullable: true
-  description: Deprecated in FIXT 1.1 Length of encrypted message
-  fix: {tag: '90', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SecureDataLen, version: 5.0.SP2, display: SecureDataLen}
-- name: securedata
-  type: binary
-  nullable: true
-  description: Deprecated in FIXT 1.1 Actual encrypted data stream
-  fix: {tag: '91', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardHeader"]', name: SecureData, version: 5.0.SP2, display: SecureData}
-- name: signaturelength
-  type: int64
-  nullable: true
-  description: Deprecated in FIXT 1.1 Number of bytes in signature field
-  fix: {tag: '93', type: Length, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: SignatureLength, version: 5.0.SP2, display: SignatureLength}
-- name: signature
-  type: binary
-  nullable: true
-  description: Deprecated in FIXT 1.1 Electronic signature
-  fix: {tag: '89', type: data, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', components: '["StandardTrailer"]', name: Signature, version: 5.0.SP2, display: Signature}
 - name: symbol
   type: string
   nullable: true

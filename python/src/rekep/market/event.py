@@ -695,7 +695,7 @@ class MarketEvent(Event):
     pxunit: Annotated[str, Field.column("Px Unit")] = ""
     """How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
 
-    ccy: Annotated[Currency | None, fix_tag("Currency")] = None
+    currency: Annotated[Currency | None, fix_tag("Currency")] = None
     """Currency of the monetary values; null when the source does not state one."""
 
     qty: Annotated[float | None, fix_tag("OrderQty")] = None
@@ -721,8 +721,8 @@ class MarketEvent(Event):
 
     def __post_init__(self) -> None:
         """Normalize the compact currency code and inherited clocks."""
-        if self.ccy is not None:
-            self.ccy = Currency.from_str(self.ccy)
+        if self.currency is not None:
+            self.currency = Currency.from_str(self.currency)
         Event.__post_init__(self)
 
     def attach_instrument(self, instrument: Instrument) -> Self:
@@ -730,8 +730,8 @@ class MarketEvent(Event):
         self.__instrument = instrument
         self.instrumentxhash = self.instrumentxhash or instrument.xhash
         self.instrumentcode = self.instrumentcode or instrument.code or instrument.symbol
-        if self.ccy is None:
-            self.ccy = instrument.currency
+        if self.currency is None:
+            self.currency = instrument.currency
         return self
 
     def into_instrument(self) -> Instrument | None:
@@ -778,8 +778,8 @@ class MarketEvent(Event):
                 self.qty = previous.qty
         if not self.pxunit:
             self.pxunit = previous.pxunit
-        if self.ccy is None:
-            self.ccy = previous.ccy
+        if self.currency is None:
+            self.currency = previous.currency
         if not self.qtyunit:
             self.qtyunit = previous.qtyunit
 
@@ -815,7 +815,7 @@ class MarketEvent(Event):
         instrument = self.into_instrument()
         if instrument is None:
             return None
-        multiplier = instrument.multiplier
+        multiplier = instrument.contractmultiplier
         if multiplier is None:
             # A cash instrument really does trade one for one, and it is the
             # only class where the multiplier can be assumed rather than read.
@@ -864,7 +864,7 @@ class MarketEvent(Event):
             self.side,
             self.px,
             self.prevpx,
-            self.ccy,
+            self.currency,
             self.qty,
             self.prevqty,
             self.notional,

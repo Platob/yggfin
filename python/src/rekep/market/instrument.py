@@ -51,28 +51,28 @@ class Leg(MarketConvertible):
     securityidsource: Annotated[str | None, fix_tag("LegSecurityIDSource")] = None
     """Which scheme `securityid` is in, as FIX numbers them."""
 
-    cfi: Annotated[str | None, fix_tag("LegCFICode")] = None
+    cficode: Annotated[str | None, fix_tag("LegCFICode")] = None
     """ISO 10962 classification of the leg."""
 
     securitytype: Annotated[str | None, fix_tag("LegSecurityType")] = None
     """What the venue calls this leg, from FIX's own list."""
 
-    exchange: Annotated[str | None, fix_tag("LegSecurityExchange")] = None
+    securityexchange: Annotated[str | None, fix_tag("LegSecurityExchange")] = None
     """Where the leg is listed, when it differs from the strategy's venue."""
 
     currency: Annotated[Currency | None, fix_tag("LegCurrency")] = None
     """ISO 4217 currency the leg is priced in."""
 
-    multiplier: Annotated[float | None, fix_tag("LegContractMultiplier")] = None
+    contractmultiplier: Annotated[float | None, fix_tag("LegContractMultiplier")] = None
     """Units of the underlying one leg contract represents."""
 
-    maturity: Annotated[datetime.date | None, fix_tag("LegMaturityDate")] = None
+    maturitydate: Annotated[datetime.date | None, fix_tag("LegMaturityDate")] = None
     """When the leg expires; null for anything that does not."""
 
-    strike: Annotated[float | None, fix_tag("LegStrikePrice")] = None
+    strikeprice: Annotated[float | None, fix_tag("LegStrikePrice")] = None
     """Exercise price, where the leg is an option."""
 
-    optionkind: Annotated[OptionKind, fix_tag("LegPutOrCall")] = OptionKind.UNKNOWN
+    putorcall: Annotated[OptionKind, fix_tag("LegPutOrCall")] = OptionKind.UNKNOWN
     """Which way the leg points, where it is an option."""
 
     def __post_init__(self) -> None:
@@ -137,10 +137,10 @@ class Instrument(Event):
     securitytype: Annotated[str | None, fix_tag("SecurityType")] = None
     """What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`, `MLEG`."""
 
-    cfi: Annotated[str | None, fix_tag("CFICode")] = None
+    cficode: Annotated[str | None, fix_tag("CFICode")] = None
     """Full ISO 10962 classification; `kind` is its first character, decoded."""
 
-    exchange: Annotated[str | None, fix_tag("SecurityExchange")] = None
+    securityexchange: Annotated[str | None, fix_tag("SecurityExchange")] = None
     """ISO 10383 market identifier the instrument is listed on."""
 
     currency: Annotated[Currency | None, fix_tag("Currency")] = None
@@ -150,25 +150,25 @@ class Instrument(Event):
     # a quantity into money: without it every consumer of a notional needs the
     # reference table, and the ones that forget are wrong by a factor nobody
     # notices until settlement.
-    multiplier: Annotated[float | None, fix_tag("ContractMultiplier")] = None
+    contractmultiplier: Annotated[float | None, fix_tag("ContractMultiplier")] = None
     """Units of the underlying one contract represents; 1 for cash instruments."""
 
-    tick: Annotated[float | None, fix_tag("MinPriceIncrement")] = None
+    minpriceincrement: Annotated[float | None, fix_tag("MinPriceIncrement")] = None
     """Smallest price change the venue accepts, which is what makes a spread countable."""
 
-    lot: Annotated[float | None, fix_tag("RoundLot")] = None
+    roundlot: Annotated[float | None, fix_tag("RoundLot")] = None
     """Quantity increment the venue trades in."""
 
-    maturity: Annotated[datetime.date | None, fix_tag("MaturityDate")] = None
+    maturitydate: Annotated[datetime.date | None, fix_tag("MaturityDate")] = None
     """When the contract expires; null for anything that does not."""
 
-    strike: Annotated[float | None, fix_tag("StrikePrice")] = None
+    strikeprice: Annotated[float | None, fix_tag("StrikePrice")] = None
     """Exercise price of an option."""
 
-    optionkind: Annotated[OptionKind, fix_tag("PutOrCall")] = OptionKind.UNKNOWN
+    putorcall: Annotated[OptionKind, fix_tag("PutOrCall")] = OptionKind.UNKNOWN
     """Which way the option points; `UNKNOWN` for everything that is not one."""
 
-    label: Annotated[str | None, fix_tag("SecurityDesc")] = None
+    securitydesc: Annotated[str | None, fix_tag("SecurityDesc")] = None
     """Human description, as reference data publishes it."""
 
     # Last, and a list: a multileg instrument is a handful of legs and every
@@ -418,16 +418,16 @@ _INSTRUMENT_MEMBERS = (
     "isincode",
     "altids",
     "securitytype",
-    "cfi",
-    "exchange",
+    "cficode",
+    "securityexchange",
     "currency",
-    "multiplier",
-    "tick",
-    "lot",
-    "maturity",
-    "strike",
-    "optionkind",
-    "label",
+    "contractmultiplier",
+    "minpriceincrement",
+    "roundlot",
+    "maturitydate",
+    "strikeprice",
+    "putorcall",
+    "securitydesc",
     "legs",
 )
 _LEG_MEMBERS = (
@@ -438,14 +438,14 @@ _LEG_MEMBERS = (
     "kind",
     "securityid",
     "securityidsource",
-    "cfi",
+    "cficode",
     "securitytype",
-    "exchange",
+    "securityexchange",
     "currency",
-    "multiplier",
-    "maturity",
-    "strike",
-    "optionkind",
+    "contractmultiplier",
+    "maturitydate",
+    "strikeprice",
+    "putorcall",
 )
 
 

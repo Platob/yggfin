@@ -25,7 +25,7 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-33 33
+58 58
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -64,15 +64,24 @@ title case with acronyms preserved (`sourceurl` → `Source URL`, `altids` →
 from rekep import Field
 
 order = Field.from_yaml("schemas/rekep/order.yaml")
-for name in ("clientorderid", "px", "unixpartition"):
+for name in ("clordid", "px", "unixpartition"):
     print(f"{name:16} {order.field(name).fix.display}")
 ```
 
 ```text
-clientorderid    ClOrdID
+clordid          ClOrdID
 px               Price
 unixpartition    Unix Partition
 ```
+
+A column that reads a FIX field is named after that field, so a reader who
+knows the dictionary knows the column: `ClOrdID <11>` is `clordid`,
+`MinPriceIncrement <969>` is `minpriceincrement`. Two names stay generic on
+purpose. `px` and `qty` are the one slot every market row shares — which FIX
+field they hold is the row's kind to say, `Price <44>` on an order and
+`LastPx <31>` on a report — and a nested struct drops the prefix the wire
+needs, so a leg's `LegCFICode <608>` is `cficode`, exactly as its instrument's
+`CFICode <461>` is.
 
 ## Evolution
 

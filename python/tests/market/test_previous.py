@@ -25,7 +25,7 @@ from rekep.market import (
 )
 from rekep.market.identity import NIL, hash_bytes_of
 
-EQUITY = Instrument(symbol="AAPL", exchange="XNAS", kind=AssetKind.EQUITY)
+EQUITY = Instrument(symbol="AAPL", securityexchange="XNAS", kind=AssetKind.EQUITY)
 XNAS = MIC.from_str("XNAS")
 
 
@@ -57,10 +57,10 @@ def resting(**given: object) -> Order:
         "px": 100.0,
         "qty": 10.0,
         "kind": MarketKind.LIMIT_ORDER,
-        "tif": TimeInForce.DAY,
+        "timeinforce": TimeInForce.DAY,
         "state": State.NEW,
         "orderid": "ORD-1",
-        "clientorderid": "CL-1",
+        "clordid": "CL-1",
         "mic": XNAS,
     }
     completed = changed(_order(instrument, **{**declared, **given}))
@@ -210,7 +210,7 @@ def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None
     assert resting().notional == 1000.0, "a cash equity really does trade one for one"
     future = Instrument(symbol="ESZ6", kind=AssetKind.FUTURE)
     assert resting(instrument=future).notional is None
-    priced = Instrument(symbol="ESZ6", kind=AssetKind.FUTURE, multiplier=50.0)
+    priced = Instrument(symbol="ESZ6", kind=AssetKind.FUTURE, contractmultiplier=50.0)
     assert resting(instrument=priced, code="ESZ6").notional == 50_000.0
 
 
@@ -266,24 +266,24 @@ def test_a_terminal_order_without_history_preserves_its_source_quantity() -> Non
 
 def test_a_cancelled_order_does_not_store_a_cumulative_fill_quantity() -> None:
     done = changed(_order(unix=20, orderid="ORD-1", state=State.CANCELLED), resting())
-    assert "filledqty" not in done.into_field().names
+    assert "cumqty" not in done.into_field().names
 
 
 def test_the_identifier_that_was_replaced_is_the_one_the_version_before_had() -> None:
     """FIX requires a new `ClOrdID <11>` per version and calls the old one
     `OrigClOrdID <41>`; when this version did not say, the version before is it."""
-    replaced = changed(_order(unix=20, clientorderid="CL-2", state=State.OPEN), resting())
-    assert replaced.prevclientorderid == "CL-1"
+    replaced = changed(_order(unix=20, clordid="CL-2", state=State.OPEN), resting())
+    assert replaced.origclordid == "CL-1"
 
 
 def test_a_version_that_reuses_the_identifier_names_nothing_replaced() -> None:
-    same = changed(_order(unix=20, clientorderid="CL-1", state=State.OPEN), resting())
-    assert same.prevclientorderid is None
+    same = changed(_order(unix=20, clordid="CL-1", state=State.OPEN), resting())
+    assert same.origclordid is None
 
 
 def test_the_order_kind_and_time_in_force_are_carried() -> None:
     later = changed(_order(unix=20, orderid="ORD-1", state=State.OPEN), resting())
-    assert later.kind is MarketKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
+    assert later.kind is MarketKind.LIMIT_ORDER and later.timeinforce is TimeInForce.DAY
 
 
 # -- what an execution works out ---------------------------------------------
@@ -314,7 +314,7 @@ def test_what_is_done_accumulates_across_fills() -> None:
     much is now done."""
     one = fill(100.0, 4.0, 20, execid="EX-1").with_previous(resting())
     two = fill(101.0, 6.0, 30, execid="EX-2").with_previous(one)
-    assert (one.filledqty, two.filledqty) == (4.0, 10.0)
+    assert (one.cumqty, two.cumqty) == (4.0, 10.0)
     assert (one.leavesqty, two.leavesqty) == (6.0, 0.0)
 
 
@@ -339,13 +339,13 @@ def test_an_unknown_prior_total_stays_unknown_when_another_fill_arrives() -> Non
         qty=1.0,
         state=State.FILLED,
         execid="EX-1",
-        filledqty=None,
+        cumqty=None,
         leavesqty=9.0,
         vwap=100.0,
     ).with_previous(None)
     later = fill(110.0, 1.0, 30, execid="EX-2").with_previous(previous)
 
-    assert later.filledqty is None and later.vwap is None
+    assert later.cumqty is None and later.vwap is None
     assert later.leavesqty == 8.0
 
 
@@ -355,19 +355,19 @@ def test_a_fill_without_a_price_cannot_update_an_existing_average() -> None:
         qty=1.0,
         state=State.FILLED,
         execid="EX-1",
-        filledqty=1.0,
+        cumqty=1.0,
         leavesqty=9.0,
         vwap=100.0,
     ).with_previous(None)
     later = _execution(unix=30, qty=1.0, state=State.FILLED, execid="EX-2").with_previous(previous)
-    assert later.filledqty == 2.0 and later.vwap is None
+    assert later.cumqty == 2.0 and later.vwap is None
 
 
 def test_an_acknowledgement_changes_no_running_total() -> None:
     """Adding its quantity is how a fills table starts overcounting."""
     one = fill(100.0, 4.0, 20, execid="EX-1").with_previous(resting())
     acked = _execution(unix=30, state=State.NEW, qty=99.0, execid="EX-3").with_previous(one)
-    assert acked.filledqty == 4.0 and acked.leavesqty == 6.0
+    assert acked.cumqty == 4.0 and acked.leavesqty == 6.0
     assert acked.vwap == 100.0
 
 
@@ -396,7 +396,7 @@ def test_a_correction_replaces_the_referenced_fill_in_running_totals() -> None:
         state=State.REPLACED,
     ).with_previous(one)
 
-    assert (fixed.filledqty, fixed.leavesqty) == (4.0, 6.0)
+    assert (fixed.cumqty, fixed.leavesqty) == (4.0, 6.0)
     assert fixed.vwap == 100.5
 
 
@@ -410,7 +410,7 @@ def test_a_cancel_removes_the_referenced_fill_from_running_totals() -> None:
         state=State.CANCELLED,
     ).with_previous(two)
 
-    assert (cancelled.filledqty, cancelled.leavesqty) == (4.0, 6.0)
+    assert (cancelled.cumqty, cancelled.leavesqty) == (4.0, 6.0)
     assert cancelled.vwap == 100.0
 
 
@@ -430,7 +430,7 @@ def test_an_unknown_referenced_price_makes_an_amended_average_unknown(
         qty=2.0,
         state=State.FILLED,
         execid="EX-1",
-        filledqty=6.0,
+        cumqty=6.0,
         leavesqty=4.0,
         vwap=100.0,
     ).with_previous(None)
@@ -585,7 +585,7 @@ def test_a_code_is_carried_between_versions_of_the_same_shape() -> None:
     """Which is the whole point of carrying it -- a venue stops repeating it."""
     order = resting()
     later = _order(unix=20, orderid="ORD-1", state=State.OPEN).with_previous(order)
-    assert later.kind is MarketKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
+    assert later.kind is MarketKind.LIMIT_ORDER and later.timeinforce is TimeInForce.DAY
     one = fill(100.0, 4.0, 20, execid="EX-1").with_previous(order)
     two = fill(100.5, 1.0, 30, execid="EX-1").with_previous(one)
     assert two.state is State.FILLED
@@ -609,23 +609,23 @@ def test_asking_what_a_lifecycle_is_does_not_change_it() -> None:
 
 
 def test_an_amendment_keeps_the_readable_lifecycle_code_while_its_code_moves() -> None:
-    first = resting(orderid=None, clientorderid="CL-1")
+    first = resting(orderid=None, clordid="CL-1")
     later = resting(
         unix=20,
         orderid=None,
-        clientorderid="CL-2",
-        prevclientorderid="CL-1",
+        clordid="CL-2",
+        origclordid="CL-1",
     ).with_previous(first)
     assert later.code == first.code == "CL-1"
     assert later.xhash == first.xhash
 
 
 def test_a_later_order_id_does_not_split_a_client_identified_lifecycle() -> None:
-    first = resting(orderid=None, clientorderid="CL-1")
+    first = resting(orderid=None, clordid="CL-1")
     later = _order(
         unix=20,
         orderid="ORD-1",
-        clientorderid="CL-1",
+        clordid="CL-1",
         state=State.OPEN,
     ).with_previous(None)
     assert later.code == "ORD-1", "the isolated parsed row prefers the stronger identifier"
@@ -657,14 +657,14 @@ def test_a_preidentified_order_keeps_its_flat_scope_across_completion() -> None:
 
 
 def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
-    first = resting(orderid=None, clientorderid="CL-1")
+    first = resting(orderid=None, clordid="CL-1")
     done = fill(
         100.0,
         1.0,
         15,
         execid="EX-1",
         orderid="ORD-1",
-        clientorderid="CL-1",
+        clordid="CL-1",
     ).with_previous(first)
     after = _order(unix=20, orderid="ORD-1", state=State.OPEN).with_previous(None)
 
@@ -676,11 +676,11 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
 
 def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
-    first = resting(orderid=None, clientorderid="CL-1")
+    first = resting(orderid=None, clordid="CL-1")
     amended = _order(
         unix=12,
-        clientorderid="CL-2",
-        prevclientorderid="CL-1",
+        clordid="CL-2",
+        origclordid="CL-1",
         state=State.OPEN,
     ).with_previous(first)
     done = fill(
@@ -689,23 +689,23 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
         15,
         execid="EX-1",
         orderid="ORD-1",
-        clientorderid="CL-2",
+        clordid="CL-2",
     ).with_previous(amended)
 
     after = _order(unix=20, orderid="ORD-1", state=State.OPEN).with_previous(done)
 
     assert amended.code == first.code == "CL-1"
-    assert done.prevclientorderid == "CL-1"
+    assert done.origclordid == "CL-1"
     assert done.linkedevents == [(amended.unix, first.xhash)]
     assert after.code == "CL-1" and after.xhash == first.xhash
 
 
 def test_order_and_client_identifier_namespaces_never_cross_match() -> None:
-    first = resting(orderid="VENUE-1", clientorderid="42")
+    first = resting(orderid="VENUE-1", clordid="42")
     other = _order(
         unix=20,
         orderid="42",
-        clientorderid="OTHER",
+        clordid="OTHER",
         state=State.OPEN,
     ).with_previous(first)
     assert other.code == "42"
@@ -714,11 +714,11 @@ def test_order_and_client_identifier_namespaces_never_cross_match() -> None:
 
 
 def test_conflicting_order_ids_override_a_reused_client_id() -> None:
-    first = resting(orderid="ORD-A", clientorderid="CLIENT")
+    first = resting(orderid="ORD-A", clordid="CLIENT")
     other = _order(
         unix=20,
         orderid="ORD-B",
-        clientorderid="CLIENT",
+        clordid="CLIENT",
         state=State.OPEN,
     ).with_previous(first)
 

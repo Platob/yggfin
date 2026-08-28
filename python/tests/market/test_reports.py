@@ -19,8 +19,8 @@ def report(
     cum_qty: float | None = None,
     leavesqty: float | None = None,
     orderid: str = "ORDER-1",
-    clientorderid: str = "CLIENT-1",
-    prevclientorderid: str | None = None,
+    clordid: str = "CLIENT-1",
+    origclordid: str | None = None,
     side: str | None = "1",
     price: float = 100.0,
     max_floor: float | None = None,
@@ -31,7 +31,7 @@ def report(
         ("Symbol", "BTC-USD"),
         ("SecurityExchange", "XCME"),
         ("OrderID", orderid),
-        ("ClOrdID", clientorderid),
+        ("ClOrdID", clordid),
         ("OrdType", "2"),
         ("Price", price),
         ("ExecType", exec_type),
@@ -42,8 +42,8 @@ def report(
         pairs.append(("OrdStatus", status))
     if side is not None:
         pairs.append(("Side", side))
-    if prevclientorderid is not None:
-        pairs.append(("OrigClOrdID", prevclientorderid))
+    if origclordid is not None:
+        pairs.append(("OrigClOrdID", origclordid))
     for name, value in (
         ("OrderQty", order_qty),
         ("LastPx", 100.0 if last_qty is not None else None),
@@ -125,7 +125,7 @@ def test_full_fill_is_terminal_zero_and_does_not_consume_an_unrelated_order() ->
         order_qty=50.0,
         leavesqty=50.0,
         orderid="ORDER-2",
-        clientorderid="CLIENT-2",
+        clordid="CLIENT-2",
     )
     filled = report(1, "2", "F", last_qty=100.0, leavesqty=0.0)
 
@@ -166,7 +166,7 @@ def test_first_observed_fill_without_last_preserves_requested_quantity() -> None
         leavesqty=0.0,
     )
     assert (order.prevqty, order.qty, order.state) == (100.0, 0.0, State.FILLED)
-    assert execution.filledqty == 100.0 and execution.leavesqty == 0.0
+    assert execution.cumqty == 100.0 and execution.leavesqty == 0.0
 
 
 def test_partial_execution_without_a_prior_new_still_yields_both_rows() -> None:
@@ -210,8 +210,8 @@ def test_replacement_confirmation_updates_the_live_order() -> None:
         "5",
         order_qty=120.0,
         leavesqty=120.0,
-        clientorderid="CLIENT-2",
-        prevclientorderid="CLIENT-1",
+        clordid="CLIENT-2",
+        origclordid="CLIENT-1",
         price=101.0,
     )
 

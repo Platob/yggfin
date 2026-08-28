@@ -216,7 +216,7 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
             continue
         if name == "Currency":
             assert spellings == {
-                ("ccy", pyarrow.int32()),
+                ("currency", pyarrow.int32()),
                 ("currency", pyarrow.int32()),
             }
             continue

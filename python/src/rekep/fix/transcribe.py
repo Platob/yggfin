@@ -625,7 +625,9 @@ class FixCodec(Convertible):
         """
         return Entry.structure_arrow(keys, values)
 
-    def versions_of_entries(self, entries: Any, begin_strings: Any) -> tuple[Any, Any]:
+    def versions_of_entries(
+        self, entries: Any, begin_strings: Any, application_versions: Any = None
+    ) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
         Off `entries` rather than off the message, because by this point the
@@ -633,11 +635,15 @@ class FixCodec(Convertible):
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
 
-        `begin_strings` is the column the raw stage lifted `BeginString` into.
-        It leads and `entries` fills it, which is the one rule every lifted
-        column is read under: a null column and a column a projection dropped
-        are the same absence, and the tag is still in the list either way.
-        Stated rather than defaulted, so a caller says which it is handing over.
+        `begin_strings` and `application_versions` are the columns the raw
+        stage lifted `BeginString <8>` and `ApplVerID <1128>` into. Each leads
+        and `entries` fills it, which is the one rule every lifted column is
+        read under: a null column and a column a projection dropped are the
+        same absence, and the tag is still in the list either way. Both are
+        stated rather than defaulted, so a caller says which it is handing
+        over -- and `ApplVerID` has to be one of them, because under FIXT it
+        is the version, and a transport row whose only evidence was lifted
+        out of `entries` would resolve to nothing.
         """
         from rekep.fix.access import FieldAccess
 
@@ -653,7 +659,14 @@ class FixCodec(Convertible):
                 _as_array(begin_strings, rows).cast(pyarrow.string(), safe=False), lifted
             )
         )
-        application = FieldAccess.first_named(entries, 1128, "ApplVerID", rows)
+        held = FieldAccess.first_named(entries, 1128, "ApplVerID", rows)
+        application = (
+            held
+            if application_versions is None
+            else pyarrow.compute.coalesce(
+                _as_array(application_versions, rows).cast(pyarrow.string(), safe=False), held
+            )
+        )
         default = FieldAccess.first_named(entries, 1137, "DefaultApplVerID", rows)
         compute = pyarrow.compute
         version_keys, version_values = self._version_lookup

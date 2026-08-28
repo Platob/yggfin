@@ -349,13 +349,13 @@ def test_a_request_is_pending_because_the_venue_has_not_agreed_yet(kind: str, st
 
 def test_an_order_carries_every_slot_the_message_filled() -> None:
     order, fill = events(FILLED)
-    assert order.kind is MarketKind.LIMIT_ORDER and order.tif is TimeInForce.GTC
+    assert order.kind is MarketKind.LIMIT_ORDER and order.timeinforce is TimeInForce.GTC
     assert order.side is Side.BUY
     assert (order.qty, order.vwap, fill.vwap) == (6.0, None, 100.25)
     assert order.metadata["6"] == fill.metadata["6"] == "100.25"
-    assert not hasattr(order, "filledqty") and not hasattr(order, "leavesqty")
-    assert (order.orderid, order.clientorderid) == ("ORD-9", "CL-7")
-    assert order.prevclientorderid == "CL-6"
+    assert not hasattr(order, "cumqty") and not hasattr(order, "leavesqty")
+    assert (order.orderid, order.clordid) == ("ORD-9", "CL-7")
+    assert order.origclordid == "CL-6"
 
 
 def test_avgpx_is_evidence_not_a_vwap_when_prior_fills_are_unknown() -> None:
@@ -363,7 +363,7 @@ def test_avgpx_is_evidence_not_a_vwap_when_prior_fills_are_unknown() -> None:
     order, fill = events(report)
 
     assert order.vwap is None and fill.vwap is None
-    assert fill.filledqty == 4.0 and fill.qty == 2.0
+    assert fill.cumqty == 4.0 and fill.qty == 2.0
     assert order.metadata["6"] == fill.metadata["6"] == "100.25"
 
 
@@ -420,7 +420,7 @@ def test_order_qty_uses_explicit_or_derived_live_quantity() -> None:
 
 def test_an_omitted_time_in_force_is_day_as_fix_specifies() -> None:
     (order,) = events("35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|60=20260821-10:00:00")
-    assert order.tif is TimeInForce.DAY and order.eunix is None
+    assert order.timeinforce is TimeInForce.DAY and order.eunix is None
 
 
 def test_a_price_the_venue_did_not_send_is_absent_and_not_zero() -> None:
@@ -468,7 +468,7 @@ def test_an_explicit_expiry_time_wins_over_the_day() -> None:
 def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) -> None:
     unit_pair = "" if unit is None else f"|1916={unit}"
     (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629=2{unit_pair}|60=20260821-10:00:00")
-    assert order.tif is TimeInForce.GFT
+    assert order.timeinforce is TimeInForce.GFT
     assert order.eunix == order.unix + 2 * factor
     assert order.metadata["1629"] == "2"
     if unit is not None:
@@ -589,14 +589,14 @@ def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> Non
     instrument = order.into_instrument()
     assert instrument is not None
     assert instrument.symbol == "BTC-USD" and order.symbol == "BTC-USD"
-    assert instrument.exchange == "XCME" and instrument.currency is Currency.USD
+    assert instrument.securityexchange == "XCME" and instrument.currency is Currency.USD
     assert order.instrumentxhash == instrument.xhash != 0
     assert fill.instrumentxhash == order.instrumentxhash
 
 
 def test_the_price_unit_is_the_instruments_currency() -> None:
     order, _ = events(FILLED)
-    assert order.pxunit == "USD" and order.ccy is Currency.USD
+    assert order.pxunit == "USD" and order.currency is Currency.USD
 
 
 def test_fix_exchange_values_become_the_lossless_mic_code() -> None:
@@ -642,7 +642,7 @@ def test_the_asset_class_is_the_first_character_of_the_cfi_code() -> None:
     instrument = order.into_instrument()
     assert instrument is not None
     assert instrument.kind is AssetKind.EQUITY
-    assert instrument.cfi == "ESVUFR"
+    assert instrument.cficode == "ESVUFR"
 
 
 def test_an_instrument_with_no_cfi_is_unknown_rather_than_guessed() -> None:
@@ -657,9 +657,9 @@ def test_the_option_fields_are_read_where_a_venue_sends_them() -> None:
     )
     instrument = order.into_instrument()
     assert instrument is not None
-    assert instrument.optionkind is OptionKind.CALL
-    assert instrument.strike == 150.5
-    assert instrument.maturity == datetime.date(2026, 12, 18)
+    assert instrument.putorcall is OptionKind.CALL
+    assert instrument.strikeprice == 150.5
+    assert instrument.maturitydate == datetime.date(2026, 12, 18)
 
 
 # -- what the shapes do not have a column for --------------------------------
@@ -911,7 +911,7 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     reader = FixEvents.from_text(line, registry=registry)
     (order,) = list(reader)
     assert reader.version == "VENUE1"
-    assert (order.symbol, order.clientorderid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
+    assert (order.symbol, order.clordid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
     assert (order.qty, order.px, order.unix) == (7.0, 10.5, unix_of("20260821-10:00:00"))
     assert "9004" not in order.metadata, "the configured Side tag is a claimed column"
     assert order.metadata["9008"] == "ALPHA", "a registry-only field remains auditable"
@@ -1150,8 +1150,8 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         ("AAPL", Side.BUY, 1.0),
         ("MSFT", Side.SELL, 2.0),
     ]
-    assert instrument.legs[0].maturity == datetime.date(2027, 1, 15)
-    assert instrument.legs[0].strike == 150.5
+    assert instrument.legs[0].maturitydate == datetime.date(2027, 1, 15)
+    assert instrument.legs[0].strikeprice == 150.5
     assert instrument.legs[1].currency == Currency.USD
 
     wire = (
@@ -1177,7 +1177,7 @@ def test_a_two_sided_trade_capture_report_is_one_execution_per_side() -> None:
     events = list(FixEvents.from_text(wire))
 
     assert [type(one) for one in events] == [Execution, Execution]
-    assert [(one.side, one.orderid, one.clientorderid) for one in events] == [
+    assert [(one.side, one.orderid, one.clordid) for one in events] == [
         (Side.BUY, "O-BUY", "C-BUY"),
         (Side.SELL, "O-SELL", "C-SELL"),
     ]
@@ -1323,9 +1323,9 @@ def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
         "#TRANSACTTIME=20260814-10:00:00"
     )
     (order,) = list(FixEvents.from_text(line))
-    assert order.parentclientorderid == "P-1"
+    assert order.parentclordid == "P-1"
     assert order.parentorderid == "V-9"
-    assert order.clientorderid == "C-2"
+    assert order.clordid == "C-2"
     assert "PARENTCLORDID" not in order.metadata, "a field with a column is not metadata"
     assert "PARENTORDERID" not in order.metadata, "under the bridge's spelling either"
 
@@ -1342,7 +1342,7 @@ def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
     assert order.state is State.CANCELLED
     assert order.side is Side.BUY
     assert order.kind is MarketKind.LIMIT_ORDER
-    assert order.tif is TimeInForce.GTD
+    assert order.timeinforce is TimeInForce.GTD
     assert order.eunix is not None, "a GTD spelled out still reads its expiry"
 
 
@@ -1356,7 +1356,7 @@ def test_a_side_never_answers_with_its_siblings_fields() -> None:
     )
     first, second = list(FixEvents.from_text(wire))
 
-    assert (first.clientorderid, second.clientorderid) == ("C-BUY", None)
+    assert (first.clordid, second.clordid) == ("C-BUY", None)
     assert "1" not in (second.metadata or {}).values(), "no borrowed account either"
     assert {one.tradeid for one in (first, second)} == {"M-1"}, (
         "the report level still falls through"

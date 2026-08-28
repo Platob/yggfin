@@ -101,7 +101,7 @@ instrument = fixmsg.into_instrument(fix_version="4.4")
 book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 
 assert message.MsgType == fixmsg.MsgType == "8"
-assert (order.clientorderid, order.qty) == ("CL-7", 6.0)
+assert (order.clordid, order.qty) == ("CL-7", 6.0)
 assert (execution.execid, execution.qty, execution.px) == ("EX-3", 4.0, 100.25)
 assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
 ```

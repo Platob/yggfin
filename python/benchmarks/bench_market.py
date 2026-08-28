@@ -308,7 +308,10 @@ def bench_instruments(rows: int, repeat: int) -> None:
     """Price the repeated identity spellings a feed sends on every message."""
 
     def build(distinct: int) -> list[Instrument]:
-        return [Instrument(symbol=f"S{index % distinct}", exchange="XPAR") for index in range(rows)]
+        return [
+            Instrument(symbol=f"S{index % distinct}", securityexchange="XPAR")
+            for index in range(rows)
+        ]
 
     print(f"\nInstrument identity cache -- {rows:,} rows")
     unique, uncached = timed(lambda: build(rows), repeat)
@@ -334,11 +337,11 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
         securityidsource="4",
         altids={"RIC": "CAL.N"},
         securitytype="MLEG",
-        exchange="XPAR",
+        securityexchange="XPAR",
         currency=Currency.EUR,
-        multiplier=10.0,
-        tick=0.01,
-        lot=1.0,
+        contractmultiplier=10.0,
+        minpriceincrement=0.01,
+        roundlot=1.0,
         legs=[
             Leg(
                 symbol="JUN-27",
@@ -570,7 +573,7 @@ def stream(events: int) -> list[object]:
     """
     from rekep.market import Execution, Instrument, MarketKind, Order, Side, State
 
-    instrument = Instrument(symbol="BTC-USD", exchange="XCME")
+    instrument = Instrument(symbol="BTC-USD", securityexchange="XCME")
 
     def ready(event):
         built = event.attach_instrument(instrument).with_previous(None)
@@ -622,7 +625,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
     if events < 1 or live_levels < 1 or orders_per_level < 1:
         raise ValueError("events, live_levels and orders_per_level must be positive")
     capacity = live_levels * orders_per_level
-    instrument = Instrument(symbol="MATRIX", exchange="XCME")
+    instrument = Instrument(symbol="MATRIX", securityexchange="XCME")
     for index in range(events):
         slot = index % capacity
         cycle = index // capacity
@@ -686,7 +689,7 @@ def bench_standing(rows: int, repeat: int) -> None:
                         "secondary_cl_ord_id": f"C{index}",
                     },
                     orderid=f"O{index}",
-                    clientorderid=f"CL{index}",
+                    clordid=f"CL{index}",
                     side=Side.BID,
                     px=100.0,
                     qty=1.0,

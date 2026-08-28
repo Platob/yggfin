@@ -148,7 +148,7 @@ only the exact `FixMsg` to `Instrument` projection.
 | Symbol | Venue / currency | Enrichment | `xhash` |
 | --- | --- | --- | --- |
 | `BTC-USD` | `XCME / USD` | synthetic market identity | `7683678321830537938` |
-| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, tick `0.01`, lot `1`, label `Apple Inc.` | `-9052458260103799025` |
+| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, `minpriceincrement` `0.01`, `roundlot` `1`, `securitydesc` `Apple Inc.` | `-9052458260103799025` |
 | `MSFT` | `XNAS / USD` | synthetic market identity | `-1664556628408186290` |
 
 ### Books

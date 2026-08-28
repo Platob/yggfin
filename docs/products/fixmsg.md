@@ -30,9 +30,9 @@ unixsource        'TransactTime'
 !!! note "Batch transcribes; scalar lifts"
 
     `from_message_batch` is where a payload becomes columns.
-    `FixMsg.from_text` lifts the same seven header fields the raw stage does
-    and leaves the body in `entries` -- which is what
-    `into_market_events` reads.
+    `FixMsg.from_text` lifts the same standard header the raw stage does --
+    reading it off those columns rather than walking the list again -- and
+    leaves the body in `entries`, which is what `into_market_events` reads.
 
     ```python
     FixMsg.from_text(line).msgtype   # '8'

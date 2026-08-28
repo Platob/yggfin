@@ -134,7 +134,7 @@ fields:
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
   fix: {display: Px Unit}
-- name: ccy
+- name: currency
   type: int32
   nullable: true
   description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See Appendix 6-A: Valid Currency Codes for information on obtaining'
@@ -194,17 +194,17 @@ fields:
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
   fix: {tag: '37', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","TradeCaptureReportRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","Email","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","DontKnowTradeDK","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","TradeCaptureReport","Confirmation","AllocationReport","ConfirmationRequest","AllocationInstruction","DontKnowTrade","MarketDataSnapshotFullRefresh","MarketDataIncrementalRefresh","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]', name: OrderID, version: 5.0.SP2, display: OrderID}
-- name: clientorderid
+- name: clordid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID <49> or OnBehalfOfCompID <115> as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID <11> field.
   fix: {tag: '11', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","OrderMassActionReport","Email","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","RegistrationInstructions","RegistrationInstructionsResponse","OrderMassCancelRequest","OrderMassCancelReport","QuoteRequest","SettlementInstructions","TradeCaptureReport","Confirmation","AllocationReport","ConfirmationRequest","NewOrderList","AllocationInstruction","ListStrikePrice","ListStatus","NewOrderCross","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","MultilegOrderCancelReplaceRequest","Allocation"]', components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]', name: ClOrdID, version: 5.0.SP2, display: ClOrdID}
-- name: prevclientorderid
+- name: origclordid
   type: string
   nullable: true
   description: ClOrdID <11> of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
   fix: {tag: '41', type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', msgtypes: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: OrigClOrdID, version: 5.0.SP2, display: OrigClOrdID}
-- name: filledqty
+- name: cumqty
   type: double
   nullable: true
   description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)
@@ -219,7 +219,7 @@ fields:
   nullable: true
   description: Average price of everything done on the order, as of this report.
   fix: {display: VWAP}
-- name: aggressor
+- name: aggressorindicator
   type: bool
   nullable: true
   description: Used to identify whether the order initiator is an aggressor or not in the trade.

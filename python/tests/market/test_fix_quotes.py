@@ -65,7 +65,7 @@ def test_a_two_sided_quote_becomes_two_distinct_indicative_orders() -> None:
     assert (ask.side, ask.px, ask.qty) == (Side.ASK, 101.0, 12.0)
     assert bid.kind is ask.kind is MarketKind.LIMIT_ORDER
     assert bid.orderid == ask.orderid == "Q-1"
-    assert bid.clientorderid == ask.clientorderid == "REQ-1"
+    assert bid.clordid == ask.clordid == "REQ-1"
     assert bid.xhash != ask.xhash
     assert bid.eunix == ask.eunix == unix_of("20260821-10:05:00")
     assert bid.metadata["537"] == ask.metadata["537"] == "1"

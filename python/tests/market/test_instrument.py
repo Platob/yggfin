@@ -22,7 +22,7 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
     expected = hash_of("symbol", "", "AAPL")
     variants = (
         Instrument(symbol="AAPL"),
-        Instrument(symbol="AAPL", exchange="XNAS"),
+        Instrument(symbol="AAPL", securityexchange="XNAS"),
         Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4"),
         Instrument(symbol="AAPL", xhash=7, code="US0378331005"),
     )
@@ -31,10 +31,10 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
 
 def test_two_venues_using_the_same_symbol_agree() -> None:
     one = Instrument(
-        symbol="AAPL", exchange="XNAS", securityid="US0378331005", securityidsource="4"
+        symbol="AAPL", securityexchange="XNAS", securityid="US0378331005", securityidsource="4"
     )
     other = Instrument(
-        symbol="AAPL", exchange="XPAR", securityid="FR0000000001", securityidsource="4"
+        symbol="AAPL", securityexchange="XPAR", securityid="FR0000000001", securityidsource="4"
     )
     assert one.xhash == other.xhash
 
@@ -69,7 +69,7 @@ def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
     unidentified = Instrument(
         xhash=7,
         code="US0378331005",
-        exchange="XCME",
+        securityexchange="XCME",
         currency="USD",
         securityid="US0378331005",
         securityidsource="4",
@@ -136,7 +136,11 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         snapshot_every=0,
     )
 
-    assert (instrument.tick, instrument.lot, instrument.label) == (0.01, 100.0, "FAKE-DESC")
+    assert (instrument.minpriceincrement, instrument.roundlot, instrument.securitydesc) == (
+        0.01,
+        100.0,
+        "FAKE-DESC",
+    )
     assert transcription == {"registry": registry}
 
 
@@ -151,15 +155,15 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
         securityidsource="4",
         altids={"RIC_CODE": "CAL.N"},
         securitytype="MLEG",
-        exchange="XPAR",
+        securityexchange="XPAR",
         currency=Currency.EUR,
-        multiplier=10.0,
-        tick=0.01,
-        lot=1.0,
-        maturity=datetime.date(2027, 6, 18),
-        strike=42.0,
-        optionkind=OptionKind.CALL,
-        label="Calendar spread",
+        contractmultiplier=10.0,
+        minpriceincrement=0.01,
+        roundlot=1.0,
+        maturitydate=datetime.date(2027, 6, 18),
+        strikeprice=42.0,
+        putorcall=OptionKind.CALL,
+        securitydesc="Calendar spread",
         legs=[
             Leg(
                 xhash=17,
@@ -205,15 +209,15 @@ def test_normalized_instrument_batches_decode_without_python_rows(
             securityidsource="4",
             altids={"ISIN_NUMBER": "FR0000000001", "RIC_CODE": "CAL.N", "Z": "vendor"},
             securitytype="MLEG",
-            exchange="XPAR",
+            securityexchange="XPAR",
             currency=Currency.EUR,
-            multiplier=10.0,
-            tick=0.01,
-            lot=1.0,
-            maturity=datetime.date(2027, 6, 18),
-            strike=42.0,
-            optionkind=OptionKind.CALL,
-            label="Calendar spread",
+            contractmultiplier=10.0,
+            minpriceincrement=0.01,
+            roundlot=1.0,
+            maturitydate=datetime.date(2027, 6, 18),
+            strikeprice=42.0,
+            putorcall=OptionKind.CALL,
+            securitydesc="Calendar spread",
             legs=[
                 Leg(
                     symbol="JUN-27",
@@ -221,7 +225,7 @@ def test_normalized_instrument_batches_decode_without_python_rows(
                     ratio=1.0,
                     kind=AssetKind.FUTURE,
                     currency=Currency.EUR,
-                    maturity=datetime.date(2027, 6, 18),
+                    maturitydate=datetime.date(2027, 6, 18),
                 ),
                 Leg(symbol="SEP-27", side=Side.SELL, ratio=2.0),
             ],
@@ -258,8 +262,14 @@ def test_an_empty_normalized_instrument_batch_keeps_the_target_schema() -> None:
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
     """A tick or a maturity learnt afterwards is not part of the key, deliberately:
     an identity that moved when a field was enriched would break every join to it."""
-    bare = Instrument(symbol="AAPL", exchange="XNAS")
-    enriched = Instrument(symbol="AAPL", exchange="XNAS", tick=0.01, lot=100.0, label="Apple Inc")
+    bare = Instrument(symbol="AAPL", securityexchange="XNAS")
+    enriched = Instrument(
+        symbol="AAPL",
+        securityexchange="XNAS",
+        minpriceincrement=0.01,
+        roundlot=100.0,
+        securitydesc="Apple Inc",
+    )
     assert bare.xhash == enriched.xhash
 
 
@@ -275,8 +285,8 @@ def test_a_repeated_instrument_spelling_is_hashed_once(monkeypatch: pytest.Monke
 
     instrument_module._symbol_hash.cache_clear()
     monkeypatch.setattr(instrument_module, "hash_of", counted)
-    first = Instrument(symbol="CACHE-TEST", exchange="XNAS")
-    second = Instrument(symbol="CACHE-TEST", exchange="XNAS")
+    first = Instrument(symbol="CACHE-TEST", securityexchange="XNAS")
+    second = Instrument(symbol="CACHE-TEST", securityexchange="XNAS")
 
     assert first.xhash == second.xhash
     assert calls == 1
@@ -296,8 +306,8 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
         symbol="CAL-27",
         kind=AssetKind.MULTILEG,
         altids={"RIC_CODE": "CAL.N", "ISIN_NUMBER": "FR0000000001"},
-        maturity=maturity,
-        legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturity=maturity)],
+        maturitydate=maturity,
+        legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturitydate=maturity)],
     )
     reordered = dataclasses.replace(
         first,

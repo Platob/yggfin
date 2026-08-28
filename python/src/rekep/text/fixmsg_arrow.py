@@ -71,7 +71,7 @@ def into_flat_fixmsg_batch(
         return None
 
     protocolversion, protocolversionsource = _versions(
-        codec, entries, tags, values, rows, columns.get("beginstring")
+        codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
     )
     versions = compute.drop_null(compute.unique(protocolversion))
     if protocolversion.null_count or len(versions) != 1:
@@ -151,7 +151,9 @@ def flat_fixmsg_positions(
     misplaced = _misplaced_checksum_rows(entries, parents, tags)
     eligible = compute.and_(eligible, compute.invert(misplaced))
 
-    versions, _ = _versions(codec, entries, tags, values, rows, columns.get("beginstring"))
+    versions, _ = _versions(
+        codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
+    )
     eligible = compute.and_(eligible, compute.is_valid(versions))
     positions = sequence(rows)
     for version in compute.drop_null(compute.unique(compute.filter(versions, eligible))).sort():
@@ -227,14 +229,16 @@ def _versions(
     values: pyarrow.Array,
     rows: int,
     begin_strings: pyarrow.Array | None,
+    application_versions: pyarrow.Array | None = None,
 ) -> tuple[pyarrow.Array, pyarrow.Array]:
     """Resolve one common non-transport BeginString once for the whole batch.
 
-    `begin_strings` is the column the raw stage lifted the tag into. It leads
-    and `entries` fills it, which is the one rule every lifted column is read
-    under: a column that is null and a column a projection dropped are the
-    same absence, and the tag is still in the list either way. Stated rather
-    than defaulted, so a caller says which of the two it is handing over.
+    `begin_strings` and `application_versions` are the columns the raw stage
+    lifted those two tags into. Each leads and `entries` fills it, which is
+    the one rule every lifted column is read under: a column that is null and
+    a column a projection dropped are the same absence, and the tag is still
+    in the list either way. Stated rather than defaulted, so a caller says
+    which of the two it is handing over.
     """
     spelled = _begin_strings(entries, tags, values, rows, begin_strings)
     if spelled is not None and spelled.null_count == 0:
@@ -248,7 +252,7 @@ def _versions(
                         pyarrow.repeat(pyarrow.scalar(version), rows),
                         pyarrow.repeat(pyarrow.scalar(BEGIN_STRING_SOURCE), rows),
                     )
-    return codec.versions_of_entries(entries, begin_strings)
+    return codec.versions_of_entries(entries, begin_strings, application_versions)
 
 
 def _begin_strings(

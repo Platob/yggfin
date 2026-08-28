@@ -141,26 +141,151 @@ fields:
   nullable: true
   description: First FIX message discriminator when the payload names one.
   fix: {display: MsgType}
-- name: msgseqnum
-  type: string
-  nullable: true
-  description: Sequence number the payload states, as text.
-  fix: {display: MsgSeqNum}
 - name: sendercompid
   type: string
   nullable: true
   description: Who the payload says sent it.
   fix: {display: SenderCompID}
+- name: sendersubid
+  type: string
+  nullable: true
+  description: Which desk or trader of the sender the payload names.
+  fix: {display: SenderSubID}
+- name: senderlocationid
+  type: string
+  nullable: true
+  description: Where the payload says the sender sent it from.
+  fix: {display: SenderLocationID}
 - name: targetcompid
   type: string
   nullable: true
   description: Who the payload says it was for.
   fix: {display: TargetCompID}
+- name: targetsubid
+  type: string
+  nullable: true
+  description: Which desk or trader of the target the payload names.
+  fix: {display: TargetSubID}
+- name: targetlocationid
+  type: string
+  nullable: true
+  description: Where the payload says the target is.
+  fix: {display: TargetLocationID}
+- name: onbehalfofcompid
+  type: string
+  nullable: true
+  description: Firm the message originated with, where a hub relayed it.
+  fix: {display: OnBehalfOfCompID}
+- name: onbehalfofsubid
+  type: string
+  nullable: true
+  description: Which desk or trader of that originating firm the payload names.
+  fix: {display: OnBehalfOfSubID}
+- name: onbehalfoflocationid
+  type: string
+  nullable: true
+  description: Where the payload says that originating firm sent it from.
+  fix: {display: OnBehalfOfLocationID}
+- name: delivertocompid
+  type: string
+  nullable: true
+  description: Firm the message is ultimately for, where a hub is to relay it.
+  fix: {display: DeliverToCompID}
+- name: delivertosubid
+  type: string
+  nullable: true
+  description: Which desk or trader of that firm the payload names.
+  fix: {display: DeliverToSubID}
+- name: delivertolocationid
+  type: string
+  nullable: true
+  description: Where the payload says that firm is.
+  fix: {display: DeliverToLocationID}
+- name: msgseqnum
+  type: string
+  nullable: true
+  description: Sequence number the payload states, as text.
+  fix: {display: MsgSeqNum}
+- name: lastmsgseqnumprocessed
+  type: string
+  nullable: true
+  description: Last sequence number the sender says it had processed, as text.
+  fix: {display: LastMsgSeqNumProcessed}
+- name: possdupflag
+  type: string
+  nullable: true
+  description: Whether the payload flags itself a possible retransmission, as spelled.
+  fix: {display: PossDupFlag}
+- name: possresend
+  type: string
+  nullable: true
+  description: Whether the payload flags itself a possible resend, as spelled.
+  fix: {display: PossResend}
 - name: sendingtime
   type: string
   nullable: true
   description: When the payload says it was sent, in the payload's own spelling.
   fix: {display: SendingTime}
+- name: origsendingtime
+  type: string
+  nullable: true
+  description: When a resent payload says it first went out, as spelled.
+  fix: {display: OrigSendingTime}
+- name: onbehalfofsendingtime
+  type: string
+  nullable: true
+  description: When the originating firm sent it, where a relayed payload says.
+  fix: {display: OnBehalfOfSendingTime}
+- name: applverid
+  type: string
+  nullable: true
+  description: Application version a FIXT session names for this message.
+  fix: {display: ApplVerID}
+- name: cstmapplverid
+  type: string
+  nullable: true
+  description: Custom application extension the payload names, where it names one.
+  fix: {display: CstmApplVerID}
+- name: applextid
+  type: string
+  nullable: true
+  description: Extension pack the payload names, as text.
+  fix: {display: ApplExtID}
+- name: messageencoding
+  type: string
+  nullable: true
+  description: Encoding the payload declares for its `Encoded*` fields.
+  fix: {display: MessageEncoding}
+- name: xmldatalen
+  type: string
+  nullable: true
+  description: Declared length of `xmldata`, kept as the text in front of it.
+  fix: {display: XmlDataLen}
+- name: xmldata
+  type: string
+  nullable: true
+  description: XML block the payload carried, taken by the length in front of it.
+  fix: {display: XmlData}
+- name: securedatalen
+  type: string
+  nullable: true
+  description: Declared length of `securedata`, kept as the text in front of it.
+  fix: {display: SecureDataLen}
+- name: securedata
+  type: string
+  nullable: true
+  description: Encrypted block the payload carried, taken by the length in front of it.
+  fix: {display: SecureData}
+- name: signaturelength
+  type: string
+  nullable: true
+  description: Declared length of `signature`, kept as the text in front of it.
+  fix: {display: SignatureLength}
+- name: signature
+  type: string
+  nullable: true
+  description: Signature the payload carried, taken by the length in front of it.
+  fix: {display: Signature}
 - name: entries
   type: list
   description: Ordered payload arguments other than the promoted message discriminator.

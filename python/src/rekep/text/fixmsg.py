@@ -738,8 +738,8 @@ class FixMsg(Message):
             securityidsource=known.securityidsource,
             isincode=known.isincode,
             securitytype=known.securitytype,
-            cficode=known.cfi,
-            securityexchange=known.exchange,
+            cficode=known.cficode,
+            securityexchange=known.securityexchange,
             currency=None if known.currency is None else known.currency.into_fix(),
             **declared,
         )
@@ -1221,7 +1221,7 @@ class FixMsg(Message):
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
         protocolversion, protocolversionsource = codec.versions_of_entries(
-            entries, columns.get("beginstring")
+            entries, columns.get("beginstring"), columns.get("applverid")
         )
         columns.update(
             {
@@ -1818,18 +1818,20 @@ class FixMsg(Message):
                 "isincode": batch.column("isincode"),
                 "altids": normalized.altids(target.field("altids").dtype),
                 "securitytype": batch.column("securitytype"),
-                "cfi": batch.column("cficode"),
-                "exchange": batch.column("securityexchange"),
+                "cficode": batch.column("cficode"),
+                "securityexchange": batch.column("securityexchange"),
                 "currency": _currency_arrow(batch.column("currency")),
-                "multiplier": cast_arrow_fix(
+                "contractmultiplier": cast_arrow_fix(
                     normalized.first("ContractMultiplier"), pyarrow.float64()
                 ),
-                "tick": cast_arrow_fix(normalized.first("MinPriceIncrement"), pyarrow.float64()),
-                "lot": cast_arrow_fix(normalized.first("RoundLot"), pyarrow.float64()),
-                "maturity": cast_arrow_fix(normalized.first("MaturityDate"), pyarrow.date32()),
-                "strike": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
-                "optionkind": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
-                "label": normalized.first("SecurityDesc"),
+                "minpriceincrement": cast_arrow_fix(
+                    normalized.first("MinPriceIncrement"), pyarrow.float64()
+                ),
+                "roundlot": cast_arrow_fix(normalized.first("RoundLot"), pyarrow.float64()),
+                "maturitydate": cast_arrow_fix(normalized.first("MaturityDate"), pyarrow.date32()),
+                "strikeprice": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
+                "putorcall": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
+                "securitydesc": normalized.first("SecurityDesc"),
                 "legs": normalized.legs(target.field("legs").dtype),
             }
         )
@@ -1851,8 +1853,8 @@ class FixMsg(Message):
             securityidsource=self.securityidsource,
             isincode=self.isincode,
             securitytype=self.securitytype,
-            cfi=self.cficode,
-            exchange=self.securityexchange,
+            cficode=self.cficode,
+            securityexchange=self.securityexchange,
             currency=self.currency,
         )
 
@@ -2091,14 +2093,16 @@ class _NormalizedInstrumentFields:
             "kind": _stored_code(member("kind")),
             "securityid": member("LegSecurityID"),
             "securityidsource": member("LegSecurityIDSource"),
-            "cfi": member("LegCFICode"),
+            "cficode": member("LegCFICode"),
             "securitytype": member("LegSecurityType"),
-            "exchange": member("LegSecurityExchange"),
+            "securityexchange": member("LegSecurityExchange"),
             "currency": _currency_arrow(member("LegCurrency")),
-            "multiplier": cast_arrow_fix(member("LegContractMultiplier"), pyarrow.float64()),
-            "maturity": cast_arrow_fix(member("LegMaturityDate"), pyarrow.date32()),
-            "strike": cast_arrow_fix(member("LegStrikePrice"), pyarrow.float64()),
-            "optionkind": _fix_enum_arrow(member("LegPutOrCall"), OptionKind),
+            "contractmultiplier": cast_arrow_fix(
+                member("LegContractMultiplier"), pyarrow.float64()
+            ),
+            "maturitydate": cast_arrow_fix(member("LegMaturityDate"), pyarrow.date32()),
+            "strikeprice": cast_arrow_fix(member("LegStrikePrice"), pyarrow.float64()),
+            "putorcall": _fix_enum_arrow(member("LegPutOrCall"), OptionKind),
         }
         entries = pyarrow.StructArray.from_arrays(
             [columns[item.field(index).name] for index in range(item.num_fields)],
@@ -2201,13 +2205,13 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
     """Registry-shaped fields not already promoted on a normalized FixMsg."""
     values = (
         (_INSTRUMENT_KIND, int(instrument.kind)),
-        ("ContractMultiplier", instrument.multiplier),
-        ("MinPriceIncrement", instrument.tick),
-        ("RoundLot", instrument.lot),
-        ("MaturityDate", instrument.maturity),
-        ("StrikePrice", instrument.strike),
-        ("PutOrCall", instrument.optionkind),
-        ("SecurityDesc", instrument.label),
+        ("ContractMultiplier", instrument.contractmultiplier),
+        ("MinPriceIncrement", instrument.minpriceincrement),
+        ("RoundLot", instrument.roundlot),
+        ("MaturityDate", instrument.maturitydate),
+        ("StrikePrice", instrument.strikeprice),
+        ("PutOrCall", instrument.putorcall),
+        ("SecurityDesc", instrument.securitydesc),
     )
     pairs = [(name, rendered) for name, value in values if (rendered := _fix_text(value))]
 
@@ -2240,14 +2244,14 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
                 ("LegRatioQty", leg.ratio),
                 ("LegSecurityID", leg.securityid),
                 ("LegSecurityIDSource", leg.securityidsource),
-                ("LegCFICode", leg.cfi),
+                ("LegCFICode", leg.cficode),
                 ("LegSecurityType", leg.securitytype),
-                ("LegSecurityExchange", leg.exchange),
+                ("LegSecurityExchange", leg.securityexchange),
                 ("LegCurrency", leg.currency),
-                ("LegContractMultiplier", leg.multiplier),
-                ("LegMaturityDate", leg.maturity),
-                ("LegStrikePrice", leg.strike),
-                ("LegPutOrCall", leg.optionkind),
+                ("LegContractMultiplier", leg.contractmultiplier),
+                ("LegMaturityDate", leg.maturitydate),
+                ("LegStrikePrice", leg.strikeprice),
+                ("LegPutOrCall", leg.putorcall),
             )
             pairs.extend(
                 (f"{root}.{name}", rendered)

@@ -151,14 +151,14 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
 
 def test_a_maturity_date_is_read_as_given() -> None:
     found = instrument_of(f"{HEAD}|55=ESZ6|541=20261218")
-    assert found.maturity == datetime.date(2026, 12, 18)
+    assert found.maturitydate == datetime.date(2026, 12, 18)
 
 
 def test_a_month_year_maturity_is_the_month_it_names() -> None:
     """The older of the two ways to say it, and a venue that sends it usually sends
     no `MaturityDate <541>` at all -- so reading it is the difference between a
     dated future and an undated one."""
-    assert instrument_of(f"{HEAD}|55=ESZ6|200=202612").maturity == datetime.date(2026, 12, 1)
+    assert instrument_of(f"{HEAD}|55=ESZ6|200=202612").maturitydate == datetime.date(2026, 12, 1)
 
 
 def test_a_month_year_with_a_day_in_it_keeps_the_day() -> None:
@@ -167,7 +167,7 @@ def test_a_month_year_with_a_day_in_it_keeps_the_day() -> None:
 
 def test_the_exact_date_wins_over_the_month() -> None:
     found = instrument_of(f"{HEAD}|55=ESZ6|200=202612|541=20261218")
-    assert found.maturity == datetime.date(2026, 12, 18)
+    assert found.maturitydate == datetime.date(2026, 12, 18)
 
 
 @pytest.mark.parametrize("text", ["", None, "2026", "abcdef", "202613", "20261232"])
@@ -199,11 +199,11 @@ def test_a_leg_says_which_way_the_strategy_takes_it_and_how_much() -> None:
 def test_a_leg_is_read_with_the_same_rules_as_the_instrument_it_is_of() -> None:
     """Every member is the instrument field with a `Leg` in front of it."""
     near, far = instrument_of(SPREAD).legs
-    assert near.kind is AssetKind.FUTURE and near.multiplier == 50.0
-    assert near.maturity == datetime.date(2026, 12, 1), "its month-year, read the same way"
-    assert far.maturity == datetime.date(2027, 3, 20)
-    assert far.strike == 4500.0 and far.optionkind is OptionKind.CALL
-    assert near.currency is Currency.USD and near.exchange == "XCME"
+    assert near.kind is AssetKind.FUTURE and near.contractmultiplier == 50.0
+    assert near.maturitydate == datetime.date(2026, 12, 1), "its month-year, read the same way"
+    assert far.maturitydate == datetime.date(2027, 3, 20)
+    assert far.strikeprice == 4500.0 and far.putorcall is OptionKind.CALL
+    assert near.currency is Currency.USD and near.securityexchange == "XCME"
 
 
 def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> None:
@@ -212,7 +212,7 @@ def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> Non
     assert (
         near.xhash
         == Instrument(
-            symbol="ESZ6", exchange="XCME", securityid="US1234567890", securityidsource="4"
+            symbol="ESZ6", securityexchange="XCME", securityid="US1234567890", securityidsource="4"
         ).xhash
     )
 
