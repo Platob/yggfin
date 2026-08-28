@@ -1,11 +1,10 @@
 # End-to-end run
 
-Measured on 2026-08-23, this run executed the code cells from all six task
-notebooks against a fresh local Iceberg warehouse, then replayed the same
-interval. It is a correctness fixture; the larger focused measurements remain
-on [Benchmarks](../../storage/benchmarks.md). The stage table below covers the
-five downstream notebooks; `parse_messages` read the 13 generated rows and
-wrote all of them.
+A correctness fixture, measured 2026-08-23: all six task notebooks against a
+fresh local Iceberg warehouse, then the same interval replayed. Throughput
+measurements live on [Benchmarks](../../storage/benchmarks.md). The stage table
+covers the five downstream notebooks — `parse_messages` read the 13 generated
+rows and wrote all of them.
 
 ![End-to-end execution architecture](../../assets/workflow-run.svg)
 
@@ -14,9 +13,8 @@ Only `fix.market` continues into market readers. `fix.misc` and
 
 ## Run the workflow locally
 
-From the repository root, run the task documents in dependency order. The
-first command uses the checked-in sample log; replace its `source` override for
-your own capture.
+From the repository root, in dependency order. The first command uses the
+checked-in sample log; replace its `source` override for your own capture.
 
 ```bash
 uv run --project python --with papermill rekep task run \
@@ -45,9 +43,9 @@ uv run --project python --with papermill rekep task run \
   --output flatten_executions.executed.ipynb
 ```
 
-Each command preserves its executed notebook for inspection. The task YAML
-selects the catalog, branch, tables, and commit sizes; repeatable
-`--parameter NAME=VALUE` options override those values for one run.
+Each command keeps its executed notebook. The YAML selects catalog, branch,
+tables and commit sizes; repeatable `--parameter NAME=VALUE` overrides them for
+one run.
 
 ## Run context
 
@@ -188,19 +186,15 @@ and orders.
 
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg)
 
-| Contract | Primary key | Partitions | Nested payloads |
-| --- | --- | --- | --- |
-| `Message` | `unix, hash` | `unix_partition` | generic ordered `entries`, event lineage and `codes` |
-| `FixMsg` | `unix, hash` | `unix_partition` | `entries`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID`, `Legs`, `codes` |
-| `Instrument` | `unix, hash` | `unix_partition` | `alt_ids`, `legs`, `codes` |
-| `Book` | `unix, hash` | `unix_partition` | levels, deltas, executions, live snapshot orders, `codes` |
-| `Order` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
-| `Execution` | `unix, hash` | `unix_partition` | standard event lineage, `codes` and metadata |
+All six are keyed `(unix, hash)` and partitioned on `unix_partition` alone.
+Their columns and nested payloads are on the [product](../../products/index.md)
+pages.
 
 The hour is the only partition. An instrument identity is a 64-bit hash, so
 bucketing it multiplies the files inside each hour without pruning a read the
 hour and the sort order do not already prune.
 
-The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
-types and metadata between stages, Iceberg owns table ids and snapshots, and
-the [binary identity contract](../../contracts/identity.md) keeps hashes cross-language stable.
+`schemas/rekep/` is the portable source. Arrow owns types and metadata between
+stages, Iceberg owns table ids and snapshots, and the
+[binary identity contract](../../contracts/identity.md) keeps hashes
+cross-language stable.
