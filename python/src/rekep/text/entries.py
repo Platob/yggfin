@@ -72,9 +72,7 @@ def parse_arrow(messages):
         return pyarrow.array([], type=ENTRIES)
 
     compute = pyarrow.compute
-    text = _from_message_start(
-        compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-    )
+    text = _from_message_start(compute.fill_null(messages.cast(pyarrow.string(), safe=False), ""))
     common = _common_separators(text)
     common_rows = compute.is_valid(common)
     if compute.all(common_rows, min_count=0).as_py():

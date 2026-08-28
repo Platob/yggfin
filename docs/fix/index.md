@@ -98,14 +98,23 @@ of versions that declare it -- so a store holds one *record* per identity and
 not one per version:
 
 ```json
-{"54": {"name": "Side", "tag": 54, "type": "char",
-        "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
-        "values": [{"value": "1", "meaning": "Buy", "aliases": ["BUY"]}]}}
+{"54": {"name": "Side", "type": "string", "nullable": true,
+        "description": "Side of order.",
+        "fix": {"tag": "54", "type": "char",
+                "versions": "[\"4.4\",\"4.3\",\"4.2\"]",
+                "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"BUY\"]}]"}}}
 ```
 
-One enumerated value is one record -- what the wire carries, what it means,
-and every other spelling naming it -- and the lookups a parse needs are
-derived from it, never stored beside it.
+A field record is a `Field` document -- the same one a component file and
+`schemas/rekep/*.yaml` are written in: the Arrow reading at the top, the
+protocol's own keys under `fix`, and each key that holds a list packed into
+one JSON string because Arrow field metadata is bytes to bytes. There is no
+codec of its own to keep in step with the others.
+
+Having a tag is the whole of being a standard field, so nothing states the
+kind beside it. One enumerated value is one record -- what the wire carries,
+what it means, and every other spelling naming it -- and the lookups a parse
+needs are derived from it, never stored beside it.
 
 Records live in tag-range shards of five hundred, named by the shard index:
 
@@ -136,10 +145,10 @@ with `FutSettDate` recorded as an alias carrying the version that spelled it --
 rather than two half-histories nobody diffs.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same record with `kind: namespace`, no tag, and `*`
-for its versions, and lives in `fields/named.json` because there is no tag to
-shard it on. One naming `fix:column` is lifted into that column of the parsed
-log.
+`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions,
+and lives in `fields/named.json` because there is no tag to shard it on.
+Having no tag is the whole of being one, so no record states it twice. One
+naming `fix:column` is lifted into that column of the parsed log.
 
 ### The collapse, and what it costs
 

@@ -388,6 +388,47 @@ def _enumerated(declared: str) -> tuple[FixFieldValue, ...]:
     return values_of(json.loads(declared))
 
 
+def _json_mapping(declared: str | None) -> Mapping[str, Any]:
+    """One stored JSON object, or nothing where a record declares none."""
+    if not declared:
+        return {}
+    found = json.loads(declared)
+    return found if isinstance(found, Mapping) else {}
+
+
+def enum_member(enum_type: Any, value: Any) -> Any:
+    """One stored enum spelling as the member it names.
+
+    A member name, its packed code, or the member itself all read back. A
+    name or a code no member has raises rather than degrading to `UNKNOWN`:
+    a stored reading that quietly became "unknown" is a bug that ships.
+    """
+    if isinstance(value, enum_type):
+        return value
+    parsed: Any = int(value) if isinstance(value, str) and value.isdigit() else value
+    if isinstance(parsed, str):
+        return enum_type[parsed.upper()]
+    member = enum_type(parsed)
+    if int(member) != int(parsed):
+        raise ValueError("no member stores this code")
+    return member
+
+
+def enum_map(enum_type: Any, declared: Any, keyed: str) -> dict[str, Any]:
+    """One stored `{wire value: member}` map, saying which key was unreadable."""
+    if not isinstance(declared, Mapping):
+        return {}
+    found: dict[str, Any] = {}
+    for key, value in declared.items():
+        try:
+            found[str(key)] = enum_member(enum_type, value)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"unknown {enum_type.__name__} {value!r} for {keyed} {key!r}"
+            ) from error
+    return found
+
+
 class FixMetadata(ProtocolMetadata):
     """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.enumerated`.
 
@@ -404,7 +445,6 @@ class FixMetadata(ProtocolMetadata):
     type = _Text()
     name = _Text()
     version = _Text()
-    kind = _Text()
     column = _Text()
     note = _Text()
     component = _Text()
@@ -447,34 +487,38 @@ class FixMetadata(ProtocolMetadata):
 
     @property
     def event_types(self) -> dict[str, EventType]:
-        """The `{MsgType: EventType}` map a MsgType record carries."""
-        declared = self.get("event_types")
-        if not declared:
-            return {}
-        return {key: EventType.from_int(value) for key, value in json.loads(declared).items()}
+        """The `{MsgType: EventType}` map a MsgType record carries.
+
+        Stored by member name. These documents are read and edited by hand,
+        and a packed ASCII code is a nineteen-digit integer that says nothing
+        to whoever opens the file.
+        """
+        return enum_map(EventType, _json_mapping(self.get("event_types")), "MsgType")
 
     @event_types.setter
     def event_types(self, value: Mapping[str, Any] | None) -> None:
         if not value:
             self.pop("event_types", None)
             return
-        rendered = {str(key): int(kind) for key, kind in dict(value).items()}
+        found = enum_map(EventType, value, "MsgType")
+        rendered = {key: member.name for key, member in found.items()}
         self["event_types"] = json.dumps(rendered, separators=(",", ":"))
 
     @property
     def states(self) -> dict[str, State]:
-        """The `{wire value: State}` map a lifecycle field carries."""
-        declared = self.get("states")
-        if not declared:
-            return {}
-        return {key: State.from_int(value) for key, value in json.loads(declared).items()}
+        """The `{wire value: State}` map a lifecycle field carries.
+
+        By name, for the reason `event_types` gives.
+        """
+        return enum_map(State, _json_mapping(self.get("states")), "value")
 
     @states.setter
     def states(self, value: Mapping[str, Any] | None) -> None:
         if not value:
             self.pop("states", None)
             return
-        rendered = {str(key): int(state) for key, state in dict(value).items()}
+        found = enum_map(State, value, "value")
+        rendered = {key: member.name for key, member in found.items()}
         self["states"] = json.dumps(rendered, separators=(",", ":"))
 
     # -- what the record is -------------------------------------------------

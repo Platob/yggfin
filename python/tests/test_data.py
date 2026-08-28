@@ -20,7 +20,7 @@ import pytest
 
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.columns import _ORDER
-from rekep.fix.entries import ANY_VERSION, RECORD_KEYS
+from rekep.fix.entries import ANY_VERSION
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
     FIXMSG_FIELDS,
@@ -66,9 +66,26 @@ def records() -> dict[str, dict[str, object]]:
     return {key: record for shard in members("fields").values() for key, record in shard.items()}
 
 
+#: Every key one stored field record carries at its top level: the Arrow
+#: reading, and the protocol's own nested under `fix`. The same document a
+#: component declaration and `schemas/rekep/*.yaml` are written in, which is
+#: the whole reason there is no second codec for a field record.
+FIELD_KEYS = frozenset({"name", "type", "nullable", "description", "fix"})
+
+#: The `fix:` keys whose value is itself a document, packed into one string
+#: because Arrow field metadata is bytes to bytes.
+PACKED = ("versions", "values", "aliases", "msgtypes", "components", "event_types", "states")
+
+
+def stored_fix(record: dict[str, object]) -> dict[str, object]:
+    """One record's FIX metadata, with the documents it packs into strings read."""
+    fix = dict(record.get("fix") or {})
+    return {key: json.loads(value) if key in PACKED else value for key, value in fix.items()}
+
+
 def stored_value(record: dict[str, object], value: str) -> dict[str, object]:
     """One enumerated value out of a stored record, by what the wire carries."""
-    for one in record.get("values") or ():
+    for one in stored_fix(record).get("values") or ():
         if one["value"] == value:
             return one
     raise AssertionError(f"{record.get('name')} declares no value {value!r}")
@@ -156,8 +173,8 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
     writing it resolves.
     """
     held = records()
-    settl = held["64"]
-    assert settl["name"] == "SettlDate" and settl["tag"] == 64
+    settl = stored_fix(held["64"])
+    assert held["64"]["name"] == "SettlDate" and settl["tag"] == "64"
     assert settl["versions"] == ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
     assert [alias["name"] for alias in settl["aliases"]] == ["FutSettDate"]
 
@@ -165,41 +182,46 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
     vendor = 0
     for key, record in held.items():
         assert record["name"], key
-        assert record["versions"], key
-        assert set(record) <= set(RECORD_KEYS), key
-        if record.get("kind") == "namespace":
+        assert set(record) <= FIELD_KEYS, key
+        fix = stored_fix(record)
+        assert fix["versions"], key
+        if "tag" not in fix:
             # A field FIX never numbered: no tag, keyed by name, and holding
-            # for whichever version the session negotiated.
+            # for whichever version the session negotiated. Having no tag is
+            # the whole of being namespaced -- nothing states it twice.
             vendor += 1
-            assert "tag" not in record, key
-            assert record["versions"] == [ANY_VERSION], key
+            assert fix["versions"] == [ANY_VERSION], key
             continue
-        assert record["tag"] not in tags, f"{key} repeats a tag"
-        assert str(record["tag"]) == key, "a record is filed under its own tag"
-        tags.add(record["tag"])
-        assert set(record["versions"]) <= set(VERSIONS), key
+        assert fix["tag"] not in tags, f"{key} repeats a tag"
+        assert fix["tag"] == key, "a record is filed under its own tag"
+        tags.add(fix["tag"])
+        assert set(fix["versions"]) <= set(VERSIONS), key
     assert vendor == 3, "ISINCODE and the parent identities the log gives columns"
-    assert held["ISINCODE"]["column"] == "ISINCODE"
-    assert [alias["name"] for alias in held["ISINCODE"]["aliases"]] == ["AMON.ISINCODE"]
+    assert stored_fix(held["ISINCODE"])["column"] == "ISINCODE"
+    assert [alias["name"] for alias in stored_fix(held["ISINCODE"])["aliases"]] == ["AMON.ISINCODE"]
 
 
 def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     held = records()
     for key, record in held.items():
-        if record.get("kind") != "namespace":
+        fix = stored_fix(record)
+        if "tag" in fix:
             assert str(record["name"]).isalnum(), key
-            assert all(str(alias["name"]).isalnum() for alias in record.get("aliases", ())), key
-        assert all(str(name).isalnum() for name in record.get("used_in", ())), key
-        assert all(str(name).isalnum() for name in record.get("components", ())), key
+            assert all(str(alias["name"]).isalnum() for alias in fix.get("aliases", ())), key
+        assert all(str(name).isalnum() for name in fix.get("msgtypes", ())), key
+        assert all(str(name).isalnum() for name in fix.get("components", ())), key
 
     msg_type = held["35"]
     assert stored_value(msg_type, "8")["meaning"] == "ExecutionReport"
     assert stored_value(msg_type, "i")["meaning"] == "MassQuote"
+    assert stored_fix(msg_type)["event_types"]["8"] == "EXECUTION", (
+        "by name, because a packed ASCII code is unreadable in a file people edit"
+    )
     assert "handlers" not in msg_type
-    assert "encoded" not in msg_type and "decoded" not in msg_type, (
+    assert "encoded" not in stored_fix(msg_type) and "decoded" not in stored_fix(msg_type), (
         "a lookup derived from the values is not stored beside them"
     )
-    assert [alias["name"] for alias in held["32"]["aliases"]] == ["LastShares"]
+    assert [alias["name"] for alias in stored_fix(held["32"])["aliases"]] == ["LastShares"]
 
 
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:

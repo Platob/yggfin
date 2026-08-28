@@ -15,15 +15,13 @@ from rekep.filesystems import read_bytes
 from rekep.fix import quickfix
 from rekep.fix.entries import (
     ANY_VERSION,
-    NAMESPACE,
-    STANDARD,
     Alias,
     ComponentRecord,
     record_copy,
     record_kind,
-    record_of,
+    refuse_record,
 )
-from rekep.fix.fields import FIX_SCALARS
+from rekep.fix.fields import FIX_SCALARS, fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
 from rekep.fix.store import DOCUMENT_SUFFIXES, document_of, field_document, is_document
 
@@ -468,19 +466,21 @@ class Shell:
         column = self._ask_for(
             "parsed-log column, when the log declares one", held.fix.column if held else ""
         )
-        record = record_of(
-            {
-                "name": name,
-                "tag": int(tag) if tag else None,
-                "kind": STANDARD if tag else NAMESPACE,
-                "aliases": list(held.fix.aliases) if held else [],
-                "versions": versions,
-                "type": datatype,
-                "description": described,
-                "values": list(held.fix.enumerated) if held else [],
-                "column": column,
-            }
+        # A tag is what makes a record standard, so it is also what picks the
+        # constructor; everything after is the same either way.
+        record = (
+            fix_field(name, int(tag), datatype, description=described)
+            if tag
+            else namespaced_field(name, datatype, description=described)
         )
+        fix = record.fix
+        fix.versions = versions
+        if column:
+            fix.column = column
+        if held:
+            fix.named_aliases = list(held.fix.aliases)
+            fix.enumerated = list(held.fix.enumerated)
+        refuse_record(record)
         self._field_panel(record)
         if not self._confirm("write it"):
             console.warn("nothing was written")
@@ -676,7 +676,7 @@ def _declaration(path: str) -> Field:
         raise ValueError(
             f"{path} is not a document this can read: name it {' or '.join(DOCUMENT_SUFFIXES)}"
         )
-    return record_of(document_of(read_bytes(path), spelled))
+    return refuse_record(Field.from_dict(document_of(read_bytes(path), spelled)))
 
 
 def _unquoted(text: str) -> str:
@@ -705,6 +705,4 @@ def shell(
     ).run()
 
 
-#: Re-exported so a caller building a stored document has the same names the
-#: prompt uses, without importing two modules to do it.
-__all__ = ["ComponentRecord", "Shell", "record_of", "shell"]
+__all__ = ["ComponentRecord", "Shell", "shell"]

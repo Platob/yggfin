@@ -132,10 +132,19 @@ def test_fix_metadata_round_trips_the_market_enums() -> None:
 
     built = make_field()
     built.fix.event_types = {"D": EventType.ORDER}
-    assert built.metadata["fix:event_types"] == f'{{"D":{int(EventType.ORDER)}}}'
+    # By member name: a packed ASCII code is a nineteen-digit integer, and
+    # these documents are read and edited by hand.
+    assert built.metadata["fix:event_types"] == '{"D":"ORDER"}'
     assert built.fix.event_types == {"D": EventType.ORDER}
     built.fix.states = {"D": State.PENDING_NEW}
+    assert built.metadata["fix:states"] == '{"D":"PENDING_NEW"}'
     assert built.fix.states == {"D": State.PENDING_NEW}
+
+    # A stored spelling no member has raises rather than degrading to UNKNOWN.
+    with pytest.raises(ValueError, match="unknown EventType"):
+        built.fix.event_types = {"D": "invented"}
+    with pytest.raises(ValueError, match="unknown State"):
+        built.fix.states = {"D": 999}
 
 
 def test_iceberg_metadata_carries_the_key_declarations() -> None:

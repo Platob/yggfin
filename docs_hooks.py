@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from rekep import Execution, Field, FixMsg, Instrument, Message, Order
-from rekep.fix import FixRegistry, record_document
+from rekep.fix import FixRegistry
 from rekep.market import Book
 from rekep.text.message import SESSION_FIELDS
 
@@ -54,7 +54,7 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
             for entry in sorted(registry.component_records().values(), key=lambda one: one.name)
         ],
         "fields": [
-            record_document(entry)
+            _field_view(entry)
             for entry in sorted(
                 registry.field_records().values(),
                 key=lambda one: (
@@ -65,6 +65,38 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
             )
         ],
     }
+
+
+def _field_view(entry: Field) -> dict[str, Any]:
+    """One field record as the page reads it: flat, with nothing left packed.
+
+    A stored record is a `Field` document -- the Arrow reading at the top, the
+    protocol's own under `fix`, and every list packed into one JSON string
+    because Arrow metadata is bytes to bytes. That is the right shape for a
+    file the registry loads and a person edits, and the wrong one for a page
+    that would otherwise parse a string per key per row. So this projection
+    lives in the build that serves the page, not in the store.
+    """
+    fix = entry.fix
+    view: dict[str, Any] = {"name": fix.canonical}
+    if fix.tag is not None:
+        view["tag"] = fix.tag
+    for key, value in (
+        ("type", fix.type),
+        ("description", entry.description),
+        ("column", fix.column),
+        ("note", fix.note),
+        ("versions", list(fix.versions)),
+        ("values", [one.into_dict() for one in fix.enumerated]),
+        ("aliases", [alias.into_dict() for alias in fix.named_aliases]),
+        ("used_in", list(fix.msgtypes)),
+        ("components", list(fix.components)),
+        ("event_types", {code: kind.name for code, kind in fix.event_types.items()}),
+        ("states", {code: state.name for code, state in fix.states.items()}),
+    ):
+        if value:
+            view[key] = value
+    return view
 
 
 def _product_catalog() -> dict[str, Any]:

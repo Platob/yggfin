@@ -39,10 +39,10 @@ from rekep.fix.entries import (
     name_of,
     record_copy,
     record_kind,
-    record_of,
     records_for,
+    refuse_record,
 )
-from rekep.fix.fields import fix_field
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SpecField,
@@ -581,29 +581,20 @@ class FixRegistry(Convertible):
                 for stored, record in document.items():
                     if not isinstance(record, Mapping):
                         raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
-                    record_versions = record.get("versions")
-                    if (
-                        type(record.get("name")) is not str
-                        or not isinstance(record_versions, list)
-                        or any(type(version) is not str for version in record_versions)
-                        or not set(record_versions).issubset(known_versions | {ANY_VERSION})
-                        or not isinstance(record.get("aliases", []), list)
-                        or any(
-                            key in record and not isinstance(record[key], Mapping)
-                            for key in ("event_types", "states")
-                        )
-                        or any(
-                            key in record and not isinstance(record[key], list)
-                            for key in ("values", "used_in", "components")
-                        )
-                    ):
-                        raise ValueError(f"FIX field {stored!r} in {name!r} has invalid metadata")
+                    # A record validates by being read, the way a component's
+                    # declaration does: a document `Field` cannot parse is not
+                    # one, and `refuse_record` says the rest.
                     try:
-                        entry = record_of(record)
+                        entry = refuse_record(Field.from_dict(record))
                     except (AttributeError, KeyError, TypeError, ValueError) as error:
                         raise ValueError(
                             f"FIX field {stored!r} in {name!r} is invalid: {error}"
                         ) from error
+                    if not set(entry.fix.versions).issubset(known_versions | {ANY_VERSION}):
+                        raise ValueError(
+                            f"FIX field {stored!r} in {name!r} names a version this store "
+                            "does not declare"
+                        )
                     declared_tag = entry.fix.tag
                     expected_key = (
                         str(declared_tag) if declared_tag is not None else entry.fix.canonical
@@ -1532,16 +1523,12 @@ class FixRegistry(Convertible):
             )
         if held is None:
             return self.add_field(
-                record_of(
-                    {
-                        "name": name,
-                        "kind": NAMESPACE,
-                        "versions": [ANY_VERSION],
-                        "type": type or "String",
-                        "description": description,
-                        "aliases": [one.into_dict() for one in added],
-                        "column": column,
-                    }
+                namespaced_field(
+                    name,
+                    type or "String",
+                    description=description,
+                    column=column,
+                    aliases=added,
                 )
             )
         fix = held.fix

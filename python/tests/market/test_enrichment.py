@@ -124,7 +124,10 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
     with zipfile.ZipFile(archive) as opened:
         # SecurityType is tag 167, so it is in the shard holding tags 0 to 499.
         shard = json.loads(opened.read("fields/000000.json"))
-    published = {one["value"] for one in shard["167"].get("values") or ()}
+    # A record is a field document: the enumerated values are one packed JSON
+    # string under `fix`, because Arrow field metadata is bytes to bytes.
+    values = json.loads(shard["167"]["fix"].get("values") or "[]")
+    published = {one["value"] for one in values}
     unknown = sorted(set(SECURITY_TYPES) - published)
     assert not unknown, f"no FIX version defines SecurityType {unknown}"
 

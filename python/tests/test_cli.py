@@ -8,8 +8,9 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, StructField, cli
-from rekep.fix.entries import Alias, record_document, record_kind, record_of, values_of
-from rekep.fix.fields import fix_field
+from rekep.fields.metadata import values_of
+from rekep.fix.entries import Alias, record_kind
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
 
 #: The contracts this repository publishes, which the CLI has to be able to
@@ -590,15 +591,9 @@ def test_check_reports_an_inconsistent_store_and_says_a_sound_one_is_sound(
     assert printed.out == "", "nothing a pipe would read"
     assert "sound" in printed.err, "and one line saying so, where a person reads"
 
-    clashing = record_of(
-        {
-            "name": "FakeOther",
-            "tag": 90003,
-            "aliases": [Alias(name="FakeRole").into_dict()],
-            "versions": ["9.1"],
-            "type": "String",
-        }
-    )
+    clashing = fix_field("FakeOther", 90003, "String")
+    clashing.fix.versions = ["9.1"]
+    clashing.fix.named_aliases = [Alias(name="FakeRole")]
     reopened(store)._layout.store_field(clashing)
     assert run("fix", "registry", "check", "--store", str(store)) == 1
     assert "FakeRole" in capsys.readouterr().err
@@ -619,22 +614,9 @@ def test_registry_reads_are_json_and_accept_a_numeric_tag(
 
 def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: Path) -> None:
     declaration = tmp_path / "vendor.json"
-    declaration.write_text(
-        json.dumps(
-            record_document(
-                record_of(
-                    {
-                        "name": "FAKE.VENUE.CODE",
-                        "kind": "namespace",
-                        "versions": ["*"],
-                        "type": "String",
-                        "values": {"A": "Alpha"},
-                        "column": "fake_venue_code",
-                    }
-                )
-            )
-        )
-    )
+    declared = namespaced_field("FAKE.VENUE.CODE", "String", column="fake_venue_code")
+    declared.fix.enumerated = {"A": "Alpha"}
+    declaration.write_text(json.dumps(declared.into_dict()))
     assert (
         run(
             "fix",

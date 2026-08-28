@@ -29,7 +29,8 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import ANY_VERSION, Alias, fold, record_of
+from rekep.fix.entries import Alias, fold
+from rekep.fix.fields import namespaced_field
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
@@ -244,15 +245,7 @@ class Classified(Convertible):
         caller that already knows it; the empty default leaves the record in
         the pairs, completable later through `FixRegistry.promote_field`.
         """
-        return record_of(
-            {
-                "name": self.name,
-                "kind": "namespace",
-                "versions": (ANY_VERSION,),
-                "type": "String",
-                "column": column,
-            }
-        )
+        return namespaced_field(self.name, "String", column=column)
 
 
 @dataclasses.dataclass(frozen=True)

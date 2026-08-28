@@ -81,26 +81,24 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
 ```json
 {
   "name": "MsgType",
-  "tag": 35,
-  "values": [
-    {"value": "8", "meaning": "ExecutionReport"},
-    {"value": "D", "meaning": "NewOrderSingle"},
-    {"value": "W", "meaning": "MarketDataSnapshotFullRefresh"}
-  ],
-  "event_types": {
-    "8": {"name": "EXECUTION", "id": 4996819942064276804},
-    "D": {"name": "ORDER", "id": 5715705941605744640},
-    "W": {"name": "BOOK", "id": 4778124913204527104}
-  },
-  "states": {"D": {"name": "PENDING_NEW", "id": 3544702678800942423}}
+  "type": "string",
+  "nullable": true,
+  "fix": {
+    "tag": "35",
+    "type": "String",
+    "values": "[{\"value\":\"8\",\"meaning\":\"ExecutionReport\"},{\"value\":\"D\",\"meaning\":\"NewOrderSingle\"}]",
+    "event_types": "{\"8\":\"EXECUTION\",\"D\":\"ORDER\",\"W\":\"BOOK\"}",
+    "states": "{\"D\":\"PENDING_NEW\"}"
+  }
 }
 ```
 
-The `id` is the member's stored `int64` -- its ASCII mnemonic packed
-big-endian and left-justified (`EXECUTED`, `ORDER`, `BOOK`). The name and the
-id must agree on load; a document carrying an id this release does not store
-is refused, so a registry written by an earlier release is rewritten, not
-migrated.
+Enum members are stored by **name**. The value each name stands for is its
+ASCII mnemonic packed big-endian into an `int64` (`EXECUTION`, `ORDER`,
+`BOOK`), which is a nineteen-digit integer and unreadable in a file people
+edit. A name this release does not declare is refused on load rather than
+read as a degraded `UNKNOWN`, so a registry written by an earlier release is
+rewritten, not migrated.
 
 A row without a discriminator is `MISC`. A discriminator known by the
 registry but without a market mapping is also `MISC`; a private value absent
@@ -116,18 +114,17 @@ through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
 Every consumer, including Order fallbacks, reads that map. Python declarations
-use `State` members; registry documents store both their names and integer ids.
+use `State` members; registry documents name them.
 
 ```json
 {
   "name": "ExecType",
-  "tag": 150,
-  "states": {
-    "0": {"name": "NEW", "id": 3616758035474546688},
-    "1": {"name": "PARTIALLY_FILLED", "id": 3688817884324579660},
-    "2": {"name": "FILLED", "id": 3760864444457698628},
-    "G": {"name": "REPLACED", "id": 3833216690499109700},
-    "H": {"name": "CANCELLED", "id": 3832918705633971268}
+  "type": "string",
+  "nullable": true,
+  "fix": {
+    "tag": "150",
+    "type": "char",
+    "states": "{\"0\":\"NEW\",\"1\":\"PARTIALLY_FILLED\",\"2\":\"FILLED\",\"G\":\"REPLACED\",\"H\":\"CANCELLED\"}"
   }
 }
 ```

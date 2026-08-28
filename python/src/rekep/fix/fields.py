@@ -15,7 +15,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, TimestampField, scalar
+from rekep.fields import ANY_VERSION, Field, TimestampField, scalar
 from rekep.fields.field import arrow_type_for
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
@@ -194,6 +194,35 @@ def fix_field(
         fix["version"] = version
     if values:
         fix.enumerated = values
+    return built
+
+
+def namespaced_field(
+    name: str,
+    datatype: str | None = None,
+    *,
+    description: str | None = None,
+    column: str = "",
+    aliases: Sequence[Any] = (),
+) -> Field:
+    """One field FIX never numbered, as a generic `Field`.
+
+    The absence of a tag is what makes it namespaced -- `record_kind` reads it
+    that way and nothing stores the answer separately -- so this is
+    `fix_field` without the one thing it cannot have. Declared for every
+    version, because a rendered bridge field belongs to no FIX release.
+    """
+    built = Field(name=name, dtype=arrow_type_of(datatype), nullable=True)
+    if description:
+        built.description = description
+    fix = built.fix
+    if datatype:
+        fix["type"] = datatype
+    fix.versions = (ANY_VERSION,)
+    if column:
+        fix.column = column
+    if aliases:
+        fix.named_aliases = aliases
     return built
 
 

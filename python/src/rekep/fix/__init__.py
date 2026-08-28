@@ -1,6 +1,7 @@
 """FIX: messages out of log lines, and the dictionary that says what they mean."""
 
 from rekep.fields import encoded_key
+from rekep.fields.metadata import values_of
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.classify import (
     KeyCount,
@@ -40,13 +41,11 @@ from rekep.fix.entries import (
     collapsed_record,
     merged_record,
     record_copy,
-    record_document,
     record_for,
     record_kind,
-    record_of,
     records_for,
+    refuse_record,
     slug_of,
-    values_of,
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
@@ -183,10 +182,9 @@ __all__ = [
     "parse_session",
     "parse_spec",
     "record_copy",
-    "record_document",
     "record_for",
     "record_kind",
-    "record_of",
+    "refuse_record",
     "records_for",
     "rendered_keys",
     "shard_name",

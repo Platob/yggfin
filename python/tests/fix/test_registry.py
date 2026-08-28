@@ -26,8 +26,8 @@ import pytest
 
 from rekep.enums import EventType
 from rekep.fields import Field, newest_rank
+from rekep.fields.metadata import values_of
 from rekep.fix import FixRegistry
-from rekep.fix.entries import values_of
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import is_group, members_of
 from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
@@ -761,7 +761,7 @@ def test_the_builtin_registry_classifies_msg_types_before_transcription() -> Non
     assert "U1" not in classified, "a registry-unknown private type stays UNKNOWN"
 
     metadata = json.loads(registry.scalar("MsgType").fix["event_types"])
-    assert metadata["D"] == int(EventType.ORDER)
+    assert metadata["D"] == EventType.ORDER.name, "stored by name, read back as the member"
     assert registry.msg_type_event_types() is classified
 
 

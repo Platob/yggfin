@@ -511,12 +511,7 @@
         <tbody>${values
           .map((one) => {
             const code = String(one.value);
-            const configured = object(field.states)[code] || object(field.event_types)[code];
-            const enumText = configured
-              ? typeof configured === "object"
-                ? `${configured.name} (${configured.id})`
-                : configured
-              : "";
+            const enumText = object(field.states)[code] || object(field.event_types)[code] || "";
             return `<tr><td><code>${escape(code)}</code></td><td>${escape(one.meaning || "")}</td><td>${escape(enumText)}</td></tr>`;
           })
           .join("")}</tbody></table></div>`;

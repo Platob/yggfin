@@ -16,14 +16,9 @@ import pytest
 
 from rekep.console import Console
 from rekep.fields import Field
-from rekep.fix.entries import (
-    ComponentRecord,
-    record_document,
-    record_kind,
-    record_of,
-    values_of,
-)
-from rekep.fix.fields import fix_field
+from rekep.fields.metadata import values_of
+from rekep.fix.entries import ComponentRecord, record_kind
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member
 from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import Shell, terminal_reader
@@ -198,16 +193,9 @@ def test_component_declarations_are_added_updated_and_removed(
 
 def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_path: Path) -> None:
     declaration = tmp_path / "venue.json"
-    record = record_of(
-        {
-            "name": "FAKE.VENUE.CODE",
-            "kind": "namespace",
-            "versions": ["*"],
-            "type": "String",
-            "values": {"A": "Alpha"},
-        }
-    )
-    declaration.write_text(json.dumps(record_document(record)))
+    record = namespaced_field("FAKE.VENUE.CODE", "String")
+    record.fix.enumerated = {"A": "Alpha"}
+    declaration.write_text(json.dumps(record.into_dict()))
     assert "added FAKE.VENUE.CODE" in _run(store, f"add-field {declaration}", "y", "quit")
     assert store.resolve("FAKE.VENUE.CODE").fix.enumerated == values_of({"A": "Alpha"})
 

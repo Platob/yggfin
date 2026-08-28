@@ -19,6 +19,7 @@ import pytest
 
 from rekep.fields import Field
 from rekep.fix.columns import NAMESPACE_FIELDS
+from rekep.fix.entries import NAMESPACE, record_kind
 from rekep.fix.fields import arrow_type_of
 from rekep.market import Book, Execution, Instrument, Level, MarketEvent, Order
 
@@ -66,13 +67,17 @@ def dictionary() -> dict[str, dict[str, Any]]:
         ]
     for aliased in (False, True):
         for record in records:
-            if "tag" not in record:
+            # A stored record is a field document: the Arrow reading at the
+            # top, the protocol's own under `fix`, the ones that are lists
+            # packed into one JSON string apiece.
+            fix = record["fix"]
+            if "tag" not in fix:
                 continue  # A field FIX never numbered; nothing here declares one.
-            metadata = {"fix:tag": str(record["tag"])}
-            if record.get("type"):
-                metadata["fix:type"] = record["type"]
+            metadata = {"fix:tag": fix["tag"]}
+            if fix.get("type"):
+                metadata["fix:type"] = fix["type"]
             spellings = (
-                [alias["name"] for alias in record.get("aliases", ())]
+                [alias["name"] for alias in json.loads(fix.get("aliases") or "[]")]
                 if aliased
                 else [record["name"]]
             )
@@ -145,7 +150,7 @@ def test_every_declared_tag_is_the_one_the_dictionary_gives_that_name(
     path: str, member: Field
 ) -> None:
     name = member.fix["name"]
-    if member.fix.get("kind") == "namespace":
+    if record_kind(member) == NAMESPACE:
         # A rendered identity FIX never numbered: the registry's namespace
         # record is its declaration, and claiming a tag would be the mislabel.
         assert name in NAMESPACE_FIELDS, f"{path} names {name!r}, which no record declares"
@@ -160,7 +165,7 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     path: str, member: Field
 ) -> None:
     """The other half of a mislabel: the right tag on a column of the wrong type."""
-    if member.fix.get("kind") == "namespace":
+    if record_kind(member) == NAMESPACE:
         declared = NAMESPACE_FIELDS[member.fix["name"]]
         assert member.dtype == declared.dtype, path
         return

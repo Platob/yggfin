@@ -20,7 +20,7 @@ import socket
 import time
 import urllib.request
 import zipfile
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,7 @@ import pytest
 import rekep
 from rekep.enums import EventType, State
 from rekep.fields import Field
+from rekep.fields.metadata import values_of
 from rekep.fix import registry as registry_module
 from rekep.fix.entries import (
     ANY_VERSION,
@@ -37,12 +38,9 @@ from rekep.fix.entries import (
     Alias,
     ComponentRecord,
     record_copy,
-    record_document,
     record_kind,
-    record_of,
-    values_of,
 )
-from rekep.fix.fields import fix_field
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
 from rekep.fix.registry import FixRegistry, _problems
 from rekep.fix.store import (
@@ -58,8 +56,34 @@ from rekep.fix.transcribe import FixCodec
 PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 
+def _record(
+    name: str,
+    tag: int | None = None,
+    datatype: str = "String",
+    *,
+    description: str | None = None,
+    versions: Sequence[str] = ("9.1",),
+    **fixed: Any,
+) -> Field:
+    """A record as a caller declares one: numbered when it has a tag, named when not.
+
+    Which of the two it is decides everything downstream -- the shard it lands
+    in, whether a tag lookup can reach it -- so it is the only thing this has
+    to say; the rest of the FIX metadata a case cares about is passed through
+    by its own name (`column=`, `enumerated=`, `states=`).
+    """
+    if tag is None:
+        record = namespaced_field(name, datatype, description=description)
+    else:
+        record = fix_field(name, tag, datatype, description=description)
+        record.fix.versions = versions
+    for key, value in fixed.items():
+        setattr(record.fix, key, value)
+    return record
+
+
 def _registry_documents() -> dict[str, dict[str, Any]]:
-    field = record_of({"name": "FakeRole", "tag": 90001, "versions": ["9.1"], "type": "int"})
+    field = _record("FakeRole", 90001, "int")
     component = ComponentRecord(name="FakeParties", versions=("9.1",))
     return {
         "versions.json": {
@@ -68,7 +92,7 @@ def _registry_documents() -> dict[str, dict[str, Any]]:
             "declared": ["9.1"],
             "sessions": {"9.1": [["FakeRole", True]]},
         },
-        shard_name(90001): {"90001": record_document(field)},
+        shard_name(90001): {"90001": field.into_dict()},
         "components/fake_parties.json": component.into_dict(),
     }
 
@@ -231,17 +255,7 @@ def test_one_layout_is_all_that_is_left_of_the_store() -> None:
 
 def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Offline) -> None:
     """It has no tag to shard on, so it shares the one document those live in."""
-    store.add_field(
-        record_of(
-            {
-                "name": "FAKE.VENDOR.CODE",
-                "kind": NAMESPACE,
-                "versions": [ANY_VERSION],
-                "type": "String",
-                "column": "fake_vendor_code",
-            }
-        )
-    )
+    store.add_field(_record("FAKE.VENDOR.CODE", column="fake_vendor_code"))
     assert (Path(store.cache_dir) / NAMED_FILE).exists()
     assert list(json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())) == [
         "FAKE.VENDOR.CODE"
@@ -260,7 +274,7 @@ def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Of
     assert [alias.name for alias in entry.fix.named_aliases] == ["FakeRoleCode"]
     assert store.resolve("FakeRoleCode") is entry
     stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
-    assert stored["90001"]["aliases"] == [
+    assert json.loads(stored["90001"]["fix"]["aliases"]) == [
         {"name": "FakeRoleCode", "source": "9.0", "occurrences": 0}
     ]
 
@@ -326,7 +340,9 @@ def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
     assert store.resolve("FakeRolle").fix.tag == 90001
     stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
-    assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in stored["90001"]["aliases"]
+    assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in json.loads(
+        stored["90001"]["fix"]["aliases"]
+    )
     assert entry.fix.named_aliases[-1].occurrences == 41
 
     again = store.alias_field("FakeRole", "FakeRolle")
@@ -344,19 +360,14 @@ def test_aliasing_a_field_nothing_resolves_is_refused(store: Offline) -> None:
 
 
 def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None:
-    entry = record_of(
-        {
-            "name": "FAKE.VENDOR.CODE",
-            "kind": NAMESPACE,
-            "versions": [ANY_VERSION],
-            "type": "String",
-            "description": "A vendor's own.",
-            "column": "fake_vendor_code",
-        }
+    entry = _record(
+        "FAKE.VENDOR.CODE",
+        description="A vendor's own.",
+        column="fake_vendor_code",
     )
     store.add_field(entry)
     assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
-    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
+    assert record_kind(store.field("FAKE.VENDOR.CODE", "9.1")) == NAMESPACE
 
     renamed = record_copy(entry)
     renamed.fix.column = "renamed"
@@ -390,14 +401,9 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
     """A declared name with no column -- what `apply --namespace` leaves -- is
     finished in place, keeping the aliases and counts the run recorded."""
     store.add_field(
-        record_of(
-            {
-                "name": "FAKE.VENDOR.CODE",
-                "kind": NAMESPACE,
-                "versions": [ANY_VERSION],
-                "type": "String",
-                "aliases": [Alias(name="FAKEVENDORCODE", source="brk", occurrences=7).into_dict()],
-            }
+        _record(
+            "FAKE.VENDOR.CODE",
+            named_aliases=[Alias(name="FAKEVENDORCODE", source="brk", occurrences=7)],
         )
     )
     entry = store.promote_field(
@@ -477,15 +483,7 @@ def test_promoting_requires_a_name_and_a_column(store: Offline) -> None:
 
 
 def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> None:
-    entry = record_of(
-        {
-            "name": "MsgType",
-            "tag": 35,
-            "versions": ["9.1"],
-            "type": "String",
-            "values": {"0": "Heartbeat", "D": "NewOrderSingle"},
-        }
-    )
+    entry = _record("MsgType", 35, enumerated={"0": "Heartbeat", "D": "NewOrderSingle"})
     store.add_field(entry)
     before = store.msg_type_event_types()
     classified = record_copy(entry)
@@ -501,31 +499,27 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
         "D": EventType.ORDER,
     }
     document = json.loads((Path(store.cache_dir) / shard_name(35)).read_text())
-    assert document["35"]["event_types"] == {"D": {"name": "ORDER", "id": int(EventType.ORDER)}}
+    assert json.loads(document["35"]["fix"]["event_types"]) == {"D": "ORDER"}, (
+        "by name, because this file is read and edited by hand and the packed "
+        "code is a nineteen-digit integer"
+    )
 
 
 def test_market_dispatch_states_and_codecs_are_cached_store_data(
     store: Offline,
 ) -> None:
-    msg_type = record_of(
-        {
-            "name": "MsgType",
-            "tag": 35,
-            "versions": ["9.1"],
-            "type": "String",
-            "values": {"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
-            "event_types": {"D": "ORDER"},
-            "states": {"D": State.PENDING_NEW},
-        }
+    msg_type = _record(
+        "MsgType",
+        35,
+        enumerated={"0": "Heartbeat", "1": "TestRequest", "D": "NewOrderSingle"},
+        event_types={"D": EventType.ORDER},
+        states={"D": State.PENDING_NEW},
     )
-    status = record_of(
-        {
-            "name": "OrdStatus",
-            "tag": 39,
-            "versions": ["9.1"],
-            "type": "char",
-            "states": {"0": State.NEW, "1": State.PARTIALLY_FILLED},
-        }
+    status = _record(
+        "OrdStatus",
+        39,
+        "char",
+        states={"0": State.NEW, "1": State.PARTIALLY_FILLED},
     )
     store.add_field(msg_type)
     store.add_field(status)
@@ -552,26 +546,16 @@ def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_ref
     store: Offline,
 ) -> None:
     with pytest.raises(KeyError, match="already stored"):
-        store.add_field(
-            record_of({"name": "FakeRole", "tag": 90001, "versions": ["9.1"], "type": "int"})
-        )
+        store.add_field(_record("FakeRole", 90001, "int"))
     with pytest.raises(KeyError, match="no FIX field stored"):
-        store.update_field(record_of({"name": "FakeAbsent", "tag": 90099, "versions": ["9.1"]}))
+        store.update_field(_record("FakeAbsent", 90099))
 
 
 def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
     store: Offline,
 ) -> None:
     """Beside what is already there, because an alias alone is never a collision."""
-    clashing = record_of(
-        {
-            "name": "FakeOther",
-            "tag": 90004,
-            "aliases": [Alias(name="FakeCode").into_dict()],
-            "versions": ["9.1"],
-            "type": "String",
-        }
-    )
+    clashing = _record("FakeOther", 90004, named_aliases=[Alias(name="FakeCode")])
     # `FakeCode` is another field's canonical name, so this alias could never
     # resolve. Precedence is the rule; recording a spelling nothing will ever
     # reach is the mistake, and it is refused rather than written and ignored.
@@ -694,10 +678,7 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
         "H": State.CANCELLED,
     }
     stored = json.loads((tmp_path / "fix" / shard_name(150)).read_text())
-    assert stored["150"]["states"]["G"] == {
-        "name": "REPLACED",
-        "id": int(State.REPLACED),
-    }
+    assert json.loads(stored["150"]["fix"]["states"])["G"] == "REPLACED"
     assert Offline(cache_dir=registry.cache_dir, offline=True).state_values("ExecType") == (
         registry.state_values("ExecType")
     )
@@ -739,15 +720,13 @@ def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() ->
 def test_a_write_that_would_duplicate_a_tag_is_refused_whole(store: Offline) -> None:
     """Checked against what the store would hold after, and refused before writing."""
     with pytest.raises(KeyError, match="tag 90001 is already claimed by"):
-        store.add_field(
-            record_of({"name": "FakeOther", "tag": 90001, "versions": ["9.1"], "type": "String"})
-        )
+        store.add_field(_record("FakeOther", 90001))
     assert store.resolve("FakeOther") is None, "and nothing was written"
 
 
 def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(store: Offline) -> None:
     """One authority for both, so `check` and a write never disagree."""
-    entry = record_of({"name": "FakeOther", "tag": 90001, "versions": ["9.1"], "type": "String"})
+    entry = _record("FakeOther", 90001)
     problems = _problems(({**store._entries[0], "spare": entry}, store._entries[1]))
     assert any("FIX tag 90001 is claimed by" in problem for problem in problems)
 
@@ -1005,7 +984,7 @@ def test_malformed_registry_documents_never_leave_the_staging_directory(
     if malformed == "index":
         documents["versions.json"]["sessions"] = {"9.1": [["FakeRole", "yes"]]}
     elif malformed == "field":
-        documents[shard_name(90001)]["90001"]["versions"] = "9.1"
+        documents[shard_name(90001)]["90001"]["fix"]["versions"] = "9.1"
     else:
         documents["components/fake_parties.json"]["declaration"] = "not-a-document"
     target = tmp_path / malformed
@@ -1240,38 +1219,42 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     record names.
     """
     store.add_field(
-        record_of(
-            {
-                "name": "FAKE.VENDOR.CODE",
-                "kind": NAMESPACE,
-                "aliases": [Alias(name="FAKEVENDORCODE", source="brk", occurrences=5).into_dict()],
-                "versions": [ANY_VERSION],
-                "type": "String",
-                "description": "A vendor's own code.",
-                "column": "fake_vendor_code",
-            }
+        _record(
+            "FAKE.VENDOR.CODE",
+            named_aliases=[Alias(name="FAKEVENDORCODE", source="brk", occurrences=5)],
+            description="A vendor's own code.",
+            column="fake_vendor_code",
         )
     )
 
     # Declared, so the registry answers for it by every spelling it has.
     assert store.resolve("FAKE.VENDOR.CODE").fix.column == "fake_vendor_code"
     assert store.resolve("fakevendorcode").fix.canonical == "FAKE.VENDOR.CODE"
-    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
+    assert record_kind(store.field("FAKE.VENDOR.CODE", "9.1")) == NAMESPACE
     assert "FAKE.VENDOR.CODE" not in store.tags(), "it has no tag to be mapped to"
 
-    # Stored, in the one document the fields with no tag share.
+    # Stored, in the one document the fields with no tag share, as the same
+    # field document every other declaration in this repository is written in:
+    # the Arrow reading at the top, the protocol's own keys under `fix`.
     stored = json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())
     assert stored == {
         "FAKE.VENDOR.CODE": {
             "name": "FAKE.VENDOR.CODE",
-            "kind": "namespace",
-            "column": "fake_vendor_code",
-            "type": "String",
+            "type": "string",
+            "nullable": True,
             "description": "A vendor's own code.",
-            "versions": ["*"],
-            "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
+            "fix": {
+                "type": "String",
+                "versions": '["*"]',
+                "column": "fake_vendor_code",
+                "aliases": '[{"name":"FAKEVENDORCODE","source":"brk","occurrences":5}]',
+            },
         }
     }
+    assert "kind" not in stored["FAKE.VENDOR.CODE"]["fix"], (
+        "having no tag is what makes it namespaced; storing the answer beside "
+        "the question is a second place for the two to disagree"
+    )
 
     # Projected, whole rather than per version, into a registry of its own.
     projected = FixRegistry(
@@ -1337,17 +1320,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
     would make one of them answer for the other's values.
     """
     for vendor, column in (("FAKEA", "fake_a_client"), ("FAKEB", "fake_b_client")):
-        store.add_field(
-            record_of(
-                {
-                    "name": f"{vendor}.CLIENTID",
-                    "kind": NAMESPACE,
-                    "versions": [ANY_VERSION],
-                    "type": "String",
-                    "column": column,
-                }
-            )
-        )
+        store.add_field(_record(f"{vendor}.CLIENTID", column=column))
     codec = FixCodec(registry=store)
     assert set(codec.named_fields()) == {"fakea.clientid", "fakeb.clientid"}
     assert "clientid" not in codec.named_fields(), "two fields claim it, so it is a guess"
