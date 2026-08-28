@@ -255,6 +255,25 @@ def encodings_of(values: tuple[FixFieldValue, ...]) -> Any:
     return MappingProxyType(found), MappingProxyType(dropped)
 
 
+@functools.lru_cache(maxsize=8192)
+def symbols_of(values: tuple[FixFieldValue, ...]) -> Mapping[str, str]:
+    """`{wire value: the symbolic name the dictionary gives it}`.
+
+    The inverse of `encodings_of`, for a caller that stores what a value *is*
+    rather than the character the wire carried -- an alternative identifier
+    keyed by its scheme, a code rendered in a report. The spec's own symbol
+    where it declares one, because that is the name every other FIX tool
+    prints; the value itself where the dictionary names it nothing, so a key
+    always exists.
+
+    Cached on the values tuple exactly as `encodings_of` is, and for the same
+    reason: one field is asked this once per parse, not once per row.
+    """
+    return MappingProxyType(
+        {one.value: (one.aliases[0] if one.aliases else one.value) for one in values}
+    )
+
+
 class ProtocolMetadata(MutableMapping):
     """One protocol's keys in a field's metadata: `prefix:key = value`."""
 
@@ -585,6 +604,16 @@ class FixMetadata(ProtocolMetadata):
     def encode(self, value: Any) -> str:
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
+
+    @property
+    def symbols(self) -> Mapping[str, str]:
+        """`{wire value: its symbolic name}`, for storing the scheme not the character."""
+        return symbols_of(self.enumerated)
+
+    def symbol(self, value: Any) -> str:
+        """The symbolic name of one wire value, or the value where it has none."""
+        spelled = str(value)
+        return self.symbols.get(spelled, spelled)
 
     def value_of(self, value: Any) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""

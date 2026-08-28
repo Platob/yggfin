@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from rekep import Execution, Field, FixMsg, Instrument, Message, Order
+from rekep import enums as rekep_enums
+from rekep.enums.ascii_codes import Ascii32
 from rekep.fix import FixRegistry
 from rekep.market import Book
 from rekep.text.message import SESSION_FIELDS
@@ -34,6 +36,7 @@ def on_post_build(config: Any) -> None:
     assets.mkdir(parents=True, exist_ok=True)
     _write(assets / "fix-registry.json", _registry_catalog(root))
     _write(assets / "product-lineage.json", _product_catalog())
+    _write(assets / "enum-codes.json", _enum_catalog())
 
 
 def _write(target: Path, payload: Any) -> None:
@@ -65,6 +68,46 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
             )
         ],
     }
+
+
+def _enum_catalog() -> dict[str, Any]:
+    """Every compiled ASCII code, so the encoder page can be checked against them.
+
+    Built from the classes rather than from a table written beside them: the
+    page's arithmetic is the packing rule, and this is what the rule is
+    supposed to produce, so a page that disagreed with the package would say
+    so on screen rather than in a comment nobody re-reads.
+
+    Stored values are strings. An eight-byte code packs past `2**53`, and a
+    JSON number that far out is a float by the time the browser sees it --
+    `PENDING_NEW` would come back as a different code.
+    """
+    found = []
+    for name in sorted(rekep_enums.__all__):
+        enum = getattr(rekep_enums, name)
+        if not isinstance(enum, type) or not issubclass(enum, Ascii32) or not enum.__members__:
+            continue
+        found.append(
+            {
+                "name": name,
+                "base": "Ascii32" if enum.BYTE_WIDTH <= 4 else "Ascii64",
+                "byte_width": enum.BYTE_WIDTH,
+                "stored": "int32" if enum.BYTE_WIDTH <= 4 else "int64",
+                "open": enum._registers_unknown(),
+                "members": [
+                    {
+                        "key": key,
+                        "code": member.code,
+                        "value": str(int(member)),
+                        "rank": member.rank,
+                        "fix": member.into_fix(),
+                        "alias_of": "" if key == member.name else member.name,
+                    }
+                    for key, member in enum.__members__.items()
+                ],
+            }
+        )
+    return {"enums": found}
 
 
 def _field_view(entry: Field) -> dict[str, Any]:

@@ -39,12 +39,14 @@ theme:
 
 extra_css:
   - stylesheets/terminal.css
+  - stylesheets/ascii-codes.css
   - stylesheets/home.css
   - stylesheets/fix-registry.css
   - stylesheets/fix-transcribe.css
   - stylesheets/product-lineage.css
 
 extra_javascript:
+  - javascripts/ascii-codes.js
   - javascripts/fix-declaration.js
   - javascripts/fix-registry.js
   - javascripts/fix-transcribe.js
@@ -77,16 +79,16 @@ nav:
           - Time-anchored hashes: contracts/txhash.md
   - Enums:
       - Overview: enums/index.md
+      - ASCII codes: enums/ascii-codes.md
       - Events:
           - Event type: enums/event-type.md
           - State: enums/state.md
       - Instruments:
           - Asset kind: enums/asset-kind.md
-          - Identifier source: enums/id-source.md
           - Market identifier: enums/mic.md
           - Currency: enums/currency.md
           - Option kind: enums/option-kind.md
-      - Orders:
+      - Market:
           - Side: enums/side.md
           - Market kind: enums/market-kind.md
           - Time in force: enums/time-in-force.md

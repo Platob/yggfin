@@ -1,6 +1,10 @@
 name: release
 
 on:
+  # A merged version bump is the whole trigger: the release is cut from the
+  # version the project declares, so there is no second place to remember.
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -23,7 +27,57 @@ defaults:
     working-directory: python
 
 jobs:
+  # What `pyproject.toml` says, against what has been released. On a push this
+  # decides whether anything happens at all; on a published release or a
+  # dispatch it only reports, because the tag is already there.
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      cut: ${{ steps.decide.outputs.cut }}
+      version: ${{ steps.decide.outputs.version }}
+      previous: ${{ steps.decide.outputs.previous }}
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The notes are every commit since the previous tag, so the run needs
+          # the history and the tags rather than the default shallow clone.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v5
+      - name: Decide
+        id: decide
+        run: >-
+          uv run --with packaging --no-project
+          python .github/scripts/release_version.py --notes release-notes.md
+      # `gh release create` creates the tag as well, so nothing here needs a
+      # credential persisted into `.git` to push one.
+      #
+      # This is also why `publish` below is chained by `needs:` rather than
+      # left to the `release: published` trigger: a release created with the
+      # workflow's own GITHUB_TOKEN does not start another workflow run, so a
+      # release cut here would publish nothing if it waited for that event.
+      - name: Cut the release
+        if: steps.decide.outputs.cut == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "v${{ steps.decide.outputs.version }}"
+          --target "$GITHUB_SHA"
+          --title "v${{ steps.decide.outputs.version }}"
+          --notes-file release-notes.md
+
   publish:
+    needs: version
+    # A push publishes only what `version` just cut. A published release or a
+    # dispatch publishes whatever it was pointed at.
+    if: >-
+      needs.version.result == 'success'
+      && (github.event_name != 'push' || needs.version.outputs.cut == 'true')
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'artifactory' }}
     env:

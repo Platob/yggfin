@@ -1,0 +1,140 @@
+/* The encoder page. It borrows the registry's surfaces so the two read as one
+   site, and adds only what a two-way form and a byte table need. */
+
+.ascii-codes__form {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius);
+  background: var(--rekep-card);
+}
+
+.ascii-codes__width {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ascii-codes__width legend {
+  padding: 0;
+  color: var(--registry-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ascii-codes__width label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--md-default-fg-color);
+  font-size: 0.72rem;
+}
+
+.ascii-codes__pair {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  align-items: end;
+}
+
+.ascii-codes__field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ascii-codes__field > span {
+  color: var(--registry-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ascii-codes__field input,
+.ascii-codes__field select {
+  min-height: 2.1rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--registry-border);
+  border-radius: var(--rekep-radius-sm);
+  background: var(--rekep-elevated);
+  color: var(--md-default-fg-color);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.ascii-codes__field input:focus-visible,
+.ascii-codes__field select:focus-visible {
+  outline: 2px solid var(--registry-orange);
+  outline-offset: 1px;
+}
+
+.ascii-codes__problem {
+  margin: 0;
+  color: var(--registry-orange);
+  font-size: 0.72rem;
+}
+
+.ascii-codes__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.9rem;
+  margin: 1rem 0 0.6rem;
+}
+
+.ascii-codes__facts dt {
+  color: var(--registry-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ascii-codes__facts dd {
+  margin: 0;
+}
+
+.ascii-codes__table-wrap {
+  overflow-x: auto;
+}
+
+.ascii-codes__number {
+  text-align: right;
+}
+
+.ascii-codes__bytes tr[data-pad] {
+  color: var(--registry-muted);
+}
+
+.ascii-codes__known {
+  margin-top: 2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ascii-codes__known tbody tr {
+  cursor: pointer;
+}
+
+.ascii-codes__known tbody tr:hover {
+  background: var(--rekep-elevated);
+}
+
+/* The base a code page is built on, said once at the top of it. */
+.enum-base {
+  font-weight: 700;
+}
+
+.md-typeset p:has(> .enum-base:first-child) {
+  padding: 0.5rem 0.7rem;
+  border-left: 2px solid var(--registry-orange);
+  border-radius: var(--rekep-radius-sm);
+  background: var(--rekep-elevated);
+  color: var(--registry-muted);
+  font-size: 0.74rem;
+}

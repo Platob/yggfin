@@ -1,5 +1,7 @@
 # EventType
 
+[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+
 ```python
 from rekep.enums import EventType
 
@@ -9,11 +11,10 @@ assert str(kind) == "FACT"
 assert EventType.BOOK.is_snapshot
 ```
 
-The stored `int64` is the event kind's ASCII mnemonic -- explicit spellings
-like `ORDER` and `EXECUTED`, packed big-endian left-justified with trailing
-NULs -- readable in raw column dumps, exact in scans. `from_int` answers only
-on the compiled codes: any other integer is `UNKNOWN`, never a near-miss
-respelling.
+Eight bytes buy explicit spellings -- `ORDER`, `EXECUTED` -- where four would
+have forced abbreviations, so a raw column dump reads as itself. `from_int`
+answers only on the compiled codes: any other integer is `UNKNOWN`, never a
+near-miss respelling.
 
 The order the bands read in rides in each member's *rank*. A kind question
 compares ranks (`kind.rank >= EventType.INTENT.rank`), and a storage scan

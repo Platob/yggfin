@@ -1,5 +1,7 @@
 # Side
 
+[`Ascii32`](ascii-codes.md){ .enum-base } — four bytes of printable ASCII packed left-justified into one `int32`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+
 ```python
 from rekep.enums import Side
 
@@ -9,10 +11,8 @@ assert side.sign == 1
 assert side.opposite is Side.SELL
 ```
 
-Side packs a readable mnemonic as big-endian ASCII in one `int32`,
-left-justified with trailing NULs like every other ASCII code, so the stored
-integer orders exactly as the mnemonic does. `BID` and `ASK` are aliases of
-`BUY` and `SELL`.
+`BID` and `ASK` are aliases of `BUY` and `SELL`: a book side and an order
+side are the same fact under two names, and a feed writes whichever it likes.
 
 | Key | Mnemonic | Stored value | FIX code | Meaning |
 | --- | --- | ---: | --- | --- |

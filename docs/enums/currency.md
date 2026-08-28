@@ -1,5 +1,7 @@
 # Currency
 
+[`Ascii32`](ascii-codes.md){ .enum-base } — four bytes of printable ASCII packed left-justified into one `int32`, an open vocabulary, so a code it meets and can round-trip registers itself.
+
 ```python
 from rekep.enums import Currency
 
@@ -8,11 +10,9 @@ assert usd.code == "USD"
 assert Currency.from_str("$") is usd
 ```
 
-Currency packs its three uppercase letters as big-endian ASCII in an
-`int32`, left-justified with a trailing NUL like every other ASCII code, so
-the stored value orders exactly as the code does and carries nothing but the
-letters. `Currency.register` accepts another ISO 4217 alphabetic code; the
-table lists the built-in members.
+A code is its three ISO 4217 letters and nothing else, so the stored value
+carries no scale, no symbol and no name. `Currency.register` accepts another
+alphabetic code; the table lists the built-in members.
 
 | Key | Stored value |
 | --- | ---: |
