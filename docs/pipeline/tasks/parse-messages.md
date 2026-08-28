@@ -71,6 +71,13 @@ Keep a directly opened `TextFile` in a `with` block. Exhausting its Arrow
 reader releases the temporary spill; when a caller stops early, closing the
 owning `TextFile` performs that release immediately.
 
+A log is read once at a time. A `TextFile` has one stream, so asking it for a
+second reader while the first is live is refused rather than served: both would
+read through that one handle, and the second rewinding it under the first
+splices a record across a read boundary. Close the reader, or open a second
+`TextFile`. Closing a `TextFile` or a `TextFiles` under a live reader fails
+that reader, so a capture read short is never reported as one read whole.
+
 Physical lines are scanned through a fixed-size native buffer. A long line or
 folded continuation grows one mutable record buffer instead of recopying its
 entire prefix on every compressed read; `max_row_byte_size` bounds that buffer,

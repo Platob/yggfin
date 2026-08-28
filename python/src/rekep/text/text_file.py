@@ -457,6 +457,9 @@ class TextFile(Dataset, io.BufferedIOBase):
     ) -> pyarrow.RecordBatchReader:
         """Stream filtered messages in row- or duration-bounded Arrow batches."""
         self._check_open()
+        self._check_unread()
+        # Nothing is parsing, so this only drops a handle the `read` API left
+        # part way through the file.
         self._close_stream()
         batches = self.into_arrow_batches(
             batch_row_size,
@@ -502,6 +505,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         columnar happens once per batch in `_batch`.
         """
         self._check_open()
+        self._check_unread()
         includes = _regexes("include_regexes", include_regexes)
         excludes = _regexes("exclude_regexes", exclude_regexes)
         included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
@@ -753,6 +757,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         to `readline` rather than checked after it, so the bytes past it are
         read in `read_byte_size` pieces and dropped instead of held.
         """
+        self._check_unread()
+        self.__dict__["_reading"] = True
         buffered = io.BufferedReader(self, buffer_size=read_byte_size)
         try:
             while line := buffered.readline(max_row_byte_size):
@@ -765,7 +771,10 @@ class TextFile(Dataset, io.BufferedIOBase):
                     dropped += len(rest.removesuffix(b"\n").removesuffix(b"\r"))
                     if rest.endswith(b"\n"):
                         break
-                yield line.removesuffix(b"\n").removesuffix(b"\r"), dropped
+                line = line.removesuffix(b"\n")
+                # A `\r` is the other half of a terminator only where one is;
+                # on a line the bound cut, it is the payload's own byte.
+                yield (line if dropped else line.removesuffix(b"\r")), dropped
         finally:
             # Detaching keeps the reusable TextFile open while discarding the
             # line buffer; `_close_stream` owns the Arrow decoder underneath.
@@ -851,6 +860,7 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     def _close_stream(self) -> None:
         """Close and forget the lazily opened stream without opening it."""
+        self.__dict__.pop("_reading", None)
         stream = self.__dict__.pop("_stream", None)
         if stream is not None:
             stream.close()
@@ -861,6 +871,21 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _check_open(self) -> None:
         if self.closed:
             raise ValueError("I/O operation on closed file.")
+
+    def _check_unread(self) -> None:
+        """Refuse a second parse of a file that has one stream to parse it with.
+
+        Both parses read through the one lazily opened handle, so the second
+        one starting rewinds it under the first: the rows already read come
+        back again, and the two readers then split every buffer between them --
+        which lands mid-line and hands a spliced record over as data. A log is
+        read once at a time; a second reading of it is a second `TextFile`.
+        """
+        if self.__dict__.get("_reading"):
+            raise ValueError(
+                f"{type(self).__name__} is already being read; finish or close that reader "
+                f"before parsing {self.url} again, or open a second {type(self).__name__}"
+            )
 
 
 def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:

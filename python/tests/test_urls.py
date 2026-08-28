@@ -189,6 +189,55 @@ def test_a_hostname_without_a_port_is_still_a_store() -> None:
 
 
 @pytest.mark.parametrize(
+    "host",
+    [
+        "s3.eu.cloud.ovh.net",  # OVH
+        "gateway.storjshare.io",  # Storj
+        "sos-ch-dk-2.exo.io",  # Exoscale
+        "s3.fr-par.scw.cloud",  # Scaleway
+        "s3.wasabisys.com",  # Wasabi
+        "s3.us-west-000.backblazeb2.com",  # Backblaze B2
+        "nyc3.digitaloceanspaces.com",  # DigitalOcean Spaces
+        "storage.googleapis.com",  # Google's S3 interoperability endpoint
+        "abc123.r2.cloudflarestorage.com",  # Cloudflare R2
+        "objects.example.co.uk",  # a Ceph gateway on somebody's own domain
+        "192.168.1.10",  # and one addressed by number
+    ],
+)
+def test_an_s3_compatible_store_is_read_by_its_name_and_not_only_by_dot_com(
+    host: str,
+) -> None:
+    """The suffix `.com` is not what carries S3; a registered name is.
+
+    Every one of these answers on 443 with no port to tell it from a bucket,
+    and reading one as a bucket loses the real one -- `logs` -- into the key.
+    """
+    url = Url.from_string(f"s3://{host}/logs/2026/app.txt")
+    assert url.hosts_a_store is True
+    assert url.endpoint == host
+    assert (url.bucket, url.key) == ("logs", "2026/app.txt")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "s3://bucket/key",  # one label is a name nobody registered
+        "s3://MyBucket/key",
+        "s3://my.logs.2026/key",  # a numeric last label is no public suffix
+        "s3://logs.internal/key",  # and neither is a private-use one
+        "s3://logs.corp/key",
+        "s3://logs.local/key",
+    ],
+)
+def test_a_name_nobody_could_have_registered_is_still_a_bucket(text: str) -> None:
+    url = Url.from_string(text)
+    assert url.hosts_a_store is False
+    assert url.endpoint is None
+    assert url.bucket == url.host
+    assert url.key == "key"
+
+
+@pytest.mark.parametrize(
     ("text", "endpoint", "region"),
     [
         ("s3://logs.s3.amazonaws.com/a.txt", "s3.amazonaws.com", None),

@@ -1178,6 +1178,48 @@ def test_large_payloads_stop_a_batch_before_the_row_limit(tmp_path: Path) -> Non
     assert [batch.column("message")[0].as_py() for batch in batches] == ["x" * 100] * 4
 
 
+def test_one_file_is_read_once_at_a_time(tmp_path: Path) -> None:
+    """Two parses share one handle, and the second rewinds it under the first.
+
+    Both readers then split every buffer between them, which lands mid-line
+    and hands a spliced record over as data. The refusal is the answer.
+    """
+    path = tmp_path / "app.txt"
+    path.write_text(
+        "".join(f"2026-08-14 00:05:{n:02d}.000 [t] [M] (INFO) m{n}\n" for n in range(12)),
+        encoding="utf-8",
+    )
+
+    with TextFile.from_path(path) as log:
+        first = log.into_arrow_reader(batch_row_size=3, read_byte_size=64)
+        assert first.read_next_batch().column("message").to_pylist() == ["m0", "m1", "m2"]
+        with pytest.raises(ValueError, match="is already being read"):
+            log.into_arrow_reader(batch_row_size=3)
+        with pytest.raises(ValueError, match="is already being read"):
+            log.into_arrow_batches()
+        # Rows the second reader would have rewound past are still there.
+        assert first.read_next_batch().column("message").to_pylist() == ["m3", "m4", "m5"]
+        first.close()
+        again = log.into_arrow_reader(batch_row_size=3)
+        assert again.read_next_batch().column("message").to_pylist() == ["m0", "m1", "m2"]
+        again.close()
+
+
+def test_a_carriage_return_inside_a_truncated_row_is_payload(tmp_path: Path) -> None:
+    """It is half a terminator only where a line ended, and this one did not."""
+    path = tmp_path / "cut.txt"
+    header = "2026-08-14 00:05:00.000 [t] [M] (INFO) "
+    path.write_bytes(f"{header}AAA\rBBBBBBBBBB\n".encode())
+
+    with TextFile.from_path(path) as log:
+        table = log.into_arrow_table(max_row_byte_size=len(header) + 4)
+
+    assert table.column("message").to_pylist() == ["AAA\r"]
+    assert table.column("reason").to_pylist() == [
+        "row truncated at max_row_byte_size; dropped bytes: 10"
+    ]
+
+
 def test_a_row_is_bounded_by_max_row_byte_size_and_says_what_it_dropped(
     tmp_path: Path,
 ) -> None:

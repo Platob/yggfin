@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import ipaddress
 import os
 import re
 import urllib.parse
@@ -60,15 +61,28 @@ S3_ENVIRONMENT = (
 #: Endpoint defaults, from the store-specific spelling to AWS's global one.
 S3_ENDPOINT_ENVIRONMENT = ("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")
 
-#: A netloc that is a *hostname* rather than a bucket name. A bucket may carry
-#: dots -- `my.logs.2026` is a legal name -- so a dot decides nothing; what
-#: decides is the last label, because a name ending in a public suffix is
-#: something somebody registered and pointed at a store. `.com` is the one that
-#: carries S3: every AWS endpoint, R2, Spaces, Wasabi, Backblaze, and a MinIO
-#: behind a real certificate. A location whose bucket really *is* named for a
-#: domain -- the S3 static-website pattern, `s3://www.example.com/index.html` --
-#: says so with `?endpoint_override=`, which is a decision and beats a shape.
-STORE_HOST = re.compile(r"\.com$", re.IGNORECASE)
+#: Last labels that are not a public suffix: IANA's special-use names and
+#: ICANN's private-use `internal`. A netloc ending in one of them was never
+#: registered, so it names something on a private network -- or a bucket.
+PRIVATE_HOSTS = frozenset(
+    {
+        "internal",
+        "intranet",
+        "private",
+        "corp",
+        "home",
+        "lan",
+        "local",
+        "localdomain",
+        "localhost",
+        "alt",
+        "arpa",
+        "example",
+        "invalid",
+        "onion",
+        "test",
+    }
+)
 
 #: One of Amazon's own S3 hostnames, and the bucket in front of it when the
 #: location is spelled virtual-hosted style. Every published form is here:
@@ -494,9 +508,50 @@ def _split_host(host: str) -> tuple[str, str]:
         # store *is* the host, and slicing a length off it would take a
         # character of the hostname with it.
         return ("" if store == host else host[: len(host) - len(store) - 1]), store
-    if STORE_HOST.search(host):
+    if _registered(host):
         return "", host
     return host, ""
+
+
+def _registered(host: str) -> bool:
+    """Whether a netloc names a machine somebody registered rather than a bucket.
+
+    A bucket may carry dots -- `my.logs.2026` is a legal name -- so a dot
+    decides nothing; what decides is the last label. A name ending in a public
+    suffix was registered and pointed at something, and for an `s3://` location
+    that something is a store: `s3.eu.cloud.ovh.net`, `gateway.storjshare.io`,
+    `sos-ch-dk-2.exo.io`, `s3.fr-par.scw.cloud`, `minio.corp.example` and every
+    `.com` endpoint alike. A last label that is numeric was registered by
+    nobody, and one in `PRIVATE_HOSTS` cannot be.
+
+    An IP literal is a store whatever it ends in, because that is the one name
+    a bucket may never be formatted as -- S3's own rule.
+
+    A location whose bucket really *is* named for a domain -- the S3
+    static-website pattern, `s3://www.example.com/index.html` -- says so with
+    `?endpoint_override=`, which is a decision and beats a shape. So does a
+    third-party store addressed virtual-hosted style, `mybucket.s3.example.net`:
+    only Amazon publishes which of its leading labels is a bucket, so on any
+    other store the whole netloc is the endpoint and the bucket is in the path.
+    """
+    if _ip_literal(host):
+        return True
+    if "." not in host:
+        return False
+    label = host.rpartition(".")[2].lower()
+    if label in PRIVATE_HOSTS:
+        return False
+    # `xn--` is a registered name spelled in ASCII; the rest of it is not alpha.
+    return label.startswith("xn--") or (len(label) > 1 and label.isalpha())
+
+
+def _ip_literal(host: str) -> bool:
+    """Whether a netloc is an address rather than a name."""
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
 
 
 def _posix(path: str) -> str:

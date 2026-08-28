@@ -797,3 +797,19 @@ def test_the_row_bound_reaches_every_file_in_the_set(tmp_path: Path) -> None:
         "row truncated at max_row_byte_size; dropped bytes: 480",
         None,
     ]
+
+
+def test_closing_the_set_under_a_live_reader_is_not_the_end_of_the_stream(
+    tmp_path: Path,
+) -> None:
+    """A capture read short must not come back as a capture read whole."""
+    for index in range(3):
+        (tmp_path / f"app.{index}.txt").write_bytes(SAMPLE_BYTES)
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+
+    reader = files.read_arrow_reader(batch_row_size=4)
+    assert reader.read_next_batch().num_rows == 4
+    files.close()
+
+    with pytest.raises(ValueError, match="closed file"):
+        reader.read_all()

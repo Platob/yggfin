@@ -135,6 +135,52 @@ properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
 same Arrow S3 filesystem as `s3://`. Recorded and listed paths are compared
 only after the same resolver normalizes them.
 
+### What an `s3://` netloc names
+
+`s3://bucket/key` is a bucket. `s3://store/bucket/key` is an S3-compatible
+store addressed path-style. A netloc is the store when it carries a port, when
+it is an IP address, when it is one of Amazon's own hostnames, or when its last
+label is a public suffix -- a registered name somebody pointed at a machine.
+Nothing else is: one label, a numeric last label, and the private-use suffixes
+(`.internal`, `.local`, `.lan`, `.corp`, ...) stay bucket names, which a bucket
+with dots in it needs.
+
+```python
+from rekep.urls import Url
+
+for text in (
+    "s3://bucket/logs/a.txt",                    # a bucket
+    "s3://minio:9000/bucket/logs/a.txt",         # a store, by its port
+    "s3://s3.eu.cloud.ovh.net/bucket/logs/a.txt",  # a store, by its name
+    "s3://bucket.s3.eu-west-1.amazonaws.com/logs/a.txt",  # AWS, virtual-hosted
+    "s3://my.logs.2026/logs/a.txt",              # a bucket, dots and all
+):
+    url = Url.from_string(text)
+    print(f"{url.bucket:<14} {url.key:<12} {url.endpoint}")
+```
+
+```text
+bucket         logs/a.txt   None
+bucket         logs/a.txt   minio:9000
+bucket         logs/a.txt   s3.eu.cloud.ovh.net
+bucket         logs/a.txt   s3.eu-west-1.amazonaws.com
+my.logs.2026   logs/a.txt   None
+```
+
+Two spellings the shape cannot decide say so with `?endpoint_override=`, which
+is a decision and beats a shape:
+
+- a bucket really named for a domain -- the S3 static-website pattern,
+  `s3://www.example.com/index.html?endpoint_override=s3.amazonaws.com`;
+- a bucket addressed virtual-hosted style on a store that is not Amazon's,
+  `s3://bucket/key?endpoint_override=s3.example.net`, because only AWS
+  publishes which of its leading labels is a bucket.
+
+Everything derived from the location follows that reading: the Arrow
+`S3FileSystem`, the `s3.endpoint`, `s3.access-key-id`, `s3.secret-access-key`
+and `s3.region` a catalog is configured with, the FileIO cache identity, and
+the spill identity.
+
 PyIceberg is configured with the package-level
 `rekep.arrow_file_io.ArrowFileIO` implementation.
 

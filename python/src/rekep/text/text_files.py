@@ -468,6 +468,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
         self.__dict__.setdefault("_arrow_batches", set()).add(batches)
         try:
             yield from batches
+            # A generator closed from outside stops here exactly as an
+            # exhausted one does, and a reader told the set ended would report
+            # a capture read short as a capture read whole.
+            self._check_open()
         finally:
             close = getattr(batches, "close", None)
             if close is not None:
