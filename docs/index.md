@@ -10,7 +10,8 @@
     </nav>
   </div>
   <figure class="rkp-hero__mark">
-    <img src="assets/rkp-logo.svg" alt="RKP, the rekep project trigram" width="420" height="230">
+    <img src="assets/rkp-logo.svg#only-dark" alt="RKP, the rekep project trigram" width="420" height="230">
+    <img src="assets/rkp-logo-light.svg#only-light" alt="RKP, the rekep project trigram" width="420" height="230">
   </figure>
 </section>
 
@@ -30,7 +31,8 @@ pip install "rekep[all]"       # all package extras
 - [Publish an Arrow contract](contracts/index.md#publishing)
 
 <div class="rkp-diagram-scroll" role="region" aria-label="Scrollable Apache Arrow interoperability diagram" tabindex="0">
-  <img src="assets/arrow-hub.svg" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
+  <img src="assets/arrow-hub.svg#only-dark" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
+  <img src="assets/arrow-hub-light.svg#only-light" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
 </div>
 
 Arrow is the project's shared columnar boundary: Iceberg tables and encoded

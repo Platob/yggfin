@@ -29,6 +29,18 @@
   --md-accent-fg-color: var(--rekep-orange);
   --md-code-bg-color: #0c0c0e;
   --md-code-fg-color: #e4e4e7;
+  --md-code-hl-number-color: #fdba74;
+  --md-code-hl-special-color: #f87171;
+  --md-code-hl-function-color: #f4f4f5;
+  --md-code-hl-constant-color: #fb923c;
+  --md-code-hl-keyword-color: #fb923c;
+  --md-code-hl-string-color: #d4d4d8;
+  --md-code-hl-name-color: #fafafa;
+  --md-code-hl-operator-color: #a1a1aa;
+  --md-code-hl-punctuation-color: #7d7d86;
+  --md-code-hl-comment-color: #7d7d86;
+  --md-code-hl-generic-color: #e4e4e7;
+  --md-code-hl-variable-color: #f4f4f5;
   --md-footer-bg-color: #070708;
   --md-footer-bg-color--dark: #050505;
 }
@@ -50,24 +62,28 @@
   --md-primary-fg-color: #09090b;
   --md-primary-bg-color: #fafafa;
   --md-accent-fg-color: #c2410c;
-  --md-code-bg-color: #18181b;
-  --md-code-fg-color: #f4f4f5;
+  --md-code-bg-color: #f4f4f5;
+  --md-code-fg-color: #18181b;
+  --md-code-hl-number-color: #b45309;
+  --md-code-hl-special-color: #b91c1c;
+  --md-code-hl-function-color: #18181b;
+  --md-code-hl-constant-color: #c2410c;
+  --md-code-hl-keyword-color: #c2410c;
+  --md-code-hl-string-color: #3f3f46;
+  --md-code-hl-name-color: #18181b;
+  --md-code-hl-operator-color: #52525b;
+  --md-code-hl-punctuation-color: #63636b;
+  --md-code-hl-comment-color: #63636b;
+  --md-code-hl-generic-color: #27272a;
+  --md-code-hl-variable-color: #18181b;
 }
 
+/* Only what genuinely reads the same over either ground belongs here. The
+   twelve syntax colours that used to live in this block did not: one palette
+   tuned for a dark card, applied to both schemes, put near-black tokens on a
+   near-black light-mode code block. */
 [data-md-color-scheme] {
   --md-code-hl-color: rgb(249 115 22 / 12%);
-  --md-code-hl-number-color: #fdba74;
-  --md-code-hl-special-color: #f87171;
-  --md-code-hl-function-color: #f4f4f5;
-  --md-code-hl-constant-color: #fb923c;
-  --md-code-hl-keyword-color: #fb923c;
-  --md-code-hl-string-color: #d4d4d8;
-  --md-code-hl-name-color: #fafafa;
-  --md-code-hl-operator-color: #a1a1aa;
-  --md-code-hl-punctuation-color: #71717a;
-  --md-code-hl-comment-color: #71717a;
-  --md-code-hl-generic-color: #e4e4e7;
-  --md-code-hl-variable-color: #f4f4f5;
 }
 
 body,

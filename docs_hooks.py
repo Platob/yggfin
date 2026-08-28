@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -150,3 +152,180 @@ def _column(member: dict[str, Any], enums: dict[str, Any]) -> dict[str, Any]:
     if unit:
         column["unit"] = unit
     return column
+
+
+# --- diagrams -------------------------------------------------------------
+
+#: The diagrams are authored once, for the dark scheme, and the light variant
+#: is derived. Two hand-kept copies of one drawing is two things to change
+#: whenever a stage moves, and the second one to be forgotten is the one
+#: nobody is looking at.
+DIAGRAMS = (
+    "arrow-hub",
+    "compatibility-tree",
+    "rkp-logo",
+    "schema-lineage",
+    "workflow-run",
+)
+
+#: Each third-party mark and the box it draws itself in. A mark that declares
+#: no `viewBox` still declares a width and a height, and that is the box.
+MARKS = {
+    "logos/apache-airflow.svg": (175, 175),
+    "logos/apache-arrow.svg": (1350, 1181.25),
+    "logos/apache-iceberg.svg": (800, 218),
+    "logos/github-mark.svg": (24, 24),
+}
+
+#: Above this CIELAB chroma a colour carries meaning rather than depth. The
+#: diagrams' neutrals all sit under 6 and the two brand accents over 75, so
+#: nothing in them is anywhere near the line.
+ACCENT_CHROMA = 20.0
+
+#: The one rule whose colour is not depth: a third-party mark is reproduced
+#: unmodified, so the card it sits on stays the ground that mark was drawn
+#: for. Relit with the rest, it put the Apache and GitHub marks on black.
+KEPT_SELECTOR = ".brand-plate"
+
+_HEX = re.compile(r"#[0-9a-fA-F]{6}\b")
+_STYLE = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.S)
+_RULE = re.compile(r"([^{}]+)\{([^}]*)\}")
+_MARK = re.compile(r'<image href="(logos/[^"]+)"([^/>]*)/>')
+
+#: D65, the white point sRGB is defined against.
+_WHITE = (0.95047, 1.0, 1.08883)
+
+
+def _to_lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
+    """One sRGB colour in CIELAB, where lightness is a coordinate of its own."""
+
+    def linear(channel: float) -> float:
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    def curve(value: float) -> float:
+        return value ** (1 / 3) if value > 216 / 24389 else (24389 / 27 * value + 16) / 116
+
+    red, green, blue = (linear(channel / 255) for channel in rgb)
+    xyz = (
+        0.4124564 * red + 0.3575761 * green + 0.1804375 * blue,
+        0.2126729 * red + 0.7151522 * green + 0.0721750 * blue,
+        0.0193339 * red + 0.1191920 * green + 0.9503041 * blue,
+    )
+    fx, fy, fz = (curve(value / white) for value, white in zip(xyz, _WHITE, strict=True))
+    return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+
+def _from_lab(lab: tuple[float, float, float]) -> tuple[int, int, int]:
+    """The CIELAB coordinate back as the nearest sRGB colour."""
+
+    def gamma(channel: float) -> float:
+        channel = max(0.0, min(1.0, channel))
+        return channel * 12.92 if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
+
+    def curve(value: float) -> float:
+        return value**3 if value**3 > 216 / 24389 else (116 * value - 16) * 27 / 24389
+
+    lightness, a, b = lab
+    fy = (lightness + 16) / 116
+    coordinates = (fy + a / 500, fy, fy - b / 200)
+    x, y, z = (curve(value) * white for value, white in zip(coordinates, _WHITE, strict=True))
+    return (
+        round(gamma(3.2404542 * x - 1.5371385 * y - 0.4985314 * z) * 255),
+        round(gamma(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z) * 255),
+        round(gamma(0.0556434 * x - 0.2040259 * y + 1.0572252 * z) * 255),
+    )
+
+
+def relight_colour(colour: str) -> str:
+    """One colour as the same colour on the other ground.
+
+    A neutral inverts its lightness and keeps its hue, so a near-black card
+    becomes a near-white one and a hairline that sat *above* its ground sits
+    *below* the new one by the same perceived distance. A table keyed by hex
+    would have to answer "is this a ground or a label" for every value, and
+    `#71717a` in these files is both.
+
+    A saturated colour is left exactly as it is: the orange and the red are
+    identity rather than depth, they read on either ground, and inverting them
+    gave a burnt brown that no longer said rekep.
+    """
+    rgb = (int(colour[1:3], 16), int(colour[3:5], 16), int(colour[5:7], 16))
+    lightness, a, b = _to_lab(rgb)
+    if (a * a + b * b) ** 0.5 >= ACCENT_CHROMA:
+        return colour
+    red, green, blue = _from_lab((100 - lightness, a, b))
+    return f"#{red:02x}{green:02x}{blue:02x}"
+
+
+def relight(source: str) -> str:
+    """One diagram as the same drawing on the other ground."""
+
+    def relit(text: str) -> str:
+        return _HEX.sub(lambda found: relight_colour(found[0].lower()), text)
+
+    def one_rule(rule: re.Match[str]) -> str:
+        if KEPT_SELECTOR in rule[1]:
+            return rule[0]
+        return f"{rule[1]}{{{relit(rule[2])}}}"
+
+    parts, last = [], 0
+    for style in _STYLE.finditer(source):
+        parts.append(relit(source[last : style.start()]))
+        parts.append(f"{style[1]}{_RULE.sub(one_rule, style[2])}{style[3]}")
+        last = style.end()
+    parts.append(relit(source[last:]))
+    return "".join(parts)
+
+
+def embed_marks(source: str, assets: Path) -> str:
+    """The third-party marks carried in the drawing rather than referenced.
+
+    A browser renders `<img src="a.svg">` in a context that loads no external
+    resource, so `href="logos/apache-iceberg.svg"` inside one of these fetches
+    nothing and the plate under it stays empty -- which is what every one of
+    these diagrams has been shipping. Carried as data they render.
+
+    One `<symbol>` per mark and a `<use>` per placement, because the Iceberg
+    mark appears eight times in a single diagram and eight copies of eleven
+    kilobytes is most of the file.
+    """
+    wanted = sorted({name for name, _ in _MARK.findall(source)})
+    if not wanted:
+        return source
+    symbols = []
+    for name in wanted:
+        width, height = MARKS[name]
+        encoded = base64.b64encode((assets / name).read_bytes()).decode("ascii")
+        symbols.append(
+            f'<symbol id="mark-{Path(name).stem}" viewBox="0 0 {width} {height}">'
+            f'<image href="data:image/svg+xml;base64,{encoded}" '
+            f'width="{width}" height="{height}"/></symbol>'
+        )
+    placed = _MARK.sub(lambda m: f'<use href="#mark-{Path(m[1]).stem}"{m[2]}/>', source)
+    return placed.replace("</defs>", "".join(symbols) + "</defs>", 1)
+
+
+def on_files(files: Any, config: Any) -> Any:
+    """Both schemes of every diagram, with their marks carried inside them.
+
+    Here rather than after the build, because a page links the light variant
+    and `--strict` checks those links against the files mkdocs knows about --
+    one written straight into the output directory is a link mkdocs reports as
+    broken while the browser finds it.
+    """
+    from mkdocs.structure.files import File
+
+    assets = Path(config.docs_dir) / "assets"
+    for name in DIAGRAMS:
+        authored = (assets / f"{name}.svg").read_text(encoding="utf-8")
+        for spelling, drawing in (
+            (f"assets/{name}.svg", authored),
+            (f"assets/{name}-light.svg", relight(authored)),
+        ):
+            # The authored file is already collected; the generated one takes
+            # its place, so the marks reach the page in both schemes.
+            standing = files.get_file_from_path(spelling)
+            if standing is not None:
+                files.remove(standing)
+            files.append(File.generated(config, spelling, content=embed_marks(drawing, assets)))
+    return files

@@ -6,7 +6,8 @@ measurements live on [Benchmarks](../../storage/benchmarks.md). The stage table
 covers the five downstream notebooks — `parse_messages` read the 13 generated
 rows and wrote all of them.
 
-![End-to-end execution architecture](../../assets/workflow-run.svg)
+![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
+![End-to-end execution architecture](../../assets/workflow-run-light.svg#only-light)
 
 Only `fix.market` continues into market readers. `fix.misc` and
 `fix.unknown` are terminal routes; a route with no rows need not create a table.
@@ -184,7 +185,8 @@ and orders.
 
 ## Schema lineage
 
-![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg)
+![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg#only-dark)
+![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
 All six are keyed `(unix, hash)` and partitioned on `unix_partition` alone.
 Their columns and nested payloads are on the [product](../../products/index.md)

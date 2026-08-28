@@ -4,7 +4,8 @@ Arrow is the in-memory contract every stage meets at. Not a database, not a
 table format, not a compute engine — a columnar shape, and standard ways to
 hand it over.
 
-![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub.svg)
+![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub.svg#only-dark)
+![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub-light.svg#only-light)
 
 One declaration becomes every boundary:
 

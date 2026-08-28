@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -82,7 +83,8 @@ def test_home_page_uses_the_animated_rkp_trigram() -> None:
     config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
 
     assert 'class="rkp-hero"' in page
-    assert 'src="assets/rkp-logo.svg"' in page
+    assert 'src="assets/rkp-logo.svg#only-dark"' in page
+    assert 'src="assets/rkp-logo-light.svg#only-light"' in page
     assert 'aria-labelledby="rkp-title rkp-desc"' in logo
     assert 'viewBox="0 0 420 230"' in logo
     assert "prefers-reduced-motion:no-preference" in logo
@@ -250,3 +252,76 @@ def test_an_example_parses_and_imports_what_it_names(where: str, source: str) ->
         module = importlib.import_module(node.module)
         for alias in node.names:
             assert hasattr(module, alias.name), f"{where}: {node.module} has no {alias.name}"
+
+
+def _hooks() -> ModuleType:
+    """The build hooks, imported the way mkdocs imports them."""
+    root = DOCS.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    return importlib.import_module("docs_hooks")
+
+
+def test_a_neutral_inverts_and_an_accent_is_left_alone() -> None:
+    """The light variant of a diagram is derived, not drawn again, so the one
+    rule that derives it is the thing worth pinning: depth flips, identity
+    does not."""
+    hooks = _hooks()
+
+    assert hooks.relight_colour("#050505") == "#fbfbfb", "a near-black ground becomes near-white"
+    assert hooks.relight_colour("#fafafa") == "#060606", "and the text on it becomes near-black"
+    for accent in ("#f97316", "#ef4444"):
+        assert hooks.relight_colour(accent) == accent, "brand colour is identity, not depth"
+
+
+def test_the_card_a_third_party_mark_sits_on_is_not_relit() -> None:
+    """The marks are reproduced unmodified, so the plate under them has to stay
+    the ground they were drawn for. Relit with everything else it put the
+    Apache and GitHub marks on black."""
+    hooks = _hooks()
+    drawing = (DOCS / "assets" / "workflow-run.svg").read_text(encoding="utf-8")
+
+    assert ".brand-plate{fill:#ffffff" in drawing, "the authored plate is white"
+    assert ".brand-plate{fill:#ffffff" in hooks.relight(drawing), "and stays white"
+    assert ".label{font:600 18px system-ui,sans-serif;fill:#060606" in hooks.relight(drawing), (
+        "while a label beside it does invert"
+    )
+
+
+def test_every_mark_is_carried_rather_than_referenced() -> None:
+    """A browser renders `<img src="a.svg">` in a context that loads no
+    external resource, so a mark referenced by path never arrives and the
+    plate under it ships empty -- which is what these diagrams did."""
+    hooks = _hooks()
+    assets = DOCS / "assets"
+
+    for name in hooks.DIAGRAMS:
+        drawing = (assets / f"{name}.svg").read_text(encoding="utf-8")
+        embedded = hooks.embed_marks(drawing, assets)
+        assert 'href="logos/' not in embedded, f"{name}: a mark is still referenced by path"
+        assert drawing.count("logos/") == 0 or "data:image/svg+xml;base64," in embedded
+        # One `<symbol>` per mark, not one copy per placement: the Iceberg mark
+        # appears eight times in one diagram and is eleven kilobytes.
+        assert embedded.count("data:image/svg+xml;base64,") == len(
+            {name for name, _ in hooks._MARK.findall(drawing)}
+        )
+
+
+@pytest.mark.parametrize("page", sorted(str(one.relative_to(DOCS)) for one in DOCS.rglob("*.md")))
+def test_a_diagram_is_shown_in_both_schemes(page: str) -> None:
+    """Material picks between two images by a URL fragment, so a diagram named
+    without one is a diagram that shows in both schemes -- and every one of
+    these is drawn for exactly one of them."""
+    hooks = _hooks()
+    text = (DOCS / page).read_text(encoding="utf-8")
+    # Where a diagram is *shown*, not where it is named: the asset licence
+    # table lists these filenames as prose and carries no image at all.
+    found = re.findall(r"!\[[^\]]*\]\(([^)]+)\)|<img[^>]+src=\"([^\"]+)\"", text)
+    sources = [one or other for one, other in found]
+
+    for name in hooks.DIAGRAMS:
+        dark = [one for one in sources if one.endswith(f"{name}.svg#only-dark")]
+        light = [one for one in sources if one.endswith(f"{name}-light.svg#only-light")]
+        plain = [one for one in sources if one.endswith(f"{name}.svg")]
+        assert not plain, f"{page}: {name}.svg is shown with no scheme fragment"
+        assert len(dark) == len(light), f"{page}: {name} is not shown once per scheme"
