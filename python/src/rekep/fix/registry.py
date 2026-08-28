@@ -1318,10 +1318,10 @@ class FixRegistry(Convertible):
         Deterministic, in the two tiers `TIERS` names, and they are the whole rule:
 
         1. the canonical name of an identity;
-        2. a name some version spells for it (tag 64 is `FutSettDate` through
-           4.3 and `SettlDate` after, and both are that identity);
-        3. a declared alias -- a rendered or namespaced spelling, a legacy name, a
-           near miss confirmed against a capture.
+        2. a declared alias -- a rendered or namespaced spelling, a near miss
+           confirmed against a capture, or the name an older version gave the
+           tag (64 is `FutSettDate` through 4.3 and `SettlDate` after, and both
+           are that identity).
 
         A later tier is only consulted when every earlier one missed, so
         adding an alias can never take a name away from a field that already
