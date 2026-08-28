@@ -53,6 +53,38 @@ _NOT_A_TAG = r"(?:^|[^0-9])"
 #: BeginString value is, by construction, the separator.
 BEGIN_STRING = rf"{_NOT_A_TAG}8=FIXT?"
 
+#: Every tag whose value the standard types `data`: a value that may hold the
+#: delimiter itself, and whose length is the field immediately in front of it.
+#: That adjacency is the pairing -- the dictionary states each field's type and
+#: never which length belongs to which value -- so a scan needs only this set:
+#: the token before a data field is its length.
+#:
+#: Read off the shipped registry, and pinned against it by
+#: `tests/fix/test_message.py`, so a field the dictionary types `data` and this
+#: set does not is a failure rather than a truncated value.
+DATA_TAGS = frozenset(
+    {
+        "89", "91", "96", "213", "349", "351", "353", "355", "357", "359", "361", "363",
+        "365", "446", "619", "622", "1278", "1281", "1283", "1360", "1398", "1402", "1404",
+        "1469", "1527", "1579", "1621", "1665", "1697", "1734", "2073", "2075", "2112",
+        "2180", "2288", "2352", "2371", "2482", "2493", "2521", "2638", "2652", "2666",
+        "2716", "2719", "2722", "2798", "2801", "2808", "2814", "40005", "40009", "40979",
+        "40981", "40983", "40985", "40987", "40989", "41084", "41102", "41108", "41257",
+        "41321", "41325", "41459", "41477", "41483", "41654", "41711", "41807", "41812",
+        "41874", "41970", "42026", "42172", "42452", "42653", "42948",
+    }
+)  # fmt: skip
+
+#: One of those tags as a key, wherever a key may start. A row this matches is
+#: split by the lengths it carries rather than by the delimiter alone.
+DATA_TAG_TOKEN = (
+    r"(?s)(?:^|\x04\x03|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?(?:"
+    + "|".join(sorted(DATA_TAGS, key=len, reverse=True))
+    + r")[ \t\r\n\f\x0b]*="
+)
+
+_DATA_TAG_KEY = re.compile(DATA_TAG_TOKEN.replace(r"(?s)", "", 1), re.DOTALL)
+
 #: A top-level numeric MsgType token is enough to identify FIX even when a
 #: capture omitted BeginString. Separators are explicit so prose `35=D` stays
 #: prose; `#` is both the rendered marker and a delimiter in compact logs.
@@ -351,7 +383,7 @@ def parse_pairs(
     if named and entry_separator is None:
         entry_separator = detect_entry_separator(text, separator, extra_entry_separators)
     pairs: list[tuple[str, str]] = []
-    for token in text.split(separator):
+    for token in split_payload(text, separator):
         parsed = _parse_token(token, named)
         if parsed is None:
             continue
@@ -593,7 +625,7 @@ def parse_arrow_array(
         canonical = bool(
             compute.all(compute.match_substring_regex(values, wire_pattern), min_count=0).as_py()
         )
-    tokens = compute.split_pattern(values, separator)
+    tokens = split_payload_arrow(values, separator)
     # `.values`, not `.flatten()`: the boundaries below index into the child
     # array as the offsets wrote it, and `flatten` re-slices around null rows.
     # A kernel output owns its buffers from zero, so the two only agree here.
@@ -969,6 +1001,66 @@ def _until_checksum(
         compute.filter(entries, keep),
         renumbered.take(offsets),
     )
+
+
+def split_payload(text: str, separator: str) -> list[str]:
+    """`text.split(separator)`, with a length-prefixed value taken by its length.
+
+    FIX types a field `data` precisely because its value may hold the
+    delimiter, and the field immediately in front of it says how many
+    characters to take. Splitting on the delimiter instead cuts the value at
+    its first embedded one and reads the rest of it as fields -- so every real
+    field after it is lost, and a `10=` inside the value ends the message where
+    the writer did not.
+
+    A declared length that does not land on a delimiter is a length the writer
+    got wrong; the delimiter is then the better of the two readings.
+    """
+    if _DATA_TAG_KEY.search(text) is None:
+        return text.split(separator)
+    tokens: list[str] = []
+    width = len(separator)
+    at = 0
+    while True:
+        end = text.find(separator, at)
+        stop = len(text) if end < 0 else end
+        key = text[at:stop].partition("=")[0]
+        declared = _declared_length(tokens[-1]) if tokens else None
+        if declared is not None and key.strip(_STRIPPED).lstrip(MARKER) in DATA_TAGS:
+            taken = at + len(key) + 1 + declared
+            if taken <= len(text) and (taken == len(text) or text.startswith(separator, taken)):
+                stop = taken
+        tokens.append(text[at:stop])
+        if stop >= len(text):
+            return tokens
+        at = stop + width
+
+
+def split_payload_arrow(values: Any, separator: str) -> Any:
+    """One column split, honouring a length-prefixed value where a row has one.
+
+    Where a data value ends is the length in front of it, which no Arrow kernel
+    can be told -- so a batch carrying one is split a row at a time, and every
+    batch that carries none takes the kernel it always did. A capture where
+    that costs anything is one where every message has a `data` field in it.
+    """
+    compute = pyarrow.compute
+    prefixed = compute.fill_null(compute.match_substring_regex(values, DATA_TAG_TOKEN), False)
+    if not compute.any(prefixed, min_count=0).as_py():
+        return compute.split_pattern(values, separator)
+    return pyarrow.array(
+        [
+            None if value is None else split_payload(value, separator)
+            for value in values.to_pylist()
+        ],
+        type=pyarrow.list_(pyarrow.string()),
+    )
+
+
+def _declared_length(token: str) -> int | None:
+    """The length a token states, when its whole value is one."""
+    value = token.partition("=")[2].strip(_STRIPPED)
+    return int(value) if value.isdigit() else None
 
 
 def _is_checksum(key: str) -> bool:

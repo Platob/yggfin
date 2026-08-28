@@ -17,7 +17,7 @@ from rekep.fields.arrays import (
     scattered,
     sequence,
 )
-from rekep.fix.message import BEGIN_VECTOR, BRIDGE_VECTOR
+from rekep.fix.message import BEGIN_VECTOR, BRIDGE_VECTOR, split_payload_arrow
 
 # A generic argument name. Capture its marker so `Entry` can remove it while
 # preserving that normalization for protocol-specific conversion.
@@ -232,7 +232,10 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
         compute.or_(compute.less(unmarked_at, 0), compute.less(marked_at, unmarked_at)),
     )
     body = compute.fill_null(compute.if_else(use_marked, marked_body, unmarked_body), "")
-    tokens = compute.split_pattern(body, separator)
+    # Split by the lengths a row declares where it declares one: a FIX `data`
+    # value may hold the delimiter, and this stage's arguments are what the FIX
+    # stage reads instead of the payload -- so a value cut here is cut for good.
+    tokens = split_payload_arrow(body, separator)
     parsed = compute.extract_regex(tokens.values, _TOKEN)
     keys = compute.struct_field(parsed, "key")
     matched = compute.fill_null(compute.is_valid(keys), False)
