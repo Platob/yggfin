@@ -181,6 +181,40 @@ Everything derived from the location follows that reading: the Arrow
 and `s3.region` a catalog is configured with, the FileIO cache identity, and
 the spill identity.
 
+### Settings a location carries
+
+| query key | Arrow argument | catalog property |
+| --- | --- | --- |
+| `region` | `region` | `s3.region` |
+| `scheme` | `scheme` | part of `s3.endpoint` |
+| `endpoint_override` | `endpoint_override` | `s3.endpoint` |
+| `force_virtual_addressing` | `force_virtual_addressing` | `s3.force-virtual-addressing` |
+| `anonymous` | `anonymous` | `s3.anonymous` |
+| `allow_bucket_creation` | `allow_bucket_creation` | -- |
+
+```python
+from rekep.urls import Url, properties_of
+
+warehouse = "s3://key:secret@minio.example.net/rekep/warehouse?force_virtual_addressing=true"
+print(dict(properties_of(Url.from_string(warehouse))))
+```
+
+```text
+{'s3.endpoint': 'https://minio.example.net', 's3.access-key-id': 'key',
+ 's3.secret-access-key': 'secret', 's3.force-virtual-addressing': 'true'}
+```
+
+A flag is on only where it is spelled `true`, so a typo reads as off. The two
+that decide whether a store answers at all are the addressing style -- Arrow
+addresses an overridden endpoint path-style, which is what MinIO and Ceph want
+and what a store serving only `bucket.endpoint` refuses -- and `anonymous`, so
+a public bucket is read as nobody instead of as whatever the credential chain
+found.
+
+Name `region` wherever the store signs with one. Without it PyIceberg asks AWS
+which region hosts a bucket of that name, which a bucket on another store is
+not, and falls back to the SDK default.
+
 PyIceberg is configured with the package-level
 `rekep.arrow_file_io.ArrowFileIO` implementation.
 

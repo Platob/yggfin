@@ -46,7 +46,24 @@ S3 = frozenset({"s3", "s3a", "s3n"})
 
 #: Query keys an S3 location may carry, and what they configure. Anything else
 #: is left in `query` for whoever put it there.
-S3_SETTINGS = ("region", "scheme", "endpoint_override", "allow_bucket_creation")
+#:
+#: `force_virtual_addressing` and `anonymous` are here because they decide
+#: whether a store answers at all: Arrow addresses an overridden endpoint
+#: path-style, which is what MinIO and Ceph want and what a store that only
+#: serves `bucket.endpoint` refuses, and a public bucket read with the
+#: credential chain's answer is a 403 rather than the data.
+S3_SETTINGS = (
+    "region",
+    "scheme",
+    "endpoint_override",
+    "allow_bucket_creation",
+    "force_virtual_addressing",
+    "anonymous",
+)
+
+#: Settings a query spells as text and Arrow takes as a flag. `true` is the one
+#: spelling that turns one on, so a typo reads as off rather than as on.
+S3_FLAGS = frozenset({"allow_bucket_creation", "force_virtual_addressing", "anonymous"})
 
 #: Portable process defaults and their Iceberg property suffixes. AWS
 #: credentials stay in Arrow's provider chain; these names are the explicit
@@ -398,8 +415,8 @@ class Url:
             settings["region"] = _region_of(self.bucket)
             if settings["region"] is None:
                 settings.pop("region")
-        if "allow_bucket_creation" in settings:
-            settings["allow_bucket_creation"] = settings["allow_bucket_creation"] == "true"
+        for flag in S3_FLAGS & settings.keys():
+            settings[flag] = settings[flag] == "true"
         return pyarrow.fs.S3FileSystem(**settings)
 
     def _local_path(self) -> str:
@@ -650,4 +667,9 @@ def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
     region = url.region
     if region:
         settings[f"{prefix}.region"] = region
+    # The two switches pyiceberg spells the same way this does, so one location
+    # configures the catalog's filesystem and direct Arrow access alike.
+    for flag in ("force_virtual_addressing", "anonymous"):
+        if flag in url.query:
+            settings[f"{prefix}.{flag.replace('_', '-')}"] = url.query[flag]
     return settings

@@ -688,3 +688,37 @@ def test_s3_environment_translates_portable_defaults_and_endpoint_fallbacks() ->
 
 def test_empty_s3_environment_values_are_not_configuration() -> None:
     assert s3_environment({name: "" for name, _ in urls.S3_ENVIRONMENT}) == {}
+
+
+def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> None:
+    """The two switches that decide whether a store answers at all.
+
+    Arrow addresses an overridden endpoint path-style, which a store serving
+    only `bucket.endpoint` refuses; and a public bucket read with whatever the
+    credential chain found answers 403 rather than the data. pyiceberg spells
+    both the same way, so one location configures the catalog too.
+    """
+    url = Url.from_string("s3://k:s@s3.example.net/bucket/key?force_virtual_addressing=true")
+    assert dict(properties_of(url)) == {
+        "s3.endpoint": "https://s3.example.net",
+        "s3.access-key-id": "k",
+        "s3.secret-access-key": "s",
+        "s3.force-virtual-addressing": "true",
+    }
+    filesystem, path = url.into_filesystem()
+    assert isinstance(filesystem, pyarrow.fs.S3FileSystem)
+    assert path == "bucket/key"
+
+    public = Url.from_string("s3://s3.example.net/bucket/key?anonymous=true")
+    assert dict(properties_of(public)) == {
+        "s3.endpoint": "https://s3.example.net",
+        "s3.anonymous": "true",
+    }
+    assert isinstance(public.into_filesystem()[0], pyarrow.fs.S3FileSystem)
+
+
+def test_a_flag_is_on_only_where_it_is_spelled_true() -> None:
+    """A query is text, and a typo has to read as off."""
+    url = Url.from_string("s3://s3.example.net/bucket/key?anonymous=yes")
+    filesystem, _ = url.into_filesystem()
+    assert isinstance(filesystem, pyarrow.fs.S3FileSystem)
