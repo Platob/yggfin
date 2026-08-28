@@ -239,8 +239,8 @@
   overflow: auto;
   border: 1px solid var(--registry-border);
   border-radius: var(--rekep-radius-sm);
-  background: #0c0c0e;
-  color: var(--rekep-white);
+  background: var(--md-code-bg-color);
+  color: var(--md-code-fg-color);
   font-size: 0.7rem;
   line-height: 1.55;
   white-space: pre-wrap;

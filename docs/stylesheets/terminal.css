@@ -41,6 +41,7 @@
   --md-code-hl-comment-color: #7d7d86;
   --md-code-hl-generic-color: #e4e4e7;
   --md-code-hl-variable-color: #f4f4f5;
+  --rekep-hero: #070708;
   --md-footer-bg-color: #070708;
   --md-footer-bg-color--dark: #050505;
 }
@@ -62,6 +63,7 @@
   --md-primary-fg-color: #09090b;
   --md-primary-bg-color: #fafafa;
   --md-accent-fg-color: #c2410c;
+  --rekep-hero: #fafafa;
   --md-code-bg-color: #f4f4f5;
   --md-code-fg-color: #18181b;
   --md-code-hl-number-color: #b45309;
@@ -84,6 +86,15 @@
    near-black light-mode code block. */
 [data-md-color-scheme] {
   --md-code-hl-color: rgb(249 115 22 / 12%);
+}
+
+/* Material hides the variant that does not match the scheme, and it does so at
+   the same specificity as a `.md-typeset .thing img` layout rule -- which the
+   project stylesheets carry, and which load after it. Stated once here, above
+   both, so a page never shows a diagram twice. */
+[data-md-color-scheme="default"] .md-typeset img[src$="#only-dark"],
+[data-md-color-scheme="slate"] .md-typeset img[src$="#only-light"] {
+  display: none;
 }
 
 body,
