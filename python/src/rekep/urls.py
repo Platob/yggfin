@@ -65,6 +65,11 @@ S3_SETTINGS = (
 #: spelling that turns one on, so a typo reads as off rather than as on.
 S3_FLAGS = frozenset({"allow_bucket_creation", "force_virtual_addressing", "anonymous"})
 
+#: The settings Arrow's own S3 URI parser refuses -- it accepts the other four
+#: as query keys and raises on these. A location carrying one has to have its
+#: filesystem built here rather than handed over as a URI.
+S3_BUILT_SETTINGS = frozenset({"force_virtual_addressing", "anonymous"})
+
 #: Portable process defaults and their Iceberg property suffixes. AWS
 #: credentials stay in Arrow's provider chain; these names are the explicit
 #: S3-compatible-store layer above it.
@@ -162,6 +167,10 @@ class Url:
         for one. Everything after is split by `urllib`, and then decoded: the
         userinfo on its *first* colon, and user, password and path through
         `unquote`, because a URL is transport and the values are not.
+
+        Fragments are off: `#` is a legal object-key character, and reading one
+        as a fragment names a shorter object that a read then opens or a write
+        lands on. A local path taking the branch above keeps its `#` too.
         """
         text = os.fspath(text)
         matched = SCHEME.match(text)
@@ -170,7 +179,18 @@ class Url:
         scheme = matched["scheme"].lower()
         # `s3://host/path` has an authority to read; `file:/path` has none, and
         # reading one there would take the first segment for a host.
-        parsed = urllib.parse.urlsplit(f"//{matched['rest']}" if matched["slashes"] else text)
+        spelled = f"//{matched['rest']}" if matched["slashes"] else text
+        parsed = urllib.parse.urlsplit(spelled, allow_fragments=False)
+        try:
+            # A `/` in the secret truncates the authority, so urllib reads what
+            # is in front of it as a port -- and puts the secret's first
+            # segment in the message it raises with. Say what to do instead,
+            # about a location with the secret taken out.
+            port = parsed.port
+        except ValueError as error:
+            raise ValueError(
+                f"cannot parse {_masked_text(text)!r}: percent-encode ':' and '/' in the secret"
+            ) from error
         user, password = _credentials(parsed.netloc)
         path = urllib.parse.unquote(parsed.path)
         return cls(
@@ -178,7 +198,7 @@ class Url:
             user=user,
             password=password,
             host=_host(parsed),
-            port=parsed.port,
+            port=port,
             path=_drive_path(path) if scheme in LOCAL else path.lstrip("/"),
             query=dict(urllib.parse.parse_qsl(parsed.query)),
         )
@@ -356,8 +376,14 @@ class Url:
         if self.scheme in LOCAL:
             return pyarrow.fs.LocalFileSystem(), self._local_path()
         environment = s3_environment() if self.scheme in S3 else {}
+        # A setting Arrow's URI parser refuses is built here instead: a public
+        # bucket spelled `s3://bucket/key?anonymous=true` would otherwise fail
+        # to resolve at all rather than be read as nobody.
         if self.scheme in S3 and (
-            self.endpoint is not None or self.user is not None or environment
+            self.endpoint is not None
+            or self.user is not None
+            or environment
+            or not self.query.keys().isdisjoint(S3_BUILT_SETTINGS)
         ):
             return self._s3_filesystem(environment), self.store_path
         location = self.into_string()
@@ -402,9 +428,12 @@ class Url:
         endpoint = self.endpoint
         if endpoint is not None:
             if not _amazon(_bare(endpoint))[0]:
-                settings["endpoint_override"] = endpoint
+                # Through the same helper the process default goes through:
+                # Arrow wants a connect string, and `?endpoint_override=` is
+                # where somebody writes `http://minio:9000` by hand.
+                scheme, settings["endpoint_override"] = _endpoint_parts(endpoint)
                 if "scheme" not in self.query:
-                    settings["scheme"] = "http" if _plain(endpoint) else "https"
+                    settings["scheme"] = scheme
             else:
                 # Naming AWS in the location is an explicit store choice, so
                 # a process-wide compatible-store endpoint cannot survive it.
@@ -454,6 +483,22 @@ class Url:
     def __repr__(self) -> str:
         """Masked, always: a `repr` is what a log and a traceback print."""
         return f"Url({self.masked!r})"
+
+
+def _masked_text(text: str) -> str:
+    """A location whose userinfo is `***`, for a message about one that would not parse.
+
+    Built from the text rather than from a `Url`, because this is what is said
+    when there is no `Url` -- the parse is what failed.
+    """
+    scheme, separator, rest = text.partition("://")
+    if not separator:
+        return text
+    # The *last* `@`: an unencoded `/` in the secret is exactly what puts the
+    # authority's end somewhere this cannot find, so everything before it is
+    # treated as userinfo. Masking too much is the safe direction here.
+    _, at, remainder = rest.rpartition("@")
+    return text if not at else f"{scheme}://***@{remainder}"
 
 
 def _credentials(netloc: str) -> tuple[str | None, str | None]:
@@ -609,7 +654,6 @@ def _endpoint_parts(endpoint: str) -> tuple[str, str]:
     return ("http" if _plain(endpoint) else "https"), endpoint.rstrip("/")
 
 
-@functools.lru_cache(maxsize=64)
 def _region_of(bucket: str) -> str | None:
     """The region a bucket lives in, when Arrow can be asked and knows.
 
@@ -618,13 +662,23 @@ def _region_of(bucket: str) -> str | None:
     A resolution that cannot happen (no network, no such bucket, MinIO) is not
     an error here: Arrow's own default is what a caller who named no region
     would have got anyway.
+
+    Only an answer is remembered. One blocked call at startup is a second of
+    network, and memoizing its `None` would pin every later read of that bucket
+    to Arrow's default region for the life of the process.
     """
     if not bucket:
         return None
     try:
-        return pyarrow.fs.resolve_s3_region(bucket)
+        return _resolved_region(bucket)
     except Exception:  # noqa: BLE001 - any failure means "nobody knows", not "refuse"
         return None
+
+
+@functools.lru_cache(maxsize=64)
+def _resolved_region(bucket: str) -> str | None:
+    """What Arrow answers, cached -- and it raises rather than answering None."""
+    return pyarrow.fs.resolve_s3_region(bucket)
 
 
 def s3_environment(environ: Mapping[str, str] = os.environ, prefix: str = "s3") -> dict[str, str]:
@@ -659,8 +713,11 @@ def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
     # addressing. The region below is the part of such a location that has to
     # be carried, and it is carried.
     if endpoint is not None and not _amazon(_bare(endpoint))[0]:
-        scheme = url.query.get("scheme", "http" if _plain(endpoint) else "https")
-        settings[f"{prefix}.endpoint"] = f"{scheme}://{endpoint}"
+        # Through the same helper `_s3_filesystem` uses, because
+        # `?endpoint_override=` is where somebody writes `http://minio:9000`
+        # by hand and the transport is already in it.
+        transport, host = _endpoint_parts(endpoint)
+        settings[f"{prefix}.endpoint"] = f"{url.query.get('scheme', transport)}://{host}"
     if url.user is not None:
         settings[f"{prefix}.access-key-id"] = url.user
         settings[f"{prefix}.secret-access-key"] = url.password or ""
@@ -669,7 +726,11 @@ def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
         settings[f"{prefix}.region"] = region
     # The two switches pyiceberg spells the same way this does, so one location
     # configures the catalog's filesystem and direct Arrow access alike.
+    # Normalized here, because pyiceberg reads them with `strtobool` -- which
+    # takes `yes`, `1` and `on` -- where Arrow gets the `== "true"` reading
+    # below. One location has to mean one thing on both paths.
     for flag in ("force_virtual_addressing", "anonymous"):
         if flag in url.query:
-            settings[f"{prefix}.{flag.replace('_', '-')}"] = url.query[flag]
+            spelled = str(url.query[flag] == "true").lower()
+            settings[f"{prefix}.{flag.replace('_', '-')}"] = spelled
     return settings

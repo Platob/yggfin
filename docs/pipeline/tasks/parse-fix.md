@@ -82,6 +82,6 @@ metadata is read by `parse_messages` because `etype` is part of `Message`, so
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
-The projected conversion requires the version 1 `MsgType`, `entries`, and
-`protocol_code` columns, and refuses an older source table with a rebuild
-instruction.
+The projected conversion requires the `MsgType`, `entries` and
+`protocol_code` columns of [Message contract 3](../../contracts/index.md), and
+refuses an older source table with a rebuild instruction.

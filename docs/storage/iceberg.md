@@ -173,8 +173,10 @@ is a decision and beats a shape:
 - a bucket really named for a domain -- the S3 static-website pattern,
   `s3://www.example.com/index.html?endpoint_override=s3.amazonaws.com`;
 - a bucket addressed virtual-hosted style on a store that is not Amazon's,
-  `s3://bucket/key?endpoint_override=s3.example.net`, because only AWS
-  publishes which of its leading labels is a bucket.
+  `s3://bucket/key?endpoint_override=s3.example.net&force_virtual_addressing=true`,
+  because only AWS publishes which of its leading labels is a bucket -- and an
+  overridden endpoint is addressed path-style unless the location says
+  otherwise.
 
 Everything derived from the location follows that reading: the Arrow
 `S3FileSystem`, the `s3.endpoint`, `s3.access-key-id`, `s3.secret-access-key`
@@ -204,12 +206,18 @@ print(dict(properties_of(Url.from_string(warehouse))))
  's3.secret-access-key': 'secret', 's3.force-virtual-addressing': 'true'}
 ```
 
-A flag is on only where it is spelled `true`, so a typo reads as off. The two
-that decide whether a store answers at all are the addressing style -- Arrow
-addresses an overridden endpoint path-style, which is what MinIO and Ceph want
-and what a store serving only `bucket.endpoint` refuses -- and `anonymous`, so
-a public bucket is read as nobody instead of as whatever the credential chain
-found.
+A flag is on only where it is spelled `true`, so a typo reads as off, on the
+catalog path as well as Arrow's. The two that decide whether a store answers at
+all are the addressing style -- Arrow addresses an overridden endpoint
+path-style, which is what MinIO and Ceph want and what a store serving only
+`bucket.endpoint` refuses -- and `anonymous`, so a public bucket is read as
+nobody instead of as whatever the credential chain found.
+
+`endpoint_override` may carry its own transport (`http://minio:9000`) or not
+(`minio:9000`); either way it reaches Arrow as a connect string and the catalog
+as one URL. Without a transport, a hostname with no dot -- a container or a
+laptop -- is read as plaintext and anything else as TLS; `scheme` says it
+outright.
 
 Name `region` wherever the store signs with one. Without it PyIceberg asks AWS
 which region hosts a bucket of that name, which a bucket on another store is

@@ -16,9 +16,12 @@ registry = FixRegistry(offline=True)
 registry.field("OrigClOrdID", "4.4")
 ```
 
-The separator is detected from the message. SOH, pipe, caret forms, and
-rendered `Name=Value` logs use the same ordered representation. Vectorized
-Arrow helpers split whole columns and resolve distinct rendered names once.
+The separator is detected from the message: the standard's SOH (`\x01`)
+first, then the substitutions tools write in its place -- `|`, EOT/ETX
+(`\x04\x03`), `^A`, `^`, `;` -- in that order, so a multi-character candidate
+is tried before anything it contains. Rendered `#Name=Value` bridge logs use
+the same ordered representation. Vectorized Arrow helpers split whole columns
+and resolve distinct rendered names once.
 
 ## Version selection
 

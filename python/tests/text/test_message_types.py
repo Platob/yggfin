@@ -164,6 +164,19 @@ def test_a_prefixed_marked_checksum_ends_discriminator_promotion() -> None:
     ]
 
 
+def test_a_bridge_renders_a_tag_it_has_no_name_for_as_a_digit_key() -> None:
+    """`#35=D` is a marked key, so it is part of the message and not its prefix.
+
+    A rule that took only a letter-initial name put such a token in the prose
+    every reader of a bridge line cuts away, so the field was lost with it.
+    """
+    found = Message.parse_arrow(pyarrow.array(["toBridge #35=D|#55=IBM|#54=1|"]), EVENT_TYPES)
+
+    assert found["MsgType"].to_pylist() == ["D"]
+    assert found["etype"].to_pylist() == [int(EventType.ORDER)]
+    assert [entry["key"] for entry in found["entries"].to_pylist()[0]] == ["55", "54"]
+
+
 def test_only_a_valid_fix_begin_string_qualifies_a_single_assignment() -> None:
     found = parsed(
         "diagnostic 8=FIXTURE " + "x" * 10_000,

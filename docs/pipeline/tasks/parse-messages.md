@@ -100,7 +100,14 @@ message identities are parsed.
 `include_msgtypes` admits only exact discriminator values when non-empty;
 `exclude_msgtypes` removes exact values after that inclusion. Rows without a
 discriminator survive an empty include list. Empty lists retain every MsgType.
-Both filters run before entries are split.
+
+Both filters run before entries are split, so they read the discriminator off
+the raw text rather than off the parsed arguments: the first `35=` or
+`MsgType=` token before the first checksum-shaped token *anywhere in the line*.
+A payload carrying a `10=` sequence inside an earlier field value therefore
+reads as having no discriminator here while the stored `MsgType` column, whose
+boundary is the first checksum-keyed entry, still holds it. Filter on
+`MsgType` after the fact where that matters.
 
 `technical_plugins` names exact plugin codes to omit case-insensitively from
 the parsed stream before it is written. This source policy belongs to the task,

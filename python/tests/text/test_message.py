@@ -624,3 +624,122 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
     assert hash_int_of(table.column("hash")[0].as_py()) == hash_bytes(payload.encode("utf-8"))
+
+
+def test_the_log_s_own_prose_does_not_decide_the_payload_s_separator() -> None:
+    """A capture writes `seq=1092 sending >>` in front of the message.
+
+    That prefix is an assignment, so a separator inferred from the whole line
+    read the `>` of `>>` as the delimiter and returned the whole message as
+    one entry, with the rest of it stored as `BeginString`.
+    """
+    line = "seq=1092 sending >> 8=FIX.4.2|9=176|35=D|34=1092|49=A|56=B|55=TTF|10=203"
+
+    parsed = Message.parse_arrow(pyarrow.array([line]))
+
+    assert parsed["BeginString"][0].as_py() == "FIX.4.2"
+    assert parsed["MsgType"][0].as_py() == "D"
+    assert [(entry["key"], entry["value"]) for entry in parsed["entries"][0].as_py()] == [
+        ("55", "TTF"),
+        ("10", "203"),
+    ]
+
+
+def test_a_line_that_names_no_message_keeps_all_of_itself() -> None:
+    """Which is what a generic argument list is."""
+    parsed = Message.parse_arrow(pyarrow.array(["a=1;b=2;c=3"]))
+
+    assert [(entry["key"], entry["value"]) for entry in parsed["entries"][0].as_py()] == [
+        ("a", "1"),
+        ("b", "2"),
+        ("c", "3"),
+    ]
+
+
+def test_the_raw_stage_reads_every_separator_the_fix_parsers_declare() -> None:
+    """EOT/ETX is one of them, and the raw stage saw none of such a payload."""
+    line = "8=FIX.4.2\x04\x0335=D\x04\x0349=SEND\x04\x0356=TARG\x04\x0355=IBM\x04\x0310=001"
+
+    parsed = Message.parse_arrow(pyarrow.array([line]))
+
+    assert parsed["protocol_code"][0].as_py() == "FIX"
+    assert parsed["MsgType"][0].as_py() == "D"
+    assert parsed["SenderCompID"][0].as_py() == "SEND"
+    assert Message.msg_types_arrow(pyarrow.array([line]))[0].as_py() == "D"
+    assert [(entry["key"], entry["value"]) for entry in parsed["entries"][0].as_py()] == [
+        ("55", "IBM"),
+        ("10", "001"),
+    ]
+
+
+def test_a_begin_string_needs_no_dotted_version_to_be_fix() -> None:
+    """`8=FIX4` is what this repository's own fixture writes.
+
+    The syntax probe demanded `FIX.<major>.<minor>` where the shipped
+    classification rule asks only for `8=FIX`, so such a row reached the store
+    as OTHER -- and lost `direction` with it, which is keyed on the protocol.
+    """
+    parsed = Message.parse_arrow(pyarrow.array(["sending >> 8=FIX4|9=61|34=1|49=A|10=1"]))
+
+    assert parsed["protocol_code"][0].as_py() == "FIX"
+    assert parsed["direction"][0].as_py() is True
+    assert parsed["BeginString"][0].as_py() == "FIX4"
+
+
+def test_prose_that_merely_contains_fix_is_not_a_message() -> None:
+    """The BeginString value stops at a separator, and prose has none there."""
+    parsed = Message.parse_arrow(pyarrow.array(["the 8=FIXTURE cost 12"]))
+
+    assert parsed["protocol_code"][0].as_py() == "OTHER"
+
+
+def test_a_row_carrying_its_text_answers_the_syntax_columns_either_way() -> None:
+    """Whoever tokenized its arguments -- `from_text` passes its own in."""
+    line = "8=FIX.4.2|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|11=ORD-1|10=203"
+
+    assert Message.from_text(line, message=line).protocol_code == "FIX"
+    assert Message(message=line).protocol_code == "FIX"
+    # Without the text there is nothing to read a syntax column off.
+    assert Message.from_text(line).protocol_code == "OTHER"
+
+
+def test_the_discriminator_agrees_with_itself_before_it_is_lifted() -> None:
+    """One spelling stating two values is torn, exactly like the six beside it.
+
+    The second `35=` used to be claimed and dropped, so a re-wrapped line came
+    out of the parser without the reading it disagreed on.
+    """
+    soh = chr(1)
+    torn = f"8=FIX.4.4{soh}35=D{soh}35=8{soh}55=A{soh}10=001{soh}"
+    agreed = f"8=FIX.4.4{soh}35=D{soh}35=D{soh}55=A{soh}10=001{soh}"
+
+    assert [(e.key, e.value) for e in Message.from_text(torn).entries] == [
+        ("35", "D"),
+        ("35", "8"),
+        ("55", "A"),
+        ("10", "001"),
+    ]
+    assert Message.from_text(torn).MsgType is None
+    assert [(e.key, e.value) for e in Message.from_text(agreed).entries] == [
+        ("55", "A"),
+        ("10", "001"),
+    ]
+    assert Message.from_text(agreed).MsgType == "D"
+
+    # The column path keeps both readings too; its column then falls back to
+    # the raw line's own first discriminator, which the scalar row has no text
+    # to read.
+    found = Message.parse_arrow(pyarrow.array([torn, agreed]))
+    assert found["MsgType"].to_pylist() == ["D", "D"]
+    assert [[entry["key"] for entry in row] for row in found["entries"].to_pylist()] == [
+        ["35", "35", "55", "10"],
+        ["55", "10"],
+    ]
+
+
+def test_the_two_discriminator_spellings_still_have_their_own_rule() -> None:
+    """A `U`-prefixed wire type defers to a rendered name beside it."""
+    message = Message.from_text("8=FIX.4.4|35=U1|#MSGTYPE=D|55=A|10=1")
+
+    assert message.MsgType == "D"
+    assert [(entry.key, entry.value) for entry in message.entries] == [("55", "A"), ("10", "1")]

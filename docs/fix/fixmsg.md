@@ -57,12 +57,12 @@ echo whose `MSGTYPE=` is real but whose `#` markers are absent parses as the
 bridge message the syntax probe already saw, while every line the rules do
 name keeps their reading.
 
-Long prose and diagnostics that contain neither a discriminator nor two
-delimiter-separated assignments skip tokenization entirely. Use
-`exclude_msgtypes=("0", "1")` on the text reader to discard operational
-traffic before argument tokenization; the empty default retains it.
+Long prose and diagnostics skip tokenization entirely; the
+[parse messages](../pipeline/tasks/parse-messages.md) page owns which payloads
+do not. Use `exclude_msgtypes=("0", "1")` on the text reader to discard
+operational traffic before argument tokenization; the empty default retains it.
 
-The published `Message` and `FixMsg` contracts are version 1.
+The published `Message` contract is version 3 and `FixMsg` is version 2.
 `entries` keeps a raw audit sidecar only when a typed column cannot reproduce
 the source spelling, such as `0010.5000` stored as a numeric `10.5`.
 

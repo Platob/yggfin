@@ -652,7 +652,10 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
         ["Text"],
         ["Text"],
         ["msg_type", "Text"],
-        ["Text"],
+        # One spelling stating two values is torn, like every other header
+        # field: both readings stay, and the column falls back to the raw
+        # line's own first discriminator.
+        ["35", "35", "Text"],
     ]
 
 

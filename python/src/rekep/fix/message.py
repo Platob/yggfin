@@ -36,8 +36,9 @@ MARKER = "#"
 #: What a BeginString *value* may hold: anything that is not a separator
 #: candidate and not whitespace -- so the value stops exactly where the
 #: separator starts. Spelled out for `_WS`'s reason, and shared, because the
-#: scalar reading of a separator and the vectorised one are one rule.
-_NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
+#: scalar reading of a separator and the vectorised one are one rule -- and
+#: with the raw stage, whose syntax probe reads a BeginString the same way.
+NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
 
 #: The guard that keeps the `8=` inside tag 18 or 58 from reading as a
 #: BeginString: the start of the text, or a character that is not a digit.
@@ -63,7 +64,12 @@ WIRE_MSG_TYPE = (
 #: `BEGIN_STRING` with the message after it captured: how a vectorised parse
 #: cuts the log's own prefix off a line. `(?s)`, or a message holding a
 #: newline would end at it here where the scalar slice keeps it.
-_BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
+#:
+#: Public because the raw stage cuts with it too: a log writes its own prose in
+#: front of the payload, and `seq=1092` in that prose is an assignment -- so a
+#: separator inferred from the whole line reads the `>` of `sending >>` as the
+#: delimiter and collapses the message into one entry.
+BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
 
 #: The scalar reading of the same rule, and the one spelling of it that uses a
 #: lookbehind: it has to report where the `8` is and not where the guard is,
@@ -74,7 +80,7 @@ _BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
 #: parsers are contracted to agree. Without the flag a tag written in
 #: Arabic-Indic digits was a pair to the scalar parser and noise to the
 #: vectorised one; ASCII is also what the FIX standard means by a digit.
-_BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{_NOT_SEPARATOR}*", re.ASCII)
+_BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{NOT_SEPARATOR}*", re.ASCII)
 
 #: A rendered field or group name, as the tools around a bridge print one --
 #: letters first, then the word characters, dots (a component path like
@@ -104,14 +110,19 @@ _WS = r"[ \t\r\n\f\x0b]"
 #: which is wider than what any of these regexes call whitespace.
 _STRIPPED = " \t\r\n\f\x0b"
 
-#: One `#NAME=` token, which is how a UL bridge marks a field: the `#` says
+#: One `#KEY=` token, which is how a UL bridge marks a field: the `#` says
 #: "a key starts here", which is the only thing in a rendered line that does.
 #:
 #: The bracket and the dotted member are both admitted, because both are how a
 #: real line spells a group member -- `#NoPartyIDs[0].PartyID=` is what this
 #: parser's own canonical key looks like, and a rule that would not recognise
 #: it called such a line no message at all and lost every field on it.
-_BRIDGE_TOKEN = rf"#{_NAME}(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+#:
+#: The key may be digits. A bridge renders a tag it has no name for as `#35=`
+#: or `#10=`, and a rule that took only a letter-initial name put that token in
+#: the *prefix* every reader of this cuts away -- so the field was dropped and,
+#: where it was the trailer, a discriminator written behind it was promoted.
+_BRIDGE_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: What makes a line a **bridge message**: two or more of those tokens.
 #: Public for the same reason `BEGIN_STRING` is -- it is the UL classification
@@ -121,10 +132,10 @@ _BRIDGE_TOKEN = rf"#{_NAME}(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 BRIDGE = rf"(?s){_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}"
 
 #: `BRIDGE` with the message after it captured: where a bridge message starts
-#: inside a log line, exactly as `_BEGIN_VECTOR` says where a wire message
+#: inside a log line, exactly as `BEGIN_VECTOR` says where a wire message
 #: does. `toBridge #ISINCODE=x|#SIDE=1` carries the plugin's own prefix, and
 #: without a start marker the first key would be `toBridge #ISINCODE`.
-_BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
+BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
 
 #: A wire message whose **body** is a bridge one: a BeginString, and MsgType
 #: `UL` somewhere after it. Some venues wrap the bridge's own `#NAME=` payload
@@ -162,14 +173,13 @@ _BRIDGE_NEXT = re.compile(_BRIDGE_TOKEN, re.ASCII)
 #: all: `parse_arrow_array` samples a column once by contract, so the rows that
 #: share a separator have to be handed to it together, and this is how a caller
 #: finds out which those are without reading a row in Python.
-SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
+SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 NAMED_SEPARATOR_VECTOR = (
     rf"(?s)(?:^|[^A-Za-z0-9])#?"
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
-    rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
+    rf"[Ff][Ii][Xx][Tt]?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 )
-_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
-BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_BRIDGE_PAIR_TOKEN}"
+BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_BRIDGE_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -477,7 +487,7 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
     if compute.all(starts, min_count=0).as_py():
         wire = compute.fill_null(starts, False)
     else:
-        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
+        begun = compute.struct_field(compute.extract_regex(values, BEGIN_VECTOR), "msg")
         wire = compute.is_valid(begun)
         values = compute.if_else(wire, begun, values)
     if named:
@@ -486,7 +496,7 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
         # the header, or the tags that say what it is are cut off with the
         # log's prefix. The scalar parser applies the same guard, so the two
         # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
+        bridged = compute.struct_field(compute.extract_regex(values, BRIDGE_VECTOR), "msg")
         values = compute.if_else(
             compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
         )

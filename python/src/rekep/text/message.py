@@ -14,7 +14,7 @@ import pyarrow.compute
 from rekep.enums import EventType
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
-from rekep.fix.message import parse_pairs
+from rekep.fix.message import NOT_SEPARATOR, parse_pairs
 from rekep.market.event import Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
@@ -25,8 +25,11 @@ from rekep.text.entries import ENTRIES, Entry
 _CONTRACT_METADATA = MappingProxyType({"version": "3"})
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
-_DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\^A|[\x01|^;#]|$)"
-_TOKEN_START = r"(?:^|\^A|[\x01|^;#])"
+# Every separator `fix.message.SEPARATORS` declares, in that order: a
+# multi-character candidate leads anything it contains, and a discriminator the
+# raw stage cannot see is a MsgType filter that silently drops the row.
+_DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
+_TOKEN_START = r"(?:^|\x04\x03|\^A|[\x01|^;#])"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
 _CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
@@ -87,9 +90,15 @@ _NAMED_MSG_TYPE = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?MsgType[ \t\r\n\f\x0b]*="
     rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
 )
+# The version is whatever the BeginString value holds, which is everything up
+# to the separator -- `NOT_SEPARATOR`, the same class the FIX parsers read one
+# with. A dotted version alone was stricter than the shipped classification
+# rule, so `8=FIX4` -- which this repository's own fixture writes -- reached
+# the store as OTHER with no direction while `Rules.into_default()` called it
+# FIX. One spelling of one rule.
 _FIX_BEGIN = (
     r"(?s)(?:^|[^A-Za-z0-9_.\-])#?8[ \t\r\n\f\x0b]*="
-    rf"[ \t\r\n\f\x0b]*FIXT?\.[0-9]+\.[0-9]+(?:SP[0-9]+)?{_DISCRIMINATOR_END}"
+    rf"[ \t\r\n\f\x0b]*FIXT?{NOT_SEPARATOR}*{_DISCRIMINATOR_END}"
 )
 
 
@@ -166,18 +175,24 @@ class Message(Event):
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
-        if implicit_entries and self.message:
+        # `protocol_code` and `direction` are read off the raw *text*, so a row
+        # carrying one answers them whoever tokenized its arguments:
+        # `from_text(line, message=line)` stored `OTHER` and no direction
+        # because it had passed its own `entries` in. Everything else here is
+        # read off the arguments, and an explicit list of them is the answer.
+        if self.message and (implicit_entries or self.protocol_code == _NO_PROTOCOL):
             parsed = self.parse_arrow(pyarrow.array([self.message]))
-            self.entries = parsed["entries"][0].as_py()
             if self.protocol_code == _NO_PROTOCOL:
                 self.protocol_code = parsed["protocol_code"][0].as_py()
+            if self.direction is None:
+                self.direction = parsed["direction"][0].as_py()
+        if implicit_entries and self.message:
+            self.entries = parsed["entries"][0].as_py()
             for name, _ in SESSION_FIELDS:
                 if getattr(self, name) is None:
                     setattr(self, name, parsed[name][0].as_py())
             if self.etype == EventType.UNKNOWN:
                 self.etype = EventType(parsed["etype"][0].as_py())
-            if self.direction is None:
-                self.direction = parsed["direction"][0].as_py()
 
         self.entries = [Entry.from_stored(entry) for entry in self.entries]
         session, self.entries = _scalar_session_values(self.entries)
@@ -199,10 +214,17 @@ class Message(Event):
     ) -> Self:
         """One payload's ordered fields as a raw row, discriminator promoted.
 
-        The scalar spelling of what `parse_arrow` does to a column: the
-        payload is tokenized once and `__post_init__` promotes `MsgType`
-        out of the arguments. The raw text itself is retained only where a
-        caller declares `message=` -- the pairs carry every field.
+        Tokenized by `parse_pairs`, which reads the payload as its protocol:
+        tag mode keeps only numeric keys, where the column parser's
+        protocol-neutral `Entry.parse_arrow` keeps every key it can split. The
+        two disagree on a wire message carrying a named enrichment key, and
+        that is the difference between the two readings, not a defect in
+        either.
+
+        The raw text itself is retained only where a caller declares
+        `message=` -- the pairs carry every field -- and the syntax columns
+        `protocol_code`, `etype` and `direction` are read off that text, so
+        they stay unset without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
         return cls(entries=list(pairs), **declared)
@@ -331,7 +353,9 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
     """
     claimed: dict[str, list[int]] = {}
     residual: list[int] = []
-    wire = named = None
+    # The discriminator's two spellings are claimed apart, because each has to
+    # agree with itself before the rule between them applies.
+    spellings: dict[str, list[int]] = {"35": [], "msgtype": []}
     ended = False
     for index, entry in enumerate(entries):
         folded = entry.key.lower()
@@ -341,30 +365,38 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
         if column == _MSG_TYPE:
             if _MSG_TYPE_VALUE_RE.fullmatch(entry.value) is None:
                 column = None
-            elif folded == "35":
-                wire = entry.value if wire is None else wire
             else:
-                named = entry.value if named is None else named
+                spellings["35" if folded == "35" else "msgtype"].append(index)
         if column is None:
             residual.append(index)
         else:
             claimed.setdefault(column, []).append(index)
 
+    def agreed(where: list[int]) -> str | None:
+        """The one value those entries state, or None when they state two."""
+        values = {entries[index].value for index in where}
+        if len(values) == 1:
+            return values.pop()
+        # Two readings of one fact is not one statement of it: both stay where
+        # a reader can see them, and the column says nothing.
+        residual.extend(where)
+        return None
+
     found: dict[str, str] = {}
     for column, where in claimed.items():
-        values = [entries[index].value for index in where]
         if column == _MSG_TYPE:
             # The discriminator has a rule of its own for its two spellings, so
             # they disagreeing is expected rather than torn.
+            wire = agreed(spellings["35"]) if spellings["35"] else None
+            named = agreed(spellings["msgtype"]) if spellings["msgtype"] else None
             hybrid = wire and wire.startswith("U") and named
-            found[column] = named if hybrid else (wire or named)
+            value = named if hybrid else (wire or named)
+            if value is not None:
+                found[column] = value
             continue
-        if len(set(values)) > 1:
-            # Two readings of one fact is not one statement of it: both stay
-            # where a reader can see them, and the column says nothing.
-            residual.extend(where)
-            continue
-        found[column] = values[0]
+        value = agreed(where)
+        if value is not None:
+            found[column] = value
     residual.sort()
     return found, [entries[index] for index in residual]
 
@@ -413,10 +445,13 @@ def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], p
             # The discriminator has a rule of its own for its two spellings --
             # a `U`-prefixed wire type defers to a rendered name beside it --
             # so disagreement between them is expected rather than torn, and
-            # its value is the one the standard constrains.
+            # its value is the one the standard constrains. *Within* one
+            # spelling the general rule holds: `35=D` beside `35=8` is two
+            # readings of one fact, so neither leaves `entries` and the column
+            # falls back to the raw line's own first discriminator.
             eligible = compute.and_(eligible, named_values)
-            found[name] = _wire_or_named(values, parents, normalized, eligible, rows)
-            claimed = compute.or_(claimed, eligible)
+            found[name], mask = _wire_or_named(values, parents, normalized, eligible, rows)
+            claimed = compute.or_(claimed, mask)
             continue
         first, mask = _agreed_by_parent(values, parents, eligible, rows)
         found[name] = first
@@ -437,24 +472,29 @@ def _wire_or_named(
     normalized: pyarrow.Array,
     eligible: pyarrow.Array,
     rows: int,
-) -> pyarrow.Array:
-    """The discriminator, where a `U`-prefixed wire type defers to a rendered one.
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """`(the discriminator, which entries it claims)`, tag deferring to a name.
 
     A bridge that wraps its own message in `35=U1` and then names the real
-    type beside it means the name; everything else means the tag.
+    type beside it means the name; everything else means the tag. Each
+    spelling has to agree with itself first, so a row spelling `35=` twice
+    with two values leaves both where a reader can see them.
     """
     compute = pyarrow.compute
-    wire = _first_by_parent(
+    wire, wire_mask = _agreed_by_parent(
         values, parents, compute.and_(eligible, compute.equal(normalized, "35")), rows
     )
-    named = _first_by_parent(
+    named, named_mask = _agreed_by_parent(
         values, parents, compute.and_(eligible, compute.equal(normalized, "msgtype")), rows
     )
     wrapped = compute.and_(
         compute.fill_null(compute.starts_with(wire, "U"), False),
         compute.is_valid(named),
     )
-    return compute.if_else(wrapped, named, compute.coalesce(wire, named))
+    return (
+        compute.if_else(wrapped, named, compute.coalesce(wire, named)),
+        compute.or_(wire_mask, named_mask),
+    )
 
 
 def _agreed_by_parent(
