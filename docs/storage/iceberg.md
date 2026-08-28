@@ -14,7 +14,7 @@ logs = IcebergDataset(
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
-        "warehouse": "file:///warehouse",
+        "warehouse": "file://warehouse",
     },
     branch="root",
 )
@@ -26,13 +26,26 @@ The field name is the full table identifier; `logs.namespace` is `"fix"`.
 
 ```python
 reader = logs.read_arrow_reader(
-    row_filter=filter,
-    columns=["unix", "hash", "Symbol"],
+    row_filter="Symbol = 'IBM'",
+    columns=["unix", "hash", "MsgSeqNum", "Symbol"],
     order_by=["unix", "MsgSeqNum", "hash"],
     snapshot_id=None,
     branch="root",
 )
+print(reader.schema.names)
+
+
+def rows():
+    """One fresh reader per call: a stream is consumed by whoever reads it."""
+    return logs.read_arrow_reader(columns=["unix", "hash", "MsgSeqNum", "Symbol"])
 ```
+
+```text
+['unix', 'hash', 'MsgSeqNum', 'Symbol']
+```
+
+Every `order_by` column must be projected — sorting on one the reader will not
+hand back is refused rather than dropped, so `MsgSeqNum` is in `columns` here.
 
 Filters and projections reach scan planning. Ordered reads sort planned
 partition paths deterministically, stream one partition at a time, and rely on
@@ -48,8 +61,9 @@ nor a declared shape there is nothing to answer with, and the read raises.
 ## Write
 
 ```python
-logs.overwrite_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
-logs.append_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
+# A reader is consumed by the write it is handed to, so each takes its own.
+logs.overwrite_arrow_reader(rows(), merge_by=True, commit_row_size=250_000)
+logs.append_arrow_reader(rows(), merge_by=True, commit_row_size=250_000)
 ```
 
 `overwrite_*` replaces the rows whose keys match and inserts the rest. A false
@@ -296,15 +310,19 @@ output it created. Iceberg's `s3.sse.*` are refused rather than ignored -- see
 [Encryption at rest](#encryption-at-rest).
 
 ```python
+from pprint import pprint
+
 from rekep.urls import Url, properties_of
 
 warehouse = "s3://key:secret@minio.example.net/rekep/warehouse?force_virtual_addressing=true"
-print(dict(properties_of(Url.from_string(warehouse))))
+pprint(dict(properties_of(Url.from_string(warehouse))), sort_dicts=False, width=74)
 ```
 
 ```text
-{'s3.endpoint': 'https://minio.example.net', 's3.access-key-id': 'key',
- 's3.secret-access-key': 'secret', 's3.region': 'us-east-1',
+{'s3.endpoint': 'https://minio.example.net',
+ 's3.access-key-id': 'key',
+ 's3.secret-access-key': 'secret',
+ 's3.region': 'us-east-1',
  's3.force-virtual-addressing': 'true'}
 ```
 

@@ -13,6 +13,9 @@ import ast
 import builtins
 import importlib
 import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -125,6 +128,9 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
 
 
+#: A fence that reaches a bucket, a network scrape, or a path this checkout has
+#: not got cannot be run here. It is still parsed and still checked for free
+#: names; only its printed output goes unverified.
 def _bound(tree: ast.AST) -> set[str]:
     """Every name a fence binds: assignments, imports, definitions, parameters."""
     names: set[str] = set()
@@ -151,6 +157,66 @@ def pages() -> list[tuple[str, list[str]]]:
         if fences:
             found.append((str(page.relative_to(DOCS)), fences))
     return found
+
+
+_OUTSIDE = (
+    "s3://bucket",
+    "FixRegistry.scrape",
+    "FixRegistry()",
+    "TextFile.from_path",
+)
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(("page", "fences"), pages(), ids=[one for one, _ in pages()])
+def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) -> None:
+    """The ```text after a fence is a claim about this checkout, and a claim
+    nothing runs is one a rename or a changed default quietly falsifies -- the
+    `properties_of` block on the Iceberg page printed a dict that had gained a
+    key.
+
+    Fences carry forward, so stdout does too: the block after fence *n* is the
+    tail of everything the page has printed up to it.
+    """
+    with tempfile.TemporaryDirectory() as sandbox:
+        # A reader runs these from the checkout, so a relative `schemas/` or
+        # `data/` has to resolve -- but an example that *writes* is not a
+        # licence to write into the repository, and one of them lands a
+        # `catalog.db` and a warehouse where it is run. So: linked in, run
+        # elsewhere, and whatever they create goes with the directory.
+        root = Path(sandbox)
+        for shared in ("schemas", "data", "python"):
+            source_path = DOCS.parent / shared
+            if source_path.exists():
+                (root / shared).symlink_to(source_path, target_is_directory=True)
+        carried: list[str] = []
+        for index, source in enumerate(fences):
+            outside = any(mark in source for mark in _OUTSIDE)
+            carried.append("pass" if outside else source)
+            stated = _stated_output(page, index)
+            if stated is None or outside:
+                continue
+            run = subprocess.run(  # noqa: S603
+                [sys.executable, "-c", "\n".join(carried)],
+                capture_output=True,
+                text=True,
+                timeout=180,
+                cwd=root,
+            )
+            assert run.returncode == 0, f"{page}#{index} raised:\n{run.stderr[-2000:]}"
+            assert run.stdout.strip().endswith(stated), (
+                f"{page}#{index} prints\n{run.stdout.strip()[-2000:]}\nnot\n{stated}"
+            )
+
+
+def _stated_output(page: str, index: int) -> str | None:
+    """The `text` fence immediately after python fence `index`, if there is one."""
+    blocks = [(m[1], m[2]) for m in _FENCE.finditer((DOCS / page).read_text())]
+    python = [position for position, (lang, _) in enumerate(blocks) if lang == "python"]
+    at = python[index]
+    if at + 1 < len(blocks) and blocks[at + 1][0] == "text":
+        return blocks[at + 1][1].strip()
+    return None
 
 
 @pytest.mark.parametrize(("page", "fences"), pages(), ids=[one for one, _ in pages()])
