@@ -561,8 +561,8 @@ where it sits. That is the declaration a projected shape is checked against.
 
 ## Nested payloads
 
-`XmlData <213>` is an XML data stream in the standard and a `key=value`
-message in real bridge traffic. A payload that reads as pairs becomes pairs,
+FIXML is a FIX frame whose `XmlData <213>` carries a rendered `NAME=VALUE`
+document. A payload that reads as pairs becomes pairs,
 under `XmlData.<key>`, in the place the tag sat -- so `XmlData.ClOrdID`
 resolves like the rendered `NoPartyIDs.PartyID` already does, and lands in the
 column its name earns.

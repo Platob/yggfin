@@ -1146,7 +1146,7 @@ class FixMsg(Message):
                 # The message stage classified these same rows once, from
                 # syntax the rules cannot always see: a rendered payload whose
                 # `MSGTYPE=` discriminator is real but whose `#` markers are
-                # not there carries genuine bridge data the `BRIDGE` pattern
+                # not there carries genuine bridge data the `FIXML_PATTERN`
                 # alone would drop into OTHER unread. The stored reading fills
                 # only what the recompute could not name -- never the other
                 # way around, because the rules also see what the syntax probe

@@ -229,7 +229,7 @@ ENTRY_TRADE = "2"
 # states. Keep the wire spelling beside the standard code for an audit.
 _STATE_FIELDS = ("OrdStatus", "ExecType", "MDUpdateAction", "QuoteStatus", "QuoteRespType")
 
-#: Bridge shorthand observed on real UL rows for spellings the dictionary
+#: Bridge shorthand observed on real FIXML rows for spellings the dictionary
 #: writes longer -- `EXECTYPE=cancel` where its vocabulary says `canceled`.
 #: Folded wherever the dictionary's own spellings are folded, never over an
 #: explicit code.

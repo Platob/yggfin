@@ -543,10 +543,10 @@ def test_wrapped_fixt_uses_the_protocols_named_application_fields(codec: FixCode
         ]
     )
 
-    vector = codec.versions_of(messages, "UL").to_pylist()
+    vector = codec.versions_of(messages, "FIXML").to_pylist()
 
     assert vector == ["5.0.SP2", "5.0.SP2", "5.0.SP2"]
-    assert [codec.version_of(message, "UL")[0] for message in messages.to_pylist()] == vector
+    assert [codec.version_of(message, "FIXML")[0] for message in messages.to_pylist()] == vector
 
 
 def test_a_named_checksum_ends_version_evidence(codec: FixCodec) -> None:
@@ -557,8 +557,8 @@ def test_a_named_checksum_ends_version_evidence(codec: FixCodec) -> None:
             "#BeginString=FIXT.1.1|#Trailer.10=000|#ApplVerID=9|#Symbol=X",
         ]
     )
-    assert codec.versions_of(messages, "UL").to_pylist() == [None, None, None]
-    assert [codec.version_of(message, "UL") for message in messages.to_pylist()] == [
+    assert codec.versions_of(messages, "FIXML").to_pylist() == [None, None, None]
+    assert [codec.version_of(message, "FIXML") for message in messages.to_pylist()] == [
         (None, NO_SOURCE),
         (None, NO_SOURCE),
         (None, NO_SOURCE),
@@ -584,7 +584,7 @@ def test_automatic_vector_version_detection_categorises_like_the_scalar(codec: F
     assert [codec.version_of(message)[0] for message in messages.to_pylist()] == vector
 
 
-@pytest.mark.parametrize("protocol", ["FIX", "UL"])
+@pytest.mark.parametrize("protocol", ["FIX", "FIXML"])
 def test_an_empty_message_column_has_an_empty_version_column(
     codec: FixCodec, protocol: str
 ) -> None:
@@ -635,8 +635,8 @@ def test_named_beginstrings_and_numeric_bridge_keys_detect_each_rows_separator(
 
     assert codec.separators_of(messages, True).to_pylist() == ["|", ";", "|", ";"]
     expected = ["5.0.SP2", "5.0.SP1", "5.0.SP2", "5.0.SP1"]
-    assert codec.versions_of(messages, "UL").to_pylist() == expected
-    assert [codec.version_of(message, "UL")[0] for message in messages.to_pylist()] == expected
+    assert codec.versions_of(messages, "FIXML").to_pylist() == expected
+    assert [codec.version_of(message, "FIXML")[0] for message in messages.to_pylist()] == expected
 
 
 def test_versionless_parties_stay_raw(codec: FixCodec) -> None:
@@ -657,9 +657,9 @@ def test_a_beginstring_no_version_answers_raw(codec: FixCodec) -> None:
 def test_a_protocol_rule_does_not_supply_a_fix_version(codec: FixCodec) -> None:
     own = FixCodec(
         registry=codec.registry,
-        rules=Rules(rules=[Rule(protocol="UL", pattern="#", codec="ul")]),
+        rules=Rules(rules=[Rule(protocol="FIXML", pattern="#", codec="fixml")]),
     )
-    assert own.version_of("toBridge #A=1|#B=2", "UL") == (None, NO_SOURCE)
+    assert own.version_of("toBridge #A=1|#B=2", "FIXML") == (None, NO_SOURCE)
     assert own.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == [None]
 
 
@@ -774,7 +774,7 @@ def test_a_value_that_means_nothing_is_dropped(codec: FixCodec) -> None:
     describes -- and a trim nothing hands a padded value to is a trim no
     failure can reach.
     """
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), "UL")
+    parsed = codec.into_pairs(pyarrow.array([ABSENT]), "FIXML")
     assert parsed.to_pylist()[0] == [("SYMBOL", "TTF"), ("ORDERQTY", "1200")]
     padded = pyarrow.MapArray.from_arrays(
         pyarrow.array([0, 2], pyarrow.int32()),
@@ -785,7 +785,7 @@ def test_a_value_that_means_nothing_is_dropped(codec: FixCodec) -> None:
 
 
 def test_an_absent_field_is_stored_nowhere(codec: FixCodec) -> None:
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), "UL")
+    parsed = codec.into_pairs(pyarrow.array([ABSENT]), "FIXML")
     resolved = codec.into_entries(parsed, "4.4")
     assert dict(_tags(resolved)) == {55: "TTF", 38: "1200"}
     assert _named(resolved) == []
@@ -793,19 +793,19 @@ def test_an_absent_field_is_stored_nowhere(codec: FixCodec) -> None:
 
 def test_a_message_whose_every_field_was_absent_is_empty_and_not_null(codec: FixCodec) -> None:
     """It was a message. It said nothing. Those are different facts."""
-    parsed = codec.into_pairs(pyarrow.array(["#A=null|#B=<NULL>"]), "UL")
+    parsed = codec.into_pairs(pyarrow.array(["#A=null|#B=<NULL>"]), "FIXML")
     assert parsed.to_pylist() == [[]]
 
 
 def test_a_null_row_stays_null_through_the_filter(codec: FixCodec) -> None:
-    parsed = codec.into_pairs(pyarrow.array([ABSENT, None]), "UL")
+    parsed = codec.into_pairs(pyarrow.array([ABSENT, None]), "FIXML")
     assert parsed.to_pylist()[1] is None
 
 
 def test_an_empty_set_keeps_every_pair(codec: FixCodec) -> None:
     """A feed whose `n/a` really is a value says so, and nothing is dropped."""
     keeping = FixCodec(registry=codec.registry, null_values=frozenset())
-    parsed = keeping.into_pairs(pyarrow.array([ABSENT]), "UL")
+    parsed = keeping.into_pairs(pyarrow.array([ABSENT]), "FIXML")
     assert len(parsed.to_pylist()[0]) == ABSENT.count("|") + 1
 
 
@@ -878,7 +878,7 @@ def test_the_set_is_configuration_and_travels_in_a_document(
     codec: FixCodec, tmp_path: Path
 ) -> None:
     own = FixCodec(registry=codec.registry, null_values=frozenset({"-", "unset"}))
-    parsed = own.into_pairs(pyarrow.array(["#A=-|#B=unset|#C=null|#D=1"]), "UL")
+    parsed = own.into_pairs(pyarrow.array(["#A=-|#B=unset|#C=null|#D=1"]), "FIXML")
     assert parsed.to_pylist()[0] == [("C", "null"), ("D", "1")]
     path = tmp_path / "codec.yml"
     own.into_yaml(path)
@@ -913,7 +913,7 @@ def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCode
 
 def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) -> None:
     """The name is the whole address: the batch carries it, the rule is ours."""
-    for line, expected in ((BRIDGE, "UL"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
+    for line, expected in ((BRIDGE, "FIXML"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
         assert Rules.into_default().categorise(line).protocol == expected
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
@@ -1284,7 +1284,7 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
     entries = _packed_party_entries(separator)
 
     assert stored_entry_separators(entries).to_pylist() == [separator]
-    pairs, parties, residual = _parties_from_entries(packaged, entries, "UL")
+    pairs, parties, residual = _parties_from_entries(packaged, entries, "FIXML")
 
     assert _pairs(pairs) == [
         ("NOPARTYIDS[0].PARTYID", "99106.003"),
@@ -1311,7 +1311,7 @@ def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec
             "rules": [
                 {
                     "protocol": "VENDOR",
-                    "codec": "ul",
+                    "codec": "fixml",
                     "extra_entry_separators": [separator],
                 }
             ]
@@ -1427,7 +1427,7 @@ def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
         ]
     )
     tags, columns = packaged.into_fixmsg_columns(
-        packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
+        packaged.into_pairs(pyarrow.array([line]), "FIXML"), "4.4"
     )
     lifted = {name: column.to_pylist()[0] for name, column in columns.items()}
     assert lifted["side"] == "1"
@@ -1442,7 +1442,7 @@ def test_two_readings_that_disagree_are_still_left_where_they_were(
     """Two values under one key is a group or a rewrite, and picking is a guess."""
     line = "toBridge #BEGINSTRING=FIX.4.4|#SIDE=1|SIDE=2"
     tags, columns = packaged.into_fixmsg_columns(
-        packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
+        packaged.into_pairs(pyarrow.array([line]), "FIXML"), "4.4"
     )
     assert columns["side"].to_pylist() == [None]
     assert _tags(tags) == [(54, "1"), (54, "2")]
@@ -1533,7 +1533,7 @@ def test_a_payload_that_really_is_xml_is_left_exactly_as_it_was(
 
 
 def test_a_payload_that_is_not_pairs_at_all_is_left_alone(packaged: FixCodec) -> None:
-    """One `a=b` is a sentence, not a message -- the same rule `BRIDGE` applies."""
+    """One `a=b` is a sentence, not a message -- the same rule `FIXML_PATTERN` applies."""
     for payload in ("nothing here at all", "onlyone=value"):
         message = SOH.join(["8=FIX.4.4", "35=8", f"213={payload}", "10=000"]) + SOH
         assert ("213", payload) in _payload(packaged, message)
@@ -1559,7 +1559,7 @@ def test_a_payload_field_lands_in_the_column_its_name_earns(packaged: FixCodec) 
 def test_a_rendered_xmldata_is_read_the_same_way(packaged: FixCodec) -> None:
     """The tag and the rendered name are two spellings of one field."""
     line = "toBridge #BEGINSTRING=FIX.4.4|#XMLDATA=ClOrdID=ORD-TEST-02;Side=2|#SIDE=2"
-    assert _payload(packaged, line, "UL") == [
+    assert _payload(packaged, line, "FIXML") == [
         ("BEGINSTRING", "FIX.4.4"),
         ("XmlData.ClOrdID", "ORD-TEST-02"),
         ("XmlData.Side", "2"),

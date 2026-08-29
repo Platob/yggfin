@@ -48,7 +48,7 @@
   color: var(--md-default-fg-color);
 }
 
-.fix-transcribe__protocol[data-protocol="ul"] {
+.fix-transcribe__protocol[data-protocol="fixml"] {
   color: var(--md-default-fg-color);
 }
 

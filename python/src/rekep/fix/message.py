@@ -1,4 +1,4 @@
-"""One FIX message out of a log line, and whole columns of them at once."""
+"""FIX wire frames and FIXML rendered payloads, scalar and columnar."""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ _DATA_TAG_KEY = re.compile(DATA_TAG_TOKEN.replace(r"(?s)", "", 1), re.DOTALL)
 #: A top-level numeric MsgType token is enough to identify FIX even when a
 #: capture omitted BeginString. Separators are explicit so prose `35=D` stays
 #: prose; `#` is both the rendered marker and a delimiter in compact logs.
-WIRE_MSG_TYPE = (
+FIX_MSG_TYPE_PATTERN = (
     r"(?s)(?:^|\x04\x03|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
     r"[ \t\r\n\f\x0b]*[A-Za-z0-9]+[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
 )
@@ -144,7 +144,7 @@ _WS = r"[ \t\r\n\f\x0b]"
 #: which is wider than what any of these regexes call whitespace.
 _STRIPPED = " \t\r\n\f\x0b"
 
-#: One `#KEY=` token, which is how a UL bridge marks a field: the `#` says
+#: One `#KEY=` token, which is how a FIXML bridge marks a field: the `#` says
 #: "a key starts here", which is the only thing in a rendered line that does.
 #:
 #: The bracket and the dotted member are both admitted, because both are how a
@@ -156,46 +156,38 @@ _STRIPPED = " \t\r\n\f\x0b"
 #: or `#10=`, and a rule that took only a letter-initial name put that token in
 #: the *prefix* every reader of this cuts away -- so the field was dropped and,
 #: where it was the trailer, a discriminator written behind it was promoted.
-_BRIDGE_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_FIXML_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: What makes a line a **bridge message**: two or more of those tokens.
-#: Public for the same reason `BEGIN_STRING` is -- it is the UL classification
+#: Public for the same reason `BEGIN_STRING` is -- it is the FIXML classification
 #: rule, and a rule is data. Two and not one, because a lone `#FOO=bar` in
 #: prose is a sentence, and a rule that called it a message would parse every
 #: log line that mentions a hashtag.
-BRIDGE = rf"(?s){_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}"
+FIXML_PATTERN = rf"(?s){_FIXML_TOKEN}.*{_FIXML_TOKEN}"
 
-#: `BRIDGE` with the message after it captured: where a bridge message starts
+#: `FIXML_PATTERN` with the message after it captured: where a bridge message starts
 #: inside a log line, exactly as `BEGIN_VECTOR` says where a wire message
 #: does. `toBridge #ISINCODE=x|#SIDE=1` carries the plugin's own prefix, and
 #: without a start marker the first key would be `toBridge #ISINCODE`.
-BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
+FIXML_VECTOR = rf"(?s)(?P<msg>{_FIXML_TOKEN}.*{_FIXML_TOKEN}.*)"
 
-#: A wire message whose **body** is a bridge one: a BeginString, and MsgType
-#: `UL` somewhere after it. Some venues wrap the bridge's own `#NAME=` payload
-#: in a FIX envelope, and such a line answers to both tells -- so it needs a
-#: rule of its own, or the FIX one claims it first and every named field in it
-#: is read as noise.
-#:
-#: The MsgType is the discriminator and not the `#` tokens, because that is
-#: what the *sender* said the message is: a wire message with a hash in a Text
-#: field is not a bridge message, and one that says `35=UL` is one however few
-#: fields it happens to carry.
-BRIDGE_WIRE = rf"(?s){BEGIN_STRING}.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)"
+#: A FIX frame carrying a rendered `NAME=VALUE` document in `XmlData <213>`.
+#: The venue's wire token remains `35=UL`; FIXML is rekep's protocol name.
+FIXML_WIRE_PATTERN = rf"(?s){BEGIN_STRING}.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)"
 
 # A user-defined MsgType can wrap a rendered payload even when it is not the
-# built-in UL protocol. Scalar parsing must then admit both numeric and named
+# built-in FIXML protocol. Scalar parsing must then admit both numeric and named
 # keys, exactly as the columnar message stage does.
 _USER_DEFINED_WIRE = r"(?s)(?:^|[^0-9])35=U[A-Za-z0-9]*(?:[^A-Za-z0-9]|$)"
 
 #: The scalar reading of the same rule: the first `#NAME=` that has another
 #: after it. A lookahead rather than a capture, because the scalar path wants
 #: the *position* and RE2 -- which has neither -- reads it off the capture.
-_BRIDGE = re.compile(rf"{_BRIDGE_TOKEN}(?=.*{_BRIDGE_TOKEN})", re.DOTALL | re.ASCII)
+_FIXML = re.compile(rf"{_FIXML_TOKEN}(?=.*{_FIXML_TOKEN})", re.DOTALL | re.ASCII)
 
 #: One `#NAME=` on its own, for finding the *second* one -- whatever sits in
 #: front of which is the separator (`detect_separator`).
-_BRIDGE_NEXT = re.compile(_BRIDGE_TOKEN, re.ASCII)
+_FIXML_NEXT = re.compile(_FIXML_TOKEN, re.ASCII)
 
 #: `detect_separator`, vectorised, in its two halves: whatever follows the
 #: BeginString value, and -- for a line that has none -- whatever sits in front
@@ -213,7 +205,7 @@ NAMED_SEPARATOR_VECTOR = (
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
     rf"[Ff][Ii][Xx][Tt]?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 )
-BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_BRIDGE_TOKEN}"
+FIXML_SEPARATOR_VECTOR = rf"(?s){_FIXML_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_FIXML_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -312,9 +304,9 @@ def detect_separator(text: str) -> str:
         following = _separator_at(text, match.end())
         if following is not None:
             return following
-    bridge = _BRIDGE.search(text)
-    if bridge is not None:
-        second = _BRIDGE_NEXT.search(text, bridge.end())
+    fixml = _FIXML.search(text)
+    if fixml is not None:
+        second = _FIXML_NEXT.search(text, fixml.end())
         if second is not None:
             return _separator_before(text, second.start())
     for candidate in SEPARATORS:
@@ -378,9 +370,9 @@ def parse_pairs(
     if named is None:
         named = begin is None or re.search(_USER_DEFINED_WIRE, text, re.IGNORECASE) is not None
     if named and begin is None:
-        bridge = _BRIDGE.search(text)
-        if bridge is not None:
-            text = text[bridge.start() :]
+        fixml = _FIXML.search(text)
+        if fixml is not None:
+            text = text[fixml.start() :]
     separator = separator or detect_separator(text)
     if named and entry_separator is None:
         entry_separator = detect_entry_separator(text, separator, extra_entry_separators)
@@ -530,7 +522,7 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
         # the header, or the tags that say what it is are cut off with the
         # log's prefix. The scalar parser applies the same guard, so the two
         # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, BRIDGE_VECTOR), "msg")
+        bridged = compute.struct_field(compute.extract_regex(values, FIXML_VECTOR), "msg")
         values = compute.if_else(
             compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
         )
@@ -1092,9 +1084,9 @@ def _column_style(
             if begin is not None:
                 text = text[begin.start() :]
             elif reading:
-                bridge = _BRIDGE.search(text)
-                if bridge is not None:
-                    text = text[bridge.start() :]
+                fixml = _FIXML.search(text)
+                if fixml is not None:
+                    text = text[fixml.start() :]
             separator = detect_separator(text)
             entry = (
                 detect_entry_separator(text, separator, extra_entry_separators) if reading else None

@@ -1,6 +1,6 @@
 # Transcribe FIX
 
-Decode or encode FIX, UL, and FIX-wrapped UL in the browser. Pair order,
+Decode or encode FIX, FIXML, and FIX-wrapped FIXML in the browser. Pair order,
 repeating groups, and unknown values are preserved.
 
 <div class="fix-registry fix-transcribe" data-fix-transcribe
@@ -64,8 +64,8 @@ repeating groups, and unknown values are preserved.
           <div class="fix-transcribe__samples" aria-label="Decode examples">
             <span>Examples</span>
             <button type="button" data-decode-sample="fix">FIX</button>
-            <button type="button" data-decode-sample="ul">UL</button>
-            <button type="button" data-decode-sample="ul-wire">UL wire</button>
+            <button type="button" data-decode-sample="fixml">FIXML</button>
+            <button type="button" data-decode-sample="fixml-wire">FIXML wire</button>
           </div>
         </div>
 
@@ -82,7 +82,7 @@ repeating groups, and unknown values are preserved.
       <details class="fix-transcribe__rules">
         <summary>Parsing rules</summary>
         <p>Unparsed tokens fail FIX syntax. Unresolved pairs remain ordered but have no registry identity.</p>
-        <p>Indexed UL groups are exact. Numeric groups require an unambiguous count, delimiter, version, and registry shape.</p>
+        <p>Indexed FIXML groups are exact. Numeric groups require an unambiguous count, delimiter, version, and registry shape.</p>
       </details>
 
       <div class="fix-registry__summary fix-transcribe__summary" aria-label="Decode summary">
@@ -193,8 +193,8 @@ repeating groups, and unknown values are preserved.
           <div class="fix-transcribe__samples" aria-label="Encode examples">
             <span>Examples</span>
             <button type="button" data-encode-sample="fix">FIX</button>
-            <button type="button" data-encode-sample="ul">UL</button>
-            <button type="button" data-encode-sample="ul-wire">UL wire</button>
+            <button type="button" data-encode-sample="fixml">FIXML</button>
+            <button type="button" data-encode-sample="fixml-wire">FIXML wire</button>
           </div>
         </div>
 

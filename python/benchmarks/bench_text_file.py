@@ -353,7 +353,7 @@ def _listing(folder: pathlib.Path, repeat: int) -> None:
 #: and not two: the cost of a line the pipeline will *not* parse is the number
 #: that says whether classifying first is worth anything, so the majority case
 #: has to be in the mix rather than assumed away.
-CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("UL", 15))
+CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("FIXML", 15))
 
 #: The separator the generated messages use, stated rather than detected: a
 #: benchmark that let each implementation sample the column would be timing
@@ -421,7 +421,7 @@ def _capture_line(protocol: str, i: int, generate: random.Random) -> str:
         ]
         body = CAPTURE_SEPARATOR.join(fields)
         return f"sending >> {body}{CAPTURE_SEPARATOR} << queued seq={1000 + i}"
-    if protocol == "UL":
+    if protocol == "FIXML":
         entries = SOH.join(["PARTYID=BUYSIDE", "PARTYIDSOURCE=D", "PARTYROLE=1"])
         other = SOH.join(["PARTYID=XPAR", "PARTYIDSOURCE=G", "PARTYROLE=17"])
         fields = [
@@ -864,7 +864,7 @@ def _tags_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     The dictionary is the real one (`data/fix.zip`), because how many names are
     in it is exactly what separates a hash probe from a join.
     """
-    keys = _bridge_keys(columns["UL"])
+    keys = _bridge_keys(columns["FIXML"])
     names = _dictionary()
     if not names:
         print("\n  pairs -> tags: skipped, no FIX dictionary at data/fix.zip")

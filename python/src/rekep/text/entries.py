@@ -18,7 +18,7 @@ from rekep.fields.arrays import (
     scattered,
     sequence,
 )
-from rekep.fix.message import BEGIN_VECTOR, BRIDGE_VECTOR, split_payload_arrow
+from rekep.fix.message import BEGIN_VECTOR, FIXML_VECTOR, split_payload_arrow
 
 # A generic argument name. Capture its marker so `Entry` can remove it while
 # preserving that normalization for protocol-specific conversion.
@@ -161,7 +161,7 @@ def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
     """
     compute = pyarrow.compute
     begun = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
-    bridged = compute.struct_field(compute.extract_regex(text, BRIDGE_VECTOR), "msg")
+    bridged = compute.struct_field(compute.extract_regex(text, FIXML_VECTOR), "msg")
     return compute.coalesce(begun, bridged, text)
 
 

@@ -2163,11 +2163,13 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
 ) -> None:
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
     quiet = FixMsg(unix=1, hash=1, xhash=1, message="heartbeat emitted")
-    bridged = FixMsg(unix=2, hash=2, xhash=2, message="toBridge #", protocolcode="UL", entries=[])
+    bridged = FixMsg(
+        unix=2, hash=2, xhash=2, message="toBridge #", protocolcode="FIXML", entries=[]
+    )
     logs.append_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
     stored = logs.read_arrow_table(FixMsg.into_field()).sort_by("unix")
-    assert stored.column("protocolcode").to_pylist() == ["OTHER", "UL", "FIX"]
+    assert stored.column("protocolcode").to_pylist() == ["OTHER", "FIXML", "FIX"]
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
     # parser-level contract still pins null versus empty before this boundary.

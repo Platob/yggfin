@@ -9,7 +9,7 @@ import pytest
 
 from rekep import FixMsg, FixRegistry
 from rekep.fix import (
-    BRIDGE,
+    FIXML_PATTERN,
     MARKER,
     SOH,
     detect_entry_separator,
@@ -371,7 +371,7 @@ def test_the_plugin_s_own_prefix_never_glues_onto_the_first_key() -> None:
 
 
 def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
-    """Two `#NAME=` or it is a sentence, which is what `BRIDGE` says."""
+    """Two `#NAME=` or it is a sentence, which is what `FIXML_PATTERN` says."""
     assert _raw(FixMsg.from_text("Account=A|note=see #ref for details"), "Account") == "A"
 
 
@@ -881,9 +881,9 @@ def test_the_two_parsers_agree_about_a_named_bracket() -> None:
 
 def test_a_line_of_named_brackets_is_a_bridge_message() -> None:
     """The classification rule and the token rule are one rule, or a line is lost."""
-    assert re.search(BRIDGE, "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM")
-    assert re.search(BRIDGE, "toBridge #NOPARTYIDS[0].PARTYID=A|#NOPARTYIDS[0].PARTYROLE=1")
-    assert not re.search(BRIDGE, "a sentence mentioning #hashtag and nothing else")
+    assert re.search(FIXML_PATTERN, "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM")
+    assert re.search(FIXML_PATTERN, "toBridge #NOPARTYIDS[0].PARTYID=A|#NOPARTYIDS[0].PARTYROLE=1")
+    assert not re.search(FIXML_PATTERN, "a sentence mentioning #hashtag and nothing else")
 
 
 def test_a_wire_message_still_refuses_a_bracketed_key() -> None:

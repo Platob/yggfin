@@ -44,12 +44,12 @@ EXPECTED_PROTOCOLS = [
     "FIX",
     "FIX",
     "FIX",
-    "UL",
-    "UL",
+    "FIXML",
+    "FIXML",
     "OTHER",
     "OTHER",
     "OTHER",
-    "UL",
+    "FIXML",
 ]
 
 #: Derived from the bridge line, then pinned: eleven tokens, two of which carry
@@ -730,7 +730,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     path = tmp_path / "rules.yml"
     Rules(
         rules=[
-            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="ul"),
+            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="fixml"),
             Rules.into_default().rule(NO_PROTOCOL),
         ]
     ).into_yaml(path)
@@ -1274,7 +1274,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert "entries" in staged.schema.names
     assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
-    assert staged.column("protocolcode").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    assert staged.column("protocolcode").to_pylist() == ["FIX", "FIXML", "MISC", "OTHER"]
     # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
     # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
@@ -1408,7 +1408,7 @@ def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:
 def test_the_split_key_still_spells_what_the_line_wrote(codec: FixCodec) -> None:
     """An indexed `comp` joined to `key` survives dictionary completion."""
     line = "send #NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42"
-    pairs = codec.into_pairs(pyarrow.array([line], pyarrow.string()), "UL")
+    pairs = codec.into_pairs(pyarrow.array([line], pyarrow.string()), "FIXML")
     columns = {"entries": codec.into_message_entries(pairs)}
     for level in (columns["entries"], codec.complete_entries(columns["entries"], "4.4")):
         rebuilt = [

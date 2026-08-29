@@ -116,6 +116,7 @@ def test_named_message_types_use_the_same_registry_mapping() -> None:
     found = parsed("MsgType=8|Text=rendered|", "#MSGTYPE=W|#Text=marked|")
 
     assert found["msgtype"].to_pylist() == ["8", "W"]
+    assert found["protocolcode"].to_pylist() == ["FIXML", "FIXML"]
     assert found["eventtype"].to_pylist() == [
         int(EventType.EXECUTION),
         int(EventType.BOOK),
@@ -126,6 +127,7 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["msgtype"].to_pylist() == ["D"]
+    assert found["protocolcode"].to_pylist() == ["FIXML"]
     assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
     assert [entry["key"] for entry in residual] == ["SIDE"]

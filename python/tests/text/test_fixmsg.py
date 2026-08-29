@@ -703,7 +703,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
         _raw_batch(Message(message=line)), FixCodec(registry=registry)
     )
 
-    assert batch.column("protocolcode")[0].as_py() == "UL"
+    assert batch.column("protocolcode")[0].as_py() == "FIXML"
     altids = batch.column("securityaltid")[0].as_py()
     assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
@@ -1041,7 +1041,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         "ISINCODE",
     ], "only the discriminator answers to a rendered header name"
     assert raw.column("msgseqnum").to_pylist() == ["7", None, None], "text, until this stage"
-    assert raw.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert raw.column("protocolcode").to_pylist() == ["FIX", "FIXML", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
@@ -1051,7 +1051,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         int(EventType.EXECUTION),
         int(EventType.MISC),
     ]
-    assert parsed.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert parsed.column("protocolcode").to_pylist() == ["FIX", "FIXML", "OTHER"]
     assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4", None]
     assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
     assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
@@ -1099,7 +1099,7 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
         raw.select([name for name in raw.schema.names if name != "message"]), codec
     )
 
-    assert whole.column("protocolcode").to_pylist() == ["FIX", "UL"]
+    assert whole.column("protocolcode").to_pylist() == ["FIX", "FIXML"]
     assert projected.column("protocolcode").equals(whole.column("protocolcode"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
@@ -1126,7 +1126,7 @@ def test_staged_protocol_matching_the_codec_survives_projection(
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert whole.column("protocolcode").to_pylist() == ["UL"]
+    assert whole.column("protocolcode").to_pylist() == ["FIXML"]
     assert whole.column("clordid").to_pylist() == ["A"]
     assert projected.column("protocolcode").equals(whole.column("protocolcode"))
     assert projected.column("clordid").equals(whole.column("clordid"))
@@ -1539,8 +1539,8 @@ def test_staged_groups_preserve_malformed_continuations(registry: FixRegistry) -
     raw = _raw_batch(Message(message=line))
     codec = FixCodec(registry=registry)
 
-    staged = codec.into_pairs_from_entries(raw.column("entries"), "UL")
-    direct = codec.into_pairs(pyarrow.array([line]), "UL")
+    staged = codec.into_pairs_from_entries(raw.column("entries"), "FIXML")
+    direct = codec.into_pairs(pyarrow.array([line]), "FIXML")
 
     assert (
         staged.to_pylist()
@@ -1786,10 +1786,26 @@ def test_rendered_isincode_keeps_its_source_identity() -> None:
     assert field.fix == {"name": "ISINCODE", "type": "String", "display": "ISIN Code"}
 
 
+def test_fixml_decodes_a_named_value_inside_its_wire_envelope(
+    registry: FixRegistry,
+) -> None:
+    payload = "EXECTYPE=fill|CURRENCY=NOK|COUNTERAMOUNT=1200"
+    line = f"8=FIX.4.2|35=UL|212={len(payload)}|213={payload}|10=000"
+
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line)), FixCodec(registry=registry)
+    )
+
+    assert parsed.column("protocolcode").to_pylist() == ["FIXML"]
+    assert parsed.column("msgtype").to_pylist() == ["UL"]
+    assert parsed.column("protocolversion").to_pylist() == ["4.2"]
+    assert parsed.column("exectype").to_pylist() == ["2"]
+
+
 def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegistry) -> None:
     """An enrichment echo writes real bridge fields with a `MSGTYPE=` and no
     `#` markers: the rules alone say OTHER and drop that payload unread, but
-    the message stage's syntax reading said UL, and that answer is data. The
+    the message stage's syntax reading said FIXML, and that answer is data. The
     fill is one-directional -- a recompute that named a protocol keeps it --
     so operational vocabulary stays MISC and a `35=UL` wrapper the probe
     stored as FIX still parses as the bridge message it is."""
@@ -1797,7 +1813,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
         message="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
         "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
     )
-    assert echo.protocolcode == "UL", "the syntax probe already said so"
+    assert echo.protocolcode == "FIXML", "the syntax probe already said so"
     heartbeat = Message(message="heartbeat emitted seq=7")
     assert heartbeat.protocolcode == "OTHER", "the probe has no MISC vocabulary"
     wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
@@ -1806,7 +1822,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     batch = FixMsg.from_message_batch(
         _raw_batch(echo, heartbeat, wrapped), FixCodec(registry=registry)
     )
-    assert batch.column("protocolcode").to_pylist() == ["UL", "MISC", "UL"]
+    assert batch.column("protocolcode").to_pylist() == ["FIXML", "MISC", "FIXML"]
     assert batch.column("clordid").to_pylist()[0] == "PL024819", "promoted, not dropped"
     assert batch.column("account").to_pylist()[0] == "807768.001"
     assert batch.column("msgtype").to_pylist()[0] == "D"
@@ -1817,9 +1833,9 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     # rescued row still keeps its arguments and its identities -- both were
     # simply null while the row read as OTHER.
     bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
-    assert bare.protocolcode == "UL"
+    assert bare.protocolcode == "FIXML"
     lone = FixMsg.from_message_batch(_raw_batch(bare), FixCodec(registry=registry))
-    assert lone.column("protocolcode").to_pylist() == ["UL"]
+    assert lone.column("protocolcode").to_pylist() == ["FIXML"]
     assert [(entry["key"], entry["value"]) for entry in lone.column("entries").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
         ("CLORDID", "PL9"),
@@ -1839,8 +1855,8 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
         "toBridge Sending #MSGTYPE=D|#CLORDID=C2|#SYMBOL=MSFT|#SIDE=1",
         "RouteMessage : 8=FIX.4.4|35=D|11=C3|55=IBM|54=2|38=1|10=000",
         "Receiving Sending 8=FIX.4.4|35=D|11=C4|10=000",
-        # A rendered bridge line anchors on the `UL` rule's own vocabulary,
-        # not `UL_WIRE`'s: a verb only inside its payload answers nothing.
+        # A rendered bridge line anchors on the `FIXML` rule's own vocabulary,
+        # not `FIXML_WIRE`'s: a verb only inside its payload answers nothing.
         "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
         "just some heartbeat prose",
     ]
@@ -1871,13 +1887,13 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
         int(Direction.SENT),
     ]
 
-    # A rescued row -- stored UL, no rule pattern in its text -- has no
+    # A rescued row -- stored FIXML, no rule pattern in its text -- has no
     # payload anchor, and an unanchored verb answers nothing rather than
     # answering from anywhere.
     rescued = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
-    assert rescued.protocolcode == "UL"
+    assert rescued.protocolcode == "FIXML"
     anchorless = FixMsg.from_message_batch(_raw_batch(rescued), FixCodec(registry=registry))
-    assert anchorless.column("protocolcode").to_pylist() == ["UL"]
+    assert anchorless.column("protocolcode").to_pylist() == ["FIXML"]
     assert anchorless.column("direction").to_pylist() == [int(Direction.UNKNOWN)]
 
     # A projected row reparsed without its raw message keeps the resolved

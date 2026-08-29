@@ -39,7 +39,7 @@ from rekep.fix.components import (
 from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
-    BRIDGE_SEPARATOR_VECTOR,
+    FIXML_SEPARATOR_VECTOR,
     MARKER,
     NAMED_SEPARATOR_VECTOR,
     SEPARATOR_VECTOR,
@@ -59,7 +59,7 @@ _XML_DATA_NAME = pyarrow.scalar(column_name(_XML_DATA_KEY))
 _XML_DATA_TAG = pyarrow.scalar(str(DECLARED[_XML_DATA_KEY].fix.tag))
 
 #: What makes a payload a message rather than a document: two `name=` tokens.
-#: The same "two and not one" `BRIDGE` uses, and for the same reason -- one
+#: The same "two and not one" `FIXML_PATTERN` uses, and for the same reason -- one
 #: `a=b` inside prose is a sentence.
 _PAYLOAD_PAIRS = r"[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*="
 
@@ -70,7 +70,7 @@ _LOOKS_XML = r"^[ \t\r\n]*<"
 #: What a payload writes between its fields. Neither of the two things
 #: `separators_of` reads -- a BeginString or a `#` -- is inside one, so this
 #: reads the character between the first `name=value` and the next `name=`,
-#: which is the same rule `BRIDGE_SEPARATOR_VECTOR` applies to a marked line.
+#: which is the same rule `FIXML_SEPARATOR_VECTOR` applies to a marked line.
 #: `\^A` before `.`, or a caret-A payload reads its separator as `^` and every
 #: key after the first comes back with an `A` glued to the front.
 _PAYLOAD_SEPARATOR = r"(?s)[A-Za-z0-9_.\-]+[ \t]*=.*?(?P<sep>\^A|.)[A-Za-z0-9_.\-]+[ \t]*="
@@ -388,7 +388,7 @@ class FixCodec(Convertible):
     def into_payload_pairs(self, pairs: Any) -> Any:
         """`XmlData <213>` read as the message it carries, where it carries one.
 
-        The standard calls tag 213 an XML data stream; real bridge traffic puts
+        The standard calls tag 213 an XML data stream; real FIXML traffic puts
         a `key=value` message in it. A payload that reads as pairs becomes
         pairs under `XmlData.<key>`, in the place the tag sat, and resolves
         like any other nested key; one that reads as XML, or as nothing, stays
@@ -500,7 +500,7 @@ class FixCodec(Convertible):
             )
             found = named_begin if found is None else compute.coalesce(found, named_begin)
             bridge = compute.struct_field(
-                compute.extract_regex(text, BRIDGE_SEPARATOR_VECTOR), "sep"
+                compute.extract_regex(text, FIXML_SEPARATOR_VECTOR), "sep"
             )
             bridge = compute.if_else(
                 compute.is_in(bridge, value_set=pyarrow.array(SEPARATORS, pyarrow.string())),

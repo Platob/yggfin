@@ -53,7 +53,7 @@ monotonic insert where their semantics fit.
 ## Where the parse stages spend their time
 
 2026-08-27, same machine, over `bench_text_file.py`'s mixed capture — 100,000
-rows at 60% OTHER, 25% FIX, 15% UL, batches of 65,536, warm:
+rows at 60% OTHER, 25% FIX, 15% FIXML, batches of 65,536, warm:
 
 | stage | rows/s |
 | --- | ---: |
@@ -69,7 +69,7 @@ pending exactly this measurement:
 | collapse the classification probe scans | worth about a tenth; `Entry.parse_arrow` is ~¾ of `Message.parse_arrow` and the probes ~⅐. RE2 cannot express the before-checksum guard in one pass — no lookahead, no per-row slice — so value and position stay two scans. Parked. |
 | cut per-call kernel dispatch | ~85% of a warm batch runs inside Arrow kernels, over a millisecond per call across ~2,000 calls, so wrapper overhead is under a tenth. Group-by fragmentation grows with distinct protocol/version groups, which this fixture keeps small. |
 | the two seconds at the front | one-time: a fresh codec materializes the merged field table and per-version declarations, then caches them. Dominates a short profile, vanishes over a long run. |
-| a bridge fast path | the reference path costs ~0.5 s/batch against the flat FIX path's 0.2 s, and per *field* a named read is already on par with a wire one — the row-rate gap is message size. Worth doing against a real UL-heavy capture, not this fixture. |
+| a bridge fast path | the reference path costs ~0.5 s/batch against the flat FIX path's 0.2 s, and per *field* a named read is already on par with a wire one — the row-rate gap is message size. Worth doing against a real FIXML-heavy capture, not this fixture. |
 
 Reproduce with `bench_text_file.capture` and `cProfile` over
 `Message.parse_arrow` and `FixMsg.from_message_batch` separately, warm.

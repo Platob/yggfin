@@ -180,7 +180,7 @@ def test_the_accessor_reads_what_the_codec_transcribed(registry: FixRegistry) ->
     """
     codec = FixCodec(registry=registry)
     stored = codec.into_entries(
-        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
+        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "FIXML"), "4.4"
     ).to_pylist()[0]
     access = FieldAccess.of(registry, "4.4")
     assert access.reading(stored, 54).raw == "1"
@@ -206,7 +206,7 @@ def test_a_wire_row_answers_a_name_and_a_rendered_row_answers_a_tag(
         codec.into_pairs(pyarrow.array([WIRE], pyarrow.string()), "FIX"), "4.4"
     ).to_pylist()[0]
     rendered = codec.into_entries(
-        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
+        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "FIXML"), "4.4"
     ).to_pylist()[0]
     for named in (54, "Side", "OrderQty", "PartyID"):
         assert access.reading(wire, named).raw == access.reading(rendered, named).raw, named
@@ -216,7 +216,7 @@ def test_pairs_and_stored_entries_read_alike(registry: FixRegistry) -> None:
     """A row addressed as pairs and the same row stored answer the same asks."""
     codec = FixCodec(registry=registry)
     stored = codec.into_entries(
-        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "UL"), "4.4"
+        codec.into_pairs(pyarrow.array([RENDERED], pyarrow.string()), "FIXML"), "4.4"
     ).to_pylist()[0]
     pairs = FixMsg.from_text(RENDERED).pairs
     access = FieldAccess.of(registry, "4.4")

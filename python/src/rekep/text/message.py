@@ -52,7 +52,7 @@ _CHECKSUM_KEYS = tuple(
 #: field is eligible only where it stands in front of it -- and a marker that
 #: lifted itself out could no longer say it was last.
 #:
-#: `XmlData <213>` is a message more often than it is a document: real bridge
+#: `XmlData <213>` is a message more often than it is a document: real FIXML
 #: traffic writes `key=value` pairs in it, and `FixCodec.into_payload_pairs`
 #: expands those in the place the tag sat. That expansion reads the tag out of
 #: the fields the row still carries, so lifting it here would leave a nested
@@ -135,7 +135,7 @@ _CHECKSUM_TOKEN = (
 # Finding one discriminator is deliberately cheaper than tokenising the whole
 # payload. Captures can contain long prose and stack traces; only a row that
 # names a message kind is allowed into the key/value splitter.
-_WIRE_MSG_TYPE = (
+_FIX_MSG_TYPE_PATTERN = (
     rf"(?s){_TOKEN_START}[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
     rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
 )
@@ -730,7 +730,7 @@ def _protocol_codes(
     named = compute.or_(wrapped, compute.and_(named_probe, compute.invert(wire_probe)))
     return compute.if_else(
         named,
-        pyarrow.scalar("UL"),
+        pyarrow.scalar("FIXML"),
         compute.if_else(
             compute.or_(begins_fix, wire_probe),
             pyarrow.scalar("FIX"),
@@ -754,10 +754,12 @@ def _msg_type_probe(
 ) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array]:
     """Wire values, syntax masks, and the first valid top-level discriminator."""
     compute = pyarrow.compute
-    wire_values = compute.struct_field(compute.extract_regex(text, _WIRE_MSG_TYPE), "value")
+    wire_values = compute.struct_field(compute.extract_regex(text, _FIX_MSG_TYPE_PATTERN), "value")
     named_values = compute.struct_field(compute.extract_regex(text, _NAMED_MSG_TYPE), "value")
     checksum_at = compute.find_substring_regex(text, _CHECKSUM_TOKEN)
-    wire_probe = _before_checksum(compute.find_substring_regex(text, _WIRE_MSG_TYPE), checksum_at)
+    wire_probe = _before_checksum(
+        compute.find_substring_regex(text, _FIX_MSG_TYPE_PATTERN), checksum_at
+    )
     named_probe = _before_checksum(compute.find_substring_regex(text, _NAMED_MSG_TYPE), checksum_at)
     missing = pyarrow.scalar(None, pyarrow.string())
     wire_values = compute.if_else(wire_probe, wire_values, missing)

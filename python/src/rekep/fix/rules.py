@@ -15,16 +15,21 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import Direction, EventType
 from rekep.fields import scalar
-from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, WIRE_MSG_TYPE
+from rekep.fix.message import (
+    BEGIN_STRING,
+    FIX_MSG_TYPE_PATTERN,
+    FIXML_PATTERN,
+    FIXML_WIRE_PATTERN,
+)
 
 #: Read wire tags, rendered names, or no message.
-CODECS: tuple[str, ...] = ("fix", "ul", "none")
+CODECS: tuple[str, ...] = ("fix", "fixml", "none")
 
 #: `codec` -> `parse_arrow_array`'s named mode; None skips parsing. Named for
 #: what it maps rather than for the word it maps to: three unrelated `NAMED`
 #: constants meant three things, and an import of one read as an import of
 #: another.
-CODEC_KEYS: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
+CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "none": None}
 
 #: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
@@ -33,7 +38,7 @@ NO_PROTOCOL = "OTHER"
 #: `Sending : ...`, `Message received:` -- counted only where the verb opens
 #: the line before the payload's own first token, so prose inside a FIX
 #: `Text <58>` or a bridge value never answers. Measured on real capture:
-#: every FIX row carries one of these; most UL re-log lines carry none, so
+#: every FIX row carries one of these; most FIXML re-log lines carry none, so
 #: direction is best-effort there. `incoming`/`outgoing`/`forward`, bare
 #: `IN`/`OUT` markers and the session-name fields were all investigated on
 #: the same capture and ruled out -- each mislabels enrichment snapshots,
@@ -49,7 +54,7 @@ OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b"
 DIRECTION_PATTERNS: Mapping[str, tuple[str, str]] = MappingProxyType(
     {
         "FIX": (INBOUND_PATTERN, OUTBOUND_PATTERN),
-        "UL": (INBOUND_PATTERN, OUTBOUND_PATTERN),
+        "FIXML": (INBOUND_PATTERN, OUTBOUND_PATTERN),
     }
 )
 
@@ -119,7 +124,7 @@ class Rule(Convertible):
     """Additional literals considered when an indexed-entry separator is detected."""
 
     codec: str = "none"
-    """How to read the line: `fix`, `ul`, or `none` for "do not"."""
+    """How to read the line: `fix`, `fixml`, or `none` for "do not"."""
 
     def __post_init__(self) -> None:
         """Keep direct string input as one literal, never its characters."""
@@ -146,15 +151,15 @@ class Rule(Convertible):
 
 
 #: Use parser-owned patterns so classification and parsing cannot drift.
-FIX = Rule(protocol="FIX", pattern=joined_pattern(BEGIN_STRING, WIRE_MSG_TYPE), codec="fix")
+FIX = Rule(protocol="FIX", pattern=joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN), codec="fix")
 
-UL = Rule(protocol="UL", pattern=BRIDGE, codec="ul")
+FIXML = Rule(protocol="FIXML", pattern=FIXML_PATTERN, codec="fixml")
 
 #: More specific than FIX, so this must precede `FIX`. Zero hits across the
 #: 292,750-row three-log sample this set was last validated on -- kept anyway,
 #: by construction rather than by evidence: its envelope is FIX-shaped, so
 #: without it a wrapped bridge message would parse under the wire codec.
-UL_WIRE = Rule(protocol="UL", pattern=BRIDGE_WIRE, codec="ul")
+FIXML_WIRE = Rule(protocol="FIXML", pattern=FIXML_WIRE_PATTERN, codec="fixml")
 
 #: Operational lines whose vocabulary is understood but which carry no market
 #: message. Keeping these known lines out of `unknown` makes that table a
@@ -172,8 +177,8 @@ MISC = Rule(
 #: An empty pattern makes this the final fall-through rule.
 OTHER = Rule(protocol=NO_PROTOCOL, pattern="", codec="none")
 
-#: First match wins; wrapped UL must precede its FIX envelope.
-DEFAULT_RULES: tuple[Rule, ...] = (UL_WIRE, FIX, UL, MISC, OTHER)
+#: First match wins; wrapped FIXML must precede its FIX envelope.
+DEFAULT_RULES: tuple[Rule, ...] = (FIXML_WIRE, FIX, FIXML, MISC, OTHER)
 
 
 def _default_rules() -> list[Rule]:
@@ -285,7 +290,7 @@ class Rules(Convertible):
             if not compute.any(selected, min_count=0).as_py():
                 continue
             # Every rule the protocol answers to, not `rule(protocol)`'s first:
-            # a rendered bridge line matches `UL`, never `UL_WIRE`, and a verb
+            # a rendered bridge line matches `FIXML`, never `FIXML_WIRE`, and a verb
             # checked against the wrong vocabulary would answer from anywhere.
             spelled = joined_pattern(
                 *dict.fromkeys(rule.pattern for rule in self.rules if rule.protocol == protocol)

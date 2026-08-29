@@ -60,7 +60,7 @@ protocols:
       plugin_pattern: '^VenueBridge$'
       separator: ';'
       extra_entry_separators: ["\u001e\u001f"]
-      codec: ul         # `fix` reads wire tags, `ul` rendered names, `none` neither
+      codec: fixml      # `fix` reads wire tags, `fixml` rendered names, `none` neither
     - protocol: OTHER
       pattern: ''       # empty patterns make this the fall-through
       codec: none

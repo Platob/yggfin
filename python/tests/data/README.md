@@ -14,7 +14,7 @@ hard-coded row edits.
   stack trace folded into its preceding `ERROR` row.
 - `app_messages_sample.txt` covers millisecond and microsecond timestamps,
   surrounding noise, pipe, `^A`, and literal SOH separators, a truncated FIX
-  version, indexed UL groups, unknown fields, prose from a bridge driver, a
+  version, indexed FIXML groups, unknown fields, prose from a bridge driver, a
   folded stack trace, and a row without a level.
 
 The message fixture deliberately mixes shapes in one batch so tests exercise

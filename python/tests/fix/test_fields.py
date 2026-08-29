@@ -444,7 +444,7 @@ def _unreachable(*_arguments: object, **_named: object) -> int:
 def test_bridge_spellings_read_the_same_on_both_engines(text: str, expected: str | None) -> None:
     """Colon-free clocks and trailing offsets, scalar and Arrow agreeing.
 
-    Real UL rows carry `TRANSACTTIME=094510` and `EVENTDATE=20260814-0400s`,
+    Real FIXML rows carry `TRANSACTTIME=094510` and `EVENTDATE=20260814-0400s`,
     which the strict pattern nulled; both forms now read, and an offset moves
     the instant rather than being waved through as if it were `Z`.
     """

@@ -5,14 +5,14 @@
 
   const DECODE_SAMPLES = {
     fix: "8=FIX.4.4|35=D|11=ORD-42|453=2|448=BUY-A|447=D|452=3|448=BUY-B|447=D|452=3|10=000|",
-    ul: "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=ORD-42|#NoPartyIDs[0]=PartyID=BUY-A\x04\x03PartyIDSource=proprietary/customcode\x04\x03PartyRole=clientid\x04\x03|#NoPartyIDs[1].PartyID=BUY-B|#NoPartyIDs[1].PartyIDSource=proprietary/customcode|#NoPartyIDs[1].PartyRole=clientid|",
-    "ul-wire":
+    fixml: "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=ORD-42|#NoPartyIDs[0]=PartyID=BUY-A\x04\x03PartyIDSource=proprietary/customcode\x04\x03PartyRole=clientid\x04\x03|#NoPartyIDs[1].PartyID=BUY-B|#NoPartyIDs[1].PartyIDSource=proprietary/customcode|#NoPartyIDs[1].PartyRole=clientid|",
+    "fixml-wire":
       "sending >> 8=FIX.4.4|35=UL|55=wire-copy|#MSGTYPE=D|#CLORDID=ORD-42|#SYMBOL=named-copy|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|10=000|",
   };
   const ENCODE_SAMPLES = {
     fix: "BeginString=FIX.4.4|MsgType=NewOrderSingle|ClOrdID=ORD-42|NoPartyIDs=2|NoPartyIDs[0].PartyID=BUY-A|NoPartyIDs[0].PartyIDSource=proprietary/customcode|NoPartyIDs[0].PartyRole=clientid|NoPartyIDs[1].PartyID=BUY-B|NoPartyIDs[1].PartyIDSource=proprietary/customcode|NoPartyIDs[1].PartyRole=clientid|CheckSum=000|",
-    ul: "#BEGINSTRING=FIX.4.4|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|",
-    "ul-wire":
+    fixml: "#BEGINSTRING=FIX.4.4|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|",
+    "fixml-wire":
       "8=FIX.4.4|35=UL|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|10=000|",
   };
   const SEPARATORS = new Map([
@@ -435,7 +435,7 @@
             0,
             prefix,
             "envelope",
-            begin >= 0 ? "Before BeginString" : "Before first marked UL field",
+            begin >= 0 ? "Before BeginString" : "Before first marked FIXML field",
           ),
         );
       }
@@ -625,13 +625,18 @@
     const msgType = pairs.find((pair) => pair.input_key.replace(/^#/, "") === "35")
       ?.input_value;
     if (hasBegin && msgType === "UL") {
-      return { code: "UL", variant: "fix-wrapper", label: "UL · FIX wrapper", named: true };
+      return {
+        code: "FIXML",
+        variant: "fix-wrapper",
+        label: "FIXML · FIX wrapper",
+        named: true,
+      };
     }
     if (hasBegin && /^U[A-Za-z0-9]*$/i.test(msgType || "")) {
       return { code: "FIX", variant: "user-defined", label: "FIX · user-defined", named: true };
     }
     if (hasBegin) return { code: "FIX", variant: "wire", label: "FIX", named: false };
-    if (hasBridge) return { code: "UL", variant: "bridge", label: "UL", named: true };
+    if (hasBridge) return { code: "FIXML", variant: "bridge", label: "FIXML", named: true };
     const namedBegin = pairs.some(
       (pair) =>
         folded(pair.input_key.replace(/^#/, "")) === "beginstring" &&
@@ -644,7 +649,7 @@
       return { code: "FIX", variant: "fragment", label: "FIX · fragment", named: false };
     }
     if (direction === "encode" || pairs.some((pair) => !/^#?\d+$/.test(pair.input_key))) {
-      return { code: "UL", variant: "named", label: "UL · named", named: true };
+      return { code: "FIXML", variant: "named", label: "FIXML · named", named: true };
     }
     return { code: "OTHER", variant: "pairs", label: "Pairs", named: true };
   }
@@ -870,7 +875,7 @@
         ...record,
         shadowed: true,
         state: "shadowed",
-        reason: "A named UL field is authoritative over this numeric wrapper copy",
+        reason: "A named FIXML field is authoritative over this numeric wrapper copy",
       };
     });
   }

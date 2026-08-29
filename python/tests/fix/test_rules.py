@@ -8,17 +8,25 @@ import pyarrow
 import pytest
 
 from rekep.enums.codes import Direction
-from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, NO_PROTOCOL, Rule, Rules
-from rekep.fix.message import WIRE_MSG_TYPE
+from rekep.fix import (
+    BEGIN_STRING,
+    FIXML_PATTERN,
+    FIXML_WIRE_PATTERN,
+    NO_PROTOCOL,
+    Rule,
+    Rules,
+)
+from rekep.fix.message import FIX_MSG_TYPE_PATTERN
 from rekep.fix.rules import (
     CODEC_KEYS,
+    CODECS,
     DEFAULT_RULES,
+    FIXML,
+    FIXML_WIRE,
     MARKET_CATEGORY,
     MISC,
     MISC_CATEGORY,
     OTHER,
-    UL,
-    UL_WIRE,
     UNKNOWN_CATEGORY,
     joined_pattern,
 )
@@ -32,8 +40,8 @@ LINES = {
     "sending >> 8=FIX.4.2|9=176|35=D|10=203| << queued seq=1092": "FIX",
     "recv 8=FIX4^A9=61^A35=0^A10=017^A on session 3": "FIX",
     f"raw 8=FIX.4.4{SOH}9=224{SOH}35=8{SOH}10=118{SOH}": "FIX",
-    "toBridge #ISINCODE=XX|#SYMBOL=TTF|#SIDE=1": "UL",
-    "sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|": "UL",
+    "toBridge #ISINCODE=XX|#SYMBOL=TTF|#SIDE=1": "FIXML",
+    "sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|": "FIXML",
     "8=FIX.4.4|35=8|58=quoting #A=1 and #B=2|10=1|": "FIX",
     "Message rejected because : ignoring OMSSales expiry message": "OTHER",
     "no level printed by this plugin": "OTHER",
@@ -46,7 +54,7 @@ EXPECTED_RULES = 5
 EXPECTED_PROTOCOLS = 4
 #: The bridge is the one protocol two built-ins carry, which is the point of
 #: `protocol` being a name and not a rule.
-EXPECTED_UL_RULES = 2
+EXPECTED_FIXML_RULES = 2
 DEFAULT = Rules.into_default()
 
 
@@ -54,9 +62,9 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
     """The wrapped bridge message leads: it is the only one with two tells."""
     assert len(DEFAULT_RULES) == EXPECTED_RULES
     assert [rule.protocol for rule in DEFAULT.rules] == [
-        "UL",
+        "FIXML",
         "FIX",
-        "UL",
+        "FIXML",
         "MISC",
         "OTHER",
     ]
@@ -66,10 +74,10 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
 
 def test_the_built_in_patterns_are_the_parser_s_own() -> None:
     """One answer to "where does a message start", not two that drift apart."""
-    assert DEFAULT.rule("FIX").pattern == joined_pattern(BEGIN_STRING, WIRE_MSG_TYPE)
-    assert {rule.pattern for rule in DEFAULT.rules if rule.protocol == "UL"} == {
-        BRIDGE,
-        BRIDGE_WIRE,
+    assert DEFAULT.rule("FIX").pattern == joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN)
+    assert {rule.pattern for rule in DEFAULT.rules if rule.protocol == "FIXML"} == {
+        FIXML_PATTERN,
+        FIXML_WIRE_PATTERN,
     }
 
 
@@ -95,17 +103,17 @@ def test_two_rules_sharing_a_protocol_both_classify_as_it() -> None:
     """
     bare = "toBridge #ISINCODE=XX|#SYMBOL=TTF"
     wrapped = "sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|"
-    assert DEFAULT.categorise(bare) == UL
-    assert DEFAULT.categorise(wrapped) == UL_WIRE
+    assert DEFAULT.categorise(bare) == FIXML
+    assert DEFAULT.categorise(wrapped) == FIXML_WIRE
     assert DEFAULT.categorise(bare).protocol == DEFAULT.categorise(wrapped).protocol
-    assert sum(rule.protocol == "UL" for rule in DEFAULT_RULES) == EXPECTED_UL_RULES
+    assert sum(rule.protocol == "FIXML" for rule in DEFAULT_RULES) == EXPECTED_FIXML_RULES
     lines = pyarrow.array([bare, wrapped])
-    assert DEFAULT.into_arrow_protocol_array(lines).to_pylist() == ["UL", "UL"]
+    assert DEFAULT.into_arrow_protocol_array(lines).to_pylist() == ["FIXML", "FIXML"]
 
 
 def test_the_first_rule_for_a_protocol_is_the_one_it_reads_back() -> None:
-    """A slice is parsed by a rule, and two carry `UL`, so the order decides."""
-    assert DEFAULT.rule("UL") == UL_WIRE
+    """A slice is parsed by a rule, and two carry `FIXML`, so the order decides."""
+    assert DEFAULT.rule("FIXML") == FIXML_WIRE
     assert DEFAULT.rule("FIX").codec == "fix"
     assert DEFAULT.rule(NO_PROTOCOL) == OTHER
 
@@ -113,7 +121,7 @@ def test_the_first_rule_for_a_protocol_is_the_one_it_reads_back() -> None:
 def test_a_wrapped_bridge_message_is_read_as_a_bridge_message() -> None:
     """It answers to both tells, so the order of the rules is what decides it."""
     wrapped = "8=FIX.4.2|35=UL|#A=1|#B=2"
-    assert DEFAULT.categorise(wrapped).protocol == "UL"
+    assert DEFAULT.categorise(wrapped).protocol == "FIXML"
     assert DEFAULT.categorise(wrapped).named is True
     assert DEFAULT.categorise("8=FIX.4.2|35=ULX|#A=1|#B=2").protocol == "FIX"
     assert DEFAULT.categorise("8=FIX.4.2|135=UL|#A=1|#B=2").protocol == "FIX"
@@ -122,7 +130,7 @@ def test_a_wrapped_bridge_message_is_read_as_a_bridge_message() -> None:
 def test_a_lone_marked_key_in_prose_is_not_a_bridge_message() -> None:
     """Two `#NAME=` tokens or it is a sentence, which is what the rule says."""
     assert DEFAULT.categorise("retry #FOO=bar and move on").protocol == "MISC"
-    assert DEFAULT.categorise("send #FOO=bar #BAZ=1").protocol == "UL"
+    assert DEFAULT.categorise("send #FOO=bar #BAZ=1").protocol == "FIXML"
 
 
 def test_a_rule_joins_several_patterns_into_one_alternation() -> None:
@@ -261,7 +269,7 @@ def test_direction_words_produce_packed_codes_before_the_payload() -> None:
 
 
 def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
-    protocols = ["FIX", NO_PROTOCOL, "UL", "MISC", NO_PROTOCOL, "SBE", None]
+    protocols = ["FIX", NO_PROTOCOL, "FIXML", "MISC", NO_PROTOCOL, "SBE", None]
     eventtypes = [
         EventType.ORDER,
         EventType.MISC,
@@ -339,8 +347,9 @@ def test_a_rule_naming_a_plugin_with_no_plugin_column_does_not_match() -> None:
 
 
 def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
+    assert CODECS == ("fix", "fixml", "none")
     assert CODEC_KEYS[DEFAULT.rule("FIX").codec] is False
-    assert CODEC_KEYS[DEFAULT.rule("UL").codec] is True
+    assert CODEC_KEYS[DEFAULT.rule("FIXML").codec] is True
     assert DEFAULT.rule(NO_PROTOCOL).named is None, "and OTHER is not read at all"
 
 
@@ -363,7 +372,7 @@ def test_configured_entry_separator_candidates_round_trip_as_literals() -> None:
             "rules": [
                 {
                     "protocol": "VENDOR",
-                    "codec": "ul",
+                    "codec": "fixml",
                     "extra_entry_separators": [".*", "\x1e\x1f"],
                 }
             ]
@@ -378,11 +387,11 @@ def test_a_loaded_rule_set_overrides_the_default(tmp_path: Path) -> None:
     """A desk with its own bridge writes a document rather than patching this."""
     path = tmp_path / "rules.yml"
     Rules(
-        rules=[Rule(protocol="OWN", pattern=r"toBridge", codec="ul", separator="|"), OTHER]
+        rules=[Rule(protocol="OWN", pattern=r"toBridge", codec="fixml", separator="|"), OTHER]
     ).into_yaml(path)
     loaded = Rules.from_yaml(path)
     line = "toBridge #ISINCODE=XX|#SYMBOL=TTF"
-    assert DEFAULT.categorise(line).protocol == "UL"
+    assert DEFAULT.categorise(line).protocol == "FIXML"
     assert loaded.categorise(line).protocol == "OWN"
     assert loaded.categorise(line).separator == "|"
     protocols = loaded.into_arrow_protocol_array(pyarrow.array([line, "prose"]))

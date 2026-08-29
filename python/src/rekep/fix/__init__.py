@@ -60,8 +60,8 @@ from rekep.fix.fields import (
 )
 from rekep.fix.message import (
     BEGIN_STRING,
-    BRIDGE,
-    BRIDGE_WIRE,
+    FIXML_PATTERN,
+    FIXML_WIRE_PATTERN,
     MARKER,
     SOH,
     detect_entry_separator,
@@ -118,8 +118,8 @@ __all__ = [
     "ANY_VERSION",
     "Alias",
     "BEGIN_STRING",
-    "BRIDGE",
-    "BRIDGE_WIRE",
+    "FIXML_PATTERN",
+    "FIXML_WIRE_PATTERN",
     "CACHE_DIRECTORY",
     "CODECS",
     "CODEC_KEYS",

@@ -33,7 +33,7 @@ The standard header and trailer are lifted, in the order the FIX stage
 declares them, so a reader who has the header does not have to walk `entries`
 for it. Two fields stay entries and cannot do otherwise. `CheckSum <10>` is
 the boundary every other lift is measured against. And `XmlData <213>` is a
-message more often than it is a document — bridges write `key=value` pairs in
+message more often than it is a document — FIXML writes `NAME=VALUE` pairs in
 it, which the FIX stage expands in the place the tag sat — so it stays where
 that expansion can still see it, with `XmlDataLen <212>` beside it because a
 length and the value it measures are one token.
