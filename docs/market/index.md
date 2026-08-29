@@ -1,7 +1,8 @@
 # Market
 
-Market tables store immutable event versions. `hash` identifies one version,
-`prevhash` its predecessor, `xhash` its lifecycle, and `linkedhashes` holds
+Market tables store immutable event versions. `vhash` identifies its value,
+`hash` anchors that value to the event time, `prevhash` names its predecessor,
+`xhash` identifies its lifecycle, and `linkedhashes` holds
 ordered lifecycle hashes relating order, execution and book rows —
 deduplicated, and never pointing at the event's own lifecycle.
 
@@ -171,15 +172,11 @@ completion and emit no Book, same-price amendments update their existing
 level, expiry scans start only when the heap's first deadline is due, and
 single-instrument streams skip cross-book sweeps.
 
-Book identity still reads the ordered live Order hashes its contract requires,
-but per level rather than per book: each level caches the order its members
-settled into and their hashes, and forgets both whenever anything about them
-moves — a member joining or leaving, a quantity revised, or a new version of
-an order standing exactly where the old one did. A book with a hundred live
-levels therefore pays for the one an event touched, and the frame those hashes
-go into is written a run of integers at a time. Both leave the identity bytes
-exactly as they were; together they are most of a 3.7x fold on a
-thousand-order book.
+Book value identity reads the ordered live Order `vhash` values its contract
+requires. Each level caches the order its members settle into and their value
+hashes, then forgets both when a member joins, leaves, or changes. A book with
+a hundred live levels therefore re-hashes the level one event touched, and
+frames the cached values as runs of signed `int64`.
 
 Translating a parsed row back into market events is the other half of the
 generator, and on a real feed the larger half. Which columns carry a FIX tag,

@@ -99,8 +99,8 @@ _SHAPES_BY_CODE: Mapping[int, Stamp] = MappingProxyType(dict(enumerate(SHAPES)))
 #: whatever its fraction is.
 STAMP_WIDTHS: tuple[int, ...] = tuple(sorted({width for stamp in SHAPES for width in stamp.widths}))
 
-#: The Arrow type a line's digest is, and the list of them a lineage would be.
-#: Named here so the parser builds the empty ones without re-deriving the type.
+#: The Arrow type of parent event hashes a line may carry.
+#: Named here so the parser builds empty lists without re-deriving the type.
 PARENTS = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
@@ -744,7 +744,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
         # `Message.identified` fills these once every raw column is here.
-        for name in ("hash", "xhash"):
+        for name in ("hash", "vhash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
         linkedhashes = schema.field("linkedhashes")
         columns.setdefault(

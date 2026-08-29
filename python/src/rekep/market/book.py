@@ -26,7 +26,7 @@ from rekep.enums import (
 from rekep.fields import Field, scalar
 from rekep.market.event import DAY, HOUR, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import HASH, NIL, frame, hash_bytes_of, stored_member
+from rekep.market.identity import HASH, NIL, frame, hash_bytes, stored_member
 from rekep.market.instrument import Instrument
 from rekep.market.orders import CLIENT_ORDER_CODE, Execution, Order, _quantity_transition
 
@@ -69,7 +69,7 @@ class Book(MarketEvent):
         return EventType.BOOK
 
     hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
-    """Digest of the instant, instrument, and ordered live Order version hashes."""
+    """Time-anchored composition of `unix` and the live book's `vhash`."""
 
     # Re-declared to carry **no** FIX tag, which is the honest thing to say:
     # a mid and a touch size are computed from two sides, and FIX has no field
@@ -156,8 +156,8 @@ class Book(MarketEvent):
     )
     """Complete living ask orders, populated only on snapshots."""
 
-    __bid_order_hashes: tuple[int, ...] = ()
-    __ask_order_hashes: tuple[int, ...] = ()
+    __bid_order_vhashes: tuple[int, ...] = ()
+    __ask_order_vhashes: tuple[int, ...] = ()
     __bid_order_frame: bytes | None = None
     __ask_order_frame: bytes | None = None
 
@@ -178,23 +178,38 @@ class Book(MarketEvent):
         self.biddepth = 0 if self.biddepth is None else self.biddepth
         self.askdepth = 0 if self.askdepth is None else self.askdepth
         if self.bidalive or self.askalive:
-            self._remember_alive_hashes(*_alive_hashes(self.bidalive, self.askalive))
+            self._remember_alive_vhashes(*_alive_vhashes(self.bidalive, self.askalive))
         MarketEvent.__post_init__(self)
 
     def version_parts(self) -> tuple[Any, ...]:
         """Identify this instant's complete live order state."""
-        bid = self.__bid_order_hashes
-        ask = self.__ask_order_hashes
+        bid = self.__bid_order_vhashes
+        ask = self.__ask_order_vhashes
         return (
-            self.unix,
-            hash_bytes_of(self.instrumentxhash),
-            len(bid),
-            *(hash_bytes_of(one) for one in bid),
+            *self._version_prefix_parts(len(bid)),
+            *bid,
             len(ask),
-            *(hash_bytes_of(one) for one in ask),
+            *ask,
         )
 
-    def _remember_alive_hashes(
+    def _version_prefix_parts(self, bid_count: int) -> tuple[Any, ...]:
+        """Current book values before the cached live-side value hashes."""
+        return (
+            *MarketEvent.version_parts(self),
+            self.spread,
+            self.vwap,
+            self.execpx,
+            self.imbalance,
+            self.bidpx,
+            self.bidqty,
+            self.biddepth,
+            self.askpx,
+            self.askqty,
+            self.askdepth,
+            bid_count,
+        )
+
+    def _remember_alive_vhashes(
         self,
         bid: Iterable[int],
         ask: Iterable[int],
@@ -202,31 +217,29 @@ class Book(MarketEvent):
         bid_frame: bytes | None = None,
         ask_frame: bytes | None = None,
     ) -> None:
-        """Retain ordered live Order hashes as private Book identity inputs."""
-        self.__bid_order_hashes = tuple(bid)
-        self.__ask_order_hashes = tuple(ask)
+        """Retain ordered live Order value hashes as private Book identity inputs."""
+        self.__bid_order_vhashes = tuple(bid)
+        self.__ask_order_vhashes = tuple(ask)
         self.__bid_order_frame = bid_frame
         self.__ask_order_frame = ask_frame
 
-    def _version_hash(self) -> int:
+    def _version_vhash(self) -> int:
         """Hash the live sides from their cached byte-exact identity frames."""
-        bid = self.__bid_order_hashes
-        ask = self.__ask_order_hashes
+        bid = self.__bid_order_vhashes
+        ask = self.__ask_order_vhashes
         bid_frame = self.__bid_order_frame
         if bid_frame is None:
-            bid_frame = self.__bid_order_frame = hashes_frame(bid)
+            bid_frame = self.__bid_order_frame = vhashes_frame(bid)
         ask_frame = self.__ask_order_frame
         if ask_frame is None:
-            ask_frame = self.__ask_order_frame = hashes_frame(ask)
-        return self.txhash_framed(
+            ask_frame = self.__ask_order_frame = vhashes_frame(ask)
+        return hash_bytes(
             b"".join(
                 (
                     frame(
                         (
                             type(self).__name__,
-                            self.unix,
-                            hash_bytes_of(self.instrumentxhash),
-                            len(bid),
+                            *self._version_prefix_parts(len(bid)),
                         )
                     ),
                     bid_frame,
@@ -287,8 +300,9 @@ class Book(MarketEvent):
         self._materialize_life_code()
         if self.linkedhashes:
             self._drop_self_link()
-        self.hash = self._version_hash()
-        return self
+        self.vhash = self._version_vhash()
+        self.hash = NIL
+        return self.identify()
 
     @classmethod
     def from_fixmsgs(cls, logs: Iterable[FixMsg], **declared: Any) -> Iterator[Self]:
@@ -453,12 +467,12 @@ class Book(MarketEvent):
 # -- helpers ----------------------------------------------------------------
 
 
-def hashes_frame(hashes: tuple[int, ...]) -> bytes:
-    """A run of identifiers as the v1 frame of their stored bytes."""
-    return frame(tuple(hash_bytes_of(one) for one in hashes)) if hashes else b""
+def vhashes_frame(vhashes: tuple[int, ...]) -> bytes:
+    """A run of value hashes in their native signed 64-bit frame."""
+    return frame(vhashes) if vhashes else b""
 
 
-def _alive_hashes(
+def _alive_vhashes(
     bid: Iterable[Order], ask: Iterable[Order]
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """The two sides' live orders as the hashes a book is identified by.
@@ -467,7 +481,7 @@ def _alive_hashes(
     just snapshotted. A fold reads the hashes off its own state instead, and
     never builds the rows to get them.
     """
-    return tuple(order.hash for order in bid), tuple(order.hash for order in ask)
+    return tuple(order.vhash for order in bid), tuple(order.vhash for order in ask)
 
 
 def _resting(order: Order) -> float:
@@ -570,12 +584,12 @@ class _LevelState:
     priority: dict[int, int] = dataclasses.field(default_factory=dict, repr=False)
     next_priority: int = dataclasses.field(default=0, repr=False)
 
-    #: Those members' content hashes, in the same order. Cached beside the
+    #: Those members' value hashes, in the same order. Cached beside the
     #: order for the same reason and cleared with it: a book is identified by
     #: this and by nothing else about the orders standing behind it.
-    hashes: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
+    vhashes: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
 
-    #: The same hashes in their byte-exact identity frames. Joining the
+    #: The same value hashes in their byte-exact identity frames. Joining the
     #: unchanged levels avoids reframing a whole side when one price moves.
     frame: bytes | None = dataclasses.field(default=None, repr=False)
 
@@ -623,7 +637,7 @@ class _Side:
         default_factory=dict, init=False, repr=False
     )
     _next_deadline_token: int = dataclasses.field(default=0, init=False, repr=False)
-    _order_hashes_cache: tuple[int, ...] | None = dataclasses.field(
+    _order_vhashes_cache: tuple[int, ...] | None = dataclasses.field(
         default=None, init=False, repr=False
     )
     _order_frame_cache: bytes | None = dataclasses.field(default=None, init=False, repr=False)
@@ -741,45 +755,47 @@ class _Side:
         orders = self.orders
         return [orders[x] for level in self.alive for x in self._resting_members(level)]
 
-    def order_hashes(self) -> tuple[int, ...]:
-        """Every live order's content hash, best first.
+    def order_vhashes(self) -> tuple[int, ...]:
+        """Every live order's value hash, best first.
 
         What a book is identified by, without building the list of orders it
-        would otherwise be read off: a book row keeps the hashes and nothing
+        would otherwise be read off: a book row keeps the value hashes and nothing
         else about the orders standing behind it. Per level and cached, so an
         instrument with a hundred live levels pays for the one an event moved.
         """
-        cached = self._order_hashes_cache
+        cached = self._order_vhashes_cache
         if cached is not None:
             return cached
         found: list[int] = []
         orders = self.orders
         for level in self.alive:
-            hashes = level.hashes
-            if hashes is None:
-                hashes = level.hashes = tuple(orders[x].hash for x in self._resting_members(level))
-            found.extend(hashes)
-        cached = self._order_hashes_cache = tuple(found)
+            vhashes = level.vhashes
+            if vhashes is None:
+                vhashes = level.vhashes = tuple(
+                    orders[x].vhash for x in self._resting_members(level)
+                )
+            found.extend(vhashes)
+        cached = self._order_vhashes_cache = tuple(found)
         return cached
 
-    def order_identity(self) -> tuple[tuple[int, ...], bytes]:
-        """Ordered live hashes and their cached v1 frames."""
-        hashes = self.order_hashes()
+    def order_value_identity(self) -> tuple[tuple[int, ...], bytes]:
+        """Ordered live value hashes and their cached v1 frames."""
+        vhashes = self.order_vhashes()
         encoded = self._order_frame_cache
         if encoded is None:
             frames = []
             for level in self.alive:
-                level_hashes = level.hashes
-                if level_hashes is None:
-                    level_hashes = level.hashes = tuple(
-                        self.orders[x].hash for x in self._resting_members(level)
+                level_vhashes = level.vhashes
+                if level_vhashes is None:
+                    level_vhashes = level.vhashes = tuple(
+                        self.orders[x].vhash for x in self._resting_members(level)
                     )
                 level_frame = level.frame
                 if level_frame is None:
-                    level_frame = level.frame = hashes_frame(level_hashes)
+                    level_frame = level.frame = vhashes_frame(level_vhashes)
                 frames.append(level_frame)
             encoded = self._order_frame_cache = b"".join(frames)
-        return hashes, encoded
+        return vhashes, encoded
 
     @staticmethod
     def _resting_members(level: _LevelState) -> list[int]:
@@ -824,11 +840,11 @@ class _Side:
         self._moved(px if level is None else level)
 
     def _moved(self, where: float | _LevelState | None) -> None:
-        """Forget one level's cached order and hashes, by price or by level."""
+        """Forget one level's cached order value hashes, by price or by level."""
         level = self.levels.get(where) if isinstance(where, float) else where
         if level is not None:
-            level.hashes = level.frame = None
-            self._order_hashes_cache = None
+            level.vhashes = level.frame = None
+            self._order_vhashes_cache = None
             self._order_frame_cache = None
 
     def into_levels(self) -> list[Level]:
@@ -949,10 +965,8 @@ class _Side:
         if (
             standing is not None
             and order.xhash == standing.xhash
-            and order.state == standing.state
-            and order.px == standing.px
-            and order.qty == standing.qty
-            and order.same_as(standing)
+            and order.vhash
+            and order.vhash == standing.vhash
         ):
             return False, None
         # A copy, because what is stored here outlives the call and is
@@ -983,19 +997,17 @@ class _Side:
             settled.code = standing.code
             settled.xhash = standing.xhash
             settled.completed_from(standing)
-        elif not settled.xhash or not settled.hash:
+        elif not settled.xhash or not settled.vhash or not settled.hash:
             settled.completed_from(None)
         settled = BookIterator.validate(settled)
+        if not settled.vhash or not settled.hash:
+            settled.identify()
         if (
             standing is not None
-            and settled.state == standing.state
-            and settled.px == standing.px
-            and settled.qty == standing.qty
-            and settled.same_as(standing)
+            and settled.xhash == standing.xhash
+            and settled.vhash == standing.vhash
         ):
             return False, None
-        if not settled.hash:
-            settled.identify()
         if settled.state is State.INTERNAL_REJECTED:
             return False, settled
         if settled.px is None:
@@ -1065,7 +1077,7 @@ class _Side:
             "kind",
         ):
             setattr(working, name, getattr(standing, name))
-        working.hash = NIL
+        working.vhash = working.hash = NIL
         working.identify()
 
         old_xhash = standing.xhash
@@ -1106,7 +1118,7 @@ class _Side:
         if displayed is not None and current_qty is not None:
             order.hiddenqty = max(current_qty - displayed, 0.0)
         order.notional = None
-        order.hash = NIL
+        order.vhash = order.hash = NIL
         order.derive()
         order.identify()
 
@@ -1116,6 +1128,7 @@ class _Side:
         standing.hiddenqty = order.hiddenqty
         standing.notional = order.notional
         standing.state = order.state
+        standing.vhash = order.vhash
         standing.hash = order.hash
         after = 0.0 if order.state.is_terminal or order.expires_on_arrival else _resting(order)
         if after <= 0:
@@ -1242,7 +1255,7 @@ class _Side:
     def _remember(self, order: Order) -> None:
         """Store one live order, its bounded code index, and its lazy deadline.
 
-        A new version of a resting order is a new content hash even where it
+        A changed version of a resting order has a new value hash even where it
         stands at the same price for the same quantity, so its level forgets
         what it settled into whether or not the level itself moved.
         """
@@ -1383,6 +1396,9 @@ class _Side:
             if order.qty is not None:
                 revised = copy.copy(order)
                 revised.qty = max(revised.qty - taken, 0.0)
+                revised.vhash = revised.hash = NIL
+                revised.derive()
+                revised.identify()
                 self.orders[order.xhash] = revised
                 if level is not None:
                     self._place(level, order.xhash, _resting(revised))
@@ -1744,7 +1760,7 @@ class BookIterator:
             candidate = copy.copy(paired)
             candidate.prevqty = transition.previous_qty
             candidate.qty = transition.current_qty
-            candidate.hash = NIL
+            candidate.vhash = candidate.hash = NIL
             paired_moved, resulting = side._applied(candidate)
             if resulting is not None:
                 paired = resulting
@@ -1774,6 +1790,7 @@ class BookIterator:
             order_qty=paired.qty if paired.prevqty is None and last_qty is None else None,
         )
         old_hash = paired.hash
+        old_vhash = paired.vhash
         previous_changed = paired.prevqty is None and transition.previous_qty is not None
         state_changed = paired.state is not transition.state
         if previous_changed:
@@ -1787,9 +1804,9 @@ class BookIterator:
             paired.state = transition.state
             paired.qty = transition.current_qty
             paired.derive()
-            paired.hash = NIL
+            paired.vhash = paired.hash = NIL
             paired.identify()
-        if paired.hash != old_hash:
+        if paired.vhash != old_vhash:
             state.parent_hashes.pop(old_hash, None)
             state.parent_hashes[paired.hash] = None
 
@@ -1999,7 +2016,7 @@ class BookIterator:
                 reasons.append("quantity is missing or non-positive")
         if not reasons:
             if terminal_changed:
-                event.hash = NIL
+                event.vhash = event.hash = NIL
                 event.identify()
             return event
         event.state = State.INTERNAL_REJECTED
@@ -2008,7 +2025,7 @@ class BookIterator:
             event.hiddenqty = 0.0
         if not event.reason:
             event.reason = "rejected for book: " + "; ".join(reasons)
-        event.hash = NIL
+        event.vhash = event.hash = NIL
         return event.identify()
 
     def _index_instrument(self, known: Instrument) -> None:
@@ -2094,11 +2111,11 @@ class BookIterator:
         taken.executions = []
         taken.bidalive = state.bid.into_orders()
         taken.askalive = state.ask.into_orders()
-        bid_hashes, bid_frame = state.bid.order_identity()
-        ask_hashes, ask_frame = state.ask.order_identity()
-        taken._remember_alive_hashes(
-            bid_hashes,
-            ask_hashes,
+        bid_vhashes, bid_frame = state.bid.order_value_identity()
+        ask_vhashes, ask_frame = state.ask.order_value_identity()
+        taken._remember_alive_vhashes(
+            bid_vhashes,
+            ask_vhashes,
             bid_frame=bid_frame,
             ask_frame=ask_frame,
         )
@@ -2223,11 +2240,11 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         deltas=list(state.deltas),
         executions=list(state.executions),
     )
-    bid_hashes, bid_frame = state.bid.order_identity()
-    ask_hashes, ask_frame = state.ask.order_identity()
-    book._remember_alive_hashes(
-        bid_hashes,
-        ask_hashes,
+    bid_vhashes, bid_frame = state.bid.order_value_identity()
+    ask_vhashes, ask_frame = state.ask.order_value_identity()
+    book._remember_alive_vhashes(
+        bid_vhashes,
+        ask_vhashes,
         bid_frame=bid_frame,
         ask_frame=ask_frame,
     )
@@ -2245,5 +2262,5 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     state.parent_hashes.clear()
     # The prices across the sides are `Book.derive`'s, which `with_previous`
     # runs once every layer has filled -- so they are not computed here as
-    # well, and the content hash it ends with is of a row that already has them.
+    # well, and the value hash it ends with is of a row that already has them.
     return book.with_previous(previous)

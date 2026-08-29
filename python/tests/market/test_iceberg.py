@@ -46,16 +46,15 @@ def test_every_column_comment_travels(shape: type) -> None:
         assert schema.find_field(member.name).doc == member.description, member.name
 
 
-def test_an_identifier_is_a_fixed_width_column_in_every_engine() -> None:
-    """A version hash is an instant over a 64-bit digest and no longer fits a
-    `long`, so every identifier is `fixed[16]`: Iceberg's one exact fixed-width
-    type, which round trips back to the Arrow column it was written from, and
-    whose big-endian bytes still sort by time."""
+def test_hash_widths_are_preserved_in_every_engine() -> None:
     schema = MarketEvent.into_field().into_iceberg_schema()
     assert str(schema.find_field("hash").field_type) == "fixed[16]"
-    assert str(schema.find_field("xhash").field_type) == "fixed[16]"
+    assert str(schema.find_field("vhash").field_type) == "long"
+    assert str(schema.find_field("xhash").field_type) == "long"
+    assert str(schema.find_field("instrumentxhash").field_type) == "long"
     back = StructField.from_iceberg_schema(schema)
     assert back.field("hash").dtype == HASH
+    assert back.field("vhash").dtype == pyarrow.int64()
 
 
 def test_a_stable_code_is_a_plain_iceberg_integer() -> None:

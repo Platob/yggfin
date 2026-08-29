@@ -85,7 +85,7 @@ class MarketConvertible(Convertible):
 
     #: One member as its column holds it, for the builder that assembles a
     #: batch member by member. Only the spelling is asked here: `stored_member`
-    #: answers for the identity members wherever they appear, and the builder
+    #: answers for wide event hashes wherever they appear, and the builder
     #: walks a nested shape itself rather than being handed a document of it.
     into_column_value = staticmethod(stored_member)
 
@@ -93,7 +93,7 @@ class MarketConvertible(Convertible):
         """This value as a stored row: every member as the column holds it.
 
         Read off the live members rather than off `into_dict`, because the two
-        spellings differ: a document renders a date as text and an identifier
+        spellings differ: a document renders a date as text and an event hash
         as a number, while a column wants the date and the sixteen bytes.
         Nested values convert through their own `into_row`, so a book's orders
         and levels follow -- and a plain map of identifiers does not, however its

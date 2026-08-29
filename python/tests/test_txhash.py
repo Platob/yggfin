@@ -47,7 +47,6 @@ def test_a_timestamp_clock_is_read_in_whole_seconds() -> None:
     when = datetime.datetime(2024, 1, 2, 3, 4, 5, 678_900, tzinfo=datetime.UTC)
     assert txhash.seconds_of(txhash.h64(when, b"")) == int(when.timestamp())
     assert txhash.h64(when.replace(tzinfo=None), b"") == txhash.h64(when, b"")
-    assert txhash.h128(when.replace(tzinfo=None), b"") == txhash.h128(when, b"")
 
 
 def test_the_kernel_matches_the_scalar_row_for_row() -> None:
@@ -214,91 +213,96 @@ def test_the_selectors_and_the_shapes_are_checked() -> None:
         txhash.h64_arrow_arrays(pyarrow.array([1.5]), pyarrow.array(["x"]))
 
 
-# -- one hundred and twenty-eight bits wide ----------------------------------
+# -- an event clock over its value hash -------------------------------------
 
 
-def test_the_wide_couple_is_exact_and_reversible() -> None:
-    value = txhash.h128(1_700_000_000_000_000, b"payload")
+@pytest.mark.parametrize("vhash", [-(2**63), -1, 0, 1, 2**63 - 1])
+def test_the_event_hash_composition_is_exact_and_reversible(vhash: int) -> None:
+    value = txhash.couple128(1_700_000_000_000_000, vhash)
     assert txhash.micros_of(value) == 1_700_000_000_000_000
-    assert txhash.digest64_of(value) == xxhash.xxh64_intdigest(b"payload")
-    assert value == txhash.couple128(1_700_000_000_000_000, txhash.digest64_of(value))
-    assert value < 10**38, "and it fits the decimal a column stores it in"
+    assert txhash.vhash_of(value) == vhash
+    assert txhash.digest64_of(value) == vhash & txhash.DIGEST64_MASK
+    assert txhash.vhash_of(txhash.wide_bytes(value)) == vhash
+    assert value == txhash.couple128(txhash.micros_of(value), txhash.vhash_of(value))
 
 
-def test_the_wide_couple_orders_by_time_first() -> None:
-    assert txhash.h128(1, b"zzz") < txhash.h128(2, b"aaa")
-    assert txhash.couple128(-1, txhash.DIGEST64_MASK) < txhash.couple128(0, 0)
+def test_the_event_hash_integer_orders_by_signed_time_first() -> None:
+    assert txhash.couple128(1, 2**63 - 1) < txhash.couple128(2, -(2**63))
+    assert txhash.couple128(-1, -1) < txhash.couple128(0, 0)
 
 
-def test_a_wide_clock_or_digest_out_of_range_is_refused() -> None:
+def test_stored_event_hashes_order_nonnegative_times_chronologically() -> None:
+    later = txhash.wide_bytes(txhash.couple128(1, -(2**63)))
+    earlier = txhash.wide_bytes(txhash.couple128(0, 2**63 - 1))
+    assert earlier < later
+
+
+@pytest.mark.parametrize("micros,vhash", [(1 << 63, 0), (0, 1 << 63), (0, -(2**63) - 1)])
+def test_an_event_clock_or_value_hash_out_of_range_is_refused(micros: int, vhash: int) -> None:
     with pytest.raises(OverflowError, match="int64"):
-        txhash.couple128(1 << 63, 0)
-    with pytest.raises(OverflowError, match="int64"):
-        txhash.couple128(0, 1 << 64)
+        txhash.couple128(micros, vhash)
 
 
-def test_the_wide_kernel_matches_the_scalar_row_for_row() -> None:
-    micros = [0, 1_700_000_000_000_000, -5]
-    payloads = ["", "one", "café"]
-    hashed = txhash.h128_arrow(
-        pyarrow.array(micros, pyarrow.int64()), pyarrow.array(payloads, pyarrow.string())
+def test_the_event_hash_kernel_matches_the_scalar_row_for_row() -> None:
+    micros = [0, 1_700_000_000_000_000, -5, 9]
+    vhashes = [-(2**63), -1, 0, 2**63 - 1]
+    hashed = txhash.couple128_arrow(
+        pyarrow.array(micros, pyarrow.int64()), pyarrow.array(vhashes, pyarrow.int64())
     )
     assert hashed.type == txhash.TXHASH128
-    assert [txhash.wide_of(one) for one in hashed.to_pylist()] == [
-        txhash.h128(tick, text) for tick, text in zip(micros, payloads, strict=True)
+    assert hashed.to_pylist() == [
+        txhash.wide_bytes(txhash.couple128(tick, vhash))
+        for tick, vhash in zip(micros, vhashes, strict=True)
     ]
 
 
-def test_the_wide_halves_come_back_out_of_a_column() -> None:
-    values = pyarrow.array([txhash.wide_bytes(txhash.h128(100, b"a")), None], txhash.TXHASH128)
-    assert txhash.micros_arrow(values).to_pylist() == [100, None]
-    assert txhash.digest64_arrow(values).to_pylist() == [txhash.xxh64_of(b"a"), None]
-    assert txhash.micros_arrow(values).type == pyarrow.int64()
-    assert txhash.digest64_arrow(values).type == pyarrow.uint64()
+def test_the_event_hash_kernel_reads_slices_where_they_stand() -> None:
+    micros = pyarrow.array([10, 11, 12, 13], pyarrow.int64())[1:3]
+    vhashes = pyarrow.array([-10, -11, -12, -13], pyarrow.int64())[1:3]
+    found = txhash.couple128_arrow(micros, vhashes)
+    assert [txhash.wide_of(one) for one in found.to_pylist()] == [
+        txhash.couple128(11, -11),
+        txhash.couple128(12, -12),
+    ]
 
 
-def test_a_null_on_either_side_is_a_null_wide_txhash() -> None:
-    hashed = txhash.h128_arrow(
-        pyarrow.array([1, None, 3], pyarrow.int64()), pyarrow.array(["a", "b", None])
+def test_a_null_on_either_side_is_a_null_event_hash() -> None:
+    hashed = txhash.couple128_arrow(
+        pyarrow.array([1, None, 3], pyarrow.int64()),
+        pyarrow.array([-1, 2, None], pyarrow.int64()),
     )
     assert [None if one is None else txhash.wide_of(one) for one in hashed.to_pylist()] == [
-        txhash.h128(1, "a"),
+        txhash.couple128(1, -1),
         None,
         None,
     ]
 
 
-def test_the_wide_builders_agree_across_arrays_batch_and_dataclass() -> None:
-    from rekep import Convertible, scalar
+def test_event_hash_columns_must_align_and_be_integers() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        txhash.couple128_arrow(pyarrow.array([1]), pyarrow.array([2, 3]))
+    with pytest.raises(TypeError, match="integer column"):
+        txhash.couple128_arrow(pyarrow.array([1.5]), pyarrow.array([2]))
 
-    @scalar
-    class Trade(Convertible):
-        unix: datetime.datetime
-        symbol: str
-        qty: int
 
+def test_empty_event_hash_columns_produce_the_declared_type() -> None:
+    empty = pyarrow.array([], pyarrow.int64())
+    found = txhash.couple128_arrow(empty, empty)
+    assert len(found) == 0
+    assert found.type == txhash.TXHASH128
+
+
+def test_event_hash_composition_refuses_an_ambiguous_big_endian_arrow_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(txhash.sys, "byteorder", "big")
+    with pytest.raises(RuntimeError, match="little-endian"):
+        txhash.couple128_arrow(pyarrow.array([1]), pyarrow.array([2]))
+    assert txhash.couple128(1, 2)
+
+
+def test_a_timestamp_clock_converts_to_epoch_microseconds() -> None:
     paris = datetime.timezone(datetime.timedelta(hours=1))
     when = datetime.datetime(2023, 11, 14, 23, 13, 20, 678_900, tzinfo=paris)
-    rows = [Trade(unix=when, symbol="BTC", qty=1), Trade(unix=when, symbol="ETH", qty=2)]
-    field = Trade.into_field()
-    batch = pyarrow.RecordBatch.from_arrays(
-        [
-            field.field("unix").cast_arrow_array(pyarrow.array([row.unix for row in rows])),
-            pyarrow.array([row.symbol for row in rows]),
-            field.field("qty").cast_arrow_array(pyarrow.array([row.qty for row in rows])),
-        ],
-        names=["unix", "symbol", "qty"],
-    )
-    columns = txhash.h128_arrow_arrays(
-        batch.column("unix"), batch.column("symbol"), batch.column("qty")
-    )
-    selected = txhash.h128_arrow_batch(batch, "unix", "symbol", "qty")
-    assert [txhash.wide_of(one) for one in columns.to_pylist()] == [
-        txhash.wide_of(one) for one in selected.to_pylist()
-    ]
-    assert [txhash.wide_of(one) for one in selected.to_pylist()] == [
-        txhash.h128_dataclass(row, "unix", "symbol", "qty") for row in rows
-    ]
-    assert (
-        txhash.epoch_micros_arrow(batch.column("unix")).to_pylist() == [1_700_000_000_678_900] * 2
-    )
+    values = pyarrow.array([when], pyarrow.timestamp("us", tz="UTC"))
+    assert txhash.epoch_micros_arrow(values).to_pylist() == [1_700_000_000_678_900]

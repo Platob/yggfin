@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pyarrow
 import pytest
 
+from rekep import txhash
 from rekep.market import (
     HASH,
     MIC,
@@ -20,7 +23,7 @@ from rekep.market import (
     State,
 )
 from rekep.market.event import ALTIDS_TYPE, DAY, HOUR, SECOND
-from rekep.market.identity import NIL, arrow_of, hash_bytes_of, hash_int_of
+from rekep.market.identity import NIL, hash_bytes_of, hash_int_of
 
 SHAPES = {
     Order: EventType.ORDER,
@@ -207,24 +210,19 @@ def test_an_empty_event_stream_still_declares_its_schema() -> None:
 def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
     unix, instrumentxhash = 1_710_374_400_000_000_123, 42
     built = Book(unix=unix, instrumentxhash=instrumentxhash).identify()
+    expected = (*built._version_prefix_parts(0), 0)
 
-    assert built.version_parts() == (unix, hash_bytes_of(instrumentxhash), 0, 0)
-    assert built.hash == built.txhash_of(*built.version_parts())
-    assert [
-        hash_int_of(one)
-        for one in Book.txhash_arrow(
-            pyarrow.array([unix], pyarrow.int64()),
-            pyarrow.array([unix], pyarrow.int64()),
-            arrow_of([instrumentxhash]),
-            pyarrow.array([0], pyarrow.int64()),
-            pyarrow.array([0], pyarrow.int64()),
-        ).to_pylist()
-    ] == [built.hash]
+    assert built.version_parts() == expected
+    assert built.vhash == Book.hash_of(*expected)
+    assert built.hash == txhash.couple128(unix // 1_000, built.vhash)
+    later = dataclasses.replace(built, unix=unix + 1_000, hash=NIL).identify()
+    assert later.vhash == built.vhash
+    assert later.hash != built.hash
 
 
 def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> None:
     """`hash` is NOT NULL, so an unsaved row is a visible repeat, not a late failure."""
-    assert Order().hash == NIL and Order().xhash == NIL
+    assert Order().hash == NIL and Order().vhash == NIL and Order().xhash == NIL
     assert Order().state is State.UNKNOWN and Order().prevunix is None
     assert Order().prevhash is None
 

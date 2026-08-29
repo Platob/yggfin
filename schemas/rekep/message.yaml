@@ -44,11 +44,15 @@ fields:
   fix: {display: Snap Unix}
 - name: hash
   type: fixed_size_binary[16]
-  description: 'Digest of this version''s content: the same version, twice, is one row.'
+  description: Time-anchored composition of `unix` and `vhash`.
   iceberg: {primary_key: 'true'}
   fix: {display: Hash}
+- name: vhash
+  type: int64
+  description: XXH3-64 of the framed value parts, with every clock excluded.
+  fix: {display: Value Hash}
 - name: xhash
-  type: fixed_size_binary[16]
+  type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
   fix: {display: Xhash}
 - name: linkedhashes

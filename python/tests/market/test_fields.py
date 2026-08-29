@@ -27,6 +27,7 @@ from rekep.market import (
     Event,
     Execution,
     Instrument,
+    Leg,
     MarketEvent,
     Order,
 )
@@ -85,13 +86,22 @@ class Keyed(MarketConvertible):
     """Its own partition."""
 
 
-def test_an_identifier_is_sixteen_fixed_bytes() -> None:
-    """One width for every identity, narrow or wide: a version hash carries an
-    instant over a 64-bit digest and no longer fits a `long`."""
+def test_hash_widths_match_their_roles() -> None:
     for shape in SHAPES:
-        for name in ("hash", "xhash"):
-            if name in shape.into_field().names:
-                assert shape.into_field().field(name).dtype == HASH, shape.__name__
+        field = shape.into_field()
+        if "hash" in field.names:
+            assert field.field("hash").dtype == HASH, shape.__name__
+        for name in ("vhash", "xhash", "instrumentxhash"):
+            if name in field.names:
+                assert field.field(name).dtype == pyarrow.int64(), f"{shape.__name__}.{name}"
+    assert Leg.into_field().field("xhash").dtype == pyarrow.int64()
+    parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
+    linkedhashes = pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
+    for shape in (Event, Instrument, MarketEvent, Order, Execution, Book):
+        field = shape.into_field()
+        assert field.field("prevhash").dtype == HASH, shape.__name__
+        assert field.field("parenthash").dtype == parenthash, shape.__name__
+        assert field.field("linkedhashes").dtype == linkedhashes, shape.__name__
 
 
 def test_a_market_code_column_is_as_wide_as_its_code_declares() -> None:

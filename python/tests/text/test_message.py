@@ -6,11 +6,10 @@ import pyarrow
 import pytest
 
 import rekep.text.entries as entries_module
-from rekep import Entry, FixRegistry, Message, TextFile
+from rekep import Entry, FixRegistry, Message, TextFile, txhash
 from rekep.enums import EventType
 from rekep.fields import DISPLAY
 from rekep.market import Event, hash_bytes
-from rekep.market.identity import hash_int_of
 
 #: The standard header this stage lifts out of `entries` into columns of its
 #: own, in the order `Message` declares them, with the FIX tag each answers to.
@@ -640,8 +639,10 @@ def test_raw_identity_depends_only_on_the_payload() -> None:
     copied = Message(message="same", sourceurl="two.log", sourcerownum=9).identify()
     changed = Message(message="different", sourceurl="one.log", sourcerownum=2).identify()
 
-    assert first.hash == copied.hash == first.xhash == hash_bytes(b"same")
-    assert changed.hash != first.hash
+    expected = hash_bytes(b"same")
+    assert first.vhash == copied.vhash == first.xhash == expected
+    assert first.hash == copied.hash == txhash.couple128(0, expected)
+    assert changed.vhash != first.vhash
 
 
 def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: Path) -> None:
@@ -672,8 +673,9 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
     ], "the body and the boundary, and nothing the header already answers"
     assert table.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
-    assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
-    assert hash_int_of(table.column("hash")[0].as_py()) == hash_bytes(payload.encode("utf-8"))
+    expected = hash_bytes(payload.encode("utf-8"))
+    assert table.column("vhash").to_pylist() == table.column("xhash").to_pylist() == [expected]
+    assert txhash.vhash_of(table.column("hash")[0].as_py()) == expected
 
 
 def test_the_log_s_own_prose_does_not_decide_the_payload_s_separator() -> None:

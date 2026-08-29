@@ -39,9 +39,11 @@ guessing would make bad data look valid.
 
 ## Keep identities portable
 
-Every persisted identifier is sixteen big-endian bytes: `fixed_size_binary(16)`
-in Arrow, `fixed[16]` in Iceberg. Composite keys use the exact
-[binary frame](../contracts/identity.md), not Python formatting or process-local hashes.
+Lifecycle and value identities are signed `int64`. A version `hash` composes
+epoch microseconds over its value identity and stores the result as sixteen
+big-endian bytes: `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
+Composite keys use the exact [binary frame](../contracts/identity.md), not
+Python formatting or process-local hashes.
 Enums persist integer codes with their member table in field metadata, so an
 unknown future code is retained.
 

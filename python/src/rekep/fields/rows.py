@@ -7,10 +7,10 @@ is read straight off the objects into a column, and a nested class or a
 repeating group recurses the same way.
 
 The one thing a class may still have to say is how it *spells* a member its
-column stores differently from the attribute -- a market identity is an integer
-in hand and sixteen bytes in a column. That is one call per member, keyed by
-the member's name, which is why `market.identity.stored_member` is keyed by
-name too.
+column stores differently from the attribute -- a time-anchored market hash is
+an integer in hand and sixteen bytes in a column. That is one call per member,
+keyed by the member's name, which is why `market.identity.stored_member` is
+keyed by name too.
 """
 
 from __future__ import annotations

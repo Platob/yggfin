@@ -121,9 +121,9 @@ registry path builds the message once and translates it.
 
 A changed bid rebuilds only bid levels and bid summaries; ask values carry
 from the preceding Book before cross-side prices derive, and vice versa. Book
-identity includes every ordered live Order hash, so dense-book throughput also
-measures that linear identity input; duplicate-event shortcuts skip the walk
-when no Book is emitted.
+value identity includes every ordered live Order `vhash`, so dense-book
+throughput also measures that linear input; duplicate-event shortcuts skip the
+walk when no Book is emitted.
 
 The [notebook smoke run](../pipeline/operations/run.md) exercises all six
 jobs, all three log routes, registry-backed instrument enrichment, book

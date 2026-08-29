@@ -11,12 +11,13 @@ from typing import Annotated, Any, Self
 import pyarrow
 import pyarrow.compute
 
+from rekep import txhash
 from rekep.enums import EventType
 from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
 from rekep.fix.message import NOT_SEPARATOR, parse_pairs
-from rekep.market.event import Event
+from rekep.market.event import MICROSECOND, Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
 
@@ -451,9 +452,11 @@ class Message(Event):
 
     def identify(self) -> Self:
         """Give this raw row the identity of its exact payload."""
+        if not self.vhash:
+            self.vhash = hash_bytes(self.message.encode("utf-8"))
         if not self.hash:
-            self.hash = hash_bytes(self.message.encode("utf-8"))
-        self.xhash = self.hash
+            self.hash = txhash.couple128(self.unix // MICROSECOND, self.vhash)
+        self.xhash = self.vhash
         return self
 
     @classmethod
@@ -461,8 +464,11 @@ class Message(Event):
         cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
     ) -> pyarrow.RecordBatch:
         """Build a batch after assigning raw row identities in Arrow kernels."""
-        columns["hash"] = hash_bytes_arrow(columns["message"])
-        columns["xhash"] = columns["hash"]
+        columns["vhash"] = hash_bytes_arrow(columns["message"])
+        columns["hash"] = txhash.couple128_arrow(
+            cls._clock_micros(columns["unix"]), columns["vhash"]
+        )
+        columns["xhash"] = columns["vhash"]
         return pyarrow.RecordBatch.from_arrays(
             [columns[name] for name in schema.names], schema=schema
         )

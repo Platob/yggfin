@@ -1,21 +1,15 @@
-"""Time-anchored sortable identities: a clock over a digest of the payload.
+"""Time-anchored sortable identities composed from a clock and value hash.
 
-The narrow couple is one signed `int64`: four high bytes of epoch seconds as
-a signed `int32`, four low bytes of XXH32. The wide one is a signed 128-bit
-value -- epoch microseconds over XXH64 -- stored as its sixteen big-endian
-bytes, which is what every identity in the package is stored as. Comparing
-two txhashes compares their times first, so a column sorts by time while
-still spreading rows hashed within one tick: one value that is both an
-identity and a sort key.
-
-Each couple is exact and reversible -- `seconds_of`/`digest_of` and
-`micros_of`/`digest64_of` read the halves back -- and the Arrow kernels
-produce bit-identical values to the Python builders row for row.
+The persisted hash composes signed `int64` epoch microseconds in its high half
+with the unchanged bits of a signed `int64` value hash in its low half, stored
+as sixteen big-endian bytes. The narrow seconds-over-XXH32 couple remains
+available for callers whose contract is one `int64`.
 """
 
 from __future__ import annotations
 
 import datetime
+import sys
 from typing import Any
 
 import pyarrow
@@ -37,20 +31,19 @@ DIGEST_MASK = 0xFFFF_FFFF
 _SECONDS_MIN = -(1 << 31)
 _SECONDS_MAX = (1 << 31) - 1
 
-#: How many bytes one wide txhash is.
+#: How many bytes one persisted event hash is.
 WIDE_WIDTH = 16
 
-#: The Arrow type every wide txhash is: its sixteen bytes, big-endian, so a
-#: column compares and sorts exactly as the values do.
+#: The Arrow type of a persisted event hash.
 TXHASH128 = pyarrow.binary(WIDE_WIDTH)
 
-#: How far the epoch micros sit above the wide digest.
+#: How far epoch microseconds sit above the value hash.
 MICROS_SHIFT = 64
 
-#: The eight low bytes the wide digest owns.
+#: The mask for the low half of a persisted event hash.
 DIGEST64_MASK = (1 << 64) - 1
 
-#: What a stored wide couple's bytes hold: the value, two's complement.
+#: What a stored event hash's bytes hold: the value, two's complement.
 _WIDE_MASK = (1 << 128) - 1
 
 #: What a signed `int64` clock can say.
@@ -148,39 +141,22 @@ def digest_arrow(values: Any) -> pyarrow.Array:
     return low.cast(pyarrow.uint32(), safe=False)
 
 
-# -- the same couple, one hundred and twenty-eight bits wide -----------------
+# -- an event clock over its value hash -------------------------------------
 
 
-def xxh64_of(payload: bytes | str, seed: int = 0) -> int:
-    """The unsigned XXH64 digest of one payload; text is digested as UTF-8."""
-    raw = payload.encode("utf-8") if isinstance(payload, str) else payload
-    return xxhash.xxh64_intdigest(raw, seed)
-
-
-def couple128(micros: int, digest: int) -> int:
-    """Pack epoch `micros` over an unsigned 64-bit `digest`, as one integer.
-
-    The clock keeps the high sixty-four bits, so the value orders by time
-    exactly as the narrow couple does, with microseconds of resolution and
-    a digest wide enough that a collision inside one microsecond is not
-    something a feed will meet.
-    """
+def couple128(micros: int, vhash: int) -> int:
+    """Compose epoch microseconds and a signed `int64` value hash."""
     ticks = int(micros)
     if not _MICROS_MIN <= ticks <= _MICROS_MAX:
         raise OverflowError(f"epoch micros {ticks} do not fit a signed int64")
-    low = int(digest)
-    if not 0 <= low <= DIGEST64_MASK:
-        raise OverflowError(f"digest {low} does not fit an unsigned int64")
-    return ticks * (1 << MICROS_SHIFT) + low
-
-
-def h128(micros: Any, payload: bytes | str, seed: int = 0) -> int:
-    """One wide txhash from epoch `micros` and a payload."""
-    return couple128(_micros(micros), xxh64_of(payload, seed))
+    value = int(vhash)
+    if not _MICROS_MIN <= value <= _MICROS_MAX:
+        raise OverflowError(f"value hash {value} does not fit a signed int64")
+    return (ticks << MICROS_SHIFT) | (value & DIGEST64_MASK)
 
 
 def wide_of(value: Any) -> int:
-    """One wide txhash as the integer it is, from bytes or from an integer."""
+    """One persisted event hash as an integer."""
     if isinstance(value, int):
         return value
     packed = int.from_bytes(bytes(value), "big")
@@ -188,10 +164,10 @@ def wide_of(value: Any) -> int:
 
 
 def wide_bytes(value: Any) -> bytes | None:
-    """One wide txhash as the sixteen bytes a column holds; `None` stays `None`.
+    """One event hash as the sixteen bytes a column holds; `None` stays `None`.
 
-    Big-endian two's complement, which is what makes the stored column sort
-    exactly as the values do -- and the one place those bytes are written.
+    Big-endian two's complement keeps nonnegative epoch times in chronological
+    byte order and is the one place those bytes are written.
     """
     if value is None or isinstance(value, bytes):
         return value
@@ -199,94 +175,35 @@ def wide_bytes(value: Any) -> bytes | None:
 
 
 def micros_of(value: Any) -> int:
-    """The epoch microseconds a wide txhash is anchored to."""
+    """The epoch microseconds an event hash is anchored to."""
     return wide_of(value) >> MICROS_SHIFT
 
 
 def digest64_of(value: Any) -> int:
-    """The unsigned XXH64 digest a wide txhash carries."""
+    """The unsigned bits in an event hash's low half."""
     return wide_of(value) & DIGEST64_MASK
 
 
-def h128_arrow(micros: Any, payload: Any, seed: int = 0) -> pyarrow.Array:
-    """One wide txhash per row: `micros` over the XXH64 of `payload`.
+def vhash_of(value: Any) -> int:
+    """The signed value hash in an event hash's low half."""
+    low = digest64_of(value)
+    return low - (1 << 64) if low >= (1 << 63) else low
 
-    The values are written straight into the column's sixteen-byte cells,
-    big-endian as `wide_bytes` writes one, so nothing is boxed on the way.
-    """
+
+def couple128_arrow(micros: Any, vhash: Any) -> pyarrow.Array:
+    """Compose epoch microseconds and signed value hashes column by column."""
+    if sys.byteorder != "little":
+        raise RuntimeError("couple128_arrow requires a little-endian Arrow host; use couple128")
     clock = _int64_column(micros)
-    binary = _binary_column(payload)
-    rows = len(binary)
-    if len(clock) != rows:
-        raise ValueError("micros and payload columns must have the same length")
-    out = bytearray(16 * rows)
-    if rows:
-        digest = xxhash.xxh64_intdigest
-        ticks = _int64_view(clock)
-        offsets, data = _payload_view(binary)
-        begin = offsets[0]
-        for row in range(rows):
-            end = offsets[row + 1]
-            value = ticks[row] * (1 << MICROS_SHIFT) + digest(data[begin:end], seed)
-            out[row * 16 : row * 16 + 16] = (value & _WIDE_MASK).to_bytes(WIDE_WIDTH, "big")
-            begin = end
-    hashed = pyarrow.FixedSizeBinaryArray.from_buffers(
-        TXHASH128, rows, [None, pyarrow.py_buffer(out)]
+    values = _int64_column(vhash)
+    if len(clock) != len(values):
+        raise ValueError("micros and value hash columns must have the same length")
+    joined = pyarrow.compute.binary_join_element_wise(
+        _big_endian_int64(clock),
+        _big_endian_int64(values),
+        pyarrow.scalar(b"", pyarrow.binary()),
     )
-    if not clock.null_count and not binary.null_count:
-        return hashed
-    compute = pyarrow.compute
-    known = compute.and_(compute.is_valid(clock), compute.is_valid(binary))
-    return compute.if_else(known, hashed, pyarrow.scalar(None, TXHASH128))
-
-
-def micros_arrow(values: Any) -> pyarrow.Array:
-    """The epoch microseconds each wide txhash is anchored to, as `int64`."""
-    return pyarrow.array(
-        [None if one is None else micros_of(one) for one in _column(values).to_pylist()],
-        pyarrow.int64(),
-    )
-
-
-def digest64_arrow(values: Any) -> pyarrow.Array:
-    """The unsigned XXH64 digest each wide txhash carries, as `uint64`."""
-    return pyarrow.array(
-        [None if one is None else digest64_of(one) for one in _column(values).to_pylist()],
-        pyarrow.uint64(),
-    )
-
-
-def h128_arrow_arrays(clock: Any, *columns: Any, seed: int = 0) -> pyarrow.Array:
-    """`h64_arrow_arrays` one hundred and twenty-eight bits wide."""
-    micros = epoch_micros_arrow(clock)
-    if not columns:
-        raise ValueError("at least one column is required")
-    rows = len(micros)
-    for column in columns:
-        if len(_column(column)) != rows:
-            raise ValueError("every column must have the same number of rows")
-    return h128_arrow(micros, _framed(columns), seed=seed)
-
-
-def h128_arrow_batch(batch: Any, clock: Any, *names: str, seed: int = 0) -> pyarrow.Array:
-    """`h64_arrow_batch` one hundred and twenty-eight bits wide."""
-    if not names:
-        raise ValueError("at least one column name is required")
-    return h128_arrow_arrays(
-        batch.column(clock), *(batch.column(name) for name in names), seed=seed
-    )
-
-
-def h128_dataclass(value: Any, clock: str, *names: str, seed: int = 0) -> int:
-    """`h64_dataclass` one hundred and twenty-eight bits wide."""
-    field = _struct_field_of(value)
-    members = {member.name: member for member in field.fields}
-    selected = names or tuple(name for name in members if name != clock)
-    payload = b"".join(
-        _frame(members[name].into_bytes(getattr(value, name, None))) for name in selected
-    )
-    anchored = _epoch_micros(members[clock], getattr(value, clock, None))
-    return couple128(anchored, xxh64_of(payload, seed))
+    return joined.cast(TXHASH128, safe=False)
 
 
 def epoch_micros_arrow(clock: Any) -> pyarrow.Array:
@@ -384,11 +301,6 @@ def epoch_seconds_arrow(clock: Any) -> pyarrow.Array:
 def _epoch_seconds(field: Any, value: Any) -> Any:
     """One clock value as whole UTC epoch seconds."""
     return epoch_seconds_arrow(_clock_arrow(field, value))[0].as_py()
-
-
-def _epoch_micros(field: Any, value: Any) -> Any:
-    """One clock value as whole UTC epoch microseconds."""
-    return epoch_micros_arrow(_clock_arrow(field, value))[0].as_py()
 
 
 def _clock_arrow(field: Any, value: Any) -> pyarrow.Array:
@@ -508,20 +420,13 @@ def _int64_column(micros: Any) -> pyarrow.Array:
     return column.cast(pyarrow.int64())
 
 
-def _int64_view(clock: pyarrow.Array) -> Any:
-    """The clock's values, read in place from its buffer."""
-    start = clock.offset
-    return memoryview(clock.buffers()[1]).cast("q")[start : start + len(clock)]
-
-
-def _micros(value: Any) -> int:
-    """Whole epoch microseconds from an integer or a `timestamp()` clock."""
-    if isinstance(value, datetime.datetime) and value.tzinfo is None:
-        value = value.replace(tzinfo=datetime.UTC)
-    when = getattr(value, "timestamp", None)
-    if when is not None and not isinstance(value, (int, float)):
-        return int(round(when() * 1_000_000))
-    return int(value)
+def _big_endian_int64(column: pyarrow.Array) -> pyarrow.Array:
+    """The column's signed bits in network byte order."""
+    validity, data = column.buffers()[:2]
+    native = pyarrow.FixedSizeBinaryArray.from_buffers(
+        pyarrow.binary(8), len(column), [validity, data], offset=column.offset
+    ).cast(pyarrow.binary(), safe=False)
+    return pyarrow.compute.binary_reverse(native)
 
 
 def _int32_view(clock: pyarrow.Array) -> Any:

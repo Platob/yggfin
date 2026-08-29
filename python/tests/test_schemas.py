@@ -90,6 +90,9 @@ def test_published_contracts_have_no_nested_table_keys() -> None:
 #: not columns and nothing looks them up, so they are exempt from the rule.
 _CONTAINER_PARTS = frozenset({"item", "key", "value"})
 
+#: Reader-facing names whose words are intentionally fuller than the folded column.
+_COLUMN_DISPLAYS = {"vhash": "Value Hash"}
+
 
 def _columns(field: Field) -> list[Field]:
     """Every member of a contract, nested ones included, container parts aside."""
@@ -124,6 +127,9 @@ def test_every_column_says_what_it_is_called(path: Path) -> None:
         display = member.fix.display
         assert display, f"{path.name}: {member.name} says nothing about its name"
         spellings = {member.name, column_name(member.fix.name or member.name)}
+        if member.name in _COLUMN_DISPLAYS:
+            assert display == _COLUMN_DISPLAYS[member.name]
+            spellings.add(column_name(display))
         assert column_name(display) in spellings, f"{path.name}: {member.name} -> {display}"
 
 

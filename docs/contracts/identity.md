@@ -32,19 +32,24 @@ conversion directly to those exact bytes, without a length prefix. Composite
 identities use `hash_of(*parts)` and the frame above. The two operations are
 deliberately distinct and have pinned tests; an empty composite is refused.
 
-## Stored column
+## Stored columns
 
-A digest is computed as a signed `i64` and stored as sixteen big-endian
-two's-complement bytes -- `fixed_size_binary(16)` in Arrow, `fixed[16]` in
-Iceberg. One width covers both a content digest and the wider time-anchored
-version hash [`rekep.txhash`](txhash.md) builds, and big-endian keeps the
-column sorting as the values do. `hash_bytes_of` writes those bytes and
-`hash_int_of` reads them back. `linkedhashes` stores related lifecycle digests
-as signed `int64` values; the related event time comes from joining on `xhash`.
+XXH3-64 digests are signed `int64` columns. `vhash` identifies an event's
+clock-free value, `xhash` identifies its lifecycle, `instrumentxhash` joins a
+market row to its instrument, and `linkedhashes` lists related lifecycle
+identities. A related event time is recovered by joining on `xhash`.
 
-An identifier that is itself a part of another identity enters the frame as
-those sixteen bytes, never as an integer -- which is why the integer payload
-below still refuses anything outside `i64`.
+An event `hash` composes its epoch microseconds with its `vhash` without
+hashing the payload again. It is stored as sixteen big-endian two's-complement
+bytes -- `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
+`prevhash` has the same width and `parenthash` is a list of those values. The
+[time-anchored hash contract](txhash.md) defines the reversible composition.
+
+A lifecycle identity used as a part of another identity enters the frame as
+its sign-extended sixteen-byte representation, never as an integer. Value
+hashes nested in a Book frame use their native signed `int64` payload. This
+preserves the `rekep-identity-v1` lifecycle frame while its columns use
+`int64` storage.
 
 ## Scalar payloads
 
@@ -76,8 +81,8 @@ container state, and renders dates as ISO 8601 before framing.
 
 ## Arrow and Python
 
-`hash_of(*parts)` implements the scalar composite contract and
-`hash_arrow(*columns)` produces the same values row by row.
+`hash_of(*parts)` implements the scalar composite contract and returns a signed
+`int64`. `hash_arrow(*columns)` produces the same `int64` values row by row.
 `hash_bytes_arrow(column)` is the vectorized unframed operation used for raw
 message strings:
 
@@ -96,14 +101,16 @@ both scalar and Arrow builders against every vector.
 
 ## Rust reference
 
-The executable in `python/examples/identity-rust` reads the same golden corpus. Its
-core operation is:
+The executable in `python/examples/identity-rust` reads the same golden corpus.
+Its frame digest and event-hash composition are:
 
 ```rust
 use xxhash_rust::xxh3::xxh3_64_with_seed;
 
 let digest: u64 = xxh3_64_with_seed(&frame, 0);
-let stored: i64 = digest as i64;
+let vhash: i64 = digest as i64;
+let hash: i128 = ((micros as i128) << 64) | ((vhash as u64) as i128);
+let stored: [u8; 16] = hash.to_be_bytes();
 ```
 
 Every scalar uses Rust's explicit `to_le_bytes`; NaN uses the fixed bits above.
@@ -111,7 +118,7 @@ Run the complete reference with:
 
 ```console
 cargo run --release --locked --manifest-path python/examples/identity-rust/Cargo.toml
-# rekep-identity-v1: 3 raw + 16 framed vectors match
+# rekep-identity-v1: 3 raw + 16 framed vectors and event-hash composition match
 ```
 
 [`xxhash-rust::xxh3_64_with_seed`](https://docs.rs/xxhash-rust/0.8.15/xxhash_rust/xxh3/fn.xxh3_64_with_seed.html)

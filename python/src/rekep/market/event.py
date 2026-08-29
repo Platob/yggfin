@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import datetime
 import functools
-import operator
 from collections.abc import Iterable, Iterator, Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Annotated, Any, Self
@@ -20,8 +20,6 @@ from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import (
     HASH,
     NIL,
-    frame,
-    framed_arrow,
     hash_arrow,
     hash_bytes_of,
     hash_of,
@@ -142,9 +140,12 @@ class Event(MarketConvertible):
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
     hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
-    """Digest of this version's content: the same version, twice, is one row."""
+    """Time-anchored composition of `unix` and `vhash`."""
 
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
+    vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("Value Hash")] = NIL
+    """XXH3-64 of the framed value parts, with every clock excluded."""
+
+    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
     linkedhashes: Annotated[
@@ -174,7 +175,7 @@ class Event(MarketConvertible):
     prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("Prev Hash")] = None
     """The previous version's hash; null on the first version."""
 
-    # Version digests are distinct from `linkedhashes` lifecycle relations.
+    # `parenthash` values are distinct from `linkedhashes` lifecycle relations.
     parenthash: Annotated[
         list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("Parent Hash")
     ] = None
@@ -280,35 +281,6 @@ class Event(MarketConvertible):
         """`hash_of` over whole columns: one identifier per row, in kernels."""
         return hash_arrow(cls.__name__, *columns)
 
-    def txhash_of(self, *parts: Any) -> int:
-        """This version's identity: its instant over the digest of `parts`.
-
-        A version is a thing that happened at a time, so the identifier says
-        when: the epoch microseconds ride above an XXH64 of the same framed
-        bytes `hash_of` digests. A column of them sorts by time and still
-        spreads rows inside one microsecond.
-        """
-        return self.txhash_framed(frame((type(self).__name__, *parts)))
-
-    def txhash_framed(self, framed: bytes) -> int:
-        """This version's identity from an already framed payload.
-
-        The one place the anchor is chosen, so a shape that caches its frame
-        -- a book keeps one per live level -- anchors it exactly as
-        `txhash_of` anchors the frame it builds.
-        """
-        return txhash.h128(self.unix // MICROSECOND, framed)
-
-    @classmethod
-    def txhash_arrow(cls, clock: Any, *columns: Any) -> pyarrow.Array:
-        """`txhash_of` over whole columns, anchored to the `clock` column.
-
-        An event's clock is epoch nanoseconds, so an integer column is read
-        as those and floored to whole microseconds exactly as the scalar does.
-        """
-        payload = framed_arrow(cls.__name__, *columns)
-        return txhash.h128_arrow(cls._clock_micros(clock), payload)
-
     @staticmethod
     def _clock_micros(clock: Any) -> pyarrow.Array:
         """One clock column as whole epoch microseconds, flooring like `//` does."""
@@ -326,76 +298,36 @@ class Event(MarketConvertible):
         self._materialize_life_code()
         self.xhash = self.xhash or self.life_hash()
         self._drop_self_link()
+        if not self.vhash:
+            self.vhash = self.hash_of(*self.version_parts())
         if not self.hash:
-            self.hash = self.txhash_of(*self.version_parts())
+            self.hash = txhash.couple128(self.unix // MICROSECOND, self.vhash)
         return self
 
     def with_previous(self, previous: Event | None) -> Self | None:
         """Complete this version, returning None when it changes no stored fact."""
         self.completed_from(previous)
-        if previous is not None and self.same_as(previous):
+        self.vhash = self.hash_of(*self.version_parts())
+        self.hash = NIL
+        if (
+            previous is not None
+            and type(self) is type(previous)
+            and self.xhash == previous.xhash
+            and self.vhash == previous.vhash
+            and self.snapunix is None
+            and previous.snapunix is None
+        ):
             return None
         return self.identify()
 
-    def same_as(self, previous: Event) -> bool:
-        """Whether this is only a later observation of the same stored state."""
-        if type(self) is not type(previous) or self.xhash != previous.xhash:
-            return False
-        snapshot = self.snapunix is not None or previous.snapunix is not None
-        values, floats = type(self)._same_as_values(snapshot)
-        if values(self) != values(previous):
-            return False
-        # Tuple equality treats the same NaN object as equal by identity while
-        # the member-by-member comparison this replaces did not.
-        if floats is None:
-            return True
-        current = floats(self)
-        if not isinstance(current, tuple):
-            return current == current
-        return all(value == value for value in current)
-
-    @classmethod
-    @functools.cache
-    def _same_as_values(cls, snapshot: bool) -> tuple[Any, Any | None]:
-        """Cached projection of the state compared for this concrete shape."""
-        ignored = {
-            "creaunix",
-            "recunix",
-            "hash",
-            "xhash",
-            "version",
-            "prevunix",
-            "prevhash",
-            "prevpx",
-            "prevqty",
-            "prevnotional",
-            "prevbidpx",
-            "prevbidqty",
-            "prevaskpx",
-            "prevaskqty",
-            "prevexecpx",
-            "parenthash",
-        }
-        # Observation time is state only for a snapshot.
-        if not snapshot:
-            ignored.update(("unix", "unixpartition"))
-        names = tuple(
-            member.name for member in dataclasses.fields(cls) if member.name not in ignored
-        )
-        floating = tuple(
-            member.name
-            for member in cls.into_field().fields
-            if member.name in names and pyarrow.types.is_floating(member.dtype)
-        )
-        return operator.attrgetter(*names), operator.attrgetter(*floating) if floating else None
-
     def completed_from(self, previous: Event | None) -> Self:
-        """`with_previous` without the content hash: everything but `hash`."""
+        """Complete inherited and derived values without assigning identities."""
         if previous is None:
             self.derive()
             self._materialize_life_code()
             self.xhash = self.xhash or self.life_hash()
             self._drop_self_link()
+            self.vhash = self.hash = NIL
             return self
         life_before = self.life_parts()
         self.complete_from(previous)
@@ -438,7 +370,7 @@ class Event(MarketConvertible):
         # made of, so the identity this row arrived with was of a different
         # row. `identify` refuses to overwrite a hash that is set, which is
         # what makes clearing it the way to ask for a new one.
-        self.hash = NIL
+        self.vhash = self.hash = NIL
         return self
 
     def _completed_from_same_lifecycle(self, previous: Event) -> Self:
@@ -453,7 +385,7 @@ class Event(MarketConvertible):
         self.version = previous.version + 1
         self.prevunix = previous.unix
         self._remember_previous(previous)
-        self.hash = NIL
+        self.vhash = self.hash = NIL
         return self
 
     def _keep_lifecycle_altids(self, previous: Event) -> None:
@@ -553,7 +485,7 @@ class Event(MarketConvertible):
         taken.forget_delta()
         # Cleared so `identify` derives one: the row differs from the one it
         # was copied from, in the two fields that say it is a picture.
-        taken.hash = NIL
+        taken.vhash = taken.hash = NIL
         return taken
 
     def forget_delta(self) -> None:
@@ -573,8 +505,6 @@ class Event(MarketConvertible):
         # Cached on the parts rather than computed per event, because a
         # lifecycle is the thing that *repeats*: forty resting levels restated
         # on every refresh, one order amended five times, a trade corrected.
-        # A version hash is not cached beside it -- it is different by
-        # definition, so it would only evict these.
         try:
             return _life_hash(type(self).__name__, parts)
         except TypeError:
@@ -610,22 +540,18 @@ class Event(MarketConvertible):
         return (code,) if code else ()
 
     def version_parts(self) -> tuple[Any, ...]:
-        """What makes this version different from the one before it.
-
-        The lifecycle leads, so two lifecycles cannot collide however alike
-        their versions are, and then the counter, the instant and the state --
-        the three things every event has that a new version moves.
-        """
+        """Current non-clock values in the lifecycle's framed hash domain."""
         links = tuple(self.linkedhashes)
         return (
             hash_bytes_of(self.xhash),
-            self.version,
-            self.unix,
+            self.eventtype,
             self.state,
             self.mic,
             len(links),
             *links,
+            self.code,
             self.reason,
+            *_mapping_parts(self.altids),
         )
 
 
@@ -644,7 +570,9 @@ class MarketEvent(Event):
     # Not a partition, deliberately. The value is a hash, so bucketing it split
     # every hour into as many files as buckets while the hour itself already
     # prunes the read -- more small files for a filter that was already exact.
-    instrumentxhash: Annotated[int, Field(dtype=HASH), Field.column("Instrument Xhash")] = NIL
+    instrumentxhash: Annotated[
+        int, Field(dtype=pyarrow.int64()), Field.column("Instrument Xhash")
+    ] = NIL
     """Instrument lifecycle identity used to join market rows."""
 
     # Beside the hash rather than only inside `altids`: a hash joins, and a
@@ -848,18 +776,20 @@ class MarketEvent(Event):
         return self.code or self.symbol
 
     def version_parts(self) -> tuple[Any, ...]:
-        """A market version moves when its price or its quantity moves."""
+        """Current non-clock market values in the framed hash domain."""
         return (
             *Event.version_parts(self),
+            hash_bytes_of(self.instrumentxhash),
+            self.instrumentcode,
             self.kind,
             self.side,
             self.px,
-            self.prevpx,
+            self.pxunit,
             self.currency,
             self.qty,
-            self.prevqty,
+            self.qtyunit,
             self.notional,
-            self.prevnotional,
+            *_mapping_parts(self.metadata),
         )
 
     @classmethod
@@ -913,6 +843,19 @@ def unix_partition_arrow(unix: Any) -> pyarrow.Array:
 def _unix_partition_of(unix: int) -> int:
     """Return one nanosecond instant's hour boundary as epoch seconds."""
     return (unix - unix % HOUR) // SECOND
+
+
+def _mapping_parts(values: Mapping[str, Any] | None) -> tuple[Any, ...]:
+    """One optional mapping in deterministic key order."""
+    if values is None:
+        return (False, 0)
+    ordered = sorted(values.items(), key=lambda item: item[0].encode("utf-8"))
+    return (True, len(ordered), *(part for pair in ordered for part in pair))
+
+
+def _scalar_part(value: Any) -> Any:
+    """One scalar in the identity frame's portable spelling."""
+    return value.isoformat() if isinstance(value, datetime.date) else value
 
 
 @functools.lru_cache(maxsize=65_536)

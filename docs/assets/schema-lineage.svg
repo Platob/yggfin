@@ -40,7 +40,7 @@
 
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
-  <text class="small" x="1345" y="88">hash | xhash | prevhash | linkedhashes</text>
+  <text class="small" x="1345" y="88">hash | vhash | xhash | prevhash | linkedhashes</text>
   <text class="small" x="1345" y="108">unix | eventtype | state | reason | parenthash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 

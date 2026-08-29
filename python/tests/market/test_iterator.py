@@ -9,7 +9,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import FixCodec, Message
+from rekep import FixCodec, Message, txhash
 from rekep.fix import FixFieldValue, FixRegistry, record_copy
 from rekep.fix.columns import ISIN_SCHEME
 from rekep.market import (
@@ -1222,8 +1222,9 @@ def test_an_exact_boundary_keeps_one_book_identity() -> None:
     books = list(BookIterator.from_events(events).books)
 
     assert len({(book.unix, book.instrumentxhash) for book in books}) == len(books)
+    assert [book.vhash for book in books] == [Book.hash_of(*book.version_parts()) for book in books]
     assert [book.hash for book in books] == [
-        book.txhash_of(*book.version_parts()) for book in books
+        txhash.couple128(book.unix // 1_000, book.vhash) for book in books
     ]
 
 
@@ -1237,6 +1238,8 @@ def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
     assert [one.version for one in found] == [0, 1, 2, 3]
     assert len({one.xhash for one in found}) == 1, "one book"
     assert len({one.hash for one in found}) == len(found), "and four versions of it"
+    assert found[0].vhash == found[1].vhash == found[2].vhash
+    assert found[3].vhash != found[2].vhash
     for before, after in zip(found, found[1:], strict=False):
         assert after.prevunix == before.unix
         assert after.prevhash == before.hash
@@ -1473,7 +1476,7 @@ def test_book_recovery_normalizes_candidates_by_unix_version_and_hash() -> None:
     assert restored.folding[BTC.xhash].previous is high
 
 
-def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold() -> None:
+def test_recovery_rebuilds_the_same_order_framed_vhash_as_an_uninterrupted_fold() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1")
     after = order(BASE + HOUR + 70, BTC, Side.BID, 99.0, 3.0, "B2")
@@ -1491,17 +1494,20 @@ def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold()
         )
     )[-1]
     expected = (
-        after.unix,
-        hash_bytes_of(BTC.xhash),
-        2,
-        hash_bytes_of(placed.hash),
-        hash_bytes_of(after.hash),
+        *uninterrupted._version_prefix_parts(2),
+        placed.vhash,
+        after.vhash,
         1,
-        hash_bytes_of(clock.hash),
+        clock.vhash,
     )
 
     assert uninterrupted.version_parts() == recovered.version_parts() == expected
-    assert uninterrupted.hash == recovered.hash == uninterrupted.txhash_of(*expected)
+    assert uninterrupted.vhash == recovered.vhash == Book.hash_of(*expected)
+    assert (
+        uninterrupted.hash
+        == recovered.hash
+        == txhash.couple128(uninterrupted.unix // 1_000, uninterrupted.vhash)
+    )
 
 
 def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None:
@@ -1510,23 +1516,23 @@ def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None
     The cache is what keeps a book with a hundred live levels from re-sorting
     and re-hashing all of them on every event -- so the case worth pinning is
     the one that changes an order without changing its level: same price, same
-    resting quantity, a new version and therefore a new content hash.
+    resting quantity, a new version and therefore a new value hash.
     """
 
     def live(where: _Side) -> tuple[int, ...]:
         """What the side says it is identified by, read the long way round."""
-        return tuple(one.hash for one in where.sorted_orders)
+        return tuple(one.vhash for one in where.sorted_orders)
 
     side = _Side(side=Side.BID)
     placed = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
     assert side.apply(placed)
-    before = side.order_hashes()
-    assert before == live(side) == (placed.hash,)
+    before = side.order_vhashes()
+    assert before == live(side) == (placed.vhash,)
 
     revised = order(BASE + 10, BTC, Side.BID, 100.0, 5.0, "B1", state=State.PARTIALLY_FILLED)
     assert revised.px == placed.px and _resting(revised) == _resting(placed)
     side.apply(revised)
-    after = side.order_hashes()
+    after = side.order_vhashes()
     assert after == live(side) and after != before, (
         "the level forgot what it had settled into -- even though nothing about "
         "the level itself moved, which is exactly the case a stale cache would miss"
@@ -1534,7 +1540,7 @@ def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None
 
     beside = order(BASE + 20, BTC, Side.BID, 100.0, 9.0, "B2")
     assert side.apply(beside)
-    assert side.order_hashes() == live(side) == (beside.hash, *after), "biggest first"
+    assert side.order_vhashes() == live(side) == (beside.vhash, *after), "biggest first"
 
 
 def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> None:

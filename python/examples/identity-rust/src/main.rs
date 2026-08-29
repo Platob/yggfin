@@ -88,6 +88,18 @@ fn into_hex(value: &[u8]) -> String {
     value.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+fn couple128(micros: i64, vhash: i64) -> i128 {
+    ((micros as i128) << 64) | ((vhash as u64) as i128)
+}
+
+fn micros_of(value: i128) -> i64 {
+    (value >> 64) as i64
+}
+
+fn vhash_of(value: i128) -> i64 {
+    value as i64
+}
+
 fn main() {
     let corpus: Corpus =
         serde_json::from_str(include_str!("../../../../docs/assets/identity-v1.json")).unwrap();
@@ -121,8 +133,15 @@ fn main() {
         );
         assert_eq!(digest as i64, vector.signed_i64, "{} signed", vector.name);
     }
+    let micros = 1_700_000_000_000_000_i64;
+    let vhash = -4_872_843_452_109_876_543_i64;
+    let hash = couple128(micros, vhash);
+    assert_eq!(micros_of(hash), micros);
+    assert_eq!(vhash_of(hash), vhash);
+    assert_eq!(i128::from_be_bytes(hash.to_be_bytes()), hash);
+
     println!(
-        "{}: {} raw + {} framed vectors match",
+        "{}: {} raw + {} framed vectors and event-hash composition match",
         corpus.protocol,
         corpus.raw_vectors.len(),
         corpus.vectors.len()

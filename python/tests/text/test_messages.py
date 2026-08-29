@@ -1248,16 +1248,21 @@ def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     return _parsed(staged, codec)
 
 
-def test_two_identical_lines_in_two_captures_share_payload_identities(tmp_path: Path) -> None:
-    """Capture provenance does not alter the exact message-payload identity."""
-    digests = []
-    for name in ("first.txt", "second.txt"):
+def test_two_captures_share_payload_identities_across_clocks(tmp_path: Path) -> None:
+    """Capture time anchors `hash` without changing payload identity."""
+    tables = []
+    for name, text in (
+        ("first.txt", STAGED_LINES),
+        ("second.txt", STAGED_LINES.replace("2026-08-14", "2026-08-15")),
+    ):
         path = tmp_path / name
-        path.write_text(STAGED_LINES)
+        path.write_text(text)
         with TextFile.from_path(path) as log:
-            digests.append(log.read_arrow_table().column("hash").to_pylist())
-    assert len(digests[0]) == len(STAGED_LINES.splitlines())
-    assert digests[0] == digests[1]
+            tables.append(log.read_arrow_table())
+    assert tables[0].num_rows == len(STAGED_LINES.splitlines())
+    assert tables[0].column("vhash").equals(tables[1].column("vhash"))
+    assert tables[0].column("xhash").equals(tables[1].column("xhash"))
+    assert not tables[0].column("hash").equals(tables[1].column("hash"))
 
 
 def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(

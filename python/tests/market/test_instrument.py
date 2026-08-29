@@ -299,19 +299,15 @@ def test_a_repeated_instrument_spelling_is_hashed_once(monkeypatch: pytest.Monke
     instrument_module._symbol_hash.cache_clear()
 
 
-def test_instrument_version_hashing_names_every_fact_and_leg_member() -> None:
+def test_instrument_vhash_names_every_owned_fact_and_leg_member() -> None:
     altids = Instrument.into_field().field("altids")
     assert Instrument.into_field().names.count("altids") == 1 and not altids.nullable
     declared = tuple(name for name in Instrument.__annotations__ if name != "xhash")
-    assert instrument_module._INSTRUMENT_MEMBERS == (
-        *declared[:5],
-        "altids",
-        *declared[5:],
-    )
+    assert instrument_module._INSTRUMENT_MEMBERS == declared
     assert instrument_module._LEG_MEMBERS == tuple(field.name for field in dataclasses.fields(Leg))
 
 
-def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
+def test_instrument_vhash_is_stable_for_maps_dates_and_legs() -> None:
     maturity = datetime.date(2027, 6, 18)
     first = Instrument(
         symbol="CAL-27",
@@ -325,11 +321,11 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
         altids={"ISINNumber": "FR0000000001", "RICCode": "CAL.N"},
     )
 
-    one = dataclasses.replace(first, unix=1).with_previous(None)
-    two = dataclasses.replace(reordered, unix=1).with_previous(None)
+    one = dataclasses.replace(first, unix=1_000).with_previous(None)
+    two = dataclasses.replace(reordered, unix=2_000).with_previous(None)
 
     assert one is not None and two is not None
-    assert one.hash == two.hash
-    empty = dataclasses.replace(first, unix=1, altids={}, hash=0).identify().hash
-    absent = dataclasses.replace(first, unix=1, altids=None, hash=0).identify().hash
+    assert one.vhash == two.vhash and one.hash != two.hash
+    empty = dataclasses.replace(first, unix=1, altids={}, vhash=0, hash=0).identify().hash
+    absent = dataclasses.replace(first, unix=1, altids=None, vhash=0, hash=0).identify().hash
     assert empty == absent, "the one required identifier map normalizes absence to empty"

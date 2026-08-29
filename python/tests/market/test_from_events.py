@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 import rekep.market.book as book_module
+from rekep import txhash
 from rekep.market import (
     MIC,
     Book,
@@ -18,7 +19,6 @@ from rekep.market import (
     TimeInForce,
 )
 from rekep.market.book import _Side
-from rekep.market.identity import hash_bytes_of
 
 BTC = Instrument(symbol="BTC-USD", securityexchange="XCME", currency="USD")
 ETH = Instrument(symbol="ETH-USD", securityexchange="XCME", currency="USD")
@@ -115,17 +115,16 @@ def test_a_book_hash_frames_both_ordered_live_sides_explicitly() -> None:
     (only,) = books(TWO_SIDED)
     bid, lower_bid, ask = TWO_SIDED
     expected = (
-        only.unix,
-        hash_bytes_of(only.instrumentxhash),
-        2,
-        hash_bytes_of(bid.hash),
-        hash_bytes_of(lower_bid.hash),
+        *only._version_prefix_parts(2),
+        bid.vhash,
+        lower_bid.vhash,
         1,
-        hash_bytes_of(ask.hash),
+        ask.vhash,
     )
 
     assert only.version_parts() == expected
-    assert only.hash == only.txhash_of(*expected)
+    assert only.vhash == Book.hash_of(*expected)
+    assert only.hash == txhash.couple128(only.unix // 1_000, only.vhash)
 
 
 def test_book_hash_cache_follows_each_side_change() -> None:
@@ -136,22 +135,21 @@ def test_book_hash_cache_follows_each_side_change() -> None:
 
     found = list(BookIterator.from_events([bid, ask, better_bid, cancel], snapshot_every=0))
     expected_sides = [
-        ([bid.hash], []),
-        ([bid.hash], [ask.hash]),
-        ([better_bid.hash, bid.hash], [ask.hash]),
-        ([better_bid.hash], [ask.hash]),
+        ([bid.vhash], []),
+        ([bid.vhash], [ask.vhash]),
+        ([better_bid.vhash, bid.vhash], [ask.vhash]),
+        ([better_bid.vhash], [ask.vhash]),
     ]
     for book, (bids, asks) in zip(found, expected_sides, strict=True):
         expected = (
-            book.unix,
-            hash_bytes_of(book.instrumentxhash),
-            len(bids),
-            *(hash_bytes_of(one) for one in bids),
+            *book._version_prefix_parts(len(bids)),
+            *bids,
             len(asks),
-            *(hash_bytes_of(one) for one in asks),
+            *asks,
         )
         assert book.version_parts() == expected
-        assert book.hash == book.txhash_of(*expected)
+        assert book.vhash == Book.hash_of(*expected)
+        assert book.hash == txhash.couple128(book.unix // 1_000, book.vhash)
 
 
 # -- what it refuses ---------------------------------------------------------
@@ -1154,13 +1152,14 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
     assert list(side.orders) == [standing.xhash]
 
 
-def test_replacement_and_removal_keep_a_bounded_expiry_index() -> None:
+def test_clock_only_replacements_collapse_without_growing_the_expiry_index() -> None:
     side = _Side(side=Side.BID)
     side.apply(order(10, Side.BID, 100.0, 5.0, "B1", expunix=20))
     identity = next(iter(side.orders))
 
-    for expiry in range(21, 2_021):
-        side.apply(
+    side.apply(order(12, Side.BID, 100.0, 5.0, "B1", expunix=21, state=State.OPEN))
+    for expiry in range(22, 2_021):
+        assert not side.apply(
             order(
                 expiry - 9,
                 Side.BID,
@@ -1171,8 +1170,9 @@ def test_replacement_and_removal_keep_a_bounded_expiry_index() -> None:
                 state=State.OPEN,
             )
         )
-        token = side._deadline_tokens[identity]
-        assert (expiry, identity, token) in side._deadlines
+    token = side._deadline_tokens[identity]
+    assert side._deadline_values[identity] == 21
+    assert (21, identity, token) in side._deadlines
     assert (
         len(side._deadlines) <= len(side._deadline_tokens) * 2 + book_module._DEADLINE_STALE_BUFFER
     )

@@ -29,6 +29,7 @@ ENVELOPE = [
     "expunix",
     "snapunix",
     "hash",
+    "vhash",
     "xhash",
     "linkedhashes",
     "version",

@@ -178,15 +178,15 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 ## Market data
 
-- Events are immutable versions. `hash` identifies a version; `xhash` a
-  lifecycle; `prevhash` its previous version; `linkedhashes` relates
-  lifecycles by `xhash`.
+- Events are immutable versions. `vhash` identifies a clock-free value,
+  `hash` anchors it to one event time, `xhash` identifies a lifecycle,
+  `prevhash` its previous version, and `linkedhashes` relates lifecycles by
+  `xhash`.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
-  Event identity columns are stored as sixteen big-endian bytes --
-  `fixed_size_binary(16)` in Arrow -- so a content digest and a time-anchored
-  one share a width, and the column sorts as its values do. Numbers are never
-  formatted as text.
+  `vhash` and lifecycle identities are signed `int64`; `hash` composes epoch
+  microseconds over `vhash` and is stored as sixteen big-endian bytes. Numbers
+  are never formatted as text.
 - Store market notions as ASCII codes packed into one integer, left-justified
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage

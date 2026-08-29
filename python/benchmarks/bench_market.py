@@ -55,7 +55,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import best_of, identical, parser, report  # noqa: E402
 
-from rekep import FixMsg  # noqa: E402
+from rekep import FixMsg, txhash  # noqa: E402
 from rekep.enums import State  # noqa: E402
 from rekep.fix import parse_arrow_array  # noqa: E402
 from rekep.fix.message import parse_pairs  # noqa: E402
@@ -73,7 +73,6 @@ from rekep.market.identity import (  # noqa: E402
     _binary,
     _length,
     hash_arrow,
-    hash_bytes_of,
     hash_of,
 )
 
@@ -288,12 +287,8 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     scalar, one_at_a_time = timed(
         lambda: [hash_of("Order", *values) for values in zip(*parts, strict=True)], repeat
     )
-    # Verified before it is timed: the two must be the same identifiers. One
-    # builds a column and answers in the sixteen bytes a column stores; the
-    # other builds one identity and answers in the integer a reader works in.
-    assert built.to_pylist()[:scalar_rows] == [hash_bytes_of(one) for one in one_at_a_time], (
-        "the two builders disagree"
-    )
+    # Verified before it is timed: the two must be the same signed identities.
+    assert built.to_pylist()[:scalar_rows] == one_at_a_time, "the two builders disagree"
 
     joined, _ = timed(lambda: plain_join(*columns), repeat)
     framed, _ = timed(lambda: framed_join(*columns), repeat)
@@ -411,13 +406,15 @@ def levels(depth: int, base: float) -> list[dict[str, object]]:
 
 def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
+    vhashes = [index + 1 for index in range(rows)]
     return {
         "unix": [UNIX] * rows,
         "unixpartition": [UNIX_PARTITION] * rows,
         "eventtype": [0] * rows,
         "creaunix": [UNIX] * rows,
         "recunix": [UNIX] * rows,
-        "hash": [index + 1 for index in range(rows)],
+        "hash": [txhash.wide_bytes(txhash.couple128(UNIX // 1_000, vhash)) for vhash in vhashes],
+        "vhash": vhashes,
         "xhash": [index + 1 for index in range(rows)],
         "linkedhashes": [[] for _ in range(rows)],
         "version": [1] * rows,

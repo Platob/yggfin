@@ -8,6 +8,7 @@ from typing import Any
 import pyarrow
 import pyarrow.compute as compute
 
+from rekep import txhash
 from rekep.enums import Currency, EventType, MarketKind, Side, State, TimeInForce
 from rekep.fields import column_names, encoded_key
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
@@ -23,7 +24,14 @@ from rekep.market.fix import (
     ORDER_HANDLERS,
     MarketTags,
 )
-from rekep.market.identity import HASH, NIL_BYTES, hash_arrow
+from rekep.market.identity import (
+    HASH,
+    NIL,
+    arrow_of,
+    framed_arrow,
+    hash_arrow,
+    hash_bytes_arrow,
+)
 from rekep.market.orders import Execution, Order
 
 _REASON_FIELDS = (
@@ -462,7 +470,7 @@ class _Shared:
         self.symbol = values.text("Symbol", fallback="")
         self.instrumentxhash = compute.if_else(
             compute.equal(self.symbol, ""),
-            pyarrow.scalar(NIL_BYTES, HASH),
+            pyarrow.scalar(NIL, pyarrow.int64()),
             hash_arrow("symbol", "", self.symbol),
         )
         self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
@@ -550,51 +558,72 @@ def _orders(
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
-        Order.hash_arrow(instrumentxhash, mic, named, side),
-        pyarrow.scalar(NIL_BYTES, HASH),
+        Order.hash_arrow(arrow_of(instrumentxhash), mic, named, side),
+        pyarrow.scalar(NIL, pyarrow.int64()),
     )
     px = shared.take(values.number("Price"), where)
     currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
     vwap = pyarrow.nulls(len(where), pyarrow.float64())
     null_float = pyarrow.nulls(len(where), pyarrow.float64())
-    event_hash = Order.txhash_arrow(
-        unix,
-        xhash,
-        0,
-        unix,
-        state,
-        mic,
-        0,
-        reason,
-        kind,
-        side,
-        px,
-        null_float,
-        currency,
-        current,
-        previous,
-        null_float,
-        null_float,
-        client_id,
-        hidden,
-        vwap,
-        False,
+    eventtype = _constant(len(where), int(EventType.ORDER), pyarrow.int64())
+    altids = shared.take(shared.altids, where)
+    pxunit = shared.take(shared.pxunit, where)
+    qtyunit = _constant(len(where), "", pyarrow.string())
+    metadata = shared.take(shared.metadata, where)
+    clordlinkid = shared.take(values.text("ClOrdLinkID"), where)
+    parentclordid = shared.take(values.text("ParentClOrdID"), where)
+    parentorderid = shared.take(values.text("ParentOrderID"), where)
+    null_text = pyarrow.nulls(len(where), pyarrow.string())
+    vhash = _value_hash_arrow(
+        Order,
+        (arrow_of(xhash), eventtype, state, mic, 0, code, reason),
+        altids,
+        (
+            arrow_of(instrumentxhash),
+            symbol,
+            kind,
+            side,
+            px,
+            pxunit,
+            currency,
+            current,
+            qtyunit,
+            null_float,
+        ),
+        metadata,
+        (
+            timeinforce,
+            shared.take(values.number("StopPx"), where),
+            hidden,
+            vwap,
+            False,
+            orderid,
+            client_id,
+            previous_client_id,
+            clordlinkid,
+            parentclordid,
+            parentorderid,
+            pyarrow.nulls(len(where), pyarrow.int32()),
+            null_text,
+        ),
     )
+    event_hash = txhash.couple128_arrow(Order._clock_micros(unix), vhash)
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
-        "eventtype": _constant(len(where), int(EventType.ORDER), pyarrow.int64()),
+        "eventtype": eventtype,
         "creaunix": unix,
         "recunix": shared.take(shared.recunix, where),
         "expunix": expunix,
         "hash": event_hash,
+        "vhash": vhash,
         "xhash": xhash,
         "linkedhashes": _empty_lists(len(where), Order.into_field().field("linkedhashes").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "altids": shared.take(shared.altids, where),
+        "altids": altids,
         "prevhash": pyarrow.nulls(len(where), HASH),
         "mic": mic,
         "reason": reason,
@@ -603,12 +632,12 @@ def _orders(
         "kind": kind,
         "side": side,
         "px": px,
-        "pxunit": shared.take(shared.pxunit, where),
+        "pxunit": pxunit,
         "currency": currency,
         "qty": current,
         "prevqty": previous,
-        "qtyunit": _constant(len(where), "", pyarrow.string()),
-        "metadata": shared.take(shared.metadata, where),
+        "qtyunit": qtyunit,
+        "metadata": metadata,
         "timeinforce": timeinforce,
         "stoppx": shared.take(values.number("StopPx"), where),
         "hiddenqty": hidden,
@@ -619,10 +648,10 @@ def _orders(
         "origclordid": previous_client_id,
         # The reject-only columns stay null here: a row carrying either is
         # `_REASON_FIELDS`-complex and translates through the scalar path.
-        "clordlinkid": shared.take(values.text("ClOrdLinkID"), where),
+        "clordlinkid": clordlinkid,
         # Namespace identities live in their resolved columns, never as tags.
-        "parentclordid": shared.take(values.text("ParentClOrdID"), where),
-        "parentorderid": shared.take(values.text("ParentOrderID"), where),
+        "parentclordid": parentclordid,
+        "parentorderid": parentorderid,
     }
     return _batch(Order, columns, len(where))
 
@@ -665,8 +694,8 @@ def _executions(
     named_life = compute.not_equal(named, "")
     xhash = compute.if_else(
         named_life,
-        Execution.hash_arrow(instrumentxhash, mic, named, side),
-        pyarrow.scalar(NIL_BYTES, HASH),
+        Execution.hash_arrow(arrow_of(instrumentxhash), mic, named, side),
+        pyarrow.scalar(NIL, pyarrow.int64()),
     )
     orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
@@ -699,7 +728,7 @@ def _executions(
     order_by_source = _order_lookup(orders, order_at, where)
     order_xhash = order_by_source["xhash"]
     order_hash = order_by_source["hash"]
-    order_lifecycle = _lifecycle_int64(order_xhash)
+    order_lifecycle = order_xhash
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
     linked = build_list(
         Execution.into_field().field("linkedhashes").dtype,
@@ -714,65 +743,75 @@ def _executions(
     currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
     null_float = pyarrow.nulls(rows, pyarrow.float64())
-    no_link_hash = Execution.txhash_arrow(
-        unix,
-        xhash,
-        0,
-        unix,
-        state,
-        mic,
-        0,
-        reason,
+    eventtype = _constant(rows, int(EventType.EXECUTION), pyarrow.int64())
+    altids = shared.take(shared.altids, where)
+    pxunit = shared.take(shared.pxunit, where)
+    qtyunit = _constant(rows, "", pyarrow.string())
+    metadata = shared.take(shared.metadata, where)
+    settldate = shared.take(values.raw("SettlDate", pyarrow.date32()), where)
+    settltype = shared.take(values.text("SettlType"), where)
+    settlcurrency = shared.take(values.text("SettlCurrency"), where)
+    settlcurrfxratecalc = shared.take(values.text("SettlCurrFxRateCalc"), where)
+    market_values = (
+        arrow_of(instrumentxhash),
+        symbol,
         kind,
         side,
         px,
-        null_float,
+        pxunit,
         currency,
         qty,
+        qtyunit,
         null_float,
-        null_float,
-        null_float,
-        execid,
-        filled,
-        vwap,
     )
-    linked_hash = Execution.txhash_arrow(
-        unix,
-        xhash,
-        0,
-        unix,
-        state,
-        mic,
-        1,
-        order_lifecycle,
-        reason,
-        kind,
-        side,
-        px,
-        null_float,
-        currency,
-        qty,
-        null_float,
-        null_float,
-        null_float,
+    execution_values = (
         execid,
+        execrefid,
+        tradeid,
+        orderid,
+        client_id,
+        previous_client_id,
         filled,
+        leaves,
         vwap,
+        aggressorindicator,
+        settldate.cast(pyarrow.string()),
+        settltype,
+        settlcurrency,
+        settlcurrfxratecalc,
     )
-    event_hash = compute.if_else(reported, linked_hash, no_link_hash)
+    no_link_vhash = _value_hash_arrow(
+        Execution,
+        (arrow_of(xhash), eventtype, state, mic, 0, code, reason),
+        altids,
+        market_values,
+        metadata,
+        execution_values,
+    )
+    linked_vhash = _value_hash_arrow(
+        Execution,
+        (arrow_of(xhash), eventtype, state, mic, 1, order_lifecycle, code, reason),
+        altids,
+        market_values,
+        metadata,
+        execution_values,
+    )
+    vhash = compute.if_else(reported, linked_vhash, no_link_vhash)
+    event_hash = txhash.couple128_arrow(Execution._clock_micros(unix), vhash)
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
-        "eventtype": _constant(rows, int(EventType.EXECUTION), pyarrow.int64()),
+        "eventtype": eventtype,
         "creaunix": unix,
         "recunix": shared.take(shared.recunix, where),
         "hash": event_hash,
+        "vhash": vhash,
         "xhash": xhash,
         "linkedhashes": linked,
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "altids": shared.take(shared.altids, where),
+        "altids": altids,
         "prevhash": pyarrow.nulls(rows, HASH),
         "parenthash": parent,
         "mic": mic,
@@ -782,11 +821,11 @@ def _executions(
         "kind": kind,
         "side": side,
         "px": px,
-        "pxunit": shared.take(shared.pxunit, where),
+        "pxunit": pxunit,
         "currency": currency,
         "qty": qty,
-        "qtyunit": _constant(rows, "", pyarrow.string()),
-        "metadata": shared.take(shared.metadata, where),
+        "qtyunit": qtyunit,
+        "metadata": metadata,
         "execid": execid,
         "execrefid": execrefid,
         "tradeid": tradeid,
@@ -797,10 +836,10 @@ def _executions(
         "leavesqty": leaves,
         "vwap": vwap,
         "aggressorindicator": aggressorindicator,
-        "settldate": shared.take(values.raw("SettlDate", pyarrow.date32()), where),
-        "settltype": shared.take(values.text("SettlType"), where),
-        "settlcurrency": shared.take(values.text("SettlCurrency"), where),
-        "settlcurrfxratecalc": shared.take(values.text("SettlCurrFxRateCalc"), where),
+        "settldate": settldate,
+        "settltype": settltype,
+        "settlcurrency": settlcurrency,
+        "settlcurrfxratecalc": settlcurrfxratecalc,
     }
     return _batch(Execution, columns, rows)
 
@@ -811,24 +850,11 @@ def _order_lookup(
     rows = len(execution_at)
     if orders is None:
         return {
-            "xhash": pyarrow.nulls(rows, HASH),
+            "xhash": pyarrow.nulls(rows, pyarrow.int64()),
             "hash": pyarrow.nulls(rows, HASH),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
     return {name: compute.take(orders.column(name), locations) for name in ("xhash", "hash")}
-
-
-def _lifecycle_int64(values: pyarrow.Array) -> pyarrow.Array:
-    """Signed low half of fixed-width lifecycle hashes, without boxing rows."""
-    if values.type == pyarrow.int64():
-        return values
-    if values.type != HASH:
-        raise TypeError(f"lifecycle hashes must be {HASH} or int64, got {values.type}")
-    low = compute.binary_slice(values.cast(pyarrow.binary()), 8, 16)
-    reversed_low = compute.binary_reverse(compute.fill_null(low, b"\x00" * 8))
-    return pyarrow.Int64Array.from_buffers(
-        pyarrow.int64(), len(values), [values.buffers()[0], reversed_low.buffers()[2]]
-    )
 
 
 def _quantity_transition(
@@ -1049,6 +1075,64 @@ def _metadata(values: _Values, tags: MarketTags) -> pyarrow.Array:
         items = compute.take(items, order)
     dtype = Order.into_field().field("metadata").dtype
     return build_map(dtype, dense_counts(parents, rows), keys, items)
+
+
+def _value_hash_arrow(
+    shape: type[Order] | type[Execution],
+    event: tuple[Any, ...],
+    altids: pyarrow.Array,
+    market: tuple[Any, ...],
+    metadata: pyarrow.Array,
+    specific: tuple[Any, ...],
+) -> pyarrow.Array:
+    """Hash complete non-clock market values around their canonical maps."""
+    framed = (
+        framed_arrow(shape.__name__, *event),
+        _mapping_frame_arrow(altids),
+        framed_arrow(*market),
+        _mapping_frame_arrow(metadata),
+        framed_arrow(*specific),
+    )
+    joined = compute.binary_join_element_wise(
+        *framed,
+        pyarrow.scalar(b"", pyarrow.binary()),
+        null_handling="replace",
+        null_replacement=b"",
+    )
+    return hash_bytes_arrow(joined)
+
+
+def _mapping_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """Optional map entries as deterministic identity-frame segments."""
+    item = pyarrow.struct(
+        [
+            pyarrow.field("key", values.type.key_type, nullable=False),
+            pyarrow.field("value", values.type.item_type, nullable=values.type.item_field.nullable),
+        ]
+    )
+    listed = values.cast(pyarrow.list_(item), safe=False)
+    counts = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int64())
+    entries = compute.list_flatten(listed)
+    parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+    keys = compute.struct_field(entries, "key")
+    items = compute.struct_field(entries, "value")
+    if len(entries):
+        order = compute.sort_indices(
+            pyarrow.record_batch([parents, keys], names=["parent", "key"]),
+            sort_keys=[("parent", "ascending"), ("key", "ascending")],
+        )
+        keys = compute.take(keys, order)
+        items = compute.take(items, order)
+    entry_frames = (
+        framed_arrow(keys, items) if len(entries) else pyarrow.array([], pyarrow.binary())
+    )
+    grouped = build_list(pyarrow.list_(pyarrow.binary()), counts, entry_frames)
+    payload = compute.binary_join(grouped, pyarrow.scalar(b"", pyarrow.binary()))
+    return compute.binary_join_element_wise(
+        framed_arrow(compute.is_valid(values), counts),
+        payload,
+        pyarrow.scalar(b"", pyarrow.binary()),
+    )
 
 
 def _currencies(source: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:

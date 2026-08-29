@@ -41,4 +41,4 @@ rekep fields dump --pyclass rekep.market.orders:Order --target schemas/rekep/ord
 
 See [schema contracts](../contracts/index.md) for the document format,
 [types](../contracts/types.md) for the Arrow types it may name, and
-[binary identities](../contracts/identity.md) for how `hash` and `xhash` are framed.
+[binary identities](../contracts/identity.md) for the lifecycle and event hash contracts.

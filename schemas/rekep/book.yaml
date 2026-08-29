@@ -44,11 +44,15 @@ fields:
   fix: {display: Snap Unix}
 - name: hash
   type: fixed_size_binary[16]
-  description: Digest of the instant, instrument, and ordered live Order version hashes.
+  description: Time-anchored composition of `unix` and the live book's `vhash`.
   iceberg: {primary_key: 'true'}
   fix: {display: Hash}
+- name: vhash
+  type: int64
+  description: XXH3-64 of the framed value parts, with every clock excluded.
+  fix: {display: Value Hash}
 - name: xhash
-  type: fixed_size_binary[16]
+  type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
   fix: {display: Xhash}
 - name: linkedhashes
@@ -108,7 +112,7 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
   fix: {display: Reason}
 - name: instrumentxhash
-  type: fixed_size_binary[16]
+  type: int64
   description: Instrument lifecycle identity used to join market rows.
   fix: {display: Instrument Xhash}
 - name: instrumentcode
@@ -333,10 +337,14 @@ fields:
       fix: {display: Snap Unix}
     - name: hash
       type: fixed_size_binary[16]
-      description: 'Digest of this version''s content: the same version, twice, is one row.'
+      description: Time-anchored composition of `unix` and `vhash`.
       fix: {display: Hash}
+    - name: vhash
+      type: int64
+      description: XXH3-64 of the framed value parts, with every clock excluded.
+      fix: {display: Value Hash}
     - name: xhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
       fix: {display: Xhash}
     - name: linkedhashes
@@ -396,7 +404,7 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
       fix: {display: Reason}
     - name: instrumentxhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Instrument lifecycle identity used to join market rows.
       fix: {display: Instrument Xhash}
     - name: instrumentcode
@@ -580,10 +588,14 @@ fields:
       fix: {display: Snap Unix}
     - name: hash
       type: fixed_size_binary[16]
-      description: 'Digest of this version''s content: the same version, twice, is one row.'
+      description: Time-anchored composition of `unix` and `vhash`.
       fix: {display: Hash}
+    - name: vhash
+      type: int64
+      description: XXH3-64 of the framed value parts, with every clock excluded.
+      fix: {display: Value Hash}
     - name: xhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
       fix: {display: Xhash}
     - name: linkedhashes
@@ -643,7 +655,7 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
       fix: {display: Reason}
     - name: instrumentxhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Instrument lifecycle identity used to join market rows.
       fix: {display: Instrument Xhash}
     - name: instrumentcode
@@ -833,10 +845,14 @@ fields:
       fix: {display: Snap Unix}
     - name: hash
       type: fixed_size_binary[16]
-      description: 'Digest of this version''s content: the same version, twice, is one row.'
+      description: Time-anchored composition of `unix` and `vhash`.
       fix: {display: Hash}
+    - name: vhash
+      type: int64
+      description: XXH3-64 of the framed value parts, with every clock excluded.
+      fix: {display: Value Hash}
     - name: xhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
       fix: {display: Xhash}
     - name: linkedhashes
@@ -896,7 +912,7 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
       fix: {display: Reason}
     - name: instrumentxhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Instrument lifecycle identity used to join market rows.
       fix: {display: Instrument Xhash}
     - name: instrumentcode
@@ -1080,10 +1096,14 @@ fields:
       fix: {display: Snap Unix}
     - name: hash
       type: fixed_size_binary[16]
-      description: 'Digest of this version''s content: the same version, twice, is one row.'
+      description: Time-anchored composition of `unix` and `vhash`.
       fix: {display: Hash}
+    - name: vhash
+      type: int64
+      description: XXH3-64 of the framed value parts, with every clock excluded.
+      fix: {display: Value Hash}
     - name: xhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
       fix: {display: Xhash}
     - name: linkedhashes
@@ -1143,7 +1163,7 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
       fix: {display: Reason}
     - name: instrumentxhash
-      type: fixed_size_binary[16]
+      type: int64
       description: Instrument lifecycle identity used to join market rows.
       fix: {display: Instrument Xhash}
     - name: instrumentcode

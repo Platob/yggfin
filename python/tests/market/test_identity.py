@@ -34,6 +34,8 @@ from rekep.market.identity import (
     hash_int_of,
     hash_of,
     part_bytes,
+    read_member,
+    stored_member,
 )
 
 SYMBOLS = ["AAPL", "MSFT", "AAPL", None, ""]
@@ -77,13 +79,12 @@ def vector_column(part: object) -> pyarrow.Array:
 # -- what an identifier is ---------------------------------------------------
 
 
-def test_an_identifier_is_a_signed_integer_stored_in_sixteen_bytes() -> None:
-    """One stored width for every identity: a content digest is sixty-four bits,
-    a time-anchored version hash is twice that, and both are this column."""
+def test_an_identifier_is_a_native_signed_int64() -> None:
     value = hash_of("Order", "AAPL")
     assert isinstance(value, int)
     assert -(2**63) <= value < 2**63
-    assert hash_arrow("Order", pyarrow.array(["AAPL"])).type == HASH == pyarrow.binary(16)
+    assert hash_arrow("Order", pyarrow.array(["AAPL"])).type == pyarrow.int64()
+    assert HASH == pyarrow.binary(16)
     assert hash_int_of(hash_bytes_of(value)) == value
 
 
@@ -202,9 +203,9 @@ def test_a_blob_is_hashed_as_it_stands_and_not_framed() -> None:
 
 def test_unframed_arrow_hashes_match_scalar_bytes() -> None:
     values = pyarrow.array(["a line", "", "café"])
-    assert [hash_int_of(one) for one in hash_bytes_arrow(values).to_pylist()] == [
-        hash_bytes(value.encode("utf-8")) for value in values.to_pylist()
-    ]
+    found = hash_bytes_arrow(values)
+    assert found.type == pyarrow.int64()
+    assert found.to_pylist() == [hash_bytes(value.encode("utf-8")) for value in values.to_pylist()]
 
 
 def test_an_empty_composite_is_refused_in_both_builders() -> None:
@@ -409,6 +410,8 @@ def test_vector_hashing_refuses_an_ambiguous_big_endian_arrow_host(
     monkeypatch.setattr(identity.sys, "byteorder", "big")
     with pytest.raises(RuntimeError, match="little-endian"):
         hash_arrow(pyarrow.array([1], type=pyarrow.int64()))
+    with pytest.raises(RuntimeError, match="little-endian"):
+        arrow_of(pyarrow.array([1], type=pyarrow.int64()))
     assert hash_of(1), "the scalar implementation writes little-endian explicitly"
 
 
@@ -446,10 +449,10 @@ def test_bytes_like_values_share_their_declared_raw_payload() -> None:
     assert hash_of(raw) == hash_of(bytearray(raw)) == hash_of(memoryview(raw))
 
 
-# -- a column of identifiers -------------------------------------------------
+# -- stored hashes and nested identities ------------------------------------
 
 
-def test_a_column_of_identifiers_is_the_stored_width_whatever_it_arrives_as() -> None:
+def test_an_identity_is_padded_only_when_it_enters_a_nested_frame() -> None:
     values = [hash_of("a"), None]
     for column in (values, pyarrow.array(values, type=pyarrow.int64())):
         assert arrow_of(column).type == HASH
@@ -457,15 +460,33 @@ def test_a_column_of_identifiers_is_the_stored_width_whatever_it_arrives_as() ->
 
 
 def test_a_narrow_identifier_column_widens() -> None:
-    narrow = pyarrow.array([1, 2], type=pyarrow.int32())
+    narrow = pyarrow.array([-1, 2], type=pyarrow.int32())
     widened = arrow_of(narrow)
     assert widened.type == HASH
-    assert [hash_int_of(one) for one in widened.to_pylist()] == [1, 2]
+    assert [hash_int_of(one) for one in widened.to_pylist()] == [-1, 2]
 
 
 def test_a_chunked_column_converts_chunk_by_chunk() -> None:
     chunked = pyarrow.chunked_array([pyarrow.array([1], type=pyarrow.int32())])
     assert arrow_of(chunked).type == HASH
+
+
+def test_a_sliced_identity_column_keeps_its_sign_and_nulls() -> None:
+    values = pyarrow.array([99, -1, None, 2], pyarrow.int64())[1:]
+    assert [hash_int_of(one) for one in arrow_of(values).to_pylist()] == [-1, None, 2]
+
+
+def test_only_time_anchored_members_change_spelling_in_a_stored_row() -> None:
+    version = (17 << 64) | ((-9) & ((1 << 64) - 1))
+    assert stored_member("hash", version) == hash_bytes_of(version)
+    assert stored_member("prevhash", version) == hash_bytes_of(version)
+    assert stored_member("parenthash", [version]) == [hash_bytes_of(version)]
+    assert read_member("hash", hash_bytes_of(version)) == version
+    assert read_member("parenthash", [hash_bytes_of(version)]) == [version]
+    for name in ("vhash", "xhash", "instrumentxhash", "linkedhashes"):
+        value = [-9] if name == "linkedhashes" else -9
+        assert stored_member(name, value) == value
+        assert read_member(name, value) == value
 
 
 def test_a_supported_unhashable_lifecycle_part_bypasses_the_cache() -> None:

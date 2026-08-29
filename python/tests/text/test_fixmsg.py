@@ -6,7 +6,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import Field, FixCodec, FixMsg, Message
+from rekep import Field, FixCodec, FixMsg, Message, txhash
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
@@ -28,6 +28,7 @@ ENVELOPE = [
     "expunix",
     "snapunix",
     "hash",
+    "vhash",
     "xhash",
     "linkedhashes",
     "version",
@@ -173,7 +174,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 115
+EXPECTED_LOG_COLUMNS = 116
 
 
 @pytest.fixture(scope="module")
@@ -336,14 +337,44 @@ def test_transcribing_keeps_a_stored_classification_and_resets_identity() -> Non
     """A raw stage that already classified the row is kept; identity is not --
     a parsed row hashes over its parsed values, never the raw line's digest."""
     staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", eventtype=EventType.MISC)
-    staged.hash = staged.xhash = 12345
+    staged.hash = staged.vhash = staged.xhash = 12345
 
     row = FixMsg.from_message(staged)
     assert row.eventtype == EventType.MISC
-    assert row.hash == 0 and row.xhash == 0
+    assert row.hash == row.vhash == row.xhash == 0
 
     with pytest.raises(TypeError, match="Message"):
         FixMsg.from_message("8=FIX.4.4|35=D|10=000")
+
+
+def test_scalar_and_arrow_identification_share_the_registry_projection() -> None:
+    line = "8=FIX.4.4|35=D|11=C1|54=1|10=000"
+    declared = {
+        "unix": 1_700_000_000_000_000_000,
+        "recunix": 1_700_000_000_000_000_000,
+        "sourceurl": "capture.log",
+        "sourcerownum": 1,
+    }
+    scalar = FixMsg.from_text(line, **declared).identify()
+    arrow = FixMsg.from_message_batch([Message(message=line, **declared)])
+
+    assert scalar.code == arrow.column("code")[0].as_py() == "C1"
+    assert scalar.vhash == arrow.column("vhash")[0].as_py()
+    assert scalar.xhash == arrow.column("xhash")[0].as_py()
+    assert scalar.into_row()["hash"] == arrow.column("hash")[0].as_py()
+
+
+def test_fixmsg_value_hash_excludes_the_event_clock() -> None:
+    line = "8=FIX.4.4|35=D|11=C1|54=1|10=000"
+    parsed = FixMsg.from_message_batch(
+        [
+            Message(message=line, unix=1_000, recunix=1_000),
+            Message(message=line, unix=2_000, recunix=2_000),
+        ]
+    )
+
+    assert parsed.column("vhash")[0].as_py() == parsed.column("vhash")[1].as_py()
+    assert parsed.column("hash")[0].as_py() != parsed.column("hash")[1].as_py()
 
 
 def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
@@ -865,11 +896,12 @@ def test_every_unix_column_declares_its_unit() -> None:
     assert partition_metadata["epoch"] == "1970-01-01"
 
 
-def test_the_line_digest_is_stored_like_every_other_identifier() -> None:
-    """One stored width for every identity, and the key is `(unix, hash)` -- so
-    two digests only meet if they also share a nanosecond."""
-    for name in ("hash", "xhash", "prevhash"):
+def test_hash_widths_match_their_roles() -> None:
+    """Version provenance stays wide while value and lifecycle joins are int64."""
+    for name in ("hash", "prevhash"):
         assert FixMsg.into_field().field(name).dtype == HASH, name
+    for name in ("vhash", "xhash"):
+        assert FixMsg.into_field().field(name).dtype == pyarrow.int64(), name
     assert FixMsg.into_field().field("unix").dtype == pyarrow.int64()
 
 
@@ -1126,7 +1158,12 @@ def test_unread_message_identity_survives_raw_message_projection(
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
     assert whole.column("entries").null_count == 2
+    assert whole.column("vhash").equals(projected.column("vhash"))
+    assert whole.column("xhash").equals(projected.column("xhash"))
     assert whole.column("hash").equals(projected.column("hash"))
+    assert [txhash.vhash_of(one) for one in whole.column("hash").to_pylist()] == whole.column(
+        "vhash"
+    ).to_pylist()
     assert len(set(whole.column("hash").to_pylist())) == 2
 
 

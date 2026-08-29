@@ -13,6 +13,7 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
+from rekep import txhash
 from rekep.enums import MIC, AssetKind, Currency, EventType, OptionKind, Side
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
@@ -67,7 +68,7 @@ from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
-from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
+from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
 from rekep.text.message import SESSION_FIELDS, Message
 
 _EVENT_CODE = pyarrow.int64()
@@ -202,8 +203,8 @@ class FixMsg(Message):
         """`MsgType <35>` a synthesized instrument row carries."""
         return _INSTRUMENT_MSG_TYPE
 
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
-    """Digest of `code`, or the raw-line digest when no correlation code exists."""
+    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
+    """Digest of `code`, or `vhash` when no correlation code exists."""
 
     code: str = ""
     """Best lifecycle identifier present on this line."""
@@ -267,8 +268,31 @@ class FixMsg(Message):
                     self.protocolcode = "FIX"
 
     def identify(self) -> FixMsg:
-        """Give the parsed event its lifecycle and version identities."""
-        return Event.identify(self)
+        """Give the parsed event the identities its registry projection earns."""
+        if self.hash and self.vhash and self.xhash:
+            return self
+        staged_values = {
+            member.name: getattr(self, member.name) for member in dataclasses.fields(Message)
+        }
+        staged_values["message"] = self.message or ""
+        parsed = type(self).from_message_batch(
+            [Message(**staged_values)], type(self).into_codec(self.registry)
+        )
+
+        def value(name: str) -> Any:
+            return parsed.column(name)[0].as_py()
+
+        self.unix = value("unix")
+        self.unixpartition = value("unixpartition")
+        self.creaunix = value("creaunix")
+        self.unixsource = value("unixsource")
+        self.code = value("code")
+        self.altids = dict(value("altids") or ())
+        self.reason = value("reason")
+        self.vhash = value("vhash")
+        self.hash = hash_int_of(value("hash")) or NIL
+        self.xhash = value("xhash")
+        return self
 
     # Nullable, and null on `fix.market`: typed columns plus `entries` carry
     # every field the line held, so keeping the raw string beside them would
@@ -696,6 +720,7 @@ class FixMsg(Message):
                 "altids": dict(source.altids),
                 "parenthash": None if source.parenthash is None else list(source.parenthash),
                 "hash": NIL,
+                "vhash": NIL,
                 "xhash": NIL,
             }
         )
@@ -744,6 +769,7 @@ class FixMsg(Message):
             # its own -- and carries no raw line: `entries` states every fact,
             # so text beside them would be the same content twice.
             hash=known.hash,
+            vhash=known.vhash,
             xhash=known.xhash,
             message=None,
             eventtype=declared.pop("eventtype", EventType.INSTRUMENT),
@@ -1406,9 +1432,14 @@ class FixMsg(Message):
         columns["unix"], columns["unixsource"] = resolve_arrow(columns, columns["recunix"], rows)
         columns["unixpartition"] = unix_partition_arrow(columns["unix"])
         columns["creaunix"] = columns["unix"]
-        columns["hash"] = cls.version_hash_arrow(columns, rows)
+        columns["vhash"] = cls.version_vhash_arrow(columns, rows)
+        columns["hash"] = txhash.couple128_arrow(
+            cls._clock_micros(columns["unix"]), columns["vhash"]
+        )
         linked = compute.not_equal(columns["code"], "")
-        columns["xhash"] = compute.if_else(linked, cls.hash_arrow(columns["code"]), columns["hash"])
+        columns["xhash"] = compute.if_else(
+            linked, cls.hash_arrow(columns["code"]), columns["vhash"]
+        )
         # `cast_arrow_fix` and not a plain cast, because the session columns
         # arrive as the text the wire carried: `20260814-09:30:00.123` is an
         # instant and `Y` is a boolean, and Arrow's own cast raises on both.
@@ -1420,16 +1451,13 @@ class FixMsg(Message):
     @classmethod
     @functools.cache
     def into_digest_columns(cls) -> tuple[str, ...]:
-        """What a stored row's `hash` is taken over, in this order.
+        """What a stored row's `vhash` is taken over, in this order.
 
         The **parsed** values and never the raw line, so a message reformatted
-        but not changed hashes alike. `recunix` is deliberately out and `unix`
-        deliberately in: when a line was written down is not what it says, and
-        a re-parse that resolves the instant from a different rung has learnt
-        something new about the row.
+        but not changed hashes alike. Every clock is excluded; `unixsource`
+        remains because it states which field supplied the event time.
         """
         return (
-            "unix",
             "unixsource",
             "sourceurl",
             "sourcerownum",
@@ -1440,8 +1468,8 @@ class FixMsg(Message):
         )
 
     @classmethod
-    def version_hash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """One digest per row, over the parsed values rather than the raw line.
+    def version_vhash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
+        """One value hash per row, over parsed values rather than the raw line.
 
         A row that could not be read as a message has no parsed values, so it
         hashes on the raw line instead -- which is the one stated exception to
@@ -1449,28 +1477,22 @@ class FixMsg(Message):
         """
         compute = pyarrow.compute
         parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
-        clock = columns["unix"]
-        digests = cls.txhash_arrow(clock, *parsed)
+        digests = cls.hash_arrow(*parsed)
         stored = columns.get("entries")
         if stored is None:
             return digests
         unread = compute.is_null(stored)
         if not compute.any(unread, min_count=0).as_py():
             return digests
-        recomputed = cls.txhash_arrow(
-            clock,
-            _digest_text(columns.get("message"), rows),
-            _digest_text(columns.get("sourceurl"), rows),
-            _digest_text(columns.get("sourcerownum"), rows),
-        )
-        incoming = columns.get("hash")
+        recomputed = hash_bytes_arrow(_digest_text(columns.get("message"), rows))
+        incoming = columns.get("vhash")
         raw = (
             recomputed
             if incoming is None
             else compute.if_else(
                 compute.and_(
                     compute.is_valid(incoming),
-                    compute.not_equal(incoming, pyarrow.scalar(NIL_BYTES, HASH)),
+                    compute.not_equal(incoming, pyarrow.scalar(NIL, pyarrow.int64())),
                 ),
                 incoming,
                 recomputed,
@@ -1612,7 +1634,7 @@ class FixMsg(Message):
         for event in self.into_fix_events(**declared):
             if self.reason and not event.reason:
                 event.reason = self.reason
-                event.hash = NIL
+                event.vhash = event.hash = NIL
                 event.identify()
             yield event
 
@@ -1893,6 +1915,7 @@ class FixMsg(Message):
             expunix=self.expunix,
             snapunix=self.snapunix,
             hash=self.hash,
+            vhash=self.vhash,
             xhash=self.xhash,
             linkedhashes=list(self.linkedhashes),
             version=self.version,
@@ -2173,7 +2196,7 @@ class _NormalizedInstrumentFields:
 
         item = dtype.value_type
         columns = {
-            "xhash": arrow_of(pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0)),
+            "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),

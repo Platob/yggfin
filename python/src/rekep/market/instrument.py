@@ -9,6 +9,8 @@ import re
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any
 
+import pyarrow
+
 from rekep.enums import (
     Ascii32,
     AssetKind,
@@ -21,16 +23,16 @@ from rekep.enums import (
 from rekep.fields import Field, scalar
 from rekep.fix.columns import ISIN_SCHEME, id_scheme
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import HOUR, Event
+from rekep.market.event import HOUR, Event, _scalar_part
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import HASH, NIL, hash_bytes_of, hash_of
+from rekep.market.identity import NIL, hash_bytes_of, hash_of
 
 
 @scalar(slots=True, weakref_slot=True)
 class Leg(MarketConvertible):
     """One leg of a multileg instrument: a spread's near and far, an option's pair."""
 
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
+    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """The instrument this leg is of, derived the same way any other one is."""
 
     symbol: Annotated[str, fix_tag("LegSymbol")] = ""
@@ -101,7 +103,7 @@ class Instrument(Event):
 
     # Not a partition: bucketing a hash splits every hour into as many files as
     # buckets, and the hour already prunes the read this would prune.
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
+    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Digest of the exact `symbol`; zero when the symbol is empty."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -198,15 +200,13 @@ class Instrument(Event):
     def enriched_with(self, other: Instrument) -> Instrument | None:
         """This instrument plus whatever `other` knows and it does not, or None."""
         filled = {}
+        merged_altids = dict(self.altids)
+        for key, value in other.altids.items():
+            merged_altids.setdefault(key, value)
+        if merged_altids != self.altids:
+            filled["altids"] = merged_altids
         for name in _INSTRUMENT_MEMBERS:
             mine, theirs = getattr(self, name), getattr(other, name)
-            if name == "altids":
-                merged = dict(mine)
-                for key, value in theirs.items():
-                    merged.setdefault(key, value)
-                if merged != mine:
-                    filled[name] = merged
-                continue
             if theirs in (None, "", NIL) or theirs == mine:
                 continue
             # A code that is `UNKNOWN` is not knowledge, and the zero every
@@ -217,7 +217,7 @@ class Instrument(Event):
                 filled[name] = theirs
         if not filled:
             return None
-        return dataclasses.replace(self, **filled)
+        return dataclasses.replace(self, **filled, vhash=NIL, hash=NIL)
 
     def into_xhash(self) -> int:
         """The exact symbol's domain-separated identity, or zero when absent."""
@@ -237,7 +237,7 @@ class Instrument(Event):
 
     def version_parts(self) -> tuple[Any, ...]:
         """Hash the complete explicitly framed instrument state."""
-        return (hash_bytes_of(self.xhash), self.version, self.unix, *_instrument_parts(self))
+        return (*Event.version_parts(self), *_instrument_parts(self))
 
     def into_fixmsg(self, **declared: Any) -> Any:
         """Carry this version as a normalized row in the market FixMsg stream."""
@@ -331,10 +331,12 @@ class _InstrumentIterator:
                 self._states[state.xhash] = state
                 yield known
                 continue
-            if all(
-                getattr(state.current, name) == getattr(instrument, name)
-                for name in _INSTRUMENT_MEMBERS
-            ):
+            observed = _observed_at(instrument, unix)
+            observed_vhash = observed.hash_of(*observed.version_parts())
+            current_vhash = state.current.vhash or state.current.hash_of(
+                *state.current.version_parts()
+            )
+            if observed_vhash == current_vhash:
                 continue
             enriched = state.current.enriched_with(instrument)
             if enriched is None:
@@ -415,7 +417,6 @@ _INSTRUMENT_MEMBERS = (
     "securityid",
     "securityidsource",
     "isincode",
-    "altids",
     "securitytype",
     "cficode",
     "securityexchange",
@@ -463,6 +464,7 @@ def _observed_at(
         expunix=None,
         snapunix=None,
         hash=NIL,
+        vhash=NIL,
         linkedhashes=[],
         version=0,
         state=State.OPEN,
@@ -479,20 +481,11 @@ def _instrument_parts(instrument: Instrument) -> tuple[Any, ...]:
     for name in _INSTRUMENT_MEMBERS:
         value = getattr(instrument, name)
         parts.append(name)
-        if name == "altids":
-            parts.extend(_map_parts(value))
-        elif name == "legs":
+        if name == "legs":
             parts.extend(_legs_parts(value))
         else:
             parts.append(_scalar_part(value))
     return tuple(parts)
-
-
-def _map_parts(values: dict[str, str] | None) -> tuple[Any, ...]:
-    if values is None:
-        return (False, 0)
-    ordered = sorted(values.items(), key=lambda item: item[0].encode("utf-8"))
-    return (True, len(ordered), *(part for pair in ordered for part in pair))
 
 
 def _legs_parts(legs: list[Any] | None) -> tuple[Any, ...]:
@@ -502,12 +495,9 @@ def _legs_parts(legs: list[Any] | None) -> tuple[Any, ...]:
     for index, leg in enumerate(legs):
         parts.extend(("leg", index))
         for name in _LEG_MEMBERS:
-            parts.extend((name, _scalar_part(getattr(leg, name))))
+            value = getattr(leg, name)
+            parts.extend((name, hash_bytes_of(value) if name == "xhash" else _scalar_part(value)))
     return tuple(parts)
-
-
-def _scalar_part(value: Any) -> Any:
-    return value.isoformat() if isinstance(value, datetime.date) else value
 
 
 _FOREX_SYMBOL = re.compile(r"[A-Za-z]{3}/[A-Za-z]{3}", re.ASCII)

@@ -13,7 +13,7 @@ import pyarrow
 
 from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
-from rekep.market.event import Event, MarketEvent
+from rekep.market.event import Event, MarketEvent, _scalar_part
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL, hash_bytes_of
 
@@ -339,10 +339,19 @@ class Order(MarketEvent):
         """An order's version moves with what it asked for, and how far it got."""
         return (
             *MarketEvent.version_parts(self),
-            self.clordid,
+            self.timeinforce,
+            self.stoppx,
             self.hiddenqty,
             self.vwap,
             self.indicative,
+            self.orderid,
+            self.clordid,
+            self.origclordid,
+            self.clordlinkid,
+            self.parentclordid,
+            self.parentorderid,
+            self.cxlrejreason,
+            self.cxlrejresponseto,
         )
 
 
@@ -500,7 +509,23 @@ class Execution(MarketEvent):
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""
-        return (*MarketEvent.version_parts(self), self.execid, self.cumqty, self.vwap)
+        return (
+            *MarketEvent.version_parts(self),
+            self.execid,
+            self.execrefid,
+            self.tradeid,
+            self.orderid,
+            self.clordid,
+            self.origclordid,
+            self.cumqty,
+            self.leavesqty,
+            self.vwap,
+            self.aggressorindicator,
+            _scalar_part(self.settldate),
+            self.settltype,
+            self.settlcurrency,
+            self.settlcurrfxratecalc,
+        )
 
 
 def _carry(into: Event, previous: Event, *names: str) -> None:

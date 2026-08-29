@@ -14,25 +14,19 @@ import xxhash
 
 from rekep import txhash
 
-#: How many bytes one identifier is: a wide txhash's width, because a
-#: time-anchored version hash is one and a content digest is stored as one.
+#: How many bytes one persisted event hash is.
 HASH_WIDTH = txhash.WIDE_WIDTH
 
-#: The Arrow type every identifier in this package is: its bytes, at a fixed
-#: width, so a column of them compares and sorts as the values do.
+#: The Arrow type of a time-anchored event hash.
 HASH = pyarrow.binary(HASH_WIDTH)
 
 #: The immutable wire protocol implemented here and in `docs/contracts/identity.md`.
 IDENTITY_PROTOCOL = "rekep-identity-v1"
 
 #: An identifier nothing has computed yet. Zero rather than null, because
-#: `hash` and `xhash` are NOT NULL columns: a row that reaches a store still
-#: holding it is one nobody hashed, which is a bug worth seeing as a repeated
-#: key rather than as a constraint violation at the very end.
+#: `hash`, `vhash`, and `xhash` are NOT NULL columns: a stored zero exposes a
+#: row nobody hashed as a repeated key rather than a late constraint failure.
 NIL = 0
-
-#: `NIL` as a stored identifier: what a column holds for a row nobody hashed.
-NIL_BYTES = b"\x00" * HASH_WIDTH
 
 #: The length an absent part is framed with. Not zero -- that is an empty part,
 #: which is a different fact.
@@ -64,7 +58,7 @@ def hash_bytes(raw: bytes) -> int:
 
 
 def hash_bytes_arrow(raw: Any) -> pyarrow.Array:
-    """Hash each unframed UTF-8 or binary value as one indivisible blob."""
+    """Hash each unframed UTF-8 or binary value to a signed `int64`."""
     if sys.byteorder != "little":
         raise RuntimeError("hash_bytes_arrow requires a little-endian Arrow host; use hash_bytes")
     binary = _binary(raw)
@@ -93,10 +87,9 @@ def frame(parts: tuple[Any, ...]) -> bytes:
         raise TypeError("an identifier needs at least one part to frame")
     out: list[bytes] = []
     # A long identity is mostly one long run of plain integers -- a book's live
-    # order hashes, an event's parent digests -- and every one of them frames
-    # to the same sixteen bytes: the constant length, then the value. Packing a
-    # whole run at once writes the exact same frame as one part at a time, in
-    # one call rather than four per part. The run is built already interleaved,
+    # value hashes -- and every one of them frames to the same sixteen bytes:
+    # the constant length, then the value. Packing a whole run writes the exact
+    # same frame in one call rather than four per part. The run is interleaved,
     # which measured faster than interleaving a constant into it afterwards.
     run: list[int] = []
     for part in parts:
@@ -170,9 +163,8 @@ def part_bytes(part: Any) -> bytes | None:
 def framed_arrow(*columns: Any) -> pyarrow.Array:
     """The v1 frame of `columns`, one payload per row.
 
-    What `hash_arrow` digests, exposed because a time-anchored identity
-    digests the same bytes -- the framing is the contract, the digest is
-    not.
+    What `hash_arrow` digests, exposed for callers that cache an assembled
+    frame before computing its value hash.
     """
     if not columns:
         raise TypeError("an identifier needs at least one part to hash")
@@ -202,26 +194,25 @@ def hash_arrow(*columns: Any) -> pyarrow.Array:
 
 
 def arrow_of(values: Any) -> pyarrow.Array:
-    """Identifiers as the column they are stored in, whatever they are spelled as."""
+    """Signed identities padded to the event-hash width for nested framing."""
     if isinstance(values, pyarrow.ChunkedArray):
         return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
     if isinstance(values, pyarrow.Array):
         if values.type == HASH:
             return values
         if pyarrow.types.is_integer(values.type):
-            values = values.to_pylist()
-        else:
-            return values.cast(HASH, safe=False)
+            return _widened(values)
+        return values.cast(HASH, safe=False)
     return pyarrow.array([hash_bytes_of(one) for one in values], type=HASH)
 
 
 def hash_bytes_of(value: Any) -> bytes | None:
-    """One identifier as the bytes a column holds; `None` stays `None`."""
+    """One signed identity padded to sixteen bytes for a nested frame."""
     return txhash.wide_bytes(value)
 
 
 def hash_int_of(value: Any) -> int | None:
-    """One stored identifier as the integer a reader works in."""
+    """One padded or integer identity as the signed value a reader uses."""
     return None if value is None else txhash.wide_of(value)
 
 
@@ -232,12 +223,12 @@ def stored_member(name: str, value: Any) -> Any:
     """One member as a column stores it, by the name that says what it is.
 
     Named rather than typed because the vectorized builders assemble a batch
-    member by member and never hold the whole row: scalar hashes and the
+    member by member and never hold the whole row: `hash`, `prevhash`, and the
     `parenthash` list use the same stored width wherever they appear.
     """
     if value is None:
         return None
-    if name in IDENTITY_MEMBERS:
+    if name in _WIDE_MEMBERS:
         return hash_bytes_of(value)
     if name == "parenthash":
         return [hash_bytes_of(one) for one in value]
@@ -253,18 +244,18 @@ def read_member(name: str, value: Any) -> Any:
     """
     if value is None:
         return None
-    if name in IDENTITY_MEMBERS:
+    if name in _WIDE_MEMBERS:
         return hash_int_of(value) or NIL
     if name == "parenthash":
         return [hash_int_of(one) for one in value]
     return value
 
 
-#: Every member of an event that is one identifier.
-IDENTITY_MEMBERS = ("hash", "xhash", "prevhash", "instrumentxhash")
+#: Members whose Arrow representation is a sixteen-byte event hash.
+_WIDE_MEMBERS = frozenset(("hash", "prevhash"))
 
 #: Every member a stored row spells differently from a document.
-ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parenthash"))
+ROW_SPELLED = frozenset((*_WIDE_MEMBERS, "parenthash"))
 
 
 # -- helpers ----------------------------------------------------------------
@@ -273,9 +264,8 @@ ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parenthash"))
 def _int64_bytes(value: int) -> bytes:
     """One integer part, eight bytes, refusing what Rust cannot hold as an `i64`.
 
-    An identifier is itself a part of other identifiers and is wider than
-    that -- which is why it enters a frame as its stored bytes, through
-    `hash_bytes_of`, and not as the integer a reader works in.
+    A time-anchored event hash is wider and enters a frame through
+    `hash_bytes_of`; lifecycle and value hashes already fit this width.
     """
     try:
         return LENGTH.pack(value)
@@ -364,18 +354,34 @@ def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
     return fixed.cast(pyarrow.binary(), safe=False)
 
 
-def _digested(joined: pyarrow.Array) -> pyarrow.Array:
-    """One xxh3-64 per row of a binary column, straight out of its buffers.
+def _widened(values: pyarrow.Array) -> pyarrow.Array:
+    """Signed `int64` values sign-extended into big-endian sixteen-byte cells."""
+    if sys.byteorder != "little":
+        raise RuntimeError("widening requires a little-endian Arrow host; use hash_bytes_of")
+    try:
+        column = values.cast(pyarrow.int64())
+    except pyarrow.ArrowInvalid:
+        raise OverflowError("Arrow identity integers must fit signed int64") from None
+    compute = pyarrow.compute
+    high = compute.if_else(
+        compute.less(column, pyarrow.scalar(0, pyarrow.int64())),
+        pyarrow.scalar(b"\xff" * 8, pyarrow.binary()),
+        pyarrow.scalar(b"\x00" * 8, pyarrow.binary()),
+    )
+    low = compute.binary_reverse(_reinterpreted(column, 8))
+    joined = compute.binary_join_element_wise(
+        high,
+        low,
+        pyarrow.scalar(b"", pyarrow.binary()),
+    )
+    return joined.cast(HASH, safe=False)
 
-    The row loop is the whole cost, so it does the least a row can be: the
-    offsets are read once into a list, each row's end is the next row's begin,
-    and the digest is written big-endian into the low half of its cell. The
-    high half stays zero for a positive digest and is filled for a negative
-    one, which is the sign extension `hash_bytes_of` writes for the same value.
-    """
+
+def _digested(joined: pyarrow.Array) -> pyarrow.Array:
+    """One signed XXH3-64 per row, straight out of the binary buffers."""
     digest = xxhash.xxh3_64_intdigest
     rows = len(joined)
-    out = bytearray(HASH_WIDTH * rows)
+    out = bytearray(8 * rows)
     if rows:
         _, offset_buffer, data_buffer = joined.buffers()[:3]
         wide = pyarrow.types.is_large_binary(joined.type)
@@ -384,19 +390,16 @@ def _digested(joined: pyarrow.Array) -> pyarrow.Array:
             memoryview(offset_buffer).cast("q" if wide else "i")[start : start + rows + 1].tolist()
         )
         data = memoryview(data_buffer)
-        sign = 1 << 63
+        values = memoryview(out).cast("Q")
         begin = offsets[0]
-        cell = 0
         for row in range(rows):
             end = offsets[row + 1]
-            value = digest(data[begin:end])
-            if value >= sign:
-                out[cell : cell + 8] = _NEGATIVE_HIGH
-            out[cell + 8 : cell + HASH_WIDTH] = value.to_bytes(8, "big")
+            values[row] = digest(data[begin:end])
             begin = end
-            cell += HASH_WIDTH
-    return pyarrow.FixedSizeBinaryArray.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])
-
-
-#: The high half of a negative identity, two's complement.
-_NEGATIVE_HIGH = b"\xff" * 8
+        values.release()
+    hashed = pyarrow.Int64Array.from_buffers(pyarrow.int64(), rows, [None, pyarrow.py_buffer(out)])
+    if not joined.null_count:
+        return hashed
+    return pyarrow.compute.if_else(
+        pyarrow.compute.is_valid(joined), hashed, pyarrow.scalar(None, pyarrow.int64())
+    )

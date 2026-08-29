@@ -7,13 +7,12 @@ and each test says which one it is pinning.
 
 from __future__ import annotations
 
-import copy
-
 import pytest
 
 from rekep.market import (
     MIC,
     AssetKind,
+    Book,
     Event,
     Execution,
     Instrument,
@@ -116,24 +115,23 @@ def test_a_duplicate_observation_returns_none() -> None:
     assert duplicate is None
 
 
-def test_state_comparison_keeps_late_members_and_snapshot_time() -> None:
-    """The cached projection may omit clocks only for ordinary observations."""
+def test_vhash_drives_change_detection_while_snapshots_remain_explicit() -> None:
     first = resting()
-    observed = copy.copy(first)
-    observed.unix += 1
-    assert observed.same_as(first), "an ordinary observation time is not stored state"
-
+    observed = _order(unix=first.unix + 1, orderid="ORD-1").completed_from(first)
+    observed.vhash = observed.hash_of(*observed.version_parts())
+    assert observed.vhash == first.vhash, "an ordinary observation time is not stored state"
     observed.reason = "late declared field changed"
-    assert not observed.same_as(first), "the projection reaches the last order member"
+    assert observed.hash_of(*observed.version_parts()) != first.vhash
 
-    snapshot = copy.copy(first)
-    snapshot.snapunix = first.unix
-    later_snapshot = copy.copy(snapshot)
-    later_snapshot.unix += 1
-    assert not later_snapshot.same_as(snapshot), "snapshot time is part of its stored state"
+    current = Book(unix=first.unix, instrumentxhash=EQUITY.xhash).identify()
+    snapshot = current.make_snapshot(current.unix + 1_000)
+    assert snapshot is not None
+    later_snapshot = snapshot.with_previous(current)
+    assert later_snapshot is not None and later_snapshot.vhash == current.vhash
+    assert later_snapshot.hash != current.hash, "a snapshot remains an explicit timed row"
 
     nonfinite = resting(px=float("nan"))
-    assert not copy.copy(nonfinite).same_as(nonfinite), "NaN keeps its scalar inequality"
+    assert _order(unix=20, orderid="ORD-1").with_previous(nonfinite) is None
 
 
 def test_a_message_with_no_clock_lands_where_the_version_before_it_was() -> None:

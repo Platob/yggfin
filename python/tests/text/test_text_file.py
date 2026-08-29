@@ -11,11 +11,11 @@ import pytest
 from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 
 import rekep.text.text_file as text_file_module
-from rekep import Dataset, Entry, Field, FixRegistry, Message
+from rekep import Dataset, Entry, Field, FixRegistry, Message, txhash
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
-from rekep.market.identity import HASH, hash_int_of
+from rekep.market.identity import HASH
 from rekep.text import HEADER_PATTERN, TextFile
 from rekep.text.text_file import _local_micros
 from rekep.times import unix_of
@@ -578,6 +578,8 @@ def test_schema(plain: Path) -> None:
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unixpartition").type == pyarrow.int32()
     assert schema.field("hash").type == HASH
+    assert schema.field("vhash").type == pyarrow.int64()
+    assert schema.field("xhash").type == pyarrow.int64()
     assert schema.field("eventtype").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
@@ -599,7 +601,10 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     ]
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
-    assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
+    assert table.column("vhash").to_pylist() == table.column("xhash").to_pylist()
+    assert [txhash.vhash_of(one) for one in table.column("hash").to_pylist()] == table.column(
+        "vhash"
+    ).to_pylist()
 
     # The header is lifted into columns of its own, still spelled exactly as
     # the payload spelled it: no number is read and no zone is named here.
@@ -1139,17 +1144,18 @@ def test_a_batch_boundary_keeps_every_rownum_with_its_own_row(tmp_path: Path) ->
     assert table.column("sourcerownum").to_pylist() == list(range(1, 11))
 
 
-def test_the_digest_is_per_line_and_a_signed_int64(plain: Path) -> None:
+def test_the_value_hash_is_per_line_and_a_signed_int64(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
     stored = table.column("hash").to_pylist()
-    hashes = [hash_int_of(one) for one in stored]
+    hashes = table.column("vhash").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= digest < 2**63 for digest in hashes)
-    assert table.column("xhash").to_pylist() == stored, "a line is its own lifecycle"
+    assert [txhash.vhash_of(one) for one in stored] == hashes
+    assert table.column("xhash").to_pylist() == hashes, "a line is its own lifecycle"
 
 
-def test_hash64_is_stable_across_reads(plain: Path) -> None:
+def test_event_hash_is_stable_across_reads(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as first, TextFile(url=plain.as_uri()) as second:
         assert first.into_arrow_table().column("hash").to_pylist() == (
             second.into_arrow_table().column("hash").to_pylist()
@@ -1500,9 +1506,9 @@ def test_from_path_takes_the_zone_too(plain: Path) -> None:
     zoned = TextFile.from_path(plain, timezone="Europe/Paris").read_arrow_table()
     assert zoned.column("unix").to_pylist() != naive.column("unix").to_pylist()
     assert zoned.column("message").to_pylist() == naive.column("message").to_pylist()
-    assert zoned.column("hash").to_pylist() == naive.column("hash").to_pylist(), (
-        "same lines, so the same digests -- the zone moves the instant, not the text"
-    )
+    assert zoned.column("vhash").to_pylist() == naive.column("vhash").to_pylist()
+    assert zoned.column("xhash").to_pylist() == naive.column("xhash").to_pylist()
+    assert zoned.column("hash").to_pylist() != naive.column("hash").to_pylist()
 
 
 def test_reading_the_same_log_twice_reads_it_twice(plain: Path) -> None:
@@ -1535,10 +1541,8 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     written = tmp_path / "written.txt"
     TextFile.from_url(written.as_uri(), timezone=zone).append_arrow(rows)
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
-    # Not `hash`: it is the digest of the *raw* line, and a rendered line is
-    # the header regex read backwards, not the bytes that were parsed -- the
-    # level marker a log prints is stripped into `message` and never rendered
-    # back. What has to survive is what the columns say.
+    # The rendered line is the header regex read backwards rather than the
+    # bytes that were parsed. What has to survive is what the columns say.
     for column in ("unix", "unixpartition", "message"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
@@ -1677,10 +1681,7 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     crlf.write_bytes(SAMPLE_BYTES.replace(b"\n", b"\r\n"))
     with TextFile(url=plain.as_uri()) as a, TextFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
-    # `hash` and `xhash` name where the line was read, so two paths give two
-    # digests on purpose -- what this pins is that nothing else moved.
-    told = ["sourceurl", "hash", "xhash"]
-    assert left.drop_columns(told).equals(right.drop_columns(told))
+    assert left.drop_columns(["sourceurl"]).equals(right.drop_columns(["sourceurl"]))
 
 
 # -- timezone: the wall clock is local, the instant is not ----------------
