@@ -7,6 +7,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep.enums.codes import Direction
 from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, NO_PROTOCOL, Rule, Rules
 from rekep.fix.message import WIRE_MSG_TYPE
 from rekep.fix.rules import (
@@ -217,6 +218,46 @@ def test_no_rows_is_no_rows() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(pyarrow.array([], pyarrow.string()))
     assert len(protocols) == 0
     assert protocols.type == pyarrow.string()
+
+    directions = DEFAULT.into_arrow_direction_array(pyarrow.array([], pyarrow.string()), protocols)
+    assert len(directions) == 0
+    assert directions.type == pyarrow.int32()
+
+
+def test_direction_is_a_closed_packed_vocabulary() -> None:
+    assert int(Direction.SENT) == int.from_bytes(b"SENT", "big", signed=True)
+    assert int(Direction.RECV) == int.from_bytes(b"RECV", "big", signed=True)
+    assert Direction.from_str("sent") is Direction.SENT
+    assert Direction.from_int(int.from_bytes(b"NOPE", "big", signed=True)) is Direction.UNKNOWN
+    with pytest.raises(TypeError, match="closed set"):
+        Direction.register("BOTH")
+
+
+def test_direction_words_produce_packed_codes_before_the_payload() -> None:
+    messages = pyarrow.array(
+        [
+            "Receiving : 8=FIX.4.4|35=D|11=A|10=000|",
+            "Sending : 8=FIX.4.4|35=D|11=B|10=000|",
+            "Received then sent 8=FIX.4.4|35=D|11=C|10=000|",
+            "8=FIX.4.4|35=8|58=order sent late|10=000|",
+            "Sending an operational status",
+            None,
+        ],
+        pyarrow.string(),
+    )
+    protocols = pyarrow.array(["FIX", "FIX", "FIX", "FIX", "OTHER", "FIX"])
+
+    directions = DEFAULT.into_arrow_direction_array(messages, protocols)
+
+    assert directions.type == pyarrow.int32()
+    assert directions.to_pylist() == [
+        int(Direction.RECV),
+        int(Direction.SENT),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+    ]
 
 
 def test_categories_agree_one_row_and_one_column_at_a_time() -> None:

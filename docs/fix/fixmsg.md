@@ -145,12 +145,12 @@ for text in ("Receiving : 8=FIX.4.4|35=D|10=0", "Sending : 8=FIX.4.4|35=D|10=0")
 ```
 
 ```text
-False
-True
+RECV
+SENT
 ```
 
-Null is most rows — bridge re-log lines repeat a payload without repeating the
-verb, and no answer beats a guessed one. The patterns are
+`UNKNOWN` is most rows — bridge re-log lines repeat a payload without repeating
+the verb, and no answer beats a guessed one. The patterns are
 `rekep.fix.rules.DIRECTION_PATTERNS`. It resolves at the message stage, where
 the raw line and its protocol reading last coexist; the FIX stage re-resolves
 any row still carrying its text and keeps the stored answer where `parse_fix`

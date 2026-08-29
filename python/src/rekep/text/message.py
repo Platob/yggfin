@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import EventType
+from rekep.enums import Direction, EventType
 from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
@@ -25,6 +25,7 @@ from rekep.text.entries import ENTRIES, Entry
 #: and a lifted column is read back out of the list wherever it is empty --
 #: a null column and a column a projection dropped being the same absence.
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_DIRECTION_CODE = Direction.into_arrow_type().index_type
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
 # Every separator `fix.message.SEPARATORS` declares, in that order: a
@@ -146,7 +147,7 @@ _NAMED_MSG_TYPE = (
 # to the separator -- `NOT_SEPARATOR`, the same class the FIX parsers read one
 # with. A dotted version alone was stricter than the shipped classification
 # rule, so `8=FIX4` -- which this repository's own fixture writes -- reached
-# the store as OTHER with no direction while `Rules.into_default()` called it
+# the store as OTHER with direction UNKNOWN while `Rules.into_default()` called it
 # FIX. One spelling of one rule.
 _FIX_BEGIN = (
     r"(?s)(?:^|[^A-Za-z0-9_.\-])#?8[ \t\r\n\f\x0b]*="
@@ -286,29 +287,30 @@ class Message(Event):
     # direction, and prose inside the payload never answers. Resolved *here*
     # because `parse_fix` reads these rows back with `message` projected out:
     # the FIX stage re-answers any row still carrying its text and preserves
-    # this answer where the text is gone. Null for every row no directed
-    # protocol claims, and for the many bridge re-log lines that repeat a
-    # payload without repeating `Receiving`/`Sending`.
-    direction: bool | None = None
-    """True where the line says it was sent, False received; null undirected."""
+    # this answer where the text is gone. UNKNOWN marks rows no directed
+    # protocol claims and bridge re-log lines that repeat a payload without
+    # repeating `Receiving`/`Sending`.
+    direction: Direction = Direction.UNKNOWN
+    """SENT or RECV when stated by the transport prefix; UNKNOWN otherwise."""
 
     def __post_init__(self) -> None:
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)
+        self.direction = Direction.from_str(self.direction)
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
         # `protocolcode` and `direction` are read off the raw *text*, so a row
         # carrying one answers them whoever tokenized its arguments:
-        # `from_text(line, message=line)` stored `OTHER` and no direction
+        # `from_text(line, message=line)` stored `OTHER` and UNKNOWN
         # because it had passed its own `entries` in. Everything else here is
         # read off the arguments, and an explicit list of them is the answer.
         if self.message and (implicit_entries or self.protocolcode == _NO_PROTOCOL):
             parsed = self.parse_arrow(pyarrow.array([self.message]))
             if self.protocolcode == _NO_PROTOCOL:
                 self.protocolcode = parsed["protocolcode"][0].as_py()
-            if self.direction is None:
-                self.direction = parsed["direction"][0].as_py()
+            if self.direction is Direction.UNKNOWN:
+                self.direction = Direction.from_int(parsed["direction"][0].as_py())
         if implicit_entries and self.message:
             self.entries = parsed["entries"][0].as_py()
             for name, _ in SESSION_FIELDS:
@@ -347,7 +349,7 @@ class Message(Event):
         The raw text itself is retained only where a caller declares
         `message=` -- the pairs carry every field -- and the syntax columns
         `protocolcode`, `eventtype` and `direction` are read off that text, so
-        they stay unset without it.
+        direction stays UNKNOWN without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
         return cls(entries=list(pairs), **declared)
@@ -387,7 +389,7 @@ class Message(Event):
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
-                    [part["direction"] for part in parts], pyarrow.bool_()
+                    [part["direction"] for part in parts], _DIRECTION_CODE
                 ),
             }
 
@@ -398,7 +400,7 @@ class Message(Event):
                 "eventtype": pyarrow.array([], _EVENT_CODE),
                 "protocolcode": pyarrow.array([], pyarrow.string()),
                 "entries": pyarrow.array([], type=ENTRIES),
-                "direction": pyarrow.array([], pyarrow.bool_()),
+                "direction": pyarrow.array([], _DIRECTION_CODE),
             }
 
         compute = pyarrow.compute

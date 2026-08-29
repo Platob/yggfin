@@ -449,6 +449,14 @@ class State(Ascii64):
         return tuple(int(member) for member in cls if member.is_terminal)
 
 
+class Direction(Ascii32):
+    """Message transport direction stored as a four-byte ASCII mnemonic."""
+
+    UNKNOWN = 0
+    SENT = "SENT"
+    RECV = "RECV"
+
+
 class MIC(Ascii32):
     """ISO 10383 code stored as four ASCII bytes in one `int32`."""
 

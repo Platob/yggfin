@@ -18,6 +18,7 @@ from rekep.enums import (
     MIC,
     AssetKind,
     Currency,
+    Direction,
     EventType,
     MarketKind,
     OptionKind,
@@ -38,7 +39,7 @@ BANDED = (
     EventType,
 )
 
-PACKED = (Side, TimeInForce, EventType)
+PACKED = (Direction, Side, TimeInForce, EventType)
 
 
 def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
@@ -47,6 +48,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         MIC,
         AssetKind,
         Currency,
+        Direction,
         EventType,
         MarketKind,
         OptionKind,
@@ -243,6 +245,12 @@ SIDE_CODES = {
     "UNDISCLOSED": int.from_bytes(b"UNDS", "big"),
 }
 
+DIRECTION_CODES = {
+    "UNKNOWN": 0,
+    "SENT": 1_397_050_964,
+    "RECV": 1_380_270_934,
+}
+
 
 def test_the_state_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in State} == STATE_CODES
@@ -250,6 +258,10 @@ def test_the_state_codes_are_the_ones_on_disk() -> None:
 
 def test_the_side_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Side} == SIDE_CODES
+
+
+def test_the_direction_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in Direction} == DIRECTION_CODES
 
 
 def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:

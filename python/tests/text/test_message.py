@@ -7,7 +7,7 @@ import pytest
 
 import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile, txhash
-from rekep.enums import EventType
+from rekep.enums import Direction, EventType
 from rekep.fields import DISPLAY
 from rekep.market import Event, hash_bytes
 
@@ -86,6 +86,9 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         not any(key.startswith("fix:") for key in field.metadata if key != DISPLAY)
         for field in Message.into_field().fields
     )
+    direction = Message.into_field().field("direction")
+    assert not direction.nullable and direction.dtype == pyarrow.int32()
+    assert direction.metadata["enum:name"] == "Direction"
 
 
 def test_entry_is_the_required_ordered_argument_shape() -> None:
@@ -184,12 +187,18 @@ def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
         "just some heartbeat prose",
     ]
     parsed = Message.parse_arrow(pyarrow.array(lines))
-    assert parsed["direction"].to_pylist() == [False, True, None, None, None]
+    assert parsed["direction"].to_pylist() == [
+        int(Direction.RECV),
+        int(Direction.SENT),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+    ]
 
-    assert Message(message=lines[0]).direction is False
-    assert Message(message=lines[1]).direction is True
-    assert Message(message=lines[4]).direction is None
-    assert Message(message=lines[0], direction=True).direction is True, (
+    assert Message(message=lines[0]).direction is Direction.RECV
+    assert Message(message=lines[1]).direction is Direction.SENT
+    assert Message(message=lines[4]).direction is Direction.UNKNOWN
+    assert Message(message=lines[0], direction=Direction.SENT).direction is Direction.SENT, (
         "an explicitly stored answer is not recomputed"
     )
 
@@ -733,7 +742,7 @@ def test_a_begin_string_needs_no_dotted_version_to_be_fix() -> None:
     parsed = Message.parse_arrow(pyarrow.array(["sending >> 8=FIX4|9=61|34=1|49=A|10=1"]))
 
     assert parsed["protocolcode"][0].as_py() == "FIX"
-    assert parsed["direction"][0].as_py() is True
+    assert parsed["direction"][0].as_py() == int(Direction.SENT)
     assert parsed["beginstring"][0].as_py() == "FIX4"
 
 

@@ -313,10 +313,10 @@ fields:
       description: Indexed container prefix.
       fix: {display: Comp}
 - name: direction
-  type: bool
-  nullable: true
-  description: True where the line says it was sent, False received; null undirected.
+  type: int32
+  description: SENT or RECV when stated by the transport prefix; UNKNOWN otherwise.
   fix: {display: Direction}
+  enum: {name: Direction, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1397050964":"SENT","1380270934":"RECV"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right}
 - name: unixsource
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock.

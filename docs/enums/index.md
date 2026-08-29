@@ -12,9 +12,15 @@ assert int(side) == int.from_bytes(b"BUY\0", "big")
 assert int(state) == int.from_bytes(b"20OPEN\0\0", "big")
 ```
 
-A market enum persists as the integer its own code packs into -- `int32` for
+A code enum persists as the integer its own code packs into -- `int32` for
 a four-byte code, `int64` for an eight-byte one. Its Arrow field carries the
 enum name and the complete stored-value lookup under `enum:*` metadata.
+
+## Message codes
+
+| Enum | Contract |
+| --- | --- |
+| [Direction](direction.md) | Transport movement stated before a payload. |
 
 ## Event codes
 

@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.enums import EventType
+from rekep.enums import Direction, EventType
 from rekep.fields import scalar
 from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, WIRE_MSG_TYPE
 
@@ -262,18 +262,19 @@ class Rules(Convertible):
         protocols: Any,
         patterns: Mapping[str, tuple[str, str]] | None = None,
     ) -> pyarrow.Array:
-        """True sent, False received, null undirected -- read before the payload.
+        """Packed transport direction read before the payload.
 
         The verb counts only where it starts before the first token the row's
         own rule matched, so a `sent` inside a FIX `Text <58>` or a bridge
-        value never becomes a direction. Neither matching is null, and so is
-        both: no answer beats a guessed one. Protocols outside `patterns` --
-        `DIRECTION_PATTERNS` unless a bridge hands its own wording -- stay
-        null whole.
+        value never becomes a direction. Neither matching is `UNKNOWN`, and
+        so is both: no answer beats a guessed one. Protocols outside
+        `patterns` -- `DIRECTION_PATTERNS` unless a bridge hands its own
+        wording -- stay `UNKNOWN` whole.
         """
         compute = pyarrow.compute
         rows = len(messages)
-        found: Any = pyarrow.nulls(rows, pyarrow.bool_())
+        unknown = pyarrow.scalar(int(Direction.UNKNOWN), pyarrow.int32())
+        found: Any = pyarrow.repeat(unknown, rows)
         if not rows:
             return found
         configured = DIRECTION_PATTERNS if patterns is None else patterns
@@ -296,11 +297,11 @@ class Rules(Convertible):
             sent = _opens(compute.find_substring_regex(text, pattern=outbound), payload_at)
             direction = compute.if_else(
                 compute.and_(sent, compute.invert(received)),
-                pyarrow.scalar(True),
+                pyarrow.scalar(int(Direction.SENT), pyarrow.int32()),
                 compute.if_else(
                     compute.and_(received, compute.invert(sent)),
-                    pyarrow.scalar(False),
-                    pyarrow.scalar(None, pyarrow.bool_()),
+                    pyarrow.scalar(int(Direction.RECV), pyarrow.int32()),
+                    unknown,
                 ),
             )
             found = compute.if_else(selected, direction, found)

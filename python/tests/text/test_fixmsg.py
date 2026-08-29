@@ -7,6 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message, txhash
+from rekep.enums import Direction
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
@@ -215,7 +216,7 @@ def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
     is the provenance a line always has.
     """
     field = FixMsg.into_field()
-    payload = {"message", "entries", "direction", *LIFTED_HEADER}
+    payload = {"message", "entries", *LIFTED_HEADER}
     for name in LINE:
         if name in payload:
             assert field.field(name).nullable, f"a row may leave {name} null"
@@ -1098,7 +1099,10 @@ def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) 
     # The production shape: `parse_fix` reads with `message` projected out,
     # so the direction the message stage stored is the one the parsed row
     # carries -- identical to what the text would have answered.
-    assert whole.column("direction").to_pylist() == [True, None]
+    assert whole.column("direction").to_pylist() == [
+        int(Direction.SENT),
+        int(Direction.UNKNOWN),
+    ]
     assert projected.column("direction").equals(whole.column("direction"))
 
 
@@ -1837,23 +1841,27 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     )
 
     assert batch.column("direction").to_pylist() == [
-        False,
-        True,
-        False,
-        True,
-        None,
-        None,
-        None,
-        None,
+        int(Direction.RECV),
+        int(Direction.SENT),
+        int(Direction.RECV),
+        int(Direction.SENT),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
+        int(Direction.UNKNOWN),
     ]
 
-    # A stored batch written before the column existed computes it fresh,
-    # through the split path too: the wire row is flat-translated, the
-    # rendered row falls back, and both slices must carry the answer.
+    # A projection that omits the derived column computes it through the split
+    # path too: the wire row is flat-translated, the rendered row falls back,
+    # and both slices must carry the answer.
     raw = _raw_batch(*(Message(message=line) for line in lines[:2] + [lines[3]]))
-    legacy = raw.remove_column(raw.schema.get_field_index("direction"))
-    relived = FixMsg.from_message_batch(legacy, FixCodec(registry=registry))
-    assert relived.column("direction").to_pylist() == [False, True, True]
+    projected = raw.remove_column(raw.schema.get_field_index("direction"))
+    resolved = FixMsg.from_message_batch(projected, FixCodec(registry=registry))
+    assert resolved.column("direction").to_pylist() == [
+        int(Direction.RECV),
+        int(Direction.SENT),
+        int(Direction.SENT),
+    ]
 
     # A rescued row -- stored UL, no rule pattern in its text -- has no
     # payload anchor, and an unanchored verb answers nothing rather than
@@ -1862,12 +1870,12 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
     assert rescued.protocolcode == "UL"
     anchorless = FixMsg.from_message_batch(_raw_batch(rescued), FixCodec(registry=registry))
     assert anchorless.column("protocolcode").to_pylist() == ["UL"]
-    assert anchorless.column("direction").to_pylist() == [None]
+    assert anchorless.column("direction").to_pylist() == [int(Direction.UNKNOWN)]
 
     # A projected row reparsed without its raw message keeps the resolved
     # answer: direction is the message stage's fact, and nothing recomputes
     # it where the text that carried the verb is gone.
-    projected = Message(message="", protocolcode="FIX", direction=True).into_row()
+    projected = Message(message="", protocolcode="FIX", direction=Direction.SENT).into_row()
     projected["message"] = None
     projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
     again = FixMsg.from_message_batch(
@@ -1876,4 +1884,4 @@ def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> N
         ),
         FixCodec(registry=registry),
     )
-    assert again.column("direction").to_pylist() == [True]
+    assert again.column("direction").to_pylist() == [int(Direction.SENT)]
