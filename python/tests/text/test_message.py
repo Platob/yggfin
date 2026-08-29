@@ -90,7 +90,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
 
 def test_entry_is_the_required_ordered_argument_shape() -> None:
     field = Entry.into_field()
-    assert field.names == ["tag", "key", "value", "namespace", "comp"]
+    assert field.names == ["tag", "key", "value", "comp"]
     assert field.field("key").nullable is False
     assert field.field("value").nullable is False
     assert Message.into_field().field("entries").item.dtype == field.dtype
@@ -118,9 +118,10 @@ def test_one_entry_shape_serves_storage_and_reading_alike() -> None:
     assert (indexed.name, indexed.index, indexed.spelling) == ("Side", 0, "Side[0]")
 
     namespaced = Entry(key="TECH.CLIENTID", value="x")
-    assert (namespaced.namespace, namespaced.name, namespaced.entry_lead) == (
-        "TECH",
+    assert (namespaced.key, namespaced.name, namespaced.lead, namespaced.entry_lead) == (
+        "TECH.CLIENTID",
         "CLIENTID",
+        "TECH",
         False,
     )
 
@@ -130,16 +131,11 @@ def test_one_entry_shape_serves_storage_and_reading_alike() -> None:
 
 
 def test_the_stored_split_answers_before_any_respelling() -> None:
-    """The stored members are already the split: `comp` asserts group
-    semantics whatever its spelling, a trailing-dot key keeps its stored
-    name, and an empty namespace defers to the comp beside it."""
-    indexless = Entry(key="PartyID", comp="NoPartyIDs", value="P")
-    assert (indexless.lead, indexless.entry_lead) == ("NoPartyIDs", True)
-
+    """A trailing-dot key stays whole and an indexed comp stays beside its key."""
     dotted = Entry(key="A.", value="v")
-    assert (dotted.namespace, dotted.name, dotted.lead) == ("A", "A.", "A")
+    assert (dotted.key, dotted.name, dotted.lead) == ("A.", "A.", "A")
 
-    beside = Entry(key="PartyID", namespace="", comp="NoPartyIDs[0]", value="P")
+    beside = Entry(key="PartyID", comp="NoPartyIDs[0]", value="P")
     assert (beside.spelling, beside.entry_lead) == ("NoPartyIDs[0].PartyID", True)
 
 
@@ -583,12 +579,15 @@ def test_a_numeric_key_too_wide_for_a_tag_remains_a_key() -> None:
 
 
 def test_generic_arguments_preserve_numeric_dotted_members() -> None:
-    (parsed,) = Entry.parse_arrow(pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|Side=1"])).to_pylist()
+    (parsed,) = Entry.parse_arrow(
+        pyarrow.array(["54.5=x|NoPartyIDs[0].448=A|TECH.CLIENTID=42|TECH.NoPartyIDs[0].PartyID=P"])
+    ).to_pylist()
 
-    assert [(entry["namespace"], entry["comp"], entry["key"]) for entry in parsed] == [
-        ("54", None, "5"),
-        (None, "NoPartyIDs[0]", "448"),
-        (None, None, "Side"),
+    assert [(entry["tag"], entry["comp"], entry["key"]) for entry in parsed] == [
+        (0, None, "54.5"),
+        (448, "NoPartyIDs[0]", "448"),
+        (0, None, "TECH.CLIENTID"),
+        (0, "TECH.NoPartyIDs[0]", "PartyID"),
     ]
 
 

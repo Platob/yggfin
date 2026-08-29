@@ -1,11 +1,4 @@
-"""One protocol-neutral shape for ordered structured key/value entries.
-
-`Entry` is both halves of a field: the stored struct a row persists -- tag,
-key, value, namespace, comp -- and the ready view the accessor matches
-against -- name, index, lead and folded spellings, derived lazily from the
-stored spelling. One shape for both, so nothing renders a key to text and
-re-splits it on the way to an answer.
-"""
+"""One protocol-neutral shape for ordered structured key/value entries."""
 
 from __future__ import annotations
 
@@ -20,26 +13,17 @@ from rekep.convert import Convertible
 from rekep.fields import Field, column_name, scalar
 
 TAG: pyarrow.DataType = pyarrow.int32()
-NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
-GROUP_ENTRY = r"\[[0-9]+\]$"
 IS_TAG = r"^[0-9]{1,9}$"
 _TAGGED_TERMINAL = r"^(?P<tag>[0-9]{1,9})(?:\[[0-9]+\])?$"
+_GROUPED_KEY = r"(?s)^(?:(?P<comp>.*\[[0-9]+\])\.(?P<key>[^.]+)|(?P<plain>.*))$"
 
-#: A rendered key cut into whatever stood in front, the name, and its entry
-#: index: `NoPartyIDs[0].PartyID` is lead `NoPartyIDs[0]` name `PartyID`;
-#: `TECH.CLIENTID` is lead `TECH` name `CLIENTID`; `Side[0]` is name `Side`
-#: index `0`. Greedy lead, so the *last* dot is the cut -- the same rule the
-#: parser and the transcription apply.
+#: A rendered key cut into its lead, name and entry index.
 KEY_VIEW = re.compile(
     r"(?s)^(?:(?P<lead>.*)\.)?(?P<name>[^.\[\]]*)(?:\[(?P<index>[0-9]+)\])?$",
     re.ASCII,
 )
 
-#: A lead that names a repeating-group entry rather than a namespace: it ends
-#: with an index. The one dotted lead a bare name still answers through --
-#: `get("PartyID")` finds `NoPartyIDs[0].PartyID`, because the group is where
-#: the field sits and not what it is, while `TECH.CLIENTID` stays out of reach
-#: of `get("CLIENTID")` because a vendor namespace is part of the name.
+#: A group entry is a location; every other dotted lead is part of the key.
 ENTRY_LEAD = re.compile(r"\[[0-9]+\]$", re.ASCII)
 
 
@@ -62,13 +46,10 @@ class Entry(Convertible, Mapping[str, Any]):
     """Numeric identity written or resolved; zero while unresolved."""
 
     key: str = ""
-    """Terminal spelling without a leading argument marker."""
+    """Whole field spelling outside an indexed container."""
 
     value: str = ""
     """Text after the first equals sign; an empty value is empty text."""
-
-    namespace: str | None = None
-    """Prefix outside an indexed container."""
 
     comp: str | None = None
     """Indexed container prefix."""
@@ -76,16 +57,12 @@ class Entry(Convertible, Mapping[str, Any]):
     def __post_init__(self) -> None:
         """Normalize direct construction exactly like stored entries."""
         spelling = str(self.key).removeprefix("#")
-        if self.namespace is None and self.comp is None:
-            inferred, spelling, namespace, comp = _key_parts(spelling)
-            self.namespace = namespace
+        if self.comp is None:
+            inferred, spelling, comp = _key_parts(spelling)
             self.comp = comp
         else:
             inferred = _terminal_tag(spelling)
-            namespace = None if self.namespace is None else str(self.namespace)
-            comp = None if self.comp is None else str(self.comp)
-            self.namespace = None if namespace is None else namespace.removeprefix("#")
-            self.comp = None if comp is None else comp.removeprefix("#")
+            self.comp = str(self.comp).removeprefix("#")
         self.tag = int(self.tag or inferred)
         self.key = spelling
         self.value = "" if self.value is None else str(self.value)
@@ -110,7 +87,6 @@ class Entry(Convertible, Mapping[str, Any]):
                 tag=entry.tag,
                 key=entry.key,
                 value=entry.value,
-                namespace=entry.namespace,
                 comp=entry.comp,
             )
         if isinstance(entry, Mapping):
@@ -119,7 +95,6 @@ class Entry(Convertible, Mapping[str, Any]):
                 tag=int(entry.get("tag") or 0),
                 key=str(entry["key"]),
                 value="" if value is None else str(value),
-                namespace=entry.get("namespace"),
                 comp=entry.get("comp"),
             )
         key, value = entry
@@ -141,7 +116,6 @@ class Entry(Convertible, Mapping[str, Any]):
         tag: int = 0,
         key: str = "",
         value: Any = "",
-        namespace: str | None = None,
         comp: str | None = None,
     ) -> Entry:
         """A ready view: the spelling kept verbatim and the value kept typed.
@@ -153,7 +127,6 @@ class Entry(Convertible, Mapping[str, Any]):
         built.tag = int(tag)
         built.key = key
         built.value = value
-        built.namespace = namespace
         built.comp = comp
         built.__views = None
         built.__folded = None
@@ -175,10 +148,9 @@ class Entry(Convertible, Mapping[str, Any]):
 
     @property
     def spelling(self) -> str:
-        """The verbatim spelling this entry renders under."""
-        lead = self.namespace or self.comp
-        if lead:
-            return f"{lead}.{self.key}"
+        """The spelling this entry renders under."""
+        if self.comp:
+            return f"{self.comp}.{self.key}"
         if "[" in self.key:
             return self.key
         if self.tag:
@@ -186,40 +158,21 @@ class Entry(Convertible, Mapping[str, Any]):
         return self.key
 
     def _view(self) -> tuple[str, int | None, str | None, bool]:
-        """`(name, index, lead, entry lead)`: the stored split, held apart.
-
-        The stored members are already the split, so they answer directly --
-        `comp` asserts group-entry semantics whatever its spelling, and the
-        key parts only an index away from the name. Only a spelling the
-        stored split cannot re-render byte for byte -- a dotted key under an
-        explicit lead, a zero-padded index, a double lead -- re-splits whole
-        under `KEY_VIEW`, which is how the parser reads such a key off a
-        wire pair.
-        """
+        """`(name, index, lead, entry lead)` matched from the stored key."""
         found = self.__views
         if found is None:
-            lead = self.comp if self.comp else self.namespace
-            name, index = self.key, None
-            match = KEY_VIEW.match(self.key)
-            if match is not None and match.group("index") is not None:
-                name, index = match.group("name"), int(match.group("index"))
-            spelled = name if index is None else f"{name}[{index}]"
-            joined = self.namespace or self.comp
-            full = f"{joined}.{self.key}" if joined else self.key
-            if (f"{lead}.{spelled}" if lead else spelled) == full:
-                found = (name, index, lead, bool(self.comp))
+            full = f"{self.comp}.{self.key}" if self.comp else self.key
+            match = KEY_VIEW.match(full)
+            if match is None:
+                found = (full, None, None, False)
             else:
-                match = KEY_VIEW.match(full)
-                if match is None:
-                    found = (full, None, None, False)
-                else:
-                    split_lead, name, spelled_index = match.group("lead", "name", "index")
-                    found = (
-                        name or full,
-                        None if spelled_index is None else int(spelled_index),
-                        split_lead,
-                        bool(split_lead) and ENTRY_LEAD.search(split_lead) is not None,
-                    )
+                lead, name, spelled_index = match.group("lead", "name", "index")
+                found = (
+                    name or full,
+                    None if spelled_index is None else int(spelled_index),
+                    lead,
+                    bool(lead) and ENTRY_LEAD.search(lead) is not None,
+                )
             self.__views = found
         return found
 
@@ -235,13 +188,12 @@ class Entry(Convertible, Mapping[str, Any]):
 
     @property
     def lead(self) -> str | None:
-        """Whatever stood in front of the name: a namespace or a group entry."""
+        """The dotted prefix before the terminal name."""
         return self._view()[2]
 
     @property
     def entry_lead(self) -> bool:
-        """Whether a bare-name ask may reach through `lead`: true for a group
-        entry (`NoPartyIDs[0]`), false for a namespace."""
+        """Whether a bare-name ask may reach through an indexed group lead."""
         return self._view()[3]
 
     @property
@@ -301,23 +253,25 @@ class Entry(Convertible, Mapping[str, Any]):
         values = compute.fill_null(values, "")
         encoded = keys.dictionary_encode()
         spellings, indices = encoded.dictionary, encoded.indices
-        parts = compute.extract_regex(spellings, NAMESPACED_KEY)
-        lead = compute.struct_field(parts, "namespace")
-        terminals = compute.fill_null(compute.struct_field(parts, "key"), spellings)
+        parts = compute.extract_regex(spellings, _GROUPED_KEY)
+        lead = compute.struct_field(parts, "comp")
+        grouped = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
+        terminals = compute.coalesce(
+            compute.if_else(
+                grouped,
+                compute.struct_field(parts, "key"),
+                compute.struct_field(parts, "plain"),
+            ),
+            spellings,
+        )
+        lead = compute.if_else(grouped, lead, pyarrow.scalar(None, pyarrow.string()))
         tagged = compute.struct_field(compute.extract_regex(terminals, _TAGGED_TERMINAL), "tag")
         tags = compute.fill_null(tagged, "0").cast(TAG)
-        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
-        indexed = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
-        nothing = pyarrow.scalar(None, pyarrow.string())
         return (
             compute.take(tags, indices),
             compute.take(terminals, indices),
             values,
-            compute.take(
-                compute.if_else(compute.and_(led, compute.invert(indexed)), lead, nothing),
-                indices,
-            ),
-            compute.take(compute.if_else(compute.and_(led, indexed), lead, nothing), indices),
+            compute.take(lead, indices),
         )
 
 
@@ -327,19 +281,12 @@ ENTRIES: pyarrow.DataType = pyarrow.list_(
 ENTRY_PARTS: tuple[str, ...] = tuple(member.name for member in ENTRIES.value_type)
 
 
-def _key_parts(spelling: str) -> tuple[int, str, str | None, str | None]:
-    """A generic key split into identity, terminal spelling, and location."""
+def _key_parts(spelling: str) -> tuple[int, str, str | None]:
+    """A generic key split into identity, spelling and indexed location."""
     lead, separator, terminal = spelling.rpartition(".")
-    key = terminal if separator and terminal else spelling
-    tail = lead.rsplit(".", 1)[-1]
-    index = tail.rpartition("[")[2].removesuffix("]")
-    inside = bool(lead) and tail.endswith("]") and index.isdigit()
-    return (
-        _terminal_tag(key),
-        key,
-        lead if lead and not inside else None,
-        lead if inside else None,
-    )
+    inside = bool(separator and terminal and ENTRY_LEAD.search(lead))
+    key = terminal if inside else spelling
+    return _terminal_tag(key), key, lead if inside else None
 
 
 def _terminal_tag(spelling: str) -> int:

@@ -141,8 +141,8 @@ class TagIndex:
 
     #: Every name a dotted key may sit *inside*: a component, a group, a field.
     #: What tells `NoPartyIDs[0].PartyID` -- `PartyID` in a group this version
-    #: declares -- from `TECH.CLIENTID`, which is a vendor's own namespace and
-    #: not `ClientID <109>` wearing a prefix.
+    #: declares -- from `TECH.CLIENTID`, which is a vendor's own field and not
+    #: `ClientID <109>` wearing a prefix.
     containers: pyarrow.Array = dataclasses.field(
         default_factory=lambda: pyarrow.array([], pyarrow.string())
     )
@@ -214,10 +214,9 @@ class TagIndex:
         """Resolved tags, registry hits, terminal names, and containment.
 
         Four answers because they are one scan: whether a key sits inside a
-        container this version declares decides both whether its tail may be
-        resolved and whether what stands in front of it is a component or a
-        namespace, and computing it twice would read the same column
-        through the same regex twice.
+        container this version declares decides whether its tail may be
+        resolved, and computing that twice would read the same column through
+        the same regex twice.
 
         Scanned once per **distinct** spelling and taken back across the
         entries: a message keys its fields out of a bounded vocabulary, so a
@@ -567,21 +566,19 @@ class FixCodec(Convertible):
 
         The whole of what the dictionary adds to a field, in kernels and in one
         place, so nothing downstream resolves a name or reads an enumeration a
-        second way. `key` is the field's own name; whatever the line wrote in
-        front of it goes to `comp` where this version declares that container
-        and to `namespace` where it does not.
+        second way. A group member keeps its indexed path in `comp`; every
+        other spelling stays whole in `key`.
         """
         compute = pyarrow.compute
         tags, _, _, _ = self.index_of(version).resolve_with_match(keys)
         # The split is `structure`'s, not a second rule: where a field stood is
         # a fact about the spelling, so the message stage settles it and the
         # dictionary never revises it. What the dictionary adds is the tag.
-        _, key, value, namespace, comp = self.structure(keys, values)
+        _, key, value, comp = self.structure(keys, values)
         return (
             compute.fill_null(tags, pyarrow.scalar(0, TAG)),
             key,
             value,
-            namespace,
             comp,
         )
 
@@ -594,10 +591,10 @@ class FixCodec(Convertible):
     def into_message_entries(self, pairs: Any) -> Any:
         """Every field a message carried, structured but not resolved.
 
-        The same `ENTRIES` struct at its unresolved fill level: `key`, `value`,
-        `namespace` and `comp` are what the line spells, and `tag` is the
-        number only where the line spelled one -- `0` otherwise. No name is
-        looked up and no value is translated, so this needs no dictionary.
+        The same `ENTRIES` struct at its unresolved fill level: `key`, `value`
+        and `comp` are what the line spells, and `tag` is the number only where
+        the line spelled one -- `0` otherwise. No name is looked up and no
+        value is translated, so this needs no dictionary.
         """
         rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
@@ -616,12 +613,9 @@ class FixCodec(Convertible):
     def structure(self, keys: Any, values: Any) -> tuple[Any, ...]:
         """Stored argument members from the spelling alone.
 
-        The dictionary-free half of `transcribe`, and the same split: whatever
-        the line wrote in front of a name goes to `comp` when it is a group
-        entry and to `namespace` when it is not. Telling those apart needs no
-        dictionary either -- an entry of a repeating group is what carries a
-        subscript, which is what `Entry.structure_arrow` matches, and everything else in
-        front of a name is a vendor's own prefix.
+        The dictionary-free half of `transcribe`, and the same split: an
+        indexed group path goes to `comp`; every other spelling stays whole in
+        `key`.
         """
         return Entry.structure_arrow(keys, values)
 
@@ -704,8 +698,8 @@ class FixCodec(Convertible):
 
         A fill and not a shape conversion. Three members are filled -- `tag`,
         `key` canonicalized to the registry's spelling, `value` translated
-        where its field enumerates its values -- while `namespace` and `comp`
-        come through unchanged.
+        where its field enumerates its values -- while `comp` comes through
+        unchanged.
         """
         rows = len(entries)
         if isinstance(entries, pyarrow.ChunkedArray):
@@ -718,16 +712,14 @@ class FixCodec(Convertible):
         stored = compute.struct_field(items, "tag")
         keys = compute.struct_field(items, "key")
         values = compute.struct_field(items, "value")
-        namespace = compute.struct_field(items, "namespace")
         comp = compute.struct_field(items, "comp")
         # A stored key is the field's own name with its container beside it, so
         # the container goes back in front before it is resolved: that is the
         # spelling `resolve_with_match` reads, and `TECH.CLIENTID` must not
         # resolve as `CLIENTID`.
-        lead = compute.coalesce(namespace, comp)
         whole = compute.if_else(
-            compute.is_valid(lead),
-            compute.binary_join_element_wise(compute.fill_null(lead, ""), keys, "."),
+            compute.is_valid(comp),
+            compute.binary_join_element_wise(compute.fill_null(comp, ""), keys, "."),
             keys,
         )
         tags, matched, _, _ = self.index_of(version).resolve_with_match(whole)
@@ -742,7 +734,6 @@ class FixCodec(Convertible):
             tags,
             self._canonical(keys, tags, version),
             self._encoded(tags, values, version),
-            namespace,
             comp,
         )
 
@@ -1343,17 +1334,14 @@ def _version_columns(
 
 
 def _lead_of(entries: Any) -> Any:
-    """Whatever a stored field wrote in front of its name, either place it went."""
-    compute = pyarrow.compute
-    return compute.coalesce(
-        compute.struct_field(entries, "namespace"), compute.struct_field(entries, "comp")
-    )
+    """The indexed container stored beside each key."""
+    return pyarrow.compute.struct_field(entries, "comp")
 
 
 def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
     """Where each field sits in `declared`, or null; the whole name first.
 
-    Whole first because a namespace is part of a name -- `TECH.CLIENTID`
+    Whole first because a vendor prefix is part of a name -- `TECH.CLIENTID`
     is not `CLIENTID` -- and the tail second because a dictionary that declares
     only one of the two spellings still answers for the other.
     """
@@ -1697,10 +1685,8 @@ def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
     lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
     entries = compute.list_flatten(listed)
     keys = compute.struct_field(entries, "key")
-    if entries.type.get_field_index("namespace") >= 0:
-        lead = compute.coalesce(
-            compute.struct_field(entries, "namespace"), compute.struct_field(entries, "comp")
-        )
+    if entries.type.get_field_index("comp") >= 0:
+        lead = compute.struct_field(entries, "comp")
         keys = compute.if_else(
             compute.is_valid(lead),
             compute.binary_join_element_wise(compute.fill_null(lead, ""), keys, "."),

@@ -94,10 +94,9 @@ wire order are data.
 | member | what it holds |
 | --- | --- |
 | `tag` | a numeric key from the payload, a resolved tag, or `0` while unresolved |
-| `key` | the terminal spelling without a leading `#`, canonicalized once resolved |
+| `key` | the full spelling without `#`; an indexed component keeps only its terminal |
 | `value` | the value carried; always present, `""` when explicitly empty |
 | `comp` | an indexed container prefix, such as `NoPartyIDs[0]` |
-| `namespace` | a non-indexed prefix, such as `TECH` in `TECH.CLIENTID` |
 
 Raw `Message.entries` is always a list. A `FixMsg` carrying no recognized
 message has null `entries`; a parsed message with no residue has an empty one.

@@ -153,8 +153,7 @@ def _entries_array(rows: Sequence[Sequence[tuple[Any, ...]] | None]) -> pyarrow.
             None
             if row is None
             else [
-                {"tag": tag, "key": key, "value": value, "trans": None, "namespace": None}
-                for tag, key, value in row
+                {"tag": tag, "key": key, "value": value, "trans": None} for tag, key, value in row
             ]
             for row in rows
         ],
@@ -263,17 +262,16 @@ def test_a_value_reads_its_meaning_from_the_whole_enumeration(codec: FixCodec) -
     )
 
 
-def test_a_key_is_split_into_its_name_and_where_it_stood(codec: FixCodec) -> None:
-    """A vendor prefix and a FIX container are both data, and not the same data."""
+def test_only_an_indexed_container_is_split_from_its_key(codec: FixCodec) -> None:
     parsed = parse_arrow_array(
         pyarrow.array(["#TECH.CLIENTID=ACCT-TEST-01|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"]),
         "|",
         named=True,
     )
     found = codec.into_entries(parsed, "4.4").to_pylist()[0]
-    assert [(entry["namespace"], entry["comp"], entry["key"]) for entry in found] == [
-        ("TECH", None, "CLIENTID"),
-        (None, "NOPARTYIDS[0]", "PARTYID"),
+    assert [(entry["comp"], entry["key"]) for entry in found] == [
+        (None, "TECH.CLIENTID"),
+        ("NOPARTYIDS[0]", "PARTYID"),
     ], "`TECH` names nothing this version declares; `NOPARTYIDS` names a group"
 
 
@@ -286,14 +284,8 @@ def test_the_split_key_still_spells_the_key_the_line_wrote(codec: FixCodec) -> N
         named=True,
     )
     found = codec.into_entries(parsed, "4.4").to_pylist()[0]
-    rebuilt = [
-        ".".join(part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part)
-        for entry in found
-    ]
+    rebuilt = [".".join(part for part in (entry["comp"], entry["key"]) if part) for entry in found]
     assert rebuilt == written, "the split loses nothing, so a reader can undo it"
-    assert all(entry["namespace"] is None or entry["comp"] is None for entry in found), (
-        "and a field stood in one place, so at most one of the two is filled"
-    )
 
 
 def test_a_vendor_namespace_does_not_borrow_the_tag_its_tail_names(codec: FixCodec) -> None:
@@ -309,7 +301,7 @@ def test_a_vendor_namespace_does_not_borrow_the_tag_its_tail_names(codec: FixCod
         named=True,
     )
     assert _entries_column(codec.into_entries(parsed, "4.4")) == [
-        (0, "CLIENTID", "ACCT-TEST-01"),
+        (0, "TECH.CLIENTID", "ACCT-TEST-01"),
         (448, "PARTYID", "PARTY-TEST-A"),
     ]
 
@@ -846,10 +838,9 @@ def test_a_stored_field_names_itself_and_never_nothing() -> None:
         "tag",
         "key",
         "value",
-        "namespace",
         "comp",
     ]
-    assert ENTRY_PARTS == ("tag", "key", "value", "namespace", "comp"), (
+    assert ENTRY_PARTS == ("tag", "key", "value", "comp"), (
         "one declaration of the members, read off the type itself"
     )
 

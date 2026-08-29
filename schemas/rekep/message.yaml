@@ -299,17 +299,12 @@ fields:
       fix: {display: Tag}
     - name: key
       type: string
-      description: Terminal spelling without a leading argument marker.
+      description: Whole field spelling outside an indexed container.
       fix: {display: Key}
     - name: value
       type: string
       description: Text after the first equals sign; an empty value is empty text.
       fix: {display: Value}
-    - name: namespace
-      type: string
-      nullable: true
-      description: Prefix outside an indexed container.
-      fix: {display: Namespace}
     - name: comp
       type: string
       nullable: true

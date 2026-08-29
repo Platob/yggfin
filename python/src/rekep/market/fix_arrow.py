@@ -178,12 +178,10 @@ def flat_market_parts(
     items = compute.list_flatten(entries)
     if len(items):
         tag = compute.struct_field(items, "tag")
-        namespace = compute.struct_field(items, "namespace")
         component = compute.struct_field(items, "comp")
         if (
             tag.null_count
             or compute.any(compute.less_equal(tag, 0), min_count=0).as_py()
-            or namespace.null_count < len(namespace)
             or component.null_count < len(component)
         ):
             return None
@@ -341,11 +339,9 @@ def _eligible_market_rows(
     items = compute.list_flatten(entries)
     if len(items):
         tag = compute.struct_field(items, "tag")
-        namespace = compute.struct_field(items, "namespace")
         component = compute.struct_field(items, "comp")
         parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
         valid = compute.and_(compute.is_valid(tag), compute.greater(tag, 0))
-        valid = compute.and_(valid, compute.is_null(namespace))
         valid = compute.and_(valid, compute.is_null(component))
         eligible = compute.and_(
             eligible,

@@ -1102,7 +1102,6 @@ def _pipeline_message_batches(
                         "tag": int(tag),
                         "key": str(tag),
                         "value": renamed.get(tag, value),
-                        "namespace": None,
                         "comp": None,
                     }
                     for tag, value in pairs

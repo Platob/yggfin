@@ -38,7 +38,6 @@ def test_every_way_of_naming_one_field_reads_the_same_value(
             "tag": 769,
             "key": "TrdRegTimestamp",
             "value": "20260824-10:00:01.123",
-            "namespace": None,
             "comp": "NoTrdRegTimestamps[0]",
         }
     ]
@@ -52,7 +51,7 @@ def test_a_namespace_qualified_key_reads_only_under_its_namespace(access: FieldA
     opposite of a group entry, where the container is only *where* the field
     sits.
     """
-    stored = [{"tag": 0, "key": "CLIENTID", "value": "42", "namespace": "TECH", "comp": None}]
+    stored = [{"tag": 0, "key": "TECH.CLIENTID", "value": "42", "comp": None}]
     assert access.reading(stored, "TECH.CLIENTID").raw == "42"
     assert not access.reading(stored, "CLIENTID")
 
@@ -60,8 +59,8 @@ def test_a_namespace_qualified_key_reads_only_under_its_namespace(access: FieldA
 def test_a_group_entry_answers_a_bare_name_and_its_own_path(access: FieldAccess) -> None:
     """The index and the group are where a field sits, not what it is."""
     stored = [
-        {"tag": 448, "key": "PartyID", "value": "A", "namespace": None, "comp": "NoPartyIDs[0]"},
-        {"tag": 448, "key": "PartyID", "value": "B", "namespace": None, "comp": "NoPartyIDs[1]"},
+        {"tag": 448, "key": "PartyID", "value": "A", "comp": "NoPartyIDs[0]"},
+        {"tag": 448, "key": "PartyID", "value": "B", "comp": "NoPartyIDs[1]"},
     ]
     assert access.reading(stored, "PartyID").raw == "A"
     assert access.reading(stored, "NoPartyIDs[1].PartyID").raw == "B"
@@ -92,9 +91,7 @@ def test_an_unregistered_value_reads_back_coherently_typed(access: FieldAccess) 
     import datetime
 
     def read(value: str) -> object:
-        stored = [
-            {"tag": 0, "key": "CONVERSATIONID", "value": value, "namespace": None, "comp": None}
-        ]
+        stored = [{"tag": 0, "key": "CONVERSATIONID", "value": value, "comp": None}]
         return access.reading(stored, "CONVERSATIONID")
 
     assert read("12345").value == 12345
@@ -261,7 +258,6 @@ def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None
                 "tag": 448,
                 "key": "PartyID",
                 "value": "ABC",
-                "namespace": None,
                 "comp": "NoPartyIDs[0]",
             }
         ],
@@ -283,7 +279,6 @@ def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
                     "tag": 448,
                     "key": "PartyID",
                     "value": "A",
-                    "namespace": None,
                     "comp": "NoPartyIDs[0]",
                 }
             ]

@@ -38,13 +38,11 @@ def into_flat_fixmsg_batch(
     tags = compute.struct_field(items, "tag")
     keys = compute.struct_field(items, "key")
     values = compute.struct_field(items, "value")
-    namespace = compute.struct_field(items, "namespace")
     component = compute.struct_field(items, "comp")
     if (
         tags.null_count
         or values.null_count
         or compute.any(compute.less_equal(tags, 0), min_count=0).as_py()
-        or namespace.null_count < len(namespace)
         or component.null_count < len(component)
         or compute.any(compute.equal(tags, 213), min_count=0).as_py()
         or not compute.all(compute.equal(keys, tags.cast(pyarrow.string())), min_count=0).as_py()
@@ -127,13 +125,11 @@ def flat_fixmsg_positions(
     tags = compute.struct_field(items, "tag")
     keys = compute.struct_field(items, "key")
     values = compute.struct_field(items, "value")
-    namespace = compute.struct_field(items, "namespace")
     component = compute.struct_field(items, "comp")
     parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
 
     good = compute.and_(compute.is_valid(tags), compute.greater(tags, 0))
     good = compute.and_(good, compute.is_valid(values))
-    good = compute.and_(good, compute.is_null(namespace))
     good = compute.and_(good, compute.is_null(component))
     good = compute.and_(good, compute.not_equal(tags, 213))
     good = compute.and_(good, compute.equal(keys, tags.cast(pyarrow.string())))
@@ -285,7 +281,6 @@ def _complete_tagged(codec: Any, entries: pyarrow.Array, version: str) -> pyarro
             tags,
             codec._canonical(keys, tags, version),
             codec._encoded(tags, values, version),
-            compute.struct_field(items, "namespace"),
             compute.struct_field(items, "comp"),
         ],
         fields=list(items.type),

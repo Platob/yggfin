@@ -485,8 +485,8 @@ Two readings the classification depends on:
   `NoPartyIDs[0].PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
   vendor's own field rather than `ClientID <109>` with a prefix.
 - Classification normalizes `#Foo` to `Foo` but retains separate marked and
-  bare occurrence counters. Parsed entries receive the normalized name; the
-  counters preserve how each bridge spelling arrived.
+  bare occurrence counters. Parsed entries receive the normalized spelling;
+  the counters preserve how each bridge spelling arrived.
 
 ## Groups and components
 

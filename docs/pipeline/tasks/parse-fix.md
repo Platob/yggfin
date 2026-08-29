@@ -42,10 +42,10 @@ batch it:
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
-canonical FIX key, its numeric tag, its value, and either its component path or
-vendor namespace. Fields promoted for filtering use the registry spelling as
-their physical column name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`,
-`TransactTime`, and so on.
+canonical FIX key, its numeric tag, its value, and an indexed component path
+where present; a vendor-qualified name remains whole in the key. Fields
+promoted for filtering use the registry spelling as their physical column
+name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`, `TransactTime`, and so on.
 
 ## Routing
 

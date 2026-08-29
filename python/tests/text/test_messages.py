@@ -1046,7 +1046,7 @@ def _keys(scalar: pyarrow.Scalar) -> list[str]:
 
 def _key(entry: dict[str, object]) -> str:
     """One stored field's rendered key: its name under whatever led it."""
-    lead = entry.get("namespace") or entry.get("comp")
+    lead = entry.get("comp")
     return f"{lead}.{entry['key']}" if lead else str(entry["key"])
 
 
@@ -1406,15 +1406,13 @@ def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:
 
 
 def test_the_split_key_still_spells_what_the_line_wrote(codec: FixCodec) -> None:
-    """`namespace`/`comp` joined to `key` survives dictionary completion."""
+    """An indexed `comp` joined to `key` survives dictionary completion."""
     line = "send #NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42"
     pairs = codec.into_pairs(pyarrow.array([line], pyarrow.string()), "UL")
     columns = {"entries": codec.into_message_entries(pairs)}
     for level in (columns["entries"], codec.complete_entries(columns["entries"], "4.4")):
         rebuilt = [
-            ".".join(
-                part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part
-            ).upper()
+            ".".join(part for part in (entry["comp"], entry["key"]) if part).upper()
             for entry in level.to_pylist()[0]
         ]
         assert rebuilt == ["NOPARTYIDS[0].PARTYID", "TECH.CLIENTID"]

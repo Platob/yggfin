@@ -1014,7 +1014,7 @@ class FixMsg(Message):
         if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
             return None
         entries = self.entries or ()
-        if any(entry.comp or entry.namespace or not entry.tag for entry in entries):
+        if any(entry.comp or not entry.tag for entry in entries):
             return None
 
         resolver = access or self._row_access()
@@ -2011,7 +2011,9 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     return compute.coalesce(venue, stored_mic, target, sender)
 
 
-_NORMALIZED_GROUP = re.compile(r"^(?P<group>NoLegs|NoSecurityAltID)\[(?P<index>[0-9]+)\]")
+_NORMALIZED_GROUP = re.compile(
+    r"^(?P<group>NoLegs|NoSecurityAltID)\[(?P<index>[0-9]+)\]\.(?P<key>.+)$"
+)
 _GROUP_STRIDE = 1 << 32
 
 
@@ -2032,18 +2034,17 @@ class _NormalizedInstrumentFields:
         compute = pyarrow.compute
         entries = compute.list_flatten(stored)
         parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
-        keys = compute.struct_field(entries, "key")
+        stored_keys = compute.struct_field(entries, "key")
         values = compute.struct_field(entries, "value")
-        namespace = compute.struct_field(entries, "namespace")
         component = compute.struct_field(entries, "comp")
-        prefix = compute.coalesce(component, namespace)
-        prefixed = compute.fill_null(compute.greater(compute.binary_length(prefix), 0), False)
+        prefixed = compute.fill_null(compute.greater(compute.binary_length(component), 0), False)
         paths = compute.if_else(
             prefixed,
-            compute.binary_join_element_wise(prefix, keys, "."),
-            keys,
+            compute.binary_join_element_wise(component, stored_keys, "."),
+            stored_keys,
         )
         group_parts = compute.extract_regex(paths, _NORMALIZED_GROUP.pattern)
+        keys = compute.coalesce(compute.struct_field(group_parts, "key"), stored_keys)
         groups = compute.struct_field(group_parts, "group")
         indices = cast_arrow_fix(compute.struct_field(group_parts, "index"), pyarrow.int64())
         group_ids = compute.add(
@@ -2188,7 +2189,7 @@ class _NormalizedInstrumentFields:
     def legs(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
         """Normalized leg groups as one nullable Arrow list per row."""
         assert dtype is not None
-        roots, parents, xhash = self._roots("NoLegs", "xhash")
+        roots, parents, xhash = self._roots("NoLegs", _INSTRUMENT_XHASH)
         sizes = dense_counts(parents, self.rows)
 
         def member(name: str) -> pyarrow.Array:
@@ -2200,7 +2201,7 @@ class _NormalizedInstrumentFields:
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
-            "kind": _stored_code(member("kind")),
+            "kind": _stored_code(member(_INSTRUMENT_KIND)),
             "securityid": member("LegSecurityID"),
             "securityidsource": member("LegSecurityIDSource"),
             "cficode": member("LegCFICode"),
@@ -2531,7 +2532,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     for entry in entries or ():
         if not isinstance(entry, Mapping):
             entry = Entry.from_stored(entry)
-        lead = entry.get("namespace") or entry.get("comp")
+        lead = entry.get("comp")
         name = entry["key"]
         if lead:
             yield f"{lead}.{name}", entry.get("value")
@@ -2567,7 +2568,6 @@ def _stored_text(column: Any, rows: int) -> pyarrow.Array:
     spelled = compute.binary_join_element_wise(
         compute.fill_null(compute.struct_field(entries, "tag").cast(pyarrow.string()), ""),
         compute.fill_null(compute.struct_field(entries, "comp"), ""),
-        compute.fill_null(compute.struct_field(entries, "namespace"), ""),
         compute.fill_null(compute.struct_field(entries, "key"), ""),
         compute.fill_null(compute.struct_field(entries, "value"), ""),
         "\x1f",

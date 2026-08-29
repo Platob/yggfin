@@ -279,9 +279,8 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     assert member.item.field("tag").nullable is False
     assert member.item.field("key").nullable is False
     assert member.item.field("value").nullable is False
-    for name in ("namespace", "comp"):
-        assert member.item.field(name).nullable is True, name
-        assert member.item.field(name).dtype == pyarrow.string(), name
+    assert member.item.field("comp").nullable is True
+    assert member.item.field("comp").dtype == pyarrow.string()
     assert all(isinstance(entry, Entry) for entry in FixMsg(entries=[(55, "IBM")]).entries or ())
 
 
@@ -295,7 +294,7 @@ def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> No
             ("VenueOwnThing", "x"),
             ["VenueOwnThing", "y"],
             {"tag": 0, "key": "VenueOwnThing", "value": "z"},
-            {"tag": 0, "key": "CLIENTID", "value": "ACCT-TEST-01", "namespace": "TECH"},
+            {"tag": 0, "key": "TECH.CLIENTID", "value": "ACCT-TEST-01"},
             {"tag": 448, "key": "PartyID", "value": "PARTY-TEST-A", "comp": "NoPartyIDs[0]"},
         ],
     ).into_fix_events()
@@ -448,13 +447,12 @@ def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
 
 
 def test_a_stored_field_reads_through_its_own_structure() -> None:
-    """A stored argument's split -- tag, name, namespace -- is the read's:
-    no spelling is rendered and re-split on the way to an answer."""
+    """A stored argument's tag, key and component path are the read's."""
     row = FixMsg(
         msgtype="D",
         entries=[
             {"tag": 55, "key": "Symbol", "value": "IBM"},
-            {"tag": 0, "key": "CLIENTID", "value": "A1", "namespace": "TECH"},
+            {"tag": 0, "key": "TECH.CLIENTID", "value": "A1"},
         ],
     )
 
@@ -464,15 +462,13 @@ def test_a_stored_field_reads_through_its_own_structure() -> None:
 
 
 def test_an_exotic_stored_spelling_renders_verbatim() -> None:
-    """The stored spelling is the projection's, byte for byte: a zero-padded
-    index, a dotted key under an explicit lead, and a double lead all render
-    exactly as stored -- and still answer the accessor under that spelling."""
+    """Whole dotted keys and indexed component paths render byte for byte."""
     row = FixMsg(
         msgtype="D",
         entries=[
             {"key": "Side[03]", "value": "1"},
-            {"key": "a.b[0]", "namespace": "X", "value": "2"},
-            {"key": "PartyID", "namespace": "TECH", "comp": "NoPartyIDs[0]", "value": "P"},
+            {"key": "X.a.b[0]", "value": "2"},
+            {"key": "TECH.NoPartyIDs[0].PartyID", "value": "P"},
         ],
     )
 
@@ -480,14 +476,12 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
         ("35", "D"),
         ("Side[03]", "1"),
         ("X.a.b[0]", "2"),
-        ("TECH.PartyID", "P"),
+        ("TECH.NoPartyIDs[0].PartyID", "P"),
     ]
     assert row.get("X.a.b[0]").raw == "2"
-    trailing = FixMsg(
-        entries=[("A.", "v1"), {"key": "PartyID", "value": "P", "comp": "NoPartyIDs"}]
-    )
+    assert row.get("PartyID").raw == "P"
+    trailing = FixMsg(entries=[("A.", "v1")])
     assert trailing.get("A.").raw == "v1", "a trailing-dot key stays readable"
-    assert trailing.get("PartyID").raw == "P", "an index-less comp still reaches through"
     assert [reading.raw for reading in row.readings("Side")] == ["1"]
 
 
@@ -926,7 +920,7 @@ def test_the_schema_says_which_class_it_came_from() -> None:
 
 def _stored(tag: int, key: str, value: str) -> dict[str, object]:
     """One stored field in the whole spelling `FixMsg.into_dict` writes."""
-    return {"tag": tag, "key": key, "value": value, "namespace": None, "comp": None}
+    return {"tag": tag, "key": key, "value": value, "comp": None}
 
 
 def test_a_row_round_trips_as_a_document() -> None:

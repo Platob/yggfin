@@ -706,16 +706,12 @@ def parse_entries_array(
 
     items = compute.list_flatten(entries)
     raw_keys = compute.struct_field(items, "key")
-    if items.type.get_field_index("namespace") >= 0:
-        lead = compute.coalesce(
-            compute.struct_field(items, "namespace"),
-            compute.struct_field(items, "comp"),
-        )
-        raw_keys = compute.if_else(
-            compute.is_valid(lead),
-            compute.binary_join_element_wise(compute.fill_null(lead, ""), raw_keys, "."),
-            raw_keys,
-        )
+    comp = compute.struct_field(items, "comp")
+    raw_keys = compute.if_else(
+        compute.is_valid(comp),
+        compute.binary_join_element_wise(compute.fill_null(comp, ""), raw_keys, "."),
+        raw_keys,
+    )
     raw_values = compute.fill_null(compute.struct_field(items, "value"), "")
     if named:
         rendered = compute.binary_join_element_wise(raw_keys, "=", raw_values, "")

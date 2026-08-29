@@ -641,7 +641,6 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
         "tag": 10,
         "key": "10",
         "value": "203",
-        "namespace": None,
         "comp": None,
     }, "CheckSum is the boundary the lift is measured against, so it stays an entry"
     assert [entry["key"] for entry in table.column("entries")[1].as_py()] == [

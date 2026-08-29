@@ -180,7 +180,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert "unixpartition: int32  [partition identity]" in printed
     assert (
         "entries: list<item: struct<tag: int32 not null, key: string not null, "
-        "value: string not null, namespace: string, comp: string> not null>"
+        "value: string not null, comp: string> not null>"
         "  [nullable]"
     ) in printed
     assert "parties: list<item: struct<partyid: string" in printed
