@@ -37,8 +37,6 @@ Directional, not comparable across machines.
 | Key column to tags, named keys | 112,500 keys, 6,071 names | 51.3M keys/s |
 | Recursive Arrow reshape | 50,000 rows | 315.7M rows/s |
 | Wire line to market events | 100 messages of each shape | 8,179 / 5,525 / 2,281 rows/s |
-| Normalized Instrument FixMsg decode | 500 rows | 389.7 µs/row |
-| Generic Instrument reconstruction | 500 rows | 271.8 µs/row |
 | Book summary, 10 levels/side | 200 books | 404,040 books/s |
 | Stateful book fold | 200 events | 17,832 books/s |
 | Replay shape matrix | 1,000–2,000 events | 5,941–11,803 events/s |

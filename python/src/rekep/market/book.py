@@ -310,9 +310,7 @@ class Book(MarketEvent):
         return iter(BookIterator(logs=logs, **declared))
 
     @classmethod
-    def from_events(
-        cls, events: Iterable[MarketEvent | Instrument], **declared: Any
-    ) -> Iterator[Self]:
+    def from_events(cls, events: Iterable[MarketEvent], **declared: Any) -> Iterator[Self]:
         """Fold translated events directly, for protocol adapters and tests."""
         return iter(BookIterator.from_events(events, **declared))
 
@@ -1443,7 +1441,7 @@ class _Folding:
     """The last event folded in -- where a book learns what it is a book of."""
 
     instrument: Instrument = dataclasses.field(default_factory=Instrument)
-    """Latest instrument facts visible to the folded event."""
+    """Transient instrument facts carried by the latest event that stated them."""
 
     emitted: int | None = None
     """`unix` of the last book emitted, which is what an hourly snapshot counts from."""
@@ -1526,12 +1524,11 @@ class BookIterator:
         if self.max_order_age_ns is not None and self.max_order_age_ns < 0:
             raise ValueError("max_order_age_ns must be non-negative")
         self._source: Iterator[MarketEvent] | None = None
-        self._event_input: Iterable[MarketEvent | Instrument] | None = None
+        self._event_input: Iterable[MarketEvent] | None = None
         self._finished = False
         self._books: deque[Book] = deque()
         self._unix: int | None = None
         self._swept: int | None = None
-        self._instruments: dict[int, Instrument] = {}
         latest: dict[int, Book] = {}
         for snapshot in self.snapshots:
             current = latest.get(snapshot.instrumentxhash)
@@ -1548,9 +1545,7 @@ class BookIterator:
             self._restore(snapshot)
 
     @classmethod
-    def from_events(
-        cls, events: Iterable[MarketEvent | Instrument], **declared: Any
-    ) -> BookIterator:
+    def from_events(cls, events: Iterable[MarketEvent], **declared: Any) -> BookIterator:
         """Build a fold over one ordered stream of translated event versions."""
         built = cls(**declared)
         built._event_input = events
@@ -1601,19 +1596,12 @@ class BookIterator:
         return True
 
     def _events(self) -> Iterator[MarketEvent]:
-        """Index instrument rows and translate the other parsed rows once."""
+        """Translate each parsed market row once."""
         if self._event_input is not None:
-            for event in self._event_input:
-                if isinstance(event, Instrument):
-                    self._index_instrument(event)
-                else:
-                    yield event
+            yield from self._event_input
             return
         for log in self.logs:
             if log.eventtype is EventType.INSTRUMENT:
-                if log.is_instrument_version:
-                    for instrument in log.into_instruments():
-                        self._index_instrument(instrument)
                 continue
             yield from log.into_market_events(registry=self.registry)
 
@@ -1878,13 +1866,11 @@ class BookIterator:
         known = self.folding.get(event.instrumentxhash)
         if known is not None:
             return known
-        instrument = event.into_instrument()
-        stored = self._instrument_of(event, instrument)
-        state = self._started(event, stored)
+        state = self._started(event)
         self.folding[event.instrumentxhash] = state
         return state
 
-    def _started(self, event: MarketEvent, stored: Instrument | None = None) -> _Folding:
+    def _started(self, event: MarketEvent) -> _Folding:
         """The state one instrument's fold starts from, identities and all."""
         lifecycle = Book(
             unix=event.unix,
@@ -1893,15 +1879,10 @@ class BookIterator:
             currency=event.currency,
         )
         parsed = event.into_instrument()
-        instrument = (
-            stored
-            if stored is not None
-            else parsed
-            or Instrument(
-                xhash=event.instrumentxhash,
-                symbolticker=event.symbolticker,
-                currency=event.currency,
-            )
+        instrument = parsed or Instrument(
+            xhash=event.instrumentxhash,
+            symbolticker=event.symbolticker,
+            currency=event.currency,
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
@@ -1926,12 +1907,10 @@ class BookIterator:
         if snapshot.askdepth != len(snapshot.asklevels):
             raise ValueError("recovery snapshot askdepth does not match asklevels")
         canonical = snapshot.instrumentxhash
-        known = self._instruments.get(canonical)
-        instrument = (
-            known
-            if known is not None
-            else snapshot.into_instrument()
-            or Instrument(xhash=canonical, symbolticker=snapshot.symbolticker)
+        instrument = snapshot.into_instrument() or Instrument(
+            xhash=canonical,
+            symbolticker=snapshot.symbolticker,
+            currency=snapshot.currency,
         )
         snapshot.attach_instrument(instrument)
         state = _Folding(
@@ -2033,28 +2012,11 @@ class BookIterator:
         event.vhash = event.hash = NIL
         return event.identify()
 
-    def _index_instrument(self, known: Instrument) -> None:
-        """Index one full instrument version by its canonical ticker identity."""
-        self._instruments[known.xhash] = known
-
-    def _instrument_of(
-        self, event: MarketEvent, instrument: Instrument | None
-    ) -> Instrument | None:
-        """Known instrument reached through the event or parsed ticker identity."""
-        stored = self._instruments.get(event.instrumentxhash)
-        if stored is not None or instrument is None:
-            return stored
-        return self._instruments.get(instrument.xhash)
-
     def _refresh_instrument(self, state: _Folding, event: MarketEvent) -> None:
-        """Use the latest instrument version visible at this event."""
+        """Keep transient instrument facts when this event carries them."""
         parsed = event.into_instrument()
-        if parsed is None or parsed is state.instrument:
-            return
-        known = self._instrument_of(event, parsed)
-        if known is None:
-            return
-        state.instrument = known
+        if parsed is not None:
+            state.instrument = parsed
 
     # -- emitting -------------------------------------------------------------
 
@@ -2211,11 +2173,8 @@ def _hit(bid: _Side, ask: _Side, execution: Execution) -> _Side | None:
 def _settled(state: _Folding, unix: int) -> Book | None:
     """The book as it stands, as a new row -- and the delta handed over with it."""
     about = state.about
-    # The instrument the fold has *accumulated*, not whatever the last message
-    # happened to spell: a book row says what it is a book of, and the last
-    # message may have named the instrument more poorly than an earlier one.
-    # `instrumentxhash` is the canonical ticker's key, so later reference facts
-    # cannot move this row to another partition.
+    # Transient reference facts never form a second stream; the canonical
+    # ticker columns remain on every persisted market row.
     previous = state.previous
     bid_best = state.bid.best_level
     ask_best = state.ask.best_level

@@ -148,18 +148,6 @@ def test_a_code_column_renders_as_the_enum_spelled_out() -> None:
     assert narrow.to_pylist() == ["USD"]
 
 
-def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
-    """`$` lands as USD whichever path parsed the message."""
-    from rekep.text.fixmsg import _currency_arrow
-
-    spellings = ["$", "US$", "USD", " eur ", "TRY", "bad!"]
-    kernel = _currency_arrow(pyarrow.array(spellings)).to_pylist()
-    scalar = [int(Currency.from_fix(value)) for value in spellings]
-    assert kernel == scalar
-    assert kernel[0] == kernel[1] == int(Currency.USD)
-    assert Currency._named("!") is None, "an unstated punctuation mark names no currency"
-
-
 def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
     class Route(enum_module.Ascii64):
         UNKNOWN = 0
@@ -522,8 +510,8 @@ def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:
     """An intent may never happen, a fact cannot be undone, a state is a picture."""
     assert EventType.ORDER.band == EventType.INTENT
     assert EventType.EXECUTION.band == EventType.FACT
+    assert EventType.INSTRUMENT.band == EventType.FACT
     assert EventType.BOOK.band == EventType.STATE
-    assert EventType.INSTRUMENT.band == EventType.INSTRUMENT_STATE
 
 
 def test_the_removed_book_side_code_is_not_reused() -> None:
@@ -533,7 +521,7 @@ def test_the_removed_book_side_code_is_not_reused() -> None:
 def test_only_a_state_is_a_snapshot() -> None:
     assert EventType.BOOK.is_snapshot
     assert not EventType.ORDER.is_snapshot and not EventType.EXECUTION.is_snapshot
-    assert EventType.INSTRUMENT.is_snapshot, "reference data is a picture too"
+    assert not EventType.INSTRUMENT.is_snapshot
 
 
 def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:

@@ -1,7 +1,7 @@
 # Parse market
 
 `tasks/parse_market/parse_market.ipynb` reads
-`fix.market` in `(unix, MsgSeqNum, hash)` order. With the default
+`fix.market` in `(unix, msgseqnum, hash)` order. With the default
 `books: true`, it folds that stream through `BookIterator`, writes only
 `market.books`, and leaves the two flatten notebooks to publish orders and
 executions.
@@ -52,13 +52,13 @@ containing `start` minus one hour and stops after the hour containing `end`
 plus 15 minutes. In book mode, prior Book snapshots use that recovery history
 to restore live orders.
 
-`parse_market` never reads `market.instruments`. Normalized instrument
-lifecycle rows already share the sorted `fix.market` input; `BookIterator`
-indexes them by `eventtype` and folds the remaining rows.
+`parse_market` never reads `market.instruments`. `BookIterator` translates the
+sorted `fix.market` stream and uses the transient Instrument facts carried by
+each market event.
 
 Snapshot generation, terminal-state handling, one-day inactivity expiry, and
 internal rejection reasons belong to the shared event and book models rather
-than the notebook. Direct mode skips normalized Instrument rows and keeps the
+than the notebook. Direct mode skips captured Instrument events and keeps the
 instrument facts carried by each translated FIX message.
 
 The adjacent `parse_market.yml` sets the FIX dictionary, mode, all three

@@ -317,66 +317,6 @@ def bench_instruments(rows: int, repeat: int) -> None:
     report("100 repeated spellings", repeated, rows, against=unique)
 
 
-def bench_instrument_logs(rows: int, repeat: int) -> None:
-    """Decode package-authored instrument rows directly and through generic FIX."""
-    from rekep.enums import AssetKind, Currency, Side
-    from rekep.market import Leg
-    from rekep.text import FixMsg
-
-    sample = min(rows, 500)
-    instrument = Instrument(
-        unix=UNIX,
-        symbol="CAL-27",
-        kind=AssetKind.MULTILEG,
-        securityid="FR0000000001",
-        securityidsource="4",
-        altids={"RIC": "CAL.N"},
-        securitytype="MLEG",
-        securityexchange="XPAR",
-        currency=Currency.EUR,
-        contractmultiplier=10.0,
-        minpriceincrement=0.01,
-        roundlot=1.0,
-        legs=[
-            Leg(
-                symbol="JUN-27",
-                side=Side.BUY,
-                kind=AssetKind.FUTURE,
-                securitytype="FUT",
-            )
-        ],
-    ).with_previous(None)
-    assert instrument is not None
-    # The registry leg is deliberately FIX.4.4; protocol reads never infer a
-    # version when neither BeginString nor FIXT application-version tags exist.
-    log = instrument.into_fixmsg(beginstring="FIX.4.4")
-    source = next(
-        iter(FixMsg.into_arrow_reader((log for _ in range(sample)), batch_row_size=sample))
-    )
-
-    def through_registry() -> list[Instrument]:
-        built = []
-        for _ in range(sample):
-            parsed = next(log.into_fix_events().into_instruments())
-            built.append(log._instrument_version(parsed))
-        return built
-
-    def direct() -> pyarrow.RecordBatch:
-        return FixMsg.into_instrument_arrow_batch(source)
-
-    registry, generic = timed(through_registry, repeat)
-    normalized, decoded = timed(direct, repeat)
-    assert generic[0].into_dict() == instrument.into_dict()
-    assert (
-        Instrument.from_dict(decoded.slice(0, 1).to_pylist()[0]).into_dict()
-        == instrument.into_dict()
-    )
-
-    print(f"\nInstrument <-> normalized FixMsg -- {sample:,} rows")
-    report("generic FIX/registry reconstruction", registry, sample)
-    report("batch normalized-row projection", normalized, sample, against=registry)
-
-
 def bench_mics(rows: int, repeat: int) -> None:
     """Decode the low-cardinality venue column a feed repeats per event."""
     values = [("XPAR", "XNAS", "XCME")[index % 3] for index in range(rows)]
@@ -857,22 +797,23 @@ def bench_replay_matrix(rows: int, repeat: int, *, quick: bool) -> None:
 
 
 def bench_lifecycle(rows: int, repeat: int) -> None:
-    """Cached state comparison and indexed explicit-expiry lookup."""
+    """Value-hash comparison and indexed explicit-expiry lookup."""
     from rekep.market import Order, Side, State
 
     previous = next(one for one in stream(4) if isinstance(one, Order) and one.px == one.px)
     current = copy.copy(previous)
     pictured = copy.copy(previous)
     pictured.snapunix = previous.unix
-    assert current.same_as(previous) and pictured.same_as(pictured)
+    assert current.vhash == previous.vhash and pictured.vhash == pictured.vhash
 
     print(f"\nLifecycle hot paths -- {rows:,} comparisons")
     for label, one, other in (
-        ("same_as, ordinary event", current, previous),
-        ("same_as, snapshot", pictured, pictured),
+        ("vhash, ordinary event", current, previous),
+        ("vhash, snapshot", pictured, pictured),
     ):
         seconds, equal = timed(
-            lambda one=one, other=other: sum(one.same_as(other) for _ in range(rows)), repeat
+            lambda one=one, other=other: sum(one.vhash == other.vhash for _ in range(rows)),
+            repeat,
         )
         assert equal == rows
         report(label, seconds, rows)
@@ -1315,7 +1256,6 @@ def main() -> None:
 
     bench_identifiers(rows, repeat)
     bench_instruments(rows, repeat)
-    bench_instrument_logs(rows, repeat)
     bench_mics(rows, repeat)
     for depth in (1, 10) if parsed.quick else (1, 10, 50):
         bench_book(rows // 10, depth, repeat)

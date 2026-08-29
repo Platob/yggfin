@@ -160,10 +160,10 @@ last book a reader sees is an empty one rather than a bid nobody cancelled.
 
 
 `BookIterator` consumes sorted `FixMsg` records, translates their parsed FIX
-fields, indexes normalized Instrument rows by event type, restores prior
-snapshots, and emits only `Book` rows. Single-threaded on purpose: order state
-is sequential. What stays alive, and the delta/snapshot distinction, are on
-the [Book](../products/book.md) page.
+fields, restores prior Book snapshots, and emits only `Book` rows. Instrument
+facts travel with each translated market event. Single-threaded on purpose:
+order state is sequential. What stays alive, and the delta/snapshot
+distinction, are on the [Book](../products/book.md) page.
 
 Live orders, names, expiry deadlines and level quantities stay indexed, so
 mutation probes dictionaries and a lazy deadline heap; full Order copying

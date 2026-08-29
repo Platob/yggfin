@@ -193,6 +193,8 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   scan pushes the finite code set `ranked_at_least` names.
 - Nest nothing a reader filters on. Keep instrument identity and book summary
   values flat.
+- `Instrument` is flat reference data keyed by canonical `symbolticker`, with
+  `xhash = hash_of(symbolticker)`. It has no versions or snapshots.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.
 - The registry owns FIX names, types, descriptions, tags, and values across
   versions. Hard-code only normalization rules the registry cannot express.
@@ -218,8 +220,10 @@ The supported graph is:
 ```text
 parse_messages -> parse_fix -> parse_market -> flatten_orders
                       |             `-------> flatten_executions
-                      `------------> flatten_instruments
+                      `------------> market.instruments
 ```
+
+`parse_fix` writes flat Instrument records directly to `market.instruments`.
 
 With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten

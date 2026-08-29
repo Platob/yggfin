@@ -584,22 +584,17 @@ def test_an_entry_id_is_the_lifecycle_when_the_venue_gives_one() -> None:
 # -- what a message says about the instrument --------------------------------
 
 
-def test_instrument_altids_have_scalar_and_arrow_parity() -> None:
+def test_instrument_altids_hold_lifecycle_and_reference_identifiers() -> None:
     line = (
         "8=FIX.4.4|35=8|37=ORD-9|11=CL-7|55=AAPL|"
         "454=1|455=US0378331005|456=4|60=20260821-10:00:00|10=000"
     )
     scalar = reader(line).instrument
-    message = FixMsg.from_instrument(scalar)
-    source = next(iter(FixMsg.into_arrow_reader((message,), batch_row_size=1)))
-    stored = FixMsg.into_instrument_arrow_batch(source).column("altids")[0].as_py()
-
-    expected = {
+    assert scalar.altids == {
         "orderid": "ORD-9",
         "clordid": "CL-7",
         "ISINNumber": "US0378331005",
     }
-    assert scalar.altids == dict(stored) == expected
 
 
 def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> None:

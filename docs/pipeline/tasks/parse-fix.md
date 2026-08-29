@@ -38,21 +38,22 @@ batch it:
 4. lifts declared fields and structured components;
 5. derives the venue, transaction time and identities.
 
-`Message.eventtype`, `Message.MsgType`, and `Message.protocolcode` pass through
+`Message.eventtype`, `Message.msgtype`, and `Message.protocolcode` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
 canonical FIX key, its numeric tag, its value, and an indexed component path
 where present; a vendor-qualified name remains whole in the key. Fields
-promoted for filtering use the registry spelling as their physical column
-name: `MsgType`, `MsgSeqNum`, `OrigClOrdID`, `TransactTime`, and so on.
+promoted for filtering use folded physical names: `msgtype`, `msgseqnum`,
+`origclordid`, `transacttime`. Their `fix:display` metadata retains the
+dictionary spelling.
 
 ## Routing
 
-The task writes orders, quotes, executions, books and instruments to
-`fix.market`. Recognized operational traffic, rows without MsgType, and unknown
-events on a recognized transport go to `fix.misc`; an unknown event on an
-unrecognized transport goes to `fix.unknown`.
+The task writes captured orders, quotes, executions, books and security
+definitions to `fix.market`. Recognized operational traffic, rows without
+MsgType, and unknown events on a recognized transport go to `fix.misc`; an
+unknown event on an unrecognized transport goes to `fix.unknown`.
 
 Market and terminal predicates are pushed independently, so neither stream
 sees the other's rows. Registry-declared technical MsgTypes are excluded by the
@@ -63,20 +64,21 @@ both streams: stored `entries` already carry what transcription needs.
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,
 `TransactTime`, market-data entry time, sending time, or finally the recording
-clock. Output tables are sorted by `(unix, MsgSeqNum, hash)`.
+clock. Output tables are sorted by `(unix, msgseqnum, hash)`.
 
 ## Instruments
 
-After routing, the notebook resumes recent Instrument state and derives new
-versions from the sorted market stream. Normalized Instrument rows are written
-back to `fix.market` with the package-owned user-defined `MsgType` `U1`,
-then `flatten_instruments` writes the Instrument table.
+After routing, the notebook derives flat Instrument records from the sorted
+market stream and writes them directly to `market.instruments`. One canonical
+`symbolticker` identifies each record, and `fix.market` retains the captured
+rows.
 
 ## Configuration
 
 The adjacent `parse_fix.yml` owns full-transcription settings:
 `fix_dictionary`, `null_values`, protocol rules, and declared `fields`. It
-also selects the catalog, branch, source interval and batch sizes. A
+also selects `instrument_target`, the catalog, branch, source interval and
+batch sizes. A
 dictionary, field, or protocol-rule change reruns this stage against retained
 `Message` rows, resolving the stored arguments without tokenizing the payload.
 
@@ -85,6 +87,6 @@ metadata is read by `parse_messages` because `eventtype` is part of `Message`, s
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
-The projected conversion requires the `MsgType`, `entries` and
+The projected conversion requires the `msgtype`, `entries` and
 `protocolcode` columns of the [Message contract](../../contracts/index.md),
 and refuses a source without them rather than reporting an empty run.

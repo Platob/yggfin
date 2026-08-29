@@ -26,14 +26,10 @@ contains no prebuilt pipeline jobs or task reports.
 ```text
 Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
                                                    |        `-> fix.unknown
-                                                   `-> fix.market
-                                                          |
-                       +----------------------------------+
-                       |
-                       +-> flatten_instruments -> Instrument
-                       `-> parse_market -+-> Book -+-> Order
-                                         |         `-> Execution
-                                         `---------> Order + Execution (books: false)
+                                                   +-> market.instruments
+                                                   `-> fix.market -> parse_market -+-> Book -+-> Order
+                                                                                   |         `-> Execution
+                                                                                   `---------> Order + Execution (books: false)
 ```
 
 `parse_messages` tokenizes once and assigns `MsgType` and `eventtype`;
@@ -43,9 +39,9 @@ or protocol change rerun FIX resolution without reopening the source logs --
 only a MsgType event-metadata change rebuilds it, because that changes its
 stored `eventtype`.
 
-`parse_fix` resumes Instrument lifecycles from the prior Instrument table.
-There is no dependency cycle: both downstream notebooks read the normalized
-Instrument rows already committed inside `fix.market`.
+`parse_fix` derives flat Instrument records from the same captured market
+messages it writes to `fix.market`; `market.instruments` is the reference-data
+table keyed by `symbolticker`.
 
 `books: false` skips the fold and writes only the Order and Execution events
 each FIX message carries -- and so creates no snapshots, no synthetic
@@ -65,7 +61,6 @@ Arrow readers carry each stream; Iceberg stores the boundaries.
 - [Parse FIX](tasks/parse-fix.md)
 - [End-to-end run](operations/run.md)
 - [Deploy and operate with Airflow](operations/airflow.md)
-- [Flatten instruments](tasks/flatten-instruments.md)
 - [Parse market](tasks/parse-market.md)
 - [Flatten orders](tasks/flatten-orders.md)
 - [Flatten executions](tasks/flatten-executions.md)

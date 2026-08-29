@@ -1,7 +1,7 @@
 # Instrument
 
-One version of the facts known about a tradable instrument. `symbolticker`
-is the canonical stored key, and `xhash` is its framed XXH3-64 identity.
+One flat reference-data record for a tradable instrument. `symbolticker` is
+the canonical stored key, and `xhash` is its framed XXH3-64 identity.
 
 ```python
 from rekep import FixMsg, Instrument
@@ -39,5 +39,5 @@ when those facts are otherwise absent.
      data-registry-source="../../assets/fix-registry.json"
      data-sample="8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"></div>
 
-Flattened into its table by the
-[flatten instruments](../pipeline/tasks/flatten-instruments.md) task.
+Written directly to `market.instruments` by
+[parse FIX](../pipeline/tasks/parse-fix.md).

@@ -51,7 +51,7 @@ flowchart TD
     PF --> FM[(fix.market)]
     PF --> FX[(fix.misc)]
     PF --> FU[(fix.unknown)]
-    FM --> FI[flatten_instruments] --> I[(market.instruments)]
+    PF --> I[(market.instruments)]
     FM --> PK[parse_market]
     PK -->|books: true| B[(market.books)]
     B --> FO[flatten_orders] --> O[(market.orders)]

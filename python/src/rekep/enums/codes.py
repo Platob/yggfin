@@ -108,15 +108,14 @@ class EventType(Ascii64):
     QUOTE = "QUOTE", 120
     FACT = "FACT", 200
     EXECUTION = "EXECUTED", 210
+    INSTRUMENT = "INSTRMT", 220
     STATE = "STATE", 300
     BOOK = "BOOK", 320
-    INSTRUMENT_STATE = "ISTATE", 400
-    INSTRUMENT = "INSTRMT", 410
 
     @property
     def is_snapshot(self) -> bool:
         """Whether the row is a state rather than an occurrence."""
-        return self._rank >= EventType.STATE._rank
+        return self.band is EventType.STATE
 
 
 class MarketKind(Ascii64):

@@ -28,7 +28,7 @@ from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
-from rekep.market.instrument import Instrument, Leg
+from rekep.market.instrument import Instrument, Leg, _flat_instruments
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.ticker import SymbolTicker
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
@@ -765,23 +765,10 @@ class FixEvents(Convertible):
             yield self.into_order(seeded)
 
     def into_instruments(self) -> Iterator[Instrument]:
-        """Distinct repeating-entry instruments, or the header fallback."""
-        return (instrument for _, instrument in self.into_instrument_observations())
-
-    def into_instrument_observations(self) -> Iterator[tuple[int, Instrument]]:
-        """Distinct `(entry time, instrument)` facts without constructing events."""
+        """One flat record per canonical ticker in the message."""
         if self.version is None:
             return
-        seen: dict[int, list[Instrument]] = {}
-        for reader in self._instrument_readers():
-            instrument = reader.instrument
-            if not instrument.identities():
-                continue
-            versions = seen.setdefault(instrument.xhash, [])
-            if instrument in versions:
-                continue
-            versions.append(instrument)
-            yield reader.unix, instrument
+        yield from _flat_instruments(reader.instrument for reader in self._instrument_readers())
 
     def _instrument_readers(self) -> Iterator[FixEvents]:
         """Entry projections when present, otherwise the message header."""
@@ -1216,6 +1203,7 @@ class FixEvents(Convertible):
         altids = {**self._identifier_altids, **self.into_alt_ids()}
         ticker = SymbolTicker.from_fixmsg(self.message)
         return Instrument(
+            unix=self.unix,
             symbolticker=ticker.symbolticker,
             symbol=get("Symbol") or "",
             kind=_classified(cfi, securitytype),

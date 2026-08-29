@@ -11,6 +11,7 @@ from typing import Any
 import scrapbook as sb
 from airflow.providers.papermill.operators.papermill import PapermillOperator
 from airflow.sdk import Param, dag, task
+
 from rekep.tasks import Task
 
 ROOT = Path(os.environ.get("REKEP_ROOT", Path(__file__).resolve().parents[2])).resolve()
@@ -102,13 +103,8 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
     tags=["rekep", "arrow", "iceberg", "market", "notebook"],
 )
 def market_pipeline() -> None:
-    messages = notebook_task(
-        "parse_messages", "tasks/parse_messages/parse_messages.yml"
-    )
+    messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
-    instruments = notebook_task(
-        "flatten_instruments", "tasks/flatten_instruments/flatten_instruments.yml"
-    )
     market = notebook_task("parse_market", "tasks/parse_market/parse_market.yml")
     orders = notebook_task("flatten_orders", "tasks/flatten_orders/flatten_orders.yml")
     executions = notebook_task(
@@ -122,12 +118,9 @@ def market_pipeline() -> None:
 
     fix_route = after_notebook.override(task_id="route_fix")(
         output=parsed.output,
-        then={
-            "flatten_instruments": "instrument_versions",
-            "parse_market": "routed.market",
-        },
+        then={"parse_market": "routed.market"},
     )
-    fix_route >> [instruments, market]
+    fix_route >> market
 
     market_route = after_notebook.override(task_id="route_market")(
         output=market.output,

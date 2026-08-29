@@ -13,7 +13,7 @@ import pyarrow
 
 from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
-from rekep.market.event import Event, MarketEvent, _scalar_part
+from rekep.market.event import Event, MarketEvent, _declared_value_parts
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL, hash_bytes_of
 
@@ -521,7 +521,7 @@ class Execution(MarketEvent):
             self.leavesqty,
             self.vwap,
             self.aggressorindicator,
-            _scalar_part(self.settldate),
+            *_declared_value_parts(self.settldate),
             self.settltype,
             self.settlcurrency,
             self.settlcurrfxratecalc,

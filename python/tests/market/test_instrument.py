@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import dataclasses
-import datetime
 from pathlib import Path
 
 import pyarrow
 import pytest
 
-import rekep.market.instrument as instrument_module
 from rekep.fix import FixRegistry
-from rekep.market import AssetKind, Currency, Instrument, Leg, OptionKind, Side
+from rekep.market import AssetKind, Currency, Instrument, Leg
 from rekep.market.identity import NIL, hash_of
 from rekep.text import FixMsg
 
@@ -85,6 +82,33 @@ def test_currency_input_is_normalised_to_the_persisted_int32_enum() -> None:
     assert Instrument(currency=" usd ").currency is Currency.USD
 
 
+def test_flat_reference_records_are_not_snapshots() -> None:
+    known = Instrument(unix=1, symbol="AAPL").identify()
+
+    assert not Instrument.is_snapshot()
+    assert known.make_snapshot(2) is None
+
+
+def test_declared_reference_values_determine_the_value_hash() -> None:
+    known = Instrument(unix=1, symbol="AAPL", cficode="ESXXXX").identify()
+    revised = Instrument(unix=1, symbol="AAPL", cficode="EXXXXX").identify()
+    observed_later = Instrument(unix=1_000_001, symbol="AAPL", cficode="ESXXXX").identify()
+    leg = Instrument(unix=1, symbol="SPREAD", legs=[Leg(symbol="A", ratio=1)]).identify()
+    revised_leg = Instrument(unix=1, symbol="SPREAD", legs=[Leg(symbol="A", ratio=2)]).identify()
+
+    assert known.vhash != revised.vhash and known.hash != revised.hash
+    assert leg.vhash != revised_leg.vhash and leg.hash != revised_leg.hash
+    assert observed_later.vhash == known.vhash
+    assert observed_later.hash != known.hash
+
+
+def test_promoted_fallback_preserves_its_observation_clock() -> None:
+    instrument = FixMsg(unix=23, symbol="AAPL").into_instrument()
+
+    assert instrument is not None
+    assert instrument.unix == 23
+
+
 @pytest.mark.parametrize(
     ("symbol", "canonical"),
     (
@@ -148,7 +172,6 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     (instrument,) = Instrument.from_fixmsgs(
         [log],
         registry=registry,
-        snapshot_every=0,
     )
 
     assert (instrument.minpriceincrement, instrument.roundlot, instrument.securitydesc) == (
@@ -156,128 +179,49 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         100.0,
         "FAKE-DESC",
     )
+    assert instrument.unix == log.unix == 1
     assert transcription == {"registry": registry}
 
 
-def test_instrument_log_interop_preserves_the_full_version_through_arrow(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    instrument = Instrument(
-        unix=1_000,
-        symbol="CAL-27",
-        kind=AssetKind.MULTILEG,
-        securityid="FR0000000001",
+def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
+    class Source:
+        def __init__(self, *instruments: Instrument) -> None:
+            self.instruments = instruments
+
+        def into_instruments(self, **_declared: object):
+            return iter(self.instruments)
+
+    first = Instrument(
+        symbol="AAPL",
+        securityid="US0378331005",
         securityidsource="4",
-        altids={"RICCode": "CAL.N"},
-        securitytype="MLEG",
-        securityexchange="XPAR",
-        currency=Currency.EUR,
-        contractmultiplier=10.0,
+        altids={"RICCode": "AAPL.O"},
+        securitydesc="Apple",
+    )
+    other = Instrument(symbol="MSFT")
+    later = Instrument(
+        symbol="AAPL.OQ",
+        securityid="US0378331005",
+        securityidsource="4",
+        altids={"RICCode": "other", "CUSIP": "037833100"},
+        kind=AssetKind.EQUITY,
         minpriceincrement=0.01,
-        roundlot=1.0,
-        maturitydate=datetime.date(2027, 6, 18),
-        strikeprice=42.0,
-        putorcall=OptionKind.CALL,
-        securitydesc="Calendar spread",
-        legs=[
-            Leg(
-                xhash=17,
-                symbol="JUN-27",
-                side=Side.BUY,
-                ratio=1.0,
-                kind=AssetKind.FUTURE,
-                currency=Currency.EUR,
-            ),
-            Leg(symbol="SEP-27", side=Side.SELL, ratio=1.0, currency=Currency.EUR),
-        ],
-    ).with_previous(None)
-    assert instrument is not None
-
-    log = instrument.into_fixmsg()
-    table = pyarrow.Table.from_pylist(
-        [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
+        securitydesc="must not replace the first fact",
     )
-    stored = FixMsg.from_dict(table.to_pylist()[0])
 
-    def unexpected_fix_decode(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("normalized rows must not rebuild FIX state")
+    found = list(Instrument.from_fixmsgs([Source(first, other), Source(later)]))
 
-    monkeypatch.setattr(FixMsg, "into_fix_events", unexpected_fix_decode)
-    restored = stored.into_instrument()
-
-    assert restored is not None
-    assert restored.into_dict() == instrument.into_dict()
-
-
-def test_normalized_instrument_batches_decode_without_python_rows(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    instruments = [
-        Instrument(
-            unix=1_000,
-            creaunix=900,
-            recunix=1_100,
-            parenthash=[11, 12],
-            symbol="CAL-27",
-            kind=AssetKind.MULTILEG,
-            securityid="FR0000000001",
-            securityidsource="4",
-            altids={
-                "orderid": "ORD-9",
-                "clordid": "CL-7",
-                "ISINNumber": "FR0000000001",
-                "RICCode": "CAL.N",
-                "Z": "vendor",
-            },
-            securitytype="MLEG",
-            securityexchange="XPAR",
-            currency=Currency.EUR,
-            contractmultiplier=10.0,
-            minpriceincrement=0.01,
-            roundlot=1.0,
-            maturitydate=datetime.date(2027, 6, 18),
-            strikeprice=42.0,
-            putorcall=OptionKind.CALL,
-            securitydesc="Calendar spread",
-            legs=[
-                Leg(
-                    symbol="JUN-27",
-                    side=Side.BUY,
-                    ratio=1.0,
-                    kind=AssetKind.FUTURE,
-                    currency=Currency.EUR,
-                    maturitydate=datetime.date(2027, 6, 18),
-                ),
-                Leg(symbol="SEP-27", side=Side.SELL, ratio=2.0),
-            ],
-        ).identify(),
-        Instrument(unix=2_000, creaunix=2_000, recunix=2_000, symbol="CASH").identify(),
+    assert [row.symbolticker for row in found] == [
+        "ISINNumber:US0378331005",
+        "MSFT",
     ]
-    messages = [FixMsg.from_instrument(one) for one in instruments]
-    source = pyarrow.Table.from_pylist(
-        [one.into_row() for one in messages],
-        schema=FixMsg.into_field().into_arrow_schema(),
-    ).to_batches()[0]
-    expected = pyarrow.Table.from_pylist(
-        [one.into_row() for one in instruments],
-        schema=Instrument.into_field().into_arrow_schema(),
-    ).to_batches()[0]
-
-    monkeypatch.setattr(FixMsg, "into_instrument", lambda *_args, **_kwargs: pytest.fail())
-    found = FixMsg.into_instrument_arrow_batch(source)
-
-    assert found.schema.equals(expected.schema, check_metadata=True)
-    assert found.equals(expected)
-
-
-def test_an_empty_normalized_instrument_batch_keeps_the_target_schema() -> None:
-    schema = FixMsg.into_field().into_arrow_schema()
-    empty = pyarrow.RecordBatch.from_arrays(
-        [pyarrow.array([], field.type) for field in schema], schema=schema
-    )
-    found = FixMsg.into_instrument_arrow_batch(empty)
-    assert found.num_rows == 0
-    assert found.schema.equals(Instrument.into_field().into_arrow_schema(), check_metadata=True)
+    merged = found[0]
+    assert all(row.hash and row.vhash for row in found)
+    assert merged.xhash == hash_of(merged.symbolticker)
+    assert merged.securitydesc == "Apple"
+    assert merged.kind is AssetKind.EQUITY
+    assert merged.minpriceincrement == 0.01
+    assert merged.altids == {"RICCode": "AAPL.O", "CUSIP": "037833100"}
 
 
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
@@ -292,35 +236,3 @@ def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
         securitydesc="Apple Inc",
     )
     assert bare.xhash == enriched.xhash
-
-
-def test_instrument_vhash_names_every_owned_fact_and_leg_member() -> None:
-    altids = Instrument.into_field().field("altids")
-    assert Instrument.into_field().names.count("altids") == 1 and not altids.nullable
-    declared = tuple(name for name in Instrument.__annotations__ if name != "xhash")
-    assert instrument_module._INSTRUMENT_MEMBERS == declared
-    assert instrument_module._LEG_MEMBERS == tuple(field.name for field in dataclasses.fields(Leg))
-
-
-def test_instrument_vhash_is_stable_for_maps_dates_and_legs() -> None:
-    maturity = datetime.date(2027, 6, 18)
-    first = Instrument(
-        symbol="CAL-27",
-        kind=AssetKind.MULTILEG,
-        altids={"RICCode": "CAL.N", "ISINNumber": "FR0000000001"},
-        maturitydate=maturity,
-        legs=[Leg(symbol="JUN-27", side=Side.BUY, ratio=1.0, maturitydate=maturity)],
-    )
-    reordered = dataclasses.replace(
-        first,
-        altids={"ISINNumber": "FR0000000001", "RICCode": "CAL.N"},
-    )
-
-    one = dataclasses.replace(first, unix=1_000).with_previous(None)
-    two = dataclasses.replace(reordered, unix=2_000).with_previous(None)
-
-    assert one is not None and two is not None
-    assert one.vhash == two.vhash and one.hash != two.hash
-    empty = dataclasses.replace(first, unix=1, altids={}, vhash=0, hash=0).identify().hash
-    absent = dataclasses.replace(first, unix=1, altids=None, vhash=0, hash=0).identify().hash
-    assert empty == absent, "the one required identifier map normalizes absence to empty"

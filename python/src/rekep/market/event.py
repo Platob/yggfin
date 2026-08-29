@@ -574,7 +574,7 @@ class MarketEvent(Event):
     instrumentxhash: Annotated[
         int, Field(dtype=pyarrow.int64()), Field.column("Instrument Xhash")
     ] = NIL
-    """Instrument lifecycle identity used to join market rows."""
+    """Canonical Instrument identity used to join market rows."""
 
     # Beside the hash rather than only inside `altids`: a hash joins, and a
     # person reads. Every filter, group and error message about an instrument
@@ -850,9 +850,23 @@ def _mapping_parts(values: Mapping[str, Any] | None) -> tuple[Any, ...]:
     return (True, len(ordered), *(part for pair in ordered for part in pair))
 
 
-def _scalar_part(value: Any) -> Any:
-    """One scalar in the identity frame's portable spelling."""
-    return value.isoformat() if isinstance(value, datetime.date) else value
+def _declared_value_parts(value: Any) -> tuple[Any, ...]:
+    """One declared value recursively reduced to portable identity parts."""
+    if isinstance(value, MarketConvertible):
+        members = type(value).into_field().fields
+        parts: list[Any] = [True, len(members)]
+        for member in members:
+            parts.extend((member.name, *_declared_value_parts(getattr(value, member.name))))
+        return tuple(parts)
+    if isinstance(value, Mapping):
+        ordered = sorted(value.items(), key=lambda item: item[0].encode("utf-8"))
+        parts = [True, len(ordered)]
+        for key, item in ordered:
+            parts.extend((key, *_declared_value_parts(item)))
+        return tuple(parts)
+    if isinstance(value, list | tuple):
+        return (True, len(value), *(part for item in value for part in _declared_value_parts(item)))
+    return (value.isoformat() if isinstance(value, datetime.date) else value,)
 
 
 @functools.lru_cache(maxsize=65_536)

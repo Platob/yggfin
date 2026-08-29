@@ -35,7 +35,7 @@ The project workflow is intentionally outside the package:
 ```text
 parse_messages -> parse_fix -> parse_market -> flatten_orders
                       |             `-------> flatten_executions
-                      `------------> flatten_instruments
+                      `------------> market.instruments
 ```
 
 `parse_market` can instead set `books: false` and write FIX-carried orders and
@@ -50,7 +50,7 @@ Core properties:
 - streamed local and `pyarrow.fs` text input;
 - registry-driven, cross-version FIX metadata;
 - stable cross-language XXH3 `int64` identities;
-- immutable event, instrument, order, execution, and book histories;
+- immutable event histories and flat Instrument reference data;
 - deterministic partition-aware Iceberg reads and bounded writes;
 - six checked contracts under `schemas/rekep/`.
 

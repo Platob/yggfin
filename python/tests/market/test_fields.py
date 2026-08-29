@@ -126,7 +126,7 @@ def test_every_market_code_column_of_every_shape_matches_its_enum() -> None:
 
 
 def test_the_instrument_is_one_flat_event_contract() -> None:
-    assert Instrument.into_field().primary_keys() == ["unix", "hash"]
+    assert Instrument.into_field().primary_keys() == ["symbolticker"]
     assert Instrument.into_field().partition_keys() == {"unixpartition": "identity"}
     for shape in (Book, Order, MarketEvent):
         assert "instrument" not in shape.into_field().names

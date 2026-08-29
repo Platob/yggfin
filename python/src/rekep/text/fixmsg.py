@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-import re
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Annotated, Any
@@ -14,10 +13,9 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, AssetKind, Currency, EventType, OptionKind, Side
+from rekep.enums import MIC, EventType
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
-    as_entry_list,
     build_list,
     build_map,
     dense_counts,
@@ -32,10 +30,8 @@ from rekep.fix.columns import (
     ENTRIES,
     IDENTIFIER_FIELDS,
     ISIN_CODE,
-    ISIN_SCHEME,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    UNKNOWN_SCHEME,
     id_scheme,
     id_schemes,
 )
@@ -72,23 +68,7 @@ from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
 from rekep.market.ticker import SymbolTicker
 from rekep.text.message import SESSION_FIELDS, Message
 
-_EVENT_CODE = pyarrow.int64()
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
-_INSTRUMENT_PLUGIN = "rekep.instrument"
-_INSTRUMENT_PROTOCOL = "REKEP"
-
-# A `MsgType <35>` of our own, in the range FIX reserves for exactly this: `U`
-# followed by digits is user-defined, so a synthesized instrument can never
-# collide with a standard type a future FIX version adds. It is a type and not
-# a marker beside one: these rows go back out as FIX messages, and a consumer
-# holding only the message has no `eventtype` -- it has tag 35. Reusing `d` would
-# have made a synthesized instrument indistinguishable from a
-# `SecurityDefinition` a real bridge sent.
-_INSTRUMENT_MSG_TYPE = "U1"
-_INSTRUMENT_KIND = "rekep.kind"
-_INSTRUMENT_TICKER = "rekep.symbolticker"
-_INSTRUMENT_XHASH = "rekep.xhash"
-_LIFECYCLE_ALTIDS = frozenset(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
 
 @functools.cache
@@ -186,24 +166,6 @@ class FixMsg(Message):
     def into_field_metadata(cls) -> Mapping[str, str]:
         """Contract metadata published with parsed log schemas."""
         return _CONTRACT_METADATA
-
-    @classmethod
-    @functools.cache
-    def into_instrument_plugin(cls) -> str:
-        """Plugin marker for normalized instrument lifecycle rows."""
-        return _INSTRUMENT_PLUGIN
-
-    @classmethod
-    @functools.cache
-    def into_instrument_protocol(cls) -> str:
-        """Protocol marker for normalized internal rows."""
-        return _INSTRUMENT_PROTOCOL
-
-    @classmethod
-    @functools.cache
-    def into_instrument_msg_type(cls) -> str:
-        """`MsgType <35>` a synthesized instrument row carries."""
-        return _INSTRUMENT_MSG_TYPE
 
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Digest of `code`, or `vhash` when no correlation code exists."""
@@ -742,52 +704,6 @@ class FixMsg(Message):
             )
         return cls(**values).link_registry(registry)
 
-    @classmethod
-    def from_instrument(cls, instrument: Any, **declared: Any) -> FixMsg:
-        """Carry one normalized instrument version in the parsed-log stream."""
-        from rekep.market.instrument import Instrument
-
-        if not isinstance(instrument, Instrument):
-            raise TypeError(f"instrument must be Instrument, got {type(instrument).__name__}")
-        known = instrument if instrument.hash else dataclasses.replace(instrument).identify()
-        envelope = {
-            member.name: getattr(known, member.name) for member in dataclasses.fields(Event)
-        }
-        envelope["altids"] = {
-            source: value
-            for source, value in (known.altids or {}).items()
-            if column_name(source) in _LIFECYCLE_ALTIDS
-        }
-        staged = Message(
-            **envelope,
-            plugincode=cls.into_instrument_plugin(),
-            protocolcode=cls.into_instrument_protocol(),
-            msgtype=cls.into_instrument_msg_type(),
-            entries=_stored_entries(_instrument_pairs(known)) or [],
-        )
-        return cls.from_message(
-            staged,
-            # A synthesized row keeps the identified instrument's identity --
-            # `from_message` resets identity only because a parsed row earns
-            # its own -- and carries no raw line: `entries` states every fact,
-            # so text beside them would be the same content twice.
-            hash=known.hash,
-            vhash=known.vhash,
-            xhash=known.xhash,
-            message=None,
-            eventtype=declared.pop("eventtype", EventType.INSTRUMENT),
-            symbolticker=known.symbolticker,
-            symbol=known.symbol or None,
-            securityid=known.securityid,
-            securityidsource=known.securityidsource,
-            isincode=known.isincode,
-            securitytype=known.securitytype,
-            cficode=known.cficode,
-            securityexchange=known.securityexchange,
-            currency=None if known.currency is None else known.currency.into_fix(),
-            **declared,
-        )
-
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
         encoded = Event.into_dict(self)
@@ -1054,15 +970,7 @@ class FixMsg(Message):
         return separator.join(f"{key}={value}" for key, value in self.pairs)
 
     def _field_entries(self) -> list[Entry]:
-        """The canonical field sequence as accessor-ready entries.
-
-        A list of ready `Entry` views built beside the canonical dedup, so a
-        caller reading several dozen fields off one row never re-splits a
-        spelling the stored shape already holds apart: `entries_of` passes a
-        ready entry straight through, and rebuilding the row per ask was the
-        whole cost of decoding a normalized instrument
-        (benchmarks/bench_market.py).
-        """
+        """The canonical field sequence as accessor-ready entries."""
         fields, _, _ = self._canonical_fields(self._row_access())
         return fields
 
@@ -1075,16 +983,6 @@ class FixMsg(Message):
             for member in cls.into_field().fields
             if not member.fix.get("tag") and (spelled := member.fix.get("name"))
         )
-
-    @property
-    def is_instrument_version(self) -> bool:
-        """Whether this row is a normalized instrument lifecycle version.
-
-        One column answers it, and it is the one a message carries: these rows
-        are reinjected as FIX, and a consumer holding only the message has no
-        `eventtype` to dispatch on. `MsgType <35>` survives that round trip.
-        """
-        return self.msgtype == type(self).into_instrument_msg_type()
 
     # -- the FIX stage --------------------------------------------------------
 
@@ -1813,69 +1711,18 @@ class FixMsg(Message):
                 yield event_type, combined(event_type)
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
-        """Yield distinct instrument facts, synthesizing a ticker-only row when needed."""
-        if self.is_instrument_version and self.get(_INSTRUMENT_KIND):
-            yield self._normalized_instrument()
-            return
+        """Yield native instrument facts, or one flat promoted fallback."""
         translated = tuple(self.into_fix_events(**declared).into_instruments())
-        if not translated:
-            synthetic = self._flat_instrument()
-            translated = () if synthetic is None else (synthetic,)
-        if self.is_instrument_version:
-            yield from (self._instrument_version(instrument) for instrument in translated)
-        else:
+        if translated:
             yield from translated
+            return
+        instrument = self._flat_instrument()
+        if instrument is not None:
+            yield instrument
 
     def into_instrument(self, **declared: Any) -> Any | None:
-        """Build one normalized instrument version or the best facts on this row."""
+        """Build the first instrument carried by this row, when any."""
         return next(self.into_instruments(**declared), None)
-
-    @classmethod
-    def into_instrument_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
-        """Decode normalized instrument rows as one Arrow batch."""
-        from rekep.market.instrument import Instrument
-
-        if not isinstance(batch, pyarrow.RecordBatch):
-            raise TypeError(
-                f"instrument conversion needs a RecordBatch, got {type(batch).__name__}"
-            )
-        target = Instrument.into_field()
-        columns = {name: batch.column(name) for name in target.names if name in batch.schema.names}
-        normalized = _NormalizedInstrumentFields.from_array(batch.column("entries"), batch.num_rows)
-        columns.update(
-            {
-                "eventtype": pyarrow.repeat(
-                    pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE), batch.num_rows
-                ),
-                "symbolticker": pyarrow.compute.fill_null(batch.column("symbolticker"), ""),
-                "symbol": pyarrow.compute.fill_null(batch.column("symbol"), ""),
-                "kind": _stored_code(normalized.first(_INSTRUMENT_KIND)),
-                "securityid": batch.column("securityid"),
-                "securityidsource": batch.column("securityidsource"),
-                "isincode": batch.column("isincode"),
-                "altids": normalized.altids(target.field("altids").dtype, batch.column("altids")),
-                "securitytype": batch.column("securitytype"),
-                "cficode": batch.column("cficode"),
-                "securityexchange": batch.column("securityexchange"),
-                "currency": _currency_arrow(batch.column("currency")),
-                "contractmultiplier": cast_arrow_fix(
-                    normalized.first("ContractMultiplier"), pyarrow.float64()
-                ),
-                "minpriceincrement": cast_arrow_fix(
-                    normalized.first("MinPriceIncrement"), pyarrow.float64()
-                ),
-                "roundlot": cast_arrow_fix(normalized.first("RoundLot"), pyarrow.float64()),
-                "maturitydate": cast_arrow_fix(normalized.first("MaturityDate"), pyarrow.date32()),
-                "strikeprice": cast_arrow_fix(normalized.first("StrikePrice"), pyarrow.float64()),
-                "putorcall": _fix_enum_arrow(normalized.first("PutOrCall"), OptionKind),
-                "securitydesc": normalized.first("SecurityDesc"),
-                "legs": normalized.legs(target.field("legs").dtype),
-            }
-        )
-        raw = pyarrow.RecordBatch.from_arrays(
-            [columns[name] for name in target.names], names=target.names
-        )
-        return target.cast_arrow_batch(raw)
 
     def _flat_instrument(self) -> Any | None:
         """Build only the instrument facts already promoted on this row."""
@@ -1889,6 +1736,7 @@ class FixMsg(Message):
         if not ticker.symbolticker:
             return None
         return Instrument(
+            unix=self.unix,
             symbolticker=ticker.symbolticker,
             symbol=self.symbol or "",
             altids=dict(self.altids),
@@ -1899,40 +1747,6 @@ class FixMsg(Message):
             cficode=self.cficode,
             securityexchange=self.securityexchange,
             currency=self.currency,
-        )
-
-    def _normalized_instrument(self) -> Any:
-        """Decode one package-authored instrument through the columnar path."""
-        from rekep.market.instrument import Instrument
-
-        source = next(iter(type(self).into_arrow_reader((self,), batch_row_size=1)))
-        row = type(self).into_instrument_arrow_batch(source).to_pylist()[0]
-        return Instrument.from_dict(row)
-
-    def _instrument_version(self, instrument: Any) -> Any:
-        """Put decoded facts back on the lifecycle envelope this FixMsg carries."""
-        return dataclasses.replace(
-            instrument,
-            unix=self.unix,
-            unixpartition=self.unixpartition,
-            eventtype=EventType.INSTRUMENT,
-            creaunix=self.creaunix,
-            recunix=self.recunix,
-            expunix=self.expunix,
-            snapunix=self.snapunix,
-            hash=self.hash,
-            vhash=self.vhash,
-            xhash=self.xhash,
-            linkedhashes=list(self.linkedhashes),
-            version=self.version,
-            state=self.state,
-            code=self.code,
-            altids={**self.altids, **(instrument.altids or {})},
-            prevunix=self.prevunix,
-            prevhash=self.prevhash,
-            parenthash=None if self.parenthash is None else list(self.parenthash),
-            mic=self.mic,
-            reason=self.reason,
         )
 
 
@@ -2015,373 +1829,6 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         else pyarrow.nulls(rows, pyarrow.int32())
     )
     return compute.coalesce(venue, stored_mic, target, sender)
-
-
-_NORMALIZED_GROUP = re.compile(
-    r"^(?P<group>NoLegs|NoSecurityAltID)\[(?P<index>[0-9]+)\]\.(?P<key>.+)$"
-)
-_GROUP_STRIDE = 1 << 32
-
-
-@dataclasses.dataclass(frozen=True)
-class _NormalizedInstrumentFields:
-    """Column views over the normalized fields stored in `FixMsg.entries`."""
-
-    rows: int
-    parents: pyarrow.Array
-    keys: pyarrow.Array
-    values: pyarrow.Array
-    paths: pyarrow.Array
-    groups: pyarrow.Array
-    group_ids: pyarrow.Array
-
-    @classmethod
-    def from_array(cls, stored: pyarrow.Array, rows: int) -> _NormalizedInstrumentFields:
-        compute = pyarrow.compute
-        entries = compute.list_flatten(stored)
-        parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
-        stored_keys = compute.struct_field(entries, "key")
-        values = compute.struct_field(entries, "value")
-        component = compute.struct_field(entries, "comp")
-        prefixed = compute.fill_null(compute.greater(compute.binary_length(component), 0), False)
-        paths = compute.if_else(
-            prefixed,
-            compute.binary_join_element_wise(component, stored_keys, "."),
-            stored_keys,
-        )
-        group_parts = compute.extract_regex(paths, _NORMALIZED_GROUP.pattern)
-        keys = compute.coalesce(compute.struct_field(group_parts, "key"), stored_keys)
-        groups = compute.struct_field(group_parts, "group")
-        indices = cast_arrow_fix(compute.struct_field(group_parts, "index"), pyarrow.int64())
-        group_ids = compute.add(
-            compute.multiply(parents, pyarrow.scalar(_GROUP_STRIDE, pyarrow.int64())),
-            compute.fill_null(indices, 0),
-        )
-        return cls(rows, parents, keys, values, paths, groups, group_ids)
-
-    def first(self, path: str) -> pyarrow.Array:
-        """First value of one exact normalized path per row."""
-        compute = pyarrow.compute
-        matches = compute.fill_null(compute.equal(self.paths, path), False)
-        if not compute.any(matches, min_count=0).as_py():
-            return pyarrow.nulls(self.rows, pyarrow.string())
-        parents = compute.filter(self.parents, matches)
-        values = compute.filter(self.values, matches)
-        return compute.take(values, compute.index_in(sequence(self.rows), value_set=parents))
-
-    def _roots(
-        self, group: str, key: str, *, nonblank: bool = False
-    ) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array]:
-        """Stored group ids, row ids and delimiter values in wire order."""
-        compute = pyarrow.compute
-        matches = compute.and_(compute.equal(self.groups, group), compute.equal(self.keys, key))
-        if nonblank:
-            matches = compute.and_(
-                matches,
-                compute.fill_null(
-                    compute.greater(
-                        compute.binary_length(compute.utf8_trim_whitespace(self.values)), 0
-                    ),
-                    False,
-                ),
-            )
-        matches = compute.fill_null(matches, False)
-        return (
-            compute.filter(self.group_ids, matches),
-            compute.filter(self.parents, matches),
-            compute.filter(self.values, matches),
-        )
-
-    def _member(self, roots: pyarrow.Array, group: str, key: str) -> pyarrow.Array:
-        """First `key` aligned to each selected normalized group entry."""
-        compute = pyarrow.compute
-        matches = compute.fill_null(
-            compute.and_(compute.equal(self.groups, group), compute.equal(self.keys, key)),
-            False,
-        )
-        ids = compute.filter(self.group_ids, matches)
-        values = compute.filter(self.values, matches)
-        if not len(values):
-            return pyarrow.nulls(len(roots), pyarrow.string())
-        return compute.take(values, compute.index_in(roots, value_set=ids))
-
-    def altids(self, dtype: pyarrow.DataType | None, lifecycle: pyarrow.Array) -> pyarrow.Array:
-        """Reference identifiers merged after the lifecycle identifiers."""
-        assert dtype is not None
-        compute = pyarrow.compute
-        roots, parents, values = self._roots("NoSecurityAltID", "SecurityAltID", nonblank=True)
-        reference_sizes = dense_counts(parents, self.rows)
-        sources = _id_source_name_arrow(
-            self._member(roots, "NoSecurityAltID", "SecurityAltIDSource")
-        )
-        if isinstance(lifecycle, pyarrow.ChunkedArray):
-            lifecycle = lifecycle.combine_chunks()
-        listed = as_entry_list(lifecycle)
-        entries = compute.list_flatten(listed)
-        lifecycle_parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
-        keys = pyarrow.concat_arrays([compute.struct_field(entries, "key"), sources])
-        items = pyarrow.concat_arrays([compute.struct_field(entries, "value"), values])
-        joined_parents = pyarrow.concat_arrays([lifecycle_parents, parents])
-        source = pyarrow.concat_arrays(
-            [
-                pyarrow.repeat(pyarrow.scalar(0, pyarrow.int8()), len(lifecycle_parents)),
-                pyarrow.repeat(pyarrow.scalar(1, pyarrow.int8()), len(parents)),
-            ]
-        )
-        positions = pyarrow.concat_arrays(
-            [sequence(len(lifecycle_parents)), sequence(len(parents))]
-        )
-        if not len(keys):
-            return build_map(dtype, reference_sizes, keys, items)
-        grouped = compute.sort_indices(
-            pyarrow.table(
-                {
-                    "parent": joined_parents,
-                    "key": keys,
-                    "source": source,
-                    "position": positions,
-                }
-            ),
-            sort_keys=[
-                ("parent", "ascending"),
-                ("key", "ascending"),
-                ("source", "ascending"),
-                ("position", "ascending"),
-            ],
-        )
-        grouped_parents = compute.take(joined_parents, grouped)
-        grouped_keys = compute.take(keys, grouped)
-        previous_parents = pyarrow.concat_arrays(
-            [pyarrow.array([-1], pyarrow.int64()), grouped_parents.slice(0, len(grouped) - 1)]
-        )
-        previous_keys = pyarrow.concat_arrays(
-            [pyarrow.array([None], pyarrow.string()), grouped_keys.slice(0, len(grouped) - 1)]
-        )
-        duplicate = compute.fill_null(
-            compute.and_(
-                compute.equal(grouped_parents, previous_parents),
-                compute.equal(grouped_keys, previous_keys),
-            ),
-            False,
-        )
-        keep = compute.invert(duplicate)
-        kept_parents = compute.filter(grouped_parents, keep)
-        kept_keys = compute.filter(grouped_keys, keep)
-        kept_items = compute.filter(compute.take(items, grouped), keep)
-        kept_sources = compute.filter(compute.take(source, grouped), keep)
-        kept_positions = compute.filter(compute.take(positions, grouped), keep)
-        restored = compute.sort_indices(
-            pyarrow.table(
-                {
-                    "parent": kept_parents,
-                    "source": kept_sources,
-                    "position": kept_positions,
-                }
-            ),
-            sort_keys=[
-                ("parent", "ascending"),
-                ("source", "ascending"),
-                ("position", "ascending"),
-            ],
-        )
-        restored_parents = compute.take(kept_parents, restored)
-        return build_map(
-            dtype,
-            dense_counts(restored_parents, self.rows),
-            compute.take(kept_keys, restored),
-            compute.take(kept_items, restored),
-        )
-
-    def legs(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
-        """Normalized leg groups as one nullable Arrow list per row."""
-        assert dtype is not None
-        roots, parents, xhash = self._roots("NoLegs", _INSTRUMENT_XHASH)
-        sizes = dense_counts(parents, self.rows)
-
-        def member(name: str) -> pyarrow.Array:
-            return self._member(roots, "NoLegs", name)
-
-        item = dtype.value_type
-        columns = {
-            "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
-            "symbolticker": pyarrow.compute.fill_null(member(_INSTRUMENT_TICKER), ""),
-            "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
-            "side": _fix_enum_arrow(member("LegSide"), Side),
-            "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
-            "kind": _stored_code(member(_INSTRUMENT_KIND)),
-            "securityid": member("LegSecurityID"),
-            "securityidsource": member("LegSecurityIDSource"),
-            "cficode": member("LegCFICode"),
-            "securitytype": member("LegSecurityType"),
-            "securityexchange": member("LegSecurityExchange"),
-            "currency": _currency_arrow(member("LegCurrency")),
-            "contractmultiplier": cast_arrow_fix(
-                member("LegContractMultiplier"), pyarrow.float64()
-            ),
-            "maturitydate": cast_arrow_fix(member("LegMaturityDate"), pyarrow.date32()),
-            "strikeprice": cast_arrow_fix(member("LegStrikePrice"), pyarrow.float64()),
-            "putorcall": _fix_enum_arrow(member("LegPutOrCall"), OptionKind),
-        }
-        entries = pyarrow.StructArray.from_arrays(
-            [columns[item.field(index).name] for index in range(item.num_fields)],
-            fields=[item.field(index) for index in range(item.num_fields)],
-        )
-        return build_list(
-            dtype,
-            sizes,
-            entries,
-            mask=pyarrow.compute.equal(sizes, 0),
-        )
-
-
-def _stored_code(values: pyarrow.Array, declared: type[Any] = AssetKind) -> pyarrow.Array:
-    """A stored stable integer code, with malformed values degraded to unknown.
-
-    As wide as the code's own declaration: a column stores the width its enum
-    packs into, never a width a call site guessed.
-    """
-    stored = declared.into_arrow_type().index_type
-    return pyarrow.compute.fill_null(cast_arrow_fix(values, stored), 0)
-
-
-@functools.cache
-def _fix_enum_arrays(enum_type: type[Any]) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """FIX spellings and stable integer values for one enum declaration."""
-    declared = {spelling: int(member) for member in enum_type if (spelling := member.into_fix())}
-    return (
-        pyarrow.array(declared, pyarrow.string()),
-        pyarrow.array(declared.values(), enum_type.into_arrow_type().index_type),
-    )
-
-
-def _fix_enum_arrow(values: pyarrow.Array, enum_type: type[Any]) -> pyarrow.Array:
-    """FIX enum spellings decoded through cached Arrow lookup arrays."""
-    compute = pyarrow.compute
-    spellings, codes = _fix_enum_arrays(enum_type)
-    text = compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
-    return compute.fill_null(
-        compute.take(codes, compute.index_in(text, value_set=spellings)), 0
-    ).cast(enum_type.into_arrow_type().index_type)
-
-
-@functools.cache
-def _id_source_arrays() -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Identifier-scheme wire values and the names the dictionary gives them."""
-    declared = id_schemes()
-    return pyarrow.array(list(declared), pyarrow.string()), pyarrow.array(
-        list(declared.values()), pyarrow.string()
-    )
-
-
-def _id_source_name_arrow(values: pyarrow.Array) -> pyarrow.Array:
-    """Identifier source spellings as stable names, preserving unknown codes."""
-    compute = pyarrow.compute
-    spellings, names = _id_source_arrays()
-    trimmed = compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
-    known = compute.take(names, compute.index_in(trimmed, value_set=spellings))
-    fallback = compute.if_else(
-        compute.fill_null(compute.greater(compute.binary_length(values), 0), False),
-        values,
-        pyarrow.scalar(UNKNOWN_SCHEME),
-    )
-    return compute.coalesce(known, fallback)
-
-
-def _currency_arrow(values: pyarrow.Array) -> pyarrow.Array:
-    """Canonical normalized currency text packed into its persisted int32.
-
-    Three letters big-endian above a trailing NUL -- exactly `Currency._pack`,
-    aliases resolved through the table the scalar readers use, so the kernel
-    and the scalar write one value.
-    """
-    compute = pyarrow.compute
-    text = values.cast(pyarrow.string(), safe=False)
-    canonical = compute.utf8_upper(compute.utf8_trim_whitespace(text))
-    aliases = Currency.aliased_codes()
-    if aliases:
-        position = compute.index_in(canonical, value_set=pyarrow.array(list(aliases)))
-        resolved = compute.take(pyarrow.array(list(aliases.values())), position)
-        canonical = compute.coalesce(resolved, canonical)
-    valid = compute.fill_null(compute.match_substring_regex(canonical, r"^[A-Z]{3}$"), False)
-    alphabet = pyarrow.array(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
-    packed = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(values))
-    for index, multiplier in enumerate((1 << 24, 1 << 16, 1 << 8)):
-        character = compute.utf8_slice_codeunits(canonical, start=index, stop=index + 1)
-        byte = compute.add(compute.index_in(character, value_set=alphabet), 65).cast(
-            pyarrow.int32()
-        )
-        packed = compute.add(packed, compute.multiply(byte, multiplier)).cast(pyarrow.int32())
-    unknown = compute.if_else(
-        compute.is_null(values),
-        pyarrow.scalar(None, pyarrow.int32()),
-        pyarrow.scalar(0, pyarrow.int32()),
-    )
-    return compute.if_else(valid, packed, unknown)
-
-
-def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
-    """Registry-shaped fields not already promoted on a normalized FixMsg."""
-    values = (
-        (_INSTRUMENT_KIND, int(instrument.kind)),
-        ("ContractMultiplier", instrument.contractmultiplier),
-        ("MinPriceIncrement", instrument.minpriceincrement),
-        ("RoundLot", instrument.roundlot),
-        ("MaturityDate", instrument.maturitydate),
-        ("StrikePrice", instrument.strikeprice),
-        ("PutOrCall", instrument.putorcall),
-        ("SecurityDesc", instrument.securitydesc),
-    )
-    pairs = [(name, rendered) for name, value in values if (rendered := _fix_text(value))]
-
-    alternatives = {
-        source: value
-        for source, value in (instrument.altids or {}).items()
-        if column_name(source) not in _LIFECYCLE_ALTIDS
-    }
-    if instrument.isincode and not (
-        instrument.securityid == instrument.isincode
-        and id_scheme(instrument.securityidsource) == ISIN_SCHEME
-    ):
-        alternatives.setdefault(ISIN_SCHEME, instrument.isincode)
-    if alternatives:
-        pairs.append(("NoSecurityAltID", str(len(alternatives))))
-        for index, (source, value) in enumerate(sorted(alternatives.items())):
-            root = f"NoSecurityAltID[{index}]"
-            pairs.extend(
-                (
-                    (f"{root}.SecurityAltID", str(value)),
-                    (f"{root}.SecurityAltIDSource", _id_source(source)),
-                )
-            )
-
-    if instrument.legs:
-        pairs.append(("NoLegs", str(len(instrument.legs))))
-        for index, leg in enumerate(instrument.legs):
-            root = f"NoLegs[{index}]"
-            members = (
-                (_INSTRUMENT_XHASH, leg.xhash),
-                (_INSTRUMENT_TICKER, leg.symbolticker),
-                (_INSTRUMENT_KIND, int(leg.kind)),
-                ("LegSymbol", leg.symbol),
-                ("LegSide", leg.side),
-                ("LegRatioQty", leg.ratio),
-                ("LegSecurityID", leg.securityid),
-                ("LegSecurityIDSource", leg.securityidsource),
-                ("LegCFICode", leg.cficode),
-                ("LegSecurityType", leg.securitytype),
-                ("LegSecurityExchange", leg.securityexchange),
-                ("LegCurrency", leg.currency),
-                ("LegContractMultiplier", leg.contractmultiplier),
-                ("LegMaturityDate", leg.maturitydate),
-                ("LegStrikePrice", leg.strikeprice),
-                ("LegPutOrCall", leg.putorcall),
-            )
-            pairs.extend(
-                (f"{root}.{name}", rendered)
-                for name, value in members
-                if (rendered := _fix_text(value))
-            )
-    return pairs or None
 
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:

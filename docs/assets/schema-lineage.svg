@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues. Normalized Instrument FixMsg rows independently project to the Instrument table. BookIterator consumes those rows inline from fix.market while folding the same sorted FixMsg stream into Books. Book order and execution lists flatten into their own tables.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_fix also writes flat Instrument records directly. Book order and execution lists flatten into their own tables.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -52,7 +52,7 @@
   <rect class="contract" x="45" y="265" width="355" height="240" rx="15"/>
   <text class="label" x="223" y="298">FixMsg contract</text>
   <text class="small" x="223" y="324">symbol | code | altids | canonical FIX fields</text>
-  <text class="small" x="223" y="346">parsed messages + normalized Instrument versions</text>
+  <text class="small" x="223" y="346">parsed messages with ordered payload entries</text>
   <rect class="chip-live" x="78" y="370" width="290" height="36" rx="9"/>
   <text class="tiny" x="223" y="393">fix.market → continues through Arrow</text>
   <rect class="chip-stop" x="78" y="419" width="290" height="32" rx="9"/>
@@ -66,7 +66,7 @@
   <rect class="market" x="525" y="175" width="345" height="175" rx="15"/>
   <text class="label" x="698" y="208">Instrument contract</text>
   <text class="small" x="698" y="236">identity + security facts + currency</text>
-  <text class="small" x="698" y="258">projected versions + hourly snapshots</text>
+  <text class="small" x="698" y="258">one flat record per canonical symbolticker</text>
   <image href="logos/apache-iceberg.svg" x="565" y="285" width="102" height="28"/>
   <text class="small" x="755" y="306">market.instruments</text>
 
@@ -95,10 +95,10 @@
   <text class="small" x="1485" y="532">market.executions</text>
 
   <path class="flow" d="M400 330 C455 290 475 250 525 250"/>
-  <text class="edge-label" x="465" y="230">project Instrument rows</text>
+  <text class="edge-label" x="465" y="230">parse_fix writes flat records</text>
 
   <path class="flow" d="M400 410 C475 440 475 540 525 555"/>
-  <text class="edge-label" x="440" y="468">BookIterator consumes rows by eventtype</text>
+  <text class="edge-label" x="440" y="468">fix.market flows to BookIterator</text>
 
   <path class="flow" d="M620 670 V715 H780 V670"/>
   <text class="edge-label" x="700" y="740">prior Book snapshots recover live orders</text>

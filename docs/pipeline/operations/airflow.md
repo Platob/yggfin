@@ -1,6 +1,6 @@
 # Deploy and operate with Airflow
 
-Airflow runs the repository's six publishing notebooks as the
+Airflow runs the repository's five publishing notebooks as the
 `rekep_market_pipeline` DAG and the catalog-wide maintenance notebook as
 `rekep_iceberg_maintenance`. This page covers a local first run and the
 additional requirements for a distributed deployment.
@@ -26,9 +26,11 @@ flowchart TD
     RM -->|read > 0| PF[parse_fix]
     PF --> XM[(fix.misc)]
     PF --> XU[(fix.unknown)]
+    PF --> FM[(fix.market)]
+    PF --> IM[(market.instruments)]
     PF --> RF{route_fix}
-    RF -->|instrument_versions > 0| FI[flatten_instruments]
     RF -->|routed.market > 0| PK[parse_market]
+    FM --> PK
     PK --> RK{route_market}
     RK -->|flatten.orders > 0| FO[flatten_orders]
     RK -->|flatten.executions > 0| FE[flatten_executions]
@@ -74,7 +76,7 @@ The DAG resolves those relative paths beneath `REKEP_ROOT`. This is useful for
 a single-host test, but the checkout must be writable and the catalog cannot
 coordinate distributed workers.
 
-For production, replace the catalog block consistently in all seven YAML files,
+For production, replace the catalog block consistently in all six YAML files,
 including `tasks/optimize_iceberg/optimize_iceberg.yml`.
 The shipped Glue/S3 example is:
 
@@ -112,8 +114,8 @@ Keep the table wiring aligned across the documents:
 | Producer | Target | Consumer source |
 | --- | --- | --- |
 | `parse_messages` | `logs.messages` | `parse_fix` |
-| `parse_fix` | `fix.market` | `flatten_instruments`, `parse_market` |
-| `flatten_instruments` | `market.instruments` | `parse_fix.instrument_source` |
+| `parse_fix` | `fix.market` | `parse_market` |
+| `parse_fix` | `market.instruments` | terminal reference table |
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |
 
@@ -338,9 +340,9 @@ airflow backfill create \
 
 Remove `--dry-run` to create the backfill. Both date bounds are inclusive, so
 this example creates the logical 10:00 and 11:00 hourly runs. Keep the runs in
-ascending time order and keep `max_active_runs=1`: Instrument and market stages
-resume lifecycle state from previously completed data. Do not use
-`--run-backwards` for this pipeline.
+ascending time order and keep `max_active_runs=1`: the market stage resumes
+Book state from previously completed data. Do not use `--run-backwards` for
+this pipeline.
 
 ## Iceberg branches
 
@@ -362,7 +364,6 @@ An Airflow `skipped` state is expected when a route count is zero:
 | Result | Expected downstream state |
 | --- | --- |
 | `parse_messages.result.read == 0` | `parse_fix` and all consumers skipped |
-| no Instrument versions | `flatten_instruments` skipped |
 | no routed market messages | `parse_market` and both flatteners skipped |
 | book mode with only Orders | `flatten_orders` runs; `flatten_executions` skipped |
 | book mode with only Executions | `flatten_executions` runs; `flatten_orders` skipped |
@@ -441,8 +442,8 @@ Before promotion:
    skips, then dry-run the intended backfill before unpausing.
 
 Do not raise `max_active_runs` or reverse a backfill merely to drain history
-faster. The pipeline deliberately carries prior Instrument and market
-lifecycle state in chronological order.
+faster. The pipeline deliberately carries prior market lifecycle state in
+chronological order.
 
 ## Troubleshooting
 

@@ -17,14 +17,13 @@ from rekep.enums import (
     EventType,
     OptionKind,
     Side,
-    State,
 )
 from rekep.fields import Field, scalar
 from rekep.fix.columns import ISIN_SCHEME, id_scheme
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import HOUR, Event, _scalar_part
+from rekep.market.event import UNIX, Event, _declared_value_parts
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import NIL, hash_bytes_of, hash_of
+from rekep.market.identity import HASH, NIL, hash_bytes_of, hash_of
 from rekep.market.ticker import SymbolTicker
 
 
@@ -105,12 +104,18 @@ class Leg(MarketConvertible):
 
 @scalar(slots=True)
 class Instrument(Event):
-    """One version of the facts known about a tradable instrument."""
+    """One flat reference-data record for a canonical ticker."""
+
+    unix: Annotated[int, Field(metadata=UNIX), Field.sort_key()] = 0
+    """When the reference facts were observed, in nanoseconds since the epoch."""
+
+    hash: Annotated[int, Field(dtype=HASH)] = NIL
+    """Time-anchored composition of `unix` and `vhash`."""
 
     @classmethod
     @functools.cache
     def into_event_type(cls) -> EventType:
-        """Instrument-state rows share one event kind."""
+        """Instrument records use one event kind."""
         return EventType.INSTRUMENT
 
     # Not a partition: bucketing a hash splits every hour into as many files as
@@ -118,7 +123,7 @@ class Instrument(Event):
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Digest of `symbolticker`; zero when the ticker is empty."""
 
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.primary_key(), Field.column("Symbol Ticker")] = ""
     """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -222,14 +227,18 @@ class Instrument(Event):
         return (self.altids or {}).get(ISIN_SCHEME)
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
-        """This instrument plus whatever `other` knows and it does not, or None."""
+        """This record plus facts only the other observation knows."""
         filled = {}
         merged_altids = dict(self.altids)
         for key, value in other.altids.items():
             merged_altids.setdefault(key, value)
         if merged_altids != self.altids:
             filled["altids"] = merged_altids
-        for name in _INSTRUMENT_MEMBERS:
+        event_members = set(Event.into_field().names)
+        for member in dataclasses.fields(self):
+            name = member.name
+            if name in event_members or name == "xhash":
+                continue
             mine, theirs = getattr(self, name), getattr(other, name)
             if theirs in (None, "", NIL) or theirs == mine:
                 continue
@@ -247,44 +256,36 @@ class Instrument(Event):
         """The canonical ticker's identity, or zero when absent."""
         return hash_of(self.symbolticker) if self.symbolticker else NIL
 
-    def identities(self) -> tuple[int, ...]:
-        """The one identity by which this canonical ticker is known."""
-        return (self.xhash,) if self.xhash else ()
-
     def life_code(self) -> str:
-        """The canonical ticker shared by every version of this lifecycle."""
+        """The canonical ticker that names this reference record."""
         return self.symbolticker
 
     def life_parts(self) -> tuple[Any, ...]:
-        """An instrument lifecycle exists only when its canonical ticker does."""
+        """An instrument identity exists only when its canonical ticker does."""
         return (hash_bytes_of(self.xhash),) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
-        """Hash the complete explicitly framed instrument state."""
-        return (*Event.version_parts(self), *_instrument_parts(self))
-
-    def into_fixmsg(self, **declared: Any) -> Any:
-        """Carry this version as a normalized row in the market FixMsg stream."""
-        from rekep.text.fixmsg import FixMsg
-
-        return FixMsg.from_instrument(self, **declared)
-
-    @classmethod
-    def from_observations(
-        cls,
-        observations: Iterable[tuple[int, Instrument | None]],
-        **declared: Any,
-    ) -> Iterator[Instrument]:
-        """Version ordered instrument observations and hourly snapshots."""
-        return iter(_InstrumentIterator(observations=observations, **declared))
+        """Current declared reference values in the framed hash domain."""
+        event_members = set(Event.into_field().names)
+        values = {
+            member.name: getattr(self, member.name)
+            for member in type(self).into_field().fields
+            if member.name not in event_members
+        }
+        return (*Event.version_parts(self), *_declared_value_parts(values))
 
     @classmethod
-    def from_events(cls, events: Iterable[Any], **declared: Any) -> Iterator[Instrument]:
-        """Version transient instrument facts carried by market events."""
-        return cls.from_observations(
-            ((event.unix, event.into_instrument()) for event in events),
-            **declared,
-        )
+    def from_events(cls, events: Iterable[Any]) -> Iterator[Instrument]:
+        """Flat reference records merged from transient market-event facts."""
+
+        def observed() -> Iterator[Instrument | None]:
+            for event in events:
+                instrument = event.into_instrument()
+                if instrument is not None and instrument.unix != event.unix:
+                    instrument = dataclasses.replace(instrument, unix=event.unix, hash=NIL)
+                yield instrument
+
+        return _flat_instruments(observed())
 
     @classmethod
     def from_fixmsgs(
@@ -292,235 +293,31 @@ class Instrument(Event):
         logs: Iterable[Any],
         *,
         registry: FixRegistry | None = None,
-        **declared: Any,
     ) -> Iterator[Instrument]:
-        """Version instrument facts and ticker-only fallbacks from sorted logs."""
+        """Flat reference records merged from parsed FIX messages."""
 
-        def observations() -> Iterator[tuple[int, Instrument]]:
+        def observed() -> Iterator[Instrument]:
             for log in logs:
-                for instrument in log.into_instruments(
-                    registry=registry,
-                ):
-                    yield log.unix, instrument
+                yield from log.into_instruments(registry=registry)
 
-        return cls.from_observations(observations(), **declared)
+        return _flat_instruments(observed())
 
 
-@dataclasses.dataclass
-class _InstrumentState:
-    """Latest version and its next snapshot boundary."""
-
-    xhash: int
-    current: Instrument
-    previous: Instrument
-    next_snapshot: int | None
-
-
-@dataclasses.dataclass
-class _InstrumentIterator:
-    """Deduplicate and version instrument observations in event-time order."""
-
-    observations: Iterable[tuple[int, Instrument | None]] = ()
-    instruments: Iterable[Instrument] = ()
-    snapshot_every: int = HOUR
-    snapshot_until: int | None = None
-
-    def __post_init__(self) -> None:
-        if self.snapshot_every < 0:
-            raise ValueError("snapshot_every must be non-negative")
-        self._states: dict[int, _InstrumentState] = {}
-        self._unix: int | None = None
-        for known in self.instruments:
-            self._seed(known)
-
-    def __iter__(self) -> Iterator[Instrument]:
-        for unix, instrument in self.observations:
-            if self._unix is not None and unix < self._unix:
-                unix = self._unix
-            self._unix = unix
-            yield from self._snapshots(unix, inclusive=True)
-            if instrument is None or not instrument.identities():
-                continue
-            state = self._state_of(instrument)
-            if state is None:
-                known = _observed_at(instrument, unix).with_previous(None)
-                if known is None:  # pragma: no cover - first observations always add state
-                    continue
-                state = _InstrumentState(
-                    xhash=known.xhash,
-                    current=known,
-                    previous=known,
-                    next_snapshot=self._next_boundary(unix),
-                )
-                self._states[state.xhash] = state
-                yield known
-                continue
-            observed = _observed_at(instrument, unix)
-            observed_vhash = observed.hash_of(*observed.version_parts())
-            current_vhash = state.current.vhash or state.current.hash_of(
-                *state.current.version_parts()
-            )
-            if observed_vhash == current_vhash:
-                continue
-            enriched = state.current.enriched_with(instrument)
-            if enriched is None:
-                continue
-            known = _observed_at(enriched, unix).with_previous(state.previous)
-            if known is None:
-                continue
-            state.current = known
-            state.previous = known
-            state.next_snapshot = self._next_boundary(unix)
-            yield known
-        if self.snapshot_until is not None:
-            yield from self._snapshots(self.snapshot_until)
-
-    def _seed(self, known: Instrument) -> None:
-        """Keep the latest supplied version for each lifecycle."""
-        self._unix = known.unix if self._unix is None else max(self._unix, known.unix)
-        current = self._states.get(known.xhash)
-        if current is not None and (
-            current.previous.unix,
-            current.previous.version,
-            current.previous.hash,
-        ) >= (known.unix, known.version, known.hash):
-            return
-        state = _InstrumentState(
-            xhash=known.xhash,
-            current=known,
-            previous=known,
-            next_snapshot=None if known.state.is_terminal else self._next_boundary(known.unix),
-        )
-        self._states[known.xhash] = state
-
-    def _state_of(self, instrument: Instrument) -> _InstrumentState | None:
-        """Find the lifecycle named by this canonical ticker."""
-        return self._states.get(instrument.xhash)
-
-    def _next_boundary(self, unix: int) -> int | None:
-        return (
-            None
-            if not self.snapshot_every
-            else unix - unix % self.snapshot_every + self.snapshot_every
-        )
-
-    def _snapshots(self, unix: int, *, inclusive: bool = False) -> Iterator[Instrument]:
-        """Emit globally ordered snapshots until each lifecycle is terminal."""
-        while True:
-            pending = [
-                state.next_snapshot
-                for state in self._states.values()
-                if state.next_snapshot is not None
-                and (state.next_snapshot < unix or inclusive and state.next_snapshot == unix)
-            ]
-            if not pending:
-                return
-            boundary = min(pending)
-            for state in sorted(
-                (state for state in self._states.values() if state.next_snapshot == boundary),
-                key=lambda item: item.xhash,
-            ):
-                pictured = state.previous.make_snapshot(boundary)
-                known = None if pictured is None else pictured.with_previous(state.previous)
-                if known is None:
-                    state.next_snapshot = (
-                        None if state.previous.state.is_terminal else boundary + self.snapshot_every
-                    )
-                    continue
-                state.previous = known
-                state.next_snapshot = (
-                    None if known.state.is_terminal else boundary + self.snapshot_every
-                )
-                yield known
-
-
-# Frozen by the instrument version protocol, not inferred from dataclass order.
-_INSTRUMENT_MEMBERS = (
-    "symbolticker",
-    "symbol",
-    "kind",
-    "securityid",
-    "securityidsource",
-    "isincode",
-    "securitytype",
-    "cficode",
-    "securityexchange",
-    "currency",
-    "contractmultiplier",
-    "minpriceincrement",
-    "roundlot",
-    "maturitydate",
-    "strikeprice",
-    "putorcall",
-    "securitydesc",
-    "legs",
-)
-_LEG_MEMBERS = (
-    "xhash",
-    "symbolticker",
-    "symbol",
-    "side",
-    "ratio",
-    "kind",
-    "securityid",
-    "securityidsource",
-    "cficode",
-    "securitytype",
-    "securityexchange",
-    "currency",
-    "contractmultiplier",
-    "maturitydate",
-    "strikeprice",
-    "putorcall",
-)
-
-
-def _observed_at(
-    instrument: Instrument,
-    unix: int,
-) -> Instrument:
-    """Copy facts onto a fresh event envelope at one observation instant."""
-    return dataclasses.replace(
-        instrument,
-        unix=unix,
-        unixpartition=0,
-        eventtype=EventType.INSTRUMENT,
-        creaunix=instrument.creaunix or unix,
-        recunix=instrument.recunix or unix,
-        expunix=None,
-        snapunix=None,
-        hash=NIL,
-        vhash=NIL,
-        linkedhashes=[],
-        version=0,
-        state=State.OPEN,
-        prevunix=None,
-        prevhash=None,
-        parenthash=None,
-        reason=None,
-    )
-
-
-def _instrument_parts(instrument: Instrument) -> tuple[Any, ...]:
-    """Instrument state as scalar identity-v1 parts, including containers."""
-    parts: list[Any] = ["rekep-instrument-v1"]
-    for name in _INSTRUMENT_MEMBERS:
-        value = getattr(instrument, name)
-        parts.append(name)
-        if name == "legs":
-            parts.extend(_legs_parts(value))
-        else:
-            parts.append(_scalar_part(value))
-    return tuple(parts)
-
-
-def _legs_parts(legs: list[Any] | None) -> tuple[Any, ...]:
-    if legs is None:
-        return (False, 0)
-    parts: list[Any] = [True, len(legs)]
-    for index, leg in enumerate(legs):
-        parts.extend(("leg", index))
-        for name in _LEG_MEMBERS:
-            value = getattr(leg, name)
-            parts.extend((name, hash_bytes_of(value) if name == "xhash" else _scalar_part(value)))
-    return tuple(parts)
+def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrument]:
+    """One deterministically enriched record per canonical ticker."""
+    # Input order owns conflicts; later observations fill gaps but never revise facts.
+    order: list[str] = []
+    records: dict[str, Instrument] = {}
+    for instrument in observed:
+        if instrument is None or not instrument.symbolticker:
+            continue
+        ticker = instrument.symbolticker
+        known = records.get(ticker)
+        if known is None:
+            order.append(ticker)
+            records[ticker] = instrument
+            continue
+        enriched = known.enriched_with(instrument)
+        if enriched is not None:
+            records[ticker] = enriched
+    yield from (records[ticker].identify() for ticker in order)

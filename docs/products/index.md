@@ -16,12 +16,13 @@ flowchart LR
 | --- | --- | --- |
 | [Message](message.md) | one log line, tokenized | `Message.from_text` |
 | [FixMsg](fixmsg.md) | one line transcribed under the registry | `FixMsg.from_message_batch` |
-| [Instrument](instrument.md) | one version of an instrument's facts | `Instrument.from_fixmsgs` |
+| [Instrument](instrument.md) | one flat reference-data record | `Instrument.from_fixmsgs` |
 | [Order](order.md) | one version of one order | `FixMsg.into_market_events` |
 | [Execution](execution.md) | one fill, correction or cancellation | `FixMsg.into_market_events` |
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
-Every one of them is keyed `(unix, hash)`, sorted by `unix` and partitioned on
+Every event product is keyed `(unix, hash)`; Instrument is keyed by
+`symbolticker`. All six are sorted by `unix` and partitioned on
 `unixpartition` alone:
 
 ```bash

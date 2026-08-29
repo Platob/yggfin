@@ -113,10 +113,9 @@ VERSIONS: list[str] = INDEX["versions"]
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
 EXPECTED_FIELD_RECORDS = 6074
-EXPECTED_COMPONENT_FILES = 900
-#: Of which these are messages: a message is a component that arrives under a
-#: MsgType, and the 171st is the dictionary's own `RekepInstrument <U1>`.
-EXPECTED_MESSAGE_FILES = 171
+EXPECTED_COMPONENT_FILES = 899
+#: Of which these are messages: a message is a component that arrives under a MsgType.
+EXPECTED_MESSAGE_FILES = 170
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"

@@ -51,8 +51,7 @@ parameters:
   # root, main, and master name the same Iceberg root branch.
   branch: root
   target_pattern: "fix.{category}"
-  instrument_source: market.instruments
-  instrument_snapshot_every: 3600000000000
+  instrument_target: market.instruments
   merge_by: true
   batch_row_size: 65536
   commit_row_size: 250000

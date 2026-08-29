@@ -26,7 +26,6 @@ DOCS = Path(__file__).resolve().parents[2] / "docs"
 WORKFLOW_STEPS = (
     ("parse-messages", "parse_messages"),
     ("parse-fix", "parse_fix"),
-    ("flatten-instruments", "flatten_instruments"),
     ("parse-market", "parse_market"),
     ("flatten-orders", "flatten_orders"),
     ("flatten-executions", "flatten_executions"),

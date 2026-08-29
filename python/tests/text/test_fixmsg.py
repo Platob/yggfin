@@ -11,7 +11,7 @@ from rekep.enums import Direction
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
-from rekep.market import HASH, MIC, BookIterator, Event, EventType, Instrument
+from rekep.market import HASH, MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
 
@@ -653,35 +653,8 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     assert instrument == direct, "the resolved columns and the pair walk agree"
 
 
-def test_package_instrument_altids_merge_once_per_key() -> None:
-    instrument = Instrument(
-        unix=1,
-        creaunix=1,
-        recunix=1,
-        symbol="AAPL",
-        altids={"clordid": "C1", "ISINNumber": "US0378331005"},
-    ).identify()
-    message = FixMsg.from_instrument(instrument)
-
-    assert message.altids == {"clordid": "C1"}, "reference schemes live in FIX entries"
-    batch = next(iter(FixMsg.into_arrow_reader((message,))))
-    found = FixMsg.into_instrument_arrow_batch(batch)
-
-    assert found.column("altids").to_pylist() == [
-        [("clordid", "C1"), ("ISINNumber", "US0378331005")]
-    ]
-
-    message.altids = {"ISINNumber": "HEADER", "clordid": "C1"}
-    overlapped = FixMsg.into_instrument_arrow_batch(
-        next(iter(FixMsg.into_arrow_reader((message,))))
-    )
-    assert overlapped.column("altids").to_pylist() == [
-        [("ISINNumber", "HEADER"), ("clordid", "C1")]
-    ], "nonadjacent carried keys precede the rendered reference group"
-
-
 def test_flat_instrument_keeps_lifecycle_altids() -> None:
-    instrument = FixMsg(symbol="AAPL", altids={"clordid": "C1"})._flat_instrument()
+    instrument = FixMsg(symbol="AAPL", altids={"clordid": "C1"}).into_instrument()
 
     assert instrument is not None
     assert instrument.altids == {"clordid": "C1"}

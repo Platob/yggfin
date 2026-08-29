@@ -100,7 +100,7 @@ wire order are data.
 
 Raw `Message.entries` is always a list. A `FixMsg` carrying no recognized
 message has null `entries`; a parsed message with no residue has an empty one.
-The discriminator is promoted to `MsgType` and never duplicated here.
+The `MsgType` discriminator is promoted to `msgtype` and never duplicated here.
 
 ## Reading one row
 
@@ -176,6 +176,5 @@ Registry-declared technical MsgTypes and plugins enter no FIX table. Both
 scans project `message` out, so every resulting `FixMsg.message` is null.
 
 Market readers consume only `fix.market`, ordered by
-`(unix, MsgSeqNum, hash)`. Normalized Instrument rows use the package-owned
-user-defined MsgType `U1`, so they stay distinguishable from captured
-messages.
+`(unix, msgseqnum, hash)`. `parse_fix` derives flat Instrument records from
+that captured stream and writes them directly to `market.instruments`.

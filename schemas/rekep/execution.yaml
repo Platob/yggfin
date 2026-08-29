@@ -19,7 +19,7 @@ fields:
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
   fix: {display: Event Type}
-  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","6004496033382400000":"STATE","4778124913204527104":"BOOK","5283659427399139328":"INSTRUMENT_STATE","5282251034575328256":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT","INSTRUMENT_STATE":"ISTATE"}'}
+  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -113,7 +113,7 @@ fields:
   fix: {display: Reason}
 - name: instrumentxhash
   type: int64
-  description: Instrument lifecycle identity used to join market rows.
+  description: Canonical Instrument identity used to join market rows.
   fix: {display: Instrument Xhash}
 - name: symbolticker
   type: string

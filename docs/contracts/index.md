@@ -11,7 +11,7 @@ table](../assets/compatibility-tree-light.svg#only-light)
 | --- | ---: | --- |
 | `message.yaml` | 1 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
 | `fixmsg.yaml` | 1 | Parsed FIX records, including typed fields and lossless raw audit sidecars. |
-| `instrument.yaml` | 1 | Versioned and hourly instrument state. |
+| `instrument.yaml` | 1 | Flat reference data keyed by canonical `symbolticker`. |
 | `book.yaml` | 1 | Book deltas, executions, and recovery state. |
 | `order.yaml` | 1 | Flattened auditable order events. |
 | `execution.yaml` | 1 | Flattened auditable executions. |
@@ -104,7 +104,7 @@ were reset to where they are useful, which is the first number a consumer of
 The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is
 refused over it. What a reader actually depends on is the columns, and
-`parse_fix` says so directly -- it refuses a source missing `MsgType`,
+`parse_fix` says so directly -- it refuses a source missing `msgtype`,
 `entries` or `protocolcode` rather than reporting an empty successful run.
 
 ## Publishing
