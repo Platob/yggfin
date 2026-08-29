@@ -169,13 +169,19 @@ RETYPED_HEADER = {
 #: pinned below -- so a column renamed in one file and not in the other fails
 #: here, rather than moving both sides of every comparison together.
 FLAT_COLUMNS = [column for _, column in FLAT]
-ADDED_COLUMNS = [
+_FIX_ADDED_COLUMNS = [
     column for column in FLAT_COLUMNS if column not in set(ENVELOPE + SOURCE + LINE + MESSAGE)
+]
+_SYMBOL_AT = _FIX_ADDED_COLUMNS.index("symbol")
+ADDED_COLUMNS = [
+    *_FIX_ADDED_COLUMNS[:_SYMBOL_AT],
+    "symbolticker",
+    *_FIX_ADDED_COLUMNS[_SYMBOL_AT:],
 ]
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 116
+EXPECTED_LOG_COLUMNS = 117
 
 
 @pytest.fixture(scope="module")
@@ -594,7 +600,9 @@ def test_hybrid_flat_names_do_not_erase_numeric_repeating_groups(
     assert depth.group(268) == [
         [("279", "0"), ("269", "0"), ("55", "ENTRY"), ("270", "100"), ("271", "1")]
     ]
-    assert [event.symbol for event in depth.into_market_events(fix_version="4.4")] == ["ENTRY"]
+    assert [event.symbolticker for event in depth.into_market_events(fix_version="4.4")] == [
+        "ENTRY"
+    ]
 
 
 def test_instrument_groups_resolve_into_their_structured_columns(

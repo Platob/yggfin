@@ -108,7 +108,7 @@ def into_flat_fixmsg_batch(
     from rekep.text.fixmsg import _mic_arrow
 
     output["mic"] = _mic_arrow(output, rows)
-    return shape.identified(output, schema, rows)
+    return shape.identified(output, schema, rows, codec.registry)
 
 
 def flat_fixmsg_positions(

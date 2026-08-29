@@ -1,8 +1,7 @@
 # Instrument
 
-One version of the facts known about a tradable instrument. `xhash` and
-`code` derive from the exact symbol only, so one spelling is one lifecycle
-across venues and two spellings never alias through an identifier.
+One version of the facts known about a tradable instrument. `symbolticker`
+is the canonical stored key, and `xhash` is its framed XXH3-64 identity.
 
 ```python
 from rekep import FixMsg, Instrument
@@ -12,17 +11,26 @@ line = (
     "55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"
 )
 for row in Instrument.from_fixmsgs([FixMsg.from_text(line)]):
-    print(row.symbol, row.code, row.kind.name, row.currency.name, row.securityexchange, row.securityid)
+    print(
+        row.symbolticker,
+        row.symbol,
+        row.kind.name,
+        row.currency.name,
+        row.securityexchange,
+    )
 ```
 
 ```text
-BTC-USD BTC-USD CURRENCY USD XCME BTCUSD
+XCME:ExchangeSymbol:BTCUSD BTC-USD CURRENCY USD XCME
 ```
 
-An exact `AAA/BBB` symbol classifies as currency when no kind is declared and
-supplies `BBB` as the price currency when that is absent. A symbol first seen
-on a market log creates a synthetic minimal instrument; later facts enrich that
-same lifecycle. There is no separate reference model.
+`SecurityID <48>` with `SecurityIDSource <22>` leads, so the identifier above
+is qualified by its scheme and `SecurityExchange <207>`. Without that pair the
+ticker is `MIC:SYMBOL`, or just `SYMBOL` when the venue is unknown.
+
+`EUR/NOK`, `EURNOK`, and `EUR.NOK` share one FX spelling. The ticker also
+classifies the instrument as currency and supplies `NOK` as its quote currency
+when those facts are otherwise absent.
 
 ## Lineage
 

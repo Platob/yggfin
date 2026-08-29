@@ -171,7 +171,7 @@ def test_a_stream_carrying_two_instruments_folds_each_on_its_own() -> None:
         ETH,
     )
     found = books([*TWO_SIDED, other])
-    assert [one.code for one in found] == ["BTC-USD", "ETH-USD"]
+    assert [one.code for one in found] == ["XCME:BTC-USD", "XCME:ETH-USD"]
     assert found[0].biddepth == 2 and found[1].biddepth == 1
     assert found[0].instrumentxhash != found[1].instrumentxhash
 
@@ -216,7 +216,7 @@ def test_a_market_order_rests_nowhere_and_moves_no_book() -> None:
 
 def test_a_book_knows_what_it_is_a_book_of() -> None:
     (only,) = books(TWO_SIDED)
-    assert only.code == "BTC-USD" and only.instrumentxhash == BTC.xhash
+    assert only.code == "XCME:BTC-USD" and only.instrumentxhash == BTC.xhash
     assert only.pxunit == "USD" and "instrument" not in Book.into_field().names
 
 

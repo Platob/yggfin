@@ -33,6 +33,7 @@ from rekep.market.identity import (
     hash_bytes_arrow,
 )
 from rekep.market.orders import Execution, Order
+from rekep.market.ticker import SymbolTicker
 
 _REASON_FIELDS = (
     "OrdRejReason",
@@ -76,6 +77,9 @@ _READ_FIELDS = (
     "OrdType",
     "OrigClOrdID",
     "Price",
+    "SecurityExchange",
+    "SecurityID",
+    "SecurityIDSource",
     "SettlCurrency",
     "SettlCurrFxRateCalc",
     "SettlDate",
@@ -196,8 +200,9 @@ def flat_market_parts(
     values = _Values(columns, entries, tags, batch.num_rows)
     if any(values.present(name) for name in _COMPLEX_FIELDS):
         return None
-    symbol = values.text("Symbol", fallback="")
-    if compute.any(compute.match_substring_regex(symbol, r"^[A-Za-z]{3}/[A-Za-z]{3}$")).as_py():
+    if compute.any(
+        compute.is_valid(SymbolTicker.currency_arrow(_ticker_array(values, tags))), min_count=0
+    ).as_py():
         return None
     if compute.any(_expiring_rows(values), min_count=0).as_py():
         return None
@@ -353,10 +358,9 @@ def _eligible_market_rows(
     values = _Values(columns, entries, tags, rows)
     for name in _COMPLEX_FIELDS:
         eligible = compute.and_(eligible, compute.is_null(values.raw(name, pyarrow.string())))
-    symbol = values.text("Symbol", fallback="")
     eligible = compute.and_(
         eligible,
-        compute.invert(compute.match_substring_regex(symbol, r"^[A-Za-z]{3}/[A-Za-z]{3}$")),
+        compute.invert(compute.is_valid(SymbolTicker.currency_arrow(_ticker_array(values, tags)))),
     )
     eligible = compute.and_(eligible, compute.invert(_expiring_rows(values)))
     for name in _FLOAT_FIELDS:
@@ -463,11 +467,11 @@ class _Shared:
         self.recunix = compute.if_else(compute.equal(recunix, 0), self.unix, recunix)
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
         self.mic = columns["mic"].cast(pyarrow.int32(), safe=False)
-        self.symbol = values.text("Symbol", fallback="")
+        self.symbolticker = _ticker_array(values, tags)
         self.instrumentxhash = compute.if_else(
-            compute.equal(self.symbol, ""),
+            compute.equal(self.symbolticker, ""),
             pyarrow.scalar(NIL, pyarrow.int64()),
-            hash_arrow("symbol", "", self.symbol),
+            hash_arrow(self.symbolticker),
         )
         self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
@@ -476,6 +480,18 @@ class _Shared:
 
     def take(self, value: pyarrow.Array, where: pyarrow.Array) -> pyarrow.Array:
         return compute.take(value, where)
+
+
+def _ticker_array(values: _Values, tags: MarketTags) -> pyarrow.Array:
+    """Canonical tickers from the FIX columns this market reader resolves."""
+    columns = {
+        "symbolticker": values.columns["symbolticker"],
+        "symbol": values.text("Symbol"),
+        "securityid": values.text("SecurityID"),
+        "securityidsource": values.text("SecurityIDSource"),
+        "securityexchange": values.text("SecurityExchange"),
+    }
+    return SymbolTicker.into_arrow_array(columns, values.rows, tags.registry)
 
 
 def _orders(
@@ -547,7 +563,7 @@ def _orders(
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
     named = _first_nonempty(orderid, previous_client_id, client_id, fallback="")
-    symbol = shared.take(shared.symbol, where)
+    symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
@@ -577,7 +593,7 @@ def _orders(
         altids,
         (
             arrow_of(instrumentxhash),
-            symbol,
+            symbolticker,
             kind,
             side,
             px,
@@ -624,7 +640,7 @@ def _orders(
         "mic": mic,
         "reason": reason,
         "instrumentxhash": instrumentxhash,
-        "instrumentcode": symbol,
+        "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
         "px": px,
@@ -683,7 +699,7 @@ def _executions(
     named = compute.fill_null(
         compute.if_else(corrected, execrefid, _first_nonempty(execid, tradeid)), ""
     )
-    symbol = shared.take(shared.symbol, where)
+    symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
@@ -750,7 +766,7 @@ def _executions(
     settlcurrfxratecalc = shared.take(values.text("SettlCurrFxRateCalc"), where)
     market_values = (
         arrow_of(instrumentxhash),
-        symbol,
+        symbolticker,
         kind,
         side,
         px,
@@ -813,7 +829,7 @@ def _executions(
         "mic": mic,
         "reason": reason,
         "instrumentxhash": instrumentxhash,
-        "instrumentcode": symbol,
+        "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
         "px": px,

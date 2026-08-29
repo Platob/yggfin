@@ -422,7 +422,7 @@ def envelope(rows: int) -> dict[str, object]:
         "code": [f"S{index % 5000}" for index in range(rows)],
         "altids": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
         "instrumentxhash": [index % 5000 + 1 for index in range(rows)],
-        "instrumentcode": [f"S{index % 5000}" for index in range(rows)],
+        "symbolticker": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
         "pxunit": ["USD"] * rows,

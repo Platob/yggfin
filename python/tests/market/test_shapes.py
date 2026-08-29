@@ -44,11 +44,11 @@ ENVELOPE = [
 ]
 
 #: What `MarketEvent` adds on top, also in order. `instrumentxhash` leads because
-#: it is the partition column: an engine that prunes on it reads it first, and a
+#: it is the join column: an engine that prunes on it reads it first, and a
 #: declaration order is a physical order everywhere the schema travels.
 PRICED = [
     "instrumentxhash",
-    "instrumentcode",
+    "symbolticker",
     "kind",
     "side",
     "px",
@@ -294,7 +294,7 @@ FILTERED = {
         "bidpx",
         "askpx",
     ),
-    Instrument: ("xhash", "symbol", "kind"),
+    Instrument: ("xhash", "symbolticker", "kind"),
 }
 
 

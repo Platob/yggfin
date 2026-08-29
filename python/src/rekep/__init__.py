@@ -25,6 +25,7 @@ from rekep.market import (
     Instrument,
     MarketEvent,
     Order,
+    SymbolTicker,
 )
 from rekep.tasks import Task
 from rekep.text import Entry, FixMsg, Message, TextFile, TextFiles
@@ -65,6 +66,7 @@ __all__ = [
     "Order",
     "ProtocolMetadata",
     "StructField",
+    "SymbolTicker",
     "Task",
     "TextFile",
     "TextFiles",

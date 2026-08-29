@@ -30,7 +30,7 @@ from rekep.market import (
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.fix_arrow import into_flat_market_batches
-from rekep.market.identity import NIL, hash_bytes_of
+from rekep.market.identity import hash_bytes_of
 from rekep.text import FixMsg
 
 DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -97,7 +97,7 @@ def test_instrument_versioning_is_owned_outside_the_book_fold() -> None:
     events = [order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")]
     iterating = BookIterator.from_events(events)
     assert [one.unix for one in iterating.books] == [BASE]
-    assert [one.code for one in Instrument.from_events(events)] == ["BTC-USD"]
+    assert [one.code for one in Instrument.from_events(events)] == ["XCME:BTC-USD"]
 
 
 def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None:
@@ -135,19 +135,6 @@ def test_book_translation_uses_the_selected_fix_registry(
 
     assert list(BookIterator(logs=[FixMsg(eventtype=EventType.ORDER)], registry=registry)) == []
     assert seen == [registry]
-
-
-def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
-    columns = {
-        "symbol": pyarrow.array(["AAPL", None, None]),
-        "securityid": pyarrow.array(["ignored", "US0378331005", None]),
-        "isincode": pyarrow.array([None, "ignored", "FR0000120271"]),
-    }
-    assert FixMsg.symbol_arrow(columns, 3).to_pylist() == [
-        "AAPL",
-        "US0378331005",
-        "FR0000120271",
-    ]
 
 
 def test_log_altids_retain_lifecycle_identifiers_in_lookup_order() -> None:
@@ -836,7 +823,7 @@ def test_an_out_of_order_rotated_segment_keeps_a_distinct_instrument() -> None:
     assert [known.unix for known in instruments] == [BASE + 10, BASE + 10]
 
 
-def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None:
+def test_security_ids_define_distinct_tickers_even_with_the_same_symbol() -> None:
     first = Instrument(
         symbol="ABC",
         securityexchange="XPAR",
@@ -857,13 +844,15 @@ def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None
         )
     )
 
-    (known,) = instruments
-    assert known.securityid == "111111111", "the first nonempty fact remains authoritative"
-    assert known.xhash == first.xhash == second.xhash
-    assert known.version == 0
+    assert [known.symbolticker for known in instruments] == [
+        "XPAR:CUSIP:111111111",
+        "XPAR:CUSIP:222222222",
+    ]
+    assert len({known.xhash for known in instruments}) == 2
+    assert [known.version for known in instruments] == [0, 0]
 
 
-def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
+def test_a_security_id_earns_the_preferred_ticker_over_a_symbol() -> None:
     weak = Instrument(symbol="ABC", securityexchange="XPAR")
     strong = Instrument(
         symbol="ABC",
@@ -872,14 +861,15 @@ def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
         securityidsource="1",
     )
 
-    bare, enriched = Instrument.from_observations(
+    bare, identified = Instrument.from_observations(
         [(BASE, weak), (BASE + 1, strong)],
         snapshot_every=0,
     )
 
-    assert enriched.securityid == "111111111"
-    assert enriched.xhash == bare.xhash
-    assert enriched.version == bare.version + 1
+    assert bare.symbolticker == "XPAR:ABC"
+    assert identified.symbolticker == "XPAR:CUSIP:111111111"
+    assert identified.xhash != bare.xhash
+    assert identified.version == bare.version == 0
 
 
 def test_instrument_altids_hold_reference_schemes_and_lifecycle_fields() -> None:
@@ -904,13 +894,18 @@ def test_instrument_altids_hold_reference_schemes_and_lifecycle_fields() -> None
     assert [field.name for field in Instrument.into_field().fields].count("altids") == 1
 
 
-def test_a_security_id_only_instrument_is_unidentified_and_skipped() -> None:
-    unidentified = Instrument(securityid="US1234567890", securityidsource="4")
-    assert unidentified.xhash == NIL and unidentified.identities() == ()
-    assert list(Instrument.from_observations([(BASE, unidentified)], snapshot_every=0)) == []
+def test_a_security_id_only_instrument_uses_its_scheme_ticker() -> None:
+    identified = Instrument(securityid="US1234567890", securityidsource="4")
+
+    assert identified.symbolticker == "ISINNumber:US1234567890"
+    assert identified.identities() == (identified.xhash,)
+    assert [
+        known.symbolticker
+        for known in Instrument.from_observations([(BASE, identified)], snapshot_every=0)
+    ] == ["ISINNumber:US1234567890"]
 
 
-def test_different_symbols_do_not_alias_through_a_shared_security_id() -> None:
+def test_a_shared_security_id_is_one_ticker_despite_symbol_spellings() -> None:
     first = Instrument(
         symbol="BTC-USD",
         securityid="US1234567890",
@@ -929,9 +924,9 @@ def test_different_symbols_do_not_alias_through_a_shared_security_id() -> None:
         )
     )
 
-    assert [known.symbol for known in instruments] == ["BTC-USD", "XBT-USD"]
-    assert len({known.xhash for known in instruments}) == 2
-    assert [known.version for known in instruments] == [0, 0]
+    assert [known.symbolticker for known in instruments] == ["ISINNumber:US1234567890"]
+    assert instruments[0].symbol == "BTC-USD"
+    assert instruments[0].version == 0
 
 
 def test_iterating_the_iterator_is_iterating_its_books() -> None:
@@ -959,7 +954,7 @@ def test_one_iterator_folds_every_instrument_on_its_own() -> None:
     ]
     iterating = BookIterator.from_events(events, snapshot_every=0)
     found = list(iterating.books)
-    assert {one.code for one in found} == {"BTC-USD", "ETH-USD"}
+    assert {one.code for one in found} == {"XCME:BTC-USD", "XCME:ETH-USD"}
     assert len(iterating.folding) == 2, "one mutable state per instrument, and no more"
 
 
@@ -970,8 +965,9 @@ def test_an_instrument_s_book_never_sees_another_s_liquidity() -> None:
         order(BASE + 20, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
     books = {one.code: one for one in BookIterator.from_events(events, snapshot_every=0)}
-    assert books["BTC-USD"].bidpx == 100.0 and books["BTC-USD"].bidqty == 5.0
-    assert books["ETH-USD"].bidpx == 999.0
+    assert books["XCME:BTC-USD"].bidpx == 100.0
+    assert books["XCME:BTC-USD"].bidqty == 5.0
+    assert books["XCME:ETH-USD"].bidpx == 999.0
 
 
 def test_a_stream_out_of_order_is_refused() -> None:
@@ -1175,8 +1171,8 @@ def test_every_instrument_gets_the_hour_and_not_only_the_one_that_traded() -> No
     hours = {}
     for one in found:
         hours.setdefault(one.code, []).append((one.unix - BASE) // HOUR)
-    assert hours["BTC-USD"] == [0, 1, 2, 3, 3]
-    assert hours["ETH-USD"] == [0, 1, 2, 3]
+    assert hours["XCME:BTC-USD"] == [0, 1, 2, 3, 3]
+    assert hours["XCME:ETH-USD"] == [0, 1, 2, 3]
 
 
 def test_an_exact_boundary_snapshots_only_the_inactive_instrument() -> None:
@@ -1187,9 +1183,9 @@ def test_an_exact_boundary_snapshots_only_the_inactive_instrument() -> None:
     records = list(BookIterator.from_events(events))
     instruments = list(Instrument.from_events(events))
 
-    btc_books = [one for one in records if one.code == "BTC-USD"]
-    btc_refs = [one for one in instruments if one.code == "BTC-USD"]
-    eth_books = [one for one in records if one.code == "ETH-USD"]
+    btc_books = [one for one in records if one.code == "XCME:BTC-USD"]
+    btc_refs = [one for one in instruments if one.code == "XCME:BTC-USD"]
+    eth_books = [one for one in records if one.code == "XCME:ETH-USD"]
     assert [one.unix for one in btc_books] == [BASE + 60, BASE + HOUR]
     assert [one.unix for one in btc_refs] == [BASE + 60, BASE + HOUR]
     assert [one.unix for one in eth_books] == [BASE + HOUR]
@@ -1747,7 +1743,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
 
 
-def test_different_symbol_references_do_not_alias_one_book() -> None:
+def test_a_shared_security_id_reference_names_one_book() -> None:
     first = Instrument(
         symbol="BTC-USD",
         securityexchange="XCME",
@@ -1771,11 +1767,12 @@ def test_different_symbol_references_do_not_alias_one_book() -> None:
     )
 
     books = list(folding.books)
-    assert len(folding.folding) == 2
-    assert {book.instrumentxhash for book in books} == {first.xhash, second.xhash}
+    assert len(folding.folding) == 1
+    assert {book.instrumentxhash for book in books} == {first.xhash}
+    assert first.xhash == second.xhash
 
 
-def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity() -> None:
+def test_a_security_id_ticker_supersedes_the_symbol_fallback() -> None:
     canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
@@ -1784,7 +1781,7 @@ def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity
         securityidsource="4",
     )
     known = dataclasses.replace(canonical, unix=BASE - HOUR).with_previous(None)
-    assert known is not None and richer.xhash == known.xhash
+    assert known is not None and richer.xhash != known.xhash
     folding = BookIterator.from_events(
         with_instruments(
             [order(BASE, richer, Side.BID, 100.0, 1.0, "B1")],
@@ -1794,13 +1791,10 @@ def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity
     )
 
     (book,) = folding
-    instrument = known
     (nested,) = book.deltas
-    assert instrument.xhash == book.instrumentxhash == nested.instrumentxhash
-    assert book.instrumentxhash == canonical.xhash
-    assert nested.xhash == Order.hash_of(
-        hash_bytes_of(canonical.xhash), nested.mic, "B1", nested.side
-    )
+    assert book.instrumentxhash == nested.instrumentxhash == richer.xhash
+    assert book.instrumentxhash != canonical.xhash
+    assert nested.xhash == Order.hash_of(hash_bytes_of(richer.xhash), nested.mic, "B1", nested.side)
 
 
 def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
@@ -1879,7 +1873,9 @@ def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None
     )
     eth_clock = order(BASE + 2 * HOUR, ETH, Side.BID, 10.0, 1.0, "E1")
 
-    btc_books = [one for one in BookIterator.from_events([btc, eth_clock]) if one.code == "BTC-USD"]
+    btc_books = [
+        one for one in BookIterator.from_events([btc, eth_clock]) if one.code == "XCME:BTC-USD"
+    ]
 
     snapshot = next(one for one in btc_books if one.snapunix is not None)
     expired = next(
@@ -1961,7 +1957,9 @@ def test_an_inactive_instrument_expires_before_its_crossed_snapshot() -> None:
     )
     eth_clock = order(BASE + 3 * HOUR + 60, ETH, Side.BID, 10.0, 1.0, "E1")
 
-    btc_books = [one for one in BookIterator.from_events([btc, eth_clock]) if one.code == "BTC-USD"]
+    btc_books = [
+        one for one in BookIterator.from_events([btc, eth_clock]) if one.code == "XCME:BTC-USD"
+    ]
 
     assert [one.unix for one in btc_books] == sorted(one.unix for one in btc_books)
     boundary = next(one for one in btc_books if one.unix == BASE + HOUR)
@@ -2120,9 +2118,9 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
 def test_a_book_says_which_instrument_it_is_of_readably_and_by_hash() -> None:
     """A hash joins and a person reads, so a book row carries both."""
     events = _resting_stream()
-    assert [one.instrumentcode for one in events] == [BTC.symbol, BTC.symbol]
+    assert [one.symbolticker for one in events] == [BTC.symbolticker, BTC.symbolticker]
     books = list(BookIterator.from_events(events, snapshot_every=0))
-    assert {one.instrumentcode for one in books} == {BTC.symbol}
+    assert {one.symbolticker for one in books} == {BTC.symbolticker}
     assert {one.instrumentxhash for one in books} == {BTC.xhash}
 
 

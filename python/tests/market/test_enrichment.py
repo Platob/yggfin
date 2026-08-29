@@ -102,8 +102,12 @@ def test_the_security_type_classifies_where_the_cfi_is_absent() -> None:
     assert instrument_of(f"{HEAD}|55=SPX|167=MLEG").kind is AssetKind.MULTILEG
 
 
-def test_a_currency_pair_symbol_supplies_its_class_and_quote_currency() -> None:
-    found = instrument_of(f"{HEAD}|55=EUR/USD")
+@pytest.mark.parametrize("symbol", ("EUR/USD", "EURUSD", "EUR.USD"))
+def test_a_currency_pair_symbol_supplies_its_ticker_class_and_quote_currency(
+    symbol: str,
+) -> None:
+    found = instrument_of(f"{HEAD}|55={symbol}")
+    assert found.symbolticker == "EUR/USD"
     assert found.kind is AssetKind.CURRENCY
     assert found.currency is Currency.USD
 
@@ -203,18 +207,18 @@ def test_a_leg_is_read_with_the_same_rules_as_the_instrument_it_is_of() -> None:
 def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> None:
     near, far = instrument_of(SPREAD).legs
     assert near.xhash != far.xhash
-    assert (
-        near.xhash
-        == Instrument(
-            symbol="ESZ6", securityexchange="XCME", securityid="US1234567890", securityidsource="4"
-        ).xhash
+    instrument = Instrument(
+        symbol="ESZ6", securityexchange="XCME", securityid="US1234567890", securityidsource="4"
     )
+    assert near.symbolticker == instrument.symbolticker
+    assert near.xhash == instrument.xhash
 
 
 def test_a_currency_pair_leg_uses_the_same_symbol_rules_as_an_instrument() -> None:
     leg = Leg(symbol="EUR/USD", xhash=7)
     instrument = Instrument(symbol=leg.symbol)
-    assert (leg.xhash, leg.kind, leg.currency) == (
+    assert (leg.symbolticker, leg.xhash, leg.kind, leg.currency) == (
+        instrument.symbolticker,
         instrument.xhash,
         AssetKind.CURRENCY,
         Currency.USD,

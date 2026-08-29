@@ -33,6 +33,7 @@ from rekep.market.identity import (
 )
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order
+from rekep.market.ticker import SymbolTicker
 from rekep.market.transacted import PREFERRED, TRANSACTED, Stamped, Transacted
 
 __all__ = [
@@ -65,6 +66,7 @@ __all__ = [
     "Order",
     "Side",
     "State",
+    "SymbolTicker",
     "TimeInForce",
     "arrow_of",
     "frame",

@@ -115,10 +115,10 @@ fields:
   type: int64
   description: Instrument lifecycle identity used to join market rows.
   fix: {display: Instrument Xhash}
-- name: instrumentcode
+- name: symbolticker
   type: string
-  description: Readable spelling of the instrument `instrumentxhash` names; empty when unstated.
-  fix: {display: Instrument Code}
+  description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+  fix: {display: Symbol Ticker}
 - name: kind
   type: int64
   description: Standard market semantic, independent of its protocol spelling.

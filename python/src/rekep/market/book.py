@@ -1516,7 +1516,7 @@ class BookIterator:
     """Expire whatever is still resting when the stream ends, as auditable versions."""
 
     folding: dict[int, _Folding] = dataclasses.field(default_factory=dict)
-    """Mutable fold state keyed by the instrument's symbol-derived identity."""
+    """Mutable fold state keyed by the instrument's canonical ticker identity."""
 
     def __post_init__(self) -> None:
         if self.snapshot_every < 0:
@@ -1874,7 +1874,7 @@ class BookIterator:
         return bool(expired)
 
     def _state_of(self, event: MarketEvent) -> _Folding:
-        """The fold this event belongs to, by its symbol-derived identity."""
+        """The fold this event belongs to, by its canonical ticker identity."""
         known = self.folding.get(event.instrumentxhash)
         if known is not None:
             return known
@@ -1897,7 +1897,11 @@ class BookIterator:
             stored
             if stored is not None
             else parsed
-            or Instrument(xhash=event.instrumentxhash, symbol=event.symbol, currency=event.currency)
+            or Instrument(
+                xhash=event.instrumentxhash,
+                symbolticker=event.symbolticker,
+                currency=event.currency,
+            )
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
@@ -1926,7 +1930,8 @@ class BookIterator:
         instrument = (
             known
             if known is not None
-            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.symbol)
+            else snapshot.into_instrument()
+            or Instrument(xhash=canonical, symbolticker=snapshot.symbolticker)
         )
         snapshot.attach_instrument(instrument)
         state = _Folding(
@@ -2029,13 +2034,13 @@ class BookIterator:
         return event.identify()
 
     def _index_instrument(self, known: Instrument) -> None:
-        """Index one full instrument version by its symbol-derived identity."""
+        """Index one full instrument version by its canonical ticker identity."""
         self._instruments[known.xhash] = known
 
     def _instrument_of(
         self, event: MarketEvent, instrument: Instrument | None
     ) -> Instrument | None:
-        """Known instrument reached through the event or parsed symbol identity."""
+        """Known instrument reached through the event or parsed ticker identity."""
         stored = self._instruments.get(event.instrumentxhash)
         if stored is not None or instrument is None:
             return stored
@@ -2209,7 +2214,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     # The instrument the fold has *accumulated*, not whatever the last message
     # happened to spell: a book row says what it is a book of, and the last
     # message may have named the instrument more poorly than an earlier one.
-    # `instrumentxhash` is the exact symbol's key, so later reference facts
+    # `instrumentxhash` is the canonical ticker's key, so later reference facts
     # cannot move this row to another partition.
     previous = state.previous
     bid_best = state.bid.best_level

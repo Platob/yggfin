@@ -258,7 +258,7 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(declared.names)
     assert declared.names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
-    assert "symbol" not in MarketEvent.into_field().names, "instrumentcode is the flat spelling"
+    assert "symbol" not in MarketEvent.into_field().names, "symbolticker is the flat spelling"
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
@@ -267,9 +267,10 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
     assert instrument.xhash != NIL
     built = shape().attach_instrument(instrument)
     scoped = shape(instrumentxhash=7, code="given").attach_instrument(instrument)
-    assert built.instrumentxhash == instrument.xhash and built.symbol == instrument.symbol
+    assert built.instrumentxhash == instrument.xhash
+    assert built.symbolticker == instrument.symbolticker
     assert scoped.instrumentxhash == 7 and scoped.code == "given"
-    assert scoped.symbol == instrument.symbol, "a lifecycle code never displaces the symbol"
+    assert scoped.symbolticker == instrument.symbolticker
     assert built.currency is instrument.currency
     assert "instrument" not in shape.into_field().names
     assert built.into_instrument() is instrument
@@ -279,6 +280,10 @@ def test_a_row_that_names_no_instrument_keeps_the_hash_it_was_handed() -> None:
     """A projection reading back the flat column alone must not lose it to a NIL."""
     assert Order(instrumentxhash=7).instrumentxhash == 7
     assert Order().instrumentxhash == NIL, "and unset really is unset"
+
+
+def test_a_stored_market_ticker_is_canonicalized_once() -> None:
+    assert Order(symbolticker="eurnok").symbolticker == "EUR/NOK"
 
 
 def test_market_currency_input_is_normalized_to_its_compact_enum() -> None:
@@ -298,7 +303,7 @@ def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> 
     instrument = Instrument(symbol="BTC-USD")
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
-    assert built.code == built.code == instrument.symbol
+    assert built.code == instrument.symbolticker
     assert built.xhash == Book.hash_of(hash_bytes_of(instrument.xhash), built.code, Side.UNKNOWN)
 
 
@@ -307,4 +312,5 @@ def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> No
     identity = Order.into_field().field("instrumentxhash")
     assert not identity.nullable
     assert not identity.is_partition_key
-    assert not Order.into_field().field("instrumentcode").nullable
+    ticker = Order.into_field().field("symbolticker")
+    assert ticker.dtype == pyarrow.string() and not ticker.nullable

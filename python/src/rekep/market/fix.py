@@ -30,6 +30,7 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
+from rekep.market.ticker import SymbolTicker
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
 from rekep.text.fixmsg import FixMsg
 
@@ -1213,7 +1214,9 @@ class FixEvents(Convertible):
         cfi = get("CFICode")
         securitytype = get("SecurityType")
         altids = {**self._identifier_altids, **self.into_alt_ids()}
+        ticker = SymbolTicker.from_fixmsg(self.message)
         return Instrument(
+            symbolticker=ticker.symbolticker,
             symbol=get("Symbol") or "",
             kind=_classified(cfi, securitytype),
             securityid=get("SecurityID"),
@@ -1221,7 +1224,7 @@ class FixEvents(Convertible):
             altids=altids or None,
             securitytype=securitytype,
             cficode=cfi,
-            securityexchange=get("SecurityExchange") or get("ExDestination"),
+            securityexchange=get("SecurityExchange"),
             currency=_currency(get("Currency")),
             contractmultiplier=_number(get("ContractMultiplier")),
             minpriceincrement=_number(get("MinPriceIncrement")),
@@ -1263,8 +1266,12 @@ class FixEvents(Convertible):
         built = []
         for entry in entries:
             cfi, securitytype = entry.get("LegCFICode"), entry.get("LegSecurityType")
+            ticker = SymbolTicker.from_entries(
+                entry.items(), registry=self.message.registry, version=self.version
+            )
             built.append(
                 Leg(
+                    symbolticker=ticker.symbolticker,
                     symbol=entry.get("LegSymbol") or "",
                     side=Side.from_fix(entry.get("LegSide"), Side.UNKNOWN),
                     ratio=_number(entry.get("LegRatioQty")),
@@ -1392,6 +1399,7 @@ class FixEvents(Convertible):
             "mic": mic,
             "reason": self._reason(),
             "instrumentxhash": instrument.xhash,
+            "symbolticker": instrument.symbolticker,
             "pxunit": instrument.currency.into_str() if instrument.currency else "",
             "currency": instrument.currency,
         }

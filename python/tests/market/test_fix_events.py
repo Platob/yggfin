@@ -606,7 +606,8 @@ def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> Non
     order, fill = events(FILLED)
     instrument = order.into_instrument()
     assert instrument is not None
-    assert instrument.symbol == "BTC-USD" and order.symbol == "BTC-USD"
+    assert instrument.symbol == "BTC-USD"
+    assert order.symbolticker == "XCME:BTC-USD"
     assert instrument.securityexchange == "XCME" and instrument.currency is Currency.USD
     assert order.instrumentxhash == instrument.xhash != 0
     assert fill.instrumentxhash == order.instrumentxhash
@@ -929,7 +930,7 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     reader = FixEvents.from_text(line, registry=registry)
     (order,) = list(reader)
     assert reader.version == "VENUE1"
-    assert (order.symbol, order.clordid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
+    assert (order.symbolticker, order.clordid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
     assert (order.qty, order.px, order.unix) == (7.0, 10.5, unix_of("20260821-10:00:00"))
     assert "9004" not in order.metadata, "the configured Side tag is a claimed column"
     assert order.metadata["9008"] == "ALPHA", "a registry-only field remains auditable"

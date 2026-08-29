@@ -23,7 +23,7 @@ Order FILLED 0.0
 Execution FILLED 10.0
 ```
 
-`MarketEvent` adds `instrumentxhash` and its readable `instrumentcode`,
+`MarketEvent` adds `instrumentxhash` and its readable `symbolticker`,
 kind, side, price, quantity, notional, currency, and their previous values.
 Protocol spelling stays in metadata; stored fields use common semantics.
 Parsed logs retain FIX wire order as `MsgSeqNum`; normalized market events do
@@ -118,7 +118,7 @@ The shorter value avoids nine meaningless zeroes in partition paths without
 changing hourly cardinality, and covers 1901-12-13 21:00 UTC inclusive to
 2038-01-19 04:00 UTC exclusive.
 
-`instrumentcode` is deliberately not a second partition. The case for
+`symbolticker` is deliberately not a second partition. The case for
 bucketing it is real — the hour prunes time, not instrument — so it was
 measured. 144,000 rows across 72 hours and 40 instruments, best of five:
 

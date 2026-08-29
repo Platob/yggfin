@@ -103,7 +103,8 @@ book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 assert message.MsgType == fixmsg.MsgType == "8"
 assert (order.clordid, order.qty) == ("CL-7", 6.0)
 assert (execution.execid, execution.qty, execution.px) == ("EX-3", 4.0, 100.25)
-assert instrument is not None and instrument.symbol == book.symbol == "BTC-USD"
+assert instrument is not None
+assert instrument.symbolticker == book.symbolticker == "XCME:BTC-USD"
 ```
 
 The scalar example exposes each boundary. File-scale work keeps the same

@@ -24,6 +24,7 @@ from rekep.market.identity import (
     hash_bytes_of,
     hash_of,
 )
+from rekep.market.ticker import SymbolTicker
 
 if TYPE_CHECKING:
     from rekep.market.instrument import Instrument
@@ -55,7 +56,7 @@ _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
 #: What `altids` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
 #: and `execid`. Instrument identity has `instrumentxhash` and
-#: `instrumentcode`; mixing it into this map lets unrelated events match.
+#: `symbolticker`; mixing it into this map lets unrelated events match.
 ALTIDS_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
@@ -590,8 +591,8 @@ class MarketEvent(Event):
     # bucket[16] -- slower, not faster -- while the file count went 72 to 576
     # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
     # every consumer writes went 24 ms to 165 to 320. See docs/market/index.md.
-    instrumentcode: Annotated[str, Field.column("Instrument Code")] = ""
-    """Readable spelling of the instrument `instrumentxhash` names; empty when unstated."""
+    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    """Canonical spelling of the instrument `instrumentxhash` names; empty when unstated."""
 
     kind: MarketKind = MarketKind.UNKNOWN
     """Standard market semantic, independent of its protocol spelling."""
@@ -640,6 +641,7 @@ class MarketEvent(Event):
 
     def __post_init__(self) -> None:
         """Normalize the compact currency code and inherited clocks."""
+        self.symbolticker = SymbolTicker.from_str(self.symbolticker).into_str()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
         Event.__post_init__(self)
@@ -648,7 +650,7 @@ class MarketEvent(Event):
         """Use reference data while building without adding it to the event schema."""
         self.__instrument = instrument
         self.instrumentxhash = self.instrumentxhash or instrument.xhash
-        self.instrumentcode = self.instrumentcode or instrument.code or instrument.symbol
+        self.symbolticker = self.symbolticker or instrument.symbolticker
         if self.currency is None:
             self.currency = instrument.currency
         return self
@@ -656,11 +658,6 @@ class MarketEvent(Event):
     def into_instrument(self) -> Instrument | None:
         """Return transient parsed reference data, absent after persisted reads."""
         return getattr(self, "_MarketEvent__instrument", None)
-
-    @property
-    def symbol(self) -> str:
-        """The flat readable instrument spelling."""
-        return self.instrumentcode
 
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.
@@ -678,8 +675,8 @@ class MarketEvent(Event):
                 self.__instrument = known
         if not self.instrumentxhash:
             self.instrumentxhash = previous.instrumentxhash
-        if not self.instrumentcode:
-            self.instrumentcode = previous.instrumentcode
+        if not self.symbolticker:
+            self.symbolticker = previous.symbolticker
         if self.side is Side.UNKNOWN:
             self.side = previous.side
         # `px` and `qty` are the abstract slots, and what they hold is the
@@ -766,21 +763,21 @@ class MarketEvent(Event):
         return (hash_bytes_of(self.instrumentxhash), code, self.side)
 
     def life_code(self) -> str:
-        """The lifecycle identifier, and the instrument symbol when there is none.
+        """The lifecycle identifier, and the instrument ticker when there is none.
 
         A market event that names no order and no report is still an event
-        about one instrument on one side, and the symbol is the readable half
+        about one instrument on one side, and the ticker is the readable half
         of that. It is a fallback and never a preference: a row carrying an
         order identifier is named by the order.
         """
-        return self.code or self.symbol
+        return self.code or self.symbolticker
 
     def version_parts(self) -> tuple[Any, ...]:
         """Current non-clock market values in the framed hash domain."""
         return (
             *Event.version_parts(self),
             hash_bytes_of(self.instrumentxhash),
-            self.instrumentcode,
+            self.symbolticker,
             self.kind,
             self.side,
             self.px,

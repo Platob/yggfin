@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-import re
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any
 
@@ -26,6 +25,7 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import HOUR, Event, _scalar_part
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL, hash_bytes_of, hash_of
+from rekep.market.ticker import SymbolTicker
 
 
 @scalar(slots=True, weakref_slot=True)
@@ -34,6 +34,9 @@ class Leg(MarketConvertible):
 
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """The instrument this leg is of, derived the same way any other one is."""
+
+    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    """Canonical instrument spelling derived from the leg's FIX identifiers."""
 
     symbol: Annotated[str, fix_tag("LegSymbol")] = ""
     """Identifier as the venue spells the leg."""
@@ -82,13 +85,22 @@ class Leg(MarketConvertible):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        quote = _forex_quote(self.symbol)
-        if quote is not None:
+        ticker = SymbolTicker.from_entries(
+            (
+                ("SymbolTicker", self.symbolticker),
+                ("Symbol", self.symbol),
+                ("SecurityID", self.securityid),
+                ("SecurityIDSource", self.securityidsource),
+                ("SecurityExchange", self.securityexchange),
+            )
+        )
+        self.symbolticker = ticker.into_str()
+        if ticker.kind is AssetKind.CURRENCY:
             if self.kind == AssetKind.UNKNOWN:
-                self.kind = AssetKind.CURRENCY
+                self.kind = ticker.kind
             if self.currency is None:
-                self.currency = quote
-        self.xhash = _symbol_hash(self.symbol) if self.symbol else NIL
+                self.currency = ticker.currency
+        self.xhash = hash_of(self.symbolticker) if self.symbolticker else NIL
 
 
 @scalar(slots=True)
@@ -104,10 +116,13 @@ class Instrument(Event):
     # Not a partition: bucketing a hash splits every hour into as many files as
     # buckets, and the hour already prunes the read this would prune.
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
-    """Digest of the exact `symbol`; zero when the symbol is empty."""
+    """Digest of `symbolticker`; zero when the ticker is empty."""
+
+    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
-    """Identifier as the venue spells it and the instrument identity source."""
+    """Human-readable spelling carried by `Symbol <55>`."""
 
     kind: AssetKind = AssetKind.UNKNOWN
     """What it settles as, read from the first character of the CFI code."""
@@ -174,20 +189,29 @@ class Instrument(Event):
     """The legs of a multileg instrument, in the order the venue sent them."""
 
     def __post_init__(self) -> None:
-        """Normalize facts and derive identity solely from the exact symbol."""
+        """Normalize facts and derive identity from the canonical ticker."""
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        quote = _forex_quote(self.symbol)
-        if quote is not None:
+        ticker = SymbolTicker.from_entries(
+            (
+                ("SymbolTicker", self.symbolticker),
+                ("Symbol", self.symbol),
+                ("SecurityID", self.securityid),
+                ("SecurityIDSource", self.securityidsource),
+                ("SecurityExchange", self.securityexchange),
+            )
+        )
+        self.symbolticker = ticker.into_str()
+        if ticker.kind is AssetKind.CURRENCY:
             if self.kind == AssetKind.UNKNOWN:
-                self.kind = AssetKind.CURRENCY
+                self.kind = ticker.kind
             if self.currency is None:
-                self.currency = quote
+                self.currency = ticker.currency
         if self.isincode is None:
             self.isincode = self.into_isin()
         self.xhash = self.into_xhash()
-        self.code = self.symbol
+        self.code = self.symbolticker
         Event.__post_init__(self)
         self._materialize_life_code()
 
@@ -220,19 +244,19 @@ class Instrument(Event):
         return dataclasses.replace(self, **filled, vhash=NIL, hash=NIL)
 
     def into_xhash(self) -> int:
-        """The exact symbol's domain-separated identity, or zero when absent."""
-        return _symbol_hash(self.symbol) if self.symbol else NIL
+        """The canonical ticker's identity, or zero when absent."""
+        return hash_of(self.symbolticker) if self.symbolticker else NIL
 
     def identities(self) -> tuple[int, ...]:
-        """The one identity by which this exact symbol is known."""
+        """The one identity by which this canonical ticker is known."""
         return (self.xhash,) if self.xhash else ()
 
     def life_code(self) -> str:
-        """The exact symbol shared by every version of this lifecycle."""
-        return self.symbol
+        """The canonical ticker shared by every version of this lifecycle."""
+        return self.symbolticker
 
     def life_parts(self) -> tuple[Any, ...]:
-        """An instrument lifecycle exists only when its exact symbol does."""
+        """An instrument lifecycle exists only when its canonical ticker does."""
         return (hash_bytes_of(self.xhash),) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
@@ -270,7 +294,7 @@ class Instrument(Event):
         registry: FixRegistry | None = None,
         **declared: Any,
     ) -> Iterator[Instrument]:
-        """Version instrument facts and symbol-only fallbacks from sorted logs."""
+        """Version instrument facts and ticker-only fallbacks from sorted logs."""
 
         def observations() -> Iterator[tuple[int, Instrument]]:
             for log in logs:
@@ -370,7 +394,7 @@ class _InstrumentIterator:
         self._states[known.xhash] = state
 
     def _state_of(self, instrument: Instrument) -> _InstrumentState | None:
-        """Find the lifecycle named by this exact symbol."""
+        """Find the lifecycle named by this canonical ticker."""
         return self._states.get(instrument.xhash)
 
     def _next_boundary(self, unix: int) -> int | None:
@@ -412,6 +436,7 @@ class _InstrumentIterator:
 
 # Frozen by the instrument version protocol, not inferred from dataclass order.
 _INSTRUMENT_MEMBERS = (
+    "symbolticker",
     "symbol",
     "kind",
     "securityid",
@@ -432,6 +457,7 @@ _INSTRUMENT_MEMBERS = (
 )
 _LEG_MEMBERS = (
     "xhash",
+    "symbolticker",
     "symbol",
     "side",
     "ratio",
@@ -498,19 +524,3 @@ def _legs_parts(legs: list[Any] | None) -> tuple[Any, ...]:
             value = getattr(leg, name)
             parts.extend((name, hash_bytes_of(value) if name == "xhash" else _scalar_part(value)))
     return tuple(parts)
-
-
-_FOREX_SYMBOL = re.compile(r"[A-Za-z]{3}/[A-Za-z]{3}", re.ASCII)
-
-
-def _forex_quote(symbol: str) -> Currency | None:
-    """The quote currency of an exact slash-delimited pair, when present."""
-    if _FOREX_SYMBOL.fullmatch(symbol) is None:
-        return None
-    return Currency.from_str(symbol[4:])
-
-
-@functools.lru_cache(maxsize=65_536)
-def _symbol_hash(symbol: str) -> int:
-    """Hash one exact symbol in the existing symbol-identity domain."""
-    return hash_of("symbol", "", symbol)

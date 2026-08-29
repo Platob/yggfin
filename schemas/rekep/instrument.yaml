@@ -53,7 +53,7 @@ fields:
   fix: {display: Value Hash}
 - name: xhash
   type: int64
-  description: Digest of the exact `symbol`; zero when the symbol is empty.
+  description: Digest of `symbolticker`; zero when the ticker is empty.
   fix: {display: Xhash}
 - name: linkedhashes
   type: list
@@ -111,6 +111,10 @@ fields:
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
   fix: {display: Reason}
+- name: symbolticker
+  type: string
+  description: Canonical spelling selected from the FIX instrument identifiers.
+  fix: {display: Symbol Ticker}
 - name: symbol
   type: string
   description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
@@ -205,6 +209,10 @@ fields:
       type: int64
       description: The instrument this leg is of, derived the same way any other one is.
       fix: {display: Xhash}
+    - name: symbolticker
+      type: string
+      description: Canonical instrument spelling derived from the leg's FIX identifiers.
+      fix: {display: Symbol Ticker}
     - name: symbol
       type: string
       description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description

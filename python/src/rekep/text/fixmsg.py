@@ -69,6 +69,7 @@ from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
+from rekep.market.ticker import SymbolTicker
 from rekep.text.message import SESSION_FIELDS, Message
 
 _EVENT_CODE = pyarrow.int64()
@@ -85,6 +86,7 @@ _INSTRUMENT_PROTOCOL = "REKEP"
 # `SecurityDefinition` a real bridge sent.
 _INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
+_INSTRUMENT_TICKER = "rekep.symbolticker"
 _INSTRUMENT_XHASH = "rekep.xhash"
 _LIFECYCLE_ALTIDS = frozenset(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
@@ -227,9 +229,7 @@ class FixMsg(Message):
             "quoteentryid",
             "quoteid",
             "quotereqid",
-            "securityid",
-            "isincode",
-            "symbol",
+            "symbolticker",
         )
 
     @classmethod
@@ -238,17 +238,16 @@ class FixMsg(Message):
         """Parsed identifier columns retained in `altids`, in lookup order."""
         return tuple(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
-    @classmethod
-    @functools.cache
-    def into_symbol_columns(cls) -> tuple[str, ...]:
-        """Instrument identifiers used when FIX omits `Symbol <55>`."""
-        return ("symbol", "securityid", "isincode")
-
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
+        self.symbolticker = (
+            SymbolTicker.from_str(self.symbolticker)
+            if self.symbolticker
+            else SymbolTicker.from_fixmsg(self)
+        ).into_str()
         if (
             self.protocolversion is None
             and self.protocolcode == NO_PROTOCOL
@@ -289,6 +288,7 @@ class FixMsg(Message):
         self.code = value("code")
         self.altids = dict(value("altids") or ())
         self.reason = value("reason")
+        self.symbolticker = value("symbolticker")
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
         self.xhash = value("xhash")
@@ -489,6 +489,9 @@ class FixMsg(Message):
     """`Signature <89>`, as the bytes it is."""
 
     # What was traded.
+
+    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    """Canonical spelling derived from the FIX instrument identifiers."""
 
     symbol: Annotated[str | None, DECLARED["Symbol"]] = None
     """`Symbol <55>`: ticker symbol."""
@@ -773,6 +776,7 @@ class FixMsg(Message):
             xhash=known.xhash,
             message=None,
             eventtype=declared.pop("eventtype", EventType.INSTRUMENT),
+            symbolticker=known.symbolticker,
             symbol=known.symbol or None,
             securityid=known.securityid,
             securityidsource=known.securityidsource,
@@ -1276,7 +1280,7 @@ class FixMsg(Message):
             columns.setdefault(field.name, pyarrow.nulls(rows, field.type))
         columns.update(cls._resolved_batch_columns(columns, codec, rows))
         columns["mic"] = _mic_arrow(columns, rows)
-        return cls.identified(columns, schema, rows)
+        return cls.identified(columns, schema, rows, codec.registry)
 
     @classmethod
     def _message_schema(cls, source: pyarrow.Schema) -> pyarrow.Schema:
@@ -1415,7 +1419,11 @@ class FixMsg(Message):
 
     @classmethod
     def identified(
-        cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
+        cls,
+        columns: dict[str, Any],
+        schema: pyarrow.Schema,
+        rows: int,
+        registry: FixRegistry | None = None,
     ) -> pyarrow.RecordBatch:
         """The envelope a row earns: its instrument, its time, its identity.
 
@@ -1425,7 +1433,7 @@ class FixMsg(Message):
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
-        columns["symbol"] = cls.symbol_arrow(columns, rows)
+        columns["symbolticker"] = SymbolTicker.into_arrow_array(columns, rows, registry)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
@@ -1576,14 +1584,6 @@ class FixMsg(Message):
             sizes,
             compute.filter(compute.take(pyarrow.array(names), member), present),
             compute.filter(flat, present),
-        )
-
-    @classmethod
-    def symbol_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """Most relevant readable instrument identifier on each row."""
-        found = _first_text(columns, cls.into_symbol_columns(), rows)
-        return pyarrow.compute.if_else(
-            pyarrow.compute.equal(found, ""), pyarrow.nulls(rows, pyarrow.string()), found
         )
 
     @classmethod
@@ -1813,7 +1813,7 @@ class FixMsg(Message):
                 yield event_type, combined(event_type)
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
-        """Yield distinct instrument facts, synthesizing a symbol-only row when needed."""
+        """Yield distinct instrument facts, synthesizing a ticker-only row when needed."""
         if self.is_instrument_version and self.get(_INSTRUMENT_KIND):
             yield self._normalized_instrument()
             return
@@ -1847,6 +1847,7 @@ class FixMsg(Message):
                 "eventtype": pyarrow.repeat(
                     pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE), batch.num_rows
                 ),
+                "symbolticker": pyarrow.compute.fill_null(batch.column("symbolticker"), ""),
                 "symbol": pyarrow.compute.fill_null(batch.column("symbol"), ""),
                 "kind": _stored_code(normalized.first(_INSTRUMENT_KIND)),
                 "securityid": batch.column("securityid"),
@@ -1880,11 +1881,16 @@ class FixMsg(Message):
         """Build only the instrument facts already promoted on this row."""
         from rekep.market.instrument import Instrument
 
-        symbol = self.symbol or self.securityid or self.isincode or ""
-        if not symbol:
+        ticker = (
+            SymbolTicker.from_str(self.symbolticker)
+            if self.symbolticker
+            else SymbolTicker.from_fixmsg(self)
+        )
+        if not ticker.symbolticker:
             return None
         return Instrument(
-            symbol=symbol,
+            symbolticker=ticker.symbolticker,
+            symbol=self.symbol or "",
             altids=dict(self.altids),
             securityid=self.securityid,
             securityidsource=self.securityidsource,
@@ -2198,6 +2204,7 @@ class _NormalizedInstrumentFields:
         item = dtype.value_type
         columns = {
             "xhash": pyarrow.compute.fill_null(cast_arrow_fix(xhash, pyarrow.int64()), 0),
+            "symbolticker": pyarrow.compute.fill_null(member(_INSTRUMENT_TICKER), ""),
             "symbol": pyarrow.compute.fill_null(member("LegSymbol"), ""),
             "side": _fix_enum_arrow(member("LegSide"), Side),
             "ratio": cast_arrow_fix(member("LegRatioQty"), pyarrow.float64()),
@@ -2353,6 +2360,7 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
             root = f"NoLegs[{index}]"
             members = (
                 (_INSTRUMENT_XHASH, leg.xhash),
+                (_INSTRUMENT_TICKER, leg.symbolticker),
                 (_INSTRUMENT_KIND, int(leg.kind)),
                 ("LegSymbol", leg.symbol),
                 ("LegSide", leg.side),

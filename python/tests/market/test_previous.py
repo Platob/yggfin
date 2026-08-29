@@ -178,7 +178,7 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
     first = resting()
     later = changed(_order(unix=20, orderid="ORD-1", state=State.OPEN), first)
     assert later.px == 100.0 and later.qty == 10.0
-    assert later.side is Side.BUY and later.symbol == "AAPL"
+    assert later.side is Side.BUY and later.symbolticker == "XNAS:AAPL"
     assert later.into_instrument() is EQUITY
     assert later.instrumentxhash == first.instrumentxhash, "and it stays in its partition"
 
