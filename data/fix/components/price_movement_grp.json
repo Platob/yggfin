@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PriceMovementGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityList\"]"
   },
   "fields": [

@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "CrossOrderCancelRequest",
-   "msgtype": "u"
+   "msgtype": "u",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

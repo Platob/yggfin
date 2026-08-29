@@ -12,6 +12,7 @@ from rekep.fields.metadata import values_of
 from rekep.fix.entries import Alias, record_kind
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
+from rekep.fix.store import ConflictReport
 
 #: The contracts this repository publishes, which the CLI has to be able to
 #: read -- the same directory `tests/test_schemas.py` pins.
@@ -277,7 +278,10 @@ def store(tmp_path: Path) -> Path:
     """A registry holding one synthetic field, in its tag shard."""
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     registry._store_versions(("9.1",))
-    registry._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
+    field = fix_field("FakeRole", 90001, "int", version="9.1")
+    field.fix.source = "nanoconda"
+    field.fix.sources = ("nanoconda", "onixs")
+    registry._store_fields("9.1", [field])
     return Path(registry.cache_dir)
 
 
@@ -606,6 +610,12 @@ def test_registry_reads_are_json_and_accept_a_numeric_tag(
     assert run("fix", "registry", "versions", "--store", str(store)) == 0
     assert json.loads(capsys.readouterr().out) == [{"version": "9.1", "fields": 1}]
 
+    assert run("fix", "registry", "coverage", "--store", str(store)) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "nanoconda": {"primary": 1, "fields": 1},
+        "onixs": {"primary": 0, "fields": 1},
+    }
+
     assert run("fix", "registry", "show", "--store", str(store), "90001") == 0
     assert json.loads(capsys.readouterr().out)["name"] == "FakeRole"
 
@@ -689,10 +699,12 @@ def test_scrape_forwards_source_configuration(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
     target = tmp_path / "fresh"
+    conflicts = tmp_path / "conflicts.json"
     called: dict[str, object] = {}
 
     class Scraped:
         cache_dir = target
+        conflicts = ConflictReport()
 
         def field_records(self) -> dict[str, object]:
             return {"FakeRole": object()}
@@ -712,7 +724,9 @@ def test_scrape_forwards_source_configuration(
             "scrape",
             "--output",
             str(target),
-            "--base-url",
+            "--conflicts",
+            str(conflicts),
+            "--nanoconda-url",
             "https://dictionary.example",
             "--max-workers",
             "3",
@@ -720,6 +734,9 @@ def test_scrape_forwards_source_configuration(
         == 0
     )
     assert called["output"] == str(target)
-    assert called["base_url"] == "https://dictionary.example"
+    sources = called["sources"]
+    assert sources[0].name == "nanoconda"
+    assert sources[0].url == "https://dictionary.example"
     assert called["max_workers"] == 3
+    assert json.loads(conflicts.read_text())["counts"]["encoded"] == 0
     assert "1 fields and 1 components" in capsys.readouterr().err

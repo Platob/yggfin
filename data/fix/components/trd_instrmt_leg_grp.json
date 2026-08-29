@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdInstrmtLegGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

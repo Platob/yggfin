@@ -49,15 +49,10 @@ ASCENDING = "asc"
 #: the standard has.
 ANY_VERSION = "*"
 
-#: What an encoded key keeps: nothing that is not a letter or a digit, so
-#: `ORDER_SUBMISSION_TIME`, `Order Submission Time` and `ordersubmissiontime`
-#: are one key where plain lowercasing leaves three.
-_ENCODED_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
-
 
 def fold(name: Any) -> str:
-    """One spelling as it is matched: case-folded, separators kept."""
-    return str(name).strip().casefold()
+    """One spelling as it is matched: lowercase letters and digits."""
+    return column_name(str(name))
 
 
 @functools.lru_cache(maxsize=4096)
@@ -67,7 +62,7 @@ def encoded_key(text: Any) -> str:
     Memoized because a feed asks the same few hundred spellings on every
     message.
     """
-    return _ENCODED_DROP.sub("", str(text).casefold())
+    return column_name(str(text))
 
 
 def version_rank(version: str) -> tuple[int, ...]:
@@ -155,7 +150,7 @@ class FixFieldValue(Convertible):
 
     The wire value, the prose a person reads, and every other spelling the
     dictionary or a feed writes for it. One record instead of the parallel
-    maps this replaces: the value's meaning, its spec symbol and the
+    maps this replaces: the value's meaning, its symbolic name and the
     spelling-to-value lookup were the same fact stored three times, and only
     the first two are facts at all -- `encodings_of` derives the lookup.
 
@@ -171,10 +166,10 @@ class FixFieldValue(Convertible):
     """What it means, as the dictionary's prose spells it: `Buy`."""
 
     aliases: tuple[str, ...] = ()
-    """Every other spelling naming this value, the spec symbol (`BUY`) first."""
+    """Every other spelling naming this value, the leading source's name first."""
 
     def __post_init__(self) -> None:
-        """Refuse an unnamed value and settle the spellings' shape."""
+        """Refuse a missing wire value and settle the spellings' shape."""
         value = str(self.value).strip()
         if not value:
             raise ValueError("a FIX field value carries no value")
@@ -236,7 +231,7 @@ def values_of(declared: Any) -> tuple[FixFieldValue, ...]:
 def encodings_of(values: tuple[FixFieldValue, ...]) -> Any:
     """`({normalized spelling: value}, {dropped spelling: the values claiming it})`.
 
-    Built from the prose, the symbols and the raw values themselves, so a
+    Built from the prose, the names and the raw values themselves, so a
     caller has one lookup path rather than several. A spelling two values
     both normalize to is emitted for neither: an ambiguous translation that
     silently picks one is worse than none, and the lookup falls through to
@@ -262,10 +257,8 @@ def symbols_of(values: tuple[FixFieldValue, ...]) -> Mapping[str, str]:
 
     The inverse of `encodings_of`, for a caller that stores what a value *is*
     rather than the character the wire carried -- an alternative identifier
-    keyed by its scheme, a code rendered in a report. The spec's own symbol
-    where it declares one, because that is the name every other FIX tool
-    prints; the value itself where the dictionary names it nothing, so a key
-    always exists.
+    keyed by its scheme, a code rendered in a report. The leading source's
+    name wins; the wire value itself fills a value the sources do not name.
 
     Cached on the values tuple exactly as `encodings_of` is, and for the same
     reason: one field is asked this once per parse, not once per row.
@@ -487,6 +480,8 @@ class FixMetadata(ProtocolMetadata):
     version = _Text()
     column = _Folded()
     note = _Text()
+    added = _Text()
+    source = _Text()
     component = _Text()
     #: The message type a declaration defines, where it defines one -- `"D"`,
     #: `"8"`. Empty for a reusable component, which is what most blocks are.
@@ -494,6 +489,8 @@ class FixMetadata(ProtocolMetadata):
     versions = _Document(shape=tuple)
     msgtypes = _Document(shape=tuple)
     components = _Document(shape=tuple)
+    sources = _Document(shape=tuple)
+    origins = _Document(shape=dict)
     aliases = _Document(shape=tuple)
 
     @property
@@ -588,6 +585,13 @@ class FixMetadata(ProtocolMetadata):
     def newest(self) -> str:
         """The version this record's reading was taken from."""
         return newest_of(self.versions)
+
+    def source_of(self, part: str, value: Any = "") -> str:
+        """The source that supplied one field part or enumerated value part."""
+        origin = self.origins.get(part)
+        if isinstance(origin, Mapping):
+            return str(origin.get(str(value)) or self.source) if value != "" else self.source
+        return str(origin or self.source)
 
     @property
     def named_aliases(self) -> tuple[Alias, ...]:

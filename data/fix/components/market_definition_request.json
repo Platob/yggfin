@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDefinitionRequest",
-   "msgtype": "BT"
+   "msgtype": "BT",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

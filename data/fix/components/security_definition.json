@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityDefinition",
-   "msgtype": "d"
+   "msgtype": "d",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

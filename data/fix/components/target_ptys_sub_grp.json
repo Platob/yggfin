@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "TargetPtysSubGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"MassQuoteAck\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"QuoteCancel\",\"QuoteStatusReport\",\"QuoteStatusRequest\"]"
   },
   "fields": [

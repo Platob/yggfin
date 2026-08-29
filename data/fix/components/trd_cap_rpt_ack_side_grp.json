@@ -11,6 +11,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdCapRptAckSideGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeCaptureReportAck\"]"
   },
   "fields": [

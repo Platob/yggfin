@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "Heartbeat",
-   "msgtype": "0"
+   "msgtype": "0",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

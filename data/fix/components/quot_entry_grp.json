@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "QuotEntryGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MassQuote\"]"
   },
   "fields": [

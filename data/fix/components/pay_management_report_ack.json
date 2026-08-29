@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PayManagementReportAck",
-   "msgtype": "EB"
+   "msgtype": "EB",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -9,6 +9,7 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep.enums import Currency, EventType, MarketKind, Side, State, TimeInForce
+from rekep.fields import column_names, encoded_key
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
 from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
@@ -1098,15 +1099,15 @@ def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> 
         for key, value in mapping.items():
             if len(key) <= 2:
                 continue
-            low = key.casefold()
-            if low in folded and folded[low] != int(value):
-                collided.add(low)
-            folded.setdefault(low, int(value))
-        for low in collided:
-            folded.pop(low, None)
+            normalized = encoded_key(key)
+            if normalized in folded and folded[normalized] != int(value):
+                collided.add(normalized)
+            folded.setdefault(normalized, int(value))
+        for normalized in collided:
+            folded.pop(normalized, None)
         if folded:
             worded = compute.index_in(
-                compute.utf8_lower(compute.utf8_trim_whitespace(source)),
+                column_names(compute.utf8_trim_whitespace(source)),
                 value_set=pyarrow.array(list(folded), pyarrow.string()),
             )
             fallback = compute.take(pyarrow.array(list(folded.values()), stored), worded)

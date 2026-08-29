@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderMassActionReport",
-   "msgtype": "BZ"
+   "msgtype": "BZ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

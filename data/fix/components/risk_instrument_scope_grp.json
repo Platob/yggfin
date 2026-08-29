@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RiskInstrumentScopeGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\"]"
   },
   "fields": [

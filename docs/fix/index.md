@@ -41,8 +41,9 @@ supply an explicit version.
 ## Registry
 
 The reviewable `data/fix/` directory and `data/fix.zip` archive hold the same
-registry, combining OnixS field definitions with QuickFIX symbols, components
-and headers. Resource locations use the project's URL resolver and
+registry. Nanoconda leads field and value names, OnixS fills missing prose and
+usage, and QuickFIX supplies machine declarations, components and headers.
+Resource locations use the project's URL resolver and
 `pyarrow.fs`; a remote resource is materialized only when a downstream parser
 requires an OS-local path, then reused from cache -- all before the loop.
 
@@ -102,7 +103,7 @@ not one per version:
         "description": "Side of order.",
         "fix": {"tag": "54", "type": "char",
                 "versions": "[\"4.4\",\"4.3\",\"4.2\"]",
-                "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"BUY\"]}]"}}}
+                "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"Buy\"]}]"}}}
 ```
 
 A record is a `Field` document -- the Arrow reading at the top, the protocol's
@@ -163,8 +164,7 @@ still names it, so its silence does not erase the prose another version had.
 
 Every reading a collapse drops is written to `data/fix-conflicts.json`: the
 field, its tag, the part, the readings it saw with their versions and which one
-it kept. 152 fields where two versions give one enumerated value different
-meanings is a list somebody can read; a silent drop is not.
+it kept. The report is a list somebody can read; a silent drop is not.
 
 The counts are pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild
 that grows past them fails.
@@ -213,11 +213,9 @@ answers:
 2. a declared alias -- a rendered or namespaced spelling, the name an older
    version gave the tag, a near miss confirmed against a capture.
 
-Matching folds **case and nothing else**. A separator is part of a name, so
-`party_role` is a spelling of its own rather than a second way of writing
-`PartyRole` -- dropping separators merged identities a store deliberately
-holds apart, and a match a registry cannot tell from a real collision is worse
-than a miss.
+Matching folds to lowercase letters and digits, so `PartyRole`, `party_role`
+and `PARTY-ROLE` are one name. `registry.check()` refuses two identities whose
+canonical names or aliases meet under that fold.
 
 A real renderer spelling is recorded as an alias, which is what
 `rekep fix classify --report` finds and `rekep fix apply --aliases` writes.
@@ -251,14 +249,14 @@ proposed write is shown and requires confirmation.
 
 A registry resolves where its dictionary comes from **once, at construction**,
 and never on a miss -- a parse that meets its first bridge line must not answer
-it by starting a seven-thousand-page scrape in the middle of a batch.
+it by starting a fourteen-thousand-page scrape in the middle of a batch.
 
 | what it finds | what it does |
 | --- | --- |
 | a store at `cache_dir` | serves it, silently |
 | configured registry URL | validates and atomically expands the full archive |
-| archive unavailable | fetches both sources |
-| no URL, `offline=False` | fetches both sources |
+| archive unavailable | fetches the configured sources in priority order |
+| no URL, `offline=False` | fetches the configured sources in priority order |
 | no store, the fetch failed | serves the packaged projection and says the registry is reduced |
 | no store, `offline=True` | serves the packaged projection, naming the scrape command |
 
@@ -268,11 +266,11 @@ a projection that is complete for what it projects.
 
 Both channels carry the lines. `warnings.warn` is the record -- filterable, and
 shown once, which is why it is not the only one -- and `announce` is the
-foreground writer a person waiting on a multi-minute fetch reads; it defaults to
+foreground writer a person waiting on a multi-hour fetch reads; it defaults to
 `stderr`, and the CLI and the notebooks pass their own.
 
 The start line says what was not found and where it looked, what is being
-fetched from `BASE_URL` and `QUICKFIX_URL`, roughly how many pages and how
+fetched from `DEFAULT_SOURCES`, roughly how many pages and how
 long, where it installs, and how to skip it. The finish line says what was
 written and how long it took.
 
@@ -324,7 +322,7 @@ skipped on a rerun. The registry is uploaded second with its SHA-256 checksum.
 Consumers use its target URL as their cold-cache fallback.
 
 `FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
-the QuickFIX spec before serving it. The default, `0`, never refetches. A
+the configured registry sources before serving it. The default, `0`, never refetches. A
 refetch that fails is reported and the local copy served anyway: a dictionary
 a day stale parses every message, and one that raises parses none.
 
@@ -351,9 +349,9 @@ and one that dropped them extracts no group at all. The messages travel for
 their own reason: a wheel that could not say what a `D` is would send every
 reader after the full dictionary.
 
-`components()` answers `[]` for a version whose spec declares none -- nothing
-before 4.3 has a reusable block -- and `None` for a store that was never asked;
-`components_available()` is what tells them apart.
+`components()` answers `[]` both when a version declares no reusable block and
+when its declarations are absent. `components_available()` distinguishes the
+two states.
 
 It hands back the components a version declares **and** the ones their trees
 reference: a record keeps the newest member tree, so 4.3's `Parties` is now

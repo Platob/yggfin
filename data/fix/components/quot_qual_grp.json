@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "QuotQualGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\"]"
   },
   "fields": [

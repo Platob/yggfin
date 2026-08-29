@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeInstrumentPartySubIDsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\"]"
   },
   "fields": [

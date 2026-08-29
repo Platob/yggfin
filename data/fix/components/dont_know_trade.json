@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "DontKnowTrade",
-   "msgtype": "Q"
+   "msgtype": "Q",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

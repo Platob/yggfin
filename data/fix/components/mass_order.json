@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MassOrder",
-   "msgtype": "DJ"
+   "msgtype": "DJ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

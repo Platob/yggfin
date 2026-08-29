@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "ResendRequest",
-   "msgtype": "2"
+   "msgtype": "2",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

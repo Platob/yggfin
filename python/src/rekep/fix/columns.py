@@ -319,7 +319,7 @@ def _named(entry: Field) -> tuple[str, ...]:
     """Every spelling a rendered key may carry for one namespaced field, whole."""
     aliased = [str(alias.get("name", "")) for alias in entry.fix.aliases if alias.get("name")]
     spellings = [entry.fix.name, *aliased]
-    return tuple(dict.fromkeys(name.strip().lower() for name in spellings if name.strip()))
+    return tuple(dict.fromkeys(column_name(name) for name in spellings if name.strip()))
 
 
 #: What a lifted namespaced field carries into the log contract. Deliberately not
@@ -395,7 +395,7 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 #: this package's question and not the dictionary's -- it enumerates the
 #: schemes and ranks none -- while the wire value beside it is still read from
 #: the dictionary rather than written down.
-ISIN_SCHEME = "ISIN_NUMBER"
+ISIN_SCHEME = "ISINNumber"
 
 #: What an identifier carried under no stated scheme is filed under.
 UNKNOWN_SCHEME = "UNKNOWN"

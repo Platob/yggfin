@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pyarrow
+import pytest
 
 import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile
@@ -296,6 +297,23 @@ def test_scalar_message_type_uses_the_same_case_and_checksum_boundaries() -> Non
         ("10", "000"),
         ("35", "D"),
     ]
+
+
+@pytest.mark.parametrize(
+    ("message_name", "checksum_name"),
+    [("Msg_Type", "Check_Sum"), ("Msg Type", "Check Sum"), ("M!sg@Type", "Check/Sum")],
+)
+def test_rendered_header_names_use_the_column_fold_in_scalar_and_arrow(
+    message_name: str,
+    checksum_name: str,
+) -> None:
+    line = f"#{message_name}=D|#{checksum_name}=000|#Side=1"
+    assert Message(message=line).msgtype == "D"
+    assert Message.parse_arrow(pyarrow.array([line]))["msgtype"].to_pylist() == ["D"]
+
+    after = f"#{checksum_name}=000|#{message_name}=D"
+    assert Message(message=after).msgtype is None
+    assert Message.parse_arrow(pyarrow.array([after]))["msgtype"].to_pylist() == [None]
 
 
 def test_the_standard_header_lifts_into_columns_of_its_own() -> None:

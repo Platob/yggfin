@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteCancel",
-   "msgtype": "Z"
+   "msgtype": "Z",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

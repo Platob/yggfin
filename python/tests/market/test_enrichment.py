@@ -59,9 +59,9 @@ def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() 
         f"{HEAD}|55=AAPL|454=3|455=US0378331005|456=4|455=037833100|456=1|455=AAPL.OQ|456=5"
     )
     assert found.altids == {
-        "ISIN_NUMBER": "US0378331005",
+        "ISINNumber": "US0378331005",
         "CUSIP": "037833100",
-        "RIC_CODE": "AAPL.OQ",
+        "RICCode": "AAPL.OQ",
     }
 
 
@@ -84,9 +84,9 @@ def test_the_two_identifier_source_tags_share_one_enumeration() -> None:
     gives it, and only the one this package asks a question about -- which
     instrument carries an ISIN -- is named in code.
     """
-    assert id_scheme("4") == ISIN_SCHEME == "ISIN_NUMBER"
-    assert id_scheme("8") == "EXCHANGE_SYMBOL"
-    assert id_scheme("A") == "BLOOMBERG_SYMBOL"
+    assert id_scheme("4") == ISIN_SCHEME == "ISINNumber"
+    assert id_scheme("8") == "ExchangeSymbol"
+    assert id_scheme("A") == "BloombergSymbol"
     assert id_scheme(ISIN_SCHEME) == ISIN_SCHEME, "by its name as well as its code"
     assert id_scheme("") == "" and id_scheme(None) == ""
 

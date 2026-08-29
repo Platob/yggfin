@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MultilegOrderCancelReplaceRequest",
-   "msgtype": "AC"
+   "msgtype": "AC",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "MassQuote",
-   "msgtype": "i"
+   "msgtype": "i",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

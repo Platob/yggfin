@@ -25,6 +25,7 @@ from rekep.enums import (
     State,
     TimeInForce,
 )
+from rekep.market.fix_arrow import _SIDE_CODES, _mapped
 
 #: The vocabularies that rank their members in hundred-wide bands, so a
 #: detailed code says what it broadly means without the stored value being
@@ -154,6 +155,7 @@ def test_wire_aliases_resolve_alike_in_the_scalar_and_the_kernel() -> None:
     scalar = [int(Currency.from_fix(value)) for value in spellings]
     assert kernel == scalar
     assert kernel[0] == kernel[1] == int(Currency.USD)
+    assert Currency._named("!") is None, "an unstated punctuation mark names no currency"
 
 
 def test_ascii_int64_packs_eight_bytes_into_int64_storage() -> None:
@@ -531,6 +533,18 @@ def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:
     assert Side.from_fix("2") is Side.SELL
     assert TimeInForce.from_fix("gtd") is TimeInForce.GTD
     assert TimeInForce.from_fix("ioc") is TimeInForce.IOC
+    assert Side.from_str("sell-short") is Side.SELL_SHORT
+    assert Side.from_fix("sell-short") is Side.SELL_SHORT
+    assert Side.from_fix("A") is Side.CROSS_SHORT_EXEMPT
+    assert Side.from_fix("a") is Side.UNKNOWN, "wire codes stay case-sensitive"
+    assert (
+        _mapped(
+            pyarrow.array(["sell-short", "Sell Short", "5"]),
+            _SIDE_CODES,
+            Side.UNKNOWN,
+        ).to_pylist()
+        == [int(Side.SELL_SHORT)] * 3
+    )
 
     before = len(Side._value2member_map_)
     assert Side.from_fix("weird-code", Side.UNKNOWN) is Side.UNKNOWN

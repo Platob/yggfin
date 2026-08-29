@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "AllocationReport",
-   "msgtype": "AS"
+   "msgtype": "AS",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

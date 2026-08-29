@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "ListExecute",
-   "msgtype": "L"
+   "msgtype": "L",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

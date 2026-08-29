@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdMatchSideGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeMatchReport\"]"
   },
   "fields": [

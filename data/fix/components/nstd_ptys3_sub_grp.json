@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "NstdPtys3SubGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"TradeMatchReport\"]"
   },
   "fields": [

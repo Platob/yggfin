@@ -15,7 +15,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import ANY_VERSION, Field, TimestampField, scalar
+from rekep.fields import ANY_VERSION, Field, TimestampField, column_name, scalar
 from rekep.fields.field import arrow_type_for
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
@@ -267,8 +267,8 @@ class FieldRule(Convertible):
 
     @functools.cached_property
     def folded(self) -> str:
-        """`field` as a spelling is matched: case and nothing else."""
-        return self.field.strip().lower()
+        """`field` as a spelling is matched."""
+        return column_name(self.field)
 
     @property
     def tag(self) -> int | None:

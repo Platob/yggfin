@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "CrossRequest",
-   "msgtype": "DS"
+   "msgtype": "DS",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

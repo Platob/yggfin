@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "Email",
-   "msgtype": "C"
+   "msgtype": "C",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

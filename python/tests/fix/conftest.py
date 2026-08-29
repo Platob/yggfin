@@ -15,10 +15,15 @@ def fixture_page(url: str) -> str:
 
     Only `4.4` has field pages, so every other version behaves like one the
     network cannot serve right now -- which is the path a registry walking
-    versions has to take anyway. The QuickFIX spec files are served the same
-    way, by their own file name, because they are the second source and a test
-    that reached the network for one would be a test of GitHub.
+    versions has to take anyway. QuickFIX spec files are served by their own
+    file name, so a parser test never reaches GitHub.
     """
+    if "nanoconda.com/fix-reference/" in url:
+        relative = url.split("nanoconda.com/fix-reference/", 1)[1]
+        path = FIXTURES / "nanoconda" / relative
+        if path.exists():
+            return path.read_text()
+        raise OSError(f"404 {url}")
     if url.endswith("fix-dictionary.html"):
         name = "fix-dictionary.html"
     elif url.endswith(".xml"):

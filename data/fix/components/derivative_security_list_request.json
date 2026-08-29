@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeSecurityListRequest",
-   "msgtype": "z"
+   "msgtype": "z",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -9,6 +9,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.entries import ENTRIES, Entry
+from rekep.fields import column_names
 from rekep.fields.arrays import (
     build_list,
     dense_counts,
@@ -118,8 +119,8 @@ def pop_arrow(
     keys = compute.struct_field(entries, "key")
     wanted = pyarrow.array(names, pyarrow.string())
     if not case_sensitive:
-        keys = compute.utf8_lower(keys)
-        wanted = compute.utf8_lower(wanted)
+        keys = column_names(keys)
+        wanted = column_names(wanted)
     matches = compute.fill_null(compute.is_in(keys, value_set=wanted), False)
     if not compute.any(matches, min_count=0).as_py():
         return pyarrow.nulls(rows, pyarrow.string()), stored

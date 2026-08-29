@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "SettlementObligationReport",
-   "msgtype": "BQ"
+   "msgtype": "BQ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

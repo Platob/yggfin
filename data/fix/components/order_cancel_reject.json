@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderCancelReject",
-   "msgtype": "9"
+   "msgtype": "9",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

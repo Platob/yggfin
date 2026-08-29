@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "PreAllocMlegGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MultilegOrderCancelReplace\",\"NewOrderMultileg\"]"
   },
   "fields": [

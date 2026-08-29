@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrmtGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AdjustedPositionReport\",\"Email\",\"News\"]"
   },
   "fields": [

@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralReportAck",
-   "msgtype": "DQ"
+   "msgtype": "DQ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

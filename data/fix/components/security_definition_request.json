@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityDefinitionRequest",
-   "msgtype": "c"
+   "msgtype": "c",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

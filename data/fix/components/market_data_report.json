@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDataReport",
-   "msgtype": "DR"
+   "msgtype": "DR",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

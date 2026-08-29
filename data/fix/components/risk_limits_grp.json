@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RiskLimitsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\"]"
   },
   "fields": [

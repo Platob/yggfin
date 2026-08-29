@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "PositionMaintenanceReport",
-   "msgtype": "AM"
+   "msgtype": "AM",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

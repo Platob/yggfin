@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "SettlementInstructionRequest",
-   "msgtype": "AV"
+   "msgtype": "AV",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

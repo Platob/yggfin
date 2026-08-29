@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteRequestReject",
-   "msgtype": "AG"
+   "msgtype": "AG",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

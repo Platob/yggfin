@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "MarketSegmentScopeGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDataRequest\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\"]"
   },
   "fields": [

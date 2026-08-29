@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "RequestForPositionsAck",
-   "msgtype": "AO"
+   "msgtype": "AO",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

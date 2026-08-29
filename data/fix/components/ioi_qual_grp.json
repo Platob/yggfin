@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "IOIQualGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"IOI\"]"
   },
   "fields": [

@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "AllocationInstructionAlert",
-   "msgtype": "BM"
+   "msgtype": "BM",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

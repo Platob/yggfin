@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "RelSymDerivSecGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\"]"
   },
   "fields": [

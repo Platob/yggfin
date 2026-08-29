@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyDetailsDefinitionRequestAck",
-   "msgtype": "CY"
+   "msgtype": "CY",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

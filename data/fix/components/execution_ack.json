@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "ExecutionAck",
-   "msgtype": "BN"
+   "msgtype": "BN",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

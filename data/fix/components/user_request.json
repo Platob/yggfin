@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "UserRequest",
-   "msgtype": "BE"
+   "msgtype": "BE",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

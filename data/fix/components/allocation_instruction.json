@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "AllocationInstruction",
-   "msgtype": "J"
+   "msgtype": "J",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

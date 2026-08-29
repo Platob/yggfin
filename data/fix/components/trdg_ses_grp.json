@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdgSesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"MarketDataRequest\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"RequestForPositions\"]"
   },
   "fields": [

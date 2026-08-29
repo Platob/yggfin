@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "ClearingPriceParametersGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityStatus\"]"
   },
   "fields": [

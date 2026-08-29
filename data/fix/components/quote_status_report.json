@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteStatusReport",
-   "msgtype": "AI"
+   "msgtype": "AI",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

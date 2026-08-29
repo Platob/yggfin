@@ -17,7 +17,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, scalar
+from rekep.fields import Field, column_name, scalar
 
 TAG: pyarrow.DataType = pyarrow.int32()
 NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
@@ -44,15 +44,8 @@ ENTRY_LEAD = re.compile(r"\[[0-9]+\]$", re.ASCII)
 
 
 def fold(name: str) -> str:
-    """A name as it is matched: case, and nothing else.
-
-    Separators are part of a name here. Dropping them made `PartyID` and
-    `Part_yid` one key and, worse, silently merged two identities a store
-    holds apart -- a match a registry cannot then tell from a real collision.
-    A spelling that differs by more than case is an alias, which is a thing
-    the store records.
-    """
-    return str(name).strip().lower()
+    """A name as it is matched: lowercase letters and digits."""
+    return column_name(name)
 
 
 @scalar(slots=True)

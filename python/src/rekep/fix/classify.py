@@ -6,8 +6,8 @@ being actionable. It is three:
 
 - a **standard** field the dictionary has and the shipped projection left out,
   which is a key list to widen and no new code at all;
-- a **near miss** of a name the dictionary has -- a case, separator or spelling
-  variant -- which is an alias to record against the field it means, with the
+- a **near miss** of a name the dictionary has -- a spelling variant -- which
+  is an alias to record against the field it means, with the
   capture and the count that earned it, and never a silent merge;
 - a **namespaced** name FIX never numbered, which is an entry to declare.
 
@@ -402,10 +402,10 @@ def apply_report(
     """Register what the report found, through the registry's own verbs.
 
     Nothing is applied by default, and a near miss is never applied without
-    being asked for: a case variant of a known name is *evidence* that the two
-    are one field, not proof, and the whole reason the classification separates
-    them is so somebody decides. What this does is turn the decision into one
-    command instead of a thousand file edits.
+    being asked for: a spelling variant of a known name is *evidence* that the
+    two are one field, not proof, and the whole reason the classification
+    separates them is so somebody decides. What this does is turn the decision
+    into one command instead of a thousand file edits.
     """
     applied = []
     for row in report.of(NEAR) if aliases else ():

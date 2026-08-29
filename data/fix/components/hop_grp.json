@@ -11,7 +11,9 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "HopGrp"
+   "component": "HopGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "SideRegulatoryTradeIDGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeCaptureReport\"]"
   },
   "fields": [

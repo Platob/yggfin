@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "Logout",
-   "msgtype": "5"
+   "msgtype": "5",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "RoutingGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Advertisement\",\"Email\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"News\",\"Quote\"]"
   },
   "fields": [

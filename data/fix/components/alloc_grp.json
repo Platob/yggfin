@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "AllocGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\"]"
   },
   "fields": [

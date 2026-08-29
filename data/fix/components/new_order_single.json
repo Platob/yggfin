@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "NewOrderSingle",
-   "msgtype": "D"
+   "msgtype": "D",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

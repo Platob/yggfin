@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyDetailsListReport",
-   "msgtype": "CG"
+   "msgtype": "CG",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

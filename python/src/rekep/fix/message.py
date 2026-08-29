@@ -12,6 +12,7 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 
+from rekep.fields import column_name, column_names
 from rekep.fields.arrays import sequence
 
 #: The delimiter the standard writes between fields: ASCII 0x01, Start of
@@ -970,7 +971,7 @@ def _until_checksum(
         encoded = compute.dictionary_encode(tags)
         distinct = encoded.dictionary
         terminal = compute.replace_substring_regex(distinct, r"^.*\.", "")
-        folded = compute.utf8_lower(terminal)
+        folded = column_names(terminal)
         rendered = compute.and_(
             compute.invert(compute.match_substring(distinct, "[")),
             compute.or_(compute.equal(terminal, CHECKSUM), compute.equal(folded, _CHECKSUM_NAME)),
@@ -1071,7 +1072,7 @@ def _is_checksum(key: str) -> bool:
     if "[" in key:
         return False
     terminal = key.rsplit(".", 1)[-1]
-    return terminal == CHECKSUM or terminal.lower() == _CHECKSUM_NAME
+    return terminal == CHECKSUM or column_name(terminal) == _CHECKSUM_NAME
 
 
 def _column_style(
@@ -1137,7 +1138,7 @@ class _Names:
         self.source = names
         self.size = len(names)
         #: Folded name to the tag as a key is spelled.
-        self.keys = {str(name).strip().lower(): str(tag) for name, tag in names.items()}
+        self.keys = {column_name(name): str(tag) for name, tag in names.items()}
 
     @functools.cached_property
     def tags(self) -> dict[str, int]:
@@ -1280,12 +1281,12 @@ def _tag_number(spelled: str | None, lookup: Mapping[str, int], key_type: Any) -
     if text.isascii() and text.isdigit():
         found = int(text)
     else:
-        found = lookup.get(text.lower())
+        found = lookup.get(column_name(text))
         if found is None:
             member = _MEMBER_NAME.search(text)
             if member is not None:
                 name = member[1]
-                found = int(name) if name.isdigit() else lookup.get(name.lower())
+                found = int(name) if name.isdigit() else lookup.get(column_name(name))
     if found is None:
         return None
     try:
@@ -1309,14 +1310,14 @@ def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
         return None
     if text.isascii() and text.isdigit():
         return text
-    tag = folded.get(text.lower())
+    tag = folded.get(column_name(text))
     if tag is not None:
         return tag
     match = _RENDERED_KEY.match(text)
     if match is None:
         return text
     lead, name, index = match.group("lead", "name", "index")
-    tag = folded.get(name.lower())
+    tag = folded.get(column_name(name))
     if tag is None:
         return text
     return f"{lead}{tag}{index or ''}"

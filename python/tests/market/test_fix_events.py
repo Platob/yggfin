@@ -941,6 +941,21 @@ def test_one_reading_of_a_dictionary_serves_every_message_that_uses_it() -> None
     assert "54" not in order.metadata
 
 
+def test_dictionary_value_names_expand_the_pinned_market_maps() -> None:
+    tags = MarketTags.of()
+    assert {name: len(values) for name, values in tags.states.items()} == {
+        "OrdStatus": 34,
+        "ExecType": 40,
+        "MDUpdateAction": 12,
+        "QuoteStatus": 47,
+        "QuoteRespType": 25,
+    }
+    assert len(tags.execution_states) == 13
+    assert len(tags.order_kinds) == 65
+    assert len(tags.execution_kinds) == 49
+    assert len(tags.exec_type_fallbacks) == 36
+
+
 def _restated(record, states):
     """One record with different lifecycle states, holding nothing else's."""
     restated = record_copy(record)
@@ -1059,7 +1074,7 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     for one in found:
         instrument = one.into_instrument()
         assert instrument is reader.instrument, "one message, one instrument"
-        assert instrument.altids == {"ISIN_NUMBER": "US0378331005"}
+        assert instrument.altids == {"ISINNumber": "US0378331005"}
         assert instrument.isincode == "US0378331005"
 
 
@@ -1144,7 +1159,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
     reader = FixEvents(message=stored)
     instrument = reader.instrument
 
-    assert instrument.altids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.altids == {"ISINNumber": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isincode == "US0378331005"
     assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", Side.BUY, 1.0),

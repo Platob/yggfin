@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityDefinitionUpdateReport",
-   "msgtype": "BP"
+   "msgtype": "BP",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

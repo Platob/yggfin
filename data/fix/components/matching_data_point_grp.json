@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "MatchingDataPointGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Confirmation\",\"ConfirmationAck\"]"
   },
   "fields": [

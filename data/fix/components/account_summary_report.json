@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "AccountSummaryReport",
-   "msgtype": "CQ"
+   "msgtype": "CQ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

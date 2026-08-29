@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderCancelReplaceRequest",
-   "msgtype": "G"
+   "msgtype": "G",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

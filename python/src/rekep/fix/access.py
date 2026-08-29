@@ -21,7 +21,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.entries import KEY_VIEW, Entry, fold
-from rekep.fields import Field, encoded_key
+from rekep.fields import Field, column_name, column_names, encoded_key
 from rekep.fields.arrays import sequence
 from rekep.fix.fields import cast_arrow_fix, coherent_fix_value, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
@@ -418,7 +418,7 @@ class FieldAccess:
             compute.equal(compute.struct_field(entries, "tag"), tag), False
         )
         named = compute.fill_null(
-            compute.equal(compute.utf8_lower(compute.struct_field(entries, "key")), name.lower()),
+            compute.equal(column_names(compute.struct_field(entries, "key")), column_name(name)),
             False,
         )
         matches = compute.or_(numbered, named)
@@ -465,7 +465,7 @@ class FieldAccess:
         parents, entries, values = flattened
         compute = pyarrow.compute
         tags = compute.struct_field(entries, "tag")
-        keys = compute.utf8_lower(compute.struct_field(entries, "key"))
+        keys = column_names(compute.struct_field(entries, "key"))
         numbered = [(index, tag) for index, (tag, _) in enumerate(wanted) if tag]
         if numbered:
             positions, tag_values = zip(*numbered, strict=True)
@@ -477,7 +477,7 @@ class FieldAccess:
             by_tag = pyarrow.nulls(len(tags), pyarrow.int32())
         by_name = compute.index_in(
             keys,
-            value_set=pyarrow.array([name.casefold() for _, name in wanted], pyarrow.string()),
+            value_set=pyarrow.array([column_name(name) for _, name in wanted], pyarrow.string()),
         )
         matched_positions = compute.coalesce(by_tag, by_name)
         matches = compute.is_valid(matched_positions)

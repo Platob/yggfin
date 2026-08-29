@@ -20,19 +20,20 @@ from rekep.fix.store import ConflictReport
 
 #: How many identities the published dictionary collapses, per part, today.
 #: A record keeps one reading and the versions that declare it, so every
-#: disagreement between versions is a decision -- and 152 fields where two
-#: versions give one enumerated value different meanings is a list somebody
+#: disagreement between sources or versions is a decision -- and 522 value
+#: readings with different meanings are a list somebody
 #: can read. A refresh that grows any of these introduced conflicts nobody
 #: looked at, and fails rather than shipping them.
 CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
     {
-        "values": 152,
-        "aliases": 24,
-        "type": 214,
-        "name": 40,
+        "values": 522,
+        "aliases": 223,
+        "added": 16,
+        "type": 274,
+        "name": 59,
         "note": 18,
         "members": 65,
-        "encoded": 135,
+        "encoded": 134,
     }
 )
 

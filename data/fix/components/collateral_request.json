@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralRequest",
-   "msgtype": "AX"
+   "msgtype": "AX",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

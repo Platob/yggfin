@@ -15,7 +15,9 @@
   "nullable": true,
   "fix": {
    "component": "SettlementInstructions",
-   "msgtype": "T"
+   "msgtype": "T",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

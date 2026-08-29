@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrmtStrkPxGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ListStrikePrice\"]"
   },
   "fields": [

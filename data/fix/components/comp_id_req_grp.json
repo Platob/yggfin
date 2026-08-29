@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "CompIDReqGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"NetworkCounterpartySystemStatusRequest\"]"
   },
   "fields": [

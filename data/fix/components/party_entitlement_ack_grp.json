@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementAckGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyEntitlementsDefinitionRequestAck\"]"
   },
   "fields": [

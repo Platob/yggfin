@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralReport",
-   "msgtype": "BA"
+   "msgtype": "BA",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

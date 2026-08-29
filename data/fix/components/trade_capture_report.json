@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "TradeCaptureReport",
-   "msgtype": "AE"
+   "msgtype": "AE",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

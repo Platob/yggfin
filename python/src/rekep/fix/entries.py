@@ -98,12 +98,44 @@ def refuse_record(record: Field) -> Field:
         raise ValueError("a FIX field record has no name")
     if not fix.versions:
         raise ValueError(f"FIX field {name!r} is declared for no version")
+    _refuse_source_metadata(fix, name)
     # The one tag written down rather than asked for. This runs while the
     # store is being read, and asking the registry which tag `MsgType` is
     # would re-enter the read that is calling it.
     if fix.event_types and fix.tag != 35:
         raise ValueError("FIX event types belong to MsgType <35>")
     return record
+
+
+def _refuse_source_metadata(fix: Any, name: str) -> None:
+    """Refuse source provenance that cannot attribute the field parts it names."""
+    try:
+        sources = json.loads(fix.get("sources") or "[]")
+        origins = json.loads(fix.get("origins") or "{}")
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"FIX field {name!r} has invalid source metadata") from error
+    if (
+        not isinstance(sources, list)
+        or any(type(source) is not str or not source.strip() for source in sources)
+        or len(set(sources)) != len(sources)
+    ):
+        raise ValueError(f"FIX field {name!r} needs distinct source names")
+    primary = fix.source
+    if bool(primary) != bool(sources) or (sources and sources[0] != primary):
+        raise ValueError(f"FIX field {name!r} needs its primary source first")
+    if not isinstance(origins, Mapping):
+        raise ValueError(f"FIX field {name!r} has invalid source origins")
+    for part, origin in origins.items():
+        if type(part) is not str or not part:
+            raise ValueError(f"FIX field {name!r} has invalid source origins")
+        if isinstance(origin, Mapping):
+            if any(type(key) is not str for key in origin):
+                raise ValueError(f"FIX field {name!r} has invalid source origins")
+            stated = origin.values()
+        else:
+            stated = (origin,)
+        if any(type(source) is not str or source not in sources for source in stated):
+            raise ValueError(f"FIX field {name!r} has an unknown source origin")
 
 
 def record_kind(record: Field) -> str:
@@ -174,12 +206,10 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     if not members:
         raise ValueError("a FIX field record needs at least one declaration")
     latest = members[-1]
-    values: dict[str, FixFieldValue] = {}
+    added = next((member for member in reversed(members) if member.fix.added), None)
     event_types: dict[str, EventType] = {}
     states: dict[str, State] = {}
     for member in members:
-        for one in member.fix.enumerated:
-            values[one.value] = merged_value(values.get(one.value), one)
         event_types.update(member.fix.event_types)
         states.update(member.fix.states)
     # Newest first, unlike the values: where a field is used is a list and not
@@ -199,11 +229,26 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     fix.name = latest.name
     fix.versions = canonical_versions(versions)
     fix.pop("version", None)
+    if added is not None:
+        fix.added = added.fix.added
     # The same refusals a stored document meets: a collapse is a write, and a
     # record no lookup could answer for must not reach a shard from either side.
     fix.event_types = event_types
     refuse_record(built)
-    fix.enumerated = tuple(values.values())
+    values, origins = folded_field_values(members)
+    fix.enumerated = values
+    scalar_origins = {
+        part: source
+        for part, source in latest.fix.origins.items()
+        if part not in ("values", "aliases", "added")
+    }
+    if added is not None and (source := added.fix.source_of("added")):
+        scalar_origins["added"] = source
+    fix.origins = {**scalar_origins, **origins}
+    fix.sources = tuple(
+        dict.fromkeys(source for member in reversed(members) for source in member.fix.sources)
+    )
+    fix.source = fix.sources[0] if fix.sources else latest.fix.source
     fix.states = states
     fix.msgtypes = used_in
     fix.components = components
@@ -445,7 +490,7 @@ def _component_fields(
             built.append(
                 Field(
                     name=column_name(member.name),
-                    dtype=types.get(member.name) or pyarrow.string(),
+                    dtype=types.get(column_name(member.name)) or pyarrow.string(),
                     nullable=member.nullable is not False,
                     metadata={"fix:name": member.name, "fix:display": member.name},
                 )
@@ -486,18 +531,24 @@ def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldVa
     )
 
 
-def folded_values(
-    held: Sequence[FixFieldValue],
-    fresh: Sequence[FixFieldValue],
-    *,
-    newest: Sequence[FixFieldValue],
-) -> tuple[FixFieldValue, ...]:
-    """Two readings of one field's values, with `newest` winning each half."""
-    older = fresh if newest is held else held
-    found = {one.value: one for one in older}
-    for one in newest:
-        found[one.value] = merged_value(found.get(one.value), one)
-    return tuple(found.values())
+def folded_field_values(
+    members: Sequence[Field],
+) -> tuple[tuple[FixFieldValue, ...], dict[str, dict[str, str]]]:
+    """Per-version values and their sources, with the newest stated half winning."""
+    values: dict[str, FixFieldValue] = {}
+    origins: dict[str, dict[str, str]] = {"values": {}, "aliases": {}}
+    for member in members:
+        for fresh in member.fix.enumerated:
+            values[fresh.value] = merged_value(values.get(fresh.value), fresh)
+            for part, stated in (("values", fresh.meaning), ("aliases", fresh.aliases)):
+                if not stated:
+                    continue
+                source = member.fix.source_of(part, fresh.value)
+                if source:
+                    origins[part][fresh.value] = source
+                else:
+                    origins[part].pop(fresh.value, None)
+    return tuple(values.values()), {part: found for part, found in origins.items() if found}
 
 
 def _json(value: Any) -> str:

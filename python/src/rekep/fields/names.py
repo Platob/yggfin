@@ -18,9 +18,17 @@ import functools
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Any
 
 #: Everything a name is matched without: separators, punctuation, case.
 _DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
+
+# Arrow's Unicode lowercase does not perform Python's case-fold expansions:
+# `ß` stays `ß` there while `str.casefold()` makes it `ss`. FIX names are
+# ASCII in ordinary traffic, so keep that path entirely in kernels and pay for
+# a distinct-value Python fold only when a column actually carries Unicode.
+_ARROW_DROP = r"[^a-z0-9]+"
+_ARROW_ASCII = r"^[\x00-\x7f]*$"
 
 #: Words a display does not title-case, and what it writes instead. Title case
 #: reads them as words -- `Isin Code`, `Settl Curr Fx Rate Calc` -- and they
@@ -51,6 +59,35 @@ def column_name(name: str) -> str:
     Memoized: a parse asks this of the same few hundred spellings per message.
     """
     return _DROP.sub("", str(name).strip().casefold())
+
+
+def column_names(values: Any) -> Any:
+    """A string Arrow array under exactly the same fold as `column_name`."""
+    import pyarrow
+    import pyarrow.compute
+
+    compute = pyarrow.compute
+    if isinstance(values, pyarrow.Scalar):
+        return pyarrow.scalar(
+            column_name(values.as_py()) if values.is_valid else None,
+            pyarrow.string(),
+        )
+    folded = compute.replace_substring_regex(
+        compute.utf8_lower(values), pattern=_ARROW_DROP, replacement=""
+    )
+    if not len(values):
+        return folded
+    ascii_only = compute.fill_null(compute.match_substring_regex(values, _ARROW_ASCII), True)
+    if compute.all(ascii_only, min_count=0).as_py():
+        return folded
+
+    source = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
+    encoded = compute.dictionary_encode(source)
+    dictionary = pyarrow.array(
+        [column_name(value.as_py()) for value in encoded.dictionary],
+        pyarrow.string(),
+    )
+    return compute.take(dictionary, encoded.indices)
 
 
 def display_name(name: str) -> str:

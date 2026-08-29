@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "LegPositionAmountData",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

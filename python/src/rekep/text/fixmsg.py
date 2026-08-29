@@ -2269,12 +2269,14 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 @functools.cache
 def _tags_by_name() -> Mapping[str, int]:
     """Canonical FIX names to the tags declared by this parsed-row contract."""
-    return MappingProxyType({name.casefold(): member.fix.tag for name, member in DECLARED.items()})
+    return MappingProxyType(
+        {column_name(name): member.fix.tag for name, member in DECLARED.items()}
+    )
 
 
 def _tag_of(name: str) -> int:
     """The contract tag of one canonical FIX name."""
-    return _tags_by_name()[name.casefold()]
+    return _tags_by_name()[column_name(name)]
 
 
 def _component_fields(
@@ -2331,7 +2333,7 @@ def _component_key(value: Any) -> bool:
 def _pair_identity(key: Any) -> tuple[str, int | str]:
     """Stable resolved identity for duplicate selection."""
     text = str(key)
-    return ("tag", int(text)) if _numeric_key(text) else ("name", text.casefold())
+    return ("tag", int(text)) if _numeric_key(text) else ("name", column_name(text))
 
 
 def _id_source(value: Any) -> str:

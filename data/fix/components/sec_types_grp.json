@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "SecTypesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityTypes\"]"
   },
   "fields": [

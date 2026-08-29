@@ -11,6 +11,8 @@
   "nullable": true,
   "fix": {
    "component": "SecLstUpdRelSymsLegGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityListUpdateReport\"]"
   },
   "fields": [

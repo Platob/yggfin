@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "SecSizesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\"]"
   },
   "fields": [

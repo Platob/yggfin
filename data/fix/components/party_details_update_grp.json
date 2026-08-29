@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PartyDetailsUpdateGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyDetailsDefinitionRequest\",\"PartyDetailsListUpdateReport\"]"
   },
   "fields": [

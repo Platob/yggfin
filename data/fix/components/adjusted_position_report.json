@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "AdjustedPositionReport",
-   "msgtype": "BL"
+   "msgtype": "BL",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

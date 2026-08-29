@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "SettlPtysSubGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"Confirmation\",\"PayManagementReport\",\"PayManagementRequest\",\"SettlementInstructions\",\"SettlementObligationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

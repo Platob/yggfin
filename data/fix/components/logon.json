@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "Logon",
-   "msgtype": "A"
+   "msgtype": "A",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

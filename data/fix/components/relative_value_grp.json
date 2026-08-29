@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RelativeValueGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"IOI\",\"Quote\"]"
   },
   "fields": [

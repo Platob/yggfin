@@ -329,7 +329,7 @@ class MarketTags:
             return standard
         found = dict(standard)
         for name in tuple(found):
-            if tag := configured.get(name.lower()):
+            if tag := configured.get(encoded_key(name)):
                 found[name] = tag
         for name, tag in configured.items():
             found.setdefault(name, tag)
@@ -483,7 +483,7 @@ class MarketTags:
 
     @functools.cached_property
     def rendered_spellings(self) -> frozenset[str]:
-        """Every spelling a stored rendered field answers to, case-folded.
+        """Every spelling a stored rendered field answers to, folded.
 
         A tagged pair canonicalizes to its wire tag, so `claimed` matches it
         exactly; a namespace pair keeps the spelling the bridge wrote --
@@ -494,7 +494,7 @@ class MarketTags:
         for name in self.rendered():
             entry = None if self.access.registry is None else self.access.registry.resolve(name)
             spellings = entry.fix.spellings() if entry is not None else (name,)
-            found.update(spelled.casefold() for spelled in spellings)
+            found.update(encoded_key(spelled) for spelled in spellings)
         return frozenset(found)
 
     @functools.cached_property
@@ -561,7 +561,7 @@ def _coded(table: Mapping[str, Any], value: Any, default: Any) -> Any:
     raw = str(value).strip() if value is not None else ""
     found = table.get(raw)
     if found is None:
-        found = table.get(raw.casefold())
+        found = table.get(encoded_key(raw))
     return found if found is not None else default
 
 
@@ -1474,7 +1474,7 @@ class FixEvents(Convertible):
         return {
             key: str(value)
             for key, value in self.by_tag.items()
-            if (key not in claimed and key.casefold() not in rendered) or key in audited
+            if (key not in claimed and encoded_key(key) not in rendered) or key in audited
         }
 
 

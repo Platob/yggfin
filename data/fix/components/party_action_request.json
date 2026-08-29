@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyActionRequest",
-   "msgtype": "DH"
+   "msgtype": "DH",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

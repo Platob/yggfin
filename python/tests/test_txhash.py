@@ -46,6 +46,8 @@ def test_a_clock_outside_int32_is_refused() -> None:
 def test_a_timestamp_clock_is_read_in_whole_seconds() -> None:
     when = datetime.datetime(2024, 1, 2, 3, 4, 5, 678_900, tzinfo=datetime.UTC)
     assert txhash.seconds_of(txhash.h64(when, b"")) == int(when.timestamp())
+    assert txhash.h64(when.replace(tzinfo=None), b"") == txhash.h64(when, b"")
+    assert txhash.h128(when.replace(tzinfo=None), b"") == txhash.h128(when, b"")
 
 
 def test_the_kernel_matches_the_scalar_row_for_row() -> None:
@@ -184,7 +186,8 @@ def test_a_dataclass_hashes_exactly_as_its_batch_does() -> None:
         symbol: str
         qty: int
 
-    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    paris = datetime.timezone(datetime.timedelta(hours=1))
+    when = datetime.datetime(2023, 11, 14, 23, 13, 20, tzinfo=paris)
     rows = [Trade(unix=when, symbol="BTC", qty=1), Trade(unix=when, symbol="ETH", qty=2)]
     scalars = [txhash.h64_dataclass(row, "unix", "symbol", "qty") for row in rows]
     field = Trade.into_field()
@@ -274,7 +277,8 @@ def test_the_wide_builders_agree_across_arrays_batch_and_dataclass() -> None:
         symbol: str
         qty: int
 
-    when = datetime.datetime(2023, 11, 14, 22, 13, 20, tzinfo=datetime.UTC)
+    paris = datetime.timezone(datetime.timedelta(hours=1))
+    when = datetime.datetime(2023, 11, 14, 23, 13, 20, 678_900, tzinfo=paris)
     rows = [Trade(unix=when, symbol="BTC", qty=1), Trade(unix=when, symbol="ETH", qty=2)]
     field = Trade.into_field()
     batch = pyarrow.RecordBatch.from_arrays(
@@ -292,6 +296,9 @@ def test_the_wide_builders_agree_across_arrays_batch_and_dataclass() -> None:
     assert [txhash.wide_of(one) for one in columns.to_pylist()] == [
         txhash.wide_of(one) for one in selected.to_pylist()
     ]
+    assert [txhash.wide_of(one) for one in selected.to_pylist()] == [
+        txhash.h128_dataclass(row, "unix", "symbol", "qty") for row in rows
+    ]
     assert (
-        txhash.epoch_micros_arrow(batch.column("unix")).to_pylist() == [1_700_000_000_000_000] * 2
+        txhash.epoch_micros_arrow(batch.column("unix")).to_pylist() == [1_700_000_000_678_900] * 2
     )

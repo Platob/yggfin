@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MarginRequirementReport",
-   "msgtype": "CJ"
+   "msgtype": "CJ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

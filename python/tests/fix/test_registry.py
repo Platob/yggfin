@@ -1,9 +1,8 @@
 """`FixRegistry` against fixture pages: scraping, the cache, lookup and search.
 
-The fixtures under `fixtures/` mirror the OnixS layout -- the version index,
-one by-tag page, one field page per tag -- so no test touches the network:
-`FixtureRegistry` serves files where the real one fetches URLs, and
-`OfflineRegistry` refuses the network outright to prove the cache carries
+The fixtures under `fixtures/` mirror the registry source layouts, so no test
+touches the network. `FixtureRegistry` serves files where the real one fetches
+URLs, and `OfflineRegistry` refuses the network to prove the cache carries
 everything.
 
 Those pages are written by hand, which is how the scrape came to read values
@@ -12,9 +11,11 @@ site carries neither. So the parsing is pinned a second time, by
 `CaptureRegistry`, against pages captured from the site unedited.
 """
 
+import dataclasses
 import email.message
 import json
 import re
+import time
 import urllib.error
 import urllib.request
 import zipfile
@@ -24,13 +25,24 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep.enums import EventType
+from rekep.enums import EventType, State
 from rekep.fields import Field, newest_rank
-from rekep.fields.metadata import values_of
-from rekep.fix import FixRegistry
-from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import is_group, members_of
-from rekep.fix.registry import _is_transient, _levenshtein, _wait_for
+from rekep.fix import (
+    ANY_VERSION,
+    Alias,
+    ComponentRecord,
+    ConflictReport,
+    FixFieldValue,
+    FixRegistry,
+    NanocondaSource,
+    OnixSSource,
+    QuickFixSource,
+    RegistrySource,
+)
+from rekep.fix.fields import fix_field, namespaced_field
+from rekep.fix.quickfix import block, is_group, members_of
+from rekep.fix.registry import _is_missing, _is_transient, _levenshtein, _wait_for
+from rekep.fix.store import Collision
 
 from .conftest import FIXTURES, fixture_page
 
@@ -41,15 +53,15 @@ from .conftest import FIXTURES, fixture_page
 CAPTURE = FIXTURES / "capture"
 PUBLISHED = Path(__file__).resolve().parents[3] / "data"
 
-#: Derived from the by-tag fixture, then pinned: four fields are listed, and a
-#: broken link regex cannot move both sides of the assertion together.
-EXPECTED_LISTED = 4
+#: Derived from field pages the fixture carries, then pinned. The fourth
+#: by-tag link has no page and therefore contributes no field.
+EXPECTED_LISTED = 3
 
 #: The spec adds fields used by its component declarations and one extra enum.
 EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
-#: What a store of those twelve fields holds: two tag shards (the fixture's
+#: What a store of those eleven fields holds: two tag shards (the fixture's
 #: tags straddle 500), two components, one message and the version index.
 #: Derived from the fixture, then pinned, so a layout that stopped sharding
 #: fails here.
@@ -64,12 +76,18 @@ class FixtureRegistry(FixRegistry):
 
     fetched: list[str]
 
+    def __post_init__(self, registry_token: str | None) -> None:
+        self.sources = tuple(
+            dataclasses.replace(source, field_pause_seconds=0.0) for source in self.sources
+        )
+        super().__post_init__(registry_token)
+
     def _fetch(self, url: str) -> str:
         self.__dict__.setdefault("fetched", []).append(url)
         return fixture_page(url)
 
 
-class CaptureRegistry(FixRegistry):
+class CaptureRegistry(FixtureRegistry):
     """The real registry over captured pages, and nothing else.
 
     Only `4.0` was captured, and only three of its field pages: every other
@@ -125,6 +143,34 @@ class OfflineRegistry(FixRegistry):
         raise OSError(f"offline: {url}")
 
 
+class ResumeSource(RegistrySource):
+    """Two fields whose source pages make interrupted scrapes observable."""
+
+    def versions(self, fetch) -> tuple[str, ...]:
+        if fetch(f"{self.url}/versions") != "versions":
+            raise ValueError("the source version layout changed")
+        return ("4.4",)
+
+    def tags(self, fetch, _version: str) -> dict[int, tuple[str, str]]:
+        if fetch(f"{self.url}/4.4/tags") != "tags":
+            raise ValueError("the source tag layout changed")
+        return {1: ("Account", ""), 54: ("Side", "")}
+
+    def field(self, fetch, _version: str, tag: int) -> dict[str, object]:
+        if fetch(f"{self.url}/4.4/fields/{tag}") != f"field {tag}":
+            raise ValueError(f"the source field {tag} layout changed")
+        return {"name": "Account" if tag == 1 else "Side", "type": "String"}
+
+
+def _resume_page(url: str) -> str:
+    """The valid fixture answer for one `ResumeSource` URL."""
+    if url.endswith("/versions"):
+        return "versions"
+    if url.endswith("/tags"):
+        return "tags"
+    return f"field {url.rsplit('/', 1)[-1]}"
+
+
 @pytest.fixture
 def registry(tmp_path: Path) -> FixtureRegistry:
     return FixtureRegistry(cache_dir=tmp_path / "fix")
@@ -141,7 +187,17 @@ def captured(tmp_path: Path) -> dict[int, Field]:
 
 
 def test_versions_come_back_newest_first_transport_last(registry: FixtureRegistry) -> None:
-    assert registry.versions == ("5.0.SP2", "5.0", "4.4", "4.2", "4.0", "FIXT1.1")
+    assert registry.versions == (
+        "5.0.SP2",
+        "5.0.SP1",
+        "5.0",
+        "4.4",
+        "4.3",
+        "4.2",
+        "4.1",
+        "4.0",
+        "FIXT1.1",
+    )
 
 
 def test_the_latest_alias_is_not_a_version(registry: FixtureRegistry) -> None:
@@ -156,6 +212,377 @@ def test_version_ordering_reads_the_sp_suffix() -> None:
 # -- scraping ----------------------------------------------------------------
 
 
+def test_nanoconda_names_every_value_once_and_casefolds_the_lookup(tmp_path: Path) -> None:
+    registry = FixtureRegistry(
+        sources=(NanocondaSource(),),
+        cache_dir=tmp_path / "nanoconda",
+    )
+    assert [member.name for member in registry.fields("4.2")] == ["ExecType"]
+    exec_type = registry.field("ExecType", "4.2")
+    assert exec_type.fix.type == "char"
+    assert exec_type.fix.added == "4.1"
+    assert exec_type.description == "Describes the specific execution report event."
+    assert exec_type.fix.msgtypes == ("ExecutionReport",)
+    assert exec_type.fix.source == "nanoconda"
+    assert exec_type.fix.sources == ("nanoconda",)
+    assert exec_type.fix.source_of("added") == "nanoconda"
+    assert [(value.value, value.meaning, value.aliases) for value in exec_type.fix.enumerated] == [
+        ("1", "Partial fill", ("PartialFill",)),
+        ("2", "Fill", ("Fill",)),
+    ]
+    assert exec_type.fix.value_of("2").meaning == "Fill"
+    assert exec_type.fix.value_of("2").aliases == ("Fill",)
+    assert exec_type.fix.encode("fill") == "2"
+    assert exec_type.fix.encode("FILL") == "2"
+    assert "_source_pages" not in registry.__dict__
+
+
+@pytest.mark.parametrize("source", [NanocondaSource(), OnixSSource()])
+def test_a_source_index_with_unknown_markup_fails(source: RegistrySource) -> None:
+    with pytest.raises(ValueError, match="lists no FIX versions"):
+        source.versions(lambda _url: "<html>sign in</html>")
+
+
+@pytest.mark.parametrize(
+    ("source", "version"), [(NanocondaSource(), "4.2"), (OnixSSource(), "4.4")]
+)
+def test_a_source_field_list_with_unknown_markup_fails(
+    source: RegistrySource, version: str
+) -> None:
+    with pytest.raises(ValueError, match="lists no FIX fields"):
+        source.tags(lambda _url: "<html>sign in</html>", version)
+
+
+@pytest.mark.parametrize(
+    ("source", "version"), [(NanocondaSource(), "4.2"), (OnixSSource(), "4.4")]
+)
+def test_a_present_field_page_with_unknown_markup_fails(
+    source: RegistrySource, version: str
+) -> None:
+    with pytest.raises(ValueError, match="does not describe FIX field 150"):
+        source.field(lambda _url: "<html>sign in</html>", version, 150)
+
+
+def test_quickfix_usage_follows_components_messages_and_session_parts() -> None:
+    document = """
+    <fix>
+      <header><field name='HeaderID' required='Y'/></header>
+      <trailer><field name='TrailerID' required='Y'/></trailer>
+      <messages>
+        <message name='NestedMessage' msgtype='U1'>
+          <component name='Outer' required='N'/>
+        </message>
+      </messages>
+      <components>
+        <component name='Outer'><component name='Inner' required='N'/></component>
+        <component name='Inner'><field name='NestedID' required='N'/></component>
+      </components>
+      <fields>
+        <field number='1' name='HeaderID' type='STRING'/>
+        <field number='2' name='TrailerID' type='STRING'/>
+        <field number='3' name='NestedID' type='STRING'/>
+      </fields>
+    </fix>
+    """
+    source = QuickFixSource()
+
+    header = source.field(lambda _url: document, "4.4", 1)
+    trailer = source.field(lambda _url: document, "4.4", 2)
+    nested = source.field(lambda _url: document, "4.4", 3)
+
+    assert header["components"] == ("StandardHeader",)
+    assert trailer["components"] == ("StandardTrailer",)
+    assert nested["components"] == ("Inner", "Outer")
+    assert nested["used_in"] == ("NestedMessage",)
+
+
+def test_a_full_rebuild_fetches_each_shared_source_page_once(tmp_path: Path) -> None:
+    class Shared(RegistrySource):
+        def versions(self, fetch) -> tuple[str, ...]:
+            assert fetch(f"{self.url}/versions")
+            return ("4.4", "4.2")
+
+        def tags(self, fetch, _version: str) -> dict[int, tuple[str, str]]:
+            assert fetch(f"{self.url}/tags")
+            return {tag: (f"Field{tag}", "") for tag in range(100, 124)}
+
+        def field(self, fetch, _version: str, tag: int) -> dict[str, object]:
+            assert fetch(f"{self.url}/fields")
+            return {"name": f"Field{tag}", "type": "char"}
+
+    class Counting(FixRegistry):
+        fetched: list[str]
+
+        def _fetch(self, url: str) -> str:
+            self.__dict__.setdefault("fetched", []).append(url)
+            if url.endswith("/fields"):
+                time.sleep(0.01)
+            return "fields"
+
+    registry = Counting(
+        sources=(
+            Shared(
+                name="shared",
+                url="https://shared.example",
+                workers=8,
+                shared_field_page=True,
+            ),
+        ),
+        cache_dir=tmp_path / "shared",
+    )
+
+    registry.rebuild()
+
+    assert registry.fetched == [
+        f"{registry.sources[0].url}/versions",
+        f"{registry.sources[0].url}/tags",
+        f"{registry.sources[0].url}/fields",
+    ]
+    assert "_source_pages" not in registry.__dict__
+
+
+def test_a_source_spaces_each_field_page_by_its_own_interval(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paused: list[float] = []
+
+    class Spaced(RegistrySource):
+        def versions(self, _fetch) -> tuple[str, ...]:
+            return ("4.4",)
+
+        def tags(self, _fetch, _version: str) -> dict[int, tuple[str, str]]:
+            return {1: ("Account", ""), 54: ("Side", "")}
+
+        def field(self, fetch, _version: str, tag: int) -> dict[str, object]:
+            assert fetch(f"{self.url}/{tag}") == "field"
+            return {"name": "Account" if tag == 1 else "Side", "type": "String"}
+
+    class Fetched(FixRegistry):
+        def _fetch(self, _url: str) -> str:
+            return "field"
+
+    monkeypatch.setattr(time, "sleep", paused.append)
+    registry = Fetched(
+        cache_dir=tmp_path / "fix",
+        sources=(Spaced("spaced", "https://spaced.example", field_pause_seconds=0.25),),
+    )
+
+    registry.rebuild()
+
+    assert paused == [0.25, 0.25]
+
+
+def test_a_source_field_pause_cannot_be_negative(tmp_path: Path) -> None:
+    source = RegistrySource("broken", "https://broken.example", field_pause_seconds=-1.0)
+    with pytest.raises(ValueError, match="field pauses cannot be negative"):
+        FixRegistry(cache_dir=tmp_path / "fix", sources=(source,))
+
+
+def test_sources_merge_in_priority_order_and_attribute_conflicts(tmp_path: Path) -> None:
+    class Nanoconda(RegistrySource):
+        def versions(self, _fetch) -> tuple[str, ...]:
+            return ("4.2",)
+
+        def tags(self, _fetch, _version: str) -> dict[int, tuple[str, str]]:
+            return {150: ("ExecType", "")}
+
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            return {
+                "name": "ExecType",
+                "description": "The execution event type.",
+                "values": (FixFieldValue("2", "Fill", ("Fill",)),),
+            }
+
+    class OnixS(Nanoconda):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            return {
+                "name": "ExecutionType",
+                "type": "char",
+                "description": "A fallback description.",
+                "values": (FixFieldValue("2", "Trade", ("EXECUTION_FILL",)),),
+            }
+
+    class QuickFIX(Nanoconda):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            return {
+                "name": "ExecType",
+                "type": "String",
+                "values": (FixFieldValue("2", aliases=("FILL",)),),
+            }
+
+    class Missing(Nanoconda):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            return {}
+
+    registry = FixRegistry(
+        cache_dir=tmp_path / "fix",
+        sources=(
+            Missing("missing", "https://missing.example"),
+            Nanoconda("nanoconda", "https://nanoconda.example"),
+            OnixS("onixs", "https://onixs.example"),
+            QuickFIX(
+                "quickfix",
+                "https://quickfix.example",
+                shared_field_page=True,
+            ),
+        ),
+    )
+    report = registry.rebuild("4.2")
+    exec_type = registry.field(150)
+
+    assert exec_type.name == "ExecType"
+    assert exec_type.description == "The execution event type."
+    assert exec_type.fix.source == "nanoconda"
+    assert exec_type.fix.sources == ("nanoconda", "onixs", "quickfix")
+    assert exec_type.fix.origins == {
+        "name": "nanoconda",
+        "type": "onixs",
+        "description": "nanoconda",
+        "values": {"2": "nanoconda"},
+        "aliases": {"2": "nanoconda"},
+    }
+    assert exec_type.fix.value_of("2").meaning == "Fill"
+    assert exec_type.fix.value_of("2").aliases == ("Fill", "EXECUTION_FILL")
+    by_part = {conflict.part: conflict for conflict in report.collapses}
+    assert {"name", "type", "values", "aliases"} <= by_part.keys()
+    assert by_part["type"].keptsource == "onixs"
+    assert {dropped.source for dropped in by_part["type"].dropped} == {"quickfix"}
+    for part in ("name", "values", "aliases"):
+        assert by_part[part].keptsource == "nanoconda"
+        assert {dropped.source for dropped in by_part[part].dropped} == {"onixs"}
+    assert "_source_conflicts" not in registry.__dict__
+
+
+def test_every_source_contributes_parts_the_others_do_not_carry(tmp_path: Path) -> None:
+    asked: list[str] = []
+
+    class Primary(RegistrySource):
+        def versions(self, _fetch) -> tuple[str, ...]:
+            return ("4.2",)
+
+        def tags(self, _fetch, _version: str) -> dict[int, tuple[str, str]]:
+            return {150: ("ExecType", "")}
+
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "description": "The execution event type.",
+                "values": (FixFieldValue("2", "Fill", ("Fill",)),),
+            }
+
+    class Fallback(Primary):
+        def tags(self, _fetch, _version: str) -> dict[int, tuple[str, str]]:
+            return {150: ("ExecType", "Deprecated")}
+
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "used_in": ("ExecutionReport",),
+                "components": ("FallbackComponent",),
+                "values": (FixFieldValue("2", aliases=("EXECUTION_FILL",)),),
+            }
+
+    class Shared(Primary):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "values": (FixFieldValue("2", aliases=("FILL",)),),
+            }
+
+    registry = FixRegistry(
+        cache_dir=tmp_path / "fix",
+        sources=(
+            Primary(
+                "primary",
+                "https://primary.example",
+                shared_field_page=True,
+            ),
+            Fallback("fallback", "https://fallback.example"),
+            Shared(
+                "shared",
+                "https://shared.example",
+                shared_field_page=True,
+            ),
+        ),
+    )
+
+    registry.rebuild("4.2")
+
+    assert asked == ["primary", "fallback", "shared"]
+    stored = registry.field(150)
+    assert stored.fix.sources == ("primary", "fallback", "shared")
+    assert stored.fix.note == "Deprecated"
+    assert stored.fix.msgtypes == ("ExecutionReport",)
+    assert stored.fix.components == ("FallbackComponent",)
+    assert stored.fix.value_of("2").aliases == ("Fill", "EXECUTION_FILL")
+
+
+def test_source_fields_are_fetched_once_in_priority_order(tmp_path: Path) -> None:
+    asked: list[str] = []
+
+    class Primary(RegistrySource):
+        def versions(self, _fetch) -> tuple[str, ...]:
+            return ("4.2",)
+
+        def tags(self, _fetch, _version: str) -> dict[int, tuple[str, str]]:
+            return {150: ("ExecType", "")}
+
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "description": "The execution event type.",
+                "values": (FixFieldValue("2", "Fill", ("Fill",)),),
+            }
+
+    class Fallback(Primary):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "description": "The execution event type.",
+                "values": (FixFieldValue("1", "Partial fill", ("PartialFill",)),),
+            }
+
+    class Shared(Primary):
+        def field(self, _fetch, _version: str, _tag: int) -> dict[str, object]:
+            asked.append(self.name)
+            return {
+                "name": "ExecType",
+                "type": "char",
+                "values": (
+                    FixFieldValue("1", aliases=("PARTIAL_FILL",)),
+                    FixFieldValue("2", aliases=("FILL",)),
+                ),
+            }
+
+    registry = FixRegistry(
+        cache_dir=tmp_path / "fix",
+        sources=(
+            Primary("primary", "https://primary.example"),
+            Fallback("fallback", "https://fallback.example"),
+            Shared(
+                "shared",
+                "https://shared.example",
+                shared_field_page=True,
+            ),
+        ),
+    )
+
+    registry.rebuild("4.2")
+
+    assert asked == ["primary", "fallback", "shared"]
+    assert [value.value for value in registry.field(150).fix.enumerated] == ["2", "1"]
+
+
 def test_scrape_replaces_a_dump_folder_from_scratch(tmp_path: Path) -> None:
     class OneVersion(FixRegistry):
         def _scrape_versions(self) -> tuple[str, ...]:
@@ -164,18 +591,112 @@ def test_scrape_replaces_a_dump_folder_from_scratch(tmp_path: Path) -> None:
         def _spec_document(self, version: str) -> str:
             return ""
 
-        def _scrape_version(self, version: str, document: str | None = None) -> list[Field]:
+        def _scrape_version(self, version: str) -> list[Field]:
             return [fix_field("Side", 54, "char", version=version, values={"1": "Buy"})]
+
+        def rebuild(self, *versions: str) -> ConflictReport:
+            super().rebuild(*versions)
+            report = ConflictReport(
+                collisions=(
+                    Collision(
+                        "Side",
+                        "buy",
+                        ("1", "2"),
+                        54,
+                        ("fixture", "fixture"),
+                    ),
+                )
+            )
+            self.__dict__["_conflicts"] = report
+            return report
 
     target = tmp_path / "fix"
     target.mkdir()
     (target / "stale.json").write_text("{}")
 
-    registry = OneVersion.scrape(target)
+    registry = OneVersion.scrape(target, sources=(NanocondaSource(),))
 
     assert registry.offline and registry.cache_dir == target
     assert registry.field("Side", "4.4").name == "Side"
+    assert registry.conflicts.collisions[0].name == "Side"
     assert not (target / "stale.json").exists()
+
+
+def test_scrape_preserves_local_declarations_and_standard_overlays(tmp_path: Path) -> None:
+    class OneVersion(FixRegistry):
+        def _scrape_versions(self) -> tuple[str, ...]:
+            return ("4.4",)
+
+        def _scrape_version(self, version: str) -> list[Field]:
+            return [
+                fix_field("MsgType", 35, "String", version=version, values={"D": "Order"}),
+                fix_field("OrderSide", 54, "char", version=version),
+            ]
+
+    target = tmp_path / "fix"
+    held = FixRegistry(cache_dir=target, offline=True)
+    msg_type = fix_field("MsgType", 35, "String", version="4.2", values={"D": "Order"})
+    msg_type.fix.event_types = {"D": EventType.ORDER}
+    side = fix_field("Side", 54, "char", version="4.2")
+    side.fix.states = {"1": State.NEW}
+    side.fix.column = "sidecode"
+    side.fix.named_aliases = (
+        Alias("OldSide", source="4.2"),
+        Alias("VenueSide", source="venue"),
+    )
+    held._store_fields("4.2", [msg_type, side])
+    held.add_field(namespaced_field("LOCAL.CODE", "String", column="localcode"))
+    held.add_component(
+        ComponentRecord.from_components([block("LocalMessage", (), "U9")], [ANY_VERSION])
+    )
+
+    scraped = OneVersion.scrape(target, sources=(NanocondaSource(),))
+
+    assert scraped.resolve("LOCAL.CODE").fix.column == "localcode"
+    assert scraped.merged_component("LocalMessage").msg_type == "U9"
+    assert scraped.msg_type_event_types()["D"] is EventType.ORDER
+    assert scraped.state_values("OrderSide") == {"1": State.NEW}
+    assert scraped.field(54).name == "OrderSide"
+    assert scraped.field(54).fix.column == "sidecode"
+    assert scraped.resolve("VenueSide").fix.tag == 54
+    assert scraped.resolve("OldSide") is None
+
+
+def test_rebuild_replaces_source_records_and_keeps_local_declarations(tmp_path: Path) -> None:
+    class OneVersion(FixRegistry):
+        def _scrape_version(self, version: str) -> list[Field]:
+            return [fix_field("Side", 54, "char", version=version)]
+
+    registry = OneVersion(
+        cache_dir=tmp_path / "fix",
+        sources=(NanocondaSource(),),
+        offline=True,
+    )
+    side = fix_field("Side", 54, "char", version="4.2")
+    side.fix.states = {"1": State.NEW}
+    registry._store_fields("4.2", [fix_field("Account", 1, "String", version="4.2"), side])
+    registry.add_field(namespaced_field("LOCAL.CODE", "String", column="localcode"))
+    assert registry.versions == ("4.2",)
+
+    registry.rebuild("4.4")
+
+    assert registry.versions == ("4.4",)
+    assert registry.field(1) is None
+    assert registry.field(54).name == "Side"
+    assert registry.state_values("Side") == {"1": State.NEW}
+    assert registry.resolve("LOCAL.CODE").fix.column == "localcode"
+
+
+def test_rebuild_requires_the_configured_quickfix_document(tmp_path: Path) -> None:
+    class MissingSpec(FixRegistry):
+        def _spec_document(self, version: str) -> str:
+            return ""
+
+        def _scrape_version(self, version: str) -> list[Field]:
+            return [fix_field("Side", 54, "char", version=version)]
+
+    with pytest.raises(ValueError, match="QuickFIX source has no document"):
+        MissingSpec(cache_dir=tmp_path / "fix").rebuild("4.4")
 
 
 def test_scrape_requires_a_local_dump_folder() -> None:
@@ -183,15 +704,132 @@ def test_scrape_requires_a_local_dump_folder() -> None:
         FixRegistry.scrape("s3://bucket/fix")
 
 
+def test_an_interrupted_scrape_reuses_valid_pages_and_cleans_up_after_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    asked: list[str] = []
+    paused: list[float] = []
+    state = {"refuse": True}
+
+    class Interrupted(FixRegistry):
+        def _fetch(self, url: str) -> str:
+            asked.append(url)
+            if state["refuse"] and url.endswith("/fields/54"):
+                raise _refused(url)
+            return _resume_page(url)
+
+    monkeypatch.setattr(time, "sleep", paused.append)
+    source = ResumeSource(
+        "resume",
+        "https://resume.example",
+        workers=1,
+        field_pause_seconds=0.25,
+    )
+    target = tmp_path / "fix"
+    target.mkdir()
+    sentinel = target / "held.txt"
+    sentinel.write_text("published")
+
+    with pytest.raises(urllib.error.HTTPError, match="429"):
+        Interrupted.scrape(target, sources=(source,), retries=0, backoff=0.0)
+
+    page_cache = tmp_path / ".fix-source-pages"
+    assert sentinel.read_text() == "published"
+    assert len(list(page_cache.rglob("*.page"))) == 3
+    assert paused == [0.25, 0.25]
+    first_requests = len(asked)
+
+    state["refuse"] = False
+    installed = Interrupted.scrape(target, sources=(source,), retries=0, backoff=0.0)
+
+    assert asked[first_requests:] == ["https://resume.example/4.4/fields/54"]
+    assert paused == [0.25, 0.25, 0.25], "a cached field pays no source pause"
+    assert installed.field(1).name == "Account"
+    assert not sentinel.exists()
+    assert not page_cache.exists()
+
+
+def test_source_page_resume_keys_the_exact_url(tmp_path: Path) -> None:
+    asked: list[str] = []
+    state = {"refuse": True}
+
+    class Interrupted(FixRegistry):
+        def _fetch(self, url: str) -> str:
+            asked.append(url)
+            if state["refuse"] and url.endswith("/fields/54"):
+                raise _refused(url)
+            return _resume_page(url)
+
+    target = tmp_path / "fix"
+    first = ResumeSource("resume", "https://first.example", workers=1)
+    with pytest.raises(urllib.error.HTTPError, match="429"):
+        Interrupted.scrape(target, sources=(first,), retries=0, backoff=0.0)
+
+    state["refuse"] = False
+    asked.clear()
+    second = dataclasses.replace(first, url="https://second.example")
+    Interrupted.scrape(target, sources=(second,), retries=0, backoff=0.0)
+
+    assert asked == [
+        "https://second.example/versions",
+        "https://second.example/4.4/tags",
+        "https://second.example/4.4/fields/1",
+        "https://second.example/4.4/fields/54",
+    ]
+    assert not (tmp_path / ".fix-source-pages").exists()
+
+
+def test_a_source_layout_failure_does_not_cache_its_page(tmp_path: Path) -> None:
+    asked: list[str] = []
+    state = {"valid": False}
+
+    class SharedLayout(ResumeSource):
+        def versions(self, fetch) -> tuple[str, ...]:
+            fetch(f"{self.url}/document")
+            return ("4.4",)
+
+        def tags(self, fetch, _version: str) -> dict[int, tuple[str, str]]:
+            if fetch(f"{self.url}/document") != "document":
+                raise ValueError("the source tag layout changed")
+            return {1: ("Account", ""), 54: ("Side", "")}
+
+    class ChangingLayout(FixRegistry):
+        def _fetch(self, url: str) -> str:
+            asked.append(url)
+            if not state["valid"] and url.endswith("/document"):
+                return "sign in"
+            if url.endswith("/document"):
+                return "document"
+            return _resume_page(url)
+
+    source = SharedLayout("resume", "https://layout.example", workers=1)
+    target = tmp_path / "fix"
+    with pytest.raises(ValueError, match="tag layout changed"):
+        ChangingLayout.scrape(target, sources=(source,))
+
+    page_cache = tmp_path / ".fix-source-pages"
+    assert not list(page_cache.rglob("*.page")), "the rejected shared page was evicted"
+
+    state["valid"] = True
+    asked.clear()
+    ChangingLayout.scrape(target, sources=(source,))
+
+    assert asked == [
+        "https://layout.example/document",
+        "https://layout.example/4.4/fields/1",
+        "https://layout.example/4.4/fields/54",
+    ]
+    assert not page_cache.exists()
+
+
 def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None:
-    """Both sources, in tag order: the spec also names component fields."""
+    """Every source, in tag order; the spec also names component fields."""
     fields = registry.fields("4.4")
     assert len(fields) == EXPECTED_FIELDS
     assert [int(member.fix["tag"]) for member in fields] == [
         43,
         54,
         103,
-        205,
         447,
         448,
         452,
@@ -201,6 +839,7 @@ def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None
         803,
         828,
     ]
+    assert "_source_conflicts" not in registry.__dict__
 
 
 def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegistry) -> None:
@@ -215,49 +854,53 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
     assert "ExecutionReport" in json.loads(side.fix["msgtypes"])
 
 
+def test_onixs_field_usage_distinguishes_component_links() -> None:
+    page = """
+    <h2>FIX 5.0 SP2 : PartyID &lt;448&gt; field</h2>
+    <p>Type: <a>String</a></p>
+    <h3>Description</h3><p>Party identifier.</p>
+    <h3>Used in</h3>
+    <a href="compBlock_PartyDetail.html">&lt;PartyDetail&gt;</a>
+    <a href="msgType_D_68.html">New Order - Single &lt;D&gt;</a>
+    """
+
+    detail = OnixSSource().field(lambda _url: page, "5.0.SP2", 448)
+
+    assert detail["components"] == ["PartyDetail"]
+    assert detail["used_in"] == ["NewOrderSingle"]
+
+
 def test_a_boolean_field_projects_to_arrow_bool(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     assert registry.field(43, "4.4").dtype == pyarrow.bool_()
 
 
-def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) -> None:
-    """Tag 205 has no fixture page: the by-tag row alone is still a field."""
+def test_a_missing_field_page_contributes_nothing(registry: FixtureRegistry) -> None:
+    """Tag 205 has no fixture page, so that source does not declare it."""
     registry.fields("4.4")
-    maturity = registry.field(205, "4.4")
-    assert maturity.name == "MaturityDay"
-    assert maturity.dtype == pyarrow.string()
-    assert maturity.fix["note"] == "no longer used", "the parenthetical is annotation, not name"
+    assert registry.field(205, "4.4") is None
 
 
 # -- the live layout ---------------------------------------------------------
 
 
-def test_the_capture_lists_every_field_its_by_tag_page_links(tmp_path: Path) -> None:
-    """Derived from the captured page, then pinned: 4.0 lists 139 fields."""
+def test_the_capture_reads_only_fields_with_captured_pages(tmp_path: Path) -> None:
+    """A by-tag link without a field page contributes nothing."""
     page = (CAPTURE / "4.0" / "fields_by_tag.html").read_bytes().decode()
     linked = {int(tag) for tag in re.findall(r'href="tagNum_(\d+)\.html"', page)}
     assert len(linked) == 139
     registry = CaptureRegistry(cache_dir=tmp_path / "capture")
-    assert {int(member.fix["tag"]) for member in registry.fields("4.0")} == linked
+    assert {int(member.fix["tag"]) for member in registry.fields("4.0")} == {1, 35, 54}
 
 
-def test_a_captured_page_fills_description_and_paragraph_values(
+def test_a_captured_prose_only_value_list_is_not_an_enumeration(
     captured: dict[int, Field],
 ) -> None:
-    """The live pages spell an enumeration as paragraphs, not as a list."""
+    """OnixS supplies meanings here, but no source supplies symbolic names."""
     side = captured[54]
     assert side.name == "Side"
     assert side.description == "Side of order."
-    assert side.fix.enumerated == values_of(
-        {
-            "1": "Buy",
-            "2": "Sell",
-            "3": "Buy minus",
-            "4": "Sell plus",
-            "5": "Sell short",
-            "6": "Sell short exempt",
-        }
-    )
+    assert not side.fix.enumerated
     assert json.loads(side.fix["msgtypes"])[:2] == ["IndicationofInterest", "ExecutionReport"]
 
 
@@ -276,15 +919,15 @@ def test_message_links_that_are_values_are_not_read_as_messages(
 ) -> None:
     """MsgType lists its messages *as values*, and its own Used In is empty."""
     msg_type = captured[35]
-    assert msg_type.fix.value_of("0").meaning == "Heartbeat"
-    assert msg_type.fix.value_of("D").meaning == "NewOrderSingle"
+    assert msg_type.fix.value_of("0").aliases == ("Heartbeat",)
+    assert msg_type.fix.value_of("D").aliases == ("NewOrderSingle",)
     assert "msgtypes" not in msg_type.fix, "the value links belong to the enumeration"
 
 
 def test_every_captured_page_that_was_read_carries_a_description(
     captured: dict[int, Field],
 ) -> None:
-    """The three captured pages are read; the 136 that were not are still fields."""
+    """The three captured pages are read and described."""
     described = [member for member in captured.values() if member.description]
     assert len(described) == 3
     assert sorted(member.name for member in described) == ["Account", "MsgType", "Side"]
@@ -304,7 +947,7 @@ def test_a_page_refused_past_the_retries_raises(tmp_path: Path) -> None:
     """The last attempt is the caller's, so a site that stays shut is reported."""
     registry = RefusingRegistry(cache_dir=tmp_path / "fix", backoff=0.0, retries=2)
     registry.refusals = 99
-    with pytest.raises(urllib.error.HTTPError, match="429"):
+    with pytest.raises(urllib.error.HTTPError, match=r"429.*https://example\.test/tagNum_54\.html"):
         registry._fetch("https://example.test/tagNum_54.html")
     assert len(registry.asked) == 3, "the retries, and then the attempt that raises"
 
@@ -319,7 +962,9 @@ def test_a_throttled_field_page_fails_the_version(tmp_path: Path) -> None:
     registry = ThrottledRegistry(cache_dir=tmp_path / "fix", backoff=0.0, retries=0)
     with pytest.raises(urllib.error.HTTPError, match="429"):
         registry.fields("4.4")
-    assert not (Path(registry.cache_dir) / "4.4.json").exists(), "nothing half-scraped is kept"
+    cached = Path(registry.cache_dir)
+    assert not list((cached / "fields").glob("*.json"))
+    assert not list((cached / "components").glob("*.json")), "nothing half-scraped is kept"
 
 
 def test_the_pause_is_what_the_site_asked_for(tmp_path: Path) -> None:
@@ -339,6 +984,21 @@ def test_only_the_answers_that_mean_later_are_retried() -> None:
     assert _is_transient(TimeoutError())
     assert not _is_transient(_refused("u", 404)), "a page that is not there is not coming"
     assert not _is_transient(OSError("404 u")), "and neither is anything else"
+    assert _is_missing(_refused("u", 404))
+    assert _is_missing(OSError("404 u"))
+    assert not _is_missing(_refused("u", 403))
+    assert not _is_missing(OSError("offline: https://example.test/fields/404.html"))
+
+
+def test_a_forbidden_field_page_fails_the_version(tmp_path: Path) -> None:
+    class ForbiddenRegistry(FixtureRegistry):
+        def _fetch(self, url: str) -> str:
+            if "tagNum_" in url:
+                raise _refused(url, 403)
+            return super()._fetch(url)
+
+    with pytest.raises(urllib.error.HTTPError, match="403"):
+        ForbiddenRegistry(cache_dir=tmp_path / "fix").fields("4.4")
 
 
 # -- a directory or a zip -----------------------------------------------------
@@ -638,12 +1298,23 @@ def test_the_cache_answers_a_version_in_any_case(registry: FixtureRegistry) -> N
     assert [f.name for f in offline.fields("fixt1.1")] == [f.name for f in offline.fields("4.4")]
 
 
-def test_tags_maps_lowercased_names_to_tag_numbers(registry: FixtureRegistry) -> None:
+def test_tags_maps_folded_names_to_tag_numbers(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     tags = registry.tags()
     assert tags["side"] == 54
     assert tags["possdupflag"] == 43
     assert registry.tags("4.4")["ordrejreason"] == 103
+    assert registry.resolve("Poss_Dup-Flag").fix.tag == 43
+
+
+def test_versioned_tags_and_search_include_recorded_aliases(
+    registry: FixtureRegistry,
+) -> None:
+    registry.fields("4.4")
+    registry.alias_field("Side", "TradeSide")
+
+    assert registry.tags("4.4")["tradeside"] == 54
+    assert [field.name for field in registry.search("Trade_Side", fuzzy=False)] == ["Side"]
 
 
 def test_tags_for_an_explicit_version_raises_when_it_cannot_load(
@@ -839,8 +1510,8 @@ def test_search_limits_distinct_identities_across_versions() -> None:
 
 def test_search_ranks_exact_before_prefix_before_substring(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
-    found = [f.name for f in registry.search("Maturity")]
-    assert found[0] == "MaturityDay"
+    found = [f.name for f in registry.search("PartyID")]
+    assert found[0] == "PartyID"
 
 
 def test_search_falls_back_to_levenshtein_only_when_nothing_matches(
@@ -859,13 +1530,13 @@ def test_levenshtein_stops_at_its_ceiling() -> None:
     assert _levenshtein("a", "abcdefgh", 2) is None, "the length gap alone settles it"
 
 
-# -- the second source --------------------------------------------------------
+# -- source merging -----------------------------------------------------------
 
 
 def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
     tmp_path: Path,
 ) -> None:
-    """Both, never one over the other: the spec's `description=` is a symbol.
+    """Meaning and symbol survive in their distinct slots.
 
     `Side <54>` value `1` is `BUY` in the spec and "Buy" in the dictionary, and
     a merge that wrote the first where the second goes would replace prose with
@@ -888,27 +1559,23 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     assert not by_tag["828"].description, "and with no prose, because there is none"
 
 
-def test_a_field_the_spec_does_not_enumerate_gains_no_symbols(tmp_path: Path) -> None:
+def test_a_field_without_source_symbols_gains_no_enumeration(tmp_path: Path) -> None:
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
     listed = {field.fix["tag"]: field for field in registry.fields("4.4")}
-    assert listed["103"].fix.enumerated, "the site wrote the values up"
-    assert not any(one.aliases for one in listed["103"].fix.enumerated), "the spec did not"
+    assert not listed["103"].fix.enumerated
 
 
-def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
-    tmp_path: Path,
-) -> None:
-    """The enriching source: its failure is not the caller's."""
+def test_a_refused_spec_fails_the_version(tmp_path: Path) -> None:
+    """A refused source cannot become a trusted partial version."""
 
     class NoSpec(FixtureRegistry):
         def _fetch(self, url: str) -> str:
             if url.endswith(".xml"):
-                raise OSError(f"503 {url}")
+                raise _refused(url, 503)
             return super()._fetch(url)
 
-    fields = NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
-    assert len(fields) == EXPECTED_LISTED, "every field the site listed is still here"
-    assert all(not any(one.aliases for one in field.fix.enumerated) for field in fields)
+    with pytest.raises(urllib.error.HTTPError, match="503"):
+        NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
 
 
 # -- reusable components ----------------------------------------------------
@@ -958,25 +1625,17 @@ def test_an_undeclared_group_chain_has_no_delimiters() -> None:
     assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoSuchGrp"), "4.4") is None
 
 
-def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path) -> None:
-    plain = FixRegistry(cache_dir=tmp_path / "fix")
-    plain._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
-    assert registry._stored_components("4.4") is None, "the old document has no key"
-    assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
-    assert registry.fetched == [f"{registry.spec_url}/FIX44.xml"]
-
-
-def test_an_old_offline_cache_has_no_components_and_does_not_fetch(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix")
+def test_a_store_without_components_reports_them_unavailable(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     registry._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
-    offline = OfflineRegistry(cache_dir=tmp_path / "fix")
+    offline = OfflineRegistry(cache_dir=tmp_path / "fix", offline=True)
+    assert not offline.components_available("4.4")
     assert offline.components("4.4") == []
     with pytest.raises(KeyError, match="Parties"):
         offline.component("Parties", "4.4")
 
 
-def test_an_empty_component_list_is_distinct_from_an_old_cache(tmp_path: Path) -> None:
+def test_a_declared_empty_component_list_is_available(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_fields("4.4", [fix_field("Side", 54, "char")], components=[])
     assert registry._stored_components("4.4") == []
@@ -1001,43 +1660,10 @@ def test_the_session_layer_travels_with_the_dictionary(tmp_path: Path) -> None:
     ]
 
 
-def test_a_version_stored_without_a_session_layer_says_so_rather_than_raising(
+def test_a_version_without_a_session_layer_is_empty(
     tmp_path: Path,
 ) -> None:
-    """A dictionary gathered before this existed simply has no such key."""
+    """An omitted session layer is an empty sequence."""
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_fields("4.4", [fix_field("Side", 54, "char")])
     assert registry.session("4.4") == ()
-
-
-def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Path) -> None:
-    """The cheap half of a scrape on its own: one request, not seven thousand.
-
-    A dictionary gathered before this package read the spec has every
-    description and no symbol, and re-reading the site to gain them would be
-    absurd.
-    """
-    plain = FixRegistry(cache_dir=tmp_path / "fix")
-    plain._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
-    assert not any(one.aliases for one in plain.field(54, "4.4").fix.enumerated)
-
-    enriched = FixtureRegistry(cache_dir=tmp_path / "fix")
-    assert enriched.enrich("4.4") == {"4.4": 1}, "the one stored field that enumerates"
-    after = OfflineRegistry(cache_dir=tmp_path / "fix")
-    stored = after.field(54, "4.4").fix.value_of("1")
-    assert stored.aliases == ("BUY",)
-    assert stored.meaning == "Buy", "prose untouched"
-    assert after.session("4.4"), "and the session layer lands with it"
-    assert members_of(after.component("Parties", "4.4"))[0].name == "NoPartyIDs"
-
-
-def test_enriching_a_version_nothing_stored_does_nothing(tmp_path: Path) -> None:
-    """It adds to a dictionary; it never fetches one."""
-    assert FixtureRegistry(cache_dir=tmp_path / "fix").enrich("4.4") == {}
-    assert not (tmp_path / "fix" / "4.4.json").exists()
-
-
-def test_enriching_offline_is_a_no_op_rather_than_a_failure(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix")
-    registry._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
-    assert OfflineRegistry(cache_dir=tmp_path / "fix").enrich("4.4") == {"4.4": 0}

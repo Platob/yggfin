@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "OrdTypeRules",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
   },
   "fields": [

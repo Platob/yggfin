@@ -11,6 +11,8 @@
   "nullable": true,
   "fix": {
    "component": "SecLstUpdRelSymGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityListUpdateReport\"]"
   },
   "fields": [

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "OrderEntryGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MassOrder\"]"
   },
   "fields": [

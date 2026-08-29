@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderMassCancelReport",
-   "msgtype": "r"
+   "msgtype": "r",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

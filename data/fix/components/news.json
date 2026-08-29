@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "News",
-   "msgtype": "B"
+   "msgtype": "B",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

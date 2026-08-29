@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementsRequest",
-   "msgtype": "CU"
+   "msgtype": "CU",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

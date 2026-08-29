@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "RegistrationInstructions",
-   "msgtype": "o"
+   "msgtype": "o",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

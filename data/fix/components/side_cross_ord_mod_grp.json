@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "SideCrossOrdModGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"NewOrderCross\"]"
   },
   "fields": [

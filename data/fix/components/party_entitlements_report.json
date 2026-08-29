@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementsReport",
-   "msgtype": "CV"
+   "msgtype": "CV",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

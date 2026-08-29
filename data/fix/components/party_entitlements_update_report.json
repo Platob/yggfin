@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementsUpdateReport",
-   "msgtype": "CZ"
+   "msgtype": "CZ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

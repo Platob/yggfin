@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "ConfirmationRequest",
-   "msgtype": "BH"
+   "msgtype": "BH",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

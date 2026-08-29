@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "ThrottleParamsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"UserNotification\",\"UserResponse\"]"
   },
   "fields": [

@@ -180,17 +180,13 @@ def test_a_name_the_dictionary_has_is_exact(report: KeyReport) -> None:
 
 
 def test_a_renderers_own_casing_is_the_same_name(report: KeyReport) -> None:
-    """`clordid` and `ClOrdID` differ only by case, which is all the fold drops."""
+    """`clordid` and `ClOrdID` carry the same folded name."""
     assert _row(report, "clordid").kind == EXACT
     assert _row(report, "clordid").resolved == "ClOrdID"
 
 
-def test_a_separator_spelling_is_a_near_miss_a_person_records_as_an_alias(
-    report: KeyReport,
-) -> None:
-    """Not folded away: what a bridge actually writes is what the report exists to say,
-    and `--aliases` is how the decision to accept it is recorded."""
-    assert _row(report, "ORDER_QTY").kind == NEAR
+def test_a_separator_spelling_is_the_same_name(report: KeyReport) -> None:
+    assert _row(report, "ORDER_QTY").kind == EXACT
     assert _row(report, "ORDER_QTY").resolved == "OrderQty"
 
 

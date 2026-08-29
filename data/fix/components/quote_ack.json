@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteAck",
-   "msgtype": "CW"
+   "msgtype": "CW",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

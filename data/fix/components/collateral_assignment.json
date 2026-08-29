@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralAssignment",
-   "msgtype": "AY"
+   "msgtype": "AY",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

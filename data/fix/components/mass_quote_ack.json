@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MassQuoteAck",
-   "msgtype": "b"
+   "msgtype": "b",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

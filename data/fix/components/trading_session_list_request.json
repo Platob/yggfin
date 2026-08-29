@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "TradingSessionListRequest",
-   "msgtype": "BI"
+   "msgtype": "BI",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "SecMassStatGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityMassStatus\"]"
   },
   "fields": [

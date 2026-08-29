@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyRiskLimitsRequest",
-   "msgtype": "CL"
+   "msgtype": "CL",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

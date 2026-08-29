@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementUpdateGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsUpdateReport\"]"
   },
   "fields": [

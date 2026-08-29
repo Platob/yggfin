@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrumentScopeGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\"]"
   },
   "fields": [

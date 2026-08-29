@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "ApplicationMessageRequest",
-   "msgtype": "BW"
+   "msgtype": "BW",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

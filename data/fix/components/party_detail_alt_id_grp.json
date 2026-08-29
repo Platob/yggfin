@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PartyDetailAltIDGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListReport\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\",\"TradeCaptureReport\"]"
   },
   "fields": [

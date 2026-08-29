@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "ApplicationMessageReport",
-   "msgtype": "BY"
+   "msgtype": "BY",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

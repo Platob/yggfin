@@ -665,12 +665,12 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
 
     table = log.read_arrow_table()
 
-    assert table.column("msgtype").to_pylist() == ["D", "8", "W", None, "D"]
+    assert table.column("msgtype").to_pylist() == ["D", "8", "W", "G", "D"]
     assert table.column("etype").to_pylist() == [
         int(EventType.ORDER),
         int(EventType.EXECUTION),
         int(EventType.BOOK),
-        int(EventType.MISC),
+        int(EventType.ORDER),
         int(EventType.ORDER),
     ]
     keys = [[entry["key"] for entry in row] for row in table.column("entries").to_pylist()]
@@ -678,7 +678,7 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
         ["Text"],
         ["Text"],
         ["Text"],
-        ["msg_type", "Text"],
+        ["Text"],
         # One spelling stating two values is torn, like every other header
         # field: both readings stay, and the column falls back to the raw
         # line's own first discriminator.

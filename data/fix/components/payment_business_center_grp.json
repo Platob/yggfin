@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PaymentBusinessCenterGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\"]"
   },
   "fields": [

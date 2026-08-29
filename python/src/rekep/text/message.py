@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.enums import EventType
-from rekep.fields import DISPLAY, Field, column_name, scalar
+from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
 from rekep.fix.message import NOT_SEPARATOR, parse_pairs
@@ -33,7 +33,9 @@ _DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
 _TOKEN_START = r"(?:^|\x04\x03|\^A|[\x01|^;#])"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
-_CHECKSUM_KEYS = ("10", "checksum", "trailer.10", "trailer.checksum")
+_CHECKSUM_KEYS = tuple(
+    column_name(name) for name in ("10", "CheckSum", "Trailer.10", "Trailer.CheckSum")
+)
 
 #: The standard header and trailer a raw row lifts out of `entries`, by the FIX
 #: tag each of them is written under. They are lifted here because they are
@@ -114,9 +116,18 @@ _SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
     {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": _MSG_TYPE}
 )
 
+_RENDERED_DECORATION = r"[^A-Za-z0-9=\x01\x03\x04|;^#]*"
+
+
+def _rendered_name(name: str) -> str:
+    """A folded field name as the rendered-key grammar can spell it."""
+    return _RENDERED_DECORATION.join(re.escape(character) for character in column_name(name))
+
+
 _CHECKSUM_TOKEN = (
     rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?"
-    rf"(?:10|checksum|trailer\.10|trailer\.checksum)[ \t\r\n\f\x0b]*="
+    rf"(?:10|{_rendered_name('CheckSum')}|{_rendered_name('Trailer.10')}|"
+    rf"{_rendered_name('Trailer.CheckSum')})[ \t\r\n\f\x0b]*="
 )
 
 # Finding one discriminator is deliberately cheaper than tokenising the whole
@@ -127,7 +138,7 @@ _WIRE_MSG_TYPE = (
     rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
 )
 _NAMED_MSG_TYPE = (
-    rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?MsgType[ \t\r\n\f\x0b]*="
+    rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?{_rendered_name('MsgType')}[ \t\r\n\f\x0b]*="
     rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
 )
 # The version is whatever the BeginString value holds, which is everything up
@@ -469,7 +480,7 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
     spellings: dict[str, list[int]] = {"35": [], "msgtype": []}
     ended = False
     for index, entry in enumerate(entries):
-        folded = entry.key.lower()
+        folded = column_name(entry.key)
         if folded in _CHECKSUM_KEYS:
             ended = True
         column = None if ended else _SESSION_BY_KEY.get(folded)
@@ -535,7 +546,7 @@ def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], p
     positions = sequence(len(entries))
     keys = compute.struct_field(entries, "key")
     values = compute.struct_field(entries, "value")
-    normalized = compute.utf8_lower(keys)
+    normalized = column_names(keys)
     checksums = compute.fill_null(
         compute.is_in(normalized, value_set=pyarrow.array(_CHECKSUM_KEYS)), False
     )

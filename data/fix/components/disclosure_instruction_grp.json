@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "DisclosureInstructionGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\"]"
   },
   "fields": [

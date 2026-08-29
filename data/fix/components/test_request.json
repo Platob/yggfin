@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "TestRequest",
-   "msgtype": "1"
+   "msgtype": "1",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

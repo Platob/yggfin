@@ -11,7 +11,7 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.fields import Field, scalar
+from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
 from rekep.fix.columns import DECLARED, ENTRIES
 from rekep.fix.fields import cast_arrow_fix
@@ -514,21 +514,21 @@ class ComponentGroup:
         absent from `components` extracts nothing rather than falling back on
         tags this class guessed.
         """
-        wanted = self.component.lower()
-        grouped = self.group.lower()
-        by_name = {component.name.lower(): component for component in self.components}
+        wanted = column_name(self.component)
+        grouped = column_name(self.group)
+        by_name = {column_name(component.name): component for component in self.components}
         counts: set[int] = set()
         members: dict[int, str] = {}
         paths: dict[int, tuple[str, ...]] = {}
         group_delimiters: dict[tuple[str, ...], set[int]] = {}
-        name_tags = {str(name).lower(): int(tag) for name, tag in self.names.items()}
+        name_tags = {column_name(name): int(tag) for name, tag in self.names.items()}
 
         def member_tags(member: Field) -> tuple[int, ...]:
             found: list[int] = []
             declared = member.fix.tag
             if declared:
                 found.append(int(declared))
-            mapped = name_tags.get(member.name.lower())
+            mapped = name_tags.get(column_name(member.name))
             if mapped is not None and mapped not in found:
                 found.append(mapped)
             return tuple(found)
@@ -545,7 +545,7 @@ class ComponentGroup:
                     if tags:
                         return tags
                 else:
-                    key = member.name.lower()
+                    key = column_name(member.name)
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
                         tags = first_tags(nested, seen | {key})
@@ -562,7 +562,7 @@ class ComponentGroup:
                     group_delimiters.setdefault(nested_path, set()).update(first_tags(entry, seen))
                     visit(entry, seen, nested_path)
                 elif is_reference(member):
-                    key = member.name.lower()
+                    key = column_name(member.name)
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
                         visit(nested, seen | {key}, path)
@@ -571,7 +571,7 @@ class ComponentGroup:
 
         def find(declared: Field, seen: frozenset[str]) -> None:
             for member in members_of(declared):
-                if is_group(member) and member.name.lower() == grouped:
+                if is_group(member) and column_name(member.name) == grouped:
                     counts.update(member_tags(member))
                     # The group's own delimiter, which the standard fixes as
                     # its first member: read off the declaration rather than
@@ -581,18 +581,21 @@ class ComponentGroup:
                     group_delimiters.setdefault((), set()).update(first_tags(entry, seen))
                     visit(entry, seen)
                 elif is_reference(member):
-                    key = member.name.lower()
+                    key = column_name(member.name)
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
                         find(nested, seen | {key})
 
         for component in self.components:
-            key = component.name.lower()
+            key = column_name(component.name)
             if key == wanted:
                 find(component, frozenset({key}))
                 # Hand-written declarations sometimes omit the outer group.
                 visit(
-                    _without(component, lambda one: is_group(one) and one.name.lower() == grouped),
+                    _without(
+                        component,
+                        lambda one: is_group(one) and column_name(one.name) == grouped,
+                    ),
                     frozenset({key}),
                 )
             else:
@@ -633,9 +636,11 @@ class ComponentGroup:
 
     def _tags_named(self, name: str) -> pyarrow.Array:
         """Every declared tag carrying one canonical member name."""
-        wanted = name.lower()
+        wanted = column_name(name)
         return pyarrow.array(
-            sorted(tag for tag, found in self._member_names.items() if found.lower() == wanted),
+            sorted(
+                tag for tag, found in self._member_names.items() if column_name(found) == wanted
+            ),
             pyarrow.int32(),
         )
 
@@ -651,17 +656,17 @@ class ComponentGroup:
         underlyings beside legs, legs beside alt-ids -- are not collected, so
         their presence on a line never refuses a top-level extraction.
         """
-        grouped = self.group.lower()
-        by_name = {component.name.lower(): component for component in self.components}
-        name_tags = {str(name).lower(): int(tag) for name, tag in (self.names or {}).items()}
+        grouped = column_name(self.group)
+        by_name = {column_name(component.name): component for component in self.components}
+        name_tags = {column_name(name): int(tag) for name, tag in (self.names or {}).items()}
 
         def contains(declared: Field, seen: frozenset[str]) -> bool:
             for member in members_of(declared):
                 if is_group(member):
-                    if member.name.lower() == grouped or contains(entry_of(member), seen):
+                    if column_name(member.name) == grouped or contains(entry_of(member), seen):
                         return True
                 elif is_reference(member):
-                    key = member.name.lower()
+                    key = column_name(member.name)
                     nested = by_name.get(key)
                     if nested is None or key in seen:
                         continue
@@ -675,22 +680,22 @@ class ComponentGroup:
             for member in members_of(declared):
                 if is_group(member):
                     entry = entry_of(member)
-                    if member.name.lower() != grouped and contains(entry, seen):
+                    if column_name(member.name) != grouped and contains(entry, seen):
                         declared_tag = member.fix.tag
                         if declared_tag:
                             found.add(int(declared_tag))
-                        mapped = name_tags.get(member.name.lower())
+                        mapped = name_tags.get(column_name(member.name))
                         if mapped is not None:
                             found.add(mapped)
                     visit(entry, seen)
                 elif is_reference(member):
-                    key = member.name.lower()
+                    key = column_name(member.name)
                     nested = by_name.get(key)
                     if nested is not None and key not in seen:
                         visit(nested, seen | {key})
 
         for component in self.components:
-            visit(component, frozenset({component.name.lower()}))
+            visit(component, frozenset({column_name(component.name)}))
         return pyarrow.array(sorted(found), pyarrow.int32())
 
 

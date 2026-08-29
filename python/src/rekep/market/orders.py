@@ -12,7 +12,7 @@ from typing import Annotated, Any
 import pyarrow
 
 from rekep.enums import EventType, State, TimeInForce
-from rekep.fields import Field, scalar
+from rekep.fields import Field, column_name, scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL, hash_bytes_of
@@ -42,7 +42,7 @@ _ORDER_CODE_NAMES = MappingProxyType(
 @functools.lru_cache(maxsize=128)
 def _code_name(name: str) -> str:
     """One source identifier name in the spelling the lookup contract reads."""
-    return "".join(character for character in name.casefold() if character.isalnum())
+    return column_name(name)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

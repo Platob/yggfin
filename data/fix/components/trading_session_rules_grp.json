@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "TradingSessionRulesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
   "fields": [

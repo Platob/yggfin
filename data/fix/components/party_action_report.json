@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyActionReport",
-   "msgtype": "DI"
+   "msgtype": "DI",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

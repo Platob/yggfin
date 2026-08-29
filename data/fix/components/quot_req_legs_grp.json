@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "QuotReqLegsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"QuoteRequest\",\"QuoteRequestReject\"]"
   },
   "fields": [

@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "MarketSegmentGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\"]"
   },
   "fields": [

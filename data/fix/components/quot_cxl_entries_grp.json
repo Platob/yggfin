@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "QuotCxlEntriesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"QuoteCancel\"]"
   },
   "fields": [

@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PartyEntitlementsDefinitionRequestAck",
-   "msgtype": "DB"
+   "msgtype": "DB",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

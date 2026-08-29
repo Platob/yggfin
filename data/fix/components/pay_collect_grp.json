@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PayCollectGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AccountSummaryReport\"]"
   },
   "fields": [

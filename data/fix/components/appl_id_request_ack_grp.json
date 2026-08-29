@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "ApplIDRequestAckGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ApplicationMessageRequestAck\"]"
   },
   "fields": [

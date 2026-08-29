@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralInquiryAck",
-   "msgtype": "BG"
+   "msgtype": "BG",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

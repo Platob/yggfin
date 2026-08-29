@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrmtLegIOIGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"IOI\"]"
   },
   "fields": [

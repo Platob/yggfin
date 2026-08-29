@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RequestedPartyRoleGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyDetailsListRequest\",\"PartyEntitlementsRequest\",\"PartyRiskLimitsRequest\"]"
   },
   "fields": [

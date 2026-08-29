@@ -19,6 +19,7 @@ from rekep.fix import (
     NO_PROTOCOL,
     FixCodec,
     FixRegistry,
+    NanocondaSource,
     Rule,
     Rules,
     infer_version_from_pairs,
@@ -235,6 +236,12 @@ def test_a_value_its_field_enumerates_reads_its_meaning(codec: FixCodec) -> None
     assert access.reading(stored, 55).meaning is None, (
         "Symbol enumerates nothing, so there is nothing to say"
     )
+
+
+def test_a_value_name_uses_the_registry_fold(codec: FixCodec) -> None:
+    pairs = parse_arrow_array(pyarrow.array(["EXECTYPE=partial-fill|"]))
+    entries = codec.into_message_entries(pairs)
+    assert _tags(codec.complete_entries(entries, "4.2")) == [(150, "1")]
 
 
 def test_a_value_reads_its_meaning_from_the_whole_enumeration(codec: FixCodec) -> None:
@@ -695,6 +702,14 @@ def test_the_index_is_built_once_per_version(codec: FixCodec) -> None:
     assert codec.index_of("4.2") is not first
 
 
+def test_a_versioned_index_resolves_a_recorded_alias_in_scalar_and_arrow(
+    codec: FixCodec,
+) -> None:
+    index = codec.index_of("4.4")
+    assert index.resolve_key("ID_Source")[:2] == (22, True)
+    assert index.resolve(pyarrow.array(["ID_Source"])).to_pylist() == [22]
+
+
 def test_an_empty_index_resolves_nothing() -> None:
     empty = TagIndex.from_tags({})
     resolved = empty.resolve(pyarrow.array(["Symbol", "55"]))
@@ -717,11 +732,15 @@ def test_a_registry_with_no_cached_version_resolves_nothing_and_raises_nothing(
 def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
     """Which is why a codec holds one: a parse must not start a scrape.
 
-    The base URL points at a port nothing listens on, so a registry that did
+    The source URL points at a port nothing listens on, so a registry that did
     reach for it would hang on the retry ladder rather than fail quickly --
     which is exactly the failure this flag exists to make impossible.
     """
-    registry = FixRegistry(cache_dir=tmp_path, offline=True, base_url="http://127.0.0.1:9/nope")
+    registry = FixRegistry(
+        sources=(NanocondaSource(url="http://127.0.0.1:9/nope"),),
+        cache_dir=tmp_path,
+        offline=True,
+    )
     assert registry.versions == (), "what it holds, rather than an error it never earned"
     assert registry.tags() == {}
     assert FixCodec().registry.offline is True
@@ -1285,7 +1304,7 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
         [
             {
                 "partyid": "99106.003",
-                "partyidsource": "proprietary/customcode",
+                "partyidsource": "D",
                 "partyrole": 3,
                 "buffer": None,
             }
@@ -1318,7 +1337,7 @@ def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec
     assert _pairs(pairs)[-1] == ("NOPARTYIDS[0].PARTYROLE", "clientid")
     assert parties.to_pylist()[0][0] == {
         "partyid": "99106.003",
-        "partyidsource": "proprietary/customcode",
+        "partyidsource": "D",
         "partyrole": 3,
         "buffer": None,
     }

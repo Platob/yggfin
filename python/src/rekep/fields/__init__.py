@@ -48,11 +48,12 @@ from rekep.fields.metadata import (
     newest_rank,
     version_rank,
 )
-from rekep.fields.names import ACRONYMS, column_name, display_name
+from rekep.fields.names import ACRONYMS, column_name, column_names, display_name
 
 __all__ = [
     "display_name",
     "column_name",
+    "column_names",
     "ACRONYMS",
     "ANY_VERSION",
     "Alias",

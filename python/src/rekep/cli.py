@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import importlib
 import json
 import pathlib
@@ -22,7 +23,7 @@ from rekep.fix.entries import (
     refuse_record,
 )
 from rekep.fix.fields import fix_field, namespaced_field
-from rekep.fix.registry import FixRegistry
+from rekep.fix.registry import DEFAULT_SOURCES, FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import document_of, field_document
 from rekep.logs import COMMAND_LEVEL, configure
@@ -202,6 +203,12 @@ def registry_versions(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def registry_coverage(arguments: argparse.Namespace) -> int:
+    """Write source answer counts for stored fields."""
+    _write_json(_registry(arguments).source_coverage())
+    return 0
+
+
 def find_fields(arguments: argparse.Namespace) -> int:
     """Write distinct field records matching one query."""
     registry = _registry(arguments)
@@ -369,8 +376,6 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
     configuration = {
         name: value
         for name, value in (
-            ("base_url", arguments.base_url),
-            ("spec_url", arguments.spec_url),
             ("timeout", arguments.timeout),
             ("max_workers", arguments.max_workers),
             ("retries", arguments.retries),
@@ -378,10 +383,22 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
         )
         if value is not None
     }
+    source_urls = {
+        "nanoconda": arguments.nanoconda_url,
+        "onixs": arguments.onixs_url,
+        "quickfix": arguments.quickfix_url,
+    }
+    if any(source_urls.values()):
+        configuration["sources"] = tuple(
+            dataclasses.replace(source, url=source_urls[source.name] or source.url)
+            for source in DEFAULT_SOURCES
+        )
     configuration["announce"] = CONSOLE.note
     target = arguments.output or "~/.config/fix"
     with CONSOLE.spinner(f"scraping into {target}"):
         registry = FixRegistry.scrape(arguments.output, **configuration)
+    if arguments.conflicts:
+        registry.conflicts.into_json(arguments.conflicts)
     CONSOLE.ok(
         f"{registry.cache_dir} holds {len(registry.field_records())} fields and "
         f"{len(registry.component_records())} components"
@@ -643,6 +660,7 @@ def _parser() -> argparse.ArgumentParser:
         return action
 
     verb("versions", "write stored versions and field counts as JSON", registry_versions)
+    verb("coverage", "write source coverage as JSON", registry_coverage)
     finding = verb("find", "search fields and write their records as JSON", find_fields)
     finding.add_argument("query", help="tag, name, or description to search")
     finding.add_argument("--version", default=None, help="search only one FIX version")
@@ -765,8 +783,15 @@ def _parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="local target directory; defaults to ~/.config/fix",
     )
-    scraping.add_argument("--base-url", default=None, help="FIX dictionary source URL")
-    scraping.add_argument("--spec-url", default=None, help="QuickFIX specification source URL")
+    scraping.add_argument(
+        "--conflicts",
+        default=None,
+        metavar="PATH",
+        help="write the attributed conflict report as JSON",
+    )
+    scraping.add_argument("--nanoconda-url", default=None, help="Nanoconda source URL")
+    scraping.add_argument("--onixs-url", default=None, help="OnixS source URL")
+    scraping.add_argument("--quickfix-url", default=None, help="QuickFIX source URL")
     scraping.add_argument("--timeout", type=float, default=None, help="request timeout in seconds")
     scraping.add_argument(
         "--max-workers", type=int, default=None, help="maximum concurrent source requests"

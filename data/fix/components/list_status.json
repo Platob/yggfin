@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "ListStatus",
-   "msgtype": "N"
+   "msgtype": "N",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

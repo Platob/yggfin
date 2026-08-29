@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "SequenceReset",
-   "msgtype": "4"
+   "msgtype": "4",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

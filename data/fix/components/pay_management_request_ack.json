@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PayManagementRequestAck",
-   "msgtype": "DZ"
+   "msgtype": "DZ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

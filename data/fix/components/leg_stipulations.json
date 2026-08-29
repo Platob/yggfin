@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "LegStipulations",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"IOI\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

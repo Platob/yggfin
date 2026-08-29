@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdRegTimestamps",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ExecutionReport\",\"MarginRequirementReport\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"PositionReport\",\"Quote\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "StrmAsgnReqGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"StreamAssignmentRequest\"]"
   },
   "fields": [

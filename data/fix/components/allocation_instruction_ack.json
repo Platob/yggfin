@@ -15,7 +15,9 @@
   "nullable": true,
   "fix": {
    "component": "AllocationInstructionAck",
-   "msgtype": "P"
+   "msgtype": "P",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

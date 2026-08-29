@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "FinancingContractualMatrixGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AdjustedPositionReport\",\"Advertisement\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"Email\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataRequest\",\"MarketDataSnapshotFullRefresh\",\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\",\"NewOrderSingle\",\"News\",\"OrderCancelReplaceRequest\",\"OrderCancelRequest\",\"OrderStatusRequest\",\"PositionReport\",\"Quote\",\"QuoteCancel\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"QuoteStatusRequest\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListRequest\",\"SecurityListUpdateReport\",\"SecurityMassStatus\",\"SecurityStatus\",\"SecurityStatusRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeCaptureReportRequest\"]"
   },
   "fields": [

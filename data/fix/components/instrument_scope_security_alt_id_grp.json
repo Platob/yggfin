@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrumentScopeSecurityAltIDGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"PartyActionReport\",\"PartyActionRequest\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\",\"SecurityMassStatus\",\"SecurityMassStatusRequest\"]"
   },
   "fields": [

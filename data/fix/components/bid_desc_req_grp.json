@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "BidDescReqGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"BidRequest\"]"
   },
   "fields": [

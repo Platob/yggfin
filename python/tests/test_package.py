@@ -22,10 +22,10 @@ import rekep.market.fix
 from rekep import Field, FixMsg, scalar
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
-    BASE_URL,
     CACHE_DIRECTORY,
     CODECS,
     COMMON,
+    DEFAULT_SOURCES,
     FLAT,
     NO_PROTOCOL,
     QUOTE,
@@ -102,7 +102,7 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
 def test_the_registry_defaults_are_the_exported_ones() -> None:
     """Both are exported and referenced nowhere else; they are the defaults."""
     registry = FixRegistry()
-    assert registry.base_url == BASE_URL.rstrip("/")
+    assert registry.sources == DEFAULT_SOURCES
     assert str(registry.cache_dir) == str(pathlib.Path(CACHE_DIRECTORY))
 
 

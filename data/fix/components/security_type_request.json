@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityTypeRequest",
-   "msgtype": "v"
+   "msgtype": "v",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

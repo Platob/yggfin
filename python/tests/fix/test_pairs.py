@@ -47,9 +47,8 @@ def test_a_name_resolves_however_it_is_cased(spelled: str) -> None:
 
 
 @pytest.mark.parametrize("spelled", ["msg_type", "msg-type", "MSG_TYPE", "Msg Type"])
-def test_a_renderer_s_separators_are_a_spelling_of_their_own(spelled: str) -> None:
-    """A separator is part of the name, so an unknown spelling is kept, not guessed at."""
-    assert FixMsg.from_pairs([(spelled, "D")], TAGS).pairs == [(spelled, "D")]
+def test_a_renderer_s_separators_fold_to_the_field(spelled: str) -> None:
+    assert FixMsg.from_pairs([(spelled, "D")], TAGS).pairs == [("35", "D")]
 
 
 def test_a_component_path_names_the_field_at_the_end_of_it() -> None:
@@ -203,8 +202,8 @@ def test_what_from_pairs_builds_reads_back_the_same_through_from_text() -> None:
     assert FixMsg.from_text(built.into_text("|"), named=True).pairs == built.pairs
 
 
-def test_the_fold_is_case_and_nothing_else() -> None:
+def test_the_fold_is_lowercase_letters_and_digits() -> None:
     """Pinned directly, because every name rule above rests on it."""
     assert fold("MsgType") == fold("MSGTYPE") == "msgtype"
-    assert fold("msg_type") != fold("MsgType"), "a separator is part of a name"
+    assert fold("msg_type") == fold("MsgType"), "separators are not identity"
     assert fold("Side") != fold("Sides"), "it folds spelling, not meaning"

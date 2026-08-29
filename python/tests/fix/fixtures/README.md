@@ -2,8 +2,8 @@
 
 Pages and captures the FIX tests read instead of the network.
 
-- `fix-dictionary.html`, `fields_by_tag.html`, `tagNum_*.html` and `FIX44.xml`
-  mirror the two sources a scrape reads, hand-written and small.
+- `nanoconda/`, `fix-dictionary.html`, `fields_by_tag.html`, `tagNum_*.html`
+  and `FIX44.xml` mirror the registry sources, hand-written and small.
 - `capture/` holds pages captured from the live dictionary unedited, so the
   parsing is pinned a second time against the layout the site really has.
 - `bridge_keys.txt` is a synthetic bridge capture in the parser's target log

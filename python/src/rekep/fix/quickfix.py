@@ -1,4 +1,4 @@
-"""The QuickFIX spec as a second source: what the standard says, machine-readable.
+"""The QuickFIX spec as a machine-readable registry source.
 
 A component, a message and a repeating group are all one shape here: a
 `Field`. A block is a struct, a repeating group is a list of one, and a
@@ -7,8 +7,8 @@ name in `fix:component` -- expanded by whoever reads it, because expanding
 the published dictionary in place turns three thousand members into a
 hundred and twenty thousand.
 
-Names are FIX's own throughout. The Arrow projection snakes them when it
-builds columns; the declaration says what the standard says.
+Names are FIX's own throughout. The Arrow projection folds them when it builds
+columns; the declaration says what the standard says.
 """
 
 from __future__ import annotations
@@ -16,13 +16,13 @@ from __future__ import annotations
 import dataclasses
 import re
 import types
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any
 from xml.etree import ElementTree
 
 import pyarrow
 
-from rekep.fields import Field
+from rekep.fields import Field, column_name
 
 #: Where the spec files live. Override to point at a fork or a mirror.
 QUICKFIX_URL = "https://raw.githubusercontent.com/quickfix/quickfix/master/spec"
@@ -48,7 +48,7 @@ class SpecField:
     """One field as the spec declares it: its tag, its name, its datatype.
 
     `values` is `{enum: SYMBOL}` -- the machine-readable name of each
-    enumerated value, which is the half the scraped dictionary does not have.
+    enumerated value, used where a higher-priority source omits one.
     """
 
     tag: int
@@ -182,12 +182,12 @@ def declared_group(
     """Find a nested repeating group through references without cycles."""
     for member in members_of(declared):
         if is_group(member):
-            if member.name.lower() == wanted.lower():
+            if column_name(member.name) == column_name(wanted):
                 return member
             if found := declared_group(entry_of(member), wanted, components, seen):
                 return found
         elif is_reference(member):
-            key = member.name.lower()
+            key = column_name(member.name)
             block = components.get(key)
             if block is not None and key not in seen:
                 if found := declared_group(block, wanted, components, seen | {key}):
@@ -204,7 +204,7 @@ def first_declared_name(
     for member in members_of(declared):
         if not is_reference(member):
             return member.name
-        key = member.name.lower()
+        key = column_name(member.name)
         block = components.get(key)
         if block is not None and key not in seen:
             if found := first_declared_name(block, components, seen | {key}):
@@ -228,9 +228,8 @@ def spec_name(version: str) -> str:
 def parse_spec(document: str) -> dict[int, SpecField]:
     """`{tag: SpecField}` out of one spec file, or empty when it says nothing.
 
-    Only `<fields>` is read. The message and component blocks describe *where*
-    a field may appear, which is a different question from what a field is --
-    and the one this package answers through the dictionary's own `used_in`.
+    Only `<fields>` is read. Message and component blocks are declarations and
+    are parsed separately by `parse_declarations`.
     """
     root = _root(document)
     if root is None:
@@ -267,7 +266,10 @@ def parse_declarations(document: str) -> dict[str, Field]:
     root = _root(document)
     if root is None:
         return {}
-    tags = {field.name: field.tag for field in parse_spec(document).values()}
+    tags = _folded_index(
+        ((field.name, field.tag) for field in parse_spec(document).values()),
+        "field",
+    )
     found: dict[str, Field] = {}
     for owner, path in (("component", "./components/component"), ("message", "./messages/message")):
         for element in root.findall(path):
@@ -294,16 +296,29 @@ def parse_session(document: str) -> tuple[tuple[str, bool], ...]:
     skipped: one row of a group is not one value, which is the same reason it
     is not a column.
     """
+    return tuple((name, required) for name, _, required in _session_members(document))
+
+
+def parse_session_components(document: str) -> tuple[tuple[str, str], ...]:
+    """Direct session fields paired with their standard component."""
+    return tuple((name, component) for name, component, _ in _session_members(document))
+
+
+def _session_members(document: str) -> tuple[tuple[str, str, bool], ...]:
+    """Direct header and trailer fields with their owner and requiredness."""
     root = _root(document)
     if root is None:
         return ()
-    session: list[tuple[str, bool]] = []
-    for part in ("header", "trailer"):
+    members: list[tuple[str, str, bool]] = []
+    for part, component in (
+        ("header", "StandardHeader"),
+        ("trailer", "StandardTrailer"),
+    ):
         for element in root.findall(f"./{part}/field"):
             name = element.get("name")
             if name:
-                session.append((name, element.get("required") == "Y"))
-    return tuple(session)
+                members.append((name, component, element.get("required") == "Y"))
+    return tuple(members)
 
 
 def _root(document: str) -> Any:
@@ -353,7 +368,7 @@ def _element_name(element: Any, owner: str) -> str:
 
 def _field_tag(name: str, tags: Mapping[str, int], path: tuple[str, ...]) -> int:
     """The tag of a referenced field, which every usable declaration needs."""
-    tag = tags.get(name)
+    tag = tags.get(column_name(name))
     if tag is None:
         raise ValueError(f"FIX component {'.'.join(path)!r} references unknown field {name!r}")
     return tag
@@ -361,21 +376,39 @@ def _field_tag(name: str, tags: Mapping[str, int], path: tuple[str, ...]) -> int
 
 def _check_component_refs(components: Mapping[str, Field]) -> None:
     """Refuse missing and recursive component references by their full path."""
+    indexed = _folded_index(components.items(), "component")
     done: set[str] = set()
 
-    def visit(name: str, path: tuple[str, ...]) -> None:
-        if name in path:
+    def visit(name: str, path: tuple[str, ...], folded_path: tuple[str, ...]) -> None:
+        key = column_name(name)
+        if key in folded_path:
             chain = " -> ".join((*path, name))
             raise ValueError(f"recursive FIX component reference: {chain}")
-        if name in done:
+        if key in done:
             return
-        component = components.get(name)
+        component = indexed.get(key)
         if component is None:
             owner = " -> ".join(path) or "component declaration"
             raise ValueError(f"FIX component {owner} references unknown component {name!r}")
         for reference in component_refs(component):
-            visit(reference, (*path, name))
-        done.add(name)
+            visit(reference, (*path, name), (*folded_path, key))
+        done.add(key)
 
     for name in components:
-        visit(name, ())
+        visit(name, (), ())
+
+
+def _folded_index(entries: Iterable[tuple[str, Any]], owner: str) -> dict[str, Any]:
+    """Declarations keyed by fold, refusing two source spellings for one key."""
+    found: dict[str, Any] = {}
+    spellings: dict[str, str] = {}
+    for spelling, value in entries:
+        key = column_name(spelling)
+        previous = spellings.get(key)
+        if previous is not None:
+            if previous == spelling:
+                raise ValueError(f"FIX {owner} {spelling!r} is declared twice")
+            raise ValueError(f"FIX {owner} {spelling!r} collides by fold with {previous!r}")
+        found[key] = value
+        spellings[key] = spelling
+    return found

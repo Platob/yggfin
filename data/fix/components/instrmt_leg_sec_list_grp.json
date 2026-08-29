@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrmtLegSecListGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"SecurityList\"]"
   },
   "fields": [

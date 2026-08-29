@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "LotTypeRules",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
   "fields": [

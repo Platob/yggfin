@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDataIncrementalRefresh",
-   "msgtype": "X"
+   "msgtype": "X",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

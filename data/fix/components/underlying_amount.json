@@ -11,6 +11,8 @@
   "nullable": true,
   "fix": {
    "component": "UnderlyingAmount",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PositionReport\"]"
   },
   "fields": [

@@ -9,7 +9,9 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "UndInstrmtStrkPxGrp"
+   "component": "UndInstrmtStrkPxGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

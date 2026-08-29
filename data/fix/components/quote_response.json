@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteResponse",
-   "msgtype": "AJ"
+   "msgtype": "AJ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

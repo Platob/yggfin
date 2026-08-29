@@ -40,7 +40,7 @@ def examples() -> list[tuple[str, str]]:
     """`(where it is, the source)` for every python fence under `docs/`."""
     found = []
     for page in sorted(DOCS.rglob("*.md")):
-        for index, match in enumerate(_FENCE.finditer(page.read_text())):
+        for index, match in enumerate(_FENCE.finditer(page.read_text(encoding="utf-8"))):
             if match[1] == "python":
                 found.append((f"{page.relative_to(DOCS)}#{index}", match[2]))
     return found
@@ -155,7 +155,9 @@ def pages() -> list[tuple[str, list[str]]]:
     on a page continues the one above it and a reader runs them that way."""
     found = []
     for page in sorted(DOCS.rglob("*.md")):
-        fences = [m[2] for m in _FENCE.finditer(page.read_text()) if m[1] == "python"]
+        fences = [
+            m[2] for m in _FENCE.finditer(page.read_text(encoding="utf-8")) if m[1] == "python"
+        ]
         if fences:
             found.append((str(page.relative_to(DOCS)), fences))
     return found
@@ -213,7 +215,7 @@ def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) 
 
 def _stated_output(page: str, index: int) -> str | None:
     """The `text` fence immediately after python fence `index`, if there is one."""
-    blocks = [(m[1], m[2]) for m in _FENCE.finditer((DOCS / page).read_text())]
+    blocks = [(m[1], m[2]) for m in _FENCE.finditer((DOCS / page).read_text(encoding="utf-8"))]
     python = [position for position, (lang, _) in enumerate(blocks) if lang == "python"]
     at = python[index]
     if at + 1 < len(blocks) and blocks[at + 1][0] == "text":

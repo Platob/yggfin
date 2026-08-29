@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "ExecutionReport",
-   "msgtype": "8"
+   "msgtype": "8",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

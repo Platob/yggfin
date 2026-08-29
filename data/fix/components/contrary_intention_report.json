@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "ContraryIntentionReport",
-   "msgtype": "BO"
+   "msgtype": "BO",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

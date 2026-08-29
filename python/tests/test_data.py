@@ -1,8 +1,8 @@
 """The FIX dictionary in `data/fix.zip` is checked here, so a bad scrape cannot ship.
 
 A dump nobody verifies is a directory of files that merely *look* like a
-dictionary. The first scrape of this one came back a fifth empty -- the site
-throttles a seven-thousand-page walk, and every page it refused became a field
+    dictionary. The first scrape of this one came back a fifth empty -- the sites
+    throttle a fourteen-thousand-page walk, and every page refused became a field
 with no type, no description and no enumeration -- and every file it wrote
 still parsed, still loaded, still answered a lookup. So the checks here are the
 ones that would have failed then: what a version file holds is `Field`s, the
@@ -74,7 +74,17 @@ FIELD_KEYS = frozenset({"name", "type", "nullable", "description", "fix"})
 
 #: The `fix:` keys whose value is itself a document, packed into one string
 #: because Arrow field metadata is bytes to bytes.
-PACKED = ("versions", "values", "aliases", "msgtypes", "components", "event_types", "states")
+PACKED = (
+    "versions",
+    "values",
+    "aliases",
+    "msgtypes",
+    "components",
+    "event_types",
+    "states",
+    "sources",
+    "origins",
+)
 
 
 def stored_fix(record: dict[str, object]) -> dict[str, object]:
@@ -275,7 +285,7 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegis
 
 
 def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
-    """152 fields where two versions give one enumerated value different meanings.
+    """Every source and version disagreement is committed with its attribution.
 
     A reviewable list rather than a silent drop -- and a baseline, so a
     dictionary refresh cannot quietly introduce conflicts nobody looked at.
@@ -284,36 +294,32 @@ def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
     assert report.counts() == dict(CONFLICT_BASELINE)
     assert beyond_baseline(report) == []
     values = [one for one in report.collapses if one.part == "values"]
-    assert len(values) == CONFLICT_BASELINE["values"] == 152
+    assert len(values) == CONFLICT_BASELINE["values"] == 522
     assert {"AccountType", "AcctIDSource", "AllocStatus", "AllocTransType"} <= {
         one.name for one in values
     }
     assert all(one.dropped for one in report.collapses), "an entry with no loss is not one"
+    assert all(one.keptsource for one in report.collapses)
+    assert all(dropped.source for one in report.collapses for dropped in one.dropped)
     assert all(one.name.isalnum() for one in report.collapses)
-    assert all(
-        dropped.reading.isalnum()
-        for one in report.collapses
-        if one.part == "name" or (one.part == "values" and one.tag == 35)
-        for dropped in one.dropped
-    )
 
 
-#: The prose the site wrote up, per version, derived then pinned as a floor.
-#: A floor and not a ratio, because the two sources cover different amounts:
-#: the site writes up the standard's own tags, and the QuickFIX spec numbers
+#: The prose the sources wrote up, per version, derived then pinned.
+#: A count and not a ratio, because the sources cover different amounts:
+#: the prose sites write up the standard's own tags, and the QuickFIX spec numbers
 #: every field an extension pack added -- five thousand of them in 5.0.SP2,
 #: arriving typed and undocumented. A ratio over that set would say the
 #: dictionary got worse for having grown.
 EXPECTED_DESCRIBED: dict[str, int] = {
-    "4.0": 140,
-    "4.1": 211,
-    "4.2": 406,
-    "4.3": 658,
-    "4.4": 954,
-    "5.0": 1130,
-    "5.0.SP1": 1378,
-    "5.0.SP2": 1457,
-    "FIXT1.1": 75,
+    "4.0": 142,
+    "4.1": 213,
+    "4.2": 408,
+    "4.3": 660,
+    "4.4": 956,
+    "5.0": 1133,
+    "5.0.SP1": 1381,
+    "5.0.SP2": 1460,
+    "FIXT1.1": 77,
 }
 
 
@@ -321,15 +327,15 @@ EXPECTED_DESCRIBED: dict[str, int] = {
 def test_a_version_carries_what_its_pages_say(version: str, registry: FixRegistry) -> None:
     """Typed, described, and enumerated where the field is an enumeration.
 
-    Every field carries a type -- both sources state one -- so that is a ratio.
-    Prose is a floor per version: see `EXPECTED_DESCRIBED`.
+    Every field carries a type, so that is a ratio.
+    Prose is an exact published count: see `EXPECTED_DESCRIBED`.
     """
     fields = registry.fields(version)
     typed = sum(1 for member in fields if member.fix.get("type"))
     described = sum(1 for member in fields if member.description)
     enumerated = sum(1 for member in fields if member.fix.get("values"))
     assert typed / len(fields) > 0.95
-    assert described >= EXPECTED_DESCRIBED[version]
+    assert described == EXPECTED_DESCRIBED[version]
     assert enumerated > EXPECTED_DESCRIBED[version] // 10, "a tenth of FIX is enumerations"
 
 
@@ -338,7 +344,7 @@ def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
     side = registry.field("Side")
     assert side.fix["tag"] == "54"
     assert side.fix["version"] == "5.0.SP2", "the newest version that has it"
-    assert side.description == "Side of order."
+    assert side.description == 'Side of order (see Volume : "Glossary" for value definitions)'
     assert side.fix.value_of("1").meaning == "Buy"
     assert registry.field(35).name == "MsgType"
     assert [member.fix["version"] for member in registry.lookup("Side")] == [
@@ -414,11 +420,11 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
-    # Derived from `publish.PROJECTED`, then pinned: 171 keys resolve to 170
+    # Derived from `publish.PROJECTED`, then pinned: 181 keys resolve to 180
     # records, because `FutSettDate` and `SettlDate` are one tag under two
-    # spellings and the collapse keeps the older one as an alias. One of the
-    # 170 is the vendor field, which `tags()` cannot map because it has no tag.
-    assert len(builtin.tags()) == 177
+    # spellings and the collapse keeps the older one as an alias. Three records
+    # are vendor fields FIX never numbered.
+    assert len(builtin.tags()) == 181
     assert len(builtin.field_records()) == 180
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     selected = {
@@ -577,22 +583,41 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("ns")
 
 
-# -- the second source --------------------------------------------------------
+# -- source merging -----------------------------------------------------------
 
 
 def test_the_published_dictionary_carries_the_symbol_beside_the_description(
     registry: OfflineRegistry,
 ) -> None:
-    """Both halves of a value, from the two sources that each have one.
+    """Both halves of a value remain distinct after source merging.
 
-    The site writes `Side <54>` value `1` as "Buy", for a person; the QuickFIX
-    spec writes it as `BUY`, for a program. A consumer of this archive that
-    wants an identifier should not have to invent one by upper-casing prose.
+    Nanoconda writes `Buy` as both the name and the short description. Its name
+    leads the aliases, and the case-only QuickFIX spelling is not stored twice.
     """
     side = registry.field(54, "4.4")
     assert side.fix.value_of("1").meaning == "Buy"
-    assert side.fix.value_of("1").aliases == ("BUY",)
-    assert side.fix.value_of("3").aliases == ("BUY_MINUS",)
+    assert side.fix.value_of("1").aliases == ("Buy",)
+    assert side.fix.value_of("3").aliases == ("BuyMinus",)
+
+
+def test_the_published_dictionary_pins_source_coverage_and_provenance(
+    registry: OfflineRegistry,
+) -> None:
+    assert registry.source_coverage() == {
+        "nanoconda": {"primary": 1452, "fields": 1487},
+        "onixs": {"primary": 43, "fields": 1495},
+        "quickfix": {"primary": 4576, "fields": 6066},
+    }
+    standard = [entry for entry in registry.field_records().values() if entry.fix.tag is not None]
+    assert all(entry.fix.source == entry.fix.sources[0] for entry in standard)
+
+
+def test_every_published_value_has_a_source_spelling(registry: OfflineRegistry) -> None:
+    """Every enumerated value has an authoritative symbolic name."""
+    values = [
+        value for entry in registry.field_records().values() for value in entry.fix.enumerated
+    ]
+    assert all(value.aliases for value in values)
 
 
 def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry) -> None:

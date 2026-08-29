@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "ContAmtGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

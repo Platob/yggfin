@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDataSnapshotFullRefresh",
-   "msgtype": "W"
+   "msgtype": "W",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

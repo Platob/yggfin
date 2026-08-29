@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "NetworkCounterpartySystemStatusRequest",
-   "msgtype": "BC"
+   "msgtype": "BC",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

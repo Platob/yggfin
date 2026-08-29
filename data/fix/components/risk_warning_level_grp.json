@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RiskWarningLevelGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\"]"
   },
   "fields": [

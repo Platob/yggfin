@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdCollGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\"]"
   },
   "fields": [

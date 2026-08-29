@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "RelatedOrderGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "MatchingInstructions",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [

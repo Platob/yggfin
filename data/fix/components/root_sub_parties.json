@@ -11,6 +11,8 @@
   "nullable": true,
   "fix": {
    "component": "RootSubParties",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"NewOrderCross\",\"NewOrderList\",\"QuoteRequest\",\"QuoteRequestReject\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeSecurityListUpdateReport",
-   "msgtype": "BR"
+   "msgtype": "BR",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDataRequestReject",
-   "msgtype": "Y"
+   "msgtype": "Y",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

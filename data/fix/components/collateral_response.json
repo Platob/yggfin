@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "CollateralResponse",
-   "msgtype": "AZ"
+   "msgtype": "AZ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

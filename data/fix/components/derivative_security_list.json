@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeSecurityList",
-   "msgtype": "AA"
+   "msgtype": "AA",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

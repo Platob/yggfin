@@ -1,10 +1,8 @@
-"""The QuickFIX spec read as fields, components, and the session layer.
+"""The QuickFIX source read as fields, components, and the session layer.
 
-The spec is the same standard the dictionary describes, written for programs
-instead of people. What it has and the dictionary does not is the *symbol* of
-each enumerated value -- `1` is `BUY` -- and which fields the standard header
-and trailer hold, with which of them required. What it does not have is prose.
-So these check the halves it answers for, and nothing about descriptions.
+It supplies machine-readable value symbols, session fields, and declaration
+trees where higher-priority dictionaries omit them. It supplies no prose, so
+these tests cover only the parts it answers.
 """
 
 from __future__ import annotations
@@ -97,8 +95,7 @@ def test_a_field_with_no_enumeration_has_no_values() -> None:
 
 
 def test_a_document_that_is_not_a_spec_reads_as_nothing() -> None:
-    """Empty, never an exception: this is the enriching source, and a scrape
-    that could not read it still has a whole dictionary."""
+    """Malformed XML contributes no machine-readable declaration."""
     assert parse_spec("") == {}
     assert parse_spec("<fix><fields>") == {}
     assert parse_spec("not xml at all") == {}
@@ -136,6 +133,48 @@ def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
     ]
     assert [member.fix.tag for member in rows[:3]] == [448, 447, 452]
     assert is_reference(rows[-1])
+
+
+def test_field_and_component_references_match_by_the_column_fold() -> None:
+    document = """
+    <fix>
+      <fields><field number='11' name='ClOrdID' type='STRING'/></fields>
+      <components>
+        <component name='OrderBlock'><field name='Cl_Ord_ID' required='Y'/></component>
+      </components>
+      <messages>
+        <message name='Order' msgtype='D'>
+          <component name='ORDER_BLOCK' required='Y'/>
+        </message>
+      </messages>
+    </fix>
+    """
+    declared = parse_declarations(document)
+    field = members_of(declared["OrderBlock"])[0]
+    reference = members_of(declared["Order"])[0]
+
+    assert (field.name, field.fix.tag) == ("Cl_Ord_ID", 11)
+    assert (reference.name, reference.fix.component) == ("ORDER_BLOCK", "ORDER_BLOCK")
+
+
+@pytest.mark.parametrize(
+    "document,owner",
+    [
+        (
+            "<fix><fields><field number='1' name='A_B'/>"
+            "<field number='2' name='AB'/></fields></fix>",
+            "field",
+        ),
+        (
+            "<fix><fields/><components><component name='A_B'/>"
+            "<component name='AB'/></components></fix>",
+            "component",
+        ),
+    ],
+)
+def test_quickfix_declarations_refuse_names_that_collide_by_fold(document: str, owner: str) -> None:
+    with pytest.raises(ValueError, match=rf"FIX {owner} .* collides by fold"):
+        parse_declarations(document)
 
 
 def test_a_nested_group_is_its_own_component_declaration() -> None:

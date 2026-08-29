@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "ConfirmationAck",
-   "msgtype": "AU"
+   "msgtype": "AU",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

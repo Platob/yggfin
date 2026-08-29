@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "CollInqQualGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CollateralInquiry\",\"CollateralInquiryAck\"]"
   },
   "fields": [

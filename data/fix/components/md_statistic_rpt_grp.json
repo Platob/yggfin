@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "MDStatisticRptGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDataStatisticsReport\"]"
   },
   "fields": [

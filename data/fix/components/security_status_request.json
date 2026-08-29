@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityStatusRequest",
-   "msgtype": "e"
+   "msgtype": "e",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

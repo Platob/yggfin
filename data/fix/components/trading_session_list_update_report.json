@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "TradingSessionListUpdateReport",
-   "msgtype": "BS"
+   "msgtype": "BS",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

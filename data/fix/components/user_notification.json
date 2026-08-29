@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "UserNotification",
-   "msgtype": "CB"
+   "msgtype": "CB",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

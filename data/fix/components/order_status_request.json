@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderStatusRequest",
-   "msgtype": "H"
+   "msgtype": "H",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

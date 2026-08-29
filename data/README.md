@@ -21,30 +21,34 @@ tags each and are named by the shard index, so the document holding a tag is
 fourteen shards answer for six thousand fields and the empty ranges are simply
 absent. A lookup for one tag reads one shard.
 
-Two sources fill it. The OnixS dictionary supplies prose, enumerated values and
-where each field is used -- in messages *and* in component blocks, which is how
-a field FIX only carries inside a component (`TrdRegTimestamp <769>`, and three
-hundred others in 4.4 alone) records where it lives. The QuickFIX spec supplies
-the symbolic name of every enumerated value and every field an extension pack
-numbered past what the site wrote up, and the member trees themselves: both
-the reusable blocks and the messages, which are the same declaration with a
-MsgType on it. Both sources are needed: without the spec a value has no
-symbol, and the string codecs are derived from every spelling a value
-carries.
+Three ordered sources fill it. Nanoconda supplies the first reading and the
+symbolic name of every enumerated value. OnixS fills missing prose, values and
+usage. The QuickFIX spec fills machine-readable types, extension-pack fields,
+session layers and the component and message trees. Each field stores its
+primary source, every source that answered, and the source of each scalar and
+value part.
+Prose-only valid-value lists are not enumerations: every published enumeration
+has a source-supplied symbolic name for each wire value.
 
 ```python
 from rekep.fix import FixRegistry
 
 registry = FixRegistry(cache_dir="data/fix", offline=True)
 field = registry.field("Side", "4.4")
-registry.resolve("Side").encode("BUY")  # '1'
+field.fix.encode("BUY")  # '1'
 ```
 
-Where two versions disagree the newest application version wins -- `FIXT1.1` is
-the session transport and never owns an application field's reading -- and
-every dropped reading is written to `data/fix-conflicts.json`. Its counts are
-pinned in `rekep.fix.publish.CONFLICT_BASELINE`, so a refresh that introduces
-conflicts nobody looked at fails rather than shipping them.
+```bash
+cd python
+uv run rekep fix registry coverage --store ../data/fix
+```
+
+Where sources disagree the first reading wins. Where versions disagree the
+newest application version wins; `FIXT1.1` is the session transport and never
+owns an application field's reading. Every dropped reading and its source is
+written to `data/fix-conflicts.json`. Its counts are pinned in
+`rekep.fix.publish.CONFLICT_BASELINE`, so a refresh that introduces conflicts
+nobody looked at fails rather than shipping them.
 
 Promote a rendered bridge name into a typed column, record a spelling, or
 check the whole store. `promote` is one call whether the name is brand new or
@@ -65,12 +69,13 @@ new field is built one answered question at a time:
 uv run rekep fix shell --store ../data/fix
 ```
 
-Replace the dictionary from both sources -- one scrape of seven thousand
-pages and several minutes:
+Replace the dictionary from every source -- about fourteen thousand pages and
+several hours:
 
 ```bash
 cd python
-uv run rekep fix registry scrape --output ../data/fix
+uv run rekep fix registry scrape --output ../data/fix \
+    --conflicts ../data/fix-conflicts.json
 uv run python -c "from rekep.fix import FixRegistry; \
 FixRegistry(cache_dir='../data/fix', offline=True).into_zip('../data/fix.zip')"
 ```

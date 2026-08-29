@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "CommissionDataGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

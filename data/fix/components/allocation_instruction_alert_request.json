@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "AllocationInstructionAlertRequest",
-   "msgtype": "DU"
+   "msgtype": "DU",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

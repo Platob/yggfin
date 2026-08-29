@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "SettlDetails",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PayManagementReport\",\"PayManagementRequest\",\"SettlementObligationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

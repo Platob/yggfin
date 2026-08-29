@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "DlvyInstGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"Confirmation\",\"SettlementInstructions\"]"
   },
   "fields": [

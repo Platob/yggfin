@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "BidRequest",
-   "msgtype": "k"
+   "msgtype": "k",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

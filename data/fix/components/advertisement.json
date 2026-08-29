@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "Advertisement",
-   "msgtype": "7"
+   "msgtype": "7",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

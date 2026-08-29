@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "TradeQtyGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

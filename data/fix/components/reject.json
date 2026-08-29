@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "Reject",
-   "msgtype": "3"
+   "msgtype": "3",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

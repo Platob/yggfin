@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MarginRequirementInquiry",
-   "msgtype": "CH"
+   "msgtype": "CH",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

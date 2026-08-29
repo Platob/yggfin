@@ -11,7 +11,9 @@
   "nullable": true,
   "fix": {
    "component": "SecurityListUpdateReport",
-   "msgtype": "BK"
+   "msgtype": "BK",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

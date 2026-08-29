@@ -15,6 +15,7 @@ produce bit-identical values to the Python builders row for row.
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 import pyarrow
@@ -284,8 +285,8 @@ def h128_dataclass(value: Any, clock: str, *names: str, seed: int = 0) -> int:
     payload = b"".join(
         _frame(members[name].into_bytes(getattr(value, name, None))) for name in selected
     )
-    anchored = _epoch_seconds(members[clock], getattr(value, clock, None))
-    return couple128(_micros(anchored), xxh64_of(payload, seed))
+    anchored = _epoch_micros(members[clock], getattr(value, clock, None))
+    return couple128(anchored, xxh64_of(payload, seed))
 
 
 def epoch_micros_arrow(clock: Any) -> pyarrow.Array:
@@ -351,7 +352,7 @@ def h64_dataclass(value: Any, clock: str, *names: str, seed: int = 0) -> int:
         _frame(members[name].into_bytes(getattr(value, name, None))) for name in selected
     )
     return couple(
-        _seconds(_epoch_seconds(members[clock], getattr(value, clock, None))),
+        _epoch_seconds(members[clock], getattr(value, clock, None)),
         xxh32_of(payload, seed),
     )
 
@@ -382,12 +383,19 @@ def epoch_seconds_arrow(clock: Any) -> pyarrow.Array:
 
 def _epoch_seconds(field: Any, value: Any) -> Any:
     """One clock value as whole UTC epoch seconds."""
+    return epoch_seconds_arrow(_clock_arrow(field, value))[0].as_py()
+
+
+def _epoch_micros(field: Any, value: Any) -> Any:
+    """One clock value as whole UTC epoch microseconds."""
+    return epoch_micros_arrow(_clock_arrow(field, value))[0].as_py()
+
+
+def _clock_arrow(field: Any, value: Any) -> pyarrow.Array:
+    """One declared clock value as its one-cell Arrow column."""
     if value is None:
         raise ValueError(f"{field.name or 'the clock'} has no value to anchor a hash to")
-    read = field.cast_py(value)
-    if isinstance(read, int):
-        return read
-    return _seconds(read)
+    return field.cast_arrow_array(pyarrow.array([value]))
 
 
 def _framed(columns: Any) -> pyarrow.Array:
@@ -452,6 +460,8 @@ def _struct_field_of(value: Any) -> Any:
 
 def _seconds(value: Any) -> int:
     """Whole epoch seconds from an integer or anything on a `timestamp()` clock."""
+    if isinstance(value, datetime.datetime) and value.tzinfo is None:
+        value = value.replace(tzinfo=datetime.UTC)
     when = getattr(value, "timestamp", None)
     if when is not None and not isinstance(value, (int, float)):
         return int(when())
@@ -506,6 +516,8 @@ def _int64_view(clock: pyarrow.Array) -> Any:
 
 def _micros(value: Any) -> int:
     """Whole epoch microseconds from an integer or a `timestamp()` clock."""
+    if isinstance(value, datetime.datetime) and value.tzinfo is None:
+        value = value.replace(tzinfo=datetime.UTC)
     when = getattr(value, "timestamp", None)
     if when is not None and not isinstance(value, (int, float)):
         return int(round(when() * 1_000_000))

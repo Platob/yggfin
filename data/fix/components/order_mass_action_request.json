@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderMassActionRequest",
-   "msgtype": "CA"
+   "msgtype": "CA",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

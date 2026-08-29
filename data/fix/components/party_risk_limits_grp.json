@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "PartyRiskLimitsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"PartyRiskLimitsReport\"]"
   },
   "fields": [

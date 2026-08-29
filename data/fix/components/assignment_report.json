@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "AssignmentReport",
-   "msgtype": "AW"
+   "msgtype": "AW",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

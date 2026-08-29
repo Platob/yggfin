@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "MiscFeesGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ExecutionReport\",\"MarketDefinition\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

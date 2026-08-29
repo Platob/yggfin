@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PositionTransferInstructionAck",
-   "msgtype": "DM"
+   "msgtype": "DM",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

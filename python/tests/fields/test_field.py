@@ -10,7 +10,14 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Field, ListField, MapField, StructField, scalar
-from rekep.fields import FixedSizeListField, LargeListField, LargeListViewField, ListViewField
+from rekep.fields import (
+    FixedSizeListField,
+    LargeListField,
+    LargeListViewField,
+    ListViewField,
+    column_name,
+    column_names,
+)
 from rekep.fields.field import arrow_type_for
 
 
@@ -38,6 +45,12 @@ class Book(Convertible):
 
 
 # -- the decorator ----------------------------------------------------------
+
+
+def test_scalar_and_arrow_column_name_folds_are_exact_twins() -> None:
+    values = pyarrow.chunked_array([["Msg_Type", "Straße"], [None, "Orig-Cl Ord_ID"]])
+    expected = [column_name(value) if value is not None else None for value in values.to_pylist()]
+    assert column_names(values).to_pylist() == expected
 
 
 def test_field_makes_a_dataclass() -> None:

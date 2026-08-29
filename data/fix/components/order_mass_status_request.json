@@ -13,7 +13,9 @@
   "nullable": true,
   "fix": {
    "component": "OrderMassStatusRequest",
-   "msgtype": "AF"
+   "msgtype": "AF",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

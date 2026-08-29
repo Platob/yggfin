@@ -573,7 +573,10 @@ def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
         assert row == FixMsg.from_text(line).pairs
 
 
-@pytest.mark.parametrize("checksum", ["CheckSum", "CHECKSUM", "Trailer.CheckSum", "Trailer.10"])
+@pytest.mark.parametrize(
+    "checksum",
+    ["CheckSum", "CHECK_SUM", "Check-Sum", "Trailer.CheckSum", "Trailer.10"],
+)
 def test_a_named_checksum_ends_scalar_and_vector_messages(checksum: str) -> None:
     line = f"#BeginString=FIXT.1.1|#{checksum}=000|#ApplVerID=9|#Symbol=X"
     expected = [("BeginString", "FIXT.1.1"), (checksum, "000")]

@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "ExecutionAcknowledgement",
-   "msgtype": "BN"
+   "msgtype": "BN",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

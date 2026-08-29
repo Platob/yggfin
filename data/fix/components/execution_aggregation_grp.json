@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "ExecutionAggregationGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"TradeAggregationRequest\"]"
   },
   "fields": [

@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDefinition",
-   "msgtype": "BU"
+   "msgtype": "BU",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

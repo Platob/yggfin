@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "RgstDistInstGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"RegistrationInstructions\"]"
   },
   "fields": [

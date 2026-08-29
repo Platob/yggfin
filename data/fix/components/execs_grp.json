@@ -9,7 +9,9 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "ExecsGrp"
+   "component": "ExecsGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -8,7 +8,9 @@
   "type": "struct",
   "nullable": true,
   "fix": {
-   "component": "NotAffectedOrdersGrp"
+   "component": "NotAffectedOrdersGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

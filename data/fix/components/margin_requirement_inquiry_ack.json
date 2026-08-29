@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "MarginRequirementInquiryAck",
-   "msgtype": "CI"
+   "msgtype": "CI",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "AttachmentGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Email\",\"TradeCaptureReport\"]"
   },
   "fields": [

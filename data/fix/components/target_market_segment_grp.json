@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "TargetMarketSegmentGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"OrderMassActionReport\",\"OrderMassActionRequest\"]"
   },
   "fields": [

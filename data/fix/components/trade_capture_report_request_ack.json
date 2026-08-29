@@ -12,7 +12,9 @@
   "nullable": true,
   "fix": {
    "component": "TradeCaptureReportRequestAck",
-   "msgtype": "AQ"
+   "msgtype": "AQ",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

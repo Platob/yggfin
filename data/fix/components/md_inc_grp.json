@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "MDIncGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDataIncrementalRefresh\"]"
   },
   "fields": [

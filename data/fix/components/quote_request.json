@@ -16,7 +16,9 @@
   "nullable": true,
   "fix": {
    "component": "QuoteRequest",
-   "msgtype": "R"
+   "msgtype": "R",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

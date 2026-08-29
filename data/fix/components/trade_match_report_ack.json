@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "TradeMatchReportAck",
-   "msgtype": "DD"
+   "msgtype": "DD",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "ListOrdGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"NewOrderList\"]"
   },
   "fields": [

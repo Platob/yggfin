@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "AllocCommissionDataGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [

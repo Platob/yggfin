@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "UsernameGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"UserNotification\"]"
   },
   "fields": [

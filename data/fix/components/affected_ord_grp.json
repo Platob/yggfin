@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "AffectedOrdGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"OrderMassActionReport\",\"OrderMassCancelReport\"]"
   },
   "fields": [

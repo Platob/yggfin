@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "PriceLimits",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
   },
   "fields": [

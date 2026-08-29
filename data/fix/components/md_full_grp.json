@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "MDFullGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"MarketDataSnapshotFullRefresh\"]"
   },
   "fields": [

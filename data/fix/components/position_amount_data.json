@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "PositionAmountData",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AccountSummaryReport\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AssignmentReport\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
   },
   "fields": [

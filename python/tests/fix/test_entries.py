@@ -105,17 +105,18 @@ def test_a_registry_label_has_one_annotation_free_identifier(label: str, name: s
 
 @pytest.mark.parametrize(
     ("spelled", "folded"),
-    [("PartyRole", "partyrole"), ("PARTYROLE", "partyrole"), (" PartyRole ", "partyrole")],
+    [
+        ("PartyRole", "partyrole"),
+        ("PARTYROLE", "partyrole"),
+        (" PartyRole ", "partyrole"),
+        ("party_role", "partyrole"),
+        ("Party Role", "partyrole"),
+        ("party-role", "partyrole"),
+    ],
 )
 def test_a_name_is_matched_folded(spelled: str, folded: str) -> None:
     """The same fold a rendered key gets, so a name resolves here as it does there."""
     assert fold(spelled) == folded
-
-
-@pytest.mark.parametrize("spelled", ["party_role", "Party Role", "party-role"])
-def test_a_separator_is_part_of_a_name_and_not_folded_away(spelled: str) -> None:
-    """Dropping them merged identities a store holds apart; a real spelling is an alias."""
-    assert fold(spelled) != fold("PartyRole")
 
 
 # -- which version owns a reading --------------------------------------------
@@ -149,6 +150,24 @@ def test_a_record_no_lookup_could_answer_for_is_refused() -> None:
         _entry(versions=())
 
 
+def test_a_record_refuses_unreadable_or_unattributed_source_metadata() -> None:
+    record = _entry()
+    record.fix["sources"] = "not-json"
+    with pytest.raises(ValueError, match="invalid source metadata"):
+        refuse_record(record)
+
+    with pytest.raises(ValueError, match="primary source first"):
+        _entry(source="nanoconda", sources=("onixs",))
+    with pytest.raises(ValueError, match="distinct source names"):
+        _entry(source="nanoconda", sources=("nanoconda", "nanoconda"))
+    with pytest.raises(ValueError, match="unknown source origin"):
+        _entry(
+            source="nanoconda",
+            sources=("nanoconda",),
+            origins={"type": "onixs"},
+        )
+
+
 def test_which_kind_a_record_is_is_the_tag_and_nothing_beside_it() -> None:
     """A record used to state its kind as well, and the two could disagree.
 
@@ -165,7 +184,7 @@ def test_which_kind_a_record_is_is_the_tag_and_nothing_beside_it() -> None:
 
 def test_a_record_is_keyed_by_its_tag_and_a_namespaced_one_by_its_name() -> None:
     assert _entry().fix.key == 90001
-    assert _entry(name="FAKE.CODE", tag=None).fix.key == "fake.code"
+    assert _entry(name="FAKE.CODE", tag=None).fix.key == "fakecode"
 
 
 def test_a_record_answers_to_its_name_then_to_its_aliases() -> None:
@@ -184,10 +203,9 @@ def test_an_alias_that_folds_to_a_name_the_record_has_adds_nothing() -> None:
     assert _entry(aliases=[Alias(name="FAKEROLE").into_dict()]).fix.spellings() == ("FakeRole",)
 
 
-def test_an_alias_spelled_with_separators_is_a_spelling_of_its_own() -> None:
-    """It is not folded onto the name, so it has to be recorded to be matched."""
+def test_an_alias_that_only_restores_separators_adds_nothing() -> None:
     entry = _entry(aliases=[Alias(name="fake_role").into_dict()])
-    assert entry.fix.spellings() == ("FakeRole", "fake_role")
+    assert entry.fix.spellings() == ("FakeRole",)
 
 
 def test_a_version_the_record_never_saw_has_no_declaration() -> None:
@@ -493,12 +511,70 @@ def test_a_record_is_built_from_the_same_field_read_from_several_versions() -> N
     assert entry.fix.type == "int" and entry.fix.versions == ("4.2", "4.4")
 
 
+def test_a_record_keeps_the_newest_stated_added_version() -> None:
+    older = fix_field("FakeRole", 90001, "int", version="4.2")
+    older.fix.added = "2.7"
+    older.fix.source = "nanoconda"
+    older.fix.sources = ("nanoconda",)
+    older.fix.origins = {"added": "nanoconda"}
+    newer = fix_field("FakeRole", 90001, "int", version="4.4")
+    newer.fix.source = "quickfix"
+    newer.fix.sources = ("quickfix",)
+
+    entry = collapsed_record([older, newer], ["4.2", "4.4"])
+
+    assert entry.fix.added == "2.7"
+    assert entry.fix.source_of("added") == "nanoconda"
+
+
 def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> None:
     """A value that only ever existed in 4.2 still parses, and a correction still wins."""
     older = fix_field("FakeRole", 90001, "int", version="4.2", values={"1": "First", "2": "Gone"})
     newer = fix_field("FakeRole", 90001, "int", version="4.4", values={"1": "Corrected"})
     entry = collapsed_record([older, newer], ["4.2", "4.4"])
     assert entry.fix.enumerated == values_of({"1": "Corrected", "2": "Gone"})
+
+
+def test_a_records_value_parts_keep_the_source_that_supplied_each_half() -> None:
+    older = fix_field(
+        "FakeRole",
+        90001,
+        "int",
+        version="4.2",
+        values=(FixFieldValue("1", "Older meaning", ("OlderName",)),),
+    )
+    older.fix.source = "onixs"
+    older.fix.sources = ("onixs",)
+    older.fix.origins = {
+        "values": {"1": "onixs"},
+        "aliases": {"1": "onixs"},
+    }
+    newer = fix_field(
+        "FakeRole",
+        90001,
+        "int",
+        version="4.4",
+        values=(
+            FixFieldValue("1", aliases=("NewerName",)),
+            FixFieldValue("2", "Newer meaning", ("SecondName",)),
+        ),
+    )
+    newer.fix.source = "nanoconda"
+    newer.fix.sources = ("nanoconda",)
+    newer.fix.origins = {
+        "values": {"2": "nanoconda"},
+        "aliases": {"1": "nanoconda", "2": "nanoconda"},
+    }
+
+    entry = collapsed_record([older, newer], ["4.2", "4.4"])
+
+    assert entry.fix.origins == {
+        "values": {"1": "onixs", "2": "nanoconda"},
+        "aliases": {"1": "nanoconda", "2": "nanoconda"},
+    }
+    assert entry.fix.source_of("values", "1") == "onixs"
+    assert entry.fix.source_of("aliases", "1") == "nanoconda"
+    assert entry.fix.source_of("values") == "nanoconda"
 
 
 def test_a_record_needs_at_least_one_reading() -> None:

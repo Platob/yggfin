@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "QuoteAttributeGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"Quote\",\"QuoteAck\",\"QuoteStatusReport\"]"
   },
   "fields": [

@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "LegPreAllocGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\"]"
   },
   "fields": [

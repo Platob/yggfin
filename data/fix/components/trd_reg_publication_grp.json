@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "TrdRegPublicationGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ExecutionReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"NewOrderSingle\",\"TradeCaptureReport\"]"
   },
   "fields": [

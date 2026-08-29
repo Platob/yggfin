@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PositionTransferInstruction",
-   "msgtype": "DL"
+   "msgtype": "DL",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

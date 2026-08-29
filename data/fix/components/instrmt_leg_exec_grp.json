@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "InstrmtLegExecGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"ExecutionReport\"]"
   },
   "fields": [

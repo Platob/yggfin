@@ -9,6 +9,8 @@
   "nullable": true,
   "fix": {
    "component": "FundingSourceGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"CollateralReport\"]"
   },
   "fields": [

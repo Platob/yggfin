@@ -9,7 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "PositionTransferReport",
-   "msgtype": "DN"
+   "msgtype": "DN",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

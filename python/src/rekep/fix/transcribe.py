@@ -16,7 +16,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.entries import ENTRIES, ENTRY_PARTS, TAG, Entry
 from rekep.entries import IS_TAG as _IS_TAG
-from rekep.fields import Field
+from rekep.fields import Field, column_name, column_names, encoded_key
 from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
@@ -55,7 +55,7 @@ from rekep.fix.rules import NO_PROTOCOL, Rules
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
 _XML_DATA_KEY = "XmlData"
-_XML_DATA_NAME = pyarrow.scalar(_XML_DATA_KEY.casefold())
+_XML_DATA_NAME = pyarrow.scalar(column_name(_XML_DATA_KEY))
 _XML_DATA_TAG = pyarrow.scalar(str(DECLARED[_XML_DATA_KEY].fix.tag))
 
 #: What makes a payload a message rather than a document: two `name=` tokens.
@@ -132,9 +132,8 @@ _DEFAULT_APPLICATION_KEYS = pyarrow.array(["1137", "defaultapplverid"], pyarrow.
 class TagIndex:
     """One FIX version's names as an Arrow value set, and the tags behind it."""
 
-    #: Every name the version knows, lowercased. Lowercased *here* so the probe
-    #: is one kernel and never a scan: case-insensitivity is the dictionary's
-    #: business, not the parser's, and `pairs` keeps the log's own spelling.
+    #: Every name the version knows, folded. Folded *here* so the probe is one
+    #: kernel and never a scan; `pairs` keeps the log's own spelling.
     names: pyarrow.Array
 
     #: The tag behind each name, in the same order.
@@ -151,10 +150,11 @@ class TagIndex:
     @classmethod
     def from_tags(cls, tags: Mapping[str, int], containers: Iterable[str] = ()) -> TagIndex:
         """An index out of `FixRegistry.tags()`; an empty one resolves nothing."""
-        inside = dict.fromkeys(name.lower() for name in (*tags, *containers))
+        names = {column_name(name): tag for name, tag in tags.items()}
+        inside = dict.fromkeys(column_name(name) for name in (*tags, *containers))
         return cls(
-            names=pyarrow.array(list(tags), pyarrow.string()),
-            tags=pyarrow.array(list(tags.values()), TAG),
+            names=pyarrow.array(list(names), pyarrow.string()),
+            tags=pyarrow.array(list(names.values()), TAG),
             containers=pyarrow.array(list(inside), pyarrow.string()),
         )
 
@@ -165,11 +165,11 @@ class TagIndex:
     # drift. `FieldAccess` (fix/access.py) is the caller.
 
     @functools.cached_property
-    def _tags_by_lower_name(self) -> Mapping[str, int]:
+    def _tags_by_name(self) -> Mapping[str, int]:
         """The vectorized value sets as one scalar lookup, built once."""
         return MappingProxyType(
             {
-                name.lower(): tag
+                name: tag
                 for name, tag in zip(self.names.to_pylist(), self.tags.to_pylist(), strict=True)
             }
         )
@@ -195,7 +195,7 @@ class TagIndex:
         if _IS_TAG_SCALAR.match(reduced) is not None:
             tag = int(reduced)
             return tag, tag in self._tag_set, reduced, contained
-        tag = self._tags_by_lower_name.get(reduced.lower())
+        tag = self._tags_by_name.get(column_name(reduced))
         return tag, tag is not None, reduced, contained
 
     def _contained_key(self, key: str) -> bool:
@@ -204,7 +204,7 @@ class TagIndex:
         inner = found.group("inner") if found is not None else None
         if not inner:
             return True
-        return inner.lower() in self._container_set
+        return column_name(inner) in self._container_set
 
     def resolve(self, keys: Any) -> pyarrow.Array:
         """A key column as tag numbers, null where no reading finds one."""
@@ -266,7 +266,7 @@ class TagIndex:
         # key is replaced by a digit that casts, and the `if_else` after throws
         # it away. Filter-and-scatter costs two more kernels than the waste.
         as_tag = compute.if_else(numeric, reduced, pyarrow.scalar("0")).cast(TAG)
-        name_index = compute.index_in(compute.utf8_lower(reduced), value_set=self.names)
+        name_index = compute.index_in(column_names(reduced), value_set=self.names)
         by_name = compute.take(self.tags, name_index)
         resolved = compute.if_else(numeric, as_tag, by_name)
         matched = compute.if_else(
@@ -292,7 +292,7 @@ class TagIndex:
         if not len(self.containers) or compute.all(plain, min_count=0).as_py():
             return plain
         known = compute.fill_null(
-            compute.is_in(compute.utf8_lower(inner), value_set=self.containers), False
+            compute.is_in(column_names(inner), value_set=self.containers), False
         )
         return compute.or_(plain, known)
 
@@ -406,7 +406,7 @@ class FixCodec(Convertible):
             return pairs
         carried = compute.or_(
             compute.equal(keys, _XML_DATA_TAG),
-            compute.equal(compute.utf8_lower(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
+            compute.equal(column_names(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
         )
         if not compute.any(carried, min_count=0).as_py():
             # Nearly every batch. Two string compares over the keys settle it,
@@ -763,7 +763,7 @@ class FixCodec(Convertible):
             return values
         composite = compute.binary_join_element_wise(
             compute.fill_null(tags, 0).cast(pyarrow.string()),
-            compute.utf8_lower(compute.fill_null(values, "")),
+            column_names(compute.fill_null(values, "")),
             "\x00",
         )
         found = compute.take(resolved, compute.index_in(composite, value_set=spelled))
@@ -797,7 +797,7 @@ class FixCodec(Convertible):
     def _declared_encodings(self, version: str | None) -> list[tuple[str, str]]:
         """`(tag and folded spelling, value)` for every declared encoding."""
         return [
-            (f"{tag}\x00{spelling.strip().lower()}", str(value))
+            (f"{tag}\x00{encoded_key(spelling)}", str(value))
             for tag, rule in self.field_rules(version).items()
             for spelling, value in rule.values.items()
         ]
@@ -1098,7 +1098,7 @@ class FixCodec(Convertible):
                 if not named
                 else {
                     spelling: rule.applied(field, field.name)
-                    if (rule := named.get(spelling.lower())) is not None
+                    if (rule := named.get(column_name(spelling))) is not None
                     else field
                     for spelling, field in built.items()
                 }
@@ -1270,7 +1270,7 @@ def infer_version_from_pairs(
             name = text
         else:
             member = _MEMBER_NAME_SCALAR.search(text)
-            name = member["name"].lower() if member is not None else text.lower()
+            name = column_name(member["name"] if member is not None else text)
         if name in _CHECKSUM_KEYS:
             break
         selected = _VERSION_EVIDENCE.get(name)
@@ -1327,7 +1327,7 @@ def _version_columns(
         reduced = compute.fill_null(
             compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), keys
         )
-        reduced = compute.utf8_lower(reduced)
+        reduced = column_names(reduced)
     rows = sequence(len(pairs))
 
     def first(wanted: pyarrow.Array) -> pyarrow.Array:
@@ -1360,10 +1360,10 @@ def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
     compute = pyarrow.compute
     if not len(declared):
         return pyarrow.nulls(len(keys), pyarrow.int32())
-    tail = compute.utf8_lower(keys)
+    tail = column_names(keys)
     whole = compute.if_else(
         compute.is_valid(lead),
-        compute.binary_join_element_wise(compute.utf8_lower(lead), tail, "."),
+        compute.binary_join_element_wise(column_names(lead), tail, ""),
         tail,
     )
     found = compute.index_in(whole, value_set=declared)

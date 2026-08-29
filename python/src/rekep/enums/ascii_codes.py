@@ -165,7 +165,9 @@ class Ascii32(enum.IntEnum):
         if known is not None:
             return known
         if cls._fix_codes():
-            worded = cls.worded_codes().get(cls._normalise(raw))
+            from rekep.fields import encoded_key
+
+            worded = cls.worded_codes().get(encoded_key(raw))
             if worded is not None:
                 return worded
             return default if default is not None else cls.UNKNOWN
@@ -238,13 +240,18 @@ class Ascii32(enum.IntEnum):
         ordering marker no wire value can ever mean does not answer.
         """
         wired = cls._wire_codes()
+        from rekep.fields import encoded_key
+
         found: dict[str, Self] = {
-            name: member for name, member in cls.__members__.items() if member and member in wired
+            encoded_key(name): member
+            for name, member in cls.__members__.items()
+            if member and member in wired
         }
         for alias, target in cls._built_in_aliases().items():
             member = cls.__members__.get(target)
-            if member and member in wired:
-                found.setdefault(alias, member)
+            folded = encoded_key(alias)
+            if folded and member and member in wired:
+                found.setdefault(folded, member)
         return MappingProxyType(found)
 
     # -- the shape a column declares ----------------------------------------
@@ -351,7 +358,23 @@ class Ascii32(enum.IntEnum):
         named = cls.__members__.get(text)
         if named is not None:
             return named.code
-        aliased = cls.aliased_codes().get(text, text)
+        fixed = cls._fix_codes().get(text)
+        if fixed is not None:
+            return fixed.code
+        named = cls._named(raw)
+        if named is not None:
+            return named.code
+        from rekep.fields import encoded_key
+
+        aliases = cls.aliased_codes()
+        aliased = aliases.get(text)
+        folded = encoded_key(raw)
+        if aliased is None and folded:
+            aliased = next(
+                (target for alias, target in aliases.items() if encoded_key(alias) == folded),
+                None,
+            )
+        aliased = aliased or text
         named = cls.__members__.get(aliased)
         if named is not None:
             return named.code
@@ -394,7 +417,7 @@ class Ascii32(enum.IntEnum):
     # enum a second copy of one field's enumerated values -- and the two could
     # disagree, silently, in the direction that mis-parses a message. The
     # codes are read from the dictionary now, matched to members by the
-    # spellings the spec declares for each value, and cached: `from_fix` runs
+    # spellings the registry declares for each value, and cached: `from_fix` runs
     # once per row and must stay a dictionary lookup.
 
     @classmethod
@@ -424,15 +447,27 @@ class Ascii32(enum.IntEnum):
         if member is not None:
             return member
         aliased = cls._built_in_aliases().get(text)
-        return cls.__members__.get(aliased) if aliased else None
+        if aliased:
+            return cls.__members__.get(aliased)
+        from rekep.fields import encoded_key
+
+        folded = encoded_key(spelled)
+        if not folded:
+            return None
+        for name, member in cls.__members__.items():
+            if encoded_key(name) == folded:
+                return member
+        for alias, target in cls._built_in_aliases().items():
+            if encoded_key(alias) == folded:
+                return cls.__members__.get(target)
+        return None
 
     @classmethod
     def _member_of(cls, value: Any) -> Self | None:
         """The member one enumerated value names, by every spelling it has.
 
-        The spec's symbol first, then its prose, then the abbreviation the
-        prose puts in brackets -- `Immediate Or Cancel (IOC)`, which is the
-        only place the dictionary spells the name this package uses.
+        The leading source alias first, then its prose, then the abbreviation
+        the prose puts in brackets -- `Immediate Or Cancel (IOC)`.
         """
         spellings: list[str] = [*value.aliases]
         if value.meaning:

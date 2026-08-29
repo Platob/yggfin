@@ -112,6 +112,14 @@ def test_a_declared_spelling_is_encoded_like_the_dictionary_s(
     assert (54, "BUYSIDE") in resolved(codec_of(registry), line)
 
 
+def test_a_declared_value_name_uses_the_same_fold_as_the_dictionary(
+    registry: FixRegistry,
+) -> None:
+    declared = {"rules": [{"field": "Side", "values": {"BUY_SIDE": "1"}}]}
+    line = LINE.replace("54=Buy", "54=Buy-Side")
+    assert (54, "1") in resolved(codec_of(registry, declared), line)
+
+
 def test_a_declared_spelling_wins_the_dictionary_s(registry: FixRegistry) -> None:
     """A job knows its own estate; the dictionary is the fallback, not the authority."""
     declared = {"rules": [{"field": "Side", "values": {"Buy": "9"}}]}

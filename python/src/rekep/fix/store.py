@@ -40,7 +40,7 @@ from rekep.fix.entries import (
     canonical_versions,
     collapsed_record,
     fold,
-    folded_values,
+    folded_field_values,
     newest_of,
     record_copy,
     record_for,
@@ -57,7 +57,7 @@ FIELDS = "fields"
 COMPONENTS = "components"
 
 #: What a stored document may be named, the one a store is written in first.
-#: JSON, and measured: the dictionary is seven thousand documents and every
+#: JSON, and measured: the dictionary is nearly a thousand documents and every
 #: process that imports this package parses a projection of it, where
 #: pure-Python YAML costs 25 seconds against a tenth of one for JSON. A store
 #: somebody wrote in YAML still reads, and converts itself the first time
@@ -123,6 +123,10 @@ class Documents(Protocol):
         are read together; a place that can answer many documents more cheaply
         at once than one at a time says so here.
         """
+        ...
+
+    def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
+        """Replace this store with the complete document mapping."""
         ...
 
 
@@ -249,6 +253,15 @@ class DirectoryDocuments:
             for name in self.names()
             if name.startswith(prefix) and (document := self._read_one(name)) is not None
         }
+
+    def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
+        """Replace every registry document, dropping identities no longer declared."""
+        kept = {document_stem(name) for name in documents}
+        stale = [name for name in self.names() if document_stem(name) not in kept]
+        for name, document in documents.items():
+            self.write(name, document)
+        for name in stale:
+            self.remove(name)
 
     def stamp(self, name: str) -> float:
         """When one document was last written, off the filesystem itself."""
@@ -843,20 +856,34 @@ def fold_field(held: Field | None, member: Field, version: str) -> Field:
     if held is None:
         return fresh
     versions = canonical_versions((*held.fix.versions, version))
-    kept, fetched = held.fix.enumerated, fresh.fix.enumerated
     if newest_of(versions) == version:
         # The newer reading owns the record, so it is the one written back to.
         built = fresh
-        built.fix.enumerated = folded_values(kept, fetched, newest=fetched)
+        readings = (held, fresh)
         built.fix.named_aliases = _displaced(held, fresh.fix.canonical)
     else:
         built = record_copy(held)
-        built.fix.enumerated = folded_values(kept, fetched, newest=kept)
+        readings = (fresh, held)
+    added = next((reading for reading in reversed(readings) if reading.fix.added), None)
+    if added is not None:
+        built.fix.added = added.fix.added
+    values, origins = folded_field_values(readings)
+    built.fix.enumerated = values
+    scalar_origins = {
+        part: source
+        for part, source in built.fix.origins.items()
+        if part not in (VALUES, ALIASES, ADDED)
+    }
+    if added is not None and (source := added.fix.source_of(ADDED)):
+        scalar_origins[ADDED] = source
+    built.fix.origins = {**scalar_origins, **origins}
     built.fix.versions = versions
     built.fix.event_types = {**fresh.fix.event_types, **held.fix.event_types}
     built.fix.states = {**fresh.fix.states, **held.fix.states}
     built.fix.msgtypes = _union(held.fix.msgtypes, fresh.fix.msgtypes)
     built.fix.components = _union(held.fix.components, fresh.fix.components)
+    built.fix.sources = _union(_union(built.fix.sources, held.fix.sources), fresh.fix.sources)
+    built.fix.source = built.fix.source or held.fix.source or fresh.fix.source
     built.fix.column = held.fix.column or fresh.fix.column
     return built
 
@@ -894,16 +921,17 @@ def _union(held: Sequence[str], fresh: Sequence[str]) -> tuple[str, ...]:
 
 @dataclasses.dataclass(frozen=True)
 class Dropped(Convertible):
-    """One reading a collapse did not keep, and the version that stated it."""
+    """One reading a collapse did not keep, and who stated it."""
 
     version: str
     reading: str
     #: The enumerated value this reading belongs to, where the part has keys.
     key: str = ""
+    source: str = ""
 
     def into_dict(self) -> dict[str, Any]:
         """The dropped reading as the report holds it."""
-        declared = {"version": self.version, "reading": self.reading}
+        declared = {"version": self.version, "source": self.source, "reading": self.reading}
         return {**declared, "key": self.key} if self.key else declared
 
     @classmethod
@@ -913,17 +941,16 @@ class Dropped(Convertible):
             version=str(mapping.get("version") or ""),
             reading=str(mapping.get("reading") or ""),
             key=str(mapping.get("key") or ""),
+            source=str(mapping.get("source") or ""),
         )
 
 
 @dataclasses.dataclass(frozen=True)
 class Collapse(Convertible):
-    """What one identity lost when its versions disagreed, and what was kept.
+    """What one identity lost when readings disagreed, and what was kept.
 
-    One entry per identity and part, not per key: a field whose enumeration
-    two versions spell differently is one decision to review, however many of
-    its values moved. `kept` names the version whose reading the record holds;
-    for a keyed part the surviving reading of each key is the record's own.
+    Keyed conflicts sharing one winning version and source stay in one entry.
+    `kept` names the version whose reading the record holds.
     """
 
     name: str
@@ -931,6 +958,7 @@ class Collapse(Convertible):
     kept: str
     dropped: tuple[Dropped, ...] = ()
     tag: int | None = None
+    keptsource: str = ""
 
     def into_dict(self) -> dict[str, Any]:
         """The collapse as the report holds it."""
@@ -939,6 +967,7 @@ class Collapse(Convertible):
             "tag": self.tag,
             "part": self.part,
             "kept": self.kept,
+            "keptsource": self.keptsource,
             "dropped": [one.into_dict() for one in self.dropped],
         }
 
@@ -952,6 +981,7 @@ class Collapse(Convertible):
             kept=str(mapping.get("kept") or ""),
             dropped=tuple(Dropped.from_dict(one) for one in mapping.get("dropped") or ()),
             tag=int(tag) if tag is not None else None,
+            keptsource=str(mapping.get("keptsource") or ""),
         )
 
 
@@ -963,10 +993,22 @@ class Collision(Convertible):
     key: str
     values: tuple[str, ...] = ()
     tag: int | None = None
+    sources: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Keep one source slot beside every colliding value."""
+        if len(self.sources) != len(self.values):
+            raise ValueError("a FIX encoding collision needs one source per value")
 
     def into_dict(self) -> dict[str, Any]:
         """The collision as the report holds it."""
-        return {"name": self.name, "tag": self.tag, "key": self.key, "values": list(self.values)}
+        return {
+            "name": self.name,
+            "tag": self.tag,
+            "key": self.key,
+            "values": list(self.values),
+            "sources": list(self.sources),
+        }
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Collision:
@@ -977,6 +1019,7 @@ class Collision(Convertible):
             key=str(mapping.get("key") or ""),
             values=tuple(str(value) for value in mapping.get("values") or ()),
             tag=int(tag) if tag is not None else None,
+            sources=tuple(str(source) for source in mapping.get("sources") or ()),
         )
 
 
@@ -986,11 +1029,12 @@ class Collision(Convertible):
 #: matter.
 VALUES = "values"
 ALIASES = "aliases"
+ADDED = "added"
 TYPE = "type"
 NAME = "name"
 NOTE = "note"
 MEMBERS = "members"
-PARTS: tuple[str, ...] = (VALUES, ALIASES, TYPE, NAME, NOTE, MEMBERS)
+PARTS: tuple[str, ...] = (VALUES, ALIASES, ADDED, TYPE, NAME, NOTE, MEMBERS)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1006,7 +1050,7 @@ class ConflictReport(Convertible):
     collisions: tuple[Collision, ...] = ()
 
     def counts(self) -> dict[str, int]:
-        """`{part: identities collapsed there}`, with encoding collisions beside them."""
+        """`{part: conflict entries}`, with encoding collisions beside them."""
         counted = dict.fromkeys(PARTS, 0)
         for collapse in self.collapses:
             counted[collapse.part] = counted.get(collapse.part, 0) + 1
@@ -1071,7 +1115,13 @@ def collapse(
         collapses.extend(_field_collapses(record, found))
         _, clashing = encodings_of(record.fix.enumerated)
         collisions.extend(
-            Collision(canonical, spelling, tuple(owners), record.fix.tag)
+            Collision(
+                name=canonical,
+                key=spelling,
+                values=tuple(owners),
+                tag=record.fix.tag,
+                sources=tuple(record.fix.source_of(ALIASES, owner) for owner in owners),
+            )
             for spelling, owners in sorted(clashing.items())
         )
         held = by_name.get(folded)
@@ -1159,10 +1209,21 @@ def _used_in(
 
 def _field_collapses(record: Field, found: Sequence[tuple[str, Field]]) -> list[Collapse]:
     """Every reading of one field the collapse dropped, one entry per part."""
-    parts: dict[str, list[tuple[str, str]]] = {
-        NAME: [(version, member.name) for version, member in found],
-        TYPE: [(version, str(member.fix.get("type") or "")) for version, member in found],
-        NOTE: [(version, str(member.fix.get("note") or "")) for version, member in found],
+    parts: dict[str, list[tuple[str, str, str]]] = {
+        NAME: [(version, member.fix.source_of(NAME), member.name) for version, member in found],
+        ADDED: [
+            (version, member.fix.source_of(ADDED), str(member.fix.get("added") or ""))
+            for version, member in found
+            if member.fix.added
+        ],
+        TYPE: [
+            (version, member.fix.source_of(TYPE), str(member.fix.get("type") or ""))
+            for version, member in found
+        ],
+        NOTE: [
+            (version, member.fix.source_of(NOTE), str(member.fix.get("note") or ""))
+            for version, member in found
+        ],
     }
     collapses = [
         one
@@ -1170,21 +1231,36 @@ def _field_collapses(record: Field, found: Sequence[tuple[str, Field]]) -> list[
         if (one := _collapsed(record, part, readings)) is not None
     ]
     for part, reading_of in ((VALUES, _meaning_of), (ALIASES, _alias_of)):
-        keyed: dict[str, list[tuple[str, str]]] = {}
+        keyed: dict[str, list[tuple[str, str, str]]] = {}
         for version, member in found:
             for one in member.fix.enumerated:
                 reading = reading_of(one)
                 if reading:
-                    keyed.setdefault(one.value, []).append((version, reading))
-        dropped = [
-            Dropped(version, reading, value)
-            for value, readings in sorted(keyed.items())
-            for version, reading in readings
-            if reading != readings[-1][1]
-        ]
-        if dropped:
-            fix = record.fix
-            collapses.append(Collapse(fix.canonical, part, fix.newest, tuple(dropped), fix.tag))
+                    keyed.setdefault(one.value, []).append(
+                        (version, member.fix.source_of(part, one.value), reading)
+                    )
+        grouped: dict[tuple[str, str], list[Dropped]] = {}
+        for value, readings in sorted(keyed.items()):
+            kept_version, kept_source, kept = readings[-1]
+            dropped = [
+                Dropped(version, reading, value, source)
+                for version, source, reading in readings
+                if reading != kept
+            ]
+            if dropped:
+                grouped.setdefault((kept_version, kept_source), []).extend(dropped)
+        fix = record.fix
+        for (kept_version, kept_source), dropped in grouped.items():
+            collapses.append(
+                Collapse(
+                    fix.canonical,
+                    part,
+                    kept_version,
+                    tuple(dropped),
+                    fix.tag,
+                    kept_source,
+                )
+            )
     return collapses
 
 
@@ -1198,14 +1274,23 @@ def _alias_of(one: FixFieldValue) -> str:
     return one.aliases[0] if one.aliases else ""
 
 
-def _collapsed(record: Field, part: str, readings: Sequence[tuple[str, str]]) -> Collapse | None:
+def _collapsed(
+    record: Field, part: str, readings: Sequence[tuple[str, str, str]]
+) -> Collapse | None:
     """One part of a reading, as a collapse when the versions did not agree."""
-    kept = readings[-1][1]
+    if not readings:
+        return None
+    kept_version, kept_source, kept = readings[-1]
     dropped = tuple(
-        Dropped(version, reading) for version, reading in readings if reading and reading != kept
+        Dropped(version, reading, source=source)
+        for version, source, reading in readings
+        if reading and reading != kept
     )
-    fix = record.fix
-    return Collapse(fix.canonical, part, fix.newest, dropped, fix.tag) if dropped else None
+    return (
+        Collapse(record.fix.canonical, part, kept_version, dropped, record.fix.tag, kept_source)
+        if dropped
+        else None
+    )
 
 
 def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentRecord]) -> set[str]:
@@ -1239,11 +1324,23 @@ def _component_collapses(
     """
     kept = _reachable(entry.declaration, by_name)
     dropped = tuple(
-        Dropped(version, name)
+        Dropped(version, name, source=declared.fix.source)
         for version, declared in found
         for name in sorted(_reachable(declared, by_name) - kept)
     )
-    return [Collapse(entry.name, MEMBERS, entry.newest, dropped)] if dropped else []
+    return (
+        [
+            Collapse(
+                entry.name,
+                MEMBERS,
+                entry.newest,
+                dropped,
+                keptsource=entry.declaration.fix.source,
+            )
+        ]
+        if dropped
+        else []
+    )
 
 
 def _reachable(declared: Field, by_name: Mapping[str, ComponentRecord]) -> set[str]:

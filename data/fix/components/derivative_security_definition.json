@@ -10,6 +10,8 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeSecurityDefinition",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\"]"
   },
   "fields": [

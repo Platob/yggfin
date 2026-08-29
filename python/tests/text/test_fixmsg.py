@@ -609,7 +609,7 @@ def test_instrument_groups_resolve_into_their_structured_columns(
 
     instrument = next(iter(stored.into_fix_events().into_instruments()))
     direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
-    assert instrument.altids == {"ISIN_NUMBER": "US0378331005", "CUSIP": "037833100"}
+    assert instrument.altids == {"ISINNumber": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isincode == "XS123", "the primary ISIN outranks the alternative"
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
@@ -648,7 +648,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.altids == {"ISIN_NUMBER": "US0378331005"}
+    assert instrument.altids == {"ISINNumber": "US0378331005"}
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
@@ -681,7 +681,7 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
     assert found == [
         (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
     ]
-    assert found == [("BTC-USD", None), ("ETH-USD", {"ISIN_NUMBER": "US0378331005"})]
+    assert found == [("BTC-USD", None), ("ETH-USD", {"ISINNumber": "US0378331005"})]
 
 
 def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
@@ -730,7 +730,7 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
     instrument = next(
         iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
     )
-    assert instrument.altids == {"ISIN_NUMBER": "US0378331005"}
+    assert instrument.altids == {"ISINNumber": "US0378331005"}
     assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
         ("AAPL", "BUY"),
         ("MSFT", "SELL"),

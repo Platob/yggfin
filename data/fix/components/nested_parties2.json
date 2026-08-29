@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "NestedParties2",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ConfirmationRequest\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
   },
   "fields": [

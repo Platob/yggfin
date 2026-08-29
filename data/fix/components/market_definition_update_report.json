@@ -10,7 +10,9 @@
   "nullable": true,
   "fix": {
    "component": "MarketDefinitionUpdateReport",
-   "msgtype": "BV"
+   "msgtype": "BV",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

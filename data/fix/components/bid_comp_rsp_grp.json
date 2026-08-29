@@ -12,6 +12,8 @@
   "nullable": true,
   "fix": {
    "component": "BidCompRspGrp",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]",
    "msgtypes": "[\"BidResponse\"]"
   },
   "fields": [

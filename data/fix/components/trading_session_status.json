@@ -14,7 +14,9 @@
   "nullable": true,
   "fix": {
    "component": "TradingSessionStatus",
-   "msgtype": "h"
+   "msgtype": "h",
+   "source": "quickfix",
+   "sources": "[\"quickfix\"]"
   },
   "fields": [
    {

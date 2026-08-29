@@ -29,7 +29,7 @@ import pytest
 
 import rekep
 from rekep.enums import EventType, State
-from rekep.fields import Field
+from rekep.fields import Field, FixFieldValue
 from rekep.fields.metadata import values_of
 from rekep.fix import registry as registry_module
 from rekep.fix.entries import (
@@ -42,7 +42,7 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
-from rekep.fix.registry import FixRegistry, _problems
+from rekep.fix.registry import FixRegistry, QuickFixSource, _problems
 from rekep.fix.store import (
     NAMED_FILE,
     SHARD_SPAN,
@@ -188,6 +188,51 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
     ]
 
 
+def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> None:
+    registry = Offline(cache_dir=tmp_path / "fix", offline=True)
+    older = fix_field(
+        "Side",
+        54,
+        "char",
+        version="4.2",
+        values=(FixFieldValue("1", "Buy", ("Buy",)),),
+    )
+    older.fix.source = "onixs"
+    older.fix.sources = ("onixs",)
+    older.fix.added = "2.7"
+    older.fix.origins = {
+        "added": "onixs",
+        "values": {"1": "onixs"},
+        "aliases": {"1": "onixs"},
+    }
+    newer = fix_field(
+        "Side",
+        54,
+        "char",
+        version="4.4",
+        values=(FixFieldValue("2", "Sell", ("Sell",)),),
+    )
+    newer.fix.source = "nanoconda"
+    newer.fix.sources = ("nanoconda",)
+    newer.fix.origins = {
+        "values": {"2": "nanoconda"},
+        "aliases": {"2": "nanoconda"},
+    }
+
+    registry._store_fields("4.2", [older])
+    registry._store_fields("4.4", [newer])
+
+    stored = registry.field(54)
+    assert stored.fix.source == "nanoconda"
+    assert stored.fix.sources == ("nanoconda", "onixs")
+    assert stored.fix.added == "2.7"
+    assert stored.fix.origins == {
+        "added": "onixs",
+        "values": {"1": "onixs", "2": "nanoconda"},
+        "aliases": {"1": "onixs", "2": "nanoconda"},
+    }
+
+
 @pytest.mark.parametrize(
     ("tag", "document"),
     [
@@ -307,8 +352,8 @@ def test_a_name_resolves_canonical_then_alias(store: Offline) -> None:
     assert store.resolve("FakeCode").fix.tag == 90002
     assert store.resolve("FakeRoleCode").fix.tag == 90001, "tier two: what 9.0 called that tag"
     assert store.resolve("FakeRolle").fix.tag == 90001, "and a spelling somebody recorded"
-    assert store.resolve("FAKEROLLE").fix.tag == 90001, "matching folds case, and only case"
-    assert store.resolve("fake_rolle") is None, "a separator is part of a name, not noise"
+    assert store.resolve("FAKEROLLE").fix.tag == 90001
+    assert store.resolve("fake_rolle").fix.tag == 90001, "separators are not identity"
     assert store.resolve("FakeNothing") is None, "and a name nothing here has is unknown"
     assert store.alias_conflicts() == {}
 
@@ -414,10 +459,7 @@ def test_promoting_completes_a_half_registered_name(store: Offline) -> None:
     )
     assert entry.fix.column == "fakevendorcode"
     assert entry.description == "A vendor's own code."
-    assert [alias.name for alias in entry.fix.named_aliases] == [
-        "FAKEVENDORCODE",
-        "FAKE_VENDOR_CODE",
-    ]
+    assert [alias.name for alias in entry.fix.named_aliases] == ["FAKEVENDORCODE"]
     assert entry.fix.named_aliases[0].occurrences == 7, "the recorded count survived the promotion"
 
     again = store.promote_field("FAKE.VENDOR.CODE", "fakevendorcode")
@@ -627,6 +669,12 @@ def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> No
     """The judgement the shape asks for, written down rather than inferred."""
     older = fix_field("FakeRole", 90001, "char", version="9.0", values={"1": "Was", "2": "Gone"})
     newer = fix_field("FakeRole", 90001, "int", version="9.1", values={"1": "Is"})
+    older.fix.source = "nanoconda"
+    older.fix.sources = ("nanoconda", "onixs")
+    older.fix.origins = {"type": "onixs", "values": {"1": "onixs", "2": "onixs"}}
+    newer.fix.source = "nanoconda"
+    newer.fix.sources = ("nanoconda", "quickfix")
+    newer.fix.origins = {"type": "quickfix", "values": {"1": "nanoconda"}}
     entries, _, report = collapse(("9.1", "9.0"), {"9.1": [newer], "9.0": [older]}, {})
 
     entry = entries[90001]
@@ -639,7 +687,50 @@ def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> No
     assert counts["type"] == 1 and counts["values"] == 1
     (values,) = [one for one in report.collapses if one.part == "values"]
     assert values.tag == 90001 and values.kept == "9.1"
-    assert [(one.version, one.key, one.reading) for one in values.dropped] == [("9.0", "1", "Was")]
+    assert values.keptsource == "nanoconda"
+    assert [(one.version, one.key, one.reading, one.source) for one in values.dropped] == [
+        ("9.0", "1", "Was", "onixs")
+    ]
+    (typed,) = [one for one in report.collapses if one.part == "type"]
+    assert typed.keptsource == "quickfix"
+    assert typed.dropped[0].source == "onixs"
+
+
+def test_a_component_member_collapse_attributes_both_source_readings() -> None:
+    older = block(
+        "FakeParties",
+        (field_member("FakeRole", 90001), field_member("FakeCode", 90002)),
+    )
+    newer = block("FakeParties", (field_member("FakeRole", 90001),))
+    for declared in (older, newer):
+        declared.fix.source = "quickfix"
+        declared.fix.sources = ("quickfix",)
+
+    _, _, report = collapse(
+        ("9.1", "9.0"),
+        {},
+        {"9.1": (newer,), "9.0": (older,)},
+    )
+
+    restored = ConflictReport.from_dict(report.into_dict())
+    (members,) = restored.collapses
+    assert members.keptsource == "quickfix"
+    assert [(one.reading, one.source) for one in members.dropped] == [("FakeCode", "quickfix")]
+
+
+def test_an_unstated_added_version_is_not_a_conflict() -> None:
+    older = fix_field("FakeRole", 90001, "int", version="4.2")
+    older.fix.added = "2.7"
+    older.fix.source = "nanoconda"
+    older.fix.sources = ("nanoconda",)
+    older.fix.origins = {"added": "nanoconda"}
+    newer = fix_field("FakeRole", 90001, "int", version="4.4")
+    newer.fix.source = "quickfix"
+    newer.fix.sources = ("quickfix",)
+
+    _, _, report = collapse(("4.4", "4.2"), {"4.4": [newer], "4.2": [older]}, {})
+
+    assert not [entry for entry in report.collapses if entry.part == "added"]
 
 
 def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) -> None:
@@ -647,7 +738,7 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
         def _spec_document(self, version: str) -> str:
             return "<fix><header/><trailer/><messages/><components/><fields/></fix>"
 
-        def _scrape_version(self, version: str, document: str | None = None) -> list[Field]:
+        def _scrape_version(self, version: str) -> list[Field]:
             return [
                 fix_field(
                     "ExecType",
@@ -688,9 +779,21 @@ def test_a_collapse_reports_every_encoding_two_values_share() -> None:
     member = fix_field(
         "FakeRole", 90001, "char", version="9.1", values={"1": "Cross", "2": "cross"}
     )
+    member.fix.source = "nanoconda"
+    member.fix.sources = ("nanoconda",)
     _, _, report = collapse(("9.1",), {"9.1": [member]}, {})
     assert report.counts()["encoded"] == 1
     assert report.collisions[0].key == "cross" and report.collisions[0].values == ("1", "2")
+    assert report.collisions[0].sources == ("nanoconda", "nanoconda")
+
+
+def test_a_local_collision_keeps_empty_source_slots() -> None:
+    member = fix_field(
+        "FakeRole", 90001, "char", version="9.1", values={"1": "Same Name", "2": "same-name"}
+    )
+    _, _, report = collapse(("9.1",), {"9.1": [member]}, {})
+
+    assert report.collisions[0].sources == ("", "")
 
 
 def test_a_report_round_trips_and_says_which_counts_grew() -> None:
@@ -712,7 +815,12 @@ def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() ->
     with pytest.raises(ValueError, match="FIX field name 'fakerole' is claimed by"):
         collapse(
             ("9.1",),
-            {"9.1": [_field("FakeRole", 90001, "9.1"), _field("FAKEROLE", 90002, "9.1")]},
+            {
+                "9.1": [
+                    _field("FakeRole", 90001, "9.1"),
+                    _field("FAKE_ROLE", 90002, "9.1"),
+                ]
+            },
             {},
         )
 
@@ -1048,6 +1156,19 @@ def test_an_interrupted_registry_install_leaves_no_partial_store(
     assert not target.exists()
 
 
+def test_a_whole_store_rebuild_replaces_yaml_with_json_by_identity(tmp_path: Path) -> None:
+    place = registry_module.DirectoryDocuments(
+        pyarrow.fs.LocalFileSystem(), (tmp_path / "fix").as_posix()
+    )
+    place.write("fields/000000.yaml", {"old": True})
+    place.write("fields/stale.yaml", {"stale": True})
+
+    place.write_all({"fields/000000.json": {"new": True}})
+
+    assert place.names() == ("fields/000000.json",)
+    assert place.read("fields/000000.json") == {"new": True}
+
+
 def test_a_registry_archive_cannot_write_outside_the_default_store(tmp_path: Path) -> None:
     archive = tmp_path / "hostile.zip"
     with zipfile.ZipFile(archive, "w") as opened:
@@ -1107,7 +1228,7 @@ def test_the_packaged_projection_is_bootstrapped_by_being_what_it_is() -> None:
 
 
 class Refetching(FixRegistry):
-    """A registry whose spec fetches are counted and served from a fixture."""
+    """A registry whose source fetches are counted and served from a fixture."""
 
     fetched: list[str]
 
@@ -1145,14 +1266,14 @@ _SPEC = """<fix major='9' minor='1'>
 
 def test_a_ttl_of_zero_never_reaches_upstream(store: Offline) -> None:
     """The default, and what every pipeline reading a packaged dictionary wants."""
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=0.0)
+    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=0.0, sources=(QuickFixSource(),))
     assert registry.fields("9.1")
     assert registry.refresh_if_stale() is False
     assert not registry.__dict__.get("fetched"), "no fetch was attempted at all"
 
 
 def test_a_store_younger_than_its_ttl_is_served_untouched(store: Offline) -> None:
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0)
+    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0, sources=(QuickFixSource(),))
     assert not any(one.aliases for one in registry.field(90001, "9.1").fix.enumerated)
     assert registry.refresh_if_stale() is False
     assert not registry.__dict__.get("fetched")
@@ -1167,7 +1288,12 @@ def _aged(store: Offline, seconds: float) -> None:
 
 def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> None:
     _aged(store, 7200)
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0, retries=0)
+    registry = Refetching(
+        cache_dir=store.cache_dir,
+        cache_ttl=3600.0,
+        retries=0,
+        sources=(QuickFixSource(),),
+    )
     assert registry.refresh_if_stale() is True
     assert sorted(url.rsplit("/", 1)[-1] for url in registry.fetched) == [
         "FIX90.xml",
@@ -1181,7 +1307,13 @@ def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> 
 def test_a_refetch_that_fails_serves_the_local_copy_and_says_so(store: Offline) -> None:
     """A dictionary a day stale parses every message; one that raises parses none."""
     _aged(store, 7200)
-    registry = Refusing(cache_dir=store.cache_dir, cache_ttl=3600.0, retries=0, backoff=0.0)
+    registry = Refusing(
+        cache_dir=store.cache_dir,
+        cache_ttl=3600.0,
+        retries=0,
+        backoff=0.0,
+        sources=(QuickFixSource(),),
+    )
     with pytest.warns(RuntimeWarning, match="could not be refreshed"):
         assert registry.refresh_if_stale() is False
     assert registry.fetched, "it was attempted"
@@ -1191,7 +1323,12 @@ def test_a_refetch_that_fails_serves_the_local_copy_and_says_so(store: Offline) 
 def test_a_ttl_is_checked_once_per_registry_and_not_once_per_call(store: Offline) -> None:
     """Otherwise a batch of a hundred versions is a hundred refetches."""
     _aged(store, 7200)
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0, retries=0)
+    registry = Refetching(
+        cache_dir=store.cache_dir,
+        cache_ttl=3600.0,
+        retries=0,
+        sources=(QuickFixSource(),),
+    )
     registry.fields("9.1")
     fetched = len(registry.fetched)
     registry.fields("9.0")
@@ -1274,14 +1411,7 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     # And lifted, by a codec reading that registry, out of a rendered line --
     # under both spellings, because a bridge writes whichever it feels like.
     codec = FixCodec(registry=projected)
-    assert set(codec.named_fields()) == {
-        "fake.vendor.code",
-        "fakevendorcode",
-        # The last dotted segment as well, because one estate renders the same
-        # field both with its vendor namespace and without -- and only because
-        # exactly one field here claims it.
-        "code",
-    }
+    assert set(codec.named_fields()) == {"fakevendorcode"}
     line = "toBridge " + "|".join(
         ["#FAKEVENDORCODE=FAKE-CODE-0001", "#FAKEROLE=1", "#UNRESOLVED=x"]
     )
@@ -1322,7 +1452,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> No
     for vendor, column in (("FAKEA", "fakeaclient"), ("FAKEB", "fakebclient")):
         store.add_field(_record(f"{vendor}.CLIENTID", column=column))
     codec = FixCodec(registry=store)
-    assert set(codec.named_fields()) == {"fakea.clientid", "fakeb.clientid"}
+    assert set(codec.named_fields()) == {"fakeaclientid", "fakebclientid"}
     assert "clientid" not in codec.named_fields(), "two fields claim it, so it is a guess"
 
     line = (
