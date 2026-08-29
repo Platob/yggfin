@@ -414,16 +414,16 @@ def envelope(rows: int) -> dict[str, object]:
     return {
         "unix": [UNIX] * rows,
         "unixpartition": [UNIX_PARTITION] * rows,
-        "etype": [0] * rows,
-        "cunix": [UNIX] * rows,
-        "runix": [UNIX] * rows,
+        "eventtype": [0] * rows,
+        "creaunix": [UNIX] * rows,
+        "recunix": [UNIX] * rows,
         "hash": [index + 1 for index in range(rows)],
         "xhash": [index + 1 for index in range(rows)],
-        "linkedevents": [[] for _ in range(rows)],
+        "linkedhashes": [[] for _ in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "code": [f"S{index % 5000}" for index in range(rows)],
-        "codes": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
+        "altids": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
         "instrumentxhash": [index % 5000 + 1 for index in range(rows)],
         "instrumentcode": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
@@ -436,7 +436,7 @@ def envelope(rows: int) -> dict[str, object]:
 def books(rows: int, depth: int) -> pyarrow.RecordBatch:
     """A batch of snapshots, both sides flat and only their levels filled in."""
     given = envelope(rows) | {
-        "sunix": [UNIX] * rows,
+        "snapunix": [UNIX] * rows,
         "biddepth": [depth] * rows,
         "askdepth": [depth] * rows,
         "bidlevels": [levels(depth, 100.0)] * rows,
@@ -633,7 +633,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
         unix = UNIX + index * 1_000_000
         event = Order(
             unix=unix,
-            cunix=unix,
+            creaunix=unix,
             side=Side.BID,
             px=100.0 - level * 0.01,
             qty=1.0 + cycle % 2,
@@ -661,7 +661,7 @@ def fold_shape(events: int, live_levels: int, orders_per_level: int) -> tuple[Co
         counts["deltas"] += len(book.deltas)
         counts["executions"] += len(book.executions)
         counts["materialized_levels"] += len(book.bidlevels) + len(book.asklevels)
-        counts["snapshots"] += book.sunix is not None
+        counts["snapshots"] += book.snapunix is not None
     state = next(iter(folding.folding.values()))
     counts["live_orders"] = len(state.bid.orders) + len(state.ask.orders)
     counts["live_levels"] = state.bid.depth + state.ask.depth
@@ -680,11 +680,11 @@ def bench_standing(rows: int, repeat: int) -> None:
             side.apply(
                 Order(
                     unix=UNIX + index,
-                    cunix=UNIX + index,
+                    creaunix=UNIX + index,
                     xhash=index + 1,
                     hash=index + 1,
                     code=f"O{index}",
-                    codes={
+                    altids={
                         "secondary_order_id": f"V{index}",
                         "secondary_cl_ord_id": f"C{index}",
                     },
@@ -699,26 +699,26 @@ def bench_standing(rows: int, repeat: int) -> None:
         target = side.orders[live // 2 + 1]
         cases = (
             ("exact xhash", Order(xhash=target.xhash)),
-            ("linked xhash", Execution(linkedevents=[(UNIX, target.xhash)])),
-            ("venue code", Order(codes={"secondary_order_id": f"V{live // 2}"})),
-            ("client code", Order(codes={"secondary_cl_ord_id": f"C{live // 2}"})),
-            ("code miss", Order(codes={"secondary_order_id": "missing"})),
+            ("linked xhash", Execution(linkedhashes=[target.xhash])),
+            ("venue code", Order(altids={"secondary_order_id": f"V{live // 2}"})),
+            ("client code", Order(altids={"secondary_cl_ord_id": f"C{live // 2}"})),
+            ("code miss", Order(altids={"secondary_order_id": "missing"})),
         )
 
         def linear(event: Order | Execution, side: _Side = side) -> Order | None:
             identities = ([event.xhash] if event.is_order() and event.xhash else []) + [
-                identity for _, identity in event.linkedevents
+                identity for identity in event.linkedhashes
             ]
             if identities:
                 return next(
                     (order for order in side.orders.values() if order.xhash in identities), None
                 )
-            aliases = set(Order.lookup_codes_of(event))
+            aliases = set(Order.lookup_altids_of(event))
             return next(
                 (
                     order
                     for order in side.orders.values()
-                    if aliases.intersection(Order.lookup_codes_of(order))
+                    if aliases.intersection(Order.lookup_altids_of(order))
                 ),
                 None,
             )
@@ -866,7 +866,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
     previous = next(one for one in stream(4) if isinstance(one, Order) and one.px == one.px)
     current = copy.copy(previous)
     pictured = copy.copy(previous)
-    pictured.sunix = previous.unix
+    pictured.snapunix = previous.unix
     assert current.same_as(previous) and pictured.same_as(pictured)
 
     print(f"\nLifecycle hot paths -- {rows:,} comparisons")
@@ -891,17 +891,17 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
         side.apply(
             Order(
                 unix=UNIX + clock,
-                cunix=UNIX + clock,
+                creaunix=UNIX + clock,
                 xhash=index + 1,
                 hash=index + 1,
                 code=f"O{index}",
-                codes={"symbol": "BTC-USD"},
+                altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
                 px=100.0,
                 qty=1.0,
                 state=State.NEW,
-                eunix=expiry if index % 100 == 0 else None,
+                expunix=expiry if index % 100 == 0 else None,
             )
         )
     indexed = len(side._deadlines)
@@ -919,7 +919,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
     def sorted_tie() -> list[Order]:
         return sorted(
             side.orders.values(),
-            key=lambda order: (order.cunix or order.unix, order.xhash),
+            key=lambda order: (order.creaunix or order.unix, order.xhash),
             reverse=True,
         )[:1]
 
@@ -942,11 +942,11 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
         capped.apply(
             Order(
                 unix=UNIX + index,
-                cunix=UNIX + index,
+                creaunix=UNIX + index,
                 xhash=index + 1,
                 hash=index + 1,
                 code=f"O{index}",
-                codes={"symbol": "BTC-USD"},
+                altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
                 px=float(live - index),
@@ -959,7 +959,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
         return heapq.nlargest(
             1,
             capped.orders.values(),
-            key=lambda order: (-(order.px or 0.0), order.cunix or order.unix, order.xhash),
+            key=lambda order: (-(order.px or 0.0), order.creaunix or order.unix, order.xhash),
         )
 
     scanned, expected = timed(global_scan, repeat)
@@ -1088,7 +1088,7 @@ def _pipeline_message_batches(
                 msg_types.append(None)
                 entries.append(None)
                 continue
-            etype, pairs = shapes[index % len(shapes)]
+            eventtype, pairs = shapes[index % len(shapes)]
             stamp = _fix_stamp(base + index * 1_000_000)
             renamed = {
                 "52": stamp,
@@ -1096,7 +1096,7 @@ def _pipeline_message_batches(
                 "11": f"CL-{index // 2}",
                 "17": f"EX-{index}",
             }
-            kinds.append(int(etype))
+            kinds.append(int(eventtype))
             protocols.append("FIX")
             msg_types.append(next(value for tag, value in pairs if tag == "35"))
             entries.append(
@@ -1116,9 +1116,9 @@ def _pipeline_message_batches(
         columns: dict[str, pyarrow.Array] = {
             "unix": unix,
             "unixpartition": unix_partition_arrow(unix),
-            "etype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
-            "cunix": unix,
-            "runix": unix,
+            "eventtype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
+            "creaunix": unix,
+            "recunix": unix,
             "sourceurl": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),
             "sourcerownum": pyarrow.array(range(start + 1, stop + 1), pyarrow.int64()),
             "message": pyarrow.repeat(pyarrow.scalar(""), count),

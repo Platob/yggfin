@@ -2,8 +2,8 @@
 
 `tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
 `FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
-`etype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary work
-begins.
+`eventtype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary
+work begins.
 
 The complementary scan -- `Not` of the market code set -- retains everything
 else: terminal operational rows, unrecognized rows, and any stored code no
@@ -38,7 +38,7 @@ batch it:
 4. lifts declared fields and structured components;
 5. derives the venue, transaction time and identities.
 
-`Message.etype`, `Message.MsgType`, and `Message.protocolcode` pass through
+`Message.eventtype`, `Message.MsgType`, and `Message.protocolcode` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
@@ -81,7 +81,7 @@ dictionary, field, or protocol-rule change reruns this stage against retained
 `Message` rows, resolving the stored arguments without tokenizing the payload.
 
 Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
-metadata is read by `parse_messages` because `etype` is part of `Message`, so
+metadata is read by `parse_messages` because `eventtype` is part of `Message`, so
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 

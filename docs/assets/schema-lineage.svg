@@ -40,8 +40,8 @@
 
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
-  <text class="small" x="1345" y="88">unix | hash | xhash | linkedevents</text>
-  <text class="small" x="1345" y="108">state | reason | parenthash</text>
+  <text class="small" x="1345" y="88">hash | xhash | prevhash | linkedhashes</text>
+  <text class="small" x="1345" y="108">unix | eventtype | state | reason | parenthash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
   <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
@@ -51,7 +51,7 @@
 
   <rect class="contract" x="45" y="265" width="355" height="240" rx="15"/>
   <text class="label" x="223" y="298">FixMsg contract</text>
-  <text class="small" x="223" y="324">Symbol | code | codes | canonical FIX fields</text>
+  <text class="small" x="223" y="324">symbol | code | altids | canonical FIX fields</text>
   <text class="small" x="223" y="346">parsed messages + normalized Instrument versions</text>
   <rect class="chip-live" x="78" y="370" width="290" height="36" rx="9"/>
   <text class="tiny" x="223" y="393">fix.market → continues through Arrow</text>
@@ -80,7 +80,7 @@
 
   <rect class="contract" x="1040" y="350" width="245" height="205" rx="15"/>
   <text class="label" x="1163" y="383">Order contract</text>
-  <text class="small" x="1163" y="411">ids | side | kind | TIF</text>
+  <text class="small" x="1163" y="411">ids | side | kind | timeinforce</text>
   <text class="small" x="1163" y="433">px | qty | hiddenqty | expiry</text>
   <text class="small" x="1163" y="455">Book.hash appended to parenthash</text>
   <image href="logos/apache-iceberg.svg" x="1080" y="493" width="94" height="26"/>
@@ -90,7 +90,7 @@
   <text class="label" x="1453" y="383">Execution contract</text>
   <text class="small" x="1453" y="411">execution ids + order ids</text>
   <text class="small" x="1453" y="433">px | qty | notional | currency</text>
-  <text class="small" x="1453" y="455">timed order link in linkedevents</text>
+  <text class="small" x="1453" y="455">order lifecycle in linkedhashes</text>
   <image href="logos/apache-iceberg.svg" x="1370" y="493" width="94" height="26"/>
   <text class="small" x="1485" y="532">market.executions</text>
 
@@ -98,7 +98,7 @@
   <text class="edge-label" x="465" y="230">project Instrument rows</text>
 
   <path class="flow" d="M400 410 C475 440 475 540 525 555"/>
-  <text class="edge-label" x="440" y="468">BookIterator consumes rows by etype</text>
+  <text class="edge-label" x="440" y="468">BookIterator consumes rows by eventtype</text>
 
   <path class="flow" d="M620 670 V715 H780 V670"/>
   <text class="edge-label" x="700" y="740">prior Book snapshots recover live orders</text>

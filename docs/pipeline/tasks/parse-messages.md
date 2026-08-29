@@ -22,7 +22,7 @@ Each [`Message`](../../products/message.md) row carries the recording time in
 `sourcerownum`, `threadname` and `plugincode` from the configured header,
 the unsplit payload in `message`, the syntax-only `protocolcode`, residual
 ordered `entries` with repeated keys retained, the unambiguous `MsgType` and
-registry-mapped `etype`, and `hash` — the XXH3-64 identity of the exact UTF-8
+registry-mapped `eventtype`, and `hash` — the XXH3-64 identity of the exact UTF-8
 payload.
 
 Registry names, protocol versions, components and typed values do not belong
@@ -34,7 +34,7 @@ to this stage. A leading `#` is removed from each key; values stay text.
 protocol rule can change without reopening compressed logs or re-listing the
 source prefix, and rerunning a protocol parser uses the retained `entries`
 rather than splitting `message` again. Only a MsgType `event_types` change
-requires a rebuild, because it changes stored `etype`.
+requires a rebuild, because it changes stored `eventtype`.
 
 Identity hashes `message` alone — no composite frame, source path or row
 number — so identical payloads share an identity across captures. The table
@@ -144,7 +144,7 @@ allocation.
 
 The standard header — `BeginString`, `BodyLength`, `MsgType`, `MsgSeqNum`,
 `SenderCompID`, `TargetCompID`, `SendingTime` — is lifted out of `entries`
-into columns of its own, beside `protocolcode` and the early `etype`. A
+into columns of its own, beside `protocolcode` and the early `eventtype`. A
 lifted column is read back out of `entries` wherever it is empty, so a row
 that carried the field only in the list still answers.
 

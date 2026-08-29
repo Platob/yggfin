@@ -213,7 +213,7 @@ _MERGED_FIELDS = _REGISTRY.merged_fields()
 # Source identifiers retained on parsed market rows, in lifecycle lookup
 # order. Tags come from the registry so this declaration never respells them,
 # and each is stored under its folded name -- the same name its column would
-# carry, so a `codes` key and a column key are never two spellings of one
+# carry, so an `altids` key and a column key are never two spellings of one
 # field.
 _IDENTIFIER_NAMES: tuple[str, ...] = (
     "OrderID",

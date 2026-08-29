@@ -39,8 +39,8 @@ two's-complement bytes -- `fixed_size_binary(16)` in Arrow, `fixed[16]` in
 Iceberg. One width covers both a content digest and the wider time-anchored
 version hash [`rekep.txhash`](txhash.md) builds, and big-endian keeps the
 column sorting as the values do. `hash_bytes_of` writes those bytes and
-`hash_int_of` reads them back. A relation is one of them too: `linked(unix,
-xhash)` couples an instant over a lifecycle and `unlink` returns the pair.
+`hash_int_of` reads them back. `linkedhashes` stores related lifecycle digests
+as signed `int64` values; the related event time comes from joining on `xhash`.
 
 An identifier that is itself a part of another identity enters the frame as
 those sixteen bytes, never as an integer -- which is why the integer payload

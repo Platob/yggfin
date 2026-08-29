@@ -210,12 +210,12 @@ def test_a_message_always_has_a_non_null_argument_list() -> None:
 def test_a_payload_parses_scalar_like_the_column_path() -> None:
     """`from_text` is the scalar spelling of `parse_arrow`: same promotion,
     same residual arguments -- the raw text kept only when declared."""
-    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", runix=7)
+    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", recunix=7)
     column = Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01")
 
     assert staged.msgtype == column.msgtype == "D"
     assert staged.beginstring == column.beginstring == "FIX.4.4"
-    assert staged.runix == 7
+    assert staged.recunix == 7
     assert staged.message == ""
     # `8` and `35` are standard header and leave for columns of their own; `11`
     # is body and `10` is the boundary, so both stay exactly where they were.
@@ -253,7 +253,7 @@ def test_an_explicit_message_type_still_strips_it_from_generic_arguments() -> No
 def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_arguments() -> None:
     message = Message(message="a very long diagnostic with A=1 inside it")
 
-    assert message.etype is EventType.MISC
+    assert message.eventtype is EventType.MISC
     assert message.msgtype is None
     assert message.entries == []
 
@@ -261,7 +261,7 @@ def test_a_message_without_a_discriminator_is_misc_and_skips_incidental_argument
 def test_a_piped_message_without_a_discriminator_keeps_generic_arguments() -> None:
     message = Message(message="toBridge #SYMBOL=TTF|#SIDE=1")
 
-    assert message.etype is EventType.MISC
+    assert message.eventtype is EventType.MISC
     assert [(entry.key, entry.value) for entry in message.entries] == [
         ("SYMBOL", "TTF"),
         ("SIDE", "1"),
@@ -670,7 +670,7 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
         ("55", "IBM"),
         ("10", "000"),
     ], "the body and the boundary, and nothing the header already answers"
-    assert table.column("etype").to_pylist() == [int(EventType.ORDER)]
+    assert table.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     assert table.column("hash").to_pylist() == table.column("xhash").to_pylist()
     assert hash_int_of(table.column("hash")[0].as_py()) == hash_bytes(payload.encode("utf-8"))

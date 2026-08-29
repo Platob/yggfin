@@ -238,16 +238,16 @@ class Book(MarketEvent):
 
     def complete_from(self, previous: MarketEvent) -> None:
         """Complete the book without carrying an earlier delta's relations."""
-        links = list(self.linkedevents)
+        links = list(self.linkedhashes)
         MarketEvent.complete_from(self, previous)
-        self.linkedevents = links
+        self.linkedhashes = links
         if isinstance(previous, Book) and self.execpx is None:
             self.execpx = previous.execpx
 
     def with_previous(self, previous: MarketEvent | None) -> Self | None:
         """Finish a known delta directly; snapshots retain generic completion."""
         if (
-            self.sunix is not None
+            self.snapunix is not None
             or not self.xhash
             or (
                 previous is not None
@@ -255,16 +255,16 @@ class Book(MarketEvent):
             )
         ):
             completed = MarketEvent.with_previous(self, previous)
-            if completed is not None and completed.sunix is not None:
+            if completed is not None and completed.snapunix is not None:
                 completed.forget_delta()
             return completed
         if previous is not None:
-            if not self.cunix:
-                self.cunix = previous.cunix or previous.unix
-            if not self.runix:
-                self.runix = previous.runix
-            if self.eunix is None:
-                self.eunix = previous.eunix
+            if not self.creaunix:
+                self.creaunix = previous.creaunix or previous.unix
+            if not self.recunix:
+                self.recunix = previous.recunix
+            if self.expunix is None:
+                self.expunix = previous.expunix
             if self.mic is None:
                 self.mic = previous.mic
             if self.into_instrument() is None:
@@ -285,7 +285,7 @@ class Book(MarketEvent):
             self._remember_previous(previous)
         self.derive()
         self._materialize_life_code()
-        if self.linkedevents:
+        if self.linkedhashes:
             self._drop_self_link()
         self.hash = self._version_hash()
         return self
@@ -373,7 +373,7 @@ class Book(MarketEvent):
             if execution.state is State.FILLED and execution.px is not None:
                 self.execpx = execution.px
                 break
-        if self.sunix is not None:
+        if self.snapunix is not None:
             for name in ("bid", "ask"):
                 levels = getattr(self, f"{name}levels")
                 best = levels[0] if levels else None
@@ -503,7 +503,7 @@ def _derived(batch: Any, levels: str, into: tuple[str, str, str]) -> dict[str, A
     )
     members = alive.values
     best_px, best_qty, depth = into
-    derive = compute.is_valid(batch.column("sunix"))
+    derive = compute.is_valid(batch.column("snapunix"))
     return {
         best_px: compute.if_else(
             derive, compute.take(members.field("px"), top), batch.column(best_px)
@@ -918,7 +918,7 @@ class _Side:
     @staticmethod
     def _time_priority(order: Order) -> tuple[int, int]:
         """Time priority within one price, with lifecycle as stable tie-break."""
-        return order.cunix or order.unix, order.xhash
+        return order.creaunix or order.unix, order.xhash
 
     def _expire_order(self, order: Order, unix: int, reason: str, deadline: int) -> Order:
         """Remove one live order and build its synthetic terminal version."""
@@ -926,7 +926,7 @@ class _Side:
         self._forget(order.xhash)
         terminal = copy.copy(order)
         terminal.unix = unix
-        terminal.eunix = deadline
+        terminal.expunix = deadline
         terminal.state = State.INTERNAL_EXPIRED
         if not terminal.reason:
             terminal.reason = reason
@@ -971,9 +971,9 @@ class _Side:
         # Complete once here so both the book and its auditable delta use the
         # same linked version; publishing the raw partial report loses terms.
         settled = copy.copy(order)
-        # Completion records identifiers in `codes`; isolate the fold's copy
+        # Completion records identifiers in `altids`; isolate the fold's copy
         # from the immutable input event before that map is extended.
-        settled.codes = dict(order.codes)
+        settled.altids = dict(order.altids)
         if standing is not None and settled.xhash and settled.xhash == standing.xhash:
             settled._completed_from_same_lifecycle(standing)
         elif standing is not None:
@@ -1059,7 +1059,7 @@ class _Side:
             "qty",
             "hiddenqty",
             "notional",
-            "eunix",
+            "expunix",
             "timeinforce",
             "stoppx",
             "kind",
@@ -1126,16 +1126,16 @@ class _Side:
         return before != after
 
     def standing(self, event: Order | Execution) -> Order | None:
-        """The live order matched by exact lifecycle, links, then typed codes."""
+        """The live order matched by exact lifecycle, links, then identifiers."""
         if event.is_order() and event.xhash:
             found = self.orders.get(event.xhash)
             if found is not None:
                 return found
-        for _, identity in event.linkedevents:
+        for identity in event.linkedhashes:
             found = self.orders.get(identity)
             if found is not None:
                 return found
-        aliases = tuple(Order.lookup_codes_of(event))
+        aliases = tuple(Order.lookup_altids_of(event))
         scope = int(event.mic) if event.mic else None
         venue = {value for namespace, value in aliases if namespace != CLIENT_ORDER_CODE}
         for key in aliases:
@@ -1249,7 +1249,7 @@ class _Side:
         xhash = order.xhash
         self.orders[xhash] = order
         scope = int(order.mic) if order.mic else None
-        current = dict.fromkeys((scope, *key) for key in Order.lookup_codes_of(order))
+        current = dict.fromkeys((scope, *key) for key in Order.lookup_altids_of(order))
         previous = self.aliases.get(xhash, {})
         remembered = {
             alias: None
@@ -1324,11 +1324,11 @@ class _Side:
 
     def _deadline_of(self, order: Order) -> tuple[int, str] | None:
         """The earliest explicit or configured age deadline and its audit reason."""
-        explicit = order.eunix
+        explicit = order.expunix
         age = (
             None
             if self.max_order_age_ns is None
-            else (order.cunix or order.unix) + self.max_order_age_ns
+            else (order.creaunix or order.unix) + self.max_order_age_ns
         )
         if explicit is None and age is None:
             return None
@@ -1450,14 +1450,14 @@ class _Folding:
     reported_names: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
     """Pending typed source identifiers to their Order source hash."""
 
-    reported_source_links: dict[int, tuple[int, int]] = dataclasses.field(default_factory=dict)
+    reported_source_links: dict[int, int] = dataclasses.field(default_factory=dict)
     """Raw generated Order link replaced by the completed published Order."""
 
     unpublished: set[int] = dataclasses.field(default_factory=set)
     """Report Orders deferred because LastQty is needed to distinguish their change."""
 
-    linkedevents: Annotated[dict[tuple[int, int], None], Field.column("Linked Events")] = (
-        dataclasses.field(default_factory=dict)
+    linkedhashes: Annotated[dict[int, None], Field.column("Linked Hashes")] = dataclasses.field(
+        default_factory=dict
     )
     """Delta relations accumulated once in insertion order."""
 
@@ -1485,7 +1485,7 @@ class BookIterator:
     """Prior snapshots, normalized to the latest version of each book."""
 
     max_order_age_ns: int | None = DAY
-    """Expire unchanged orders after one day; None uses explicit `eunix` only."""
+    """Expire unchanged orders after one day; None uses explicit `expunix` only."""
 
     max_side_alive: int | None = None
     """Keep at most this many live orders per side; None keeps every order."""
@@ -1594,7 +1594,7 @@ class BookIterator:
                     yield event
             return
         for log in self.logs:
-            if log.etype is EventType.INSTRUMENT:
+            if log.eventtype is EventType.INSTRUMENT:
                 if log.is_instrument_version:
                     for instrument in log.into_instruments():
                         self._index_instrument(instrument)
@@ -1629,9 +1629,7 @@ class BookIterator:
         self._sweep(event.unix, state)
         state.moved = self._expire(state, event.unix) or state.moved
         source_hash = event.hash
-        source_link = (
-            (event.unix, event.xhash) if isinstance(event, Order) and event.xhash else None
-        )
+        source_link = event.xhash if isinstance(event, Order) and event.xhash else None
         paired = self._paired_execution(state, event) if isinstance(event, Execution) else None
         if paired is not None:
             folded, settled = paired
@@ -1672,7 +1670,7 @@ class BookIterator:
     def _remember_reported(
         state: _Folding,
         source_hash: int,
-        source_link: tuple[int, int] | None,
+        source_link: int | None,
         order: Order,
         *,
         unpublished: bool = False,
@@ -1684,10 +1682,10 @@ class BookIterator:
         state.reported[key] = order
         if source_link is not None:
             state.reported_source_links[key] = source_link
-            state.reported_lifecycles[source_link[1]] = key
+            state.reported_lifecycles[source_link] = key
         if order.xhash:
             state.reported_lifecycles[order.xhash] = key
-        for code in Order.lookup_codes_of(order):
+        for code in Order.lookup_altids_of(order):
             state.reported_names[code] = key
         if unpublished:
             state.unpublished.add(key)
@@ -1699,9 +1697,9 @@ class BookIterator:
             if parent in state.reported:
                 return parent, state.reported[parent]
 
-        candidates = [state.reported_lifecycles.get(xhash) for _, xhash in execution.linkedevents]
+        candidates = [state.reported_lifecycles.get(xhash) for xhash in execution.linkedhashes]
         candidates.extend(
-            state.reported_names.get(code) for code in Order.lookup_codes_of(execution)
+            state.reported_names.get(code) for code in Order.lookup_altids_of(execution)
         )
         for key in dict.fromkeys(candidate for candidate in candidates if candidate is not None):
             order = state.reported.get(key)
@@ -1797,8 +1795,8 @@ class BookIterator:
 
         source_link = state.reported_source_links.get(source_parent)
         if source_link is not None:
-            execution.linkedevents = [
-                linked for linked in execution.linkedevents if linked != source_link
+            execution.linkedhashes = [
+                linked for linked in execution.linkedhashes if linked != source_link
             ]
         execution.parenthash = list(
             dict.fromkeys(
@@ -1815,7 +1813,7 @@ class BookIterator:
     def _remember_pending(state: _Folding, event: Order | Execution) -> None:
         """Accumulate one delta's event and parent relations without rescanning it."""
         if event.xhash:
-            state.linkedevents[(event.unix, event.xhash)] = None
+            state.linkedhashes[event.xhash] = None
         if event.hash:
             state.parent_hashes[event.hash] = None
 
@@ -1874,7 +1872,7 @@ class BookIterator:
         lifecycle = Book(
             unix=event.unix,
             instrumentxhash=event.instrumentxhash,
-            codes=dict(event.codes),
+            altids=dict(event.altids),
             currency=event.currency,
         )
         parsed = event.into_instrument()
@@ -1898,8 +1896,8 @@ class BookIterator:
 
     def _restore(self, snapshot: Book) -> None:
         """Resume one fold from the complete live state of a prior snapshot."""
-        if snapshot.sunix is None:
-            raise ValueError("a recovery seed must be a book snapshot with `sunix`")
+        if snapshot.snapunix is None:
+            raise ValueError("a recovery seed must be a book snapshot with `snapunix`")
         if snapshot.deltas or snapshot.executions:
             raise ValueError("a recovery snapshot cannot carry delta events")
         if snapshot.biddepth != len(snapshot.bidlevels):
@@ -2058,7 +2056,7 @@ class BookIterator:
         skip the hours nothing happened in is a table you have to scan
         backwards to read, which is the thing hourly rows exist to avoid. A
         gap of ten hours is ten rows, each a picture of the same state, each
-        saying so in `sunix`.
+        saying so in `snapunix`.
         """
         every = self.snapshot_every
         if not every or state.previous is None or state.emitted is None:
@@ -2105,9 +2103,7 @@ class BookIterator:
             ask_frame=ask_frame,
         )
         alive = [*taken.bidalive, *taken.askalive]
-        taken.linkedevents = list(
-            dict.fromkeys((order.unix, order.xhash) for order in alive if order.xhash)
-        )
+        taken.linkedhashes = list(dict.fromkeys(order.xhash for order in alive if order.xhash))
         taken.parenthash = [order.hash for order in alive if order.hash] or None
         linked = taken.with_previous(previous)
         if linked is None:
@@ -2207,14 +2203,14 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         unix=unix,
         instrumentxhash=state.instrumentxhash,
         code=state.code,
-        codes=dict(about.codes),
+        altids=dict(about.altids),
         pxunit=about.pxunit,
         currency=about.currency,
         qtyunit=about.qtyunit,
         mic=about.mic,
         state=State.OPEN if (state.bid.keys or state.ask.keys) else State.CLOSED,
         xhash=state.xhash,
-        linkedevents=list(state.linkedevents),
+        linkedhashes=list(state.linkedhashes),
         parenthash=list(state.parent_hashes) or None,
         bidpx=None if bid_best is None else bid_best.px,
         bidqty=None if bid_best is None else bid_best.qty,
@@ -2245,7 +2241,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     state.reported_names.clear()
     state.reported_source_links.clear()
     state.unpublished.clear()
-    state.linkedevents.clear()
+    state.linkedhashes.clear()
     state.parent_hashes.clear()
     # The prices across the sides are `Book.derive`'s, which `with_previous`
     # runs once every layer has filled -- so they are not computed here as

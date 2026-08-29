@@ -200,14 +200,20 @@ def test_normalized_instrument_batches_decode_without_python_rows(
     instruments = [
         Instrument(
             unix=1_000,
-            cunix=900,
-            runix=1_100,
+            creaunix=900,
+            recunix=1_100,
             parenthash=[11, 12],
             symbol="CAL-27",
             kind=AssetKind.MULTILEG,
             securityid="FR0000000001",
             securityidsource="4",
-            altids={"ISINNumber": "FR0000000001", "RICCode": "CAL.N", "Z": "vendor"},
+            altids={
+                "orderid": "ORD-9",
+                "clordid": "CL-7",
+                "ISINNumber": "FR0000000001",
+                "RICCode": "CAL.N",
+                "Z": "vendor",
+            },
             securitytype="MLEG",
             securityexchange="XPAR",
             currency=Currency.EUR,
@@ -230,7 +236,7 @@ def test_normalized_instrument_batches_decode_without_python_rows(
                 Leg(symbol="SEP-27", side=Side.SELL, ratio=2.0),
             ],
         ).identify(),
-        Instrument(unix=2_000, cunix=2_000, runix=2_000, symbol="CASH").identify(),
+        Instrument(unix=2_000, creaunix=2_000, recunix=2_000, symbol="CASH").identify(),
     ]
     messages = [FixMsg.from_instrument(one) for one in instruments]
     source = pyarrow.Table.from_pylist(
@@ -294,8 +300,13 @@ def test_a_repeated_instrument_spelling_is_hashed_once(monkeypatch: pytest.Monke
 
 
 def test_instrument_version_hashing_names_every_fact_and_leg_member() -> None:
-    assert instrument_module._INSTRUMENT_MEMBERS == tuple(
-        name for name in Instrument.__annotations__ if name != "xhash"
+    altids = Instrument.into_field().field("altids")
+    assert Instrument.into_field().names.count("altids") == 1 and not altids.nullable
+    declared = tuple(name for name in Instrument.__annotations__ if name != "xhash")
+    assert instrument_module._INSTRUMENT_MEMBERS == (
+        *declared[:5],
+        "altids",
+        *declared[5:],
     )
     assert instrument_module._LEG_MEMBERS == tuple(field.name for field in dataclasses.fields(Leg))
 
@@ -321,4 +332,4 @@ def test_instrument_version_hashing_is_stable_for_maps_dates_and_legs() -> None:
     assert one.hash == two.hash
     empty = dataclasses.replace(first, unix=1, altids={}, hash=0).identify().hash
     absent = dataclasses.replace(first, unix=1, altids=None, hash=0).identify().hash
-    assert empty != absent
+    assert empty == absent, "the one required identifier map normalizes absence to empty"

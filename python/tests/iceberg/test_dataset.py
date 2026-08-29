@@ -103,7 +103,7 @@ FIX_LINE = FixMsg(
     hash=3,
     xhash=3,
     code="ORD-1",
-    etype=EventType.ORDER,
+    eventtype=EventType.ORDER,
     threadname="t",
     plugincode="d",
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",

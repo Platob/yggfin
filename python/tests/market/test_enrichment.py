@@ -48,17 +48,12 @@ def test_an_identifier_in_no_scheme_is_not_an_isin() -> None:
 
 
 def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() -> None:
-    """Keyed by the name, because `altids[ISIN_SCHEME]` is a question and
-    `altids["4"]` is a lookup table away from being one.
-
-    The name is the dictionary's own symbol for the scheme, not a spelling
-    this package chose: it used to compile twenty-two of them as an enum, and
-    the dictionary already enumerates thirty-three.
-    """
+    """Reference schemes use registry names and lifecycle aliases use field names."""
     found = instrument_of(
         f"{HEAD}|55=AAPL|454=3|455=US0378331005|456=4|455=037833100|456=1|455=AAPL.OQ|456=5"
     )
     assert found.altids == {
+        "clordid": "CL-1",
         "ISINNumber": "US0378331005",
         "CUSIP": "037833100",
         "RICCode": "AAPL.OQ",
@@ -68,12 +63,11 @@ def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() 
 def test_a_scheme_this_build_has_never_seen_keeps_the_character_it_came_as() -> None:
     """The only honest key left for it, and better than dropping the identifier."""
     found = instrument_of(f"{HEAD}|55=AAPL|454=1|455=whatever|456=Z")
-    assert found.altids == {"Z": "whatever"}
+    assert found.altids == {"clordid": "CL-1", "Z": "whatever"}
 
 
-def test_an_instrument_with_no_alternatives_carries_a_null_rather_than_an_empty_map() -> None:
-    """Which says "none carried" where an empty map says "it sent an empty list"."""
-    assert instrument_of(f"{HEAD}|55=AAPL").altids is None
+def test_an_instrument_without_reference_alternatives_keeps_lifecycle_altids() -> None:
+    assert instrument_of(f"{HEAD}|55=AAPL").altids == {"clordid": "CL-1"}
 
 
 def test_the_two_identifier_source_tags_share_one_enumeration() -> None:

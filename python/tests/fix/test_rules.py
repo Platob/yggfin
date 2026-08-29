@@ -221,7 +221,7 @@ def test_no_rows_is_no_rows() -> None:
 
 def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
     protocols = ["FIX", NO_PROTOCOL, "UL", "MISC", NO_PROTOCOL, "SBE", None]
-    etypes = [
+    eventtypes = [
         EventType.ORDER,
         EventType.MISC,
         EventType.UNKNOWN,
@@ -231,8 +231,8 @@ def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
         None,
     ]
     scalar = [
-        DEFAULT.category_of(protocol, etype)
-        for protocol, etype in zip(protocols, etypes, strict=True)
+        DEFAULT.category_of(protocol, eventtype)
+        for protocol, eventtype in zip(protocols, eventtypes, strict=True)
     ]
     assert scalar == [
         MARKET_CATEGORY,
@@ -245,7 +245,7 @@ def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
     ]
     vector = DEFAULT.into_arrow_category_array(
         pyarrow.array(protocols),
-        pyarrow.array([None if etype is None else int(etype) for etype in etypes]),
+        pyarrow.array([None if eventtype is None else int(eventtype) for eventtype in eventtypes]),
     )
     assert vector.to_pylist() == scalar
 
@@ -255,12 +255,12 @@ def test_categories_agree_on_codes_no_member_spells() -> None:
     the scalar rule and the kernel answer identically on every one, because
     `from_int` answers only on the compiled codes the kernel's sets hold."""
     respelled = int.from_bytes(b"order", "big", signed=True)
-    etypes = [respelled, 110, 210, 410, 999, -1, 0]
+    eventtypes = [respelled, 110, 210, 410, 999, -1, 0]
     for protocol in (None, "FIX"):
-        scalar = [DEFAULT.category_of(protocol, etype) for etype in etypes]
+        scalar = [DEFAULT.category_of(protocol, eventtype) for eventtype in eventtypes]
         vector = DEFAULT.into_arrow_category_array(
-            pyarrow.array([protocol] * len(etypes), pyarrow.string()),
-            pyarrow.array(etypes, pyarrow.int64()),
+            pyarrow.array([protocol] * len(eventtypes), pyarrow.string()),
+            pyarrow.array(eventtypes, pyarrow.int64()),
         )
         assert vector.to_pylist() == scalar
     assert DEFAULT.category_of("FIX", respelled) == MISC_CATEGORY

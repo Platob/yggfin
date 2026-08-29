@@ -350,31 +350,6 @@ def test_an_identifier_column_can_itself_be_a_part() -> None:
     assert made[0] == hash_of("Book", hash_bytes_of(hash_of("a")))
 
 
-# -- a relation --------------------------------------------------------------
-
-
-def test_a_relation_is_one_identifier_and_the_two_builders_agree() -> None:
-    """A related event is a time and a thing, and the pair is stored as one
-    value -- so the column builder has to write what `linked` writes."""
-    pairs = [(1, 11), (1_700_000_000_000_000_000, -5), (0, 1 << 62)]
-    made = identity.linked_arrow(
-        pyarrow.array([unix for unix, _ in pairs], pyarrow.int64()),
-        arrow_of([xhash for _, xhash in pairs]),
-    )
-    assert made.type == HASH
-    assert made.to_pylist() == [identity.hash_bytes_of(identity.linked(*pair)) for pair in pairs]
-    assert [identity.unlink(one) for one in made.to_pylist()] == pairs
-
-
-def test_a_relation_refuses_a_null_on_either_side() -> None:
-    """`(0, 0)` is a relation to nothing, and silently writing one for an
-    absent instant would be a link nobody made."""
-    with pytest.raises(ValueError, match="may be null"):
-        identity.linked_arrow(pyarrow.array([None], pyarrow.int64()), arrow_of([1]))
-    with pytest.raises(ValueError, match="may be null"):
-        identity.linked_arrow(pyarrow.array([1], pyarrow.int64()), arrow_of([None]))
-
-
 def test_no_rows_is_no_rows() -> None:
     assert built("Order", pyarrow.array([], type=pyarrow.string())) == []
 

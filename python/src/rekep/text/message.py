@@ -313,16 +313,16 @@ class Message(Event):
             for name, _ in SESSION_FIELDS:
                 if getattr(self, name) is None:
                     setattr(self, name, parsed[name][0].as_py())
-            if self.etype == EventType.UNKNOWN:
-                self.etype = EventType(parsed["etype"][0].as_py())
+            if self.eventtype == EventType.UNKNOWN:
+                self.eventtype = EventType(parsed["eventtype"][0].as_py())
 
         self.entries = [Entry.from_stored(entry) for entry in self.entries]
         session, self.entries = _scalar_session_values(self.entries)
         for name, _ in SESSION_FIELDS:
             if getattr(self, name) is None:
                 setattr(self, name, session.get(name))
-        if self.msgtype is None and self.etype == EventType.UNKNOWN:
-            self.etype = EventType.MISC
+        if self.msgtype is None and self.eventtype == EventType.UNKNOWN:
+            self.eventtype = EventType.MISC
 
     @classmethod
     def from_text(
@@ -345,7 +345,7 @@ class Message(Event):
 
         The raw text itself is retained only where a caller declares
         `message=` -- the pairs carry every field -- and the syntax columns
-        `protocolcode`, `etype` and `direction` are read off that text, so
+        `protocolcode`, `eventtype` and `direction` are read off that text, so
         they stay unset without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
@@ -378,7 +378,9 @@ class Message(Event):
                     name: pyarrow.chunked_array([part[name] for part in parts], pyarrow.string())
                     for name, _ in SESSION_FIELDS
                 },
-                "etype": pyarrow.chunked_array([part["etype"] for part in parts], _EVENT_CODE),
+                "eventtype": pyarrow.chunked_array(
+                    [part["eventtype"] for part in parts], _EVENT_CODE
+                ),
                 "protocolcode": pyarrow.chunked_array(
                     [part["protocolcode"] for part in parts], pyarrow.string()
                 ),
@@ -392,7 +394,7 @@ class Message(Event):
         if not rows:
             return {
                 **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
-                "etype": pyarrow.array([], _EVENT_CODE),
+                "eventtype": pyarrow.array([], _EVENT_CODE),
                 "protocolcode": pyarrow.array([], pyarrow.string()),
                 "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], pyarrow.bool_()),
@@ -430,7 +432,7 @@ class Message(Event):
             direction = Rules.into_default().into_arrow_direction_array(text, protocols)
         return {
             **session,
-            "etype": event_types,
+            "eventtype": event_types,
             "protocolcode": protocols,
             _MSG_TYPE: msg_types,
             "entries": entries,

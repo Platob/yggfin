@@ -565,7 +565,7 @@ FIX_COLUMNS = {
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.equals(Message.into_field().into_arrow_schema())
-    assert schema.names[:3] == ["unix", "unixpartition", "etype"], "the envelope leads"
+    assert schema.names[:3] == ["unix", "unixpartition", "eventtype"], "the envelope leads"
     assert schema.names[-len(MESSAGE_COLUMNS) :] == MESSAGE_COLUMNS
     assert FIX_COLUMNS.isdisjoint(schema.names)
     for name in SESSION_COLUMNS:
@@ -578,7 +578,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unixpartition").type == pyarrow.int32()
     assert schema.field("hash").type == HASH
-    assert schema.field("etype").type == pyarrow.int64()
+    assert schema.field("eventtype").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
 
@@ -592,7 +592,7 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     assert table.schema.names == Message.into_field().names
     assert table.column("message").to_pylist() == payloads
     assert table.column("msgtype").to_pylist() == ["D", "AB", None]
-    assert table.column("etype").to_pylist() == [
+    assert table.column("eventtype").to_pylist() == [
         int(EventType.ORDER),
         int(EventType.MISC),
         int(EventType.MISC),
@@ -666,7 +666,7 @@ def test_message_type_promotion_handles_wire_rendered_marked_and_repeated_keys(
     table = log.read_arrow_table()
 
     assert table.column("msgtype").to_pylist() == ["D", "8", "W", "G", "D"]
-    assert table.column("etype").to_pylist() == [
+    assert table.column("eventtype").to_pylist() == [
         int(EventType.ORDER),
         int(EventType.EXECUTION),
         int(EventType.BOOK),

@@ -159,9 +159,9 @@ only the exact `FixMsg` to `Instrument` projection.
 | `10:30:00.400Z` | `AAPL` | `CLOSED` | none / none; rejected delta retained |
 | `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` |
 
-The BTC book relates both source order lifecycles with their event times in
-`linkedevents` and both source versions in `parenthash`. Bid and ask levels
-remain best-price ordered.
+The BTC book records both source order lifecycle hashes in `linkedhashes` and
+both source versions in `parenthash`. Bid and ask levels remain best-price
+ordered.
 
 ### Orders
 
@@ -180,8 +180,7 @@ remain best-price ordered.
 | `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link |
 
 Flattening appends the carrying `Book.hash` to each event's `parenthash`;
-`linkedevents` retains the event time and lifecycle linkage between executions
-and orders.
+`linkedhashes` retains the lifecycle linkage between executions and orders.
 
 ## Schema lineage
 

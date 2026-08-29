@@ -67,7 +67,7 @@ def test_a_two_sided_quote_becomes_two_distinct_indicative_orders() -> None:
     assert bid.orderid == ask.orderid == "Q-1"
     assert bid.clordid == ask.clordid == "REQ-1"
     assert bid.xhash != ask.xhash
-    assert bid.eunix == ask.eunix == unix_of("20260821-10:05:00")
+    assert bid.expunix == ask.expunix == unix_of("20260821-10:05:00")
     assert bid.metadata["537"] == ask.metadata["537"] == "1"
 
 
@@ -145,7 +145,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     raw = next(
         iter(
             Message.into_arrow_reader(
-                [Message(message=line, msgtype="i", etype=EventType.QUOTE)],
+                [Message(message=line, msgtype="i", eventtype=EventType.QUOTE)],
                 batch_row_size=1,
             )
         )

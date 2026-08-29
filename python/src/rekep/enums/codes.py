@@ -680,9 +680,9 @@ class TimeInForce(Ascii32):
     GTC = "GTC", 310
     """Good until cancelled."""
     GTD = "GTD", 320
-    """Good until `Event.eunix`."""
+    """Good until `Event.expunix`."""
     GFT = "GFT", 330
-    """Good for a duration resolved into `Event.eunix`."""
+    """Good for a duration resolved into `Event.expunix`."""
     GFM = "GFM", 340
     """Good for the current month."""
 

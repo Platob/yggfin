@@ -11,6 +11,7 @@ import pytest
 
 from rekep import FixCodec, Message
 from rekep.fix import FixFieldValue, FixRegistry, record_copy
+from rekep.fix.columns import ISIN_SCHEME
 from rekep.market import (
     MIC,
     AssetKind,
@@ -132,7 +133,7 @@ def test_book_translation_uses_the_selected_fix_registry(
 
     monkeypatch.setattr(FixMsg, "into_market_events", translated)
 
-    assert list(BookIterator(logs=[FixMsg(etype=EventType.ORDER)], registry=registry)) == []
+    assert list(BookIterator(logs=[FixMsg(eventtype=EventType.ORDER)], registry=registry)) == []
     assert seen == [registry]
 
 
@@ -149,7 +150,7 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
     ]
 
 
-def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
+def test_log_altids_retain_lifecycle_identifiers_in_lookup_order() -> None:
     columns = {
         "orderid": pyarrow.array(["ORD-1", None]),
         "origclordid": pyarrow.array(["CL-0", None]),
@@ -159,21 +160,21 @@ def test_log_codes_retain_lifecycle_identifiers_in_lookup_order() -> None:
         "symbol": pyarrow.array(["AAPL", "MSFT"]),
     }
 
-    codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+    altids = FixMsg.altids_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
-    assert list(codes[0].items()) == [
+    assert list(altids[0].items()) == [
         ("orderid", "ORD-1"),
         ("origclordid", "CL-0"),
         ("clordid", "CL-1"),
         ("execid", "EX-1"),
     ]
-    assert list(codes[1].items()) == [
+    assert list(altids[1].items()) == [
         ("clordid", "CL-2"),
         ("quotesetid", "SET-1"),
     ]
 
 
-def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
+def test_log_altids_read_unpromoted_identifiers_from_parsed_entries() -> None:
     log = FixMsg(
         entries=[
             (198, "ORD-SECONDARY"),
@@ -190,11 +191,11 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
         [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
+    (altids,) = FixMsg.altids_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
-    assert list(codes.items()) == [
+    assert list(altids.items()) == [
         ("secondaryorderid", "ORD-SECONDARY"),
         ("secondaryclordid", "CL-SECONDARY"),
         ("secondaryexecid", "EXEC-SECONDARY"),
@@ -206,7 +207,7 @@ def test_log_codes_read_unpromoted_identifiers_from_parsed_entries() -> None:
     ]
 
 
-def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
+def test_log_altids_match_rendered_unpromoted_identifier_names() -> None:
     log = FixMsg(
         entries=[
             ("SecondaryExecID", "EXEC-NAMED"),
@@ -217,17 +218,17 @@ def test_log_codes_match_rendered_unpromoted_identifier_names() -> None:
         [log.into_row()], schema=FixMsg.into_field().into_arrow_schema()
     ).to_batches()[0]
 
-    (codes,) = FixMsg.codes_arrow({"entries": batch.column("entries")}, 1).to_pylist(
+    (altids,) = FixMsg.altids_arrow({"entries": batch.column("entries")}, 1).to_pylist(
         maps_as_pydicts="strict"
     )
 
-    assert list(codes.items()) == [
+    assert list(altids.items()) == [
         ("secondaryexecid", "EXEC-NAMED"),
         ("mdentryrefid", "MD-NAMED"),
     ]
 
 
-def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None:
+def test_log_altids_fill_null_promoted_identifiers_from_residual_fields() -> None:
     logs = [
         FixMsg(entries=[(37, "ORDER-RESIDUAL")]),
         FixMsg(orderid="ORDER-PROMOTED", entries=[(37, "ORDER-IGNORED")]),
@@ -238,9 +239,9 @@ def test_log_codes_fill_null_promoted_identifiers_from_residual_fields() -> None
     )
     columns = {name: table.column(name) for name in table.schema.names}
 
-    codes = FixMsg.codes_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
+    altids = FixMsg.altids_arrow(columns, 2).to_pylist(maps_as_pydicts="strict")
 
-    assert [row["orderid"] for row in codes] == [
+    assert [row["orderid"] for row in altids] == [
         "ORDER-RESIDUAL",
         "ORDER-PROMOTED",
     ]
@@ -388,8 +389,8 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
     report_order = expected[Order][1]
     report_execution = expected[Execution][0]
     assert report_execution.parenthash == [report_order.hash]
-    assert report_execution.linkedevents == [(report_order.unix, report_order.xhash)]
-    assert report_execution.codes["tradeid"] == "TRADE-1"
+    assert report_execution.linkedhashes == [report_order.xhash]
+    assert report_execution.altids["tradeid"] == "TRADE-1"
     assert report_execution.metadata["9998"] == "report-meta"
 
 
@@ -714,7 +715,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         State.PARTIALLY_FILLED,
     ]
     assert expected[Execution][0].state is State.FILLED
-    assert expected[Order][0].codes["clordid"] == "CUSTOM-1"
+    assert expected[Order][0].altids["clordid"] == "CUSTOM-1"
 
 
 @pytest.mark.parametrize(
@@ -793,7 +794,7 @@ def test_checkpoint_rows_are_globally_boundary_ordered_across_instruments() -> N
         (list(Instrument.from_events(events)), "xhash"),
     )
     for snapshots, key in streams:
-        snapshots = [row for row in snapshots if row.sunix is not None]
+        snapshots = [row for row in snapshots if row.snapunix is not None]
         assert [row.unix for row in snapshots] == sorted(row.unix for row in snapshots)
         for boundary in (BASE + HOUR, BASE + 2 * HOUR, BASE + 3 * HOUR):
             assert {getattr(row, key) for row in snapshots if row.unix == boundary} == {
@@ -879,6 +880,28 @@ def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
     assert enriched.securityid == "111111111"
     assert enriched.xhash == bare.xhash
     assert enriched.version == bare.version + 1
+
+
+def test_instrument_altids_hold_reference_schemes_and_lifecycle_fields() -> None:
+    known = Instrument(
+        symbol="ABC",
+        altids={ISIN_SCHEME: "FR0000120271", "clordid": "CLIENT-1"},
+    )
+    observed = Instrument(
+        symbol="ABC",
+        altids={"CUSIP": "012345678", "clordid": "CLIENT-2"},
+    )
+
+    enriched = known.enriched_with(observed)
+
+    assert known.into_isin() == "FR0000120271"
+    assert enriched is not None
+    assert enriched.altids == {
+        ISIN_SCHEME: "FR0000120271",
+        "clordid": "CLIENT-1",
+        "CUSIP": "012345678",
+    }
+    assert [field.name for field in Instrument.into_field().fields].count("altids") == 1
 
 
 def test_a_security_id_only_instrument_is_unidentified_and_skipped() -> None:
@@ -997,6 +1020,7 @@ def test_a_message_that_knows_more_publishes_another_version() -> None:
     assert rich.currency is Currency.USD
     assert rich.xhash == bare.xhash, "the same instrument, and an identity that did not move"
     assert rich.version == bare.version + 1 and rich.prevunix == bare.unix
+    assert rich.prevhash == bare.hash
     assert rich.hash != bare.hash, "two versions of what is known, and two rows"
 
 
@@ -1049,7 +1073,7 @@ def test_a_gap_of_hours_is_filled_hour_by_hour() -> None:
     ]
     found = list(BookIterator.from_events(events))
     assert [(one.unix - BASE) // HOUR for one in found] == [0, 1, 2, 3, 3]
-    assert [one.sunix is not None for one in found] == [False, True, True, True, False]
+    assert [one.snapunix is not None for one in found] == [False, True, True, True, False]
 
 
 def test_a_snapshot_says_what_it_is_a_picture_of() -> None:
@@ -1058,10 +1082,10 @@ def test_a_snapshot_says_what_it_is_a_picture_of() -> None:
         order(BASE + 2 * HOUR + 60, BTC, Side.BID, 99.0, 1.0, "B2"),
     ]
     found = list(BookIterator.from_events(events))
-    taken = [one for one in found if one.sunix is not None]
-    assert [one.sunix for one in taken] == [BASE + 60, BASE + 60]
+    taken = [one for one in found if one.snapunix is not None]
+    assert [one.snapunix for one in taken] == [BASE + 60, BASE + 60]
     assert [one.unix for one in taken] == [BASE + HOUR, BASE + 2 * HOUR]
-    assert all(one.unix - one.sunix > 0 for one in taken), "staleness, without a join"
+    assert all(one.unix - one.snapunix > 0 for one in taken), "staleness, without a join"
 
 
 def test_instrument_state_is_published_on_every_book_boundary() -> None:
@@ -1070,7 +1094,7 @@ def test_instrument_state_is_published_on_every_book_boundary() -> None:
         order(BASE + 3 * HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1"),
     ]
     books = list(BookIterator.from_events(events))
-    boundaries = {one.unix for one in books if one.sunix is not None}
+    boundaries = {one.unix for one in books if one.snapunix is not None}
     instruments = list(Instrument.from_events(events))
 
     assert [one.unix for one in instruments] == [
@@ -1079,7 +1103,7 @@ def test_instrument_state_is_published_on_every_book_boundary() -> None:
         BASE + 2 * HOUR,
         BASE + 3 * HOUR,
     ]
-    assert {one.unix for one in instruments if one.sunix is not None} == boundaries
+    assert {one.unix for one in instruments if one.snapunix is not None} == boundaries
     assert all(one.cficode == BTC_RICH.cficode for one in instruments)
 
 
@@ -1091,7 +1115,7 @@ def test_expiry_delta_does_not_skip_the_instrument_boundary() -> None:
         100.0,
         5.0,
         "B1",
-        eunix=BASE + HOUR - 10,
+        expunix=BASE + HOUR - 10,
     )
     clock = order(BASE + 2 * HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
     events = [expiring, clock]
@@ -1184,9 +1208,9 @@ def test_an_active_exact_boundary_is_one_final_delta() -> None:
     boundary_refs = [one for one in instruments if one.unix == BASE + HOUR]
     assert len(boundary_books) == 1
     (delta,) = boundary_books
-    assert delta.sunix is None
+    assert delta.snapunix is None
     assert delta.biddepth == 2 and delta.askdepth == 1
-    assert len(boundary_refs) == 1 and boundary_refs[0].sunix == BASE + 60
+    assert len(boundary_refs) == 1 and boundary_refs[0].snapunix == BASE + 60
 
 
 def test_an_exact_boundary_keeps_one_book_identity() -> None:
@@ -1215,6 +1239,7 @@ def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
     assert len({one.hash for one in found}) == len(found), "and four versions of it"
     for before, after in zip(found, found[1:], strict=False):
         assert after.prevunix == before.unix
+        assert after.prevhash == before.hash
 
 
 def test_turning_the_grid_off_leaves_only_what_changed() -> None:
@@ -1223,7 +1248,7 @@ def test_turning_the_grid_off_leaves_only_what_changed() -> None:
         order(BASE + 5 * HOUR, BTC, Side.BID, 99.0, 1.0, "B2"),
     ]
     found = list(BookIterator.from_events(events, snapshot_every=0))
-    assert len(found) == 2 and all(one.sunix is None for one in found)
+    assert len(found) == 2 and all(one.snapunix is None for one in found)
 
 
 def test_the_stream_ends_without_guessing_how_long_the_book_stood() -> None:
@@ -1231,7 +1256,7 @@ def test_the_stream_ends_without_guessing_how_long_the_book_stood() -> None:
     gap, only a guess."""
     events = [order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")]
     found = list(BookIterator.from_events(events))
-    assert len(found) == 1 and found[0].sunix is None
+    assert len(found) == 1 and found[0].snapunix is None
 
 
 # -- a side that did not move -------------------------------------------------
@@ -1367,7 +1392,7 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
     ]
     found = list(BookIterator.from_events(events))
     for one in found:
-        if one.sunix is None:
+        if one.snapunix is None:
             continue
         assert [level.px for level in one.bidlevels] == [100.0], "the state is still there"
         assert one.deltas == [] and one.executions == []
@@ -1379,7 +1404,7 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
             one.prevexecpx,
         ) == (None, None, None, None, None)
         assert [order.orderid for order in one.bidalive] == ["B1"]
-        assert one.linkedevents == [(order.unix, order.xhash) for order in one.bidalive]
+        assert one.linkedhashes == [order.xhash for order in one.bidalive]
 
 
 def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
@@ -1415,7 +1440,7 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
         order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
-    seed = next(one for one in BookIterator.from_events(before) if one.sunix is not None)
+    seed = next(one for one in BookIterator.from_events(before) if one.snapunix is not None)
     after = order(BASE + HOUR + 70, BTC, Side.BID, 99.0, 3.0, "B2")
 
     iterator = BookIterator.from_events([after], snapshots=[seed], snapshot_every=0)
@@ -1435,7 +1460,7 @@ def test_book_recovery_normalizes_candidates_by_unix_version_and_hash() -> None:
                 order(BASE + 2 * HOUR + 60, BTC, Side.ASK, 101.0, 1.0, f"A-{named}"),
             ]
         )
-        return [book for book in books if book.sunix is not None]
+        return [book for book in books if book.snapunix is not None]
 
     first, second = seeds("B1"), seeds("B2")
     old = first[0]
@@ -1453,7 +1478,9 @@ def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold()
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1")
     after = order(BASE + HOUR + 70, BTC, Side.BID, 99.0, 3.0, "B2")
     uninterrupted = list(BookIterator.from_events([placed, clock, after], snapshot_every=0))[-1]
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     persisted = Book.from_dict(seed.into_dict())
 
     recovered = list(
@@ -1535,7 +1562,9 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
 def test_a_restored_order_continues_the_persisted_version_chain() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1")
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     amended = order(BASE + HOUR + 70, BTC, Side.BID, 100.0, 4.0, "B1")
 
     (resumed,) = BookIterator.from_events([amended], snapshots=[seed], snapshot_every=0)
@@ -1543,6 +1572,7 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
     (audited,) = resumed.deltas
     seeded = next(one for one in seed.bidalive if one.orderid == "B1")
     assert audited.prevunix == seeded.unix == placed.unix
+    assert audited.prevhash == seeded.hash
     assert audited.version == seeded.version + 1
 
 
@@ -1554,7 +1584,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             px=100.0,
             qty=5.0,
             clordid="CL-1",
-            codes={"clordid": "CL-1"},
+            altids={"clordid": "CL-1"},
             state=State.NEW,
         ),
         BTC,
@@ -1568,7 +1598,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             orderid="ORD-1",
             clordid="CL-2",
             origclordid="CL-1",
-            codes={
+            altids={
                 "orderid": "ORD-1",
                 "origclordid": "CL-1",
                 "clordid": "CL-2",
@@ -1581,7 +1611,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
     seed = next(
         book
         for book in BookIterator.from_events([placed, amended, clock])
-        if book.sunix is not None
+        if book.snapunix is not None
     )
 
     restored = BookIterator(snapshots=[seed])
@@ -1594,7 +1624,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
         ("clordid", "CL-2"),
         ("orderid", "ORD-1"),
     ):
-        assert side.standing(Order(codes={name: code})).xhash == lifecycle
+        assert side.standing(Order(altids={name: code})).xhash == lifecycle
 
     side.apply(
         initial(
@@ -1602,7 +1632,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
                 unix=BASE + HOUR + 40,
                 side=Side.BID,
                 orderid="ORD-1",
-                codes={"orderid": "ORD-1"},
+                altids={"orderid": "ORD-1"},
                 state=State.CANCELLED,
             ),
             BTC,
@@ -1614,7 +1644,9 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
 def test_recovery_refuses_a_live_level_it_cannot_reconstruct() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     broken = dataclasses.replace(seed, bidalive=[])
 
     with pytest.raises(ValueError, match="no live Order"):
@@ -1624,7 +1656,9 @@ def test_recovery_refuses_a_live_level_it_cannot_reconstruct() -> None:
 def test_recovery_refuses_a_live_order_absent_from_the_levels() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     broken = dataclasses.replace(seed, biddepth=0, bidlevels=[])
 
     with pytest.raises(ValueError, match="absent from the levels"):
@@ -1634,7 +1668,9 @@ def test_recovery_refuses_a_live_order_absent_from_the_levels() -> None:
 def test_recovery_refuses_a_level_quantity_that_disagrees_with_its_orders() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     broken = dataclasses.replace(
         seed,
         bidlevels=[dataclasses.replace(seed.bidlevels[0], qty=4.0)],
@@ -1647,7 +1683,9 @@ def test_recovery_refuses_a_level_quantity_that_disagrees_with_its_orders() -> N
 def test_recovery_refuses_a_delta_deletion_as_a_full_level() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
-    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    seed = next(
+        one for one in BookIterator.from_events([placed, clock]) if one.snapunix is not None
+    )
     broken = dataclasses.replace(
         seed,
         bidlevels=[dataclasses.replace(seed.bidlevels[0], qty=0.0)],
@@ -1665,13 +1703,13 @@ def test_recovery_rebuilds_the_explicit_expiry_index() -> None:
         100.0,
         5.0,
         "B1",
-        eunix=BASE + HOUR + 10,
+        expunix=BASE + HOUR + 10,
     )
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
     snapshot = next(
-        one for one in BookIterator.from_events([placed, clock]).books if one.sunix is not None
+        one for one in BookIterator.from_events([placed, clock]).books if one.snapunix is not None
     )
-    assert snapshot.bidlevels and snapshot.bidalive and placed.eunix is not None
+    assert snapshot.bidlevels and snapshot.bidalive and placed.expunix is not None
 
     restored = _Side.from_snapshot(
         Side.BID,
@@ -1679,8 +1717,8 @@ def test_recovery_rebuilds_the_explicit_expiry_index() -> None:
         snapshot.bidalive,
     )
 
-    assert restored._deadlines[0][0] == placed.eunix
-    (expired,) = restored.expire(placed.eunix)
+    assert restored._deadlines[0][0] == placed.expunix
+    (expired,) = restored.expire(placed.expunix)
     assert expired.xhash == placed.xhash and restored.orders == {}
     assert restored._deadlines == [] and restored._deadline_tokens == {}
 
@@ -1692,7 +1730,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
         order(BASE + 62, BTC, Side.BID, 98.0, 1.0, "B3"),
         order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1"),
     ]
-    seed = next(one for one in BookIterator.from_events(before) if one.sunix is not None)
+    seed = next(one for one in BookIterator.from_events(before) if one.snapunix is not None)
 
     iterator = BookIterator(snapshots=[seed], snapshot_every=0, max_side_alive=2)
     (bounded,) = iterator.books
@@ -1778,7 +1816,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
             px=100.0,
             qty=1.0,
             execid="X1",
-            linkedevents=[(placed.unix, placed.xhash)],
+            linkedhashes=[placed.xhash],
             parenthash=[placed.hash],
         )
         .attach_instrument(richer)
@@ -1794,11 +1832,11 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
 
     nested_order = books[0].deltas[0]
     nested_fill = books[-1].executions[0]
-    assert nested_fill.primary_linked_event == (nested_order.unix, nested_order.xhash)
+    assert nested_fill.primary_linked_hash == nested_order.xhash
     assert nested_order.hash in nested_fill.parenthash
 
 
-@pytest.mark.parametrize("explicit", [False, True], ids=["max-age", "eunix"])
+@pytest.mark.parametrize("explicit", [False, True], ids=["max-age", "expunix"])
 def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) -> None:
     expiring = order(
         BASE,
@@ -1807,7 +1845,7 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
         100.0,
         5.0,
         "B1",
-        eunix=BASE + 10 if explicit else None,
+        expunix=BASE + 10 if explicit else None,
     )
     clock = order(BASE + 20, BTC, Side.ASK, 101.0, 1.0, "A1")
     iterator = BookIterator.from_events(
@@ -1819,7 +1857,7 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
     latest = list(iterator)[-1]
     expired = [one for one in latest.deltas if one.orderid == "B1"]
     assert len(expired) == 1 and expired[0].state is State.INTERNAL_EXPIRED
-    assert expired[0].eunix == BASE + 10
+    assert expired[0].expunix == BASE + 10
     assert expired[0].reason and latest.biddepth == 0
 
 
@@ -1831,13 +1869,13 @@ def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None
         100.0,
         5.0,
         "B1",
-        eunix=BASE + HOUR + 10,
+        expunix=BASE + HOUR + 10,
     )
     eth_clock = order(BASE + 2 * HOUR, ETH, Side.BID, 10.0, 1.0, "E1")
 
     btc_books = [one for one in BookIterator.from_events([btc, eth_clock]) if one.code == "BTC-USD"]
 
-    snapshot = next(one for one in btc_books if one.sunix is not None)
+    snapshot = next(one for one in btc_books if one.snapunix is not None)
     expired = next(
         one
         for one in btc_books
@@ -1847,7 +1885,7 @@ def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None
     assert snapshot.unix == BASE + HOUR and snapshot.bidqty == 5.0
     assert expired.unix == eth_clock.unix and expired.biddepth == 0
     assert expired.deltas[-1].state is State.INTERNAL_EXPIRED
-    assert recovered is expired and recovered.sunix is None
+    assert recovered is expired and recovered.snapunix is None
     assert len({(book.unix, book.instrumentxhash) for book in btc_books}) == len(btc_books)
 
 
@@ -1877,7 +1915,7 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
         100.0,
         5.0,
         "B1",
-        eunix=deadline if explicit_offset is not None else None,
+        expunix=deadline if explicit_offset is not None else None,
     )
     clock = order(BASE + 3 * HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
 
@@ -1890,7 +1928,7 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
 
     boundary = [one for one in found if one.unix == BASE + HOUR]
     assert boundary and all(one.biddepth == 0 for one in boundary)
-    assert len(boundary) == 1 and boundary[0].sunix is None
+    assert len(boundary) == 1 and boundary[0].snapunix is None
     expired = [
         event
         for book in found
@@ -1898,7 +1936,7 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
         if event.orderid == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
-    assert expired[0].eunix == deadline
+    assert expired[0].expunix == deadline
     assert [one.unix for one in found] == sorted(one.unix for one in found)
     assert not any(one.unix == BASE + 2 * HOUR for one in found), (
         "a closed book stops producing unchanged snapshots"
@@ -1913,7 +1951,7 @@ def test_an_inactive_instrument_expires_before_its_crossed_snapshot() -> None:
         100.0,
         5.0,
         "B1",
-        eunix=BASE + HOUR - 10,
+        expunix=BASE + HOUR - 10,
     )
     eth_clock = order(BASE + 3 * HOUR + 60, ETH, Side.BID, 10.0, 1.0, "E1")
 
@@ -2059,7 +2097,7 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             cumqty=400.0,
             state=State.FILLED,
             execid="E1",
-            linkedevents=[(placed.unix, placed.xhash)],
+            linkedhashes=[placed.xhash],
         )
     )
 
@@ -2069,6 +2107,7 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     assert latest.deltas[0].px == 100.0 and latest.deltas[0].qty == 800.0
     assert latest.deltas[0].prevqty == 1_200.0
     assert latest.deltas[0].version == 1 and latest.deltas[0].prevunix == placed.unix
+    assert latest.deltas[0].prevhash == placed.hash
     assert latest.executions[0].qty == 400.0
 
 
@@ -2115,7 +2154,7 @@ def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
     books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
     last = books[-1]
     purged = [one for one in last.deltas if one.state is State.INTERNAL_EXPIRED]
-    linked = {xhash for _, xhash in last.linkedevents}
+    linked = set(last.linkedhashes)
     assert {one.xhash for one in purged} <= linked
 
 

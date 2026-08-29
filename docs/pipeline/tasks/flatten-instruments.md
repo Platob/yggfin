@@ -18,8 +18,8 @@ The package, a FIX registry and a catalog have to exist first:
 
 `parse_fix` already created, enriched, versioned, and snapshotted every
 normalized Instrument lifecycle row. This notebook filters those rows by
-`etype` and the internal plugin marker, converts each `FixMsg` back to its exact
-`Instrument`, and appends the flat audit table. It does not parse FIX or
+`eventtype` and the internal plugin marker, converts each `FixMsg` back to its
+exact `Instrument`, and appends the flat audit table. It does not parse FIX or
 version the lifecycle a second time.
 
 The adjacent `flatten_instruments.yml`

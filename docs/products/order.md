@@ -23,7 +23,7 @@ Execution FILLED 10.0 100.25
 One execution report produces both rows: the `Execution` is the evidence, the
 `Order` is the resulting state. The order is authoritative for the remaining
 quantity, so the execution is never subtracted twice. The two relate through
-`linkedevents`.
+`linkedhashes`.
 
 ```python
 from rekep.enums import State

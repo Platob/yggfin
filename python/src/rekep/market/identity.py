@@ -225,64 +225,15 @@ def hash_int_of(value: Any) -> int | None:
     return None if value is None else txhash.wide_of(value)
 
 
-# -- relations and stored rows ----------------------------------------------
-
-
-def linked(unix: int, xhash: int) -> int:
-    """One relation as one identifier: the instant over the lifecycle.
-
-    A related event is a time and a thing, which is exactly what the wide
-    couple holds -- so the pair a reader works in is stored as one value.
-    """
-    return txhash.couple128(int(unix), int(xhash) & _LIFECYCLE_MASK)
-
-
-def linked_arrow(unix: Any, xhash: Any) -> pyarrow.Array:
-    """One relation per row, vectorized: each instant over its lifecycle.
-
-    The stored bytes are big-endian, so the couple is a concatenation: the
-    clock's eight bytes, then the low eight of the lifecycle identity --
-    which is what `linked` writes for the same pair.
-    """
-    clock = unix.combine_chunks() if isinstance(unix, pyarrow.ChunkedArray) else unix
-    if not isinstance(clock, pyarrow.Array):
-        clock = pyarrow.array(clock)
-    clock = clock.cast(pyarrow.int64(), safe=False)
-    ids = arrow_of(xhash)
-    rows = len(ids)
-    if len(clock) != rows:
-        raise ValueError("unix and xhash columns must have the same length")
-    if clock.null_count or ids.null_count:
-        raise ValueError("a relation needs both an instant and a lifecycle; neither may be null")
-    out = bytearray(HASH_WIDTH * rows)
-    if rows:
-        ticks = clock.to_pylist()
-        stored = memoryview(ids.buffers()[1])
-        begin = ids.offset * HASH_WIDTH
-        for row in range(rows):
-            cell = row * HASH_WIDTH
-            out[cell : cell + 8] = int(ticks[row]).to_bytes(8, "big", signed=True)
-            low = begin + cell + 8
-            out[cell + 8 : cell + HASH_WIDTH] = stored[low : low + 8]
-    return pyarrow.FixedSizeBinaryArray.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])
-
-
-def unlink(value: Any) -> tuple[int, int]:
-    """The `(unix, xhash)` a stored relation carries."""
-    if isinstance(value, tuple | list):
-        return (int(value[0]), int(value[1]))
-    packed = hash_int_of(value)
-    low = packed & _LIFECYCLE_MASK
-    return (packed >> 64, low - (1 << 64) if low >= (1 << 63) else low)
+# -- stored rows -------------------------------------------------------------
 
 
 def stored_member(name: str, value: Any) -> Any:
     """One member as a column stores it, by the name that says what it is.
 
     Named rather than typed because the vectorized builders assemble a batch
-    member by member and never hold the whole row: `hash`, `xhash` and
-    `instrumentxhash` are identifiers wherever they appear -- a leg's
-    instrument included -- and the two list members are lists of them.
+    member by member and never hold the whole row: scalar hashes and the
+    `parenthash` list use the same stored width wherever they appear.
     """
     if value is None:
         return None
@@ -290,8 +241,6 @@ def stored_member(name: str, value: Any) -> Any:
         return hash_bytes_of(value)
     if name == "parenthash":
         return [hash_bytes_of(one) for one in value]
-    if name == "linkedevents":
-        return [hash_bytes_of(linked(unix, xhash)) for unix, xhash in value]
     return value
 
 
@@ -308,20 +257,14 @@ def read_member(name: str, value: Any) -> Any:
         return hash_int_of(value) or NIL
     if name == "parenthash":
         return [hash_int_of(one) for one in value]
-    if name == "linkedevents":
-        return [unlink(one) for one in value]
     return value
 
 
-#: A lifecycle identity is a signed 64-bit digest; the low half of a relation
-#: holds it unsigned, and `unlink` gives the sign back.
-_LIFECYCLE_MASK = (1 << 64) - 1
-
 #: Every member of an event that is one identifier.
-IDENTITY_MEMBERS = ("hash", "xhash", "instrumentxhash")
+IDENTITY_MEMBERS = ("hash", "xhash", "prevhash", "instrumentxhash")
 
 #: Every member a stored row spells differently from a document.
-ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parenthash", "linkedevents"))
+ROW_SPELLED = frozenset((*IDENTITY_MEMBERS, "parenthash"))
 
 
 # -- helpers ----------------------------------------------------------------

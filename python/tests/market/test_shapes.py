@@ -23,19 +23,20 @@ HOT_ROWS = (Event, MarketEvent, FixMsg, Instrument, Order, Execution, Book, Leve
 ENVELOPE = [
     "unix",
     "unixpartition",
-    "etype",
-    "cunix",
-    "runix",
-    "eunix",
-    "sunix",
+    "eventtype",
+    "creaunix",
+    "recunix",
+    "expunix",
+    "snapunix",
     "hash",
     "xhash",
-    "linkedevents",
+    "linkedhashes",
     "version",
     "state",
     "code",
-    "codes",
+    "altids",
     "prevunix",
+    "prevhash",
     "parenthash",
     "mic",
     "reason",
@@ -193,8 +194,8 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
 
 
 def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
-    link = Execution.into_field().field("linkedevents")
-    assert link.dtype.equals(pyarrow.list_(pyarrow.field("item", HASH, nullable=False)))
+    link = Execution.into_field().field("linkedhashes")
+    assert link.dtype.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
     assert not link.nullable
     assert "order_xhash" not in Execution.into_field().names
     assert "order_xcode" not in Execution.into_field().names
@@ -262,7 +263,7 @@ FILTERED = {
     Order: (
         "unix",
         "unixpartition",
-        "etype",
+        "eventtype",
         "state",
         "code",
         "instrumentxhash",
@@ -272,7 +273,7 @@ FILTERED = {
     Execution: (
         "unix",
         "unixpartition",
-        "etype",
+        "eventtype",
         "state",
         "code",
         "instrumentxhash",
@@ -281,7 +282,7 @@ FILTERED = {
     Book: (
         "unix",
         "unixpartition",
-        "etype",
+        "eventtype",
         "instrumentxhash",
         "px",
         "spread",

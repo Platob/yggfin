@@ -142,7 +142,7 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         [{"px": 11.0, "qty": 6.0}],
     ]
     given = Book.summarise_arrow_batch(
-        batch(Book, 2, sunix=[1, 2], bidlevels=levels, asklevels=levels)
+        batch(Book, 2, snapunix=[1, 2], bidlevels=levels, asklevels=levels)
     )
     # `append_`, not `overwrite_`: the fixture rows share a key, and what this
     # pins is the Arrow types surviving a round trip, not how rows are matched.

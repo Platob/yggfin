@@ -36,12 +36,12 @@ Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
                                          `---------> Order + Execution (books: false)
 ```
 
-`parse_messages` tokenizes once and assigns `MsgType` and `etype`;
+`parse_messages` tokenizes once and assigns `MsgType` and `eventtype`;
 `parse_fix` pushes the market-event selection to Iceberg and owns protocol and
 dictionary resolution from there. Keeping `logs.messages` is what lets a field
 or protocol change rerun FIX resolution without reopening the source logs --
 only a MsgType event-metadata change rebuilds it, because that changes its
-stored `etype`.
+stored `eventtype`.
 
 `parse_fix` resumes Instrument lifecycles from the prior Instrument table.
 There is no dependency cycle: both downstream notebooks read the normalized

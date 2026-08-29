@@ -82,13 +82,13 @@ class Stamped:
         self,
         read: Callable[[str], Any],
         entries: Callable[[str], Sequence[Any]],
-        etype: EventType | int | None,
+        eventtype: EventType | int | None,
         recorded: int | None,
         member: Callable[[Any, str], Any],
     ) -> Transacted | None:
         """What this rung says one row's transaction time is, or None."""
         if self.is_column:
-            found, kind = self._entry(entries(self.column), etype, member)
+            found, kind = self._entry(entries(self.column), eventtype, member)
             if found is None:
                 return None
             return Transacted(found, f"{self.name}={kind}" if kind is not None else self.name)
@@ -113,7 +113,7 @@ class Stamped:
     def _entry(
         self,
         entries: Sequence[Any],
-        etype: EventType | int | None,
+        eventtype: EventType | int | None,
         member: Callable[[Any, str], Any],
     ) -> tuple[int | None, int | None]:
         """The preferred entry of one regulatory group, and which type it was.
@@ -132,7 +132,7 @@ class Stamped:
         readings = [(kind, found) for kind, found in readings if found is not None]
         if not readings:
             return None, None
-        for wanted in preferred_types(etype):
+        for wanted in preferred_types(eventtype):
             for kind, found in readings:
                 if kind == wanted:
                     return found, kind
@@ -165,14 +165,14 @@ class Stamped:
 
     # -- whole columns --------------------------------------------------------
 
-    def arrow(self, columns: Mapping[str, Any], etypes: Any, rows: int) -> tuple[Any, Any]:
+    def arrow(self, columns: Mapping[str, Any], eventtypes: Any, rows: int) -> tuple[Any, Any]:
         """`(instant, kind)` per row for this rung, over a batch of parsed rows.
 
         `kind` is None for a rung that reads fields, which have no type to
         name; both are None where the batch does not carry this rung at all.
         """
         if self.is_column:
-            return self._arrow_entry(columns.get(self.column), etypes, rows)
+            return self._arrow_entry(columns.get(self.column), eventtypes, rows)
         return self._arrow_fields(columns, rows), None
 
     def _arrow_fields(self, columns: Mapping[str, Any], rows: int) -> Any:
@@ -193,7 +193,7 @@ class Stamped:
         floor = compute.subtract(date, compute.multiply(compute.divide(date, A_DAY), A_DAY))
         return compute.coalesce(compute.add(compute.subtract(date, floor), within), clock, date)
 
-    def _arrow_entry(self, column: Any, etypes: Any, rows: int) -> tuple[Any, Any]:
+    def _arrow_entry(self, column: Any, eventtypes: Any, rows: int) -> tuple[Any, Any]:
         """The preferred entry of one regulatory group, per row, in kernels.
 
         Ranked exactly as `_entry` ranks: a row takes the first of its own
@@ -212,7 +212,7 @@ class Stamped:
         instants = self._arrow_nanos(compute.struct_field(entries, self.instant), len(parents))
         kinds = compute.struct_field(entries, self.kind)
         told = compute.is_valid(instants)
-        rank = self._arrow_rank(kinds, etypes, parents, rows)
+        rank = self._arrow_rank(kinds, eventtypes, parents, rows)
         # The best-ranked entry of each row, in one stable sort: the row and
         # the rank pack into one integer -- ranks are far below `_RANK_STRIDE`
         # -- and a stable order then breaks a tie by where the entry sat, which
@@ -229,7 +229,7 @@ class Stamped:
         return compute.take(instants, chosen), compute.take(kinds, chosen)
 
     @classmethod
-    def _arrow_rank(cls, kinds: Any, etypes: Any, parents: Any, rows: int) -> Any:
+    def _arrow_rank(cls, kinds: Any, eventtypes: Any, parents: Any, rows: int) -> Any:
         """How good each entry is for the row it belongs to: lower is better.
 
         One pass per distinct `EventType` in the batch, because the ranking is
@@ -239,10 +239,10 @@ class Stamped:
         """
         compute = pyarrow.compute
         unranked = pyarrow.scalar(len(PREFERRED) + 64, pyarrow.int32())
-        if etypes is None:
+        if eventtypes is None:
             return cls._arrow_rank_of(kinds, preferred_types(None), unranked)
         codes = compute.take(
-            compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0), parents
+            compute.fill_null(eventtypes.cast(pyarrow.int64(), safe=False), 0), parents
         )
         rank = pyarrow.repeat(unranked, len(parents))
         for code in compute.unique(codes).to_pylist():
@@ -304,7 +304,7 @@ A_DAY = SECONDS_A_DAY * NANOS
 #:
 #: Below all of them is the recording clock the log header stamped, which is
 #: not in this table because it is not something the message said: it is
-#: `runix`, and `resolve` falls back to it by name.
+#: `recunix`, and `resolve` falls back to it by name.
 TRANSACTED: tuple[Stamped, ...] = (
     Stamped(
         name="TrdRegTimestamps",
@@ -379,11 +379,11 @@ _RANK_STRIDE = 1 << 10
 _ANY: tuple[int, ...] = (EXECUTION_TIME, ORDER_SUBMISSION_TIME, TIME_IN)
 
 
-def preferred_types(etype: EventType | int | None) -> tuple[int, ...]:
-    """Which regulatory stamp types `etype` prefers, best first."""
-    if etype is None:
+def preferred_types(eventtype: EventType | int | None) -> tuple[int, ...]:
+    """Which regulatory stamp types `eventtype` prefers, best first."""
+    if eventtype is None:
         return _ANY
-    kind = etype if isinstance(etype, EventType) else EventType.from_int(etype)
+    kind = eventtype if isinstance(eventtype, EventType) else EventType.from_int(eventtype)
     found = PREFERRED.get(kind)
     if found is not None:
         return found
@@ -405,7 +405,7 @@ def resolve(
     read: Callable[[str], Any],
     entries: Callable[[str], Sequence[Any]],
     *,
-    etype: EventType | int | None = None,
+    eventtype: EventType | int | None = None,
     recorded: int | None = None,
     member: Callable[[Any, str], Any] | None = None,
 ) -> Transacted:
@@ -420,7 +420,7 @@ def resolve(
     """
     reader = member or Stamped.member
     for rung in TRANSACTED:
-        found = rung.transacted(read, entries, etype, recorded, reader)
+        found = rung.transacted(read, entries, eventtype, recorded, reader)
         if found is not None:
             return found
     if recorded:
@@ -444,11 +444,11 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
     compute = pyarrow.compute
     found = pyarrow.nulls(rows, pyarrow.int64())
     source = pyarrow.nulls(rows, pyarrow.string())
-    etypes = columns.get("etype")
+    eventtypes = columns.get("eventtype")
     for rung in TRANSACTED:
         if compute.all(compute.is_valid(found), min_count=0).as_py() and rows:
             break
-        reading, kinds = rung.arrow(columns, etypes, rows)
+        reading, kinds = rung.arrow(columns, eventtypes, rows)
         if reading is None:
             continue
         fill = compute.and_(compute.is_null(found), compute.is_valid(reading))

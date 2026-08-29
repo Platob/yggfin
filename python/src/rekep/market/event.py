@@ -55,17 +55,15 @@ HOUR = 3_600_000_000_000
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
-#: What `codes` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
+#: What `altids` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
 #: and `execid`. Instrument identity has `instrumentxhash` and
 #: `instrumentcode`; mixing it into this map lets unrelated events match.
-CODES_TYPE = pyarrow.map_(
+ALTIDS_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
 
-#: A link is one identifier, not a pair of them: the wide hash carries the
-#: related event's instant in its high bits and its lifecycle in the low, so
-#: the two facts the struct spelled ride in one value.
-_LINKED_EVENTS_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
+#: Related lifecycle identities use their native signed 64-bit width.
+_LINKED_HASHES_TYPE = pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
 
 #: The list a `parenthash` is, at the width an identifier is stored in.
 _PARENT_HASH_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
@@ -123,24 +121,24 @@ class Event(MarketConvertible):
     # anything else, and Iceberg's column bounds are collected in pre-order.
     # Constant within one table, where run-length and dictionary encoding
     # collapse it to nothing.
-    etype: EventType = EventType.UNKNOWN
+    eventtype: Annotated[EventType, Field.column("Event Type")] = EventType.UNKNOWN
     """Which kind of event this is -- the one column a union of the tables needs."""
 
-    cunix: Annotated[int, Field(metadata=UNIX)] = 0
+    creaunix: Annotated[int, Field(metadata=UNIX), Field.column("Crea Unix")] = 0
     """When the event was created, upstream of anything that carried it."""
 
-    runix: Annotated[int, Field(metadata=UNIX)] = 0
+    recunix: Annotated[int, Field(metadata=UNIX), Field.column("Rec Unix")] = 0
     """When the event was written down here; deliberately not part of `hash`."""
 
-    eunix: Annotated[int | None, Field(metadata=UNIX)] = None
+    expunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Exp Unix")] = None
     """When the event stops being true -- an order's expiry, a quote's staleness."""
 
     # A snapshot's own `unix` is when the picture was taken, because that is
     # what orders it against everything else in the stream. What it is a
-    # picture *of* would otherwise be lost: `sunix` keeps it, so "as of when"
+    # picture *of* would otherwise be lost: `snapunix` keeps it, so "as of when"
     # and "taken when" are both on the row and a stale snapshot is one
     # subtraction rather than a join against whatever it snapshotted.
-    sunix: Annotated[int | None, Field(metadata=UNIX)] = None
+    snapunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Snap Unix")] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
     hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
@@ -149,12 +147,12 @@ class Event(MarketConvertible):
     xhash: Annotated[int, Field(dtype=HASH)] = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linkedevents: Annotated[
-        list[tuple[int, int]],
-        Field(dtype=_LINKED_EVENTS_TYPE),
-        Field.column("Linked Events"),
+    linkedhashes: Annotated[
+        list[int],
+        Field(dtype=_LINKED_HASHES_TYPE),
+        Field.column("Linked Hashes"),
     ] = dataclasses.field(default_factory=list)
-    """Related event times and lifecycle identities, primary match first."""
+    """Related lifecycle identities, with the primary match first."""
 
     version: int = 0
     """Which version of `xhash` this is, counting up from the first."""
@@ -165,15 +163,18 @@ class Event(MarketConvertible):
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    codes: Annotated[dict[str, str], Field(dtype=CODES_TYPE)] = dataclasses.field(
-        default_factory=dict
+    altids: Annotated[dict[str, str], Field(dtype=ALTIDS_TYPE), Field.column("Alt IDs")] = (
+        dataclasses.field(default_factory=dict)
     )
-    """Every other identifier the source spelled, by the name that carried it."""
+    """Other identifiers keyed by reference scheme or lifecycle field name."""
 
     prevunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Prev Unix")] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
-    # Version digests are distinct from `linkedevents` lifecycle relations.
+    prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("Prev Hash")] = None
+    """The previous version's hash; null on the first version."""
+
+    # Version digests are distinct from `linkedhashes` lifecycle relations.
     parenthash: Annotated[
         list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("Parent Hash")
     ] = None
@@ -187,23 +188,14 @@ class Event(MarketConvertible):
 
     def __post_init__(self) -> None:
         """Make the members agree, so everything downstream can assume they do."""
-        links = self.linkedevents
-        if links is None:
-            self.linkedevents = []
-        elif links:
-            normalized = list(dict.fromkeys(links))
-            if not isinstance(links, list) or normalized != links:
-                self.linkedevents = normalized
-        elif not isinstance(links, list):
-            self.linkedevents = []
         # Arrow reads a map back as a list of pairs, and a row that made the
         # round trip is the same row: normalize once here rather than at every
-        # reader of `codes`.
-        if not isinstance(self.codes, dict):
-            self.codes = dict(self.codes or ())
+        # reader of `altids`.
+        if not isinstance(self.altids, dict):
+            self.altids = dict(self.altids or ())
         self.normalize_float_members()
-        if self.etype is EventType.UNKNOWN:
-            self.etype = type(self).into_event_type()
+        if self.eventtype is EventType.UNKNOWN:
+            self.eventtype = type(self).into_event_type()
         self.unixpartition = _unix_partition_of(self.unix)
         self._drop_self_link()
 
@@ -349,7 +341,7 @@ class Event(MarketConvertible):
         """Whether this is only a later observation of the same stored state."""
         if type(self) is not type(previous) or self.xhash != previous.xhash:
             return False
-        snapshot = self.sunix is not None or previous.sunix is not None
+        snapshot = self.snapunix is not None or previous.snapunix is not None
         values, floats = type(self)._same_as_values(snapshot)
         if values(self) != values(previous):
             return False
@@ -367,12 +359,13 @@ class Event(MarketConvertible):
     def _same_as_values(cls, snapshot: bool) -> tuple[Any, Any | None]:
         """Cached projection of the state compared for this concrete shape."""
         ignored = {
-            "cunix",
-            "runix",
+            "creaunix",
+            "recunix",
             "hash",
             "xhash",
             "version",
             "prevunix",
+            "prevhash",
             "prevpx",
             "prevqty",
             "prevnotional",
@@ -429,7 +422,7 @@ class Event(MarketConvertible):
             # from. Never copy it before this comparison: completion crosses
             # shapes, and an execution is not named by its order's code.
             self.code = previous.code or self.code
-            self._keep_lifecycle_codes(previous)
+            self._keep_lifecycle_altids(previous)
             self.version = previous.version + 1
             self.prevunix = previous.unix
             self._remember_previous(previous)
@@ -456,41 +449,41 @@ class Event(MarketConvertible):
         self.xhash = previous.xhash
         self._drop_self_link()
         self.code = previous.code or self.code
-        self._keep_lifecycle_codes(previous)
+        self._keep_lifecycle_altids(previous)
         self.version = previous.version + 1
         self.prevunix = previous.unix
         self._remember_previous(previous)
         self.hash = NIL
         return self
 
-    def _keep_lifecycle_codes(self, previous: Event) -> None:
+    def _keep_lifecycle_altids(self, previous: Event) -> None:
         """Carry absent identifiers while keeping this version's observed values."""
-        merged = dict(previous.codes)
-        for name, value in self.codes.items():
+        merged = dict(previous.altids)
+        for name, value in self.altids.items():
             if value:
                 merged[name] = value
-        self.codes = merged
+        self.altids = merged
 
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it."""
-        if previous.linkedevents:
-            self.link_to(*previous.linkedevents)
-        if not self.cunix:
-            self.cunix = previous.cunix or previous.unix
+        if previous.linkedhashes:
+            self.link_to(*previous.linkedhashes)
+        if not self.creaunix:
+            self.creaunix = previous.creaunix or previous.unix
         if not self.unix:
             # A message with no clock at all still belongs somewhere in time,
             # and the only honest answer is where the version before it was.
             self.unix = previous.unix
             self.unixpartition = _unix_partition_of(self.unix)
-        if not self.runix:
-            self.runix = previous.runix
-        if self.eunix is None:
-            self.eunix = previous.eunix
+        if not self.recunix:
+            self.recunix = previous.recunix
+        if self.expunix is None:
+            self.expunix = previous.expunix
         # Not `code`: that names a lifecycle, and completion crosses lifecycles
         # -- an execution completed from its order is not named by the order.
         # The identifiers *beside* it are facts about the same thing under any
         # reading, so a version silent about one keeps what the last one said.
-        self.name_codes(previous.codes)
+        self.name_altids(previous.altids)
         if self.mic is None:
             self.mic = previous.mic
         if self.state is State.UNKNOWN:
@@ -500,35 +493,33 @@ class Event(MarketConvertible):
 
     def _remember_previous(self, previous: Event) -> None:
         """Store shape-specific transition values after lifecycle matching."""
+        self.prevhash = previous.hash or None
 
-    def link_to(self, *events: Event | tuple[int, int], primary: bool = False) -> Self:
+    def link_to(self, *events: Event | int, primary: bool = False) -> Self:
         """Relate events once, optionally ahead of existing links."""
         if not events:
             return self
-        given = []
+        given: list[int] = []
         for event in events:
-            link = (event.unix, event.xhash) if isinstance(event, Event) else tuple(event)
-            if len(link) != 2:
-                raise ValueError("a linked event is a (unix, xhash) pair")
-            unix, xhash = link
+            xhash = event.xhash if isinstance(event, Event) else int(event)
             if xhash:
-                given.append((int(unix), int(xhash)))
+                given.append(int(xhash))
         given = list(dict.fromkeys(given))
-        existing = list(self.linkedevents)
+        existing = list(self.linkedhashes)
         ordered = given + existing if primary else existing + given
-        self.linkedevents = list(dict.fromkeys(ordered))
+        self.linkedhashes = list(dict.fromkeys(ordered))
         self._drop_self_link()
         return self
 
     @property
-    def primary_linked_event(self) -> tuple[int, int] | None:
-        """First related event, when one is known."""
-        return self.linkedevents[0] if self.linkedevents else None
+    def primary_linked_hash(self) -> int | None:
+        """First related lifecycle, when one is known."""
+        return self.linkedhashes[0] if self.linkedhashes else None
 
     def _drop_self_link(self) -> None:
         """A relation never points back to its own lifecycle."""
-        if self.xhash and self.linkedevents:
-            self.linkedevents = [linked for linked in self.linkedevents if linked[1] != self.xhash]
+        if self.xhash and self.linkedhashes:
+            self.linkedhashes = [linked for linked in self.linkedhashes if linked != self.xhash]
 
     def derive(self) -> None:
         """Fill what this row's own fields already determine.
@@ -545,7 +536,7 @@ class Event(MarketConvertible):
             return None
         if unix < self.unix or (unix == self.unix and not same_unix):
             return None
-        if self.sunix is not None and self.sunix >= unix:
+        if self.snapunix is not None and self.snapunix >= unix:
             return None
         taken = copy.copy(self)
         taken.unix = unix
@@ -554,10 +545,10 @@ class Event(MarketConvertible):
         # picture of a picture is the original state and not the middle one.
         # Two snapshots of one unchanged book then agree on what they show and
         # differ only in when they were taken, which is the truth about them.
-        taken.sunix = self.sunix if self.sunix is not None else self.unix
-        if unix - taken.sunix >= DAY:
+        taken.snapunix = self.snapunix if self.snapunix is not None else self.unix
+        if unix - taken.snapunix >= DAY:
             taken.state = State.INTERNAL_EXPIRED
-            taken.eunix = taken.sunix + DAY
+            taken.expunix = taken.snapunix + DAY
             taken.reason = taken.reason or "expired internally after one day without change"
         taken.forget_delta()
         # Cleared so `identify` derives one: the row differs from the one it
@@ -596,18 +587,18 @@ class Event(MarketConvertible):
         return self.code
 
     def _materialize_life_code(self) -> None:
-        """Store the readable lifecycle part once, before mutable codes move."""
+        """Store the readable lifecycle part once, before mutable aliases move."""
         self.code = self.code or self.life_code()
 
-    def name_code(self, name: str, value: str | None) -> None:
+    def name_altid(self, name: str, value: str | None) -> None:
         """Record one identifier this row carried, without displacing one it has."""
-        if value and not self.codes.get(name):
-            self.codes[name] = value
+        if value and not self.altids.get(name):
+            self.altids[name] = value
 
-    def name_codes(self, codes: Mapping[str, str]) -> None:
+    def name_altids(self, altids: Mapping[str, str]) -> None:
         """Record several, in one pass and under the same rule."""
-        for name, value in codes.items():
-            self.name_code(name, value)
+        for name, value in altids.items():
+            self.name_altid(name, value)
 
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
@@ -625,7 +616,7 @@ class Event(MarketConvertible):
         their versions are, and then the counter, the instant and the state --
         the three things every event has that a new version moves.
         """
-        links = tuple(self.linkedevents)
+        links = tuple(self.linkedhashes)
         return (
             hash_bytes_of(self.xhash),
             self.version,
@@ -633,7 +624,7 @@ class Event(MarketConvertible):
             self.state,
             self.mic,
             len(links),
-            *(part for unix, xhash in links for part in (unix, hash_bytes_of(xhash))),
+            *links,
             self.reason,
         )
 
@@ -656,7 +647,7 @@ class MarketEvent(Event):
     instrumentxhash: Annotated[int, Field(dtype=HASH), Field.column("Instrument Xhash")] = NIL
     """Instrument lifecycle identity used to join market rows."""
 
-    # Beside the hash rather than only inside `codes`: a hash joins, and a
+    # Beside the hash rather than only inside `altids`: a hash joins, and a
     # person reads. Every filter, group and error message about an instrument
     # was reaching into a map for the one key this package writes itself.
     #
@@ -769,7 +760,7 @@ class MarketEvent(Event):
         # only from a version of the *same shape*. Carrying an execution's
         # `LastQty` into an order's `OrderQty` made a partly filled order
         # claim its current quantity was exactly what had just traded.
-        if previous.etype == self.etype:
+        if previous.eventtype == self.eventtype:
             if self.kind is MarketKind.UNKNOWN:
                 self.kind = previous.kind
             if self.px is None:

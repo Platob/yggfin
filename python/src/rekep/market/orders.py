@@ -148,7 +148,7 @@ class Order(MarketEvent):
     """Quantity before this transition, reconstructed when no prior Order was observed."""
 
     timeinforce: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
-    """How long it lives. `GTD` expires at `eunix`, where every expiry here lives."""
+    """How long it lives. `GTD` expires at `expunix`, where every expiry here lives."""
 
     stoppx: Annotated[float | None, fix_tag("StopPx")] = None
     """Trigger price of a stop order; `px` is the limit that applies once triggered."""
@@ -233,7 +233,7 @@ class Order(MarketEvent):
     def derive(self) -> None:
         """What an order's own numbers say about each other."""
         if self.expires_on_arrival:
-            self.eunix = self.unix
+            self.expunix = self.unix
         if self.state.is_terminal:
             if self.prevqty is None and self.qty is not None:
                 self.prevqty = self.qty
@@ -263,19 +263,19 @@ class Order(MarketEvent):
 
     def _named_life_code(self) -> str:
         """The strongest typed order identifier this version carries."""
-        return next((value for _, value in self.lookup_codes_of(self)), "")
+        return next((value for _, value in self.lookup_altids_of(self)), "")
 
     @classmethod
-    def lookup_codes_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
+    def lookup_altids_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
         """Typed order identifiers on `event`, strongest first and once each.
 
         Venue identifiers lead client identifiers; exact columns are inserted
         at their strength within that order so hand-built rows remain indexed.
-        Parsed `codes` retains identifiers not promoted to dedicated columns.
+        Parsed `altids` retains identifiers not promoted to dedicated columns.
         """
         found: set[tuple[str, str]] = set()
         parsed: list[tuple[str, str]] = []
-        for name, value in event.codes.items():
+        for name, value in event.altids.items():
             namespace = _ORDER_CODE_NAMES.get(_code_name(name))
             if namespace is not None and value:
                 parsed.append((namespace, str(value)))
@@ -307,10 +307,10 @@ class Order(MarketEvent):
 
     def _parent_order_life_code(self, previous: Event) -> str:
         """An order code whose scoped hash matches a parent Execution's order."""
-        linked = previous.primary_linked_event
+        linked = previous.primary_linked_hash
         if linked is None:
             return ""
-        target = linked[1]
+        target = linked
         candidates = dict.fromkeys(
             (
                 self.orderid,

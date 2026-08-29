@@ -41,7 +41,7 @@ version, linked to the book that closed it -- a reader of the last book cannot
 otherwise tell a resting order from one nobody cancelled. It is off by default,
 which is what a run resumed from its snapshots wants.
 
-Deltas and snapshots are told apart by `sunix`, not by a nullable list:
+Deltas and snapshots are told apart by `snapunix`, not by a nullable list:
 
 | row | `deltas`, `executions` | level lists | `bidalive`, `askalive` |
 | --- | --- | --- | --- |

@@ -23,7 +23,7 @@ from rekep.market.fix import (
     ORDER_HANDLERS,
     MarketTags,
 )
-from rekep.market.identity import HASH, NIL_BYTES, hash_arrow, linked_arrow
+from rekep.market.identity import HASH, NIL_BYTES, hash_arrow
 from rekep.market.orders import Execution, Order
 
 _REASON_FIELDS = (
@@ -455,8 +455,8 @@ class _Shared:
         self.rows = rows
         self.unix = columns["unix"].cast(pyarrow.int64(), safe=False)
         self.unixpartition = columns["unixpartition"].cast(pyarrow.int32(), safe=False)
-        runix = columns["runix"].cast(pyarrow.int64(), safe=False)
-        self.runix = compute.if_else(compute.equal(runix, 0), self.unix, runix)
+        recunix = columns["recunix"].cast(pyarrow.int64(), safe=False)
+        self.recunix = compute.if_else(compute.equal(recunix, 0), self.unix, recunix)
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
         self.mic = columns["mic"].cast(pyarrow.int32(), safe=False)
         self.symbol = values.text("Symbol", fallback="")
@@ -465,7 +465,7 @@ class _Shared:
             pyarrow.scalar(NIL_BYTES, HASH),
             hash_arrow("symbol", "", self.symbol),
         )
-        self.codes = FixMsg.codes_arrow(columns, rows, tags.tags)
+        self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
         currency = values.text("Currency")
         self.currency, self.pxunit = _currencies(currency)
@@ -531,7 +531,7 @@ def _orders(
         timeinforce,
         value_set=pyarrow.array([int(TimeInForce.IOC), int(TimeInForce.FOK)], pyarrow.int32()),
     )
-    eunix = compute.if_else(immediate, unix, pyarrow.nulls(len(where), pyarrow.int64()))
+    expunix = compute.if_else(immediate, unix, pyarrow.nulls(len(where), pyarrow.int64()))
     displayed = shared.take(values.number("MaxFloor"), where)
     hidden = compute.if_else(
         compute.and_(compute.is_valid(current), compute.is_valid(displayed)),
@@ -584,17 +584,18 @@ def _orders(
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
-        "etype": _constant(len(where), int(EventType.ORDER), pyarrow.int64()),
-        "cunix": unix,
-        "runix": shared.take(shared.runix, where),
-        "eunix": eunix,
+        "eventtype": _constant(len(where), int(EventType.ORDER), pyarrow.int64()),
+        "creaunix": unix,
+        "recunix": shared.take(shared.recunix, where),
+        "expunix": expunix,
         "hash": event_hash,
         "xhash": xhash,
-        "linkedevents": _empty_lists(len(where), Order.into_field().field("linkedevents").dtype),
+        "linkedhashes": _empty_lists(len(where), Order.into_field().field("linkedhashes").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "codes": shared.take(shared.codes, where),
+        "altids": shared.take(shared.altids, where),
+        "prevhash": pyarrow.nulls(len(where), HASH),
         "mic": mic,
         "reason": reason,
         "instrumentxhash": instrumentxhash,
@@ -696,17 +697,14 @@ def _executions(
         ),
     )
     order_by_source = _order_lookup(orders, order_at, where)
-    order_unix = order_by_source["unix"]
     order_xhash = order_by_source["xhash"]
     order_hash = order_by_source["hash"]
+    order_lifecycle = _lifecycle_int64(order_xhash)
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
-    linked_values = linked_arrow(
-        compute.filter(order_unix, reported), compute.filter(order_xhash, reported)
-    )
     linked = build_list(
-        Execution.into_field().field("linkedevents").dtype,
+        Execution.into_field().field("linkedhashes").dtype,
         linked_sizes,
-        linked_values,
+        compute.filter(order_lifecycle, reported),
     )
     parent = build_list(
         Execution.into_field().field("parenthash").dtype,
@@ -746,8 +744,7 @@ def _executions(
         state,
         mic,
         1,
-        order_unix,
-        order_xhash,
+        order_lifecycle,
         reason,
         kind,
         side,
@@ -766,16 +763,17 @@ def _executions(
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
-        "etype": _constant(rows, int(EventType.EXECUTION), pyarrow.int64()),
-        "cunix": unix,
-        "runix": shared.take(shared.runix, where),
+        "eventtype": _constant(rows, int(EventType.EXECUTION), pyarrow.int64()),
+        "creaunix": unix,
+        "recunix": shared.take(shared.recunix, where),
         "hash": event_hash,
         "xhash": xhash,
-        "linkedevents": linked,
+        "linkedhashes": linked,
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "codes": shared.take(shared.codes, where),
+        "altids": shared.take(shared.altids, where),
+        "prevhash": pyarrow.nulls(rows, HASH),
         "parenthash": parent,
         "mic": mic,
         "reason": reason,
@@ -813,14 +811,24 @@ def _order_lookup(
     rows = len(execution_at)
     if orders is None:
         return {
-            "unix": pyarrow.nulls(rows, pyarrow.int64()),
             "xhash": pyarrow.nulls(rows, HASH),
             "hash": pyarrow.nulls(rows, HASH),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
-    return {
-        name: compute.take(orders.column(name), locations) for name in ("unix", "xhash", "hash")
-    }
+    return {name: compute.take(orders.column(name), locations) for name in ("xhash", "hash")}
+
+
+def _lifecycle_int64(values: pyarrow.Array) -> pyarrow.Array:
+    """Signed low half of fixed-width lifecycle hashes, without boxing rows."""
+    if values.type == pyarrow.int64():
+        return values
+    if values.type != HASH:
+        raise TypeError(f"lifecycle hashes must be {HASH} or int64, got {values.type}")
+    low = compute.binary_slice(values.cast(pyarrow.binary()), 8, 16)
+    reversed_low = compute.binary_reverse(compute.fill_null(low, b"\x00" * 8))
+    return pyarrow.Int64Array.from_buffers(
+        pyarrow.int64(), len(values), [values.buffers()[0], reversed_low.buffers()[2]]
+    )
 
 
 def _quantity_transition(

@@ -224,9 +224,9 @@ class Rules(Convertible):
                 return rule
         return OTHER
 
-    def category_of(self, protocol: str | None, etype: int | EventType | None) -> str:
+    def category_of(self, protocol: str | None, eventtype: int | EventType | None) -> str:
         """Target category for one parsed row."""
-        kind = EventType.from_int(etype) if etype is not None else None
+        kind = EventType.from_int(eventtype) if eventtype is not None else None
         if kind is not None and kind.rank >= EventType.INTENT.rank:
             return MARKET_CATEGORY
         if kind is EventType.MISC:
@@ -306,16 +306,16 @@ class Rules(Convertible):
             found = compute.if_else(selected, direction, found)
         return found
 
-    def into_arrow_category_array(self, protocols: Any, etypes: Any) -> pyarrow.Array:
+    def into_arrow_category_array(self, protocols: Any, eventtypes: Any) -> pyarrow.Array:
         """Target category per parsed row, using the scalar rule in kernels."""
         compute = pyarrow.compute
         rows = len(protocols)
-        if len(etypes) != rows:
-            raise ValueError("protocol and etype columns must have the same length")
+        if len(eventtypes) != rows:
+            raise ValueError("protocol and eventtype columns must have the same length")
         if not rows:
             return pyarrow.array([], pyarrow.string())
 
-        event_codes = compute.fill_null(etypes.cast(pyarrow.int64(), safe=False), 0)
+        event_codes = compute.fill_null(eventtypes.cast(pyarrow.int64(), safe=False), 0)
         market = compute.fill_null(
             compute.is_in(
                 event_codes,

@@ -54,7 +54,7 @@ to restore live orders.
 
 `parse_market` never reads `market.instruments`. Normalized instrument
 lifecycle rows already share the sorted `fix.market` input; `BookIterator`
-indexes them by `etype` and folds the remaining rows.
+indexes them by `eventtype` and folds the remaining rows.
 
 Snapshot generation, terminal-state handling, one-day inactivity expiry, and
 internal rejection reasons belong to the shared event and book models rather

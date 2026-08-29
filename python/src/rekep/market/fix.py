@@ -594,7 +594,7 @@ class FixEvents(Convertible):
     mic: MIC | None = None
     """ISO venue supplied by the parsed log, when it already resolved one."""
 
-    runix: int = 0
+    recunix: int = 0
     """When the line was recorded, which is the reader's clock and not the venue's."""
 
     registry: FixRegistry | None = None
@@ -926,7 +926,7 @@ class FixEvents(Convertible):
             message=type(self.message).from_pairs(entry),
             venue=self.venue,
             mic=self.mic,
-            runix=self.runix,
+            recunix=self.recunix,
             registry=self.registry,
             fix_version=self.version,
         )
@@ -1053,9 +1053,9 @@ class FixEvents(Convertible):
         return self._finish(
             Order(
                 unix=unix,
-                cunix=unix,
-                runix=self.runix or unix,
-                eunix=self._expires(timeinforce, unix, duration),
+                creaunix=unix,
+                recunix=self.recunix or unix,
+                expunix=self._expires(timeinforce, unix, duration),
                 state=transition.state,
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("Price")),
@@ -1091,9 +1091,9 @@ class FixEvents(Convertible):
         return self._finish(
             Order(
                 unix=unix,
-                cunix=unix,
-                runix=self.runix or unix,
-                eunix=unix_value(get("ValidUntilTime")),
+                creaunix=unix,
+                recunix=self.recunix or unix,
+                expunix=unix_value(get("ValidUntilTime")),
                 state=state,
                 side=side,
                 px=px,
@@ -1113,8 +1113,8 @@ class FixEvents(Convertible):
         return self._finish(
             Execution(
                 unix=unix,
-                cunix=unix,
-                runix=self.runix or unix,
+                creaunix=unix,
+                recunix=self.recunix or unix,
                 state=self.execution_state(),
                 kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
@@ -1123,9 +1123,7 @@ class FixEvents(Convertible):
                 execid=get("ExecID"),
                 execrefid=get("ExecRefID"),
                 tradeid=get("TradeID") or get("TrdMatchID"),
-                linkedevents=(
-                    [(order.unix, order.xhash)] if order is not None and order.xhash else []
-                ),
+                linkedhashes=[order.xhash] if order is not None and order.xhash else [],
                 parenthash=[order.hash] if order is not None and order.hash else [],
                 orderid=get("OrderID"),
                 clordid=get("ClOrdID"),
@@ -1155,8 +1153,8 @@ class FixEvents(Convertible):
         return self._finish(
             Order(
                 unix=unix,
-                cunix=unix,
-                runix=self.runix or unix,
+                creaunix=unix,
+                recunix=self.recunix or unix,
                 state=self.state_of("MDUpdateAction", State.NEW if snapshot else State.OPEN),
                 side=side,
                 px=_number(get("MDEntryPx")),
@@ -1180,8 +1178,8 @@ class FixEvents(Convertible):
         return self._finish(
             Execution(
                 unix=unix,
-                cunix=unix,
-                runix=self.runix or unix,
+                creaunix=unix,
+                recunix=self.recunix or unix,
                 state=State.FILLED,
                 kind=MarketKind.TRADE,
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
@@ -1214,12 +1212,13 @@ class FixEvents(Convertible):
         get = self.get
         cfi = get("CFICode")
         securitytype = get("SecurityType")
+        altids = {**self._identifier_altids, **self.into_alt_ids()}
         return Instrument(
             symbol=get("Symbol") or "",
             kind=_classified(cfi, securitytype),
             securityid=get("SecurityID"),
             securityidsource=get("SecurityIDSource"),
-            altids=self.into_alt_ids() or None,
+            altids=altids or None,
             securitytype=securitytype,
             cficode=cfi,
             securityexchange=get("SecurityExchange") or get("ExDestination"),
@@ -1321,11 +1320,11 @@ class FixEvents(Convertible):
         answer, and two copies of it would be two answers that agreed until
         they did not.
         """
-        recorded = unix_value(self.get("SendingTime")) or self.runix or None
+        recorded = unix_value(self.get("SendingTime")) or self.recunix or None
         return resolve(
             self._clock,
             self._stamps,
-            etype=self._event_type,
+            eventtype=self._event_type,
             recorded=recorded,
             member=self._stamp_member,
         )
@@ -1389,7 +1388,7 @@ class FixEvents(Convertible):
         instrument = self.instrument
         mic = self._mic()
         return {
-            "codes": self._identifier_codes,
+            "altids": self._identifier_altids,
             "mic": mic,
             "reason": self._reason(),
             "instrumentxhash": instrument.xhash,
@@ -1398,7 +1397,7 @@ class FixEvents(Convertible):
         }
 
     @functools.cached_property
-    def _identifier_codes(self) -> dict[str, str]:
+    def _identifier_altids(self) -> dict[str, str]:
         """Every readable identifier this message carries, in lookup order."""
         found: dict[str, str] = {}
         for stored, field, tag in IDENTIFIER_FIELDS:
@@ -1446,7 +1445,7 @@ class FixEvents(Convertible):
         """The shared envelope with event-owned metadata."""
         return {
             **self._shared_values,
-            "codes": dict(self._shared_values["codes"]),
+            "altids": dict(self._shared_values["altids"]),
             "metadata": dict(self.extras),
         }
 

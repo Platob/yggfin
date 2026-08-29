@@ -564,10 +564,10 @@ def test_a_stamp_lands_as_the_microsecond_utc_instant_it_spells(table: pyarrow.T
     sending_ns = int(sending.timestamp()) * 1_000_000_000 + sending.microsecond * 1000
     # `unix` is when the transaction happened, and this line's only FIX clock
     # is its `SendingTime <52>` -- so that is the rung that answered, and the
-    # header's own stamp is a millisecond later in `runix`.
+    # header's own stamp is a millisecond later in `recunix`.
     assert table.column("unix")[PIPED].as_py() == sending_ns
     assert table.column("unixsource")[PIPED].as_py() == "SendingTime"
-    assert table.column("runix")[PIPED].as_py() - sending_ns == 1_000_000
+    assert table.column("recunix")[PIPED].as_py() - sending_ns == 1_000_000
 
 
 def test_a_field_the_message_never_sent_is_null_and_never_a_default(table: pyarrow.Table) -> None:
@@ -693,8 +693,8 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
 
 
 def test_both_stamp_widths_read_as_the_instants_they_spell(table: pyarrow.Table) -> None:
-    """The header's own clock, which is `runix` now that `unix` is the transaction."""
-    recorded = table.column("runix").to_pylist()
+    """The header clock, `recunix`, now that `unix` is the transaction."""
+    recorded = table.column("recunix").to_pylist()
     assert recorded[0] == 1_786_665_901_147_250_000, "micros, with a separator"
     assert recorded[1] == 1_786_665_901_147_000_000, "millis only"
     assert recorded[PIPED] == 1_786_665_901_148_000_000, "millis, comma-separated"
@@ -1105,7 +1105,7 @@ def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
         protocol_rules=codec.rules,
     )
     messages = messages.set_column(
-        messages.schema.get_field_index("etype"), "etype", parsed["etype"]
+        messages.schema.get_field_index("eventtype"), "eventtype", parsed["eventtype"]
     )
     messages = messages.set_column(
         messages.schema.get_field_index("protocolcode"),
@@ -1163,7 +1163,7 @@ def transacted(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
         return _parsed(log.read_arrow_table(), codec)
 
 
-def test_unix_is_the_transaction_time_and_runix_is_when_it_was_recorded(
+def test_unix_is_the_transaction_time_and_recunix_is_when_it_was_recorded(
     transacted: pyarrow.Table,
 ) -> None:
     """The whole point: a row's `unix` is when it happened, not when it printed."""
@@ -1173,7 +1173,7 @@ def test_unix_is_the_transaction_time_and_runix_is_when_it_was_recorded(
     assert unix[1] == unix_of("20260814-09:27:00.000"), "an order takes TIME_IN"
     assert unix[2] == unix_of("20260814-09:26:00.000")
     assert unix[3] == unix_of("20260814-09:31:00.000")
-    recorded = transacted.column("runix").to_pylist()
+    recorded = transacted.column("recunix").to_pylist()
     assert recorded == [
         unix_of(f"2026-08-14 00:05:0{index + 1}.147") for index in range(len(recorded))
     ], "the header clock is preserved, row for row"
@@ -1324,7 +1324,7 @@ def test_fix_conversion_never_parses_the_raw_message_again(
 def test_the_redirection_sends_one_input_to_all_three_tables(
     resolved: pyarrow.Table,
 ) -> None:
-    """One condition, one place: what `etype` the rules made of the line.
+    """One condition, one place: what `eventtype` the rules made of the line.
 
     The second row is the interesting one: its named `#MSGTYPE=D` is promoted
     before FIX transcription, so it takes the same market route as wire tag 35.
@@ -1332,7 +1332,7 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
     rules = Rules()
     categories = rules.into_arrow_category_array(
         resolved.column("protocolcode").combine_chunks(),
-        resolved.column("etype").combine_chunks(),
+        resolved.column("eventtype").combine_chunks(),
     )
     assert categories.to_pylist() == ["market", "market", "misc", "misc"]
 

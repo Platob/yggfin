@@ -16,6 +16,7 @@ import pyarrow.compute
 from rekep.enums import MIC, AssetKind, Currency, EventType, OptionKind, Side
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
+    as_entry_list,
     build_list,
     build_map,
     dense_counts,
@@ -64,7 +65,7 @@ from rekep.fix.message import (
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
-from rekep.market.event import CODES_TYPE, Event, unix_partition_arrow
+from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import HASH, NIL, NIL_BYTES, arrow_of
 from rekep.text.message import SESSION_FIELDS, Message
@@ -78,12 +79,13 @@ _INSTRUMENT_PROTOCOL = "REKEP"
 # followed by digits is user-defined, so a synthesized instrument can never
 # collide with a standard type a future FIX version adds. It is a type and not
 # a marker beside one: these rows go back out as FIX messages, and a consumer
-# holding only the message has no `etype` -- it has tag 35. Reusing `d` would
+# holding only the message has no `eventtype` -- it has tag 35. Reusing `d` would
 # have made a synthesized instrument indistinguishable from a
 # `SecurityDefinition` a real bridge sent.
 _INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
+_LIFECYCLE_ALTIDS = frozenset(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
 
 @functools.cache
@@ -232,7 +234,7 @@ class FixMsg(Message):
     @classmethod
     @functools.cache
     def into_identifier_columns(cls) -> tuple[str, ...]:
-        """Parsed identifier columns retained in `codes`, in lookup order."""
+        """Parsed identifier columns retained in `altids`, in lookup order."""
         return tuple(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
     @classmethod
@@ -677,7 +679,7 @@ class FixMsg(Message):
 
         The raw stage already tokenized the payload and promoted the
         discriminator, so the row carries over whole -- envelope, provenance
-        and residual arguments. `etype` classifies under the registry only
+        and residual arguments. `eventtype` classifies under the registry only
         where the raw stage left it unknown, and identity resets: a parsed
         row hashes over its parsed values, not the raw line's digest.
         """
@@ -690,8 +692,8 @@ class FixMsg(Message):
             {
                 "message": source.message or None,
                 "entries": list(source.entries or ()),
-                "linkedevents": list(source.linkedevents),
-                "codes": dict(source.codes),
+                "linkedhashes": list(source.linkedhashes),
+                "altids": dict(source.altids),
                 "parenthash": None if source.parenthash is None else list(source.parenthash),
                 "hash": NIL,
                 "xhash": NIL,
@@ -700,8 +702,12 @@ class FixMsg(Message):
         values.update(_session_values(source))
         values.update(declared)
         msg_type = values.get("msgtype")
-        if "etype" not in declared and msg_type is not None and source.etype == EventType.UNKNOWN:
-            values["etype"] = (
+        if (
+            "eventtype" not in declared
+            and msg_type is not None
+            and source.eventtype == EventType.UNKNOWN
+        ):
+            values["eventtype"] = (
                 (registry or cls.into_registry())
                 .msg_type_event_types()
                 .get(msg_type, EventType.UNKNOWN)
@@ -716,8 +722,16 @@ class FixMsg(Message):
         if not isinstance(instrument, Instrument):
             raise TypeError(f"instrument must be Instrument, got {type(instrument).__name__}")
         known = instrument if instrument.hash else dataclasses.replace(instrument).identify()
+        envelope = {
+            member.name: getattr(known, member.name) for member in dataclasses.fields(Event)
+        }
+        envelope["altids"] = {
+            source: value
+            for source, value in (known.altids or {}).items()
+            if column_name(source) in _LIFECYCLE_ALTIDS
+        }
         staged = Message(
-            **{member.name: getattr(known, member.name) for member in dataclasses.fields(Event)},
+            **envelope,
             plugincode=cls.into_instrument_plugin(),
             protocolcode=cls.into_instrument_protocol(),
             msgtype=cls.into_instrument_msg_type(),
@@ -732,7 +746,7 @@ class FixMsg(Message):
             hash=known.hash,
             xhash=known.xhash,
             message=None,
-            etype=declared.pop("etype", EventType.INSTRUMENT),
+            eventtype=declared.pop("eventtype", EventType.INSTRUMENT),
             symbol=known.symbol or None,
             securityid=known.securityid,
             securityidsource=known.securityidsource,
@@ -1038,7 +1052,7 @@ class FixMsg(Message):
 
         One column answers it, and it is the one a message carries: these rows
         are reinjected as FIX, and a consumer holding only the message has no
-        `etype` to dispatch on. `MsgType <35>` survives that round trip.
+        `eventtype` to dispatch on. `MsgType <35>` survives that round trip.
         """
         return self.msgtype == type(self).into_instrument_msg_type()
 
@@ -1387,11 +1401,11 @@ class FixMsg(Message):
         compute = pyarrow.compute
         columns["symbol"] = cls.symbol_arrow(columns, rows)
         columns["code"] = cls.code_arrow(columns, rows)
-        columns["codes"] = cls.codes_arrow(columns, rows)
+        columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
-        columns["unix"], columns["unixsource"] = resolve_arrow(columns, columns["runix"], rows)
+        columns["unix"], columns["unixsource"] = resolve_arrow(columns, columns["recunix"], rows)
         columns["unixpartition"] = unix_partition_arrow(columns["unix"])
-        columns["cunix"] = columns["unix"]
+        columns["creaunix"] = columns["unix"]
         columns["hash"] = cls.version_hash_arrow(columns, rows)
         linked = compute.not_equal(columns["code"], "")
         columns["xhash"] = compute.if_else(linked, cls.hash_arrow(columns["code"]), columns["hash"])
@@ -1409,7 +1423,7 @@ class FixMsg(Message):
         """What a stored row's `hash` is taken over, in this order.
 
         The **parsed** values and never the raw line, so a message reformatted
-        but not changed hashes alike. `runix` is deliberately out and `unix`
+        but not changed hashes alike. `recunix` is deliberately out and `unix`
         deliberately in: when a line was written down is not what it says, and
         a re-parse that resolves the instant from a different rung has learnt
         something new about the row.
@@ -1470,7 +1484,7 @@ class FixMsg(Message):
         return _first_text(columns, cls.into_code_columns(), rows)
 
     @classmethod
-    def codes_arrow(
+    def altids_arrow(
         cls,
         columns: Mapping[str, Any],
         rows: int,
@@ -1509,7 +1523,7 @@ class FixMsg(Message):
         names, values = zip(*available, strict=True) if available else ((), ())
         if not rows or not names:
             return build_map(
-                CODES_TYPE,
+                ALTIDS_TYPE,
                 pyarrow.repeat(pyarrow.scalar(0, pyarrow.int64()), rows),
                 pyarrow.array([], pyarrow.string()),
                 pyarrow.array([], pyarrow.string()),
@@ -1536,7 +1550,7 @@ class FixMsg(Message):
         )
         sizes = compute.subtract(ends, before)
         return build_map(
-            CODES_TYPE,
+            ALTIDS_TYPE,
             sizes,
             compute.filter(compute.take(pyarrow.array(names), member), present),
             compute.filter(flat, present),
@@ -1571,7 +1585,7 @@ class FixMsg(Message):
         from rekep.market.fix import FixEvents
 
         carried = {
-            "runix": self.runix or self.unix,
+            "recunix": self.recunix or self.unix,
             "mic": self.mic,
             "registry": getattr(self, "_FixMsg__registry", None),
             **declared,
@@ -1808,7 +1822,7 @@ class FixMsg(Message):
         normalized = _NormalizedInstrumentFields.from_array(batch.column("entries"), batch.num_rows)
         columns.update(
             {
-                "etype": pyarrow.repeat(
+                "eventtype": pyarrow.repeat(
                     pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE), batch.num_rows
                 ),
                 "symbol": pyarrow.compute.fill_null(batch.column("symbol"), ""),
@@ -1816,7 +1830,7 @@ class FixMsg(Message):
                 "securityid": batch.column("securityid"),
                 "securityidsource": batch.column("securityidsource"),
                 "isincode": batch.column("isincode"),
-                "altids": normalized.altids(target.field("altids").dtype),
+                "altids": normalized.altids(target.field("altids").dtype, batch.column("altids")),
                 "securitytype": batch.column("securitytype"),
                 "cficode": batch.column("cficode"),
                 "securityexchange": batch.column("securityexchange"),
@@ -1849,6 +1863,7 @@ class FixMsg(Message):
             return None
         return Instrument(
             symbol=symbol,
+            altids=dict(self.altids),
             securityid=self.securityid,
             securityidsource=self.securityidsource,
             isincode=self.isincode,
@@ -1872,19 +1887,20 @@ class FixMsg(Message):
             instrument,
             unix=self.unix,
             unixpartition=self.unixpartition,
-            etype=EventType.INSTRUMENT,
-            cunix=self.cunix,
-            runix=self.runix,
-            eunix=self.eunix,
-            sunix=self.sunix,
+            eventtype=EventType.INSTRUMENT,
+            creaunix=self.creaunix,
+            recunix=self.recunix,
+            expunix=self.expunix,
+            snapunix=self.snapunix,
             hash=self.hash,
             xhash=self.xhash,
-            linkedevents=list(self.linkedevents),
+            linkedhashes=list(self.linkedhashes),
             version=self.version,
             state=self.state,
             code=self.code,
-            codes=dict(self.codes),
+            altids={**self.altids, **(instrument.altids or {})},
             prevunix=self.prevunix,
+            prevhash=self.prevhash,
             parenthash=None if self.parenthash is None else list(self.parenthash),
             mic=self.mic,
             reason=self.reason,
@@ -2059,20 +2075,91 @@ class _NormalizedInstrumentFields:
             return pyarrow.nulls(len(roots), pyarrow.string())
         return compute.take(values, compute.index_in(roots, value_set=ids))
 
-    def altids(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
-        """Alternative identifiers as one nullable Arrow map per row."""
+    def altids(self, dtype: pyarrow.DataType | None, lifecycle: pyarrow.Array) -> pyarrow.Array:
+        """Reference identifiers merged after the lifecycle identifiers."""
         assert dtype is not None
+        compute = pyarrow.compute
         roots, parents, values = self._roots("NoSecurityAltID", "SecurityAltID", nonblank=True)
-        sizes = dense_counts(parents, self.rows)
+        reference_sizes = dense_counts(parents, self.rows)
         sources = _id_source_name_arrow(
             self._member(roots, "NoSecurityAltID", "SecurityAltIDSource")
         )
+        if isinstance(lifecycle, pyarrow.ChunkedArray):
+            lifecycle = lifecycle.combine_chunks()
+        listed = as_entry_list(lifecycle)
+        entries = compute.list_flatten(listed)
+        lifecycle_parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+        keys = pyarrow.concat_arrays([compute.struct_field(entries, "key"), sources])
+        items = pyarrow.concat_arrays([compute.struct_field(entries, "value"), values])
+        joined_parents = pyarrow.concat_arrays([lifecycle_parents, parents])
+        source = pyarrow.concat_arrays(
+            [
+                pyarrow.repeat(pyarrow.scalar(0, pyarrow.int8()), len(lifecycle_parents)),
+                pyarrow.repeat(pyarrow.scalar(1, pyarrow.int8()), len(parents)),
+            ]
+        )
+        positions = pyarrow.concat_arrays(
+            [sequence(len(lifecycle_parents)), sequence(len(parents))]
+        )
+        if not len(keys):
+            return build_map(dtype, reference_sizes, keys, items)
+        grouped = compute.sort_indices(
+            pyarrow.table(
+                {
+                    "parent": joined_parents,
+                    "key": keys,
+                    "source": source,
+                    "position": positions,
+                }
+            ),
+            sort_keys=[
+                ("parent", "ascending"),
+                ("key", "ascending"),
+                ("source", "ascending"),
+                ("position", "ascending"),
+            ],
+        )
+        grouped_parents = compute.take(joined_parents, grouped)
+        grouped_keys = compute.take(keys, grouped)
+        previous_parents = pyarrow.concat_arrays(
+            [pyarrow.array([-1], pyarrow.int64()), grouped_parents.slice(0, len(grouped) - 1)]
+        )
+        previous_keys = pyarrow.concat_arrays(
+            [pyarrow.array([None], pyarrow.string()), grouped_keys.slice(0, len(grouped) - 1)]
+        )
+        duplicate = compute.fill_null(
+            compute.and_(
+                compute.equal(grouped_parents, previous_parents),
+                compute.equal(grouped_keys, previous_keys),
+            ),
+            False,
+        )
+        keep = compute.invert(duplicate)
+        kept_parents = compute.filter(grouped_parents, keep)
+        kept_keys = compute.filter(grouped_keys, keep)
+        kept_items = compute.filter(compute.take(items, grouped), keep)
+        kept_sources = compute.filter(compute.take(source, grouped), keep)
+        kept_positions = compute.filter(compute.take(positions, grouped), keep)
+        restored = compute.sort_indices(
+            pyarrow.table(
+                {
+                    "parent": kept_parents,
+                    "source": kept_sources,
+                    "position": kept_positions,
+                }
+            ),
+            sort_keys=[
+                ("parent", "ascending"),
+                ("source", "ascending"),
+                ("position", "ascending"),
+            ],
+        )
+        restored_parents = compute.take(kept_parents, restored)
         return build_map(
             dtype,
-            sizes,
-            sources,
-            values,
-            mask=pyarrow.compute.equal(sizes, 0),
+            dense_counts(restored_parents, self.rows),
+            compute.take(kept_keys, restored),
+            compute.take(kept_items, restored),
         )
 
     def legs(self, dtype: pyarrow.DataType | None) -> pyarrow.Array:
@@ -2215,7 +2302,11 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
     )
     pairs = [(name, rendered) for name, value in values if (rendered := _fix_text(value))]
 
-    alternatives = dict(instrument.altids or {})
+    alternatives = {
+        source: value
+        for source, value in (instrument.altids or {}).items()
+        if column_name(source) not in _LIFECYCLE_ALTIDS
+    }
     if instrument.isincode and not (
         instrument.securityid == instrument.isincode
         and id_scheme(instrument.securityidsource) == ISIN_SCHEME

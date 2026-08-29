@@ -22,7 +22,7 @@ from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField, TimestampField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import ArrowFile, resolve
-from rekep.market.event import CODES_TYPE, unix_partition_arrow
+from rekep.market.event import ALTIDS_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.message import Message
 from rekep.times import COMPACT, SHAPES, Stamp
@@ -714,14 +714,14 @@ class TextFile(Dataset, io.BufferedIOBase):
         columns: dict[str, Any] = {
             "unix": unix,
             "unixpartition": unix_partition_arrow(unix),
-            "cunix": unix,
-            "runix": unix,
-            "eunix": pyarrow.nulls(count, pyarrow.int64()),
-            "sunix": pyarrow.nulls(count, pyarrow.int64()),
+            "creaunix": unix,
+            "recunix": unix,
+            "expunix": pyarrow.nulls(count, pyarrow.int64()),
+            "snapunix": pyarrow.nulls(count, pyarrow.int64()),
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
-            "codes": pyarrow.repeat(pyarrow.scalar({}, CODES_TYPE), count),
+            "altids": pyarrow.repeat(pyarrow.scalar({}, ALTIDS_TYPE), count),
             "prevunix": pyarrow.nulls(count, pyarrow.int64()),
             "parenthash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
@@ -746,9 +746,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
-        linkedevents = schema.field("linkedevents")
+        linkedhashes = schema.field("linkedhashes")
         columns.setdefault(
-            "linkedevents", pyarrow.repeat(pyarrow.scalar([], type=linkedevents.type), count)
+            "linkedhashes", pyarrow.repeat(pyarrow.scalar([], type=linkedhashes.type), count)
         )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable

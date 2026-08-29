@@ -68,7 +68,7 @@ def test_a_fraction_is_scaled_by_its_own_width() -> None:
 
 
 def test_epoch_fix_time_is_not_mistaken_for_an_absent_clock() -> None:
-    reader = FixEvents.from_text("35=D|52=19700101-00:00:00", runix=123, fix_version="4.4")
+    reader = FixEvents.from_text("35=D|52=19700101-00:00:00", recunix=123, fix_version="4.4")
     assert reader.unix == 0
 
 
@@ -111,15 +111,15 @@ def test_the_transaction_time_is_preferred_over_the_transmission_time() -> None:
     """FIX defines `TransactTime <60>` as when the business transaction occurred and
     `SendingTime <52>` as when the message was transmitted. They are not the same
     instant, and reading them as one is how a latency measurement comes out zero."""
-    order, _ = events(FILLED, runix=7)
+    order, _ = events(FILLED, recunix=7)
     assert order.unix == unix_of("20260821-10:29:59.998")
     assert order.unix != unix_of("20260821-10:30:00.250")
 
 
 def test_the_recording_clock_is_the_readers_and_stays_separate() -> None:
-    order, _ = events(FILLED, runix=1_787_308_200_400_000_000)
-    assert order.runix == 1_787_308_200_400_000_000
-    assert order.runix > order.unix, "recorded after it happened, which is the point"
+    order, _ = events(FILLED, recunix=1_787_308_200_400_000_000)
+    assert order.recunix == 1_787_308_200_400_000_000
+    assert order.recunix > order.unix, "recorded after it happened, which is the point"
 
 
 def test_the_fix_sequence_is_not_repeated_on_market_events() -> None:
@@ -148,7 +148,7 @@ def test_a_message_with_no_time_at_all_says_so_with_a_zero() -> None:
 
 def test_a_message_with_no_fix_clock_uses_the_recorded_log_instant() -> None:
     recorded = unix_of("20260821-10:30:00")
-    assert events("35=D|55=AAPL|11=CL-1", runix=recorded)[0].unix == recorded
+    assert events("35=D|55=AAPL|11=CL-1", recunix=recorded)[0].unix == recorded
 
 
 def test_the_declared_order_is_the_one_the_reader_uses() -> None:
@@ -215,7 +215,7 @@ def test_the_rung_that_answered_is_recorded() -> None:
     )
     assert reader(header + "60=20260821-10:00:00").transacted.source == "TransactTime"
     assert reader(header + "52=20260821-11:00:00").transacted.source == "SendingTime"
-    assert reader(header, runix=unix_of("20260821-10:30:00")).transacted.source == "recorded"
+    assert reader(header, recunix=unix_of("20260821-10:30:00")).transacted.source == "recorded"
     assert reader(header).transacted.source == "", "no clock anywhere"
 
 
@@ -238,7 +238,7 @@ def test_the_order_carries_what_remains_and_the_fill_what_moved() -> None:
 
 def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
     order, fill = events(FILLED)
-    assert fill.linkedevents == [(order.unix, order.xhash)]
+    assert fill.linkedhashes == [order.xhash]
     assert fill.parenthash == [order.hash]
 
 
@@ -367,7 +367,7 @@ def test_avgpx_is_evidence_not_a_vwap_when_prior_fills_are_unknown() -> None:
     assert order.metadata["6"] == fill.metadata["6"] == "100.25"
 
 
-def test_every_parsed_identifier_is_retained_in_isolated_code_maps() -> None:
+def test_every_parsed_identifier_is_retained_in_isolated_altid_maps() -> None:
     report = FILLED.replace(
         "|17=EX-3|",
         "|17=EX-3|527=EX-SECONDARY|19=EX-2|1003=TR-1|278=MD-1|280=MD-0|",
@@ -385,12 +385,12 @@ def test_every_parsed_identifier_is_retained_in_isolated_code_maps() -> None:
         "mdentryrefid": "MD-0",
     }
 
-    assert {name: order.codes[name] for name in shared} == shared
-    assert {name: execution.codes[name] for name in shared} == shared
-    assert "symbol" not in order.codes and "symbol" not in execution.codes
-    assert order.codes is not execution.codes
-    order.codes["local"] = "order-only"
-    assert "local" not in execution.codes
+    assert {name: order.altids[name] for name in shared} == shared
+    assert {name: execution.altids[name] for name in shared} == shared
+    assert "symbol" not in order.altids and "symbol" not in execution.altids
+    assert order.altids is not execution.altids
+    order.altids["local"] = "order-only"
+    assert "local" not in execution.altids
 
 
 def test_instrument_fields_never_identify_an_order_or_execution() -> None:
@@ -402,14 +402,14 @@ def test_instrument_fields_never_identify_an_order_or_execution() -> None:
     assert order.instrumentxhash and execution.instrumentxhash
     assert order.code == execution.code == ""
     assert order.xhash == execution.xhash == NIL
-    assert not ({"symbol", "securityid", "isincode"} & order.codes.keys())
-    assert not ({"symbol", "securityid", "isincode"} & execution.codes.keys())
+    assert not ({"symbol", "securityid", "isincode"} & order.altids.keys())
+    assert not ({"symbol", "securityid", "isincode"} & execution.altids.keys())
 
 
 def test_a_rendered_identifier_missing_from_the_merged_index_is_still_retained() -> None:
     parsed = FixEvents.from_pairs([("MDEntryRefID", "MD-NAMED")], fix_version="4.4")
 
-    assert parsed._identifier_codes["mdentryrefid"] == "MD-NAMED"
+    assert parsed._identifier_altids["mdentryrefid"] == "MD-NAMED"
 
 
 def test_order_qty_uses_explicit_or_derived_live_quantity() -> None:
@@ -420,7 +420,7 @@ def test_order_qty_uses_explicit_or_derived_live_quantity() -> None:
 
 def test_an_omitted_time_in_force_is_day_as_fix_specifies() -> None:
     (order,) = events("35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|60=20260821-10:00:00")
-    assert order.timeinforce is TimeInForce.DAY and order.eunix is None
+    assert order.timeinforce is TimeInForce.DAY and order.expunix is None
 
 
 def test_a_price_the_venue_did_not_send_is_absent_and_not_zero() -> None:
@@ -434,11 +434,11 @@ def test_a_local_market_expiry_date_is_preserved_but_not_guessed_as_utc() -> Non
 
     It reads as the instant the day begins -- every FIX temporal does, which
     is what keeps a zone applicable to it later -- and no zone is applied to
-    it here, which is what `eunix` staying null says: the package does not
+    it here, which is what `expunix` staying null says: the package does not
     know what midnight local means and will not guess.
     """
     (order,) = events("35=D|55=AAPL|11=CL-1|59=6|432=20260821|60=20260821-10:00:00")
-    assert order.eunix is None
+    assert order.expunix is None
     assert order.metadata["432"] == "20260821-00:00:00.000000"
 
 
@@ -446,7 +446,7 @@ def test_an_explicit_expiry_time_wins_over_the_day() -> None:
     (order,) = events(
         "35=D|55=AAPL|11=CL-1|59=6|432=20260821|126=20260821-16:30:00|60=20260821-10:00:00"
     )
-    assert order.eunix == unix_of("20260821-16:30:00")
+    assert order.expunix == unix_of("20260821-16:30:00")
 
 
 @pytest.mark.parametrize(
@@ -469,7 +469,7 @@ def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) ->
     unit_pair = "" if unit is None else f"|1916={unit}"
     (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629=2{unit_pair}|60=20260821-10:00:00")
     assert order.timeinforce is TimeInForce.GFT
-    assert order.eunix == order.unix + 2 * factor
+    assert order.expunix == order.unix + 2 * factor
     assert order.metadata["1629"] == "2"
     if unit is not None:
         assert order.metadata["1916"] == unit
@@ -480,7 +480,7 @@ def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) ->
 )
 def test_good_for_time_refuses_non_positive_or_calendar_durations(duration: str, unit: str) -> None:
     (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629={duration}|1916={unit}|60=20260821-10:00:00")
-    assert order.eunix is None
+    assert order.expunix is None
     assert order.metadata["1629"] == duration
     assert order.metadata["1916"] == unit
 
@@ -489,19 +489,19 @@ def test_expire_time_wins_over_good_for_time() -> None:
     (order,) = events(
         "35=D|55=AAPL|11=CL-1|59=A|1629=1|1916=13|126=20260821-10:00:01|60=20260821-10:00:00"
     )
-    assert order.eunix == unix_of("20260821-10:00:01")
+    assert order.expunix == unix_of("20260821-10:00:01")
 
 
 @pytest.mark.parametrize("fix", ["3", "4"], ids=["ioc", "fok"])
 def test_immediate_time_in_force_expires_on_arrival(fix: str) -> None:
     (order,) = events(f"35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|59={fix}|60=20260821-10:00:00")
-    assert order.eunix == order.unix == unix_of("20260821-10:00:00")
+    assert order.expunix == order.unix == unix_of("20260821-10:00:00")
 
 
 @pytest.mark.parametrize("fix", ["0", "2", "5", "7", "8", "9", "B", "C"])
 def test_calendar_dependent_time_in_force_has_no_invented_instant(fix: str) -> None:
     (order,) = events(f"35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|59={fix}|60=20260821-10:00:00")
-    assert order.eunix is None
+    assert order.expunix is None
 
 
 # -- market data -------------------------------------------------------------
@@ -582,6 +582,24 @@ def test_an_entry_id_is_the_lifecycle_when_the_venue_gives_one() -> None:
 
 
 # -- what a message says about the instrument --------------------------------
+
+
+def test_instrument_altids_have_scalar_and_arrow_parity() -> None:
+    line = (
+        "8=FIX.4.4|35=8|37=ORD-9|11=CL-7|55=AAPL|"
+        "454=1|455=US0378331005|456=4|60=20260821-10:00:00|10=000"
+    )
+    scalar = reader(line).instrument
+    message = FixMsg.from_instrument(scalar)
+    source = next(iter(FixMsg.into_arrow_reader((message,), batch_row_size=1)))
+    stored = FixMsg.into_instrument_arrow_batch(source).column("altids")[0].as_py()
+
+    expected = {
+        "orderid": "ORD-9",
+        "clordid": "CL-7",
+        "ISINNumber": "US0378331005",
+    }
+    assert scalar.altids == dict(stored) == expected
 
 
 def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> None:
@@ -1074,7 +1092,10 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     for one in found:
         instrument = one.into_instrument()
         assert instrument is reader.instrument, "one message, one instrument"
-        assert instrument.altids == {"ISINNumber": "US0378331005"}
+        assert instrument.altids == {
+            "mdentryid": "L1",
+            "ISINNumber": "US0378331005",
+        }
         assert instrument.isincode == "US0378331005"
 
 
@@ -1325,7 +1346,7 @@ def test_the_order_intent_link_identifier_is_typed_and_coded() -> None:
     line = "8=FIX.4.4|35=D|11=C-1|583=LINK-9|55=AAPL|54=1|38=5|44=10|60=20260814-10:00:00|10=000"
     (order,) = list(FixEvents.from_text(line))
     assert order.clordlinkid == "LINK-9"
-    assert order.codes["clordlinkid"] == "LINK-9"
+    assert order.altids["clordlinkid"] == "LINK-9"
 
 
 def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
@@ -1358,7 +1379,7 @@ def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
     assert order.side is Side.BUY
     assert order.kind is MarketKind.LIMIT_ORDER
     assert order.timeinforce is TimeInForce.GTD
-    assert order.eunix is not None, "a GTD spelled out still reads its expiry"
+    assert order.expunix is not None, "a GTD spelled out still reads its expiry"
 
 
 def test_a_side_never_answers_with_its_siblings_fields() -> None:

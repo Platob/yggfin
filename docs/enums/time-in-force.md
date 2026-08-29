@@ -29,6 +29,6 @@ these codes sort by how long an order lives, which their spellings do not.
 | `GFA` | `GFA` | 1,195,786,496 | `B` | Good for one auction. |
 | `RESTING` | `REST` | 1,380,275,028 |  | Ordering marker for cross-session instructions. |
 | `GTC` | `GTC` | 1,196,704,512 | `1` | Good until cancelled. |
-| `GTD` | `GTD` | 1,196,704,768 | `6` | Good until `Event.eunix`. |
-| `GFT` | `GFT` | 1,195,791,360 | `A` | Good for a duration resolved into `Event.eunix`. |
+| `GTD` | `GTD` | 1,196,704,768 | `6` | Good until `Event.expunix`. |
+| `GFT` | `GFT` | 1,195,791,360 | `A` | Good for a duration resolved into `Event.expunix`. |
 | `GFM` | `GFM` | 1,195,789,568 | `C` | Good for the current month. |

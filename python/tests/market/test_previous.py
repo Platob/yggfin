@@ -79,7 +79,7 @@ def test_a_first_version_still_gets_its_identity() -> None:
     assert first.xhash == Order.hash_of(
         hash_bytes_of(EQUITY.xhash), first.mic, first.code, first.side
     )
-    assert first.version == 0 and first.prevunix is None
+    assert first.version == 0 and first.prevunix is None and first.prevhash is None
 
 
 def test_the_lifecycle_and_the_counter_carry_across_versions() -> None:
@@ -95,6 +95,7 @@ def test_the_transition_time_is_on_the_row_rather_than_behind_a_self_join() -> N
     first = resting()
     later = changed(_order(unix=20, orderid="ORD-1", state=State.PARTIALLY_FILLED), first)
     assert later.prevunix == first.unix
+    assert later.prevhash == first.hash
     assert later.unix - later.prevunix == 10, "dwell time, without a join"
 
 
@@ -102,10 +103,10 @@ def test_the_creation_time_is_got_or_set_and_never_recomputed() -> None:
     """A lifecycle is created once; every later version was created then too.
     Recomputing it would make "how old is this order" mean "how long since the
     last message about it"."""
-    first = resting(cunix=5)
+    first = resting(creaunix=5)
     second = changed(_order(unix=20, orderid="ORD-1", state=State.OPEN), first)
     third = changed(_order(unix=30, orderid="ORD-1", state=State.PARTIALLY_FILLED), second)
-    assert third.cunix == 5 and third.unix == 30
+    assert third.creaunix == 5 and third.unix == 30
 
 
 def test_a_duplicate_observation_returns_none() -> None:
@@ -126,7 +127,7 @@ def test_state_comparison_keeps_late_members_and_snapshot_time() -> None:
     assert not observed.same_as(first), "the projection reaches the last order member"
 
     snapshot = copy.copy(first)
-    snapshot.sunix = first.unix
+    snapshot.snapunix = first.unix
     later_snapshot = copy.copy(snapshot)
     later_snapshot.unix += 1
     assert not later_snapshot.same_as(snapshot), "snapshot time is part of its stored state"
@@ -186,22 +187,22 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
 
 def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     first = resting()
-    assert first.code == "ORD-1" and first.codes == {}
+    assert first.code == "ORD-1" and first.altids == {}
     later = changed(Order(unix=20, orderid="ORD-1", state=State.OPEN), first)
-    assert later.codes == {}
+    assert later.altids == {}
     fill = changed(_execution(unix=30, execid="EX-1", state=State.FILLED, qty=4.0), first)
     assert fill.code == "EX-1", "and never `ORD-1`: an execution is not a version of its order"
-    assert fill.codes == {}
+    assert fill.altids == {}
 
 
 def test_an_identifier_already_recorded_is_never_displaced_by_a_later_one() -> None:
-    """First spelling wins, so a `codes` entry is as stable as the lifecycle."""
+    """First spelling wins, so an `altids` entry is as stable as the lifecycle."""
     order = _order(unix=10, orderid="ORD-1")
-    order.name_code("symbol", "RENAMED")
-    order.name_code("symbol", "SECOND")
-    assert order.codes["symbol"] == "RENAMED"
-    order.name_code("isin", "FAKE-ISIN-0001")
-    assert order.codes == {"symbol": "RENAMED", "isin": "FAKE-ISIN-0001"}
+    order.name_altid("symbol", "RENAMED")
+    order.name_altid("symbol", "SECOND")
+    assert order.altids["symbol"] == "RENAMED"
+    order.name_altid("isin", "FAKE-ISIN-0001")
+    assert order.altids == {"symbol": "RENAMED", "isin": "FAKE-ISIN-0001"}
 
 
 def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None:
@@ -299,14 +300,14 @@ def fill(px: float, qty: float, unix: int, **given: object) -> Execution:
 def test_a_fill_links_itself_to_the_order_it_followed() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, execid="EX-1").with_previous(first)
-    assert done.linkedevents == [(first.unix, first.xhash)]
+    assert done.linkedhashes == [first.xhash]
 
 
 def test_the_matched_order_precedes_other_lifecycle_links() -> None:
     first = resting()
-    done = fill(100.0, 4.0, 20, execid="EX-1", linkedevents=[(0, -1)]).with_previous(first)
+    done = fill(100.0, 4.0, 20, execid="EX-1", linkedhashes=[-1]).with_previous(first)
     assert done is not None
-    assert done.linkedevents == [(first.unix, first.xhash), (0, -1)]
+    assert done.linkedhashes == [first.xhash, -1]
 
 
 def test_what_is_done_accumulates_across_fills() -> None:
@@ -670,7 +671,7 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
     after.with_previous(done)
 
-    assert done.linkedevents == [(first.unix, first.xhash)]
+    assert done.linkedhashes == [first.xhash]
     assert after.code == first.code == "CL-1"
     assert after.xhash == first.xhash
 
@@ -696,7 +697,7 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
 
     assert amended.code == first.code == "CL-1"
     assert done.origclordid == "CL-1"
-    assert done.linkedevents == [(amended.unix, first.xhash)]
+    assert done.linkedhashes == [first.xhash]
     assert after.code == "CL-1" and after.xhash == first.xhash
 
 

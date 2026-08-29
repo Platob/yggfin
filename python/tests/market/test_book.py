@@ -52,7 +52,7 @@ def test_level_declares_the_fix_price_and_quantity_fields() -> None:
 def test_levels_derive_best_and_depth_for_each_side() -> None:
     bids = [level(10.0, 5.0), level(9.5, 7.0)]
     asks = [level(10.2, 3.0)]
-    out = Book.summarise_arrow_batch(book(1, sunix=[1], bidlevels=[bids], asklevels=[asks]))
+    out = Book.summarise_arrow_batch(book(1, snapunix=[1], bidlevels=[bids], asklevels=[asks]))
     assert out.column("bidpx")[0].as_py() == 10.0
     assert out.column("bidqty")[0].as_py() == 5.0
     assert out.column("biddepth")[0].as_py() == 2
@@ -62,7 +62,7 @@ def test_levels_derive_best_and_depth_for_each_side() -> None:
 
 
 def test_empty_levels_mean_a_known_empty_side() -> None:
-    out = Book.summarise_arrow_batch(book(1, sunix=[1], bidlevels=[[]]))
+    out = Book.summarise_arrow_batch(book(1, snapunix=[1], bidlevels=[[]]))
     assert out.column("bidpx")[0].as_py() is None
     assert out.column("bidqty")[0].as_py() is None
     assert out.column("biddepth")[0].as_py() == 0
@@ -84,7 +84,7 @@ def test_empty_delta_levels_leave_flat_summaries_unchanged() -> None:
 
 def test_a_thousand_levels_still_derive_the_touch_and_depth() -> None:
     levels = [level(100.0 - index, 0.1) for index in range(1000)]
-    out = Book.summarise_arrow_batch(book(1, sunix=[1], bidlevels=[levels]))
+    out = Book.summarise_arrow_batch(book(1, snapunix=[1], bidlevels=[levels]))
     assert out.column("bidpx")[0].as_py() == 100.0
     assert out.column("bidqty")[0].as_py() == 0.1
     assert out.column("biddepth")[0].as_py() == 1000
@@ -118,7 +118,7 @@ def test_one_sided_and_zero_sized_books_have_no_synthetic_price() -> None:
 def test_summarise_is_idempotent_and_keeps_the_contract() -> None:
     given = book(
         1,
-        sunix=[1],
+        snapunix=[1],
         bidlevels=[[level(1.0, 2.0)]],
         asklevels=[[level(1.5, 4.0)]],
     )
@@ -142,11 +142,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=1,
         hash=11,
         xhash=12,
-        linkedevents=[(0, 10)],
+        linkedhashes=[10],
         parenthash=[9],
         state=State.NEW,
         code="B1",
-        codes={"order": "B1"},
+        altids={"order": "B1"},
         metadata={"source": "bid"},
         side=Side.BID,
         px=100.0,
@@ -157,11 +157,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=1,
         hash=21,
         xhash=22,
-        linkedevents=[(0, 20)],
+        linkedhashes=[20],
         parenthash=[19],
         state=State.NEW,
         code="A1",
-        codes={"order": "A1"},
+        altids={"order": "A1"},
         metadata={"source": "ask"},
         side=Side.ASK,
         px=101.0,
@@ -172,11 +172,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=2,
         hash=31,
         xhash=32,
-        linkedevents=[(1, bid.xhash)],
+        linkedhashes=[bid.xhash],
         parenthash=[bid.hash],
         state=State.FILLED,
         code="E1",
-        codes={"execution": "E1"},
+        altids={"execution": "E1"},
         metadata={"source": "trade"},
         side=Side.BID,
         px=100.0,
@@ -186,9 +186,9 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
     rows = [
         Book(
             unix=2,
-            linkedevents=[(1, bid.xhash), (2, execution.xhash)],
+            linkedhashes=[bid.xhash, execution.xhash],
             parenthash=[bid.hash, execution.hash],
-            codes={"symbol": "BTC-USD"},
+            altids={"symbol": "BTC-USD"},
             metadata={"kind": "delta"},
             bidlevels=[Level(px=100.0, qty=3.0)],
             asklevels=[Level(px=101.0, qty=4.0)],
@@ -197,10 +197,10 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         ),
         Book(
             unix=3,
-            sunix=3,
-            linkedevents=[(1, bid.xhash), (1, ask.xhash)],
+            snapunix=3,
+            linkedhashes=[bid.xhash, ask.xhash],
             parenthash=[bid.hash, ask.hash],
-            codes={"symbol": "BTC-USD"},
+            altids={"symbol": "BTC-USD"},
             metadata={"kind": "snapshot"},
             bidlevels=[Level(px=100.0, qty=3.0)],
             asklevels=[Level(px=101.0, qty=4.0)],

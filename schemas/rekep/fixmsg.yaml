@@ -15,33 +15,33 @@ fields:
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
   fix: {display: Unix Partition}
-- name: etype
+- name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: Etype}
+  fix: {display: Event Type}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","6004496033382400000":"STATE","4778124913204527104":"BOOK","5283659427399139328":"INSTRUMENT_STATE","5282251034575328256":"INSTRUMENT"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT","INSTRUMENT_STATE":"ISTATE"}'}
-- name: cunix
+- name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Cunix}
-- name: runix
+  fix: {display: Crea Unix}
+- name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Runix}
-- name: eunix
+  fix: {display: Rec Unix}
+- name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Eunix}
-- name: sunix
+  fix: {display: Exp Unix}
+- name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Sunix}
+  fix: {display: Snap Unix}
 - name: hash
   type: fixed_size_binary[16]
   description: 'Digest of this version''s content: the same version, twice, is one row.'
@@ -51,12 +51,12 @@ fields:
   type: fixed_size_binary[16]
   description: Digest of `code`, or the raw-line digest when no correlation code exists.
   fix: {display: Xhash}
-- name: linkedevents
+- name: linkedhashes
   type: list
-  description: Related event times and lifecycle identities, primary match first.
-  fix: {display: Linked Events}
+  description: Related lifecycle identities, with the primary match first.
+  fix: {display: Linked Hashes}
   item:
-    type: fixed_size_binary[16]
+    type: int64
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -70,10 +70,10 @@ fields:
   type: string
   description: Best lifecycle identifier present on this line.
   fix: {display: Code}
-- name: codes
+- name: altids
   type: map
-  description: Every other identifier the source spelled, by the name that carried it.
-  fix: {display: Codes}
+  description: Other identifiers keyed by reference scheme or lifecycle field name.
+  fix: {display: Alt IDs}
   key:
     type: string
   value:
@@ -84,6 +84,11 @@ fields:
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
   fix: {display: Prev Unix}
+- name: prevhash
+  type: fixed_size_binary[16]
+  nullable: true
+  description: The previous version's hash; null on the first version.
+  fix: {display: Prev Hash}
 - name: parenthash
   type: list
   nullable: true

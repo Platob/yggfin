@@ -104,8 +104,9 @@ def test_the_books_are_separate_rows_and_not_one_object_repeated() -> None:
 def test_a_book_is_versioned_like_any_other_event() -> None:
     first, second = books([*TWO_SIDED, order(20, Side.BID, 100.0, 9.0, "B3")])
     assert second.version == first.version + 1
-    assert second.prevunix == first.unix and second.xhash == first.xhash
-    assert first.prevunix is None
+    assert second.prevunix == first.unix and second.prevhash == first.hash
+    assert second.xhash == first.xhash
+    assert first.prevunix is first.prevhash is None
     assert (second.prevbidpx, second.prevbidqty) == (first.bidpx, first.bidqty)
     assert (second.prevaskpx, second.prevaskqty) == (first.askpx, first.askqty)
 
@@ -232,7 +233,7 @@ def test_the_units_come_from_the_events_folded_and_not_the_one_after_them() -> N
 def test_a_book_links_to_the_events_that_built_its_delta() -> None:
     (only,) = books(TWO_SIDED)
     assert only.parenthash == [event.hash for event in only.deltas]
-    assert only.linkedevents == [(event.unix, event.xhash) for event in only.deltas]
+    assert only.linkedhashes == [event.xhash for event in only.deltas]
 
 
 # -- the levels, and the orders under them -----------------------------------
@@ -383,7 +384,7 @@ def test_expiry_scan_starts_only_when_the_earliest_deadline_is_due(
 
     monkeypatch.setattr(_Side, "expire", counted_expire)
     events = [
-        order(10, Side.BID, 100.0, 5.0, "B1", eunix=100),
+        order(10, Side.BID, 100.0, 5.0, "B1", expunix=100),
         order(50, Side.ASK, 101.0, 1.0, "A1"),
         order(100, Side.ASK, 102.0, 1.0, "A2"),
     ]
@@ -507,7 +508,7 @@ def test_a_fill_that_names_an_order_takes_it_out_of_that_order_s_side() -> None:
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.0, 2.0, linkedevents=[(resting_order.unix, resting_order.xhash)]),
+            trade(20, 100.0, 2.0, linkedhashes=[resting_order.xhash]),
         ]
     )
     assert second.bidqty == 3.0
@@ -518,7 +519,7 @@ def test_a_fill_tries_linked_lifecycles_in_order() -> None:
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.5, 2.0, linkedevents=[(0, -1), (placed.unix, placed.xhash)]),
+            trade(20, 100.5, 2.0, linkedhashes=[-1, placed.xhash]),
         ]
     )
     assert second.bidqty == 3.0 and second.askqty == 7.0
@@ -569,7 +570,7 @@ def test_a_trade_is_recorded_on_the_side_it_hit() -> None:
 
 def test_a_later_fill_does_not_mutate_the_prior_flattened_order() -> None:
     placed = order(10, Side.BID, 100.0, 5.0, "B1")
-    fill = trade(20, 100.0, 2.0, linkedevents=[(placed.unix, placed.xhash)])
+    fill = trade(20, 100.0, 2.0, linkedhashes=[placed.xhash])
 
     first, second = books([placed, fill])
 
@@ -790,12 +791,12 @@ def test_removing_an_order_forgets_the_name_that_pointed_at_it() -> None:
     assert [(level.px, level.qty) for level in side.into_levels()] == [(98.0, 2.0)]
 
 
-def test_order_xhash_precedes_conflicting_identifier_codes() -> None:
+def test_order_xhash_precedes_conflicting_identifier_altids() -> None:
     """The lifecycle hash is the hot path and the authoritative lookup key."""
 
-    class UnreadableCodes(dict[str, str]):
+    class UnreadableAltids(dict[str, str]):
         def items(self):
-            raise AssertionError("the exact xhash hit inspected codes")
+            raise AssertionError("the exact xhash hit inspected altids")
 
     side = _Side(side=Side.BID)
     first = order(10, Side.BID, 100.0, 5.0, "A")
@@ -803,7 +804,7 @@ def test_order_xhash_precedes_conflicting_identifier_codes() -> None:
     side.apply(first)
     side.apply(second)
 
-    probe = Order(xhash=first.xhash, codes=UnreadableCodes(orderid="B"))
+    probe = Order(xhash=first.xhash, altids=UnreadableAltids(orderid="B"))
 
     assert side.standing(probe) is side.orders[first.xhash]
 
@@ -818,13 +819,13 @@ def test_an_execution_xhash_is_not_mistaken_for_its_order_lifecycle() -> None:
     probe = Execution(
         xhash=first.xhash,
         orderid="B",
-        codes={"orderid": "B"},
+        altids={"orderid": "B"},
     )
 
     assert side.standing(probe) is side.orders[second.xhash]
 
 
-def test_a_linked_order_lifecycle_precedes_conflicting_identifier_codes() -> None:
+def test_a_linked_order_lifecycle_precedes_conflicting_identifier_altids() -> None:
     side = _Side(side=Side.BID)
     first = order(10, Side.BID, 100.0, 5.0, "A")
     second = order(11, Side.BID, 99.0, 4.0, "B")
@@ -832,15 +833,15 @@ def test_a_linked_order_lifecycle_precedes_conflicting_identifier_codes() -> Non
     side.apply(second)
 
     probe = Execution(
-        linkedevents=[(first.unix, first.xhash)],
+        linkedhashes=[first.xhash],
         orderid="B",
-        codes={"orderid": "B"},
+        altids={"orderid": "B"},
     )
 
     assert side.standing(probe) is side.orders[first.xhash]
 
 
-def test_a_missing_order_xhash_falls_back_to_typed_codes_without_a_scan() -> None:
+def test_a_missing_order_xhash_falls_back_to_typed_altids_without_a_scan() -> None:
     class NoScan(dict[int, Order]):
         def __iter__(self):
             raise AssertionError("identifier lookup iterated live orders")
@@ -853,7 +854,7 @@ def test_a_missing_order_xhash_falls_back_to_typed_codes_without_a_scan() -> Non
     side.apply(placed)
     side.orders = NoScan(side.orders)
 
-    found = side.standing(Order(xhash=-1, codes={"orderid": "A"}))
+    found = side.standing(Order(xhash=-1, altids={"orderid": "A"}))
 
     assert found is not None and found.xhash == placed.xhash
 
@@ -881,7 +882,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
             side=Side.BID,
             px=100.0,
             qty=5.0,
-            codes={name: "ONLY-ID"},
+            altids={name: "ONLY-ID"},
             state=State.NEW,
         )
     )
@@ -891,7 +892,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
             side=Side.BID,
             px=100.0,
             qty=4.0,
-            codes={name: "ONLY-ID"},
+            altids={name: "ONLY-ID"},
             state=State.OPEN,
         )
     )
@@ -901,7 +902,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
             side=Side.BID,
             px=99.0,
             qty=1.0,
-            codes={name: "OTHER-ID"},
+            altids={name: "OTHER-ID"},
             state=State.NEW,
         )
     )
@@ -927,7 +928,7 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             px=100.0,
             qty=5.0,
             clordid="42",
-            codes={"clordid": "42"},
+            altids={"clordid": "42"},
             state=State.NEW,
         )
     )
@@ -939,15 +940,15 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             px=99.0,
             qty=4.0,
             orderid="42",
-            codes={"orderid": "42"},
+            altids={"orderid": "42"},
             state=State.NEW,
         )
     )
     side.apply(client)
     side.apply(venue)
 
-    assert side.standing(Order(codes={"clordid": "42"})).xhash == client.xhash
-    assert side.standing(Order(codes={"orderid": "42"})).xhash == venue.xhash
+    assert side.standing(Order(altids={"clordid": "42"})).xhash == client.xhash
+    assert side.standing(Order(altids={"orderid": "42"})).xhash == venue.xhash
 
 
 def test_all_venue_identifiers_precede_every_client_identifier() -> None:
@@ -958,7 +959,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
         100.0,
         5.0,
         "VENUE-ROOT",
-        codes={"secondaryorderid": "VENUE"},
+        altids={"secondaryorderid": "VENUE"},
     )
     client = initial(
         Order(
@@ -967,7 +968,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
             px=99.0,
             qty=4.0,
             clordid="CLIENT",
-            codes={"clordid": "CLIENT"},
+            altids={"clordid": "CLIENT"},
             state=State.NEW,
         )
     )
@@ -977,7 +978,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
     found = side.standing(
         Order(
             origclordid="CLIENT",
-            codes={"secondaryorderid": "VENUE"},
+            altids={"secondaryorderid": "VENUE"},
         )
     )
 
@@ -1003,23 +1004,23 @@ def test_identifier_fallback_respects_known_mic_scope() -> None:
         mic=MIC.from_str("BATS"),
     )
     side.apply(xnas)
-    assert side.standing(Order(codes={"orderid": "SAME"})).xhash == xnas.xhash
+    assert side.standing(Order(altids={"orderid": "SAME"})).xhash == xnas.xhash
 
     side.apply(bats)
 
     assert set(side.orders) == {xnas.xhash, bats.xhash}
     assert (
-        side.standing(Order(mic=MIC.from_str("XNAS"), codes={"orderid": "SAME"})).xhash
+        side.standing(Order(mic=MIC.from_str("XNAS"), altids={"orderid": "SAME"})).xhash
         == xnas.xhash
     )
     assert (
-        side.standing(Order(mic=MIC.from_str("BATS"), codes={"orderid": "SAME"})).xhash
+        side.standing(Order(mic=MIC.from_str("BATS"), altids={"orderid": "SAME"})).xhash
         == bats.xhash
     )
-    assert side.standing(Order(codes={"orderid": "SAME"})) is None
+    assert side.standing(Order(altids={"orderid": "SAME"})) is None
 
 
-def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> None:
+def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() -> None:
     side = _Side(side=Side.BID)
     versions = [
         initial(
@@ -1029,7 +1030,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 px=100.0,
                 qty=5.0,
                 clordid="CL-1",
-                codes={"clordid": "CL-1"},
+                altids={"clordid": "CL-1"},
                 state=State.NEW,
             )
         ),
@@ -1041,7 +1042,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 qty=4.0,
                 clordid="CL-2",
                 origclordid="CL-1",
-                codes={"origclordid": "CL-1", "clordid": "CL-2"},
+                altids={"origclordid": "CL-1", "clordid": "CL-2"},
                 state=State.OPEN,
             )
         ),
@@ -1053,7 +1054,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 qty=3.0,
                 clordid="CL-3",
                 origclordid="CL-2",
-                codes={"origclordid": "CL-2", "clordid": "CL-3"},
+                altids={"origclordid": "CL-2", "clordid": "CL-3"},
                 state=State.OPEN,
             )
         ),
@@ -1066,7 +1067,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 orderid="ORD-1",
                 clordid="CL-3",
                 origclordid="CL-2",
-                codes={
+                altids={
                     "orderid": "ORD-1",
                     "origclordid": "CL-2",
                     "clordid": "CL-3",
@@ -1087,7 +1088,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
         ("clordid", "CL-3"),
         ("orderid", "ORD-1"),
     ):
-        assert side.standing(Order(codes={name: code})).xhash == lifecycle
+        assert side.standing(Order(altids={name: code})).xhash == lifecycle
     assert len(side.aliases[lifecycle]) == 4
 
     side.apply(
@@ -1097,7 +1098,7 @@ def test_mutating_order_codes_keep_one_lifecycle_and_a_bounded_alias_cache() -> 
                 side=Side.BID,
                 orderid="ORD-1",
                 clordid="CL-3",
-                codes={"orderid": "ORD-1", "clordid": "CL-3"},
+                altids={"orderid": "ORD-1", "clordid": "CL-3"},
                 state=State.CANCELLED,
             )
         )
@@ -1118,7 +1119,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
                 px=100.0,
                 qty=5.0,
                 clordid=root,
-                codes={"secondaryclordid": f"S{version}"},
+                altids={"secondaryclordid": f"S{version}"},
                 state=State.NEW if version == 0 else State.OPEN,
             )
         )
@@ -1127,9 +1128,9 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
 
     (standing,) = side.orders.values()
     assert standing.xhash == lifecycle and standing.code == root
-    assert standing.codes["secondaryclordid"] == "S99"
-    assert side.standing(Order(codes={"secondaryclordid": "S99"})).xhash == lifecycle
-    assert side.standing(Order(codes={"secondaryclordid": "S98"})).xhash == lifecycle
+    assert standing.altids["secondaryclordid"] == "S99"
+    assert side.standing(Order(altids={"secondaryclordid": "S99"})).xhash == lifecycle
+    assert side.standing(Order(altids={"secondaryclordid": "S98"})).xhash == lifecycle
     assert side.standing(Order(clordid=root)).xhash == lifecycle
     assert len(side.aliases[lifecycle]) <= book_module._ORDER_ALIAS_LIMIT
 
@@ -1141,7 +1142,7 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
 
     side = _Side(side=Side.BID)
     standing = order(10, Side.BID, 100.0, 5.0, "standing")
-    expiring = order(10, Side.BID, 99.0, 2.0, "expiring", eunix=20)
+    expiring = order(10, Side.BID, 99.0, 2.0, "expiring", expunix=20)
     side.apply(standing)
     side.apply(expiring)
     assert set(side._deadline_tokens) == {expiring.xhash}
@@ -1155,11 +1156,21 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
 
 def test_replacement_and_removal_keep_a_bounded_expiry_index() -> None:
     side = _Side(side=Side.BID)
-    side.apply(order(10, Side.BID, 100.0, 5.0, "B1", eunix=20))
+    side.apply(order(10, Side.BID, 100.0, 5.0, "B1", expunix=20))
     identity = next(iter(side.orders))
 
     for expiry in range(21, 2_021):
-        side.apply(order(expiry - 9, Side.BID, 100.0, 5.0, "B1", eunix=expiry, state=State.OPEN))
+        side.apply(
+            order(
+                expiry - 9,
+                Side.BID,
+                100.0,
+                5.0,
+                "B1",
+                expunix=expiry,
+                state=State.OPEN,
+            )
+        )
         token = side._deadline_tokens[identity]
         assert (expiry, identity, token) in side._deadlines
     assert (
@@ -1181,7 +1192,7 @@ def test_replacement_and_removal_keep_a_bounded_expiry_index() -> None:
 def test_a_side_bound_keeps_best_price_then_earliest_time(side: Side, prices: list[float]) -> None:
     resting = _Side(side=side)
     given = [
-        order(10 + index, side, px, 1.0, f"O{index}", eunix=1_000)
+        order(10 + index, side, px, 1.0, f"O{index}", expunix=1_000)
         for index, px in enumerate(prices)
     ]
     for event in given:
@@ -1269,6 +1280,7 @@ def test_a_new_order_evicted_immediately_keeps_both_versions_in_order() -> None:
     placed, expired = latest.deltas
     assert placed.orderid == expired.orderid == "B2"
     assert expired.state is State.INTERNAL_EXPIRED and expired.prevunix == placed.unix
+    assert expired.prevhash == placed.hash
     assert expired.version == placed.version + 1
     assert latest.bidpx == 100.0 and latest.biddepth == 1
 
@@ -1286,13 +1298,13 @@ def test_a_zero_side_bound_keeps_only_the_audit() -> None:
     assert book.askdepth == 0 and iterator.folding[BTC.xhash].ask.orders == {}
 
 
-@pytest.mark.parametrize("tif", [TimeInForce.IOC, TimeInForce.FOK])
-def test_immediate_orders_are_audited_but_never_rest(tif: TimeInForce) -> None:
-    immediate = order(10, Side.BID, 100.0, 5.0, "I1", timeinforce=tif)
+@pytest.mark.parametrize("timeinforce", [TimeInForce.IOC, TimeInForce.FOK])
+def test_immediate_orders_are_audited_but_never_rest(timeinforce: TimeInForce) -> None:
+    immediate = order(10, Side.BID, 100.0, 5.0, "I1", timeinforce=timeinforce)
 
     (book,) = BookIterator.from_events([immediate], snapshot_every=0)
 
-    assert immediate.eunix == immediate.unix
+    assert immediate.expunix == immediate.unix
     assert book.biddepth == 0 and book.bidpx is None and book.bidqty is None
     assert book.deltas == [immediate]
 

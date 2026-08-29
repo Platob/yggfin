@@ -20,7 +20,7 @@ FIX 8 7 VENUE DESK
 
 !!! warning "`message=` is what makes the syntax columns answer"
 
-    `protocolcode`, `etype` and `direction` are read off the raw text, not
+    `protocolcode`, `eventtype` and `direction` are read off the raw text, not
     off the pairs. Staged without it they stay unset and the FIX codec does
     not claim the row.
 

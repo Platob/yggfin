@@ -10,7 +10,7 @@ from rekep import Field, FixCodec, FixMsg, Message
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
-from rekep.market import HASH, MIC, BookIterator, Event, EventType
+from rekep.market import HASH, MIC, BookIterator, Event, EventType, Instrument
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
 
@@ -22,19 +22,20 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 ENVELOPE = [
     "unix",
     "unixpartition",
-    "etype",
-    "cunix",
-    "runix",
-    "eunix",
-    "sunix",
+    "eventtype",
+    "creaunix",
+    "recunix",
+    "expunix",
+    "snapunix",
     "hash",
     "xhash",
-    "linkedevents",
+    "linkedhashes",
     "version",
     "state",
     "code",
-    "codes",
+    "altids",
     "prevunix",
+    "prevhash",
     "parenthash",
     "mic",
     "reason",
@@ -172,7 +173,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 114
+EXPECTED_LOG_COLUMNS = 115
 
 
 @pytest.fixture(scope="module")
@@ -321,12 +322,12 @@ def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
     """`from_text` is `from_message` over `Message.from_text`: one seam, and
     the raw row's provenance and envelope carry over whole."""
     line = "8=FIX.4.4|35=D|11=C1|54=1|10=000"
-    staged = Message.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, runix=9)
+    staged = Message.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, recunix=9)
     row = FixMsg.from_message(staged)
 
-    assert row == FixMsg.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, runix=9)
-    assert (row.sourceurl, row.sourcerownum, row.runix) == ("s3://x/y.log", 4, 9)
-    assert row.etype == FixRegistry.from_builtin().msg_type_event_types()["D"]
+    assert row == FixMsg.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, recunix=9)
+    assert (row.sourceurl, row.sourcerownum, row.recunix) == ("s3://x/y.log", 4, 9)
+    assert row.eventtype == FixRegistry.from_builtin().msg_type_event_types()["D"]
     assert row.protocolversion == "4.4"
     assert FixMsg.from_(staged) == row, "the generic builder reaches the same seam"
 
@@ -334,11 +335,11 @@ def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
 def test_transcribing_keeps_a_stored_classification_and_resets_identity() -> None:
     """A raw stage that already classified the row is kept; identity is not --
     a parsed row hashes over its parsed values, never the raw line's digest."""
-    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", etype=EventType.MISC)
+    staged = Message.from_text("8=FIX.4.4|35=D|11=C1|10=000", eventtype=EventType.MISC)
     staged.hash = staged.xhash = 12345
 
     row = FixMsg.from_message(staged)
-    assert row.etype == EventType.MISC
+    assert row.eventtype == EventType.MISC
     assert row.hash == 0 and row.xhash == 0
 
     with pytest.raises(TypeError, match="Message"):
@@ -349,8 +350,8 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
     """`from_message_batch` is one boundary: scalar rows and a raw RecordBatch
     land as the same parsed batch, under the packaged default codec."""
     rows = [
-        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", runix=1),
-        Message(message="plain prose", runix=2),
+        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", recunix=1),
+        Message(message="plain prose", recunix=2),
     ]
     from_rows = FixMsg.from_message_batch(rows)
     raw = Message.into_arrow_reader(rows).read_all().to_batches()[0]
@@ -394,8 +395,8 @@ def test_a_batch_scanned_back_out_of_storage_transcribes_the_same() -> None:
     hands `large_string` back where the raw contract says `string` -- and the
     kernels this path builds its own constants for refuse the mix."""
     rows = [
-        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", runix=1),
-        Message(message="plain prose", runix=2),
+        Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0154=1\x0138=5\x0110=000\x01", recunix=1),
+        Message(message="plain prose", recunix=2),
     ]
     fresh = FixMsg.from_message_batch(rows)
     stored = _widened(Message.into_arrow_reader(rows).read_all().to_batches()[0])
@@ -407,7 +408,7 @@ def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
     """`parse_fix` projects `message` away and parses the stored entries. The
     declaration must not fill it back in: an all-null text column would send
     the classifier down the path that reads text, over rows that have none."""
-    rows = [Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01", runix=1)]
+    rows = [Message(message="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01", recunix=1)]
     raw = Message.into_arrow_reader(rows).read_all().to_batches()[0]
     projected = raw.select([name for name in raw.schema.names if name != "message"])
     parsed = FixMsg.from_message_batch(_widened(projected))
@@ -618,6 +619,40 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     assert instrument == direct, "the resolved columns and the pair walk agree"
 
 
+def test_package_instrument_altids_merge_once_per_key() -> None:
+    instrument = Instrument(
+        unix=1,
+        creaunix=1,
+        recunix=1,
+        symbol="AAPL",
+        altids={"clordid": "C1", "ISINNumber": "US0378331005"},
+    ).identify()
+    message = FixMsg.from_instrument(instrument)
+
+    assert message.altids == {"clordid": "C1"}, "reference schemes live in FIX entries"
+    batch = next(iter(FixMsg.into_arrow_reader((message,))))
+    found = FixMsg.into_instrument_arrow_batch(batch)
+
+    assert found.column("altids").to_pylist() == [
+        [("clordid", "C1"), ("ISINNumber", "US0378331005")]
+    ]
+
+    message.altids = {"ISINNumber": "HEADER", "clordid": "C1"}
+    overlapped = FixMsg.into_instrument_arrow_batch(
+        next(iter(FixMsg.into_arrow_reader((message,))))
+    )
+    assert overlapped.column("altids").to_pylist() == [
+        [("ISINNumber", "HEADER"), ("clordid", "C1")]
+    ], "nonadjacent carried keys precede the rendered reference group"
+
+
+def test_flat_instrument_keeps_lifecycle_altids() -> None:
+    instrument = FixMsg(symbol="AAPL", altids={"clordid": "C1"})._flat_instrument()
+
+    assert instrument is not None
+    assert instrument.altids == {"clordid": "C1"}
+
+
 def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     registry: FixRegistry,
 ) -> None:
@@ -681,7 +716,7 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(registry: FixRegistry
     assert found == [
         (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
     ]
-    assert found == [("BTC-USD", None), ("ETH-USD", {"ISINNumber": "US0378331005"})]
+    assert found == [("BTC-USD", {}), ("ETH-USD", {"ISINNumber": "US0378331005"})]
 
 
 def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
@@ -705,7 +740,18 @@ def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
     assert found == [
         (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
     ]
-    assert found == [("AAA", None), ("BBB", {"CUSIP": "037833100"})]
+    assert found == [
+        ("AAA", {"quoteentryid": "E1", "quoteid": "Q1", "quotesetid": "S1"}),
+        (
+            "BBB",
+            {
+                "quoteentryid": "E2",
+                "quoteid": "Q1",
+                "quotesetid": "S1",
+                "CUSIP": "037833100",
+            },
+        ),
+    ]
 
 
 def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
@@ -810,7 +856,7 @@ def test_the_partition_is_the_hour_the_line_falls_in() -> None:
 
 
 def test_every_unix_column_declares_its_unit() -> None:
-    for name in ("unix", "cunix", "runix", "eunix", "sunix", "prevunix"):
+    for name in ("unix", "creaunix", "recunix", "expunix", "snapunix", "prevunix"):
         metadata = FixMsg.into_field().field(name).metadata
         assert metadata["unit"] == "ns", name
         assert metadata["epoch"] == "1970-01-01", name
@@ -822,7 +868,7 @@ def test_every_unix_column_declares_its_unit() -> None:
 def test_the_line_digest_is_stored_like_every_other_identifier() -> None:
     """One stored width for every identity, and the key is `(unix, hash)` -- so
     two digests only meet if they also share a nanosecond."""
-    for name in ("hash", "xhash"):
+    for name in ("hash", "xhash", "prevhash"):
         assert FixMsg.into_field().field(name).dtype == HASH, name
     assert FixMsg.into_field().field("unix").dtype == pyarrow.int64()
 
@@ -830,7 +876,7 @@ def test_the_line_digest_is_stored_like_every_other_identifier() -> None:
 def test_a_line_is_unclassified_until_something_classifies_it() -> None:
     """The fallback the rules fall back to, on the class rather than in the parser."""
     assert FixMsg.into_event_type() is EventType.UNKNOWN
-    assert FixMsg().etype is EventType.UNKNOWN
+    assert FixMsg().eventtype is EventType.UNKNOWN
 
 
 def test_the_hour_is_derived_from_the_instant() -> None:
@@ -858,7 +904,7 @@ def test_a_row_round_trips_as_a_document() -> None:
         unix=2,
         hash=3,
         xhash=3,
-        etype=EventType.ORDER,
+        eventtype=EventType.ORDER,
         threadname="t",
         plugincode="d",
         message="m",
@@ -923,7 +969,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
 ) -> None:
     raw = _raw_batch(
         Message(
-            etype=EventType.ORDER,
+            eventtype=EventType.ORDER,
             message=(
                 "8=FIX.4.4|35=D|34=7|41=ROOT|55=IBM|461=EXXXXX|6=12.5|"
                 "453=1|448=BUYSIDE|447=D|452=1|10=000|"
@@ -933,7 +979,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
             plugincode="fix",
         ),
         Message(
-            etype=EventType.EXECUTION,
+            eventtype=EventType.EXECUTION,
             message=(
                 "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=8|#ORIGCLORDID=OLD|#ISINCODE=XX0000084733|"
             ),
@@ -965,7 +1011,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
-    assert parsed.column("etype").to_pylist() == [
+    assert parsed.column("eventtype").to_pylist() == [
         int(EventType.ORDER),
         int(EventType.EXECUTION),
         int(EventType.MISC),
@@ -986,7 +1032,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
             "buffer": None,
         }
     ]
-    assert parsed.column("codes").to_pylist()[0] == [("origclordid", "ROOT")]
+    assert parsed.column("altids").to_pylist()[0] == [("origclordid", "ROOT")]
 
 
 def test_fixmsg_preserves_the_message_stage_type_and_event_code(
@@ -996,14 +1042,14 @@ def test_fixmsg_preserves_the_message_stage_type_and_event_code(
         Message(
             message="8=FIX.4.4|35=D|11=A|10=000|ExecutionReport",
             msgtype="D",
-            etype=EventType.QUOTE,
+            eventtype=EventType.QUOTE,
         )
     )
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 
     assert parsed.column("msgtype").to_pylist() == ["D"]
-    assert parsed.column("etype").to_pylist() == [int(EventType.QUOTE)]
+    assert parsed.column("eventtype").to_pylist() == [int(EventType.QUOTE)]
 
 
 def test_fixmsg_projection_does_not_need_the_raw_message(registry: FixRegistry) -> None:
@@ -1736,7 +1782,7 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
         ("CLORDID", "PL9"),
         ("SIDE", "2"),
     ]
-    assert ("clordid", "PL9") in lone.column("codes").to_pylist()[0]
+    assert ("clordid", "PL9") in lone.column("altids").to_pylist()[0]
 
 
 def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:

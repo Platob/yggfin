@@ -96,7 +96,7 @@ class MarketConvertible(Convertible):
         spellings differ: a document renders a date as text and an identifier
         as a number, while a column wants the date and the sixteen bytes.
         Nested values convert through their own `into_row`, so a book's orders
-        and levels follow -- and a plain map of codes does not, however its
+        and levels follow -- and a plain map of identifiers does not, however its
         keys are spelled. `from_dict` reads either spelling back.
         """
         return {

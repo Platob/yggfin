@@ -126,14 +126,6 @@ class Instrument(Event):
     )
     """ISO 6166 identifier, wherever the message carried it; null when it did not."""
 
-    # A map and not a struct: which schemes a venue sends is not known when the
-    # shape is written, and a column per scheme would be forty nulls wide.
-    # Nullable, like `MarketEvent.metadata` and for the same reason: most
-    # instruments carry no alternative at all, and a null says that where an
-    # empty map says "it sent an empty list of them".
-    altids: Annotated[dict[str, str] | None, Field.column("Alt IDs")] = None
-    """Every other identifier the message carried, keyed by its scheme's name."""
-
     securitytype: Annotated[str | None, fix_tag("SecurityType")] = None
     """What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`, `MLEG`."""
 
@@ -208,6 +200,13 @@ class Instrument(Event):
         filled = {}
         for name in _INSTRUMENT_MEMBERS:
             mine, theirs = getattr(self, name), getattr(other, name)
+            if name == "altids":
+                merged = dict(mine)
+                for key, value in theirs.items():
+                    merged.setdefault(key, value)
+                if merged != mine:
+                    filled[name] = merged
+                continue
             if theirs in (None, "", NIL) or theirs == mine:
                 continue
             # A code that is `UNKNOWN` is not knowledge, and the zero every
@@ -458,16 +457,17 @@ def _observed_at(
         instrument,
         unix=unix,
         unixpartition=0,
-        etype=EventType.INSTRUMENT,
-        cunix=instrument.cunix or unix,
-        runix=instrument.runix or unix,
-        eunix=None,
-        sunix=None,
+        eventtype=EventType.INSTRUMENT,
+        creaunix=instrument.creaunix or unix,
+        recunix=instrument.recunix or unix,
+        expunix=None,
+        snapunix=None,
         hash=NIL,
-        linkedevents=[],
+        linkedhashes=[],
         version=0,
         state=State.OPEN,
         prevunix=None,
+        prevhash=None,
         parenthash=None,
         reason=None,
     )

@@ -6,6 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.market import (
+    HASH,
     MIC,
     Book,
     Currency,
@@ -18,7 +19,7 @@ from rekep.market import (
     Side,
     State,
 )
-from rekep.market.event import CODES_TYPE, DAY, HOUR, SECOND
+from rekep.market.event import ALTIDS_TYPE, DAY, HOUR, SECOND
 from rekep.market.identity import NIL, arrow_of, hash_bytes_of, hash_int_of
 
 SHAPES = {
@@ -33,15 +34,15 @@ SHAPES = {
 )
 def test_a_shape_says_what_kind_of_event_it_is(shape: type, declared: EventType) -> None:
     assert shape.into_event_type() is declared
-    assert shape().etype is declared
+    assert shape().eventtype is declared
 
 
 def test_the_type_is_the_class_rather_than_a_caller_s_word_for_it() -> None:
     """A row whose type disagreed with its table would be unreadable."""
-    assert Order().etype is EventType.ORDER
-    assert Order(etype=EventType.UNKNOWN).etype is EventType.ORDER
+    assert Order().eventtype is EventType.ORDER
+    assert Order(eventtype=EventType.UNKNOWN).eventtype is EventType.ORDER
     # A shape that deliberately carries more than one kind still says so.
-    assert Order(etype=EventType.QUOTE).etype is EventType.QUOTE
+    assert Order(eventtype=EventType.QUOTE).eventtype is EventType.QUOTE
 
 
 @pytest.mark.parametrize(
@@ -105,12 +106,12 @@ def test_the_partition_clock_is_narrower_than_the_instant() -> None:
 
 
 def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:
-    """`unix` orders it against the stream; `sunix` says what it is a picture of."""
+    """`unix` orders it against the stream; `snapunix` says what it pictures."""
     taken, subject = 2_000_000_000, 1_000_000_000
-    built = Book(unix=taken, sunix=subject)
-    assert built.unix == taken and built.sunix == subject
-    assert built.unix - built.sunix == 1_000_000_000, "staleness, without a join"
-    assert Order().sunix is None, "and nothing that is not a snapshot carries one"
+    built = Book(unix=taken, snapunix=subject)
+    assert built.unix == taken and built.snapunix == subject
+    assert built.unix - built.snapunix == 1_000_000_000, "staleness, without a join"
+    assert Order().snapunix is None, "and nothing that is not a snapshot carries one"
 
 
 def test_a_snapshot_drops_previous_market_values_because_they_are_a_delta() -> None:
@@ -150,7 +151,7 @@ def test_an_unchanged_state_expires_once_after_one_day() -> None:
 
     assert expired is not None
     assert expired.state is State.INTERNAL_EXPIRED
-    assert expired.eunix == current.unix + DAY
+    assert expired.expunix == current.unix + DAY
     assert expired.make_snapshot(expired.unix + HOUR) is None
 
 
@@ -180,8 +181,8 @@ def test_event_object_streams_cross_the_arrow_boundary_in_bounded_batches() -> N
         Order(
             unix=1,
             code="A",
-            codes={"orderid": "A", "clordid": "C1"},
-            linkedevents=[(0, 7)],
+            altids={"orderid": "A", "clordid": "C1"},
+            linkedhashes=[7],
             side=Side.BUY,
         ).identify(),
         Order(unix=2, code="B", side=Side.SELL).identify(),
@@ -225,6 +226,7 @@ def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> No
     """`hash` is NOT NULL, so an unsaved row is a visible repeat, not a late failure."""
     assert Order().hash == NIL and Order().xhash == NIL
     assert Order().state is State.UNKNOWN and Order().prevunix is None
+    assert Order().prevhash is None
 
 
 def test_mic_and_reason_distinguish_otherwise_identical_event_versions() -> None:
@@ -247,8 +249,11 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     declared = Event.into_field()
     assert "fix:tag" not in declared.field("code").metadata, "a lifecycle is not a FIX field"
     assert declared.field("code").dtype == pyarrow.string()
-    assert declared.field("codes").dtype == CODES_TYPE
-    assert declared.names.index("codes") == declared.names.index("code") + 1
+    assert declared.field("altids").dtype == ALTIDS_TYPE
+    assert declared.names.index("altids") == declared.names.index("code") + 1
+    assert declared.field("prevhash").dtype == HASH
+    assert declared.field("prevhash").nullable
+    assert declared.names.index("prevhash") == declared.names.index("prevunix") + 1
     assert MarketEvent.into_field().names == declared.names + [
         name for name in MarketEvent.into_field().names if name not in declared.names
     ], "a market event adds to the envelope and never respells it"

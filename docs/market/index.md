@@ -1,9 +1,9 @@
 # Market
 
 Market tables store immutable event versions. `hash` identifies one version,
-`xhash` its lifecycle, and `linkedevents` holds ordered `(unix, xhash)`
-relations between order, execution and book lifecycles — deduplicated, and
-never pointing at the event's own lifecycle.
+`prevhash` its predecessor, `xhash` its lifecycle, and `linkedhashes` holds
+ordered lifecycle hashes relating order, execution and book rows —
+deduplicated, and never pointing at the event's own lifecycle.
 
 Each product has its own page: [Instrument](../products/instrument.md),
 [Order](../products/order.md), [Execution](../products/execution.md),
@@ -48,7 +48,7 @@ Venue rejection and expiry use `REJECTED`/`EXPIRED`; records this pipeline
 rejects or expires use `INTERNAL_REJECTED`/`INTERNAL_EXPIRED`, so audit
 queries can separate them. Finished events produce no more snapshots, and
 generic `Event` snapshot logic expires unchanged state after one day, using
-`sunix` where present and `unix` otherwise.
+`snapunix` where present and `unix` otherwise.
 
 ## When it happened
 
@@ -75,7 +75,7 @@ BOOK      (9, 2, 1)
 ```
 
 Below every rung is the clock that *recorded* the line. It is not in that
-chain because it is not something the message said: it is `runix`, on every
+chain because it is not something the message said: it is `recunix`, on every
 row.
 
 `PREFERRED` ranks `TrdRegTimestampType <770>` per event kind, because a
