@@ -25,7 +25,7 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-56 56
+58 58
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,

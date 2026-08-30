@@ -337,10 +337,10 @@ output it created. Iceberg's `s3.sse.*` are refused rather than ignored -- see
 ```python
 from pprint import pprint
 
-from rekep.urls import Url, properties_of
+from rekep.urls import Url
 
 warehouse = "s3://key:secret@minio.example.net/rekep/warehouse?force_virtual_addressing=true"
-pprint(dict(properties_of(Url.from_string(warehouse))), sort_dicts=False, width=74)
+pprint(dict(Url.from_string(warehouse).into_properties()), sort_dicts=False, width=74)
 ```
 
 ```text

@@ -32,8 +32,6 @@ from rekep.fix.columns import (
     ISIN_CODE,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    id_scheme,
-    id_schemes,
 )
 from rekep.fix.components import (
     LEGS,
@@ -211,12 +209,6 @@ class FixMsg(Message):
             "quotereqid",
             "symbolticker",
         )
-
-    @classmethod
-    @functools.cache
-    def into_identifier_columns(cls) -> tuple[str, ...]:
-        """Parsed identifier columns retained in `altids`, in lookup order."""
-        return tuple(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
@@ -511,6 +503,30 @@ class FixMsg(Message):
 
     currency: Annotated[str | None, DECLARED["Currency"]] = None
     """`Currency <15>`, which is what the prices below are in."""
+
+    maturitydate: Annotated[datetime.date | None, DECLARED["MaturityDate"]] = None
+    """`MaturityDate <541>`, the day a dated contract expires."""
+
+    maturitymonthyear: Annotated[str | None, DECLARED["MaturityMonthYear"]] = None
+    """`MaturityMonthYear <200>`, the older spelling of the same expiry."""
+
+    strikeprice: Annotated[float | None, DECLARED["StrikePrice"]] = None
+    """`StrikePrice <202>`, in `currency`."""
+
+    putorcall: Annotated[int | None, DECLARED["PutOrCall"]] = None
+    """`PutOrCall <201>`: 0 is a put and 1 is a call."""
+
+    contractmultiplier: Annotated[float | None, DECLARED["ContractMultiplier"]] = None
+    """`ContractMultiplier <231>`, how many units one contract carries."""
+
+    minpriceincrement: Annotated[float | None, DECLARED["MinPriceIncrement"]] = None
+    """`MinPriceIncrement <969>`, the venue's tick."""
+
+    roundlot: Annotated[float | None, DECLARED["RoundLot"]] = None
+    """`RoundLot <561>`, the tradable unit."""
+
+    securitydesc: Annotated[str | None, DECLARED["SecurityDesc"]] = None
+    """`SecurityDesc <107>`, the venue's own words for the contract."""
 
     # Who asked, and under which identifiers.
 
@@ -1078,39 +1094,30 @@ class FixMsg(Message):
         columns.update(_session_batch_columns(columns))
         messages = columns.get("message")
         if messages is not None:
-            protocols = codec.categorise(messages, columns.get("plugincode"))
+            # Protocol and direction are both read off the raw line, so both are
+            # answered here and by the same rule: a row that still carries its
+            # text is classified again under *this* codec's rules -- the ones it
+            # is then parsed with -- and a row whose text a projection dropped
+            # keeps the answer the message stage stored, because there is no
+            # other. Direction is written back onto the batch, appended where
+            # the batch has no such column, so the fast path's slices carry it.
+            carries_text = pyarrow.compute.fill_null(
+                pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
+            )
+            protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugincode"))
+            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             stored_protocols = columns.get("protocolcode")
             if stored_protocols is not None:
-                # The message stage classified these same rows once, from
-                # syntax the rules cannot always see: a rendered payload whose
-                # `MSGTYPE=` discriminator is real but whose `#` markers are
-                # not there carries genuine bridge data the `FIXML_PATTERN`
-                # alone would drop into OTHER unread. The stored reading fills
-                # only what the recompute could not name -- never the other
-                # way around, because the rules also see what the syntax probe
-                # cannot: a `35=UL` wrapper without `MSGTYPE=` is stored FIX
-                # but must parse under the bridge's named codec, and known
-                # operational vocabulary is MISC only here.
                 protocols = pyarrow.compute.if_else(
-                    pyarrow.compute.equal(protocols, NO_PROTOCOL),
+                    carries_text,
+                    protocols,
                     pyarrow.compute.fill_null(
                         stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
                     ),
-                    protocols,
                 )
-            # Direction reads the verb before the payload, so it is resolved
-            # here, where the classification saying which token opens the
-            # payload was just computed -- and written back onto the batch,
-            # appended where the batch has no such column, so the partial
-            # fast path's slices carry it too. Only a row that
-            # still has its text answers fresh: a projected row dropped the
-            # message, and the stored answer is the only one there is.
-            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             stored_direction = columns.get("direction")
             if stored_direction is not None:
-                direction = pyarrow.compute.if_else(
-                    pyarrow.compute.is_valid(messages), direction, stored_direction
-                )
+                direction = pyarrow.compute.if_else(carries_text, direction, stored_direction)
             columns["direction"] = direction
             if "direction" in batch.schema.names:
                 at = batch.schema.get_field_index("direction")
@@ -1335,7 +1342,12 @@ class FixMsg(Message):
     def _prefer_named_entries(
         source: Any, resolved: Any, group_count_tags: Collection[int] = ()
     ) -> Any:
-        """Drop flat numeric copies shadowed by named fields of one identity.
+        """Drop a flat numeric copy a named field of one identity repeats.
+
+        A wrapper re-renders its own payload, so `54=1` beside `Side=1` is one
+        field written twice and the rendered spelling is what the row keeps.
+        Two *different* values are not a repetition but a conflict, and both
+        stay: which of them the sender meant is not this stage's to decide.
 
         Indexed component members remain repetitions: their shared tag does
         not make two group entries duplicates.
@@ -1386,9 +1398,23 @@ class FixMsg(Message):
                 compute.greater_equal(positions, compute.take(first_counts, parents)), False
             )
             numeric = compute.and_(numeric, compute.invert(protected))
+        # The first named occurrence of an identity is what a numeric copy is
+        # compared against: `named_values` and `named_identities` come off one
+        # mask, so `index_in` indexes both.
+        values = compute.struct_field(entries, "value")
+        named_values = compute.filter(values, named)
+        repeated = compute.fill_null(
+            compute.equal(
+                values, compute.take(named_values, compute.index_in(identities, named_identities))
+            ),
+            False,
+        )
         duplicate = compute.and_(
             numeric,
-            compute.fill_null(compute.is_in(identities, value_set=named_identities), False),
+            compute.and_(
+                compute.fill_null(compute.is_in(identities, value_set=named_identities), False),
+                repeated,
+            ),
         )
         if not compute.any(duplicate, min_count=0).as_py():
             return resolved
@@ -1998,23 +2024,6 @@ def _pair_identity(key: Any) -> tuple[str, int | str]:
     """Stable resolved identity for duplicate selection."""
     text = str(key)
     return ("tag", int(text)) if _numeric_key(text) else ("name", column_name(text))
-
-
-def _id_source(value: Any) -> str:
-    """An identifier scheme, as the wire value the dictionary gives it.
-
-    A value the dictionary already spells as a wire code comes back unchanged,
-    so this is safe on either spelling.
-    """
-    text = "" if value is None else str(value)
-    scheme = id_scheme(text)
-    return _scheme_values().get(scheme, text) if scheme else text
-
-
-@functools.cache
-def _scheme_values() -> Mapping[str, str]:
-    """`{scheme name: its wire value}` -- the inverse of `id_schemes()`."""
-    return MappingProxyType({name: value for value, name in id_schemes().items()})
 
 
 @functools.cache

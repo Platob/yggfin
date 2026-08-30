@@ -151,11 +151,6 @@ class FieldAccess:
         """One shared accessor per `(registry, version)`, memos and all."""
         return cls(registry=registry, version=version)
 
-    @classmethod
-    def spelling_only(cls) -> FieldAccess:
-        """The dictionary-less accessor a bare wire model reads through."""
-        return cls.of(None, None)
-
     @cached_property
     def index(self) -> TagIndex:
         """The name index the columnar path uses, shared so the rules are one."""

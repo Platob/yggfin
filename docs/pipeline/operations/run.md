@@ -1,6 +1,6 @@
 # End-to-end run
 
-A correctness run measured 2026-08-29 executes the five notebook tasks against
+A correctness run measured 2026-08-30 executes the five notebook tasks against
 the checked-in message fixture and a fresh local Iceberg warehouse, then
 replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).
@@ -13,24 +13,24 @@ replays the same input. Throughput measurements live on
 From the repository root:
 
 ```bash
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data/app_messages_sample.txt \
   --output parse_messages.executed.ipynb
 
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/parse_market/parse_market.yml \
   --output parse_market.executed.ipynb
 
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/flatten_orders/flatten_orders.yml \
   --output flatten_orders.executed.ipynb
 
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/flatten_executions/flatten_executions.yml \
   --output flatten_executions.executed.ipynb
 ```

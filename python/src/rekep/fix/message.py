@@ -1,4 +1,4 @@
-"""FIX wire frames and FIXML rendered payloads, scalar and columnar."""
+"""FIX wire frames and rendered named payloads, scalar and columnar."""
 
 from __future__ import annotations
 
@@ -25,6 +25,16 @@ SOH = "\x01"
 #: candidate leads any candidate it contains, so `^A` is tried before `^`.
 SEPARATORS = (SOH, "|", "\x04\x03", "^A", "^", ";")
 
+#: Whitespace, spelled out. Python's ASCII `\s` holds `\x0b` and RE2's does
+#: not, so a `\s` in a pattern that exists in both engines is a divergence
+#: waiting for a vertical tab; one explicit class reads the same everywhere.
+_WS = r"[ \t\r\n\f\x0b]"
+
+#: The same characters as a set `str.strip` takes, for the paths that do not
+#: run the pattern. `str.strip()` with no argument strips *Unicode* whitespace,
+#: which is wider than what any of these regexes call whitespace.
+_STRIPPED = " \t\r\n\f\x0b"
+
 #: What a bridge writes in front of every key, and -- where it writes nothing
 #: else -- what separates them: `#A=1#B=2` has no delimiter between its tokens
 #: at all, so the marker of the next key is the end of the value before it.
@@ -44,15 +54,11 @@ NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
 #: The guard that keeps the `8=` inside tag 18 or 58 from reading as a
 #: BeginString: the start of the text, or a character that is not a digit.
 #: RE2 has no lookbehind, so wherever this rule is run vectorised the guard
-#: rides *outside* the capture rather than behind it.
-_NOT_A_TAG = r"(?:^|[^0-9])"
-
-#: Where a message starts inside a log line: `8=FIX...` at the start or after
-#: anything that is not a digit. Public because **a classification rule is
-#: data** -- `Rules.into_default()`'s FIX rule is this string, and a rule set loaded
-#: from a document has to be able to spell it -- and because what follows the
-#: BeginString value is, by construction, the separator.
-BEGIN_STRING = rf"{_NOT_A_TAG}8=FIXT?"
+#: rides *outside* the capture rather than behind it. Letters as well as
+#: digits, because `8=FIXTURE` inside a diagnostic is a word and not a frame:
+#: what makes the token a BeginString is the whole value ending where a
+#: separator or the line does.
+_NOT_A_TAG = r"(?:^|[^A-Za-z0-9_.\-])"
 
 #: Every tag whose value the standard types `data`: a value that may hold the
 #: delimiter itself, and whose length is the field immediately in front of it.
@@ -76,23 +82,36 @@ DATA_TAGS = frozenset(
     }
 )  # fmt: skip
 
+#: Where a key may start: the payload's own start, or one of the separators a
+#: message writes between fields. `#` is in the set because a compact bridge
+#: line writes nothing else between its tokens.
+TOKEN_START = r"(?:^|\x04\x03|\^A|[\x01|^;#])"
+
+#: Where a token ends: the next separator, or the end of the text.
+TOKEN_END = rf"{_WS}*(?:\x04\x03|\^A|[\x01|^;#]|$)"
+
 #: One of those tags as a key, wherever a key may start. A row this matches is
 #: split by the lengths it carries rather than by the delimiter alone.
 DATA_TAG_TOKEN = (
-    r"(?s)(?:^|\x04\x03|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?(?:"
+    rf"(?s){TOKEN_START}{_WS}*#?(?:"
     + "|".join(sorted(DATA_TAGS, key=len, reverse=True))
-    + r")[ \t\r\n\f\x0b]*="
+    + rf"){_WS}*="
 )
 
 #: The same probe compiled, for the scalar reading of one payload.
 _DATA_TAG_KEY = re.compile(DATA_TAG_TOKEN.replace(r"(?s)", "", 1), re.DOTALL)
 
-#: A top-level numeric MsgType token is enough to identify FIX even when a
-#: capture omitted BeginString. Separators are explicit so prose `35=D` stays
-#: prose; `#` is both the rendered marker and a delimiter in compact logs.
+#: Where a message starts inside a log line: a whole `8=FIX...` token, at the
+#: start or behind something that cannot be part of one. The value runs to the
+#: separator, so a `8=FIXTURE` followed by prose is not a BeginString and a row
+#: carrying only that carries no frame.
+BEGIN_STRING = rf"(?s){_NOT_A_TAG}#?8{_WS}*={_WS}*FIXT?{NOT_SEPARATOR}*{TOKEN_END}"
+
+#: A top-level numeric MsgType token, with the value captured. Enough to
+#: identify a FIX frame even when a capture omitted BeginString; separators are
+#: explicit so prose `35=D` stays prose.
 FIX_MSG_TYPE_PATTERN = (
-    r"(?s)(?:^|\x04\x03|\^A|[\x01|^;#])[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
-    r"[ \t\r\n\f\x0b]*[A-Za-z0-9]+[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
+    rf"(?s){TOKEN_START}{_WS}*#?35{_WS}*=" rf"{_WS}*(?P<value>[A-Za-z0-9]+){TOKEN_END}"
 )
 
 #: `BEGIN_STRING` with the message after it captured: how a vectorised parse
@@ -103,7 +122,7 @@ FIX_MSG_TYPE_PATTERN = (
 #: front of the payload, and `seq=1092` in that prose is an assignment -- so a
 #: separator inferred from the whole line reads the `>` of `sending >>` as the
 #: delimiter and collapses the message into one entry.
-BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
+BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8{_WS}*={_WS}*FIXT?{NOT_SEPARATOR}*{TOKEN_END}.*)"
 
 #: The scalar reading of the same rule, and the one spelling of it that uses a
 #: lookbehind: it has to report where the `8` is and not where the guard is,
@@ -114,7 +133,10 @@ BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
 #: parsers are contracted to agree. Without the flag a tag written in
 #: Arabic-Indic digits was a pair to the scalar parser and noise to the
 #: vectorised one; ASCII is also what the FIX standard means by a digit.
-_BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{NOT_SEPARATOR}*", re.ASCII)
+_BEGIN = re.compile(
+    rf"(?:^|(?<=[^A-Za-z0-9_.\-]))8{_WS}*={_WS}*FIXT?{NOT_SEPARATOR}*(?={TOKEN_END})",
+    re.ASCII,
+)
 
 #: A rendered field or group name, as the tools around a bridge print one --
 #: letters first, then the word characters, dots (a component path like
@@ -134,17 +156,7 @@ _SELECTOR = r"[A-Za-z][A-Za-z0-9_.\-]*"
 #: One bracketed part of a rendered key: an entry index, or a member name.
 _BRACKET = rf"\[(?:\d+|{_SELECTOR})\]"
 
-#: Whitespace, spelled out. Python's ASCII `\s` holds `\x0b` and RE2's does
-#: not, so a `\s` in a pattern that exists in both engines is a divergence
-#: waiting for a vertical tab; one explicit class reads the same everywhere.
-_WS = r"[ \t\r\n\f\x0b]"
-
-#: The same characters as a set `str.strip` takes, for the paths that do not
-#: run the pattern. `str.strip()` with no argument strips *Unicode* whitespace,
-#: which is wider than what any of these regexes call whitespace.
-_STRIPPED = " \t\r\n\f\x0b"
-
-#: One `#KEY=` token, which is how a FIXML bridge marks a field: the `#` says
+#: One `#KEY=` token, which is how a bridge marks a field: the `#` says
 #: "a key starts here", which is the only thing in a rendered line that does.
 #:
 #: The bracket and the dotted member are both admitted, because both are how a
@@ -156,38 +168,69 @@ _STRIPPED = " \t\r\n\f\x0b"
 #: or `#10=`, and a rule that took only a letter-initial name put that token in
 #: the *prefix* every reader of this cuts away -- so the field was dropped and,
 #: where it was the trailer, a discriminator written behind it was promoted.
-_FIXML_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_MARKED_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
-#: What makes a line a **bridge message**: two or more of those tokens.
-#: Public for the same reason `BEGIN_STRING` is -- it is the FIXML classification
-#: rule, and a rule is data. Two and not one, because a lone `#FOO=bar` in
-#: prose is a sentence, and a rule that called it a message would parse every
-#: log line that mentions a hashtag.
-FIXML_PATTERN = rf"(?s){_FIXML_TOKEN}.*{_FIXML_TOKEN}"
+#: A marked document's own start, with the document after it captured: where a
+#: bridge message starts inside a log line, exactly as `BEGIN_VECTOR` says
+#: where a wire message does. `toBridge #ISINCODE=x|#SIDE=1` carries the
+#: plugin's own prefix, and without a start marker the first key would be
+#: `toBridge #ISINCODE`. Two tokens and not one, because a lone `#FOO=bar` in
+#: prose is a sentence.
+MARKED_VECTOR = rf"(?s)(?P<msg>{_MARKED_TOKEN}.*{_MARKED_TOKEN}.*)"
 
-#: `FIXML_PATTERN` with the message after it captured: where a bridge message starts
-#: inside a log line, exactly as `BEGIN_VECTOR` says where a wire message
-#: does. `toBridge #ISINCODE=x|#SIDE=1` carries the plugin's own prefix, and
-#: without a start marker the first key would be `toBridge #ISINCODE`.
-FIXML_VECTOR = rf"(?s)(?P<msg>{_FIXML_TOKEN}.*{_FIXML_TOKEN}.*)"
+#: A **named key** token -- a key that is not a FIX tag -- wherever a key may
+#: start. What tells a rendered field from a numbered one, so what decides
+#: whether a payload is read as tags alone or as tags and names together. The
+#: wire token `35=UL` is a MsgType and answers nothing here: a numbered-only
+#: frame carrying it holds no named key, and one carrying a named payload
+#: beside it does.
+NAMED_KEY = rf"(?s){TOKEN_START}{_WS}*#?{_NAME}(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
-#: A FIX frame carrying a rendered `NAME=VALUE` document in `XmlData <213>`.
-#: The venue's wire token remains `35=UL`; FIXML is rekep's protocol name.
-FIXML_WIRE_PATTERN = rf"(?s){BEGIN_STRING}.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)"
+#: What a rendered spelling may carry between the letters that name the field:
+#: `Msg Type`, `msg_type` and `MSG-TYPE` are one name, and the fold is what
+#: says so.
+_DECORATION = r"[^A-Za-z0-9=\x01\x03\x04|;^#]*"
 
-# A user-defined MsgType can wrap a rendered payload even when it is not the
-# built-in FIXML protocol. Scalar parsing must then admit both numeric and named
-# keys, exactly as the columnar message stage does.
-_USER_DEFINED_WIRE = r"(?s)(?:^|[^0-9])35=U[A-Za-z0-9]*(?:[^A-Za-z0-9]|$)"
 
-#: The scalar reading of the same rule: the first `#NAME=` that has another
+def rendered_name(name: str) -> str:
+    """A folded field name as the rendered-key grammar can spell it."""
+    return _DECORATION.join(re.escape(character) for character in column_name(name))
+
+
+#: A rendered MsgType token, with the value captured: what a bridge writes
+#: instead of `35=`.
+NAMED_MSG_TYPE_PATTERN = (
+    rf"(?is){TOKEN_START}{_WS}*#?{rendered_name('MsgType')}{_WS}*="
+    rf"{_WS}*(?P<value>[A-Za-z0-9]+){TOKEN_END}"
+)
+
+#: The scalar reading of `MARKED_VECTOR`: the first `#NAME=` that has another
 #: after it. A lookahead rather than a capture, because the scalar path wants
 #: the *position* and RE2 -- which has neither -- reads it off the capture.
-_FIXML = re.compile(rf"{_FIXML_TOKEN}(?=.*{_FIXML_TOKEN})", re.DOTALL | re.ASCII)
+_MARKED = re.compile(rf"{_MARKED_TOKEN}(?=.*{_MARKED_TOKEN})", re.DOTALL | re.ASCII)
 
 #: One `#NAME=` on its own, for finding the *second* one -- whatever sits in
 #: front of which is the separator (`detect_separator`).
-_FIXML_NEXT = re.compile(_FIXML_TOKEN, re.ASCII)
+_MARKED_NEXT = re.compile(_MARKED_TOKEN, re.ASCII)
+
+#: The scalar reading of `NAMED_KEY`, which is what tells `parse_pairs` whether
+#: a payload admits rendered keys.
+_NAMED_KEY = re.compile(NAMED_KEY.replace(r"(?s)", "", 1), re.DOTALL | re.ASCII)
+
+#: `XmlData <213>`, the one FIX field whose value is another message more often
+#: than it is a value: real FIXML traffic writes `key=value` pairs in it, and
+#: `FixCodec.into_payload_pairs` expands them in the place the tag sat. Pinned
+#: against the shipped registry by `tests/fix/test_message.py`, like `DATA_TAGS`.
+XML_DATA_TAG = 213
+
+#: What makes such a payload a message rather than a document: two `name=`
+#: tokens. The same "two and not one" `MARKED_VECTOR` uses, and for the same
+#: reason -- one `a=b` inside prose is a sentence.
+PAYLOAD_PAIRS = r"[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*="
+
+#: And what makes it a document: the standard says XML, and a payload that
+#: opens a tag is taken at its word however rare it turns out to be.
+LOOKS_XML = r"^[ \t\r\n]*<"
 
 #: `detect_separator`, vectorised, in its two halves: whatever follows the
 #: BeginString value, and -- for a line that has none -- whatever sits in front
@@ -199,13 +242,13 @@ _FIXML_NEXT = re.compile(_FIXML_TOKEN, re.ASCII)
 #: all: `parse_arrow_array` samples a column once by contract, so the rows that
 #: share a separator have to be handed to it together, and this is how a caller
 #: finds out which those are without reading a row in Python.
-SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
+SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8{_WS}*={_WS}*FIXT?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 NAMED_SEPARATOR_VECTOR = (
     rf"(?s)(?:^|[^A-Za-z0-9])#?"
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
     rf"[Ff][Ii][Xx][Tt]?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 )
-FIXML_SEPARATOR_VECTOR = rf"(?s){_FIXML_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_FIXML_TOKEN}"
+MARKED_SEPARATOR_VECTOR = rf"(?s){_MARKED_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_MARKED_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -304,9 +347,9 @@ def detect_separator(text: str) -> str:
         following = _separator_at(text, match.end())
         if following is not None:
             return following
-    fixml = _FIXML.search(text)
-    if fixml is not None:
-        second = _FIXML_NEXT.search(text, fixml.end())
+    marked = _MARKED.search(text)
+    if marked is not None:
+        second = _MARKED_NEXT.search(text, marked.end())
         if second is not None:
             return _separator_before(text, second.start())
     for candidate in SEPARATORS:
@@ -353,6 +396,18 @@ def detect_entry_separator(
     return None
 
 
+def _named_payload(text: str, begin: re.Match[str] | None) -> bool:
+    """Whether a payload admits rendered keys beside numbered tags.
+
+    One rule for both readings of a payload whose protocol the caller did not
+    state, and the scalar half of the shape `Rules` classifies by: no wire
+    envelope means the whole line is rendered keys, and an envelope carrying a
+    named key holds both. A `#A=1` quoted inside a `Text <58>` value opens no
+    token, so a wire message that mentions one still reads as tags alone.
+    """
+    return begin is None or _NAMED_KEY.search(text) is not None
+
+
 def parse_pairs(
     text: str | bytes,
     separator: str | None = None,
@@ -368,11 +423,11 @@ def parse_pairs(
     if begin is not None:
         text = text[begin.start() :]
     if named is None:
-        named = begin is None or re.search(_USER_DEFINED_WIRE, text, re.IGNORECASE) is not None
+        named = _named_payload(text, begin)
     if named and begin is None:
-        fixml = _FIXML.search(text)
-        if fixml is not None:
-            text = text[fixml.start() :]
+        marked = _MARKED.search(text)
+        if marked is not None:
+            text = text[marked.start() :]
     separator = separator or detect_separator(text)
     if named and entry_separator is None:
         entry_separator = detect_entry_separator(text, separator, extra_entry_separators)
@@ -522,7 +577,7 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
         # the header, or the tags that say what it is are cut off with the
         # log's prefix. The scalar parser applies the same guard, so the two
         # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, FIXML_VECTOR), "msg")
+        bridged = compute.struct_field(compute.extract_regex(values, MARKED_VECTOR), "msg")
         values = compute.if_else(
             compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
         )
@@ -539,6 +594,20 @@ _MARKED_KEY_VECTOR = (
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*="
 )
+
+
+def carries_message(values: Any) -> Any:
+    """Which `XmlData <213>` values hold a `key=value` message rather than a document.
+
+    One reading for both readers of the field: the protocol classifier, which
+    calls a frame carrying one a mixed message, and `into_payload_pairs`, which
+    expands it where the tag sat.
+    """
+    compute = pyarrow.compute
+    return compute.and_(
+        compute.fill_null(compute.match_substring_regex(values, PAYLOAD_PAIRS), False),
+        compute.invert(compute.fill_null(compute.match_substring_regex(values, LOOKS_XML), False)),
+    )
 
 
 def rendered_keys(
@@ -1080,13 +1149,13 @@ def _column_style(
             text = text.decode("utf-8", "replace")
         if text:
             begin = _BEGIN.search(text)
-            reading = begin is None if named is None else named
             if begin is not None:
                 text = text[begin.start() :]
-            elif reading:
-                fixml = _FIXML.search(text)
-                if fixml is not None:
-                    text = text[fixml.start() :]
+            reading = _named_payload(text, begin) if named is None else named
+            if begin is None and reading:
+                marked = _MARKED.search(text)
+                if marked is not None:
+                    text = text[marked.start() :]
             separator = detect_separator(text)
             entry = (
                 detect_entry_separator(text, separator, extra_entry_separators) if reading else None

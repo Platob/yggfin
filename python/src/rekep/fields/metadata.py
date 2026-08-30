@@ -50,11 +50,6 @@ ASCENDING = "asc"
 ANY_VERSION = "*"
 
 
-def fold(name: Any) -> str:
-    """One spelling as it is matched: lowercase letters and digits."""
-    return column_name(str(name))
-
-
 @functools.lru_cache(maxsize=4096)
 def encoded_key(text: Any) -> str:
     """A value or its name as `encoded` keys it: casefolded letters and digits.
@@ -124,7 +119,7 @@ class Alias(Convertible):
     @property
     def folded(self) -> str:
         """How this alias is matched."""
-        return fold(self.name)
+        return column_name(self.name)
 
     def into_dict(self) -> dict[str, Any]:
         """The alias as it is stored, carrying provenance only when it has any."""
@@ -579,7 +574,7 @@ class FixMetadata(ProtocolMetadata):
     @property
     def folded(self) -> str:
         """The canonical name as it is matched."""
-        return fold(self.canonical)
+        return column_name(self.canonical)
 
     @property
     def newest(self) -> str:
@@ -623,7 +618,7 @@ class FixMetadata(ProtocolMetadata):
         found: dict[str, str] = {}
         for name in (self.canonical, *(str(alias.get("name", "")) for alias in self.aliases)):
             if name.strip():
-                found.setdefault(fold(name), name)
+                found.setdefault(column_name(name), name)
         return tuple(found.values())
 
     def encode(self, value: Any) -> str:

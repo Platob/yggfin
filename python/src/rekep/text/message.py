@@ -14,9 +14,15 @@ import pyarrow.compute
 from rekep import txhash
 from rekep.enums import Direction, EventType
 from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
-from rekep.fields.arrays import build_list, dense_counts, null_mask, scattered, sequence
+from rekep.fields.arrays import build_list, dense_counts, null_mask, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
-from rekep.fix.message import NOT_SEPARATOR, parse_pairs
+from rekep.fix.message import (
+    FIX_MSG_TYPE_PATTERN,
+    NAMED_MSG_TYPE_PATTERN,
+    TOKEN_START,
+    parse_pairs,
+    rendered_name,
+)
 from rekep.market.event import MICROSECOND, Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
 from rekep.text.entries import ENTRIES, Entry
@@ -28,11 +34,7 @@ _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _DIRECTION_CODE = Direction.into_arrow_type().index_type
 _EVENT_CODE = pyarrow.int64()
 _NO_PROTOCOL = "OTHER"
-# Every separator `fix.message.SEPARATORS` declares, in that order: a
-# multi-character candidate leads anything it contains, and a discriminator the
-# raw stage cannot see is a MsgType filter that silently drops the row.
-_DISCRIMINATOR_END = r"[ \t\r\n\f\x0b]*(?:\x04\x03|\^A|[\x01|^;#]|$)"
-_TOKEN_START = r"(?:^|\x04\x03|\^A|[\x01|^;#])"
+_WS = r"[ \t\r\n\f\x0b]"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
 _CHECKSUM_KEYS = tuple(
@@ -118,40 +120,12 @@ _SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
     {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": _MSG_TYPE}
 )
 
-_RENDERED_DECORATION = r"[^A-Za-z0-9=\x01\x03\x04|;^#]*"
-
-
-def _rendered_name(name: str) -> str:
-    """A folded field name as the rendered-key grammar can spell it."""
-    return _RENDERED_DECORATION.join(re.escape(character) for character in column_name(name))
-
-
+#: A checksum token, however the trailer spells it: the boundary a promoted
+#: discriminator has to stand in front of.
 _CHECKSUM_TOKEN = (
-    rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?"
-    rf"(?:10|{_rendered_name('CheckSum')}|{_rendered_name('Trailer.10')}|"
-    rf"{_rendered_name('Trailer.CheckSum')})[ \t\r\n\f\x0b]*="
-)
-
-# Finding one discriminator is deliberately cheaper than tokenising the whole
-# payload. Captures can contain long prose and stack traces; only a row that
-# names a message kind is allowed into the key/value splitter.
-_FIX_MSG_TYPE_PATTERN = (
-    rf"(?s){_TOKEN_START}[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*="
-    rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
-)
-_NAMED_MSG_TYPE = (
-    rf"(?is){_TOKEN_START}[ \t\r\n\f\x0b]*#?{_rendered_name('MsgType')}[ \t\r\n\f\x0b]*="
-    rf"[ \t\r\n\f\x0b]*(?P<value>[A-Za-z0-9]+){_DISCRIMINATOR_END}"
-)
-# The version is whatever the BeginString value holds, which is everything up
-# to the separator -- `NOT_SEPARATOR`, the same class the FIX parsers read one
-# with. A dotted version alone was stricter than the shipped classification
-# rule, so `8=FIX4` -- which this repository's own fixture writes -- reached
-# the store as OTHER with direction UNKNOWN while `Rules.into_default()` called it
-# FIX. One spelling of one rule.
-_FIX_BEGIN = (
-    r"(?s)(?:^|[^A-Za-z0-9_.\-])#?8[ \t\r\n\f\x0b]*="
-    rf"[ \t\r\n\f\x0b]*FIXT?{NOT_SEPARATOR}*{_DISCRIMINATOR_END}"
+    rf"(?is){TOKEN_START}{_WS}*#?"
+    rf"(?:10|{rendered_name('CheckSum')}|{rendered_name('Trailer.10')}|"
+    rf"{rendered_name('Trailer.CheckSum')}){_WS}*="
 )
 
 
@@ -403,36 +377,26 @@ class Message(Event):
                 "direction": pyarrow.array([], _DIRECTION_CODE),
             }
 
+        from rekep.fix.rules import Rules
+
         compute = pyarrow.compute
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-        wire_values, wire_probe, named_probe, begins_fix, probed_msg_types = _msg_type_probe(text)
-        candidates = compute.or_(
-            compute.or_(compute.or_(wire_probe, named_probe), begins_fix),
-            Entry.looks_structured_arrow(text),
-        )
-        entries = _candidate_entries(text, candidates)
+        entries = Entry.payload_arrow(text)
+        # The pairs this stage just split are what a protocol is decided by, so
+        # they are handed over rather than parsed a second time -- and before
+        # the header is lifted out of them, because a frame whose every numbered
+        # tag is a session field is still a frame.
+        rules = Rules.into_default() if protocol_rules is None else protocol_rules
+        protocols = rules.into_arrow_protocol_array(text, plugins, entries)
         session, entries = _session_columns(entries)
-        msg_types = compute.coalesce(session[_MSG_TYPE], probed_msg_types)
+        msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))
         event_types = _event_types(msg_types, msg_type_event_types)
-        protocols = (
-            protocol_rules.into_arrow_protocol_array(text, plugins)
-            if protocol_rules is not None
-            else _protocol_codes(wire_values, wire_probe, named_probe, begins_fix)
-        )
         # Direction is resolved here, where the raw line and its protocol
         # last coexist: `parse_fix` reads the stored rows with `message`
         # projected out, so an answer not stored now is an answer lost. The
         # FIX stage re-resolves any row still carrying its text -- the same
         # computation -- and preserves this one where the text is gone.
-        from rekep.fix.rules import Rules
-
-        resolver = protocol_rules if protocol_rules is not None else Rules.into_default()
-        if hasattr(resolver, "into_arrow_direction_array"):
-            direction = resolver.into_arrow_direction_array(text, protocols)
-        else:
-            # A duck-typed classifier that only knows protocols leaves the
-            # verbs to the default vocabulary.
-            direction = Rules.into_default().into_arrow_direction_array(text, protocols)
+        direction = rules.into_arrow_direction_array(text, protocols)
         return {
             **session,
             "eventtype": event_types,
@@ -450,7 +414,7 @@ class Message(Event):
                 [cls.msg_types_arrow(chunk) for chunk in messages.chunks], pyarrow.string()
             )
         text = pyarrow.compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-        return _msg_type_probe(text)[-1]
+        return _msg_type_probe(text)
 
     def identify(self) -> Self:
         """Give this raw row the identity of its exact payload."""
@@ -678,23 +642,6 @@ def _first_by_parent(
     )
 
 
-def _candidate_entries(text: pyarrow.Array, candidates: pyarrow.Array) -> pyarrow.Array:
-    """Parse candidate rows and scatter empty lists into skipped prose rows."""
-    compute = pyarrow.compute
-    rows = len(text)
-    if not compute.any(candidates, min_count=0).as_py():
-        return pyarrow.repeat(pyarrow.scalar([], ENTRIES), rows)
-    if compute.all(candidates, min_count=0).as_py():
-        return Entry.parse_arrow(text)
-
-    positions = sequence(rows)
-    selected_at = compute.filter(positions, candidates)
-    skipped_at = compute.filter(positions, compute.invert(candidates))
-    parsed = Entry.parse_arrow(compute.filter(text, candidates))
-    skipped = pyarrow.repeat(pyarrow.scalar([], ENTRIES), len(skipped_at))
-    return scattered([parsed, skipped], [selected_at, skipped_at])
-
-
 def _event_types(
     msg_types: pyarrow.Array,
     declared: Mapping[str, EventType | int | str] | None,
@@ -716,29 +663,6 @@ def _event_types(
     ).cast(_EVENT_CODE, safe=False)
 
 
-def _protocol_codes(
-    wire_values: pyarrow.Array,
-    wire_probe: pyarrow.Array,
-    named_probe: pyarrow.Array,
-    begins_fix: pyarrow.Array,
-) -> pyarrow.Array:
-    """Protocol syntax classified before the payload is discarded."""
-    compute = pyarrow.compute
-    wrapped = compute.and_(
-        compute.fill_null(compute.starts_with(wire_values, "U"), False), named_probe
-    )
-    named = compute.or_(wrapped, compute.and_(named_probe, compute.invert(wire_probe)))
-    return compute.if_else(
-        named,
-        pyarrow.scalar("FIXML"),
-        compute.if_else(
-            compute.or_(begins_fix, wire_probe),
-            pyarrow.scalar("FIX"),
-            pyarrow.scalar(_NO_PROTOCOL),
-        ),
-    ).cast(pyarrow.string(), safe=False)
-
-
 def _before_checksum(candidate_at: pyarrow.Array, checksum_at: pyarrow.Array) -> pyarrow.Array:
     """A discriminator exists and precedes the first checksum token."""
     compute = pyarrow.compute
@@ -749,27 +673,31 @@ def _before_checksum(candidate_at: pyarrow.Array, checksum_at: pyarrow.Array) ->
     )
 
 
-def _msg_type_probe(
-    text: pyarrow.Array,
-) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array, pyarrow.Array]:
-    """Wire values, syntax masks, and the first valid top-level discriminator."""
+def _msg_type_probe(text: pyarrow.Array) -> pyarrow.Array:
+    """The first valid top-level discriminator, wire spelling or rendered.
+
+    A `35=U1` wrapper naming its real type beside it defers to the rendered
+    name; everything else takes the wire value where it has one. Both count
+    only in front of the checksum, so a `35=` behind the trailer is log noise.
+    """
     compute = pyarrow.compute
-    wire_values = compute.struct_field(compute.extract_regex(text, _FIX_MSG_TYPE_PATTERN), "value")
-    named_values = compute.struct_field(compute.extract_regex(text, _NAMED_MSG_TYPE), "value")
     checksum_at = compute.find_substring_regex(text, _CHECKSUM_TOKEN)
-    wire_probe = _before_checksum(
-        compute.find_substring_regex(text, _FIX_MSG_TYPE_PATTERN), checksum_at
-    )
-    named_probe = _before_checksum(compute.find_substring_regex(text, _NAMED_MSG_TYPE), checksum_at)
     missing = pyarrow.scalar(None, pyarrow.string())
-    wire_values = compute.if_else(wire_probe, wire_values, missing)
-    named_values = compute.if_else(named_probe, named_values, missing)
-    begins_fix = compute.fill_null(compute.match_substring_regex(text, _FIX_BEGIN), False)
+    values = []
+    for pattern in (FIX_MSG_TYPE_PATTERN, NAMED_MSG_TYPE_PATTERN):
+        found = _before_checksum(compute.find_substring_regex(text, pattern), checksum_at)
+        values.append(
+            compute.if_else(
+                found,
+                compute.struct_field(compute.extract_regex(text, pattern), "value"),
+                missing,
+            )
+        )
+    wire, named = values
     wrapped = compute.and_(
-        compute.fill_null(compute.starts_with(wire_values, "U"), False), named_probe
+        compute.fill_null(compute.starts_with(wire, "U"), False), compute.is_valid(named)
     )
-    msg_types = compute.if_else(wrapped, named_values, compute.coalesce(wire_values, named_values))
-    return wire_values, wire_probe, named_probe, begins_fix, msg_types
+    return compute.if_else(wrapped, named, compute.coalesce(wire, named))
 
 
 def _event_code(value: EventType | int | str) -> int:

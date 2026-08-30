@@ -95,51 +95,53 @@ class Leg:
     """One entry of FIX's InstrmtLegGrp component: one leg of a multileg.
 
     Every member is the instrument field with a `Leg` in front of it --
-    `LegSymbol <600>` is `Symbol <55>` for the leg -- so the columns here are
-    the ones `rekep.market.instrument.Leg` reads, and everything else a venue
-    sends with a leg stays in `buffer` under its unique FIX name.
+    `LegSymbol <600>` is `Symbol <55>` for the leg -- and the column takes the
+    generic spelling, because the nesting already says whose it is. That is
+    also what makes these the names `rekep.market.instrument.Leg` carries.
+    Everything else a venue sends with a leg stays in `buffer` under its
+    unique FIX name.
     """
 
-    legsymbol: Annotated[str | None, DECLARED["LegSymbol"]] = None
+    symbol: Annotated[str | None, DECLARED["LegSymbol"]] = None
     """Identifier as the venue spells the leg; what opens an entry."""
 
-    legsecurityid: Annotated[str | None, DECLARED["LegSecurityID"]] = None
+    securityid: Annotated[str | None, DECLARED["LegSecurityID"]] = None
     """Identifier in the scheme `LegSecurityIDSource` names."""
 
-    legsecurityidsource: Annotated[str | None, DECLARED["LegSecurityIDSource"]] = None
+    securityidsource: Annotated[str | None, DECLARED["LegSecurityIDSource"]] = None
     """Which scheme `LegSecurityID` is in, as FIX numbers them."""
 
-    legsecuritytype: Annotated[str | None, DECLARED["LegSecurityType"]] = None
+    securitytype: Annotated[str | None, DECLARED["LegSecurityType"]] = None
     """What the venue calls this leg, from FIX's own list."""
 
-    legcficode: Annotated[str | None, DECLARED["LegCFICode"]] = None
+    cficode: Annotated[str | None, DECLARED["LegCFICode"]] = None
     """ISO 10962 classification of the leg."""
 
-    legsecurityexchange: Annotated[str | None, DECLARED["LegSecurityExchange"]] = None
+    securityexchange: Annotated[str | None, DECLARED["LegSecurityExchange"]] = None
     """Where the leg is listed, when it differs from the strategy's venue."""
 
-    legmaturitydate: Annotated[datetime.date | None, DECLARED["LegMaturityDate"]] = None
+    maturitydate: Annotated[datetime.date | None, DECLARED["LegMaturityDate"]] = None
     """When the leg expires; null for anything that does not."""
 
-    legmaturitymonthyear: Annotated[str | None, DECLARED["LegMaturityMonthYear"]] = None
+    maturitymonthyear: Annotated[str | None, DECLARED["LegMaturityMonthYear"]] = None
     """The older month-resolution way to say when the leg expires."""
 
-    legstrikeprice: Annotated[float | None, DECLARED["LegStrikePrice"]] = None
+    strikeprice: Annotated[float | None, DECLARED["LegStrikePrice"]] = None
     """Exercise price, where the leg is an option."""
 
-    legputorcall: Annotated[int | None, DECLARED["LegPutOrCall"]] = None
+    putorcall: Annotated[int | None, DECLARED["LegPutOrCall"]] = None
     """Which way the leg points, where it is an option."""
 
-    legcontractmultiplier: Annotated[float | None, DECLARED["LegContractMultiplier"]] = None
+    contractmultiplier: Annotated[float | None, DECLARED["LegContractMultiplier"]] = None
     """Units of the underlying one leg contract represents."""
 
-    legcurrency: Annotated[str | None, DECLARED["LegCurrency"]] = None
+    currency: Annotated[str | None, DECLARED["LegCurrency"]] = None
     """ISO 4217 currency the leg is priced in."""
 
-    legside: Annotated[str | None, DECLARED["LegSide"]] = None
+    side: Annotated[str | None, DECLARED["LegSide"]] = None
     """Which way the strategy takes this leg, in `Side <54>`'s codes."""
 
-    legratioqty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
+    ratioqty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
     """How many of this leg one unit of the strategy is; the leg's weight."""
 
     buffer: dict[str, str] | None = None
@@ -871,22 +873,29 @@ class Legs(ComponentGroup):
     @classmethod
     @cache
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`LegSymbol` opens an entry; the members an instrument reads follow."""
-        return (
-            ("LegSymbol", "LegSymbol"),
-            ("LegSecurityID", "LegSecurityID"),
-            ("LegSecurityIDSource", "LegSecurityIDSource"),
-            ("LegSecurityType", "LegSecurityType"),
-            ("LegCFICode", "LegCFICode"),
-            ("LegSecurityExchange", "LegSecurityExchange"),
-            ("LegMaturityDate", "LegMaturityDate"),
-            ("LegMaturityMonthYear", "LegMaturityMonthYear"),
-            ("LegStrikePrice", "LegStrikePrice"),
-            ("LegPutOrCall", "LegPutOrCall"),
-            ("LegContractMultiplier", "LegContractMultiplier"),
-            ("LegCurrency", "LegCurrency"),
-            ("LegSide", "LegSide"),
-            ("LegRatioQty", "LegRatioQty"),
+        """`LegSymbol` opens an entry; the members an instrument reads follow.
+
+        Each pair is `(the column, the field it reads)`: the leg's own field
+        under the generic name, because the nesting says it is a leg's.
+        """
+        return tuple(
+            (name.removeprefix("Leg"), name)
+            for name in (
+                "LegSymbol",
+                "LegSecurityID",
+                "LegSecurityIDSource",
+                "LegSecurityType",
+                "LegCFICode",
+                "LegSecurityExchange",
+                "LegMaturityDate",
+                "LegMaturityMonthYear",
+                "LegStrikePrice",
+                "LegPutOrCall",
+                "LegContractMultiplier",
+                "LegCurrency",
+                "LegSide",
+                "LegRatioQty",
+            )
         )
 
 

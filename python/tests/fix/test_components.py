@@ -7,6 +7,7 @@ import datetime
 import pyarrow
 import pytest
 
+from rekep.fields import DISPLAY
 from rekep.fix.columns import ENTRIES
 from rekep.fix.components import (
     LEGS,
@@ -678,28 +679,31 @@ def test_an_alternative_identifier_is_the_exact_fix_named_shape() -> None:
 def test_a_leg_is_the_exact_fix_named_shape() -> None:
     field = Leg.into_field()
     assert field.names == [
-        "legsymbol",
-        "legsecurityid",
-        "legsecurityidsource",
-        "legsecuritytype",
-        "legcficode",
-        "legsecurityexchange",
-        "legmaturitydate",
-        "legmaturitymonthyear",
-        "legstrikeprice",
-        "legputorcall",
-        "legcontractmultiplier",
-        "legcurrency",
-        "legside",
-        "legratioqty",
+        "symbol",
+        "securityid",
+        "securityidsource",
+        "securitytype",
+        "cficode",
+        "securityexchange",
+        "maturitydate",
+        "maturitymonthyear",
+        "strikeprice",
+        "putorcall",
+        "contractmultiplier",
+        "currency",
+        "side",
+        "ratioqty",
         "buffer",
     ]
-    assert field.field("legsymbol").metadata["fix:tag"] == "600"
-    assert field.field("LegMaturityDate").dtype == pyarrow.timestamp("us"), (
+    assert field.field("symbol").metadata["fix:tag"] == "600", (
+        "the generic name, and the leg's own tag under it"
+    )
+    assert field.field("symbol").metadata[DISPLAY] == "LegSymbol"
+    assert field.field("maturitydate").dtype == pyarrow.timestamp("us"), (
         "a LocalMktDate is the instant the day begins, in a zone the message never names"
     )
-    assert field.field("LegRatioQty").dtype == pyarrow.float64()
-    assert field.field("LegPutOrCall").dtype == pyarrow.int32()
+    assert field.field("ratioqty").dtype == pyarrow.float64()
+    assert field.field("putorcall").dtype == pyarrow.int32()
     assert LEGS.value_field.nullable is False
 
 
@@ -752,10 +756,10 @@ def test_legs_resolve_through_the_shared_instrument_leg_component() -> None:
     legs, residual = _legs().into_arrow_arrays(source)
 
     first, second = legs.to_pylist()[0]
-    assert (first["legsymbol"], first["legside"], first["legratioqty"]) == ("AAPL", "1", 1.0)
-    assert first["legmaturitydate"] == datetime.datetime(2027, 1, 15)
-    assert first["legstrikeprice"] == 150.5
-    assert (second["legsymbol"], second["legside"], second["legcurrency"]) == ("MSFT", "2", "USD")
+    assert (first["symbol"], first["side"], first["ratioqty"]) == ("AAPL", "1", 1.0)
+    assert first["maturitydate"] == datetime.datetime(2027, 1, 15)
+    assert first["strikeprice"] == 150.5
+    assert (second["symbol"], second["side"], second["currency"]) == ("MSFT", "2", "USD")
     assert _pairs(residual.to_pylist()[0]) == [(55, "SPREAD"), (10, "000")]
 
 
@@ -766,8 +770,8 @@ def test_a_variant_groups_context_member_lands_in_buffer() -> None:
     legs, residual = _legs().into_arrow_arrays(source)
 
     (entry,) = legs.to_pylist()[0]
-    assert entry["legsymbol"] == "AAPL"
-    assert entry["legratioqty"] == 1.0
+    assert entry["symbol"] == "AAPL"
+    assert entry["ratioqty"] == 1.0
     assert dict(entry["buffer"]) == {"LegQty": "9"}
     assert _pairs(residual.to_pylist()[0]) == []
 
@@ -778,7 +782,7 @@ def test_a_malformed_leg_maturity_is_kept_as_text_rather_than_null() -> None:
     legs, residual = _legs().into_arrow_arrays(source)
 
     (entry,) = legs.to_pylist()[0]
-    assert entry["legmaturitydate"] is None
+    assert entry["maturitydate"] is None
     assert dict(entry["buffer"]) == {"LegMaturityDate": "Jan 15 2027"}
     assert _pairs(residual.to_pylist()[0]) == []
 
@@ -800,7 +804,7 @@ def test_alt_ids_and_legs_run_in_sequence_over_one_message() -> None:
 
     assert altids.type == SECURITY_ALT_IDS and legs.type == LEGS
     assert [entry["securityaltid"] for entry in altids.to_pylist()[0]] == ["US0378331005"]
-    assert [entry["legsymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert [entry["symbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
     assert _pairs(rest.to_pylist()[0]) == []
 
 
@@ -879,7 +883,7 @@ def test_a_scoped_group_opening_before_the_entries_is_the_messages() -> None:
 
     legs, residual = _scoped_legs().into_arrow_arrays(source)
 
-    assert [entry["legsymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert [entry["symbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
     assert _pairs(residual.to_pylist()[0]) == [(268, "1"), (279, "0"), (270, "100")]
 
 
@@ -889,7 +893,7 @@ def test_a_count_whose_entries_cannot_own_the_group_does_not_refuse_it() -> None
 
     legs, residual = _scoped_legs().into_arrow_arrays(source)
 
-    assert [entry["legsymbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
+    assert [entry["symbol"] for entry in legs.to_pylist()[0]] == ["AAPL"]
     assert _pairs(residual.to_pylist()[0]) == [(711, "1"), (311, "WTI")]
 
 

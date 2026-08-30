@@ -70,7 +70,9 @@ def test_fix_transcribe_uses_the_published_registry_in_both_directions() -> None
     assert "protocolOf" in script
     assert "structureOf" in script
     assert "expandPayloadPairs" in script
-    assert '"fix-wrapper"' in script
+    assert all(f'code: "{code}"' in script for code in ("FIX", "FIXML", "UL")), (
+        "the page classifies by the three shapes rekep.fix.rules classifies by"
+    )
     assert 'return marked || "#"' in script
     assert "stylesheets/fix-transcribe.css" in config
     assert "javascripts/fix-transcribe.js" in config
@@ -123,7 +125,7 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
 
     assert document.is_file()
     assert "## Run this step" in page
-    assert "uv run --project python --with papermill rekep task run" in page
+    assert "uv run --project python --with papermill --with ipykernel rekep task run" in page
     assert f"tasks/{task_name}/{task_name}.yml" in page
     assert f"--output {task_name}.executed.ipynb" in page
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
@@ -175,7 +177,7 @@ _OUTSIDE = (
 def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) -> None:
     """The ```text after a fence is a claim about this checkout, and a claim
     nothing runs is one a rename or a changed default quietly falsifies -- the
-    `properties_of` block on the Iceberg page printed a dict that had gained a
+    `into_properties` block on the Iceberg page printed a dict that had gained a
     key.
 
     Fences carry forward, so stdout does too: the block after fence *n* is the

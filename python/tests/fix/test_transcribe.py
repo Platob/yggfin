@@ -102,17 +102,23 @@ EXPECTED_WIRE_COMMON = 4
 SENT_AT = datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def codec() -> FixCodec:
+    """One codec for the file: it snapshots the dictionary and is never mutated.
+
+    Module-scoped because the first `into_lifted_columns` on a version plans
+    every column it can lift and memoizes that on the codec -- two seconds,
+    once, against two seconds per test.
+    """
     return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def pairs() -> pyarrow.Array:
     return parse_arrow_array(pyarrow.array([BRIDGE]))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def wire_tags(codec: FixCodec) -> pyarrow.Array:
     """`WIRE` as `entries`, which is what `into_lifted_columns` is handed."""
     return codec.into_entries(parse_arrow_array(pyarrow.array([WIRE])), "4.2")
@@ -567,7 +573,7 @@ def test_mixed_case_wire_fixt_matches_the_scalar_reading(codec: FixCodec) -> Non
     assert codec.version_of(messages[0].as_py(), "FIX")[0] == "5.0.SP2"
 
 
-def test_automatic_vector_version_detection_categorises_like_the_scalar(codec: FixCodec) -> None:
+def test_automatic_vector_version_detection_matches_the_scalar(codec: FixCodec) -> None:
     messages = pyarrow.array(
         [
             "8=FIX.4.2|35=D|",
@@ -909,8 +915,10 @@ def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCode
 
 def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) -> None:
     """The name is the whole address: the batch carries it, the rule is ours."""
-    for line, expected in ((BRIDGE, "FIXML"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
-        assert Rules.into_default().categorise(line).protocol == expected
+    for line, expected in ((BRIDGE, "UL"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
+        assert Rules.into_default().into_arrow_protocol_array(
+            pyarrow.array([line])
+        ).to_pylist() == [expected]
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 
@@ -1030,10 +1038,10 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
     columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
-    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 26, 18), (
+    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 34, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(FLAT) == 77
+    assert len(FLAT) == 85
     namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
     assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"
@@ -1244,7 +1252,7 @@ PARTIES_WIRE = (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def packaged() -> FixCodec:
     """A codec over the registry the wheel carries, and nothing else."""
     return FixCodec(registry=FixRegistry.from_builtin())
@@ -1389,7 +1397,7 @@ def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
     assert {component.name for component in registry.components("4.2")} == package_components
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        assert packaged.parties_of("4.2")._member_names == {}
+        assert packaged.component_of("parties", "4.2")._member_names == {}
 
 
 def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: Path) -> None:
@@ -1403,7 +1411,7 @@ def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: 
     bare = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     bare._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
     codec = FixCodec(registry=bare)
-    extractor = codec.parties_of("4.4")
+    extractor = codec.component_of("parties", "4.4")
     assert extractor._member_names == {}
     assert _party_rows(codec, PARTIES_WIRE, "4.4") is None
 
@@ -1538,7 +1546,7 @@ def test_a_payload_that_really_is_xml_is_left_exactly_as_it_was(
 
 
 def test_a_payload_that_is_not_pairs_at_all_is_left_alone(packaged: FixCodec) -> None:
-    """One `a=b` is a sentence, not a message -- the same rule `FIXML_PATTERN` applies."""
+    """One `a=b` is a sentence, not a message -- the same rule `MARKED_VECTOR` applies."""
     for payload in ("nothing here at all", "onlyone=value"):
         message = SOH.join(["8=FIX.4.4", "35=8", f"213={payload}", "10=000"]) + SOH
         assert ("213", payload) in _payload(packaged, message)

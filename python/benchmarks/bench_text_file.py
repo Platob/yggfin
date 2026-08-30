@@ -26,9 +26,7 @@ from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import (  # noqa: E402
     SOH,
-    FixCodec,
     FixRegistry,
-    Rules,
     parse_arrow_array,
 )
 
@@ -38,15 +36,10 @@ from rekep.fix import (  # noqa: E402
 # than copied. A benchmark that reimplemented them would be racing two
 # parsers rather than two cuts.
 from rekep.fix.message import (  # noqa: E402
-    _PAIR_TOKEN,
-    CHECKSUM,
-    _boundaries,
-    _column_style,
     _tag_numbers,
-    _until_checksum,
     parse_pairs,
 )
-from rekep.text import FixMsg, TextFile, TextFiles  # noqa: E402
+from rekep.text import TextFile, TextFiles  # noqa: E402
 from rekep.text.text_file import (  # noqa: E402
     DEFAULT_BATCH_ROW_SIZE,
     HEADER_PATTERN,
@@ -450,10 +443,12 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
     them is fast -- it is which implementation each stage should be made of,
     answered against numbers rather than by default.
 
-    Everything is streamed at `DEFAULT_BATCH_ROW_SIZE`: stage one reads the
-    whole capture without holding it, and stages two and three race over one
+    Everything is streamed at `DEFAULT_BATCH_ROW_SIZE`: the header stage reads
+    the whole capture without holding it, and the two after it race over one
     batch of that size *per protocol*, filled from the same stream, because a
-    batch is the unit the parser is handed.
+    batch is the unit the parser is handed. What a whole capture costs end to
+    end is the notebook run's measurement (`docs/pipeline/operations/run.md`),
+    not this one's.
     """
     # A deprecation notice printed between two rows of a table is a table
     # nobody can paste anywhere; the behaviour it warns about is not one this
@@ -466,7 +461,6 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
         shares = " ".join(f"{name} {counted[name] / rows:.0%}" for name, _ in CATEGORY_SHARES)
         print(f"\n{rows:,} rows, {nbytes / 2**20:.1f} MiB, {shares}, best of {repeat}")
 
-        _split_stage(path, rows, nbytes, repeat)
         _header_stage(path, repeat)
         columns = _protocol_columns(path, protocols, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192)
         _pairs_stage(columns, repeat)
@@ -544,50 +538,6 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
         print(f"    {label:>34} {len(lines) / seconds:>12,.0f}")
 
 
-def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> None:
-    """Stage one: a whole capture through FIX parsing, with rules on and off.
-
-    Timed here rather than carried over from the tables above because the
-    fixture is a different one -- 40% of these lines are messages, and they are
-    much longer than the payloads that sweep generates -- and a baseline read
-    off another fixture is not a baseline.
-
-    Two rows, because the interesting number is the **difference**: what
-    reading every FIX message costs against not reading any. Both read the same
-    raw `Message` batches before crossing the `FixMsg` boundary. A rule set
-    with no rules in it reads every line as OTHER, which parses nothing, so the
-    second row is FIX parsing switched off -- and it is also the configuration
-    a caller gets by asking for it.
-    """
-    print("\n  a whole capture, streamed")
-    print(f"    {'configuration':>34} {'rows/s':>12} {'MB/s':>8} {'peak RSS':>10}")
-    cases = (
-        ("the message layer, on", FixCodec()),
-        ("no rules at all", FixCodec(rules=Rules(rules=[]))),
-    )
-    for label, codec in cases:
-        fastest, peak = float("inf"), 0
-        for _ in range(repeat):
-            before = _rss_bytes()
-            with _peak_rss() as sampled:
-                started = time.perf_counter()
-                seen = 0
-                with TextFile.from_path(
-                    path,
-                    msg_type_event_types=codec.registry.msg_type_event_types(),
-                ) as log:
-                    for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-                        parsed = FixMsg.from_message_batch(batch, codec)
-                        seen += parsed.num_rows
-                elapsed = time.perf_counter() - started
-            assert seen == rows, f"{seen} rows parsed out of {rows}"
-            fastest, peak = min(fastest, elapsed), max(peak, sampled() - before)
-        print(
-            f"    {label:>34} {rows / fastest:>12,.0f} "
-            f"{nbytes / 2**20 / fastest:>8.1f} {_mib(peak):>10}"
-        )
-
-
 def _protocol_columns(
     path: pathlib.Path, protocols: list[str], batch_row_size: int
 ) -> dict[str, pyarrow.Array]:
@@ -614,17 +564,11 @@ def _protocol_columns(
 
 
 def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
-    """Stage two: message -> pairs, four implementations over the same column.
+    """Stage two: message -> pairs, the scalar reference against the kernel.
 
-    The scalar tokenizer is the reference and every other implementation is
-    asserted equal to it, pair for pair, before anything is timed -- so a row
-    in this table is a row that gave the right answer.
-
-    `numpy` is a variant of the Arrow path with one thing changed: the
-    `split_pattern` + two `list_element` cut replaced by offsets arithmetic
-    over the flattened token buffer. It exists for the tag-mode cut and only
-    there, because the named path builds its keys with `extract_regex` and has
-    no `list_element` to replace.
+    The scalar tokenizer is the reference and the kernel is asserted equal to
+    it, pair for pair, before anything is timed -- so a row in this table is a
+    row that gave the right answer.
     """
     print("\n  message -> pairs")
     header = ("protocol", "implementation", "rows/s", "pairs/s", "peak RSS")
@@ -635,15 +579,9 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
         candidates: list[tuple[str, object]] = [
             ("parse_pairs", lambda c=column: _scalar_pairs(c)),
             ("parse_arrow_array", lambda c=column: parse_arrow_array(c, CAPTURE_SEPARATOR)),
-            ("numpy over the buffers", lambda c=column: _numpy_pairs(c)),
-            ("polars", lambda c=column: _polars_pairs(c)),
         ]
         for label, run in candidates:
-            try:
-                answer = run()
-            except _NotApplicable as why:
-                print(f"    {name:>9} {label:>26} {'n/a':>12} {'':>12} {str(why):>10}")
-                continue
+            answer = run()
             assert _as_pairs(answer) == reference, (
                 f"{label} disagrees with the scalar parser on {name}"
             )
@@ -654,188 +592,8 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
             )
 
 
-class _NotApplicable(Exception):
-    """An implementation that cannot run here, or has nothing to replace."""
-
-
-def _optional(name: str) -> object:
-    """The module, or `_NotApplicable` -- a race one runner cannot enter is not a failure."""
-    import importlib
-
-    try:
-        return importlib.import_module(name)
-    except ImportError as error:
-        raise _NotApplicable(f"no {name}") from error
-
-
 def _scalar_pairs(column: pyarrow.Array) -> list[list[tuple[str, str]]]:
     return [parse_pairs(line, CAPTURE_SEPARATOR) for line in column.to_pylist()]
-
-
-def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
-    """`parse_arrow_array`'s tag-mode body with the cut done in numpy.
-
-    Every kernel here is the shipped one; the two `list_element` calls are what
-    is replaced. The cut does **not** trim whitespace, which the shipped one
-    does -- so this is the faster half of a choice already raced in
-    `bench_fix.py`, and it only agrees where the tokens carry no padding. The
-    assertion above is what keeps that honest.
-    """
-    numpy = _optional("numpy")
-
-    compute = pyarrow.compute
-    values = column.cast(pyarrow.string(), safe=False)
-    begun = compute.struct_field(
-        compute.extract_regex(values, r"(?s)(?:^|[^0-9])(?P<msg>8=FIXT?.*)"), "msg"
-    )
-    values = compute.if_else(compute.is_null(begun), values, begun)
-    tokens = compute.split_pattern(values, CAPTURE_SEPARATOR)
-    flat = tokens.values
-    if _column_style(column)[1]:
-        raise _NotApplicable("no cut")
-    matched = compute.fill_null(compute.match_substring_regex(flat, _PAIR_TOKEN), False)
-    kept = compute.filter(flat, matched)
-    tags, entries = _numpy_cut(kept, numpy)
-    counted = compute.cumulative_sum(matched.cast(pyarrow.int32()))
-    bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
-    offsets = bounds.take(_boundaries(tokens))
-    parents = compute.filter(compute.list_parent_indices(tokens), matched)
-    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents, named=False)
-    return pyarrow.MapArray.from_arrays(offsets, tags, entries)
-
-
-def _numpy_cut(kept: pyarrow.Array, numpy) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """`token -> (key, value)` as index arithmetic over the flattened buffer.
-
-    One pass to find every `=` byte, a `searchsorted` to give each token its
-    own first one, and one ragged gather per half -- the `repeat` + `cumsum`
-    index the rest of this package builds an interleave from, in numpy rather
-    than in Arrow.
-    """
-    if not len(kept):
-        empty = pyarrow.array([], pyarrow.string())
-        return empty, empty
-    _, offsets_buffer, data_buffer = kept.buffers()[:3]
-    offsets = numpy.frombuffer(offsets_buffer, dtype=numpy.int32, count=len(kept) + 1)
-    data = numpy.frombuffer(data_buffer, dtype=numpy.uint8)
-    starts = offsets[:-1].astype(numpy.int64)
-    ends = offsets[1:].astype(numpy.int64)
-    marks = numpy.flatnonzero(data[: int(ends[-1])] == 0x3D)
-    first = marks[numpy.searchsorted(marks, starts, side="left")]
-    return (
-        _gathered(data, starts, first - starts, numpy),
-        _gathered(data, first + 1, ends - first - 1, numpy),
-    )
-
-
-def _gathered(data, starts, lengths, numpy) -> pyarrow.Array:
-    """A string array of `data[start : start + length]` per row, in one take."""
-    bounds = numpy.concatenate(([0], numpy.cumsum(lengths)))
-    index = (
-        numpy.arange(int(bounds[-1]), dtype=numpy.int64)
-        - numpy.repeat(bounds[:-1], lengths)
-        + numpy.repeat(starts, lengths)
-    )
-    return pyarrow.StringArray.from_buffers(
-        len(starts),
-        pyarrow.py_buffer(bounds.astype(numpy.int32).tobytes()),
-        pyarrow.py_buffer(data[index].tobytes()),
-    )
-
-
-#: `_TOKEN_VECTOR` and `_MEMBER_VECTOR` in the Rust regex crate's spelling of
-#: the same grammar -- named groups as `(?<name>)`, the dot-matches-newline
-#: flag scoped to the group it is needed in. Written out rather than reused so
-#: the polars row is polars' own work and not a translation cost.
-_POLARS_TOKEN = r"^[ \t\r\n\x0b\x0c]*(?<key>\d+)[ \t\r\n\x0b\x0c]*=(?<rest>(?s:.*))$"
-_POLARS_TOKEN_NAMED = (
-    r"^[ \t\r\n\x0b\x0c]*(?<key>\d+|[A-Za-z][A-Za-z0-9_.\-]*)"
-    r"(?:\[(?<index>\d+)\])?"
-    r"(?:\.(?<member>[A-Za-z0-9_.\-]+))?"
-    r"[ \t\r\n\x0b\x0c]*=(?<rest>(?s:.*))$"
-)
-_POLARS_MEMBER = (
-    r"^[ \t\r\n\x0b\x0c]*(?<member>\d+|[A-Za-z][A-Za-z0-9_.\-]*)"
-    r"[ \t\r\n\x0b\x0c]*=(?<value>(?s:.*))$"
-)
-
-
-def _polars_pairs(column: pyarrow.Array) -> object:
-    """The same cut as one polars expression chain, ending in one list per row.
-
-    `str.split` then `str.extract_groups`, which is the shape the question was
-    asked in -- and then the two things the Arrow path also does and a race
-    that skipped them would be flattering: the checksum cut, and the regroup
-    back to one row per line. A token that matches nothing is dropped, and a
-    line left with no pairs comes back as an empty list, which is what the map
-    column holds for it.
-    """
-    polars = _optional("polars")
-
-    named, entry_separator = _column_style(column)[1:]
-    if entry_separator is not None:
-        raise _NotApplicable("no entries")
-    frame = polars.DataFrame({"line": polars.from_arrow(column)}).with_row_index("row")
-    if not named:
-        frame = frame.with_columns(
-            polars.coalesce(
-                polars.col("line").str.extract(r"(?s)(?:^|[^0-9])(8=FIXT?.*)", 1),
-                polars.col("line"),
-            ).alias("line")
-        )
-    cut = (
-        frame.with_columns(polars.col("line").str.split(CAPTURE_SEPARATOR).alias("token"))
-        .explode("token")
-        .with_columns(
-            polars.col("token")
-            .str.extract_groups(_POLARS_TOKEN_NAMED if named else _POLARS_TOKEN)
-            .alias("cut")
-        )
-        .unnest("cut")
-        .filter(polars.col("key").is_not_null())
-    )
-    if named:
-        inner = polars.col("rest").str.extract_groups(_POLARS_MEMBER)
-        grouped = polars.col("index").is_not_null() & polars.col("member").is_null()
-        cut = cut.with_columns(inner.alias("inner")).with_columns(
-            polars.when(grouped & polars.col("inner").struct.field("member").is_not_null())
-            .then(polars.col("inner").struct.field("member"))
-            .otherwise(polars.col("member"))
-            .alias("member"),
-            polars.when(grouped & polars.col("inner").struct.field("member").is_not_null())
-            .then(polars.col("inner").struct.field("value"))
-            .otherwise(polars.col("rest"))
-            .alias("rest"),
-        )
-        cut = cut.with_columns(
-            polars.concat_str(
-                polars.col("key"),
-                polars.when(polars.col("index").is_not_null())
-                .then(polars.concat_str(polars.lit("["), polars.col("index"), polars.lit("]")))
-                .otherwise(polars.lit("")),
-                polars.when(polars.col("member").is_not_null())
-                .then(polars.concat_str(polars.lit("."), polars.col("member")))
-                .otherwise(polars.lit("")),
-            ).alias("key")
-        )
-    checksum = (polars.col("key") == CHECKSUM).cast(polars.Int32)
-    cut = cut.with_columns(checksum.cum_sum().over("row").alias("seen")).filter(
-        polars.col("seen") - checksum == 0
-    )
-    pairs = cut.group_by("row").agg(
-        polars.struct(
-            polars.col("key"),
-            polars.col("rest").str.strip_chars(" \t\r\n\x0b\x0c").alias("value"),
-        ).alias("pairs")
-    )
-    return (
-        frame.select("row")
-        .join(pairs, on="row", how="left")
-        .sort("row")
-        .with_columns(
-            polars.col("pairs").fill_null(polars.lit([], dtype=polars.List(polars.Struct)))
-        )
-    )
 
 
 def _as_pairs(answer: object) -> list[list[tuple[str, str]]]:
@@ -876,7 +634,6 @@ def _tags_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
         ("_tag_numbers (what ships)", lambda: _tag_numbers(lowered, names, pyarrow.int32())),
         ("python dict over to_pylist", lambda: _python_tags(lowered, names)),
         ("pyarrow.compute.index_in", lambda: _index_in_tags(lowered, names)),
-        ("polars join", lambda: _polars_tags(lowered, names)),
     )
     reference = None
     for label, run in candidates:
@@ -921,17 +678,6 @@ def _index_in_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Arr
     known = pyarrow.array(list(names), pyarrow.string())
     tags = pyarrow.array(list(names.values()), pyarrow.int32())
     return compute.take(tags, compute.index_in(lowered, value_set=known))
-
-
-def _polars_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:
-    polars = _optional("polars")
-
-    frame = polars.DataFrame({"key": polars.from_arrow(lowered)})
-    table = polars.DataFrame(
-        {"name": list(names), "tag": polars.Series(list(names.values()), dtype=polars.Int32)}
-    )
-    joined = frame.join(table, left_on="key", right_on="name", how="left")
-    return joined.get_column("tag").to_arrow().cast(pyarrow.int32())
 
 
 def _best_of(run, repeat: int) -> tuple[float, int]:

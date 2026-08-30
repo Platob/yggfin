@@ -75,7 +75,6 @@ class Shell:
                 self.console.warn("cancelled; nothing was written")
             except (KeyError, OSError, TypeError, ValueError) as error:
                 self.console.fail(f"{type(error).__name__}: {error}")
-        return 0
 
     # -- the commands -------------------------------------------------------
 

@@ -44,12 +44,14 @@ EXPECTED_PROTOCOLS = [
     "FIX",
     "FIX",
     "FIX",
-    "FIXML",
+    # A bare named document, whatever the plugin renders it for.
+    "UL",
+    # The same names inside a numbered frame, which makes one mixed message.
     "FIXML",
     "OTHER",
     "OTHER",
     "OTHER",
-    "FIXML",
+    "UL",
 ]
 
 #: Derived from the bridge line, then pinned: eleven tokens, two of which carry
@@ -264,10 +266,10 @@ def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) 
     assert table.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS
 
 
-def test_the_column_and_the_line_agree_on_every_row(table: pyarrow.Table) -> None:
-    """Scalar and vectorised, row for row, on the capture itself."""
-    scalar = [Rules.into_default().categorise(one) for one in table.column("message").to_pylist()]
-    assert [rule.protocol for rule in scalar] == table.column("protocolcode").to_pylist()
+def test_the_stored_column_and_a_rebuilt_row_agree(table: pyarrow.Table) -> None:
+    """One classifier, so a row rebuilt from its text answers what the batch did."""
+    rebuilt = [Message(message=one) for one in table.column("message").to_pylist()]
+    assert [row.protocolcode for row in rebuilt] == table.column("protocolcode").to_pylist()
 
 
 # -- what a line carries -----------------------------------------------------
@@ -454,10 +456,12 @@ def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -
 
 
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
-    """The discriminator is what the sender said it is, not a hash in a Text field."""
+    """A marker inside a `Text <58>` value is prose, so the frame stays numbered."""
     quoted = "8=FIX.4.4|35=8|58=see #A=1 and #B=2|10=1|"
-    assert Rules.into_default().categorise(quoted).protocol == "FIX"
-    assert Rules.into_default().categorise("8=FIX.4.2|35=ULX|#A=1|#B=2").protocol == "FIX"
+    assert Message(message=quoted).protocolcode == "FIX"
+    assert Message(message="8=FIX.4.2|35=ULX|#A=1|#B=2").protocolcode == "FIXML", (
+        "and marked keys of its own make the same frame mixed"
+    )
 
 
 def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
@@ -749,7 +753,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     path = tmp_path / "rules.yml"
     Rules(
         rules=[
-            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="fixml"),
+            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="ul"),
             Rules.into_default().rule(NO_PROTOCOL),
         ]
     ).into_yaml(path)
@@ -1295,7 +1299,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert "entries" in staged.schema.names
     assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
-    assert staged.column("protocolcode").to_pylist() == ["FIX", "FIXML", "MISC", "OTHER"]
+    assert staged.column("protocolcode").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
     # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
     # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [

@@ -255,34 +255,11 @@ class IcebergDataset(Dataset):
             self.snapshot_expiry = None
         elif self.snapshot_expiry is None and configured_expiry is not None:
             self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)
-        storage_paths = ("write.data.path", "write.metadata.path")
-        locations = [
-            str(location)
-            for location in (
-                self.location,
-                *(self.table_properties.get(name) for name in storage_paths),
-            )
-            if location
-        ]
-        configured = [
-            str(location)
-            for name in ("warehouse", "location", "uri")
-            if (location := self.properties.get(name))
-        ]
-        if any(Url.from_string(location).scheme in S3 for location in (*configured, *locations)):
-            from rekep.arrow_file_io import canonical_location, location_properties
-
-            self.properties = dict(location_properties(self.properties, locations=locations))
-            if self.location is not None:
-                self.location = canonical_location(self.location)
-            self.table_properties = {
-                name: (
-                    canonical_location(str(value))
-                    if name in storage_paths and value is not None
-                    else value
-                )
-                for name, value in self.table_properties.items()
-            }
+        properties, self.location, self.table_properties = _canonicalized(
+            self.properties, self.location, self.table_properties
+        )
+        if properties is not None:
+            self.properties = properties
 
     @property
     def name(self) -> str:
@@ -357,27 +334,17 @@ class IcebergDataset(Dataset):
         """
         location = kwargs.pop("location", self.location)
         creation_properties = dict(kwargs.pop("properties", {}))
-        storage_names = ("write.data.path", "write.metadata.path")
-        effective_properties = {**self.table_properties, **creation_properties}
-        storage = [str(path) for name in storage_names if (path := effective_properties.get(name))]
-        storage_locations = ([str(location)] if location is not None else []) + storage
-        if any(Url.from_string(path).scheme in S3 for path in storage_locations):
-            from rekep.arrow_file_io import canonical_location, location_properties
-
-            configured = dict(location_properties(self.properties, locations=storage_locations))
+        properties, location, creation_properties = _canonicalized(
+            self.properties, location, {**self.table_properties, **creation_properties}
+        )
+        if properties is not None:
             store = self.__dict__.get("store")
-            self.properties = configured
+            self.properties = properties
             if store is not None:
-                store.properties = configured
+                store.properties = properties
                 catalog = store.__dict__.get("catalog")
                 if catalog is not None:
-                    catalog.properties.update(store._tracked_file_io_properties(configured))
-            if location is not None:
-                location = canonical_location(str(location))
-            creation_properties = {
-                name: canonical_location(str(value)) if name in storage_names else value
-                for name, value in creation_properties.items()
-            }
+                    catalog.properties.update(store._tracked_file_io_properties(properties))
         if self.exists:
             return self
         field = field.with_name(self.name)
@@ -3198,21 +3165,6 @@ def _ensure_name_mapping(transaction: Any) -> None:
     transaction.set_properties(**{TableProperties.DEFAULT_NAME_MAPPING: mapping.model_dump_json()})
 
 
-def _identity_partitions(table: Any) -> tuple[tuple[str, str], ...] | None:
-    """Current `(partition field, source column)` pairs when all are identities."""
-    from pyiceberg.transforms import IdentityTransform
-
-    spec = table.spec()
-    if spec.is_unpartitioned():
-        return None
-    identities = tuple(
-        (field.name, table.schema().find_column_name(field.source_id))
-        for field in spec.fields
-        if isinstance(field.transform, IdentityTransform)
-    )
-    return identities if len(identities) == len(spec.fields) else None
-
-
 def _requiring_columns(
     source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], columns: Sequence[str]
 ) -> pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]:
@@ -3907,6 +3859,46 @@ def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int
     if isinstance(older_than, datetime.timedelta):
         older_than = datetime.datetime.now(datetime.UTC) - older_than
     return int(older_than.timestamp() * 1000)
+
+
+def _canonicalized(
+    properties: Mapping[str, Any],
+    location: str | None,
+    storage: Mapping[str, Any],
+) -> tuple[dict[str, str] | None, str | None, dict[str, Any]]:
+    """A table's locations with their store settings moved onto the catalog.
+
+    An S3 location may carry an endpoint and credentials; those belong to the
+    catalog, and what a table records is the store and the object alone --
+    otherwise a secret reaches metadata every reader keeps. The properties come
+    back None where no location named an object store and nothing moves.
+    """
+    from rekep.arrow_file_io import (
+        LOCATION_PROPERTIES,
+        STORAGE_PROPERTIES,
+        canonical_location,
+        location_properties,
+    )
+
+    def named(source: Mapping[str, Any], names: Iterable[str]) -> list[str]:
+        return [str(value) for name in names if (value := source.get(name))]
+
+    locations = ([str(location)] if location is not None else []) + named(
+        storage, STORAGE_PROPERTIES
+    )
+    if not any(
+        Url.from_string(one).scheme in S3
+        for one in (*named(properties, LOCATION_PROPERTIES), *locations)
+    ):
+        return None, location, dict(storage)
+    return (
+        dict(location_properties(properties, locations=locations)),
+        None if location is None else canonical_location(str(location)),
+        {
+            name: canonical_location(str(value)) if name in STORAGE_PROPERTIES and value else value
+            for name, value in storage.items()
+        },
+    )
 
 
 def _expiry_delta(value: Any) -> datetime.timedelta:

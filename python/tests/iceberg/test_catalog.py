@@ -11,6 +11,7 @@ from rekep import Convertible, Field, scalar
 from rekep.arrow_file_io import ArrowFileIO
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
+from rekep.urls import S3
 
 
 @scalar
@@ -89,7 +90,7 @@ def test_s3_process_defaults_reach_the_catalog_before_a_table_location(
     assert seen["s3.region"] == "eu-west-1"
 
 
-@pytest.mark.parametrize("scheme", ("s3", "s3a"))
+@pytest.mark.parametrize("scheme", sorted(S3))
 def test_dataset_locations_configure_one_file_io_without_entering_stored_paths(
     monkeypatch: pytest.MonkeyPatch, scheme: str
 ) -> None:
@@ -207,7 +208,7 @@ def test_an_open_catalog_receives_explicit_table_location_settings_before_load(
         "trading.quotes",
         field=Quote.into_field(),
         location=(
-            "s3a://key:secret@bucket/tables/quotes?endpoint_override=minio%3A9000&scheme=http"
+            "s3n://key:secret@bucket/tables/quotes?endpoint_override=minio%3A9000&scheme=http"
         ),
     )
 
@@ -218,8 +219,9 @@ def test_an_open_catalog_receives_explicit_table_location_settings_before_load(
 
 
 @pytest.mark.integration
-def test_explicit_create_location_stages_distinct_s3a_objects_without_network(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_explicit_create_location_stages_distinct_objects_without_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scheme: str
 ) -> None:
     import datetime
 
@@ -227,7 +229,6 @@ def test_explicit_create_location_stages_distinct_s3a_objects_without_network(
     import pyarrow.fs
 
     from rekep.arrow_file_io import ArrowFileIO
-    from rekep.urls import S3
 
     @scalar
     class DailyQuote(Convertible):
@@ -261,7 +262,7 @@ def test_explicit_create_location_stages_distinct_s3a_objects_without_network(
         },
     )
     query = "endpoint_override=minio%3A9000&scheme=http&region=eu-west-1"
-    prefix = "s3a://key:secret@bucket"
+    prefix = f"{scheme}://key:secret@bucket"
     assert not dataset.exists, "the already-open catalog receives the table-specific settings"
     dataset.create_with_field(
         DailyQuote.into_field("trading.remote_quotes"),
@@ -273,9 +274,9 @@ def test_explicit_create_location_stages_distinct_s3a_objects_without_network(
     )
 
     table = dataset.iceberg_table
-    assert table.location() == "s3a://bucket/tables/quotes"
-    assert table.properties["write.data.path"] == "s3a://bucket/data"
-    assert table.properties["write.metadata.path"] == "s3a://bucket/metadata"
+    assert table.location() == f"{scheme}://bucket/tables/quotes"
+    assert table.properties["write.data.path"] == f"{scheme}://bucket/data"
+    assert table.properties["write.metadata.path"] == f"{scheme}://bucket/metadata"
     assert opened and opened[0]["s3.endpoint"] == "http://minio:9000"
     assert opened[0]["s3.access-key-id"] == "key"
 
@@ -288,7 +289,7 @@ def test_explicit_create_location_stages_distinct_s3a_objects_without_network(
     files = dataset.data_files().column("file_path").to_pylist()
     assert len(files) == 2
     assert len(set(files)) == 2
-    assert all(path.startswith("s3a://bucket/data/day=2026-08-14/") for path in files)
+    assert all(path.startswith(f"{scheme}://bucket/data/day=2026-08-14/") for path in files)
     assert all("?" not in path and "secret" not in path for path in files)
     assert dataset.read_arrow_table().num_rows == 2
     dataset.close()

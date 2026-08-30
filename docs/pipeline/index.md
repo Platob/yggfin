@@ -13,7 +13,7 @@ parameters:
 Run the same task document locally that Airflow gives Papermill:
 
 ```bash
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 ```

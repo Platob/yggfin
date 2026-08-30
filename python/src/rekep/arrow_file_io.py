@@ -7,7 +7,6 @@ import itertools
 import os
 import re
 import threading
-import urllib.parse
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Set
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
@@ -21,7 +20,7 @@ from pyiceberg.io.pyarrow import PyArrowFile, PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
 from rekep.filesystems import ArrowFile
-from rekep.urls import S3, Url, properties_of, s3_environment
+from rekep.urls import S3, Url, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
 #: UUID and the suffix. A name *without* the UUID -- `v3.metadata.json`, which
@@ -37,6 +36,11 @@ _VERSIONED = re.compile(
 #: An endpoint and credentials in one of these is how a MinIO catalog is
 #: usually spelled.
 LOCATION_PROPERTIES = ("warehouse", "location", "uri")
+
+#: Table properties naming where a table's own bytes are written, when it does
+#: not write them under its location. Canonicalised with the location and read
+#: with it, because all three name objects on the same store.
+STORAGE_PROPERTIES = ("write.data.path", "write.metadata.path")
 
 #: Decided per host, held as data so a test can exercise the other answer.
 _WINDOWS = os.name == "nt"
@@ -210,7 +214,7 @@ class TrackedFileIO(FileIO):
 
 def _immutable(location: str) -> bool:
     """Whether Iceberg promises never to rewrite the file at `location`."""
-    name = location.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    name = Url.from_string(location).name
     return name.endswith(".avro") or bool(_VERSIONED.match(name))
 
 
@@ -408,27 +412,20 @@ class _TeeStream:
 
 def canonical_location(location: str) -> str:
     """An S3 location containing only its scheme, bucket, and object key."""
-    url = Url.from_string(location)
-    if url.scheme not in S3:
-        return location
-    bucket, key = spelled_parts(location, url)
-    return f"{url.scheme}://{bucket}/{key}"
+    url = spelled(location)
+    return url.canonical if url.scheme in S3 else location
 
 
-def spelled_parts(location: str, url: Url | None = None) -> tuple[str, str]:
-    """`(bucket, key)` exactly as an S3 location spells them, escapes kept.
+def spelled(location: str) -> Url:
+    """A location whose object key is the text that named it, escapes kept.
 
-    Iceberg escapes a partition value into the path -- `v=a%2Fb` -- and that
-    escape *is* the object key rather than a spelling of `a/b`. `Url` decodes,
-    because for everything else a URL is transport and the value is not; here
-    it would name a different object, one carrying a directory level no
-    manifest ever recorded, so a read misses it and the orphan sweep deletes
-    the live file it could not match.
+    Iceberg escapes a partition value into the path -- `v=a%2Fb` -- and every
+    location this FileIO is handed names an object it wrote, so the escape *is*
+    the key rather than a spelling of `a/b`: decoded it would name an object
+    carrying a directory level no manifest ever recorded, which a read misses
+    and the orphan sweep deletes as the live file it could not match.
     """
-    url = url or Url.from_string(location)
-    spelled = url.copy()
-    spelled.path = urllib.parse.urlsplit(location, allow_fragments=False).path.lstrip("/")
-    return spelled.bucket, spelled.key
+    return Url.from_string(location, decode=False)
 
 
 def _location_properties(locations: Iterable[str]) -> tuple[dict[str, str], bool, bool]:
@@ -440,7 +437,7 @@ def _location_properties(locations: Iterable[str]) -> tuple[dict[str, str], bool
         url = Url.from_string(location)
         if url.scheme not in S3:
             continue
-        for key, value in properties_of(url).items():
+        for key, value in url.into_properties().items():
             if key in inferred and inferred[key] != value:
                 raise ValueError(f"conflicting {key!r} across explicit S3 locations")
             inferred[key] = value
@@ -495,7 +492,16 @@ def _check_encryption(properties: Properties) -> None:
 
 
 def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()) -> Properties:
-    """`properties`, plus S3 process and explicit-location defaults."""
+    """`properties`, plus S3 process and explicit-location defaults.
+
+    **The one precedence rule, stated here and nowhere else.** Lowest to
+    highest: the process environment (`s3_environment`), then what an explicit
+    location says (`Url.into_properties` over every `LOCATION_PROPERTIES` value
+    and every location handed in), then the properties a caller wrote down. A
+    location that names its own store or its own credentials also suppresses
+    the portable default for that one setting, because half a store's
+    configuration from one place and half from another reaches neither.
+    """
     _check_encryption(properties)
     locations = tuple(locations)
     declared = [str(location) for name in LOCATION_PROPERTIES if (location := properties.get(name))]
@@ -550,12 +556,11 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
     @staticmethod
     def parse_location(location: str, properties: Properties = EMPTY_DICT) -> tuple[str, str, str]:
         """Where a location is: its scheme, its netloc, and the path on it."""
-        url = Url.from_string(location)
+        url = spelled(location)
         if _WINDOWS and url.scheme == "file":
             return "file", "", url.path
         if url.scheme in S3:
-            bucket, key = spelled_parts(location, url)
-            return url.scheme, bucket, "/".join(part for part in (bucket, key) if part)
+            return url.scheme, url.bucket, url.store_path
         return PyArrowFileIO.parse_location(location, properties)
 
     def _new_openable(
@@ -572,26 +577,43 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         return PyArrowFile(location=target, path=target, fs=pyarrow.fs.LocalFileSystem())
 
     def _spill_identity(self, path: str, filesystem: pyarrow.fs.FileSystem) -> str | None:
+        # The store and the path, and no credentials: two keys reading one
+        # object read the same bytes, so a spill of them is one local file.
         opened = self.opened
-        if opened is not None:
-            location = str(opened.location)
-            url = Url.from_string(location)
-            scheme = url.scheme
-            if scheme:
-                canonical_scheme = "s3" if scheme in S3 else scheme
-                endpoint = str(self.properties.get("s3.endpoint", "")) if scheme in S3 else ""
-                return "\0".join((canonical_scheme, endpoint, url.bucket, path))
-        return None
+        if opened is None:
+            return None
+        url = spelled(str(opened.location))
+        return "\0".join((*self._store_of(url), path)) if url.scheme else None
 
     def content_identity(self, location: str) -> str:
-        """A cache key scoped to the S3-compatible store serving a location."""
-        url = Url.from_string(location)
+        """A cache key scoped to the S3-compatible store serving a location.
+
+        The access key is in it where the spill identity leaves it out: this
+        caches what a *reader* is allowed to see, and two keys on one store may
+        be shown different objects under one name.
+        """
+        url = spelled(location)
         if url.scheme not in S3:
             return location
-        endpoint = str(url.endpoint or self.properties.get("s3.endpoint", ""))
         access_key = str(url.user or self.properties.get("s3.access-key-id", ""))
-        region = str(self.properties.get("s3.region", ""))
-        return "\0".join(("s3", endpoint, access_key, region, url.bucket, url.key))
+        region = str(url.region or self.properties.get("s3.region", ""))
+        return "\0".join((*self._store_of(url), access_key, region, url.key))
+
+    def _store_of(self, url: Url) -> tuple[str, str, str]:
+        """`(transport, endpoint, bucket)` -- which store a location is on.
+
+        The transport and not the caller's spelling, so `s3a://` and `s3://`
+        naming one object share one entry; and the location fills what it says
+        over what the catalog configured, the same precedence
+        `_described_filesystem` reads a file with.
+        """
+        endpoint = "" if url.scheme not in S3 else str(url.endpoint or self.endpoint or "")
+        return url.transport, endpoint, url.bucket
+
+    @property
+    def endpoint(self) -> str:
+        """The store this FileIO was configured for, or nothing."""
+        return str(self.properties.get("s3.endpoint", ""))
 
     def _described_filesystem(self, location: str) -> pyarrow.fs.FileSystem | None:
         """The store a location names itself, when it names one.
@@ -614,7 +636,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         key = self.content_identity(location).rsplit("\0", 1)[0]
         filesystem = self._described.get(key)
         if filesystem is None:
-            described = PyArrowFileIO({**self.properties, **properties_of(url)})
+            described = PyArrowFileIO({**self.properties, **url.into_properties()})
             filesystem = described.fs_by_scheme(url.scheme, url.bucket)
             self._described[key] = filesystem
         return filesystem
@@ -624,12 +646,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         filesystem = self._described_filesystem(location)
         if filesystem is None:
             return None
-        bucket, key = spelled_parts(location)
-        return PyArrowFile(
-            fs=filesystem,
-            location=location,
-            path="/".join(part for part in (bucket, key) if part),
-        )
+        return PyArrowFile(fs=filesystem, location=location, path=spelled(location).store_path)
 
     def new_input(self, location: str) -> InputFile:
         # `is None`, not `or`: an input file's truthiness is its length, and

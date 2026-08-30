@@ -63,6 +63,19 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "CFICode",
     "SecurityExchange",
     "Currency",
+    # What a contract *is*, beside what it is called: the same instrument
+    # facts a leg of a multileg already carries as struct members, so a
+    # message-scoped instrument and a leg's read the same way. `Instrument`
+    # declares every one of them, and reading them off a column is what keeps
+    # it from walking `entries` again for facts this stage already resolved.
+    "MaturityDate",
+    "MaturityMonthYear",
+    "StrikePrice",
+    "PutOrCall",
+    "ContractMultiplier",
+    "MinPriceIncrement",
+    "RoundLot",
+    "SecurityDesc",
     "Account",
     "ClOrdID",
     "OrigClOrdID",

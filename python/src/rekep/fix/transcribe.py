@@ -21,7 +21,6 @@ from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
-    DECLARED,
     NAMESPACE_COLUMNS,
     QUOTE_GROUP_COUNTS,
     QUOTE_GROUP_STRUCTURE,
@@ -39,12 +38,14 @@ from rekep.fix.components import (
 from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
-    FIXML_SEPARATOR_VECTOR,
+    MARKED_SEPARATOR_VECTOR,
     MARKER,
     NAMED_SEPARATOR_VECTOR,
     SEPARATOR_VECTOR,
     SEPARATORS,
     SOH,
+    XML_DATA_TAG,
+    carries_message,
     parse_arrow_array,
     parse_entries_array,
     stored_entry_separators,
@@ -54,23 +55,14 @@ from rekep.fix.rules import NO_PROTOCOL, Rules
 
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
-_XML_DATA_KEY = "XmlData"
+_XML_DATA_KEY = FLAT_DEFAULTS[XML_DATA_TAG].fix.canonical
 _XML_DATA_NAME = pyarrow.scalar(column_name(_XML_DATA_KEY))
-_XML_DATA_TAG = pyarrow.scalar(str(DECLARED[_XML_DATA_KEY].fix.tag))
-
-#: What makes a payload a message rather than a document: two `name=` tokens.
-#: The same "two and not one" `FIXML_PATTERN` uses, and for the same reason -- one
-#: `a=b` inside prose is a sentence.
-_PAYLOAD_PAIRS = r"[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*="
-
-#: And what makes it a document: the standard says XML, and a payload that
-#: opens a tag is taken at its word however rare it turns out to be.
-_LOOKS_XML = r"^[ \t\r\n]*<"
+_XML_DATA_TAG = pyarrow.scalar(str(XML_DATA_TAG))
 
 #: What a payload writes between its fields. Neither of the two things
 #: `separators_of` reads -- a BeginString or a `#` -- is inside one, so this
 #: reads the character between the first `name=value` and the next `name=`,
-#: which is the same rule `FIXML_SEPARATOR_VECTOR` applies to a marked line.
+#: which is the same rule `MARKED_SEPARATOR_VECTOR` applies to a marked line.
 #: `\^A` before `.`, or a caret-A payload reads its separator as `^` and every
 #: key after the first comes back with an `A` glued to the front.
 _PAYLOAD_SEPARATOR = r"(?s)[A-Za-z0-9_.\-]+[ \t]*=.*?(?P<sep>\^A|.)[A-Za-z0-9_.\-]+[ \t]*="
@@ -338,10 +330,6 @@ class FixCodec(Convertible):
 
     # -- the seam -----------------------------------------------------------
 
-    def categorise(self, messages: Any, plugins: Any = None) -> Any:
-        """One `protocol` name per row, in kernels."""
-        return self.rules.into_arrow_protocol_array(messages, plugins)
-
     def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
         return self.drop_null_values(
@@ -413,12 +401,7 @@ class FixCodec(Convertible):
             # of any pass here -- never run.
             return pairs
         payloads = compute.filter(items, carried)
-        reads = compute.and_(
-            compute.fill_null(compute.match_substring_regex(payloads, _PAYLOAD_PAIRS), False),
-            compute.invert(
-                compute.fill_null(compute.match_substring_regex(payloads, _LOOKS_XML), False)
-            ),
-        )
+        reads = carries_message(payloads)
         readable = _scattered_mask(carried, reads)
         if not compute.any(readable, min_count=0).as_py():
             return pairs
@@ -500,7 +483,7 @@ class FixCodec(Convertible):
             )
             found = named_begin if found is None else compute.coalesce(found, named_begin)
             bridge = compute.struct_field(
-                compute.extract_regex(text, FIXML_SEPARATOR_VECTOR), "sep"
+                compute.extract_regex(text, MARKED_SEPARATOR_VECTOR), "sep"
             )
             bridge = compute.if_else(
                 compute.is_in(bridge, value_set=pyarrow.array(SEPARATORS, pyarrow.string())),
@@ -946,7 +929,9 @@ class FixCodec(Convertible):
         if message:
             parse_protocol = protocol
             if protocol == NO_PROTOCOL:
-                parse_protocol = self.rules.categorise(message).protocol
+                parse_protocol = self.rules.into_arrow_protocol_array(
+                    pyarrow.array([message], pyarrow.string())
+                )[0].as_py()
             pairs = self.into_pairs(pyarrow.array([message]), parse_protocol)
             begin_column, application_column, default_column = _version_columns(pairs)
             begin = begin_column[0].as_py()
@@ -966,7 +951,7 @@ class FixCodec(Convertible):
             return self.versions_of_pairs(self.into_pairs(messages, protocol), protocol)
         if not len(messages):
             return pyarrow.array([], pyarrow.string())
-        groups = list(groups_of(self.categorise(messages)))
+        groups = list(groups_of(self.rules.into_arrow_protocol_array(messages)))
         parts, positions = [], []
         for category, where in groups:
             pairs = self.into_pairs(pyarrow.compute.take(messages, where), category.as_py())
@@ -1104,10 +1089,6 @@ class FixCodec(Convertible):
                 }
             )
         return self._named
-
-    def parties_of(self, version: str | None = None) -> Parties:
-        """Version-aware Parties extractor, cached with the tag index."""
-        return self.component_of("parties", version)  # type: ignore[return-value]
 
     def component_of(self, column: str, version: str | None = None) -> ComponentGroup:
         """Version-aware extractor for one structured component, cached per version."""

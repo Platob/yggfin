@@ -5,14 +5,14 @@
 
   const DECODE_SAMPLES = {
     fix: "8=FIX.4.4|35=D|11=ORD-42|453=2|448=BUY-A|447=D|452=3|448=BUY-B|447=D|452=3|10=000|",
-    fixml: "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=ORD-42|#NoPartyIDs[0]=PartyID=BUY-A\x04\x03PartyIDSource=proprietary/customcode\x04\x03PartyRole=clientid\x04\x03|#NoPartyIDs[1].PartyID=BUY-B|#NoPartyIDs[1].PartyIDSource=proprietary/customcode|#NoPartyIDs[1].PartyRole=clientid|",
-    "fixml-wire":
+    ul: "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=ORD-42|#NoPartyIDs[0]=PartyID=BUY-A\x04\x03PartyIDSource=proprietary/customcode\x04\x03PartyRole=clientid\x04\x03|#NoPartyIDs[1].PartyID=BUY-B|#NoPartyIDs[1].PartyIDSource=proprietary/customcode|#NoPartyIDs[1].PartyRole=clientid|",
+    fixml:
       "sending >> 8=FIX.4.4|35=UL|55=wire-copy|#MSGTYPE=D|#CLORDID=ORD-42|#SYMBOL=named-copy|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|10=000|",
   };
   const ENCODE_SAMPLES = {
-    fix: "BeginString=FIX.4.4|MsgType=NewOrderSingle|ClOrdID=ORD-42|NoPartyIDs=2|NoPartyIDs[0].PartyID=BUY-A|NoPartyIDs[0].PartyIDSource=proprietary/customcode|NoPartyIDs[0].PartyRole=clientid|NoPartyIDs[1].PartyID=BUY-B|NoPartyIDs[1].PartyIDSource=proprietary/customcode|NoPartyIDs[1].PartyRole=clientid|CheckSum=000|",
-    fixml: "#BEGINSTRING=FIX.4.4|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|",
-    "fixml-wire":
+    ul: "BeginString=FIX.4.4|MsgType=NewOrderSingle|ClOrdID=ORD-42|NoPartyIDs=2|NoPartyIDs[0].PartyID=BUY-A|NoPartyIDs[0].PartyIDSource=proprietary/customcode|NoPartyIDs[0].PartyRole=clientid|NoPartyIDs[1].PartyID=BUY-B|NoPartyIDs[1].PartyIDSource=proprietary/customcode|NoPartyIDs[1].PartyRole=clientid|CheckSum=000|",
+    "ul-marked": "#BEGINSTRING=FIX.4.4|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|",
+    fixml:
       "8=FIX.4.4|35=UL|#MSGTYPE=NewOrderSingle|#CLORDID=ORD-42|#NoPartyIDs[0].PartyID=BUY-A|#NoPartyIDs[0].PartyIDSource=proprietary/customcode|#NoPartyIDs[0].PartyRole=clientid|10=000|",
   };
   const SEPARATORS = new Map([
@@ -56,6 +56,10 @@
   const DATE_TYPES = new Set(["LOCALMKTDATE", "UTCDATEONLY"]);
   const TIME_TYPES = new Set(["LOCALMKTTIME", "TZTIMEONLY", "UTCTIMEONLY"]);
   const NAME = /^(?:\d+|[A-Za-z_][A-Za-z0-9_.-]*)(?:\[[A-Za-z0-9_.-]+\])?(?:\.[A-Za-z0-9_.-]+)*$/;
+  // What makes an `XmlData <213>` payload a message rather than a document:
+  // two `name=` tokens, and no opening tag. `rekep.fix.message` spells both.
+  const PAYLOAD_PAIRS = /[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*=/;
+  const LOOKS_XML = /^[ \t\r\n]*</;
   const number = new Intl.NumberFormat();
   const select = (query, root = app) => root.querySelector(query);
   const list = (value) => (Array.isArray(value) ? value : []);
@@ -443,7 +447,7 @@
 
     const tokens = split(source, separator);
     const preliminary = tokens.map(parseToken).filter(Boolean);
-    const protocol = protocolOf(source, preliminary, begin >= 0, bridge >= 0, direction);
+    const protocol = protocolOf(preliminary);
     const named = protocol.named;
     const pairs = [];
     let ended = false;
@@ -463,12 +467,6 @@
       }
       if (!NAME.test(pair.input_key.replace(/^#/, ""))) {
         unparsed.push(unparsedRecord(position, token, "syntax", "Key does not match FIX syntax"));
-        return;
-      }
-      if (!named && !/^\d+$/.test(pair.input_key)) {
-        unparsed.push(
-          unparsedRecord(position, token, "wire-name", "Named key in a numeric wire message"),
-        );
         return;
       }
       const normalized = {
@@ -621,37 +619,25 @@
     ];
   }
 
-  function protocolOf(source, pairs, hasBegin, hasBridge, direction) {
-    const msgType = pairs.find((pair) => pair.input_key.replace(/^#/, "") === "35")
-      ?.input_value;
-    if (hasBegin && msgType === "UL") {
-      return {
-        code: "FIXML",
-        variant: "fix-wrapper",
-        label: "FIXML · FIX wrapper",
-        named: true,
-      };
-    }
-    if (hasBegin && /^U[A-Za-z0-9]*$/i.test(msgType || "")) {
-      return { code: "FIX", variant: "user-defined", label: "FIX · user-defined", named: true };
-    }
-    if (hasBegin) return { code: "FIX", variant: "wire", label: "FIX", named: false };
-    if (hasBridge) return { code: "FIXML", variant: "bridge", label: "FIXML", named: true };
-    const namedBegin = pairs.some(
-      (pair) =>
-        folded(pair.input_key.replace(/^#/, "")) === "beginstring" &&
-        /^FIX(?:T)?\./i.test(pair.input_value),
+  // The keys decide and the values never do. A key that is not a number
+  // carries no tag, so `#A=1` quoted inside a Text <58> value is that entry's
+  // text and a value full of digits stays a value. `35=UL` is a MsgType, and
+  // says nothing here.
+  function protocolOf(pairs) {
+    const numbers = pairs.map((pair) => /^\d+$/.test(pair.input_key.replace(/^#/, "")));
+    const carried = pairs.some(
+      (pair, at) =>
+        numbers[at] &&
+        pair.input_key.replace(/^#/, "") === "213" &&
+        PAYLOAD_PAIRS.test(pair.input_value) &&
+        !LOOKS_XML.test(pair.input_value),
     );
-    if (namedBegin) {
-      return { code: "FIX", variant: "named", label: "FIX · named", named: true };
-    }
-    if (/^[ \t\r\n\f\x0b]*#?35[ \t\r\n\f\x0b]*=/.test(source)) {
-      return { code: "FIX", variant: "fragment", label: "FIX · fragment", named: false };
-    }
-    if (direction === "encode" || pairs.some((pair) => !/^#?\d+$/.test(pair.input_key))) {
-      return { code: "FIXML", variant: "named", label: "FIXML · named", named: true };
-    }
-    return { code: "OTHER", variant: "pairs", label: "Pairs", named: true };
+    const numbered = numbers.some(Boolean);
+    const named = numbers.some((number) => !number) || carried;
+    if (numbered && named) return { code: "FIXML", label: "FIXML", named: true };
+    if (numbered) return { code: "FIX", label: "FIX", named: false };
+    if (named) return { code: "UL", label: "UL", named: true };
+    return { code: "OTHER", label: "Pairs", named: true };
   }
 
   function split(text, separator) {
@@ -851,23 +837,20 @@
   }
 
   function applyNamedPrecedence(records, parsed) {
-    if (!parsed.named || !["fix-wrapper", "user-defined"].includes(parsed.protocol.variant)) {
-      return records;
-    }
-    const namedTags = new Set(
-      records
-        .filter(
-          (record) =>
-            record.resolved && record.input_form === "named" && !record.input_key.includes("["),
-        )
-        .map((record) => String(record.tag)),
-    );
+    if (!parsed.named) return records;
+    const flat = (record) =>
+      record.resolved && !record.input_key.includes("[") && record.tag !== undefined;
+    const namedValues = new Map();
+    records.forEach((record) => {
+      if (!flat(record) || record.input_form !== "named") return;
+      const tag = String(record.tag);
+      if (!namedValues.has(tag)) namedValues.set(tag, record.output_value);
+    });
     return records.map((record) => {
       if (
-        !record.resolved ||
+        !flat(record) ||
         record.input_form !== "numeric" ||
-        record.input_key.includes("[") ||
-        !namedTags.has(String(record.tag))
+        namedValues.get(String(record.tag)) !== record.output_value
       ) {
         return record;
       }
@@ -875,7 +858,7 @@
         ...record,
         shadowed: true,
         state: "shadowed",
-        reason: "A named FIXML field is authoritative over this numeric wrapper copy",
+        reason: "One field, written twice under both spellings, is kept once",
       };
     });
   }

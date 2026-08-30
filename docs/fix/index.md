@@ -585,10 +585,9 @@ and every copy leaves the residual pairs with it. Readings that *disagree* are
 left where they were: two values under one key is a repeating group, or an
 enrichment that rewrote something, and picking between them would be a guess.
 
-One explicit hybrid is different: a user-defined wire wrapper (`35=U...`)
-with a named `MSGTYPE` declares its rendered payload authoritative. Named flat
-fields then replace numeric copies of the same registry identity; indexed
-group members remain repetitions.
+Indexed group members are never readings of one field: `NoPartyIDs[0].PartyID`
+and `NoPartyIDs[1].PartyID` share a tag because they are two entries, and both
+remain.
 
 ## Reading a field
 

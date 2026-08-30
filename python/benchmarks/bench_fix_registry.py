@@ -75,7 +75,7 @@ def sweep_questions(folder: pathlib.Path, repeat: int) -> None:
         )
 
 
-def sweep_size(folder: pathlib.Path, repeat: int) -> None:
+def sweep_size(folder: pathlib.Path, repeat: int, levels: tuple[int | None, ...]) -> None:
     """What the archive saves, and what each deflate level is worth.
 
     Zipped here rather than through `into_zip`, because the level is what is
@@ -92,7 +92,7 @@ def sweep_size(folder: pathlib.Path, repeat: int) -> None:
         for path in sorted(folder.rglob("*.json"))
     }
     with tempfile.TemporaryDirectory() as scratch:
-        for level in (None, 0, 1, 6, 9):
+        for level in levels:
             target = pathlib.Path(scratch) / f"level{level}.zip"
             seconds = best_of(lambda t=target, level=level: _zip(documents, t, level), repeat)
             size = target.stat().st_size
@@ -113,7 +113,7 @@ def _zip(documents: dict[str, bytes], target: pathlib.Path, level: int | None) -
 
 def main() -> None:
     arguments = parser(__doc__, repeat=7).parse_args()
-    repeat = 3 if arguments.quick else arguments.repeat
+    repeat = 2 if arguments.quick else arguments.repeat
 
     if not ARCHIVE.exists():
         raise SystemExit(f"no dictionary to measure: {ARCHIVE} is not there")
@@ -125,7 +125,10 @@ def main() -> None:
         check(folder)
         print("every answer matches between the two stores")
         sweep_questions(folder, repeat)
-        sweep_size(folder, repeat)
+        # Quick prices the shipped level against no compression at all, which
+        # is the comparison that settles whether to publish an archive; the
+        # level sweep beside it rewrites the whole store once per level.
+        sweep_size(folder, repeat, (None, 0) if arguments.quick else (None, 0, 1, 6, 9))
 
 
 if __name__ == "__main__":

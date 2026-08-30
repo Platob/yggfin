@@ -29,6 +29,28 @@ FIX 8 7 VENUE DESK
     Message.from_text(line, message=line).protocolcode  # 'FIX'
     ```
 
+## Three protocols
+
+`protocolcode` says which grammar the payload is written in, and the keys
+decide it -- never the values, and never a MsgType.
+
+| code | what the payload's keys are |
+| --- | --- |
+| `FIX` | numbered tags only |
+| `FIXML` | numbered tags and rendered names together |
+| `UL` | rendered names only |
+
+A frame is FIXML whether the names arrive inline (`8=FIX.4.4|55=IBM|#SIDE=1`)
+or inside an `XmlData <213>` document the FIX stage expands. The wire token
+`35=UL` is a MsgType and stays one: it says what the message *is*, not how it
+is spelled, so a numbered frame carrying it is `FIX`. A value full of digits
+is still a value, and a `#A=1` quoted inside `Text <58>` is that field's text
+rather than a second field.
+
+A payload with no structure at all is `OTHER`, and the log prefix in front of
+one never changes the answer: classification reads the message, which starts
+where the prefix ends.
+
 The standard header and trailer are lifted, in the order the FIX stage
 declares them, so a reader who has the header does not have to walk `entries`
 for it. Two fields stay entries and cannot do otherwise. `CheckSum <10>` is

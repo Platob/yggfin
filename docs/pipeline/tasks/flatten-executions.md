@@ -11,7 +11,7 @@ In book mode, after `parse_market` has populated `market.books`, run from the
 repository root:
 
 ```bash
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/flatten_executions/flatten_executions.yml \
   --output flatten_executions.executed.ipynb
 ```

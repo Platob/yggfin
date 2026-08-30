@@ -209,6 +209,7 @@ class IcebergCatalog(Convertible):
         pyiceberg catalog builds a SQLAlchemy engine or asks a REST server for
         its config, and `datasets()` was paying that per table.
         """
+        from rekep.arrow_file_io import STORAGE_PROPERTIES
         from rekep.iceberg.dataset import IcebergDataset
 
         storage = kwargs.get("table_properties") or {}
@@ -217,8 +218,7 @@ class IcebergCatalog(Convertible):
                 str(location)
                 for location in (
                     kwargs.get("location"),
-                    storage.get("write.data.path"),
-                    storage.get("write.metadata.path"),
+                    *(storage.get(name) for name in STORAGE_PROPERTIES),
                 )
                 if location
             ]

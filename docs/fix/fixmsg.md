@@ -102,6 +102,20 @@ Raw `Message.entries` is always a list. A `FixMsg` carrying no recognized
 message has null `entries`; a parsed message with no residue has an empty one.
 The `MsgType` discriminator is promoted to `msgtype` and never duplicated here.
 
+Every field a row keeps lands in exactly one of three places, and never two:
+
+| where | what goes there |
+| --- | --- |
+| a typed column | a field the registry names and the row states once |
+| `entries` | a field the registry knows that a column cannot hold alone |
+| `unmap` | a key the registry has no record of |
+
+A component's members leave `entries` with the component. A field written
+twice under both spellings is one field when the two agree and stays two
+entries when they do not, because choosing between them would be a guess.
+`unmap` is null where every key resolved, rather than an empty list of the
+fields that did not.
+
 ## Reading one row
 
 `get` reads promoted columns and `entries` through the same accessor, by
@@ -150,15 +164,17 @@ SENT
 ```
 
 `UNKNOWN` is most rows — bridge re-log lines repeat a payload without repeating
-the verb, and no answer beats a guessed one. The patterns are
-`rekep.fix.rules.DIRECTION_PATTERNS`. It resolves at the message stage, where
-the raw line and its protocol reading last coexist; the FIX stage re-resolves
-any row still carrying its text and keeps the stored answer where `parse_fix`
-projected the text away.
+the verb, and no answer beats a guessed one. The verb has to open before the
+first token the row's protocol could start with, which
+`rekep.fix.rules.CODEC_ANCHORS` spells per codec. It resolves at the message
+stage, where the raw line and its protocol reading last coexist; the FIX stage
+re-resolves any row still carrying its text and keeps the stored answer where
+`parse_fix` projected the text away.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
-`MSGTYPE`. There the named discriminator and named flat fields are
-authoritative, so numeric copies of the same registry identities are removed;
+`MSGTYPE`. The wrapper names the envelope and the payload names the message,
+so the rendered discriminator is the row's MsgType. Its flat fields are read
+beside the numeric ones under [Ordered residue](#ordered-residue)'s one rule;
 indexed group members are never treated as duplicates.
 
 ## Stored categories

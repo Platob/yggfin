@@ -4,7 +4,7 @@ A code packs left-justified into a fixed width, padded with trailing NULs,
 so the stored integer reads back as text and orders exactly as the text
 does. A member may also declare a *rank*, and a vocabulary ranked in
 hundred-wide bands answers `band` and the pushed code sets
-`ranked_at_least`, `ranked_below` and `ranked_between`.
+`ranked_at_least` and `ranked_below`.
 """
 
 from __future__ import annotations
@@ -225,11 +225,6 @@ class Ascii32(enum.IntEnum):
     def ranked_below(cls, floor: Self) -> tuple[int, ...]:
         """Stored codes ranked below `floor`, for a pushed scan filter."""
         return tuple(int(member) for member in cls if member._rank < floor._rank)
-
-    @classmethod
-    def ranked_between(cls, floor: Self, ceiling: Self) -> tuple[int, ...]:
-        """Stored codes ranked in `[floor, ceiling)`, for a pushed scan filter."""
-        return tuple(int(member) for member in cls if floor._rank <= member._rank < ceiling._rank)
 
     @classmethod
     @functools.cache
@@ -501,20 +496,6 @@ class Ascii32(enum.IntEnum):
         for code, member in cls._fix_codes().items():
             found.setdefault(member, code)
         return MappingProxyType(found)
-
-    @classmethod
-    def forget_fix_codes(cls) -> None:
-        """Drop the derived codes, for a caller that replaced the dictionary.
-
-        The mutator half of the accessors above. Nothing in a running pipeline
-        calls it -- the packaged dictionary does not change under a process --
-        but a rebuild of that dictionary in the same interpreter would
-        otherwise keep answering from the store it replaced.
-        """
-        cls._fix_codes.cache_clear()
-        cls._wire_codes.cache_clear()
-        cls.worded_codes.cache_clear()
-        cls._from_text.cache_clear()
 
 
 class Ascii64(Ascii32):

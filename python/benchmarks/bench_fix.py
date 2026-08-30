@@ -113,8 +113,15 @@ def check(column: pyarrow.Array, **kwargs: object) -> None:
         assert row == expected, (line, row, expected)
 
 
-def sweep_parsing(rows: int, repeat: int) -> None:
-    print(f"\nparsing, {rows:,} rows, best of {repeat}")
+def sweep_parsing(rows: int, repeat: int, scalar_rows: int) -> None:
+    """The scalar reference against the kernel, per row.
+
+    Both legs are *rates*, so the scalar one is measured over `scalar_rows` and
+    the kernel over all of them: the scalar path runs at some hundreds of rows
+    a second against the kernel's hundreds of thousands, and pricing it at the
+    same width is the whole runtime of this script.
+    """
+    print(f"\nparsing, {rows:,} rows ({scalar_rows:,} scalar), best of {repeat}")
     columns = ("case", "rows/s scalar", "rows/s vector", "speedup", "fields/s vector")
     widths = (26, 14, 14, 8, 16)
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
@@ -141,55 +148,16 @@ def sweep_parsing(rows: int, repeat: int) -> None:
                 )
             ).as_py()
         )
-        scalar = best_of(lambda lines=lines: [FixMsg.from_text(line) for line in lines], repeat)
+        sampled = lines[:scalar_rows]
+        scalar = best_of(lambda lines=sampled: [FixMsg.from_text(line) for line in lines], repeat)
         vector = best_of(
             lambda column=column, kwargs=kwargs: parse_arrow_array(column, **kwargs), repeat
         )
+        scalar_rate, vector_rate = len(sampled) / scalar, rows / vector
         print(
-            f"{label:>26} {rows / scalar:>14,.0f} {rows / vector:>14,.0f} "
-            f"{scalar / vector:>7.1f}x {fields / vector:>16,.0f}"
+            f"{label:>26} {scalar_rate:>14,.0f} {vector_rate:>14,.0f} "
+            f"{vector_rate / scalar_rate:>7.1f}x {fields / vector:>16,.0f}"
         )
-
-
-def sweep_cut(rows: int, repeat: int) -> None:
-    """The race `parse_arrow_array`'s tag/value cut was decided by."""
-    print(f"\ntag/value cut, {rows:,} tokens, best of {repeat}")
-    generate = random.Random(3)
-    tokens = pyarrow.array(
-        [
-            f"{generate.choice([8, 9, 35, 49, 54, 58, 268, 269])}={'x' * generate.randint(1, 12)}"
-            for _ in range(rows)
-        ]
-    )
-    compute = pyarrow.compute
-
-    def by_split() -> tuple:
-        halves = compute.split_pattern(tokens, "=", max_splits=1)
-        return (
-            compute.utf8_trim_whitespace(compute.list_element(halves, 0)),
-            compute.utf8_trim_whitespace(compute.list_element(halves, 1)),
-        )
-
-    def by_extract_trimming() -> tuple:
-        found = compute.extract_regex(tokens, r"^\s*(?P<t>\d+)\s*=\s*(?P<v>.*?)\s*$")
-        return compute.struct_field(found, "t"), compute.struct_field(found, "v")
-
-    def by_extract_greedy() -> tuple:
-        found = compute.extract_regex(tokens, r"^(?P<t>\d+)=(?P<v>.*)$")
-        return compute.struct_field(found, "t"), compute.struct_field(found, "v")
-
-    reference = by_split()
-    for candidate in (by_extract_trimming, by_extract_greedy):
-        tags, values = candidate()
-        assert tags.equals(reference[0]) and values.equals(reference[1])
-
-    for label, function in (
-        ("split + list_element", by_split),
-        ("extract_regex, trimming", by_extract_trimming),
-        ("extract_regex, greedy", by_extract_greedy),
-    ):
-        seconds = best_of(function, repeat)
-        print(f"{label:>26} {rows / seconds:>14,.0f} tokens/s")
 
 
 def sweep_tags(rows: int, repeat: int) -> None:
@@ -201,6 +169,16 @@ def sweep_tags(rows: int, repeat: int) -> None:
         "numeric keys -> int64 cast": (wire, {"key_type": pyarrow.int64()}),
         "rendered keys via names": (rendered, {"names": NAMES, "drop_unknown": True}),
     }
+    # The two widths are one reading of one column, so they answer alike before
+    # either is timed; the rendered mode reads different keys and is checked
+    # against the names it was given.
+    narrow, wide = (
+        tag_arrow_array(wire, **kwargs) for kwargs in ({}, {"key_type": pyarrow.int64()})
+    )
+    assert narrow.cast(wide.type).equals(wide)
+    named = tag_arrow_array(rendered, names=NAMES, drop_unknown=True)
+    tagged = {tag for row in named.to_pylist() for tag, _ in row}
+    assert tagged and tagged <= set(NAMES.values()), tagged
     for label, (maps, kwargs) in entries.items():
         keys = int(
             pyarrow.compute.sum(
@@ -244,16 +222,24 @@ def named_pairs(rows: int) -> list[list[tuple[str, object]]]:
     return built
 
 
-def sweep_pairs(rows: int, repeat: int) -> None:
-    """`from_pairs`, and the three ways its keys could have been resolved."""
-    print(f"\nfrom_pairs, {rows:,} rows, best of {repeat}")
-    pairs = named_pairs(rows)
+def sweep_pairs(rows: int, repeat: int, scalar_rows: int) -> None:
+    """`from_pairs`, and the three ways its keys could have been resolved.
+
+    `from_pairs` is scalar, so it is priced over `scalar_rows` for the reason
+    `sweep_parsing` prices its own scalar leg over a sample; the key race below
+    is in kernels and gets every key.
+    """
+    print(f"\nfrom_pairs, {scalar_rows:,} rows, best of {repeat}")
+    pairs = named_pairs(scalar_rows)
     fields = sum(len(one) for one in pairs)
     built = [FixMsg.from_pairs(one, NAMES) for one in pairs]
     assert built[0].get(54).raw == "1"
     assert built[0].get("VenueOwnField").raw == "kept"
     seconds = best_of(lambda: [FixMsg.from_pairs(one, NAMES) for one in pairs], repeat)
-    print(f"{'from_pairs':>28} {rows / seconds:>14,.0f} rows/s {fields / seconds:>14,.0f} fields/s")
+    print(
+        f"{'from_pairs':>28} {scalar_rows / seconds:>14,.0f} rows/s "
+        f"{fields / seconds:>14,.0f} fields/s"
+    )
 
     # The key-resolution race, on the keys alone. `from_pairs` above pays for
     # value rendering and object construction too, which would drown the
@@ -263,7 +249,7 @@ def sweep_pairs(rows: int, repeat: int) -> None:
     # with how many names are in it and a hash probe's does not, so a race at
     # nine names says nothing about a FIX dictionary at fifteen hundred -- and
     # nine names is exactly where "just use a regex" looks right.
-    keys = [key for one in pairs for key, _ in one]
+    keys = [key for one in named_pairs(rows) for key, _ in one]
     print(f"\n  resolving {len(keys):,} keys, best of {repeat}")
     for size in (len(NAMES), 1_500):
         _race_keys(keys, _sized_names(size), repeat)
@@ -338,10 +324,9 @@ def main() -> None:
     arguments = parser(__doc__, rows=100_000).parse_args()
     rows = 10_000 if arguments.quick else arguments.rows
     repeat = 3 if arguments.quick else arguments.repeat
-    sweep_parsing(rows, repeat)
-    sweep_cut(rows * 10, repeat)
+    sweep_parsing(rows, repeat, 500 if arguments.quick else 2_000)
     sweep_tags(rows, repeat)
-    sweep_pairs(rows, repeat)
+    sweep_pairs(rows, repeat, 1_000 if arguments.quick else 10_000)
 
 
 if __name__ == "__main__":

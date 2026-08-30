@@ -69,8 +69,8 @@ non-negative integer even though the column is signed.
 
 A member may declare a **rank** separately from its value. A vocabulary ranked
 in hundred-wide bands answers "what does this broadly mean" through `band`, and
-a scan pushes the finite code sets `ranked_at_least`, `ranked_below` and
-`ranked_between` spell:
+a scan pushes the finite code sets `ranked_at_least` and `ranked_below`
+spell:
 
 ```python
 from rekep.enums import EventType
@@ -81,7 +81,7 @@ print(len(EventType.ranked_at_least(EventType.STATE)))
 
 ```text
 40DONE FACT
-4
+2
 ```
 
 A vocabulary that declares no ranks ranks each member by its own packed code,

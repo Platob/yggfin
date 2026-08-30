@@ -61,8 +61,8 @@ enumerates in full, such as `SecurityIDSource <22>`, has no enum here at all.
 Order is a separate fact from identity. A member may declare a *rank*, and a
 vocabulary ranked in hundred-wide bands answers "what does this broadly mean"
 through `band` and "which codes rank at least this far" through
-`ranked_at_least`, `ranked_below` and `ranked_between` -- finite code sets a
-storage scan pushes down.
+`ranked_at_least` and `ranked_below` -- finite code sets a storage scan
+pushes down.
 
 An enum's Arrow shape, `EnumName.into_arrow_type()`, is one cached dictionary
 type -- its codes as values, indexed as wide as the packed integer a column

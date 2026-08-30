@@ -9,7 +9,7 @@ import pytest
 
 from rekep import FixMsg, FixRegistry
 from rekep.fix import (
-    FIXML_PATTERN,
+    MARKED_VECTOR,
     MARKER,
     SOH,
     detect_entry_separator,
@@ -219,10 +219,24 @@ def test_named_mode_is_automatic_without_a_beginstring() -> None:
     assert _raw(parsed, "took") == "5ms", "a rendered line is pairs, noise included"
 
 
-def test_a_beginstring_keeps_the_wire_rule() -> None:
-    """The same rendered spellings beside a wire message stay noise."""
+def test_a_named_key_beside_a_beginstring_is_a_field_of_the_frame() -> None:
+    """A frame carrying both spellings is one message, so both are read.
+
+    `54` and `Side` are one field written twice, so the projection renders the
+    rendered occurrence once; both spellings stay in `entries`, where the
+    conflict is visible rather than silently resolved."""
     parsed = FixMsg.from_text("8=FIX.4.2|54=1|Side=2|PartyID[0]=X|10=000")
-    assert parsed.pairs == [("8", "FIX.4.2"), ("54", "1"), ("10", "000")]
+    assert [(entry.tag, entry.key, entry.value) for entry in parsed.entries] == [
+        (54, "54", "1"),
+        (0, "Side", "2"),
+        (10, "10", "000"),
+    ]
+    assert parsed.pairs == [("8", "FIX.4.2"), ("Side", "2"), ("10", "000"), ("PartyID[0]", "X")]
+    assert FixMsg.from_text("8=FIX.4.2|54=1|10=000").pairs == [
+        ("8", "FIX.4.2"),
+        ("54", "1"),
+        ("10", "000"),
+    ], "and a frame carrying only tags reads only tags"
     assert FixMsg.from_text(RENDERED, named=False).pairs == []
 
 
@@ -371,7 +385,7 @@ def test_the_plugin_s_own_prefix_never_glues_onto_the_first_key() -> None:
 
 
 def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
-    """Two `#NAME=` or it is a sentence, which is what `FIXML_PATTERN` says."""
+    """Two `#NAME=` or it is a sentence, which is what `MARKED_VECTOR` says."""
     assert _raw(FixMsg.from_text("Account=A|note=see #ref for details"), "Account") == "A"
 
 
@@ -880,19 +894,22 @@ def test_the_two_parsers_agree_about_a_named_bracket() -> None:
         assert FixMsg.from_text(line).pairs == [tuple(pair) for pair in row], line
 
 
-def test_a_line_of_named_brackets_is_a_bridge_message() -> None:
-    """The classification rule and the token rule are one rule, or a line is lost."""
-    assert re.search(FIXML_PATTERN, "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM")
-    assert re.search(FIXML_PATTERN, "toBridge #NOPARTYIDS[0].PARTYID=A|#NOPARTYIDS[0].PARTYROLE=1")
-    assert not re.search(FIXML_PATTERN, "a sentence mentioning #hashtag and nothing else")
+def test_a_line_of_named_brackets_is_a_marked_document() -> None:
+    """The message-start rule and the token rule are one rule, or a line is lost."""
+    assert re.search(MARKED_VECTOR, "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM")
+    assert re.search(MARKED_VECTOR, "toBridge #NOPARTYIDS[0].PARTYID=A|#NOPARTYIDS[0].PARTYROLE=1")
+    assert not re.search(MARKED_VECTOR, "a sentence mentioning #hashtag and nothing else")
 
 
-def test_a_wire_message_still_refuses_a_bracketed_key() -> None:
+def test_tag_mode_refuses_a_bracketed_key() -> None:
     """Tag mode is digits only; a bracket is a rendered spelling, not a tag."""
-    assert FixMsg.from_text("8=FIX.4.2\x01INSTRUMENT[EXCHANGE]=XTST\x0154=1\x01").pairs == [
+    line = "8=FIX.4.2\x01INSTRUMENT[EXCHANGE]=XTST\x0154=1\x01"
+    assert FixMsg.from_text(line, named=False).pairs == [("8", "FIX.4.2"), ("54", "1")]
+    assert FixMsg.from_text(line).pairs == [
         ("8", "FIX.4.2"),
         ("54", "1"),
-    ]
+        ("INSTRUMENT.EXCHANGE", "XTST"),
+    ], "and the frame carries the rendered key, so it is read and kept unmapped"
 
 
 # -- what a capture spells, as against what a parse keeps --------------------

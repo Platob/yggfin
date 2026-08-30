@@ -13,23 +13,40 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
+from rekep.entries import Entry
 from rekep.enums import Direction, EventType
 from rekep.fields import scalar
+from rekep.fields.arrays import sequence
 from rekep.fix.message import (
     BEGIN_STRING,
     FIX_MSG_TYPE_PATTERN,
-    FIXML_PATTERN,
-    FIXML_WIRE_PATTERN,
+    NAMED_KEY,
+    XML_DATA_TAG,
+    carries_message,
 )
 
-#: Read wire tags, rendered names, or no message.
-CODECS: tuple[str, ...] = ("fix", "fixml", "none")
+#: Read a payload as numbered tags, as both, as rendered names, or not at all.
+CODECS: tuple[str, ...] = ("fix", "fixml", "ul", "none")
+
+#: The three a payload's own keys decide, and what each one means:
+#:
+#: - `fix` -- numbered FIX tags and no named key;
+#: - `fixml` -- numbered tags and named keys together, whether the names sit in
+#:   `XmlData <213>` or inline beside the tags;
+#: - `ul` -- named keys and no numbered tag.
+#:
+#: The wire token `35=UL` is a MsgType and decides nothing here: a numbered-only
+#: frame carrying it is `fix`, a frame carrying a named payload beside it is
+#: `fixml`, and a bare named document is `ul` whatever its `MSGTYPE` says.
+#: Classification reads the *key* of each parsed pair, so a value full of
+#: digits never makes a named field numbered.
+SHAPES: tuple[str, ...] = ("fix", "fixml", "ul")
 
 #: `codec` -> `parse_arrow_array`'s named mode; None skips parsing. Named for
 #: what it maps rather than for the word it maps to: three unrelated `NAMED`
 #: constants meant three things, and an import of one read as an import of
 #: another.
-CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "none": None}
+CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "ul": True, "none": None}
 
 #: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
@@ -45,18 +62,6 @@ NO_PROTOCOL = "OTHER"
 #: Jolokia metadata or the route's fixed endpoints as movement.
 INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b"
 OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b"
-
-#: Which protocols carry a direction verb, and the two patterns that read it.
-#: A protocol-keyed lookup beside the rules rather than two more `Rule`
-#: fields: direction is consulted *after* classification, never folded into
-#: it, and a bridge with different wording passes its own mapping to
-#: `Rules.into_arrow_direction_array`.
-DIRECTION_PATTERNS: Mapping[str, tuple[str, str]] = MappingProxyType(
-    {
-        "FIX": (INBOUND_PATTERN, OUTBOUND_PATTERN),
-        "FIXML": (INBOUND_PATTERN, OUTBOUND_PATTERN),
-    }
-)
 
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
@@ -100,6 +105,19 @@ def joined_pattern(*patterns: str) -> str:
     return "|".join(branches)
 
 
+#: Where a payload of each shape starts, which is what a direction verb has to
+#: precede. Classification reads the parsed keys and this reads the raw line,
+#: so the two meet here: the anchor is the first token the payload could open
+#: with, and a verb behind it is inside the payload rather than in front of it.
+CODEC_ANCHORS: Mapping[str, str] = MappingProxyType(
+    {
+        "fix": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN),
+        "fixml": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN, NAMED_KEY),
+        "ul": NAMED_KEY,
+    }
+)
+
+
 @scalar
 class Rule(Convertible):
     """A protocol rule whose regex must work in Python `re` and Arrow RE2."""
@@ -124,7 +142,7 @@ class Rule(Convertible):
     """Additional literals considered when an indexed-entry separator is detected."""
 
     codec: str = "none"
-    """How to read the line: `fix`, `fixml`, or `none` for "do not"."""
+    """How to read the line: one of `SHAPES`, or `none` for "do not"."""
 
     def __post_init__(self) -> None:
         """Keep direct string input as one literal, never its characters."""
@@ -138,28 +156,16 @@ class Rule(Convertible):
         """What `parse_arrow_array`'s `named` is for this rule; None is "no message"."""
         return CODEC_KEYS.get(self.codec)
 
-    def matches(self, message: str | None, plugin: str | None = None) -> bool:
-        """Whether one line matches; unavailable message or plugin data does not."""
-        if message is None:
-            return False
-        if self.pattern and _compiled(self.pattern).search(message) is None:
-            return False
-        if self.plugin_pattern:
-            if plugin is None or _compiled(self.plugin_pattern).search(plugin) is None:
-                return False
-        return True
 
+#: The three structured protocols, each named by the shape its codec reads.
+#: They carry no pattern, so the keys of a parsed payload are what decides
+#: them; a rule that does carry one is decided by it instead, which is how a
+#: `35=0` session rule sits in front of the general one.
+FIX = Rule(protocol="FIX", codec="fix")
 
-#: Use parser-owned patterns so classification and parsing cannot drift.
-FIX = Rule(protocol="FIX", pattern=joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN), codec="fix")
+FIXML = Rule(protocol="FIXML", codec="fixml")
 
-FIXML = Rule(protocol="FIXML", pattern=FIXML_PATTERN, codec="fixml")
-
-#: More specific than FIX, so this must precede `FIX`. Zero hits across the
-#: 292,750-row three-log sample this set was last validated on -- kept anyway,
-#: by construction rather than by evidence: its envelope is FIX-shaped, so
-#: without it a wrapped bridge message would parse under the wire codec.
-FIXML_WIRE = Rule(protocol="FIXML", pattern=FIXML_WIRE_PATTERN, codec="fixml")
+UL = Rule(protocol="UL", codec="ul")
 
 #: Operational lines whose vocabulary is understood but which carry no market
 #: message. Keeping these known lines out of `unknown` makes that table a
@@ -177,8 +183,11 @@ MISC = Rule(
 #: An empty pattern makes this the final fall-through rule.
 OTHER = Rule(protocol=NO_PROTOCOL, pattern="", codec="none")
 
-#: First match wins; wrapped FIXML must precede its FIX envelope.
-DEFAULT_RULES: tuple[Rule, ...] = (FIXML_WIRE, FIX, FIXML, MISC, OTHER)
+#: First match wins. The three shapes are mutually exclusive, so their order
+#: among themselves decides nothing; they lead the pattern rules because a FIX
+#: frame whose `Text <58>` says "heartbeat" is a message and not an
+#: operational line.
+DEFAULT_RULES: tuple[Rule, ...] = (FIX, FIXML, UL, MISC, OTHER)
 
 
 def _default_rules() -> list[Rule]:
@@ -210,13 +219,6 @@ class Rules(Convertible):
     #: Rules in the order they are tried.
     rules: list[Rule] = dataclasses.field(default_factory=_default_rules)
 
-    def categorise(self, message: str | None, plugin: str | None = None) -> Rule:
-        """The first rule `message` matches, or `OTHER`."""
-        for rule in self.rules:
-            if rule.matches(message, plugin):
-                return rule
-        return OTHER
-
     def rule(self, protocol: str) -> Rule:
         """The first rule for one protocol, or `OTHER` when this set has none.
 
@@ -245,8 +247,15 @@ class Rules(Convertible):
         """Recognised protocol names, excluding the fall-through value."""
         return frozenset(rule.protocol for rule in self.rules if rule.protocol != NO_PROTOCOL)
 
-    def into_arrow_protocol_array(self, messages: Any, plugins: Any = None) -> pyarrow.Array:
-        """What each row carries, in kernels: one `protocol` name per line."""
+    def into_arrow_protocol_array(
+        self, messages: Any, plugins: Any = None, entries: Any = None
+    ) -> pyarrow.Array:
+        """What each row carries, in kernels: one `protocol` name per line.
+
+        `entries` is the row's already-parsed key/value pairs, which is what a
+        structured rule is decided by -- the message stage hands over the ones
+        it just parsed rather than paying for them twice.
+        """
         compute = pyarrow.compute
         rows = len(messages)
         found: Any = pyarrow.repeat(pyarrow.scalar(OTHER.protocol, pyarrow.string()), rows)
@@ -254,27 +263,24 @@ class Rules(Convertible):
             return found
         text = messages.cast(pyarrow.string(), safe=False)
         plugin_text = None if plugins is None else plugins.cast(pyarrow.string(), safe=False)
+        shapes = (
+            payload_shapes(Entry.payload_arrow(messages) if entries is None else entries)
+            if any(rule.codec in SHAPES for rule in self.rules)
+            else None
+        )
         for rule in reversed(self.rules):
-            hit = _hit(rule, text, plugin_text)
-            if hit is None:
-                continue
+            hit = _hit(rule, text, plugin_text, shapes)
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, pyarrow.string()), found)
         return found.cast(pyarrow.string(), safe=False)
 
-    def into_arrow_direction_array(
-        self,
-        messages: Any,
-        protocols: Any,
-        patterns: Mapping[str, tuple[str, str]] | None = None,
-    ) -> pyarrow.Array:
+    def into_arrow_direction_array(self, messages: Any, protocols: Any) -> pyarrow.Array:
         """Packed transport direction read before the payload.
 
-        The verb counts only where it starts before the first token the row's
-        own rule matched, so a `sent` inside a FIX `Text <58>` or a bridge
-        value never becomes a direction. Neither matching is `UNKNOWN`, and
-        so is both: no answer beats a guessed one. Protocols outside
-        `patterns` -- `DIRECTION_PATTERNS` unless a bridge hands its own
-        wording -- stay `UNKNOWN` whole.
+        The verb counts only where it starts before the row's own payload
+        anchor, so a `sent` inside a FIX `Text <58>` or a bridge value never
+        becomes a direction. Neither matching is `UNKNOWN`, and so is both: no
+        answer beats a guessed one. A protocol whose rules carry no structured
+        codec has no anchor and stays `UNKNOWN` whole.
         """
         compute = pyarrow.compute
         rows = len(messages)
@@ -282,24 +288,17 @@ class Rules(Convertible):
         found: Any = pyarrow.repeat(unknown, rows)
         if not rows:
             return found
-        configured = DIRECTION_PATTERNS if patterns is None else patterns
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
         names = protocols.cast(pyarrow.string(), safe=False)
-        for protocol, (inbound, outbound) in configured.items():
+        for protocol, anchor in self._anchors().items():
             selected = compute.fill_null(compute.equal(names, protocol), False)
             if not compute.any(selected, min_count=0).as_py():
                 continue
-            # Every rule the protocol answers to, not `rule(protocol)`'s first:
-            # a rendered bridge line matches `FIXML`, never `FIXML_WIRE`, and a verb
-            # checked against the wrong vocabulary would answer from anywhere.
-            spelled = joined_pattern(
-                *dict.fromkeys(rule.pattern for rule in self.rules if rule.protocol == protocol)
+            payload_at = compute.find_substring_regex(text, pattern=anchor)
+            received = _opens(
+                compute.find_substring_regex(text, pattern=INBOUND_PATTERN), payload_at
             )
-            if not spelled:
-                continue
-            payload_at = compute.find_substring_regex(text, pattern=spelled)
-            received = _opens(compute.find_substring_regex(text, pattern=inbound), payload_at)
-            sent = _opens(compute.find_substring_regex(text, pattern=outbound), payload_at)
+            sent = _opens(compute.find_substring_regex(text, pattern=OUTBOUND_PATTERN), payload_at)
             direction = compute.if_else(
                 compute.and_(sent, compute.invert(received)),
                 pyarrow.scalar(int(Direction.SENT), pyarrow.int32()),
@@ -311,6 +310,22 @@ class Rules(Convertible):
             )
             found = compute.if_else(selected, direction, found)
         return found
+
+    def _anchors(self) -> dict[str, str]:
+        """`{protocol: where its payload starts}` for every structured rule.
+
+        Every rule the protocol answers to, not `rule(protocol)`'s first: two
+        rules may share a protocol under different codecs, and a verb checked
+        against the wrong vocabulary would answer from anywhere.
+        """
+        found: dict[str, list[str]] = {}
+        for rule in self.rules:
+            anchor = CODEC_ANCHORS.get(rule.codec)
+            if anchor is not None and anchor not in found.setdefault(rule.protocol, []):
+                found[rule.protocol].append(anchor)
+        return {
+            protocol: joined_pattern(*anchors) for protocol, anchors in found.items() if anchors
+        }
 
     def into_arrow_category_array(self, protocols: Any, eventtypes: Any) -> pyarrow.Array:
         """Target category per parsed row, using the scalar rule in kernels."""
@@ -367,10 +382,62 @@ def _opens(verb_at: Any, payload_at: Any) -> Any:
     )
 
 
-def _hit(rule: Rule, text: Any, plugins: Any) -> Any:
-    """One rule's mask over a whole column."""
+def payload_shapes(entries: Any) -> pyarrow.Array:
+    """Which of `SHAPES` each row's parsed pairs make, or nothing.
+
+    The keys decide and the values never do: `Entry.tag` is the numeric
+    identity a key was written under, and a key that is not a number carries
+    none. So a `#A=1` quoted inside a `Text <58>` value is one entry's text
+    rather than a second entry, and a value full of digits stays a value.
+    """
+    compute = pyarrow.compute
+    rows = len(entries)
+    empty = pyarrow.scalar("", pyarrow.string())
+    if not rows:
+        return pyarrow.array([], pyarrow.string())
+    if isinstance(entries, pyarrow.ChunkedArray):
+        entries = entries.combine_chunks()
+    items = compute.list_flatten(entries)
+    tags = compute.struct_field(items, "tag")
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
+    at = sequence(rows)
+    # `XmlData <213>` holds a whole message where it holds one, and the FIX
+    # stage expands it in the place the tag sat -- so its named keys are the
+    # message's own, and a numbered frame carrying one is mixed, not wire.
+    carried = compute.and_(
+        compute.equal(tags, XML_DATA_TAG),
+        carries_message(compute.struct_field(items, "value")),
+    )
+    numbered, named = (
+        compute.is_in(at, value_set=compute.unique(compute.filter(parents, mask)))
+        for mask in (
+            compute.not_equal(tags, 0),
+            compute.or_(compute.equal(tags, 0), carried),
+        )
+    )
+    return compute.if_else(
+        compute.and_(numbered, named),
+        pyarrow.scalar("fixml", pyarrow.string()),
+        compute.if_else(
+            numbered,
+            pyarrow.scalar("fix", pyarrow.string()),
+            compute.if_else(named, pyarrow.scalar("ul", pyarrow.string()), empty),
+        ),
+    ).cast(pyarrow.string(), safe=False)
+
+
+def _hit(rule: Rule, text: Any, plugins: Any, shapes: Any) -> Any:
+    """One rule's mask over a whole column.
+
+    A rule matches by what it declares: its message pattern and its plugin
+    pattern where it has them, and otherwise by the shape its codec names. So
+    the built-ins are decided by the keys a payload holds, and a desk that
+    writes `plugin_pattern` decides by the plugin instead.
+    """
     compute = pyarrow.compute
     mask = compute.is_valid(text)
+    if rule.codec in SHAPES and not rule.pattern and not rule.plugin_pattern:
+        mask = compute.and_(mask, compute.equal(shapes, rule.codec))
     if rule.pattern:
         mask = compute.and_(
             mask, compute.fill_null(compute.match_substring_regex(text, rule.pattern), False)
@@ -383,9 +450,3 @@ def _hit(rule: Rule, text: Any, plugins: Any) -> Any:
         )
         mask = compute.and_(mask, matched)
     return mask
-
-
-@functools.lru_cache(maxsize=256)
-def _compiled(pattern: str) -> re.Pattern[str]:
-    """Compile once with ASCII classes, matching Arrow RE2 semantics."""
-    return re.compile(pattern, re.ASCII)

@@ -47,6 +47,12 @@ declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
 *configured* rule, wherever in the line its pattern matches, which is what
 lets a specific rule sit in front of a general one.
 
+A rule matches by what it declares. A rule that writes a `pattern` or a
+`plugin_pattern` is decided by those; one that writes neither is decided by
+the shape its codec names -- the keys the payload's own parsed pairs hold.
+That is how the three shipped protocol rules work, and why a value full of
+digits or a `#A=1` quoted inside a `Text <58>` changes nothing.
+
 A rule carries one `pattern`; alternatives join with `|`, and
 `rekep.fix.rules.joined_pattern` spells that join so each branch keeps its
 own flags. A rule's regex must work in Python `re` *and* in
@@ -60,16 +66,19 @@ protocols:
       plugin_pattern: '^VenueBridge$'
       separator: ';'
       extra_entry_separators: ["\u001e\u001f"]
-      codec: fixml      # `fix` reads wire tags, `fixml` rendered names, `none` neither
+      # `fix` is numbered tags alone, `ul` named keys alone, `fixml` both
+      # together, and `none` parses no pairs at all.
+      codec: fixml
     - protocol: OTHER
       pattern: ''       # empty patterns make this the fall-through
       codec: none
 ```
 
-`Rules.into_default()` reads a FIX trading log: a wrapped bridge message, a
-wire message, a bridge message, known operational traffic, then everything
-else. `entry_separator` fixes one indexed-entry delimiter;
-`extra_entry_separators` extends literal auto-detection for that protocol.
+`Rules.into_default()` reads a FIX trading log: `FIX`, `FIXML` and `UL` by
+the keys each payload holds, then known operational traffic as `MISC`, then
+everything else as `OTHER`. `entry_separator` fixes one indexed-entry
+delimiter; `extra_entry_separators` extends literal auto-detection for that
+protocol.
 
 ## Which event a payload represents
 
