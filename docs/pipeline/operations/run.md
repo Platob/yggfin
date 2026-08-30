@@ -8,35 +8,58 @@ replays the same input. Throughput measurements live on
 ![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
 ![End-to-end execution architecture](../../assets/workflow-run-light.svg#only-light)
 
-## Run the workflow locally
+## Deploy the tables
 
-From the repository root:
+Every task creates its own target on the first write, so a run against an
+empty catalog needs nothing done first. Where the catalog is not the runner's
+to write to -- a Glue catalog over an S3 warehouse, deployed once by whoever
+owns the account -- create them ahead of the jobs instead:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml
+```
+
+The task document supplies the catalog, its properties and the branch, so a
+deployment lands where the pipeline will write; `--catalog`, `--property
+NAME=VALUE`, `--table-property NAME=VALUE` and `--branch` override any of
+them, `--table` restricts the run to one table, and `--dry-run` reports which
+tables are missing without creating any. It is idempotent: a table already in
+the catalog is left as it is, properties included, and reported `present`.
+`rekep.deploy.TABLES` is the declared layout it reads.
+
+## Run the workflow locally
+
+From the repository root. The `runner` dependency group is Papermill and the
+kernel it executes a notebook under:
+
+```bash
+uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data/app_messages_sample.txt \
   --output parse_messages.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
   --output parse_market.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/flatten_orders/flatten_orders.yml \
   --output flatten_orders.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/flatten_executions/flatten_executions.yml \
   --output flatten_executions.executed.ipynb
 ```
 
 The YAML selects the catalog, branch, tables and commit sizes. Repeatable
-`--parameter NAME=VALUE` options override one run.
+`--parameter NAME=VALUE` options override one run. The shipped documents write
+a SQLite catalog to `data/catalog.db` and a file warehouse to `data/warehouse`,
+both ignored by git along with the executed notebooks -- delete them for a
+clean run.
 
 ## Pinned results
 

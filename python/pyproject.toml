@@ -48,6 +48,15 @@ dev = [
     "ruff>=0.6",
     "rekep[iceberg,polars,yaml]",
 ]
+# What `rekep task run` needs on the machine to execute a task document:
+# Papermill runs the notebook, and a notebook runs under a kernel. Nothing here
+# is imported by `src/` -- a task is a job, not a feature of the package -- so
+# it is a group rather than an extra, installed with `uv run --group runner`.
+runner = [
+    "papermill>=2.6",
+    "ipykernel>=6.29",
+    "rekep[iceberg,polars,yaml]",
+]
 # What the benchmarks race the shipped implementations against. `polars` is
 # shipped as an extra and `bench_iceberg` races the export this package selects
 # against a forced one; nothing here is imported by `src/`.

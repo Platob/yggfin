@@ -101,6 +101,47 @@ catalog_properties:
 
 Namespaces and tables are created on first commit; nothing else to bootstrap.
 
+### Creating the tables ahead of the jobs
+
+Where the account that owns the catalog is not the account the jobs run under,
+create them separately. One command takes the catalog, its properties and the
+branch straight off a task document, so a deployment cannot land somewhere the
+pipeline will not read:
+
+```bash
+rekep iceberg deploy tasks/parse_fix/parse_fix.yml
+```
+
+```text
+logs.messages -> created
+fix.market -> created
+fix.misc -> created
+fix.unknown -> created
+market.instruments -> created
+market.books -> created
+market.orders -> created
+market.executions -> created
+```
+
+`--catalog`, `--property NAME=VALUE`, `--table-property NAME=VALUE` and
+`--branch` override the document; `--table` restricts the run to one table and
+`--dry-run` reports what is missing without creating it. Running it again
+reports every table `present` and changes nothing — including properties,
+which [Iceberg maintenance](airflow.md#run-iceberg-maintenance) owns retrofitting.
+
+The layout it creates is `rekep.deploy.TABLES`: the table, the shape it holds
+and the columns it is laid out by, in the order a run fills them.
+
+```python
+from rekep.deploy import TABLES
+
+print([shape.table for shape in TABLES])
+```
+
+```text
+['logs.messages', 'fix.market', 'fix.misc', 'fix.unknown', 'market.instruments', 'market.books', 'market.orders', 'market.executions']
+```
+
 ### AWS S3
 
 Create the bucket out of band — nothing in the pipeline creates one.

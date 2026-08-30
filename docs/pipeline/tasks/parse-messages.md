@@ -8,7 +8,7 @@ MsgType event metadata; field and protocol interpretation belong to
 ## Run this step
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data/app_messages_sample.txt \
   --output parse_messages.executed.ipynb

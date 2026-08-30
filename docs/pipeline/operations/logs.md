@@ -40,7 +40,7 @@ parameters:
 ```
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter log_level=DEBUG \
   --output parse_messages.executed.ipynb
