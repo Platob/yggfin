@@ -60,7 +60,10 @@ uv run --project python --group runner rekep task run \
 ```
 
 The YAML selects the catalog, branch, tables and commit sizes. Repeatable
-`--parameter NAME=VALUE` options override one run. Each command writes the
+`--parameter NAME=VALUE` options override one run. The same six commands run
+unchanged against S3 — only the `source`, `fix_dictionary` and
+`catalog_properties` values in the YAML move; see
+[AWS S3](deploy.md#aws-s3). Each command writes the
 run's records to `stderr` as they happen and the task's result to `stdout`;
 [Logs](logs.md) has the record a stage opens and closes with, and the keys
 every result carries. The shipped documents write

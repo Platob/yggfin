@@ -8,16 +8,19 @@ parameters:
   source: fix.market
   start: null
   end: null
+  # The FIX dictionary. A directory, a zip, or either on a bucket:
+  # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
   fix_dictionary: data/fix
-  # AWS Glue with an S3 warehouse (replace the active local block):
+  # AWS Glue with an S3 warehouse (replace the active local block). Needs the
+  # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
+  # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog: rekep-production
   # catalog_properties:
   #   type: glue
   #   warehouse: s3://example-bucket/rekep/warehouse
-  #   glue.region: eu-west-1
-  #   s3.region: eu-west-1
+  #   glue.region: eu-west-1   # where the catalog lives
+  #   s3.region: eu-west-1     # where the warehouse bucket lives
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # S3_* process defaults and the standard AWS credential chain are supported.
   catalog: rekep
   catalog_properties:
     type: sql

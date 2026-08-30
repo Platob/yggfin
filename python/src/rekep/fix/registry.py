@@ -2508,13 +2508,19 @@ class FixRegistry(Convertible):
     def _localized(self, filesystem: pyarrow.fs.FileSystem, path: str) -> str:
         """A remote archive's OS path, fetched into `remote_cache()` when it exists.
 
+        Keyed by the location, not by the filesystem handle that read it: two
+        registries over one bucket are two objects, and identifying the copy
+        by the handle would fetch the archive again for each of them -- which
+        is the cost this cache exists to pay once.
+
         `spill_path` answers None for a remote that is not there, which is a
         store about to be written rather than one that failed to read -- so
         the local path it *would* have is what a cold remote store gets.
         """
         cache = remote_cache()
         cache.mkdir(parents=True, exist_ok=True)
-        found = spill_path(path, filesystem, cache, temporary=False)
+        identity = Url.from_string(os.fspath(self.cache_dir)).into_string()
+        found = spill_path(path, filesystem, cache, identity=identity, temporary=False)
         if found is not None:
             return found
         return local_path(path, filesystem, missing_ok=True)
