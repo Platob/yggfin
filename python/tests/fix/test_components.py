@@ -91,14 +91,14 @@ def _stamps(**declared: object) -> TrdRegTimestamps:
 
 
 def test_party_is_the_exact_fix_named_shape() -> None:
-    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole", "buffer"]
+    """The members FIX declares, and nothing beside them: what the component
+    does not project stays in the row's residual `entries`, not in a second
+    residual of its own."""
+    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole"]
     assert Party.into_field().field("partyid").metadata["fix:tag"] == "448"
     assert Party.into_field().field("partyidsource").metadata["fix:tag"] == "447"
     assert Party.into_field().field("partyrole").metadata["fix:tag"] == "452"
     assert Party.into_field().field("partyrole").dtype == pyarrow.int32()
-    assert Party.into_field().field("buffer").dtype == pyarrow.map_(
-        pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
-    )
     assert PARTIES.value_field.nullable is False
 
 
@@ -121,18 +121,8 @@ def test_counted_parties_are_lifted_and_every_other_tag_keeps_its_order() -> Non
 
     assert parties.to_pylist() == [
         [
-            {
-                "partyid": "BUYSIDE",
-                "partyidsource": "D",
-                "partyrole": 1,
-                "buffer": None,
-            },
-            {
-                "partyid": "XPAR",
-                "partyidsource": "G",
-                "partyrole": 17,
-                "buffer": None,
-            },
+            {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1},
+            {"partyid": "XPAR", "partyidsource": "G", "partyrole": 17},
         ]
     ]
     assert _pairs(residual.to_pylist()[0]) == [(8, "FIX.4.4"), (55, "TTF")]
@@ -183,7 +173,10 @@ def test_a_zero_count_leaves_stray_party_members_residual() -> None:
     assert _pairs(residual.to_pylist()[0]) == [(447, "D"), (55, "TTF")]
 
 
-def test_nested_party_sub_ids_stay_lossless_in_unique_buffer_keys() -> None:
+def test_nested_party_sub_ids_stay_lossless_in_the_residual() -> None:
+    """A nested group the component does not project keeps every pair, in wire
+    order, under the tag the wire sent -- which is the nesting itself rather
+    than a rendering of it."""
     source = _tags(
         [
             (453, "1"),
@@ -201,17 +194,22 @@ def test_nested_party_sub_ids_stay_lossless_in_unique_buffer_keys() -> None:
 
     parties, residual = _parties().into_arrow_arrays(source)
 
-    assert parties.to_pylist()[0][0]["buffer"] == [
-        ("NoPartySubIDs", "2"),
-        ("NoPartySubIDs[0].PartySubID", "SUB-A"),
-        ("NoPartySubIDs[0].PartySubIDType", "1"),
-        ("NoPartySubIDs[1].PartySubID", "SUB-B"),
-        ("NoPartySubIDs[1].PartySubIDType", "2"),
+    assert parties.to_pylist()[0][0] == {
+        "partyid": "BUYSIDE",
+        "partyidsource": "D",
+        "partyrole": 1,
+    }
+    assert _pairs(residual.to_pylist()[0]) == [
+        (802, "2"),
+        (523, "SUB-A"),
+        (803, "1"),
+        (523, "SUB-B"),
+        (803, "2"),
+        (55, "TTF"),
     ]
-    assert _pairs(residual.to_pylist()[0]) == [(55, "TTF")]
 
 
-def test_nested_member_indices_follow_the_group_delimiter() -> None:
+def test_nested_members_keep_the_order_their_delimiter_gave_them() -> None:
     source = _tags(
         [
             (453, "1"),
@@ -223,17 +221,19 @@ def test_nested_member_indices_follow_the_group_delimiter() -> None:
         ]
     )
 
-    parties, _ = _parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
-    assert parties.to_pylist()[0][0]["buffer"] == [
-        ("NoPartySubIDs", "2"),
-        ("NoPartySubIDs[0].PartySubID", "SUB-A"),
-        ("NoPartySubIDs[1].PartySubID", "SUB-B"),
-        ("NoPartySubIDs[1].PartySubIDType", "2"),
+    assert parties.to_pylist()[0][0]["partyid"] == "BUYSIDE"
+    assert _pairs(residual.to_pylist()[0]) == [
+        (802, "2"),
+        (523, "SUB-A"),
+        (523, "SUB-B"),
+        (803, "2"),
     ]
 
 
-def test_duplicate_nested_members_are_occurrence_qualified() -> None:
+def test_duplicate_nested_members_are_each_kept() -> None:
+    """Two of one tag inside one occurrence: both survive, in the order sent."""
     source = _tags(
         [
             (453, "1"),
@@ -245,12 +245,10 @@ def test_duplicate_nested_members_are_occurrence_qualified() -> None:
         ]
     )
 
-    parties, _ = _parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
-    assert parties.to_pylist()[0][0]["buffer"][-2:] == [
-        ("NoPartySubIDs[0].PartySubIDType", "1"),
-        ("NoPartySubIDs[0].PartySubIDType[1]", "2"),
-    ]
+    assert parties.to_pylist()[0][0]["partyid"] == "BUYSIDE"
+    assert _pairs(residual.to_pylist()[0])[-2:] == [(803, "1"), (803, "2")]
 
 
 def test_nested_members_before_their_delimiter_stay_residual() -> None:
@@ -258,8 +256,8 @@ def test_nested_members_before_their_delimiter_stay_residual() -> None:
 
     parties, residual = _parties().into_arrow_arrays(source)
 
-    assert parties.to_pylist()[0][0]["buffer"] == [("NoPartySubIDs", "2")]
-    assert _pairs(residual.to_pylist()[0]) == [(803, "2"), (803, "3")]
+    assert parties.to_pylist()[0][0]["partyid"] == "BUYSIDE"
+    assert _pairs(residual.to_pylist()[0]) == [(802, "2"), (803, "2"), (803, "3")]
 
 
 def test_declarations_and_registry_names_extend_party_members() -> None:
@@ -284,8 +282,8 @@ def test_declarations_and_registry_names_extend_party_members() -> None:
         source
     )
 
-    assert parties.to_pylist()[0][0]["buffer"] == [("DeskCode", "LDN")]
-    assert _pairs(residual.to_pylist()[0]) == [(55, "TTF")]
+    assert parties.to_pylist()[0][0]["partyid"] == "BUYSIDE"
+    assert _pairs(residual.to_pylist()[0]) == [(9002, "LDN"), (55, "TTF")]
 
 
 @pytest.mark.parametrize("declared", ["2", "not-a-count"])
@@ -331,16 +329,11 @@ def test_an_invalid_role_is_retained_instead_of_becoming_null_data() -> None:
     parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [
-        [
-            {
-                "partyid": "BUYSIDE",
-                "partyidsource": None,
-                "partyrole": None,
-                "buffer": [("PartyRole", "dealer")],
-            }
-        ]
+        [{"partyid": "BUYSIDE", "partyidsource": None, "partyrole": None}]
     ]
-    assert residual.to_pylist() == [[]]
+    assert _pairs(residual.to_pylist()[0]) == [(452, "dealer")], (
+        "the value that arrived is kept as text; a null nobody can explain is worse"
+    )
 
 
 def test_a_leading_plus_in_party_role_is_read_as_an_integer() -> None:
@@ -372,8 +365,8 @@ def test_an_explicit_43_declaration_keeps_partysubid_flat() -> None:
 
     parties, residual = Parties(components=[component]).into_arrow_arrays(source)
 
-    assert parties.to_pylist()[0][0]["buffer"] == [("PartySubID", "SUB")]
-    assert _pairs(residual.to_pylist()[0]) == [(802, "1"), (803, "2")]
+    assert parties.to_pylist()[0][0]["partyid"] == "BUYSIDE"
+    assert _pairs(residual.to_pylist()[0]) == [(523, "SUB"), (802, "1"), (803, "2")]
 
 
 def test_unrelated_transport_components_do_not_disable_parties() -> None:
@@ -480,7 +473,6 @@ def test_another_group_splits_exactly_as_parties_does() -> None:
     ]
     assert [entry["trdregtimestamptype"] for entry in entries] == [1, 2]
     assert [entry["trdregtimestamporigin"] for entry in entries] == ["FAKE-ORIGIN", None]
-    assert [entry["buffer"] for entry in entries] == [None, None]
     assert _pairs(rest.to_pylist()[0]) == [
         (8, "FIX.4.4"),
         (55, "SYM-TEST"),
@@ -527,12 +519,7 @@ def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> Non
 
 def test_a_regulatory_stamp_is_the_exact_fix_named_shape() -> None:
     names = TrdRegTimestamp.into_field().names
-    assert names == [
-        "trdregtimestamp",
-        "trdregtimestamptype",
-        "trdregtimestamporigin",
-        "buffer",
-    ]
+    assert names == ["trdregtimestamp", "trdregtimestamptype", "trdregtimestamporigin"]
     field = TrdRegTimestamp.into_field()
     assert field.field("trdregtimestamp").metadata["fix:tag"] == "769"
     assert field.field("trdregtimestamptype").metadata["fix:tag"] == "770"
@@ -569,8 +556,7 @@ def test_a_malformed_stamp_is_kept_as_text_rather_than_becoming_null() -> None:
     (entry,) = stamps.to_pylist()[0]
     assert entry["trdregtimestamp"] is None
     assert entry["trdregtimestamptype"] == 1
-    assert dict(entry["buffer"]) == {"TrdRegTimestamp": "not-a-stamp"}
-    assert _pairs(residual.to_pylist()[0]) == []
+    assert _pairs(residual.to_pylist()[0]) == [(769, "not-a-stamp")]
 
 
 def test_each_extractor_only_takes_its_own_component() -> None:
@@ -670,7 +656,7 @@ def _legs(**declared: object) -> Legs:
 
 def test_an_alternative_identifier_is_the_exact_fix_named_shape() -> None:
     field = SecurityAltID.into_field()
-    assert field.names == ["securityaltid", "securityaltidsource", "buffer"]
+    assert field.names == ["securityaltid", "securityaltidsource"]
     assert field.field("securityaltid").metadata["fix:tag"] == "455"
     assert field.field("securityaltidsource").metadata["fix:tag"] == "456"
     assert SECURITY_ALT_IDS.value_field.nullable is False
@@ -693,7 +679,6 @@ def test_a_leg_is_the_exact_fix_named_shape() -> None:
         "currency",
         "side",
         "ratioqty",
-        "buffer",
     ]
     assert field.field("symbol").metadata["fix:tag"] == "600", (
         "the generic name, and the leg's own tag under it"
@@ -725,8 +710,8 @@ def test_counted_alternative_identifiers_are_lifted_in_wire_order() -> None:
 
     assert found.to_pylist() == [
         [
-            {"securityaltid": "US0378331005", "securityaltidsource": "4", "buffer": None},
-            {"securityaltid": "037833100", "securityaltidsource": "1", "buffer": None},
+            {"securityaltid": "US0378331005", "securityaltidsource": "4"},
+            {"securityaltid": "037833100", "securityaltidsource": "1"},
         ]
     ]
     assert _pairs(residual.to_pylist()[0]) == [(48, "XS123"), (22, "4"), (55, "AAPL")]
@@ -763,7 +748,7 @@ def test_legs_resolve_through_the_shared_instrument_leg_component() -> None:
     assert _pairs(residual.to_pylist()[0]) == [(55, "SPREAD"), (10, "000")]
 
 
-def test_a_variant_groups_context_member_lands_in_buffer() -> None:
+def test_a_variant_groups_context_member_stays_residual() -> None:
     """`LegQty <687>` is `TrdInstrmtLegGrp`'s, not a column -- and not a break."""
     source = _tags([(555, "1"), (600, "AAPL"), (687, "9"), (623, "1")])
 
@@ -772,8 +757,7 @@ def test_a_variant_groups_context_member_lands_in_buffer() -> None:
     (entry,) = legs.to_pylist()[0]
     assert entry["symbol"] == "AAPL"
     assert entry["ratioqty"] == 1.0
-    assert dict(entry["buffer"]) == {"LegQty": "9"}
-    assert _pairs(residual.to_pylist()[0]) == []
+    assert _pairs(residual.to_pylist()[0]) == [(687, "9")]
 
 
 def test_a_malformed_leg_maturity_is_kept_as_text_rather_than_null() -> None:
@@ -783,8 +767,7 @@ def test_a_malformed_leg_maturity_is_kept_as_text_rather_than_null() -> None:
 
     (entry,) = legs.to_pylist()[0]
     assert entry["maturitydate"] is None
-    assert dict(entry["buffer"]) == {"LegMaturityDate": "Jan 15 2027"}
-    assert _pairs(residual.to_pylist()[0]) == []
+    assert _pairs(residual.to_pylist()[0]) == [(611, "Jan 15 2027")]
 
 
 def test_alt_ids_and_legs_run_in_sequence_over_one_message() -> None:
@@ -920,15 +903,14 @@ def test_two_leg_blocks_stay_residual_without_owner_context() -> None:
     assert residual.to_pylist() == source.to_pylist()
 
 
-def test_a_stamp_the_reader_range_checks_away_stays_buffered_text() -> None:
+def test_a_stamp_the_reader_range_checks_away_stays_residual_text() -> None:
     """The readable gate answers with the cast, not with the pattern: a zone
-    no calendar has matches the widened shape, and text the reader nulls must
-    land in `buffer` rather than becoming a projected null nobody can explain."""
+    no calendar has matches the widened shape, and text the reader nulls stays
+    in `entries` rather than becoming a projected null nobody can explain."""
     source = _tags([(768, "1"), (769, "20260814-09:29:58-9945"), (770, "1")])
 
     stamps, residual = _stamps().into_arrow_arrays(source)
 
     (entry,) = stamps.to_pylist()[0]
     assert entry["trdregtimestamp"] is None
-    assert dict(entry["buffer"]) == {"TrdRegTimestamp": "20260814-09:29:58-9945"}
-    assert residual.to_pylist() == [[]]
+    assert _pairs(residual.to_pylist()[0]) == [(769, "20260814-09:29:58-9945")]

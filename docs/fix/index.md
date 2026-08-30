@@ -494,8 +494,8 @@ Two readings the classification depends on:
 ## Groups and components
 
 Repeating groups remain ordered entries. Structured components are extracted
-into typed lists; each entry retains an ordered string buffer for members
-absent from the projected shape.
+into typed lists carrying the members they declare; anything absent from the
+projected shape stays in the row's residual `entries`, in wire order.
 
 The extraction is driven by the component declaration and by nothing else:
 which tag counts the entries, which tag opens one, which tags may belong to
@@ -547,7 +547,7 @@ nothing rather than a group the standard never gave it.
 
 The delimiter leads the projection because it is what opens an entry. Every
 member is lifted only where its value is one the column's type can hold, and
-falls to `buffer` where it is not -- so a malformed `UTCTimestamp` is kept as
+stays in `entries` where it is not — so a malformed `UTCTimestamp` is kept as
 the text that arrived rather than becoming a null nobody can explain.
 
 `NoSecurityAltID` and `NoTradingSessions` split exactly as `NoPartyIDs` does;

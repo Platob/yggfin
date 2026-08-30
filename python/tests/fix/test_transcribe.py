@@ -1295,16 +1295,7 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
         ("NOPARTYIDS[0].PARTYIDSOURCE", "proprietary/customcode"),
         ("NOPARTYIDS[0].PARTYROLE", "clientid"),
     ]
-    assert parties.to_pylist() == [
-        [
-            {
-                "partyid": "99106.003",
-                "partyidsource": "D",
-                "partyrole": 3,
-                "buffer": None,
-            }
-        ]
-    ]
+    assert parties.to_pylist() == [[{"partyid": "99106.003", "partyidsource": "D", "partyrole": 3}]]
     assert residual.to_pylist() == [[]]
 
 
@@ -1334,7 +1325,6 @@ def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec
         "partyid": "99106.003",
         "partyidsource": "D",
         "partyrole": 3,
-        "buffer": None,
     }
     assert residual.to_pylist() == [[]]
 
@@ -1369,12 +1359,10 @@ def test_the_packaged_registry_extracts_parties_from_a_wire_message(
     assert [party["partyid"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
     assert [party["partyrole"] for party in parties] == [1, 11]
     assert [party["partyidsource"] for party in parties] == ["D", "D"]
-    assert dict(parties[0]["buffer"]) == {
-        "NoPartySubIDs": "1",
-        "NoPartySubIDs[0].PartySubID": "SUB-TEST-A",
-        "NoPartySubIDs[0].PartySubIDType": "26",
-    }, "the sub-party group is read through the component tree, not guessed"
-    assert parties[1]["buffer"] is None
+    assert parties == [
+        {"partyid": "PARTY-TEST-A", "partyidsource": "D", "partyrole": 1},
+        {"partyid": "PARTY-TEST-B", "partyidsource": "D", "partyrole": 11},
+    ], "the group is read through the component tree, not guessed"
 
 
 def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
@@ -1383,7 +1371,21 @@ def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
     """Extraction removes the group and nothing beside it, in wire order."""
     tags = packaged.into_entries(packaged.into_pairs(pyarrow.array([PARTIES_WIRE]), "FIX"), "4.4")
     _, residual = packaged.into_component_columns(tags, "4.4")
-    assert [tag for tag, _ in _tags(residual)] == [8, 35, 49, 56, 34, 52, 11, 54, 38, 10]
+    assert [tag for tag, _ in _tags(residual)] == [
+        8,
+        35,
+        49,
+        56,
+        34,
+        52,
+        11,
+        802,
+        523,
+        803,
+        54,
+        38,
+        10,
+    ], "the sub-party group the component does not project keeps its place"
 
 
 def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(

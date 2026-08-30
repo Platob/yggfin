@@ -10,7 +10,17 @@ from rekep import Field, FixCodec, FixMsg, Message, txhash
 from rekep.enums import Direction, Protocol, SecurityIDSource
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, FixRegistry, Party
-from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
+from rekep.fix.columns import (
+    _COLUMN_METADATA,
+    COLUMNS,
+    COMMON,
+    DECLARATIONS,
+    FLAT,
+    SESSION,
+    STAMPS,
+    _physical_type,
+    column_metadata,
+)
 from rekep.fix.fields import fix_field
 from rekep.market import HASH, MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
@@ -584,11 +594,13 @@ def test_an_exotic_stored_spelling_renders_verbatim() -> None:
     assert [reading.raw for reading in row.readings("Side")] == ["1"]
 
 
-def test_a_component_buffer_key_renders_verbatim() -> None:
-    """A member kept as text keeps its spelling: `007` is not tag `7`."""
-    row = FixMsg(parties=[{"partyid": "A", "buffer": {"007": "x", "[0]": "y"}}])
+def test_a_component_restores_only_the_members_it_declares() -> None:
+    """A component column round trips its own members and nothing else: what
+    it never projected stayed in `entries`, which is where the round trip
+    picks it up rather than from a second residual on the entry."""
+    row = FixMsg(parties=[{"partyid": "A"}], entries=[Entry.from_pair("007", "x")])
 
-    assert row.pairs == [("453", "1"), ("448", "A"), ("007", "x"), ("[0]", "y")]
+    assert row.pairs == [("453", "1"), ("448", "A"), ("7", "x")]
 
 
 def test_an_unlinked_row_reads_through_the_packaged_dictionary() -> None:
@@ -722,8 +734,9 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     assert legs[0]["maturitydate"] == datetime.datetime(2027, 1, 15), (
         "a FIX date projects as an instant, like every other temporal datatype"
     )
-    assert dict(legs[1]["buffer"]) == {"LegQty": "9"}, "a variant's member stays lossless"
-    assert batch.column("entries")[0].as_py() == [], "nothing of either group is stored twice"
+    assert [(entry["key"], entry["value"]) for entry in batch.column("entries")[0].as_py()] == [
+        ("LegQty", "9")
+    ], "a member no column projects stays in `entries`, and nothing is stored twice"
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     assert stored.group(454, (455, 456)) == [
@@ -927,9 +940,13 @@ def test_malformed_stored_field_entries_are_not_silently_dropped() -> None:
         FixMsg(entries=[["OnlyKey"]])
 
 
-def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
+def test_parties_keep_exactly_the_registry_fields_they_declare(
     registry: FixRegistry,
 ) -> None:
+    """The registry's own reading of each member, narrowed to what a column
+    says: which field it is, what it is called, and its FIX type. The version
+    list, the messages that carry it and the enumeration it declares stay in
+    the registry rather than being copied onto every row of every table."""
     parties = FixMsg.into_field().field("Parties")
     assert parties.nullable and not parties.item.nullable
     assert parties.metadata["fix:component"] == "Parties"
@@ -940,11 +957,9 @@ def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
         assert actual.fix["name"] == expected.name
         assert actual.fix.display == expected.name, "folded to store, spelled to read"
         assert actual.dtype == expected.dtype
-        assert actual.metadata == {**expected.metadata, DISPLAY: expected.name}
+        assert actual.metadata == column_metadata({**expected.metadata, DISPLAY: expected.name})
+        assert set(actual.metadata) <= {"description", *_COLUMN_METADATA}
         assert actual.description == expected.description
-    assert Party.into_field().field("buffer").dtype == pyarrow.map_(
-        pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
-    )
 
 
 def test_every_column_is_documented() -> None:
@@ -1136,12 +1151,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
     assert parsed.column("avgpx").to_pylist() == [12.5, None, None]
     assert parsed.column("isincode").to_pylist() == [None, "XX0000084733", None]
     assert parsed.column("parties").to_pylist()[0] == [
-        {
-            "partyid": "BUYSIDE",
-            "partyidsource": "D",
-            "partyrole": 1,
-            "buffer": None,
-        }
+        {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1}
     ]
     assert parsed.column("altids").to_pylist()[0] == [("origclordid", "ROOT")]
 
@@ -1810,7 +1820,7 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
         453: "nopartyids",
         802: "nopartysubids",
     }
-    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole", "buffer"]
+    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole"]
 
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
@@ -1937,9 +1947,11 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
         assert actual.fix.display == expected.name, column
         # Minus the `enum:` block: the registry knows `SecurityIDSource <22>`
         # as text, and reading its thirty-three codes as one code is this
-        # package's statement about the field, not the dictionary's.
+        # package's statement about the field, not the dictionary's. And
+        # narrowed to what a column says about the field it reads: the rest of
+        # the record stays where it is kept, which is the registry.
         stored = {k: v for k, v in actual.metadata.items() if not k.startswith("enum:")}
-        assert stored == {**expected.metadata, DISPLAY: expected.name}, column
+        assert stored == column_metadata({**expected.metadata, DISPLAY: expected.name}), column
         assert actual.description == expected.description, column
 
 

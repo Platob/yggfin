@@ -79,11 +79,13 @@ print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 ```
 
 ```text
-[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3, 'buffer': None}]
+[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3}]
 ```
 
-`Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs` each
-carry their declared members plus a `buffer` for the rest.
+`Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs`
+each carry the members they declare and nothing else. What a component does
+not project stays in `entries`, under the key the wire carried — one residual
+for the row, not a second one on every entry.
 
 ## Ordered residue
 

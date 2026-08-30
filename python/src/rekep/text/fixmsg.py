@@ -983,38 +983,6 @@ class FixMsg(Message):
         """Whether a rendered group path survives only in source spelling."""
         return any(entry.comp or "[" in entry.key for entry in self._residual_entries())
 
-    def component_records(self, column: str) -> list[dict[str, str]] | None:
-        """One resolved component column, each entry first-value-by-name.
-
-        None when the parse stage did not resolve the column, which is what
-        sends a scalar-built message down the pair-walking fallback. A stored
-        row hands entries back as mappings and a constructed one as `@scalar`
-        rows; both answer here, typed members rendered back to the wire's
-        spelling so the same readers serve both paths, and `buffer` merged
-        after them because a member kept as text was one a column could not
-        hold.
-        """
-        entries = getattr(self, column, None)
-        if entries is None:
-            return None
-        found: list[dict[str, str]] = []
-        for entry in entries:
-            if isinstance(entry, Mapping):
-                values = dict(entry)
-            else:
-                values = {
-                    member.name: getattr(entry, member.name, None)
-                    for member in dataclasses.fields(entry)
-                }
-            resolved: dict[str, str] = {}
-            for name, value in values.items():
-                if name != "buffer" and value is not None:
-                    resolved.setdefault(name, render_fix_value(value))
-            for name, value in dict(values.get("buffer") or {}).items():
-                resolved.setdefault(name, value)
-            found.append(resolved)
-        return found
-
     def into_first_values(self, access: FieldAccess | None = None) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip.
 
@@ -2069,31 +2037,25 @@ def _component_fields(
 ) -> list[tuple[str, Entry]]:
     """One typed component restored as a valid count-led repeating group.
 
-    `(spelling, entry)` per field: a constructed member spells as its tag,
-    and a `buffer` key keeps its stored spelling byte for byte.
+    `(spelling, entry)` per field: a constructed member spells as its tag.
+    What the component did not project is not here at all -- it stayed in the
+    row's residual `entries`, which is where the round trip picks it up.
     """
     fields: list[tuple[str, Entry]] = [
         (str(count_tag), Entry.of(tag=count_tag, key=str(count_tag), value=len(entries)))
     ]
-    members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
+    members = tuple(row_type.into_field().fields)
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
-        buffered = dict(
-            (values.get("buffer") if values is not None else getattr(entry, "buffer", None)) or {}
-        )
         for index, member in enumerate(members):
             value = (
                 values.get(member.name) if values is not None else getattr(entry, member.name, None)
             )
-            if value is None and member.name in buffered:
-                value = buffered.pop(member.name)
             if index == 0 and value is None:
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
                 tag = int(member.fix["tag"])
                 fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
-        for key, value in buffered.items():
-            fields.append((str(key), Entry.from_pair(str(key), value)))
     return fields
 
 
@@ -2217,9 +2179,9 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
 def _member_text(values: Any) -> pyarrow.Array:
     """One flattened member as text, whatever shape it turned out to be.
 
-    Recursive because a component group carries its own residual `buffer`:
-    a struct member may be a list of structs, and both spell out here rather
-    than hashing as an address.
+    Recursive because a component group is a list of structs: a struct
+    member may hold more structure, and all of it spells out here rather than
+    hashing as an address.
     """
     compute = pyarrow.compute
     kind = values.type

@@ -182,7 +182,10 @@ def test_a_fix_tag_lands_where_the_protocol_reads_it() -> None:
     assert declared.fix["name"] == "Price"
     assert declared.fix["tag"] == "44"
     assert declared.fix["type"] == "Price"
-    assert json.loads(declared.fix["versions"])[0] == "5.0.SP2"
+    assert "fix:versions" not in declared.metadata, (
+        "which versions declare a field is the registry's bookkeeping, not "
+        "something every column of every table carries a copy of"
+    )
     assert declared.description
 
 

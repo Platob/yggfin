@@ -205,8 +205,9 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
   decides whether orders still resting when the stream ends are expired.
 - A structured FIX component is a `ComponentGroup` subclass naming its
-  component, its group and the members that earn a column; everything else in
-  an entry lands in `buffer`. The spec's own `required` rules decide member
+  component, its group and the members that earn a column; everything else
+  stays in the row's residual `entries`, which is the one place a value
+  nothing lifted belongs. The spec's own `required` rules decide member
   nullability -- `FixRegistry.component_field` reads them.
 
 ## Workflow ownership

@@ -203,6 +203,33 @@ def _physical_type(member: Field) -> pyarrow.DataType:
     return pyarrow.timestamp("us", tz="UTC" if zoned else None)
 
 
+#: What a column lifted from a registry record carries, and nothing else.
+#:
+#: Which FIX field it is, what the dictionary calls it, and what type the
+#: protocol gives it. Deliberately not everything the registry knows: the
+#: versions a field was seen in, the messages that carry it, the sources that
+#: answered, the aliases a name goes by and the enumeration it declares are
+#: the *registry's* bookkeeping. Copied onto every column of every table they
+#: made a published contract a second, worse copy of the dictionary -- and
+#: made recording one newly observed spelling a change to a published schema.
+#:
+#: Measured on `FixMsg`: 307 KB of `fix:` metadata on its Arrow schema before
+#: this, 11 KB after, for the same columns -- and that schema is carried by
+#: every batch the pipeline moves, not only by the document on disk.
+_COLUMN_METADATA: tuple[str, ...] = (
+    "description",
+    "fix:tag",
+    "fix:name",
+    "fix:type",
+    "fix:display",
+)
+
+
+def column_metadata(source: Mapping[str, str]) -> dict[str, str]:
+    """`source` narrowed to what a column says about the field it reads."""
+    return {key: value for key, value in source.items() if key in _COLUMN_METADATA}
+
+
 def _declaration(member: Field) -> Field:
     """A registry field in the physical shape used by parsed logs.
 
@@ -210,7 +237,7 @@ def _declaration(member: Field) -> Field:
     kept as the display, because that is what a reader wants to see and what
     the fold throws away.
     """
-    metadata = dict(member.metadata)
+    metadata = column_metadata(member.metadata)
     metadata["fix:name"] = member.name
     metadata["fix:display"] = member.name
     return Field(
@@ -336,14 +363,6 @@ def _named(entry: Field) -> tuple[str, ...]:
     return tuple(dict.fromkeys(column_name(name) for name in spellings if name.strip()))
 
 
-#: What a lifted namespaced field carries into the log contract. Deliberately not
-#: everything the registry knows: the aliases a name answers to and the
-#: versions it was seen in are registry bookkeeping, and putting them here
-#: would make recording one newly observed spelling a change to a published
-#: schema.
-_NAMESPACE_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
-
-
 def _namespace_column(entry: Field) -> Field:
     """One namespaced field as the log column it is lifted into.
 
@@ -355,7 +374,7 @@ def _namespace_column(entry: Field) -> Field:
         name=entry.fix.column,
         dtype=entry.dtype,
         nullable=True,
-        metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
+        metadata=column_metadata(entry.metadata),
     )
     built.fix.display = entry.fix.name
     return built
@@ -470,6 +489,7 @@ NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 #: The standard types the field `String`; this package reads its thirty-three
 #: codes as one code, and `DECLARED` would hand back the standard's width.
 SECURITY_ID_SOURCE: Field = _REGISTRY.scalar("SecurityIDSource", dtype=None)
+SECURITY_ID_SOURCE.metadata = column_metadata(SECURITY_ID_SOURCE.metadata)
 SECURITY_ID_SOURCE.fix.display = SECURITY_ID_SOURCE.fix.canonical
 
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]

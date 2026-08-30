@@ -35,7 +35,11 @@ YAML and JSON use the same document model; the extension selects the codec.
 ## Metadata
 
 - `iceberg: { ... }` stores keys, partitions, sort order, and assigned field ids.
-- `fix: { ... }` stores canonical FIX name, tag, datatype, values, and version facts.
+- `fix: { ... }` says which FIX field a column reads: its tag, its canonical
+  name, its display and its FIX datatype. Not the rest of the record — the
+  versions that declare it, the messages that carry it, the sources that
+  answered and the values it enumerates stay in the registry, which is what
+  keeps a contract a contract rather than a second copy of the dictionary.
 - `enum: { ... }` stores code key/value types and members.
 - `metadata: { ... }` keeps protocol-neutral facts such as units and the schema namespace.
 

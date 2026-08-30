@@ -400,14 +400,23 @@ def test_mixed_fix_versions_read_parties_through_one_declaration(
         messages.reverse()
 
     parsed = _lines(tmp_path / f"mixed-{reverse}.txt", codec, "FixSession", messages)
-    by_id = {row[0]["partyid"]: row[0]["buffer"] for row in parsed.column("parties").to_pylist()}
+    parties = {row[0]["partyid"]: row[0] for row in parsed.column("parties").to_pylist()}
+    residual = {
+        row["partyid"]: [(entry["key"], entry["value"]) for entry in entries]
+        for row, entries in zip(
+            (one[0] for one in parsed.column("parties").to_pylist()),
+            parsed.column("entries").to_pylist(),
+            strict=True,
+        )
+    }
 
-    assert by_id["P43"] == [("NoPartySubIDs[0].PartySubID", "SUB43")]
-    assert by_id["P50"] == [
+    assert set(parties) == {"P43", "P50"}
+    assert residual["P43"] == [("PartySubID", "SUB43")]
+    assert residual["P50"] == [
         ("PartyRoleQualifier", "7"),
         ("NoPartySubIDs", "1"),
-        ("NoPartySubIDs[0].PartySubID", "SUB50"),
-        ("NoPartySubIDs[0].PartySubIDType", "1"),
+        ("PartySubID", "SUB50"),
+        ("PartySubIDType", "1"),
     ]
 
 
@@ -1037,7 +1046,6 @@ def _component_fields(table: pyarrow.Table, row: int) -> int:
         return 0
     return 1 + sum(
         sum(party[name] is not None for name in ("PartyID", "PartyIDSource", "PartyRole"))
-        + len(party["buffer"] or ())
         for party in parties
     )
 
