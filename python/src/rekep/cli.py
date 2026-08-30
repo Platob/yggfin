@@ -485,7 +485,8 @@ def run_task(arguments: argparse.Namespace) -> int:
         import papermill
     except ImportError as error:  # pragma: no cover - papermill is a dev tool
         raise ImportError(
-            "running a task needs papermill: uv run --with papermill rekep task run ..."
+            "running a task needs papermill and a kernel to run the notebook under: "
+            "uv run --with papermill --with ipykernel rekep task run ..."
         ) from error
 
     document = pathlib.Path(arguments.document).resolve()

@@ -16,7 +16,7 @@ After `parse_messages` has populated `logs.messages`, run from the repository
 root:
 
 ```bash
-uv run --project python --with papermill rekep task run \
+uv run --project python --with papermill --with ipykernel rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 ```

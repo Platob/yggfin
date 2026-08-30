@@ -2095,6 +2095,42 @@ def test_every_entry_has_exactly_one_destination(codec: FixCodec) -> None:
     assert resolved.column("unmap")[0].as_py() is None
 
 
+def test_the_shipped_capture_partitions_every_entry_it_carries(codec: FixCodec) -> None:
+    """The same three-way split over the capture the pipeline documentation runs.
+
+    A synthetic line proves the rule; a real capture proves it holds for prose,
+    a folded stack trace, a numeric frame, a rendered bridge document and the
+    unknown vendor fields a feed actually writes.
+    """
+    lines = (
+        (Path(__file__).parent.parent / "data" / "app_messages_sample.txt")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    batch = FixMsg.from_message_batch(_raw_batch(*(Message(message=line) for line in lines)), codec)
+
+    promoted = {name for name in COMMON if name not in ("entries", "unmap")}
+    for row in batch.to_pylist():
+        entries = row["entries"] or []
+        unmap = row["unmap"]
+        assert unmap != [], "a row that resolved has no unmapped fields, not an empty list of them"
+        keys = [entry["key"] for entry in entries]
+        assert len(keys) == len(set(keys)) or all(
+            entry["comp"] for entry in entries if keys.count(entry["key"]) > 1
+        ), "a key twice in `entries` is a repeating group, never one field copied"
+        assert not {entry["key"] for entry in entries} & {
+            entry["key"] for entry in (unmap or ())
+        }, "no entry is both resolved and unresolved"
+        for name in promoted:
+            value = row.get(name)
+            if value is None or isinstance(value, list):
+                continue
+            assert not any(
+                entry["value"] == value and column_name(entry["key"]) == name
+                for entry in (*entries, *(unmap or ()))
+            ), f"{name} was promoted and left behind"
+
+
 def test_a_conflicting_numeric_and_named_copy_stays_visible(codec: FixCodec) -> None:
     """One field written twice is a repetition; written twice differently it is
     a conflict, and which the sender meant is not this stage's to decide."""

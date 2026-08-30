@@ -125,7 +125,7 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
 
     assert document.is_file()
     assert "## Run this step" in page
-    assert "uv run --project python --with papermill rekep task run" in page
+    assert "uv run --project python --with papermill --with ipykernel rekep task run" in page
     assert f"tasks/{task_name}/{task_name}.yml" in page
     assert f"--output {task_name}.executed.ipynb" in page
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
