@@ -60,7 +60,10 @@ uv run --project python --group runner rekep task run \
 ```
 
 The YAML selects the catalog, branch, tables and commit sizes. Repeatable
-`--parameter NAME=VALUE` options override one run. The shipped documents write
+`--parameter NAME=VALUE` options override one run. Each command writes the
+run's records to `stderr` as they happen and the task's result to `stdout`;
+[Logs](logs.md) has the record a stage opens and closes with, and the keys
+every result carries. The shipped documents write
 a SQLite catalog to `data/catalog.db` and a file warehouse to `data/warehouse`,
 both ignored by git along with the executed notebooks -- delete them for a
 clean run.

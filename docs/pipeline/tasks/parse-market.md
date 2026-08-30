@@ -66,7 +66,8 @@ targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
 commit size. The same dictionary controls both direct and book translation.
 Switching only `books` to `false` selects the configured direct targets.
 
-The result's `read` mapping reports every attempted Book, Order, and Execution.
+The result's `products` mapping reports every attempted Book, Order and
+Execution; `read` and `written` are what this stage itself produced.
 In book mode the Order and Execution counts come from the selected Books'
 nested deltas; in direct mode they are the translated rows written here.
 

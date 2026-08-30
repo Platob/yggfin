@@ -48,8 +48,11 @@ with its half-open data interval. The DAG's `branch` parameter replaces the
 YAML branch in every notebook, and `books` selects the parse-market path. All
 other job settings continue to come from the checked-in YAML files.
 
-Each notebook records a `result` scrap with non-negative counts. A route task
-reads that result and skips downstream work whose input count is zero. Routes
+Each notebook records a `result` scrap with non-negative counts, in the shape
+[every task returns](logs.md#what-one-task-returns). A route task reads that
+result and skips downstream work whose input count is zero: `read` for
+`parse_fix`, `routed.market` for both readers of `fix.market`, and
+`flatten.orders` / `flatten.executions` for the two flatteners. Routes
 use attempted or read counts rather than `written`, so an idempotent replay
 still reaches consumers even when the producer inserts no new rows.
 
@@ -322,8 +325,9 @@ airflow dags trigger \
   rekep_iceberg_maintenance
 ```
 
-The executed notebook's `result` scrap reports table count plus rewritten,
-expired, deleted-file, and reclaimed-byte totals, with a per-table breakdown.
+The executed notebook's `result` scrap carries the keys every task returns,
+plus `tables`, `expired`, `deleted`, `byte_size` and a per-table `reports`
+breakdown. See [what one task returns](logs.md#what-one-task-returns).
 
 ## Backfill historical hours
 

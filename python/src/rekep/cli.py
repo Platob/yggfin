@@ -8,7 +8,7 @@ import importlib
 import json
 import pathlib
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from rekep import __version__
@@ -512,13 +512,29 @@ def run_task(arguments: argparse.Namespace) -> int:
         kernel_name=arguments.kernel,
         progress_bar=False,
     )
-    for cell in executed.get("cells", []):
-        for output in cell.get("outputs", []):
-            text = output.get("data", {}).get("text/plain")
-            if text and cell is executed["cells"][-1]:
-                print(text)
+    _replay(executed)
     CONSOLE.ok(task.name)
     return 0
+
+
+def _replay(executed: Mapping[str, Any]) -> None:
+    """What the notebook said, where the person who ran it is looking.
+
+    Papermill captures a kernel's `stderr` into the executed document and
+    nothing else surfaces it, so a run at a terminal used to print one dict
+    and none of the records that say how it was reached. The records go back
+    to `stderr` -- they are the library's, and `Console` owns this stream's
+    styling -- and the last cell's value to `stdout`, which is what a pipe
+    into `jq` wants.
+    """
+    cells = executed.get("cells", [])
+    for cell in cells:
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "stream":
+                sys.stderr.write("".join(output.get("text", ())))
+            text = output.get("data", {}).get("text/plain")
+            if text and cell is cells[-1]:
+                print(text)
 
 
 def deploy_tables(arguments: argparse.Namespace) -> int:

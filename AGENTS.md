@@ -240,6 +240,14 @@ Inputs are text files. Persisted outputs are `logs.messages`, the three
 `fix.*` tables, and the `market.*` instrument, book, order and execution
 tables.
 
+Every task returns the same result keys and brackets itself with the same two
+INFO records, both built by `rekep.logs.Stage`: `task`, `read`, `written`,
+`skipped`, `sources`, `targets`, `window`, `elapsed_ms`, and whatever else a
+task alone knows under its own name. The numbers in the closing record are the
+numbers in the returned dict or one of them is wrong. A notebook that hand-rolls
+its own result shape is a notebook the Airflow routes and the docs cannot both
+be right about.
+
 ## Tests and benchmarks
 
 - Test reusable internal logic; do not mirror notebooks with packaged task
