@@ -21,12 +21,13 @@ for row in Instrument.from_fixmsgs([FixMsg.from_text(line)]):
 ```
 
 ```text
-XCME:ExchangeSymbol:BTCUSD BTC-USD CURRENCY USD XCME
+XCME:BTC-USD BTC-USD CURRENCY USD XCME
 ```
 
-`SecurityID <48>` with `SecurityIDSource <22>` leads, so the identifier above
-is qualified by its scheme and `SecurityExchange <207>`. Without that pair the
-ticker is `MIC:SYMBOL`, or just `SYMBOL` when the venue is unknown.
+`Symbol <55>` leads, under the `SecurityExchange <207>` that named it. A line
+carrying no symbol falls to `SecurityID <48>` with its `SecurityIDSource <22>`
+-- `XCME:ExchangeSymbol:BTCUSD` for the row above without its `55` -- and an
+identifier without its source is no key at all.
 
 `EUR/NOK`, `EURNOK`, and `EUR.NOK` share one FX spelling. The ticker also
 classifies the instrument as currency and supplies `NOK` as its quote currency

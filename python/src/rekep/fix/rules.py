@@ -305,6 +305,8 @@ class Rules(Convertible):
         for rule in reversed(self.rules):
             hit = _hit(rule, text, plugin_text, shapes)
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, _PROTOCOL_CODE), found)
+        # No cast: the seed above and every branch here are already the code the
+        # column stores, so there is no width for the loop to have widened.
         return found
 
     def into_arrow_direction_array(self, messages: Any, protocols: Any) -> pyarrow.Array:

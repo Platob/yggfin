@@ -15,6 +15,7 @@ from rekep.fix.fields import fix_field
 from rekep.market import HASH, MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
+from rekep.text.fixmsg import _UNDIGESTED
 
 #: The dictionary this repository publishes, beside `python/`, read offline:
 #: a contract that only holds while the site answers is not a contract.
@@ -407,12 +408,58 @@ def test_scalar_and_arrow_identification_share_the_registry_projection() -> None
         "sourcerownum": 1,
     }
     scalar = FixMsg.from_text(line, **declared).identify()
-    arrow = FixMsg.from_message_batch([Message(message=line, **declared)])
+    # `eventtype` is a value the row carries and so a value it hashes: the two
+    # sides have to be given the same one. `from_text` reads it through the
+    # registry where a bare `Message` leaves it UNKNOWN.
+    arrow = FixMsg.from_message_batch(
+        [Message(message=line, eventtype=scalar.eventtype, **declared)]
+    )
 
     assert scalar.code == arrow.column("code")[0].as_py() == "C1"
     assert scalar.vhash == arrow.column("vhash")[0].as_py()
     assert scalar.xhash == arrow.column("xhash")[0].as_py()
     assert scalar.into_row()["hash"] == arrow.column("hash")[0].as_py()
+
+
+def test_the_digest_is_every_column_but_the_clocks_and_the_identities() -> None:
+    """Stated by exclusion, so a column added to the shape is in the digest the
+    day it lands rather than the day someone remembers to name it."""
+    named = set(FixMsg.into_digest_columns())
+
+    assert named == set(FixMsg.into_field().names) - _UNDIGESTED
+    assert {"clordid", "price", "side", "orderqty", "parties", "legs"} <= named, (
+        "a lifted field is content"
+    )
+    assert not named & {"unix", "recunix", "hash", "vhash", "xhash", "message"}
+
+
+def test_two_orders_differing_only_in_lifted_fields_are_two_rows(codec: FixCodec) -> None:
+    """The registry projection promotes every parsed field *out* of `entries`,
+    so a digest that named a handful of columns met an empty list and gave two
+    unrelated orders one `hash` -- which is half the primary key."""
+    one = "8=FIX.4.4|9=1|35=D|34=1|49=A|56=B|11=ORD-1|55=TTF|54=1|38=100|44=41.25|10=000|"
+    other = one.replace("11=ORD-1", "11=ORD-2").replace("55=TTF", "55=IBM")
+
+    batch = FixMsg.from_message_batch(
+        _raw_batch(Message(message=one), Message(message=other)), codec
+    )
+
+    assert batch.column("entries").to_pylist() == [[], []], "nothing was left to hash there"
+    assert batch.column("vhash")[0].as_py() != batch.column("vhash")[1].as_py()
+    assert batch.column("hash")[0].as_py() != batch.column("hash")[1].as_py()
+
+
+def test_a_reformatted_message_keeps_its_digest(codec: FixCodec) -> None:
+    """The other half of taking a digest over parsed values: the separator
+    moved and the row did not, so the identity must not move either."""
+    piped = "8=FIX.4.4|9=1|35=D|34=1|49=A|56=B|11=ORD-1|55=TTF|54=1|38=100|44=41.25|10=000|"
+    soh = piped.replace("|", "\x01").rstrip("\x01")
+
+    batch = FixMsg.from_message_batch(
+        _raw_batch(Message(message=piped), Message(message=soh)), codec
+    )
+
+    assert batch.column("vhash")[0].as_py() == batch.column("vhash")[1].as_py()
 
 
 def test_fixmsg_value_hash_excludes_the_event_clock() -> None:
@@ -1261,11 +1308,14 @@ def test_unknown_numeric_fields_follow_the_linked_registry(
     codec: FixCodec, tmp_path: Path, registry: FixRegistry
 ) -> None:
     line = "8=FIX.4.4|35=D|11=C1|9998=audit|10=000|"
+    scalar = FixMsg.from_text(line, registry=registry)
     arrow = FixMsg.from_message_batch(
-        _raw_batch(Message(message=line), Message(message=line.replace("audit", "changed"))),
+        _raw_batch(
+            Message(message=line, eventtype=scalar.eventtype),
+            Message(message=line.replace("audit", "changed"), eventtype=scalar.eventtype),
+        ),
         codec,
     )
-    scalar = FixMsg.from_text(line, registry=registry)
 
     assert arrow.column("unmap")[0].as_py() == [
         {"tag": 9998, "key": "9998", "value": "audit", "comp": None}
@@ -2227,7 +2277,9 @@ def test_the_scalar_row_and_the_batch_lift_the_same_instrument(codec: FixCodec) 
     the same columns the batch does, so the two are compared there.
     """
     scalar = FixMsg.from_text(INSTRUMENT_WIRE, registry=codec.registry)
-    batch = FixMsg.from_message_batch(_raw_batch(Message(message=INSTRUMENT_WIRE)), codec)
+    batch = FixMsg.from_message_batch(
+        _raw_batch(Message(message=INSTRUMENT_WIRE, eventtype=scalar.eventtype)), codec
+    )
 
     assert scalar.get("Symbol").raw == "AAPL"
     assert scalar.get("MaturityDate").raw == "20261218"

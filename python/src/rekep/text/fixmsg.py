@@ -68,6 +68,31 @@ from rekep.text.message import SESSION_FIELDS, Message
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 
+#: What `vhash` cannot be taken over. The clocks, because a version is what a
+#: row says and not when it was said. The identities, because they are what the
+#: digest and the folding produce from it. And `message`, because the parsed
+#: columns beside it hold the same content in a spelling a reformat cannot move
+#: -- which is the whole reason a digest exists rather than a hash of the line.
+_UNDIGESTED: frozenset[str] = frozenset(
+    {
+        "unix",
+        "unixpartition",
+        "creaunix",
+        "recunix",
+        "expunix",
+        "snapunix",
+        "prevunix",
+        "hash",
+        "vhash",
+        "xhash",
+        "prevhash",
+        "parenthash",
+        "linkedhashes",
+        "version",
+        "message",
+    }
+)
+
 
 @functools.cache
 def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
@@ -217,10 +242,7 @@ class FixMsg(Message):
         # `Event.__post_init__` and not Message's, so nothing else reads them
         # off a spelling. A column takes the code, never the word.
         self.direction = Direction.from_str(self.direction)
-        _supplied = self.protocol
         self.protocol = Protocol.from_str(self.protocol)
-        if self.protocol is Protocol.UNKNOWN and _supplied not in (None, Protocol.OTHER):
-            raise ValueError(f"{_supplied!r} is no protocol name")
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if self.unmap:
@@ -1482,22 +1504,21 @@ class FixMsg(Message):
     @classmethod
     @functools.cache
     def into_digest_columns(cls) -> tuple[str, ...]:
-        """What a stored row's `vhash` is taken over, in this order.
+        """What a stored row's `vhash` is taken over: everything the row says.
 
         The **parsed** values and never the raw line, so a message reformatted
         but not changed hashes alike. Every clock is excluded; `unixsource`
-        remains because it states which field supplied the event time.
+        remains because it states which field supplied the event time, which is
+        a reading and not a clock.
+
+        Stated by exclusion rather than listed. A named list hashed the eight
+        columns it happened to name while the registry projection promoted a
+        hundred more *out* of `entries` -- so a fully lifted message reached the
+        digest with an empty `entries` and two orders differing in every field
+        shared one `hash`, which is the primary key. A column added to the shape
+        is a thing the row says, and it is in the digest the day it lands.
         """
-        return (
-            "unixsource",
-            "sourceurl",
-            "sourcerownum",
-            "protocol",
-            "protocolversion",
-            "msgtype",
-            "entries",
-            "unmap",
-        )
+        return tuple(name for name in cls.into_field().names if name not in _UNDIGESTED)
 
     @classmethod
     def version_vhash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -2122,22 +2143,43 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
         return pyarrow.repeat("", rows)
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
-    if pyarrow.types.is_list(column.type):
+    if pyarrow.types.is_list(column.type) or pyarrow.types.is_map(column.type):
         return _stored_text(column, rows)
     return compute.fill_null(column.cast(pyarrow.string(), safe=False), "")
 
 
-def _stored_text(column: Any, rows: int) -> pyarrow.Array:
-    """A `ENTRIES` column as one string per row: every field, in wire order."""
+def _member_text(values: Any) -> pyarrow.Array:
+    """One flattened member as text, whatever shape it turned out to be.
+
+    Recursive because a component group carries its own residual `buffer`:
+    a struct member may be a list of structs, and both spell out here rather
+    than hashing as an address.
+    """
     compute = pyarrow.compute
+    kind = values.type
+    if pyarrow.types.is_struct(kind):
+        return compute.binary_join_element_wise(
+            *(_member_text(compute.struct_field(values, at)) for at in range(kind.num_fields)),
+            "\x1d",
+        )
+    if pyarrow.types.is_list(kind) or pyarrow.types.is_map(kind):
+        return _stored_text(values, len(values))
+    return compute.fill_null(values.cast(pyarrow.string(), safe=False), "")
+
+
+def _stored_text(column: Any, rows: int) -> pyarrow.Array:
+    """A nested column as one string per row: every member, in stored order."""
+    compute = pyarrow.compute
+    if pyarrow.types.is_map(column.type):
+        # A map is a list of pairs to Arrow's kernels only once it is spelled
+        # as one; `list_flatten` has no map kernel.
+        column = column.cast(
+            pyarrow.list_(
+                pyarrow.struct([("key", column.type.key_type), ("value", column.type.item_type)])
+            )
+        )
     entries = compute.list_flatten(column)
-    spelled = compute.binary_join_element_wise(
-        compute.fill_null(compute.struct_field(entries, "tag").cast(pyarrow.string()), ""),
-        compute.fill_null(compute.struct_field(entries, "comp"), ""),
-        compute.fill_null(compute.struct_field(entries, "key"), ""),
-        compute.fill_null(compute.struct_field(entries, "value"), ""),
-        "\x1f",
-    )
+    spelled = _member_text(entries)
     lengths = compute.fill_null(compute.list_value_length(column), 0).cast(pyarrow.int32())
     offsets = pyarrow.concat_arrays(
         [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
