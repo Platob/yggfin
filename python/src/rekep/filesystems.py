@@ -13,7 +13,7 @@ from typing import Any, Self
 
 import pyarrow.fs
 
-from rekep.urls import HTTP, S3, Url
+from rekep.urls import HTTP, Url
 
 # Raw bytes moved from an object store are copied in the same request-sized
 # chunks the text reader uses. The source may be compressed; this layer must
@@ -297,7 +297,7 @@ def spill_path(
         raise IsADirectoryError(f"spill source is not a file: {location}")
 
     identity = identity or _spill_identity(location, path, filesystem, injected)
-    suffix = pathlib.PurePosixPath(Url.from_string(location).path or path).suffix
+    suffix = Url.from_string(location).suffix or Url.from_string(path).suffix
     directory = pathlib.Path(local or _materialization_directory().name)
     digest = hashlib.sha256(identity.encode()).hexdigest()
     target = directory / f"{digest}{suffix}"
@@ -367,8 +367,7 @@ def _spill_identity(
     """A cache identity that does not alias two stores carrying one path."""
     if not injected:
         parsed = Url.from_string(location).copy()
-        if parsed.scheme in S3:
-            parsed.scheme = "s3"
+        parsed.scheme = parsed.transport
         parsed.user = None
         parsed.password = None
         return parsed.into_string()
@@ -402,7 +401,7 @@ def local_path(
         if materialized is not None:
             return materialized
     identity = f"{id(filesystem)}:{path}" if injected else parsed.into_string()
-    suffix = pathlib.PurePosixPath(parsed.path or location).suffix
+    suffix = parsed.suffix
     target = pathlib.Path(_materialization_directory().name) / (
         hashlib.sha256(identity.encode()).hexdigest() + suffix
     )

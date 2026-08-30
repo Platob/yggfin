@@ -25,6 +25,7 @@ from rekep.arrow_file_io import (
     inferred_properties,
     track_outputs,
 )
+from rekep.urls import S3
 
 
 @pytest.fixture
@@ -55,13 +56,13 @@ def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None
     assert ArrowFileIO.parse_location("s3a://bucket/t") == ("s3a", "bucket", "bucket/t")
 
 
-@pytest.mark.parametrize("scheme", ("s3", "s3a", "s3n"))
+@pytest.mark.parametrize("scheme", sorted(S3))
 def test_s3_locations_store_only_the_bucket_and_key(scheme: str) -> None:
     location = f"{scheme}://key:secret@bucket/table?endpoint_override=minio%3A9000&scheme=http"
     assert canonical_location(location) == f"{scheme}://bucket/table"
 
 
-@pytest.mark.parametrize("scheme", ("s3", "s3a", "s3n"))
+@pytest.mark.parametrize("scheme", sorted(S3))
 def test_an_escaped_partition_value_names_the_object_iceberg_wrote(scheme: str) -> None:
     """Iceberg escapes a partition value into the path, and the escape is the key.
 
@@ -132,7 +133,7 @@ def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> 
     }
 
 
-@pytest.mark.parametrize("scheme", ("s3", "s3a"))
+@pytest.mark.parametrize("scheme", sorted(S3))
 def test_a_warehouse_url_configures_the_filesystem_it_names(scheme: str) -> None:
     """Said once as a location, rather than again as three settings."""
     location = f"{scheme}://key:sec:ret@minio:9000/wh"
@@ -377,7 +378,7 @@ def test_output_settlement_keeps_waiting_after_an_interrupt(
     assert calls == 2
 
 
-@pytest.mark.parametrize("scheme", ("s3", "s3a"))
+@pytest.mark.parametrize("scheme", sorted(S3))
 def test_a_local_stage_copies_to_the_configured_s3_path(tmp_path: Path, scheme: str) -> None:
     store = pyarrow.fs._MockFileSystem()
     store.create_dir("bucket/table/data", recursive=True)
@@ -743,3 +744,37 @@ def test_a_catalog_can_opt_out(tmp_path: Path, opens: dict[str, int]) -> None:
 def test_a_catalog_can_resize_the_shared_budget() -> None:
     ArrowFileIO({"rekep.io.cache-bytes": "4096"})
     assert CONTENT_CACHE.limit == 4096
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_every_spelling_of_one_store_shares_one_cache_entry(scheme: str) -> None:
+    """Cache identity is the store and the object, so `s3a` and `s3` are one."""
+    io = ArrowFileIO({"s3.endpoint": "http://minio:9000", "s3.region": "eu-west-1"})
+    identity = io.content_identity(f"{scheme}://bucket/wh/x.avro")
+
+    assert identity == io.content_identity("s3://bucket/wh/x.avro")
+    assert identity.split("\0")[:3] == ["s3", "http://minio:9000", "bucket"]
+    assert io.content_identity(f"{scheme}://other/wh/x.avro") != identity, "not across buckets"
+    assert io.content_identity(f"{scheme}://k:s@elsewhere:9000/bucket/wh/x.avro") != identity, (
+        "and never across stores"
+    )
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_every_spelling_reaches_the_same_iceberg_configuration(scheme: str) -> None:
+    """One warehouse, written three ways, configures one store and keeps its spelling."""
+    configured = inferred_properties({"warehouse": f"{scheme}://key:secret@minio:9000/wh"})
+    assert configured == {
+        "warehouse": f"{scheme}://wh/",
+        "s3.endpoint": "http://minio:9000",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "secret",
+        "s3.region": "us-east-1",
+    }
+    assert {name: value for name, value in configured.items() if name != "warehouse"} == {
+        name: value
+        for name, value in inferred_properties(
+            {"warehouse": "s3://key:secret@minio:9000/wh"}
+        ).items()
+        if name != "warehouse"
+    }

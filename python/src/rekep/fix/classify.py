@@ -34,6 +34,7 @@ from rekep.fix.fields import namespaced_field
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
+from rekep.urls import Url
 
 #: What a counted name turned out to be. Ordered by how much work it implies,
 #: which is also the order a backlog reads best in.
@@ -499,13 +500,8 @@ def count_files(
         with opened:
             for batch in opened.into_arrow_batches(batch_row_size=batch_row_size):
                 counted = count_reader(
-                    batch, counted, source=_source_of(opened.url), plugins=plugins
+                    batch, counted, source=Url.from_string(opened.url).name, plugins=plugins
                 )
                 if limit is not None and counted.lines >= limit:
                     return counted
     return counted
-
-
-def _source_of(url: str) -> str:
-    """A capture's own name, which is what a backlog says a count came from."""
-    return url.rstrip("/").rsplit("/", 1)[-1]

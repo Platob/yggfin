@@ -168,13 +168,20 @@ class Url:
     # -- building -----------------------------------------------------------
 
     @classmethod
-    def from_string(cls, text: str) -> Url:
+    def from_string(cls, text: str, *, decode: bool = True) -> Url:
         """Parse a URI, a local path, or a Windows path.
 
         The scheme is what precedes `://`, so a drive letter is never mistaken
         for one. Everything after is split by `urllib`, and then decoded: the
         userinfo on its *first* colon, and user, password and path through
         `unquote`, because a URL is transport and the values are not.
+
+        `decode=False` keeps the path exactly as it was spelled. Iceberg
+        escapes a partition value into the path -- `v=a%2Fb` -- and that escape
+        *is* the object key rather than a spelling of `a/b`: decoding it names
+        a different object, one carrying a directory level no manifest
+        recorded, so a read misses it and the orphan sweep deletes the live
+        file it could not match.
 
         Fragments are off: `#` is a legal object-key character, and reading one
         as a fragment names a shorter object that a read then opens or a write
@@ -200,7 +207,7 @@ class Url:
                 f"cannot parse {_masked_text(text)!r}: percent-encode ':' and '/' in the secret"
             ) from error
         user, password = _credentials(parsed.netloc)
-        path = urllib.parse.unquote(parsed.path)
+        path = urllib.parse.unquote(parsed.path) if decode else parsed.path
         return cls(
             scheme=scheme,
             user=user,
@@ -364,6 +371,42 @@ class Url:
         return "/".join(part for part in (self.bucket, self.key) if part)
 
     @property
+    def transport(self) -> str:
+        """The scheme Arrow serves this location under.
+
+        The one place Hadoop's `s3a` and the legacy `s3n` become `s3`: they are
+        three spellings a caller may write for one object store, so they share a
+        filesystem, a cache entry and a set of properties, and nothing below
+        this needs a branch for them. What is *written back* keeps the caller's
+        own spelling -- `into_string` and `canonical` both do.
+        """
+        return "s3" if self.scheme in S3 else self.scheme
+
+    @property
+    def canonical(self) -> str:
+        """This location as the store and the object alone, and nothing else.
+
+        What a stored table location is: no endpoint, no credentials, no query,
+        so nothing a catalog configures leaks into metadata a reader keeps. The
+        caller's own scheme spelling stays, because it is how they addressed the
+        object and reading it back has to reach the same one. The path is
+        written as it stands rather than re-encoded: a location canonicalised
+        here is one this package already addressed an object with.
+        """
+        return f"{self.scheme}://{self.bucket}/{self.key}"
+
+    @property
+    def name(self) -> str:
+        """The last segment of the path -- a capture's own name, a file's."""
+        return self.path.rstrip("/").rsplit("/", 1)[-1]
+
+    @property
+    def suffix(self) -> str:
+        """The extension of the last segment, lowercased; empty where it has none."""
+        _, dot, suffix = self.name.rpartition(".")
+        return f".{suffix.lower()}" if dot else ""
+
+    @property
     def masked(self) -> str:
         """This location with the secret taken out, for anything that prints."""
         return self._spelled(secret="***")
@@ -378,6 +421,17 @@ class Url:
         with it.
         """
         return self._spelled()
+
+    def into_properties(self, prefix: str = "s3") -> Mapping[str, str]:
+        """What this location says, as the catalog properties that say the same.
+
+        pyiceberg configures its filesystems from properties (`s3.endpoint`,
+        `s3.access-key-id`), and a warehouse URL that carries an endpoint and
+        credentials is saying exactly those. This is the translation, so a
+        caller hands one location to a catalog rather than repeating it as
+        three settings.
+        """
+        return _url_properties(self, prefix)
 
     def into_filesystem(self) -> tuple[pyarrow.fs.FileSystem, str]:
         """The `pyarrow.fs` handle for this location, and the path on it."""
@@ -395,9 +449,8 @@ class Url:
         ):
             return self._s3_filesystem(environment), self.store_path
         location = self.into_string()
-        if self.scheme in S3:
-            # Arrow's native parser accepts `s3`, not Hadoop's `s3a`/`s3n` aliases.
-            location = f"s3:{location.partition(':')[2]}"
+        if self.scheme != self.transport:
+            location = f"{self.transport}:{location.partition(':')[2]}"
         filesystem, path = pyarrow.fs.FileSystem.from_uri(location)
         return filesystem, path
 
@@ -704,15 +757,8 @@ def s3_environment(environ: Mapping[str, str] = os.environ, prefix: str = "s3") 
     return settings
 
 
-def properties_of(url: Url, prefix: str = "s3") -> Mapping[str, str]:
-    """What a location says, as the catalog properties that say the same thing.
-
-    pyiceberg configures its filesystems from properties (`s3.endpoint`,
-    `s3.access-key-id`), and a warehouse URL that carries an endpoint and
-    credentials is saying exactly those. This is the translation, so a caller
-    can hand one location to a catalog rather than repeating it as three
-    settings.
-    """
+def _url_properties(url: Url, prefix: str = "s3") -> Mapping[str, str]:
+    """`Url.into_properties`, as a function `Url` can define before it exists."""
     settings: dict[str, str] = {}
     endpoint = url.endpoint
     # Amazon's own hostnames are left out for the reason `_s3_filesystem`

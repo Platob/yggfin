@@ -14,7 +14,7 @@ import pytest
 
 from rekep import Url, urls
 from rekep.filesystems import resolve
-from rekep.urls import S3, properties_of, s3_environment
+from rekep.urls import S3, s3_environment
 
 
 @pytest.fixture
@@ -635,7 +635,7 @@ def test_resolve_goes_through_the_same_parser(tmp_path: Path) -> None:
 def test_a_location_translates_into_the_properties_that_say_the_same() -> None:
     """So a caller says where the store is once, not once per setting."""
     url = Url.from_string("s3://key:secret@minio:9000/warehouse")
-    assert properties_of(url) == {
+    assert url.into_properties() == {
         "s3.endpoint": "http://minio:9000",
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
@@ -649,7 +649,7 @@ def test_an_aws_location_tells_a_catalog_its_region_and_not_its_endpoint() -> No
     """pyiceberg passes `s3.endpoint` straight to `endpoint_override`, so the
     reason `_s3_filesystem` leaves AWS out is the reason this leaves it out."""
     url = Url.from_string("s3://key:secret@logs.s3.eu-west-1.amazonaws.com/warehouse")
-    assert properties_of(url) == {
+    assert url.into_properties() == {
         "s3.access-key-id": "key",
         "s3.secret-access-key": "secret",
         "s3.region": "eu-west-1",
@@ -657,14 +657,14 @@ def test_an_aws_location_tells_a_catalog_its_region_and_not_its_endpoint() -> No
 
 
 def test_a_hosted_endpoint_reaches_a_catalog_with_the_scheme_it_is_served_on() -> None:
-    assert properties_of(Url.from_string("s3://minio.corp.com/warehouse")) == {
+    assert Url.from_string("s3://minio.corp.com/warehouse").into_properties() == {
         "s3.endpoint": "https://minio.corp.com",
         "s3.region": "us-east-1",
     }
 
 
 def test_a_location_that_says_nothing_configures_nothing() -> None:
-    assert properties_of(Url.from_string("s3://bucket/key")) == {}
+    assert Url.from_string("s3://bucket/key").into_properties() == {}
 
 
 def test_s3_environment_translates_portable_defaults_and_endpoint_fallbacks() -> None:
@@ -703,7 +703,7 @@ def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> Non
     both the same way, so one location configures the catalog too.
     """
     url = Url.from_string("s3://k:s@s3.example.net/bucket/key?force_virtual_addressing=true")
-    assert dict(properties_of(url)) == {
+    assert dict(url.into_properties()) == {
         "s3.endpoint": "https://s3.example.net",
         "s3.access-key-id": "k",
         "s3.secret-access-key": "s",
@@ -715,7 +715,7 @@ def test_a_location_says_how_a_store_is_addressed_and_who_it_is_read_as() -> Non
     assert path == "bucket/key"
 
     public = Url.from_string("s3://s3.example.net/bucket/key?anonymous=true")
-    assert dict(properties_of(public)) == {
+    assert dict(public.into_properties()) == {
         "s3.endpoint": "https://s3.example.net",
         "s3.anonymous": "true",
         "s3.region": "us-east-1",
@@ -767,7 +767,7 @@ def test_an_endpoint_override_carrying_its_own_transport_is_split_like_any_other
     url = Url.from_string(f"s3://bucket/key?endpoint_override={endpoint}")
     scheme, host = expected
 
-    assert dict(properties_of(url)) == {
+    assert dict(url.into_properties()) == {
         "s3.endpoint": f"{scheme}://{host}",
         "s3.region": "us-east-1",
     }
@@ -823,7 +823,7 @@ def test_one_location_reads_the_same_flag_on_both_paths() -> None:
     """pyiceberg parses these with `strtobool`, which takes `yes`, `1` and `on`."""
     url = Url.from_string("s3://s3.example.net/b/k?anonymous=yes&force_virtual_addressing=true")
 
-    assert dict(properties_of(url)) == {
+    assert dict(url.into_properties()) == {
         "s3.endpoint": "https://s3.example.net",
         "s3.anonymous": "false",
         "s3.force-virtual-addressing": "true",
@@ -831,3 +831,118 @@ def test_one_location_reads_the_same_flag_on_both_paths() -> None:
     }
     settings = settings_of(url.into_filesystem()[0])
     assert settings["force_virtual_addressing"] is True
+
+
+# -- the three spellings of one object store ---------------------------------
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_one_object_store_answers_the_same_under_every_spelling(scheme: str) -> None:
+    """`s3`, `s3a` and `s3n` are three ways to write one location, so every part
+    a store reads comes back identically and only the caller's own spelling
+    survives into the text."""
+    text = (
+        f"{scheme}://key:sec%3Aret@minio:9000/bucket/logs/a.txt"
+        "?region=eu-west-1&force_virtual_addressing=true"
+    )
+    url = Url.from_string(text)
+
+    assert url.scheme == scheme
+    assert url.transport == "s3", "and the transport is one, so nothing below branches"
+    assert (url.user, url.password) == ("key", "sec:ret")
+    assert (url.host, url.port, url.endpoint) == ("minio", 9000, "minio:9000")
+    assert (url.bucket, url.key) == ("bucket", "logs/a.txt")
+    assert url.store_path == "bucket/logs/a.txt"
+    assert url.region == "eu-west-1"
+    assert url.query == {"region": "eu-west-1", "force_virtual_addressing": "true"}
+    assert url.name == "a.txt"
+    assert url.suffix == ".txt"
+    assert url.into_string() == text, "the spelling the caller wrote is the spelling read back"
+    assert url.masked == text.replace("sec%3Aret", "***")
+    assert repr(url) == f"Url({url.masked!r})"
+    assert url.canonical == f"{scheme}://bucket/logs/a.txt"
+    assert dict(url.into_properties()) == {
+        "s3.endpoint": "http://minio:9000",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "sec:ret",
+        "s3.region": "eu-west-1",
+        "s3.force-virtual-addressing": "true",
+    }
+    filesystem, path = url.into_filesystem()
+    assert path == "bucket/logs/a.txt"
+    settings = settings_of(filesystem)
+    assert settings["endpoint_override"] == "minio:9000"
+    assert settings["access_key"] == "key"
+    assert settings["region"] == "eu-west-1"
+    assert settings["force_virtual_addressing"] is True
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_the_spellings_walk_join_and_escape_alike(scheme: str) -> None:
+    """A walk, an escaped key and a repeated separator read the same on all three."""
+    walked = Url.from_string(f"{scheme}://bucket/wh").join("db/", "/t", "data")
+    assert walked.into_string() == f"{scheme}://bucket/wh/db/t/data"
+    assert walked.parent().into_string() == f"{scheme}://bucket/wh/db/t"
+
+    escaped = Url.from_string(f"{scheme}://bucket/wh//v=a%2Fb/x.parquet")
+    assert escaped.key == "wh//v=a/b/x.parquet", "a URL is transport and the value is not"
+    kept = Url.from_string(f"{scheme}://bucket/wh//v=a%2Fb/x.parquet", decode=False)
+    assert kept.key == "wh//v=a%2Fb/x.parquet", "except where the escape is the object's name"
+    assert kept.canonical == f"{scheme}://bucket/wh//v=a%2Fb/x.parquet"
+
+    fragment = Url.from_string(f"{scheme}://bucket/logs/a#1.txt")
+    assert fragment.key == "logs/a#1.txt", "`#` is a legal object-key character"
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_a_location_wins_over_the_process_default_under_every_spelling(
+    scheme: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("S3_ENDPOINT_URL", "https://environment.example.com")
+    monkeypatch.setenv("S3_ACCESS_KEY_ID", "environment-key")
+    monkeypatch.setenv("S3_REGION", "us-east-1")
+    settings = settings_of(
+        Url.from_string(
+            f"{scheme}://url-key:url-secret@minio:9000/b?region=eu-west-1"
+        ).into_filesystem()[0]
+    )
+    assert settings["endpoint_override"] == "minio:9000"
+    assert settings["access_key"] == "url-key"
+    assert settings["region"] == "eu-west-1"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("logs/a.txt", "logs/a.txt"),
+        ("/var/logs/a.txt", "/var/logs/a.txt"),
+        ("file:///var/logs/a.txt", "/var/logs/a.txt"),
+        ("file:/var/logs/a.txt", "/var/logs/a.txt"),
+    ],
+    ids=("relative", "absolute", "file-uri", "authority-less"),
+)
+def test_a_local_location_resolves_wherever_it_was_spelled(text: str, expected: str) -> None:
+    url = Url.from_string(text)
+    assert url.scheme == "file"
+    assert url.transport == "file"
+    assert url.bucket == "", "a local path is in no bucket and says so"
+    assert url.resolve() == (expected if expected.startswith("/") else posix_path(expected))
+    assert url.name == "a.txt"
+    assert url.suffix == ".txt"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (r"C:\logs\a.txt", "C:/logs/a.txt"),
+        ("C:/logs/a.txt", "C:/logs/a.txt"),
+        ("file:///C:/logs/a.txt", "C:/logs/a.txt"),
+    ],
+    ids=("windows", "drive-posix", "drive-uri"),
+)
+def test_a_drive_path_is_a_path_and_never_a_scheme(text: str, expected: str) -> None:
+    url = Url.from_string(text)
+    assert url.scheme == "file"
+    assert url.path == expected
+    assert url.resolve() == expected
+    assert url.name == "a.txt"
