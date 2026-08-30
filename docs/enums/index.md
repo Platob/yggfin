@@ -21,6 +21,7 @@ enum name and the complete stored-value lookup under `enum:*` metadata.
 | Enum | Contract |
 | --- | --- |
 | [Direction](direction.md) | Transport movement stated before a payload. |
+| [Protocol](protocol.md) | Grammar the payload's keys are written in. |
 
 ## Event codes
 
@@ -36,6 +37,7 @@ enum name and the complete stored-value lookup under `enum:*` metadata.
 | [AssetKind](asset-kind.md) | Tradable asset class. |
 | [MIC](mic.md) | ISO 10383 market identifier. |
 | [Currency](currency.md) | ISO 4217 code packed into four bytes. |
+| [SecurityIDSource](security-id-source.md) | Scheme an identifier is issued under. |
 | [OptionKind](option-kind.md) | Put or call direction. |
 
 ## Market codes

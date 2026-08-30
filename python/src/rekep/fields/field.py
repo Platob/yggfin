@@ -64,7 +64,7 @@ PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
 #: Metadata key carrying what a column is *called* -- `SecurityID` for one
-#: stored as `securityid`, `Source URL` for one stored as `sourceurl`. Every
+#: stored as `securityid`, `SourceURL` for one stored as `sourceurl`. Every
 #: column carries it, because a folded name is a key and not a label.
 DISPLAY = "fix:display"
 

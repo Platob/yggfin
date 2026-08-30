@@ -61,7 +61,7 @@ def _quantity_transition(
     previous_qty: float | None = None,
     order_qty: float | None = None,
     cum_qty: float | None = None,
-    leavesqty: Annotated[float | None, Field.column("Leaves Qty")] = None,
+    leavesqty: float | None = None,
     last_qty: float | None = None,
     cancel_qty: float | None = None,
 ) -> _QuantityTransition:
@@ -144,7 +144,7 @@ class Order(MarketEvent):
     qty: float | None = None
     """Current remaining quantity after this transition; null when indeterminable."""
 
-    prevqty: Annotated[float | None, Field.column("Prev Qty")] = None
+    prevqty: Annotated[float | None, Field.column("PrevQty")] = None
     """Quantity before this transition, reconstructed when no prior Order was observed."""
 
     timeinforce: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
@@ -153,7 +153,7 @@ class Order(MarketEvent):
     stoppx: Annotated[float | None, fix_tag("StopPx")] = None
     """Trigger price of a stop order; `px` is the limit that applies once triggered."""
 
-    hiddenqty: Annotated[float | None, Field.column("Hidden Qty")] = None
+    hiddenqty: Annotated[float | None, Field.column("HiddenQty")] = None
     """Current quantity hidden from the displayed book; null when unstated."""
 
     vwap: float | None = None

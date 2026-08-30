@@ -91,51 +91,51 @@ class Book(MarketEvent):
     vwap: float | None = None
     """Top-of-book weighted price using each side's opposing quantity."""
 
-    execpx: Annotated[float | None, Field.column("Exec Px")] = None
+    execpx: Annotated[float | None, Field.column("ExecPx")] = None
     """Most recent filled execution price observed by this book."""
 
-    prevexecpx: Annotated[float | None, Field.column("Prev Exec Px")] = None
+    prevexecpx: Annotated[float | None, Field.column("PrevExecPx")] = None
     """Execution price on the preceding book version."""
 
     imbalance: float | None = None
     """`(bidqty - askqty) / (bidqty + askqty)`, in `[-1, 1]`; positive is bid-heavy."""
 
-    bidpx: Annotated[float | None, Field.column("Bid Px")] = None
+    bidpx: Annotated[float | None, Field.column("BidPx")] = None
     """Best bid; also `px - spread / 2`."""
 
-    prevbidpx: Annotated[float | None, Field.column("Prev Bid Px")] = None
+    prevbidpx: Annotated[float | None, Field.column("PrevBidPx")] = None
     """Best bid on the preceding book version."""
 
-    bidqty: Annotated[float | None, Field.column("Bid Qty")] = None
+    bidqty: Annotated[float | None, Field.column("BidQty")] = None
     """Quantity at the best bid."""
 
-    prevbidqty: Annotated[float | None, Field.column("Prev Bid Qty")] = None
+    prevbidqty: Annotated[float | None, Field.column("PrevBidQty")] = None
     """Best-bid quantity on the preceding book version."""
 
-    biddepth: Annotated[int, Field(dtype=pyarrow.int32()), Field.column("Bid Depth")] = 0
+    biddepth: Annotated[int, Field(dtype=pyarrow.int32()), Field.column("BidDepth")] = 0
     """How many levels are live on the buy side."""
 
-    askpx: Annotated[float | None, Field.column("Ask Px")] = None
+    askpx: Annotated[float | None, Field.column("AskPx")] = None
     """Best offer; also `px + spread / 2`."""
 
-    prevaskpx: Annotated[float | None, Field.column("Prev Ask Px")] = None
+    prevaskpx: Annotated[float | None, Field.column("PrevAskPx")] = None
     """Best offer on the preceding book version."""
 
-    askqty: Annotated[float | None, Field.column("Ask Qty")] = None
+    askqty: Annotated[float | None, Field.column("AskQty")] = None
     """Quantity at the best offer."""
 
-    prevaskqty: Annotated[float | None, Field.column("Prev Ask Qty")] = None
+    prevaskqty: Annotated[float | None, Field.column("PrevAskQty")] = None
     """Best-offer quantity on the preceding book version."""
 
-    askdepth: Annotated[int, Field(dtype=pyarrow.int32()), Field.column("Ask Depth")] = 0
+    askdepth: Annotated[int, Field(dtype=pyarrow.int32()), Field.column("AskDepth")] = 0
     """How many levels are live on the sell side."""
 
-    bidlevels: Annotated[list[Level], Field.column("Bid Levels")] = dataclasses.field(
+    bidlevels: Annotated[list[Level], Field.column("BidLevels")] = dataclasses.field(
         default_factory=list
     )
     """Changed buy levels on deltas; every live buy level on snapshots, best first."""
 
-    asklevels: Annotated[list[Level], Field.column("Ask Levels")] = dataclasses.field(
+    asklevels: Annotated[list[Level], Field.column("AskLevels")] = dataclasses.field(
         default_factory=list
     )
     """Changed sell levels on deltas; every live sell level on snapshots, best first."""
@@ -146,12 +146,12 @@ class Book(MarketEvent):
     executions: list[Execution] = dataclasses.field(default_factory=list)
     """Execution evidence belonging to this book delta."""
 
-    bidalive: Annotated[list[Order], Field.column("Bid Alive")] = dataclasses.field(
+    bidalive: Annotated[list[Order], Field.column("BidAlive")] = dataclasses.field(
         default_factory=list
     )
     """Complete living bid orders, populated only on snapshots."""
 
-    askalive: Annotated[list[Order], Field.column("Ask Alive")] = dataclasses.field(
+    askalive: Annotated[list[Order], Field.column("AskAlive")] = dataclasses.field(
         default_factory=list
     )
     """Complete living ask orders, populated only on snapshots."""
@@ -764,22 +764,19 @@ class _Side:
         return cached
 
     def order_value_identity(self) -> tuple[tuple[int, ...], bytes]:
-        """Ordered live value hashes and their cached v1 frames."""
+        """Ordered live value hashes and their cached v1 frames.
+
+        `order_vhashes` above fills every live level's hashes, and `_moved`
+        drops a level's two caches together with the side's, so only the
+        frames can still be missing here.
+        """
         vhashes = self.order_vhashes()
         encoded = self._order_frame_cache
         if encoded is None:
-            frames = []
             for level in self.alive:
-                level_vhashes = level.vhashes
-                if level_vhashes is None:
-                    level_vhashes = level.vhashes = tuple(
-                        self.orders[x].vhash for x in self._resting_members(level)
-                    )
-                level_frame = level.frame
-                if level_frame is None:
-                    level_frame = level.frame = vhashes_frame(level_vhashes)
-                frames.append(level_frame)
-            encoded = self._order_frame_cache = b"".join(frames)
+                if level.frame is None:
+                    level.frame = vhashes_frame(level.vhashes)
+            encoded = self._order_frame_cache = b"".join(level.frame for level in self.alive)
         return vhashes, encoded
 
     @staticmethod
@@ -1457,9 +1454,7 @@ class _Folding:
     unpublished: set[int] = dataclasses.field(default_factory=set)
     """Report Orders deferred because LastQty is needed to distinguish their change."""
 
-    linkedhashes: Annotated[dict[int, None], Field.column("Linked Hashes")] = dataclasses.field(
-        default_factory=dict
-    )
+    linkedhashes: dict[int, None] = dataclasses.field(default_factory=dict)
     """Delta relations accumulated once in insertion order."""
 
     parent_hashes: dict[int, None] = dataclasses.field(default_factory=dict)

@@ -1016,5 +1016,5 @@ def test_the_data_tags_are_the_ones_the_dictionary_types_data() -> None:
     the one way that says anything: nothing in it may be missing here.
     """
     shipped = Path(__file__).resolve().parents[3] / "data" / "fix"
-    assert data_tags_of(FixRegistry(cache_dir=str(shipped), offline=True)) == set(DATA_TAGS)
+    assert data_tags_of(FixRegistry(cache_dir=str(shipped))) == set(DATA_TAGS)
     assert data_tags_of(FixRegistry.from_builtin()) <= set(DATA_TAGS)

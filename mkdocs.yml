@@ -82,6 +82,7 @@ nav:
       - ASCII codes: enums/ascii-codes.md
       - Messages:
           - Direction: enums/direction.md
+          - Protocol: enums/protocol.md
       - Events:
           - Event type: enums/event-type.md
           - State: enums/state.md
@@ -89,6 +90,7 @@ nav:
           - Asset kind: enums/asset-kind.md
           - Market identifier: enums/mic.md
           - Currency: enums/currency.md
+          - Security ID source: enums/security-id-source.md
           - Option kind: enums/option-kind.md
       - Market:
           - Side: enums/side.md
@@ -118,6 +120,7 @@ nav:
       - Tasks:
           - Parse messages: pipeline/tasks/parse-messages.md
           - Parse FIX: pipeline/tasks/parse-fix.md
+          - Parse instruments: pipeline/tasks/parse-instruments.md
           - Parse market: pipeline/tasks/parse-market.md
           - Flatten orders: pipeline/tasks/flatten-orders.md
           - Flatten executions: pipeline/tasks/flatten-executions.md

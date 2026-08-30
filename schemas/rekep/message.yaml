@@ -14,34 +14,34 @@ fields:
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: Unix Partition}
+  fix: {display: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: Event Type}
+  fix: {display: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Crea Unix}
+  fix: {display: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Rec Unix}
+  fix: {display: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Exp Unix}
+  fix: {display: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Snap Unix}
+  fix: {display: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
@@ -50,7 +50,7 @@ fields:
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: Value Hash}
+  fix: {display: ValueHash}
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
@@ -58,7 +58,7 @@ fields:
 - name: linkedhashes
   type: list
   description: Related lifecycle identities, with the primary match first.
-  fix: {display: Linked Hashes}
+  fix: {display: LinkedHashes}
   item:
     type: int64
 - name: version
@@ -77,7 +77,7 @@ fields:
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: Alt IDs}
+  fix: {display: AltIDs}
   key:
     type: string
   value:
@@ -87,17 +87,17 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Prev Unix}
+  fix: {display: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: Prev Hash}
+  fix: {display: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: Parent Hash}
+  fix: {display: ParentHash}
   item:
     type: fixed_size_binary[16]
 - name: mic
@@ -105,7 +105,7 @@ fields:
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
   fix: {display: MIC}
-  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
+  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
@@ -114,27 +114,28 @@ fields:
 - name: sourceurl
   type: string
   description: Path of the log the row came from, as its filesystem addresses it.
-  fix: {display: Source URL}
+  fix: {display: SourceURL}
 - name: sourcerownum
   type: int64
   description: 1-based physical line number of the header; 0 when not read from a file.
-  fix: {display: Source Rownum}
+  fix: {display: SourceRownum}
 - name: threadname
   type: string
   description: Contents of the first bracketed header field.
-  fix: {display: Thread Name}
+  fix: {display: ThreadName}
 - name: plugincode
   type: string
   description: Contents of the second bracketed header field.
-  fix: {display: Plugin Code}
+  fix: {display: PluginCode}
 - name: message
   type: string
   description: Payload after the fixed log header, with continuation lines folded in.
   fix: {display: Message}
-- name: protocolcode
-  type: string
+- name: protocol
+  type: int64
   description: Protocol syntax detected without interpreting its fields.
-  fix: {display: Protocol Code}
+  fix: {display: Protocol}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
   type: string
   nullable: true

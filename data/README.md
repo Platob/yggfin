@@ -9,7 +9,7 @@ data/fix/versions.json          the version list, session layers, and which
 data/fix/fields/000000.json     tags 0-499, one cross-version record each
 data/fix/fields/000060.json     tags 30000-30499, rekep package vocabulary
 data/fix/fields/000080.json     tags 40000-40499, the 5.0.SP2 extension pack
-data/fix/fields/named.json      the fields FIX never numbered
+data/fix/fields/999999.json     the fields FIX never numbered
 data/fix/components/parties.json  one component, declared as a Field
 data/fix/components/new_order_single.json  a message, declared the same way
 data/fix-conflicts.json         every reading the collapse dropped
@@ -18,9 +18,10 @@ data/fix-conflicts.json         every reading the collapse dropped
 A field's record is cross-version by nature: one tag, one reading, and
 `versions` -- the list of versions that declare it. Shards hold five hundred
 tags each and are named by the shard index, so the document holding a tag is
-`tag // 500` and nothing has to be looked up; the tag space is sparse, so
-fifteen shards hold 6,098 tagged fields and `named.json` holds three rendered
-fields. Empty ranges are absent, and a lookup for one tag reads one shard.
+`tag // 500` and nothing has to be looked up; a field FIX never numbered keys
+by its name and lands in `999999`, the one index no tag reaches. The tag space
+is sparse, so fifteen shards hold 6,098 tagged fields and `999999.json` holds
+three rendered ones. Empty ranges are absent, and a lookup reads one shard.
 
 Three ordered sources fill it. Nanoconda supplies the first reading and the
 symbolic name of every enumerated value. OnixS fills missing prose, values and
@@ -34,7 +35,7 @@ has a source-supplied symbolic name for each wire value.
 ```python
 from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
+registry = FixRegistry(cache_dir="data/fix")
 field = registry.field("Side", "4.4")
 field.fix.encode("BUY")  # '1'
 ```

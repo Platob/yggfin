@@ -26,6 +26,7 @@ DOCS = Path(__file__).resolve().parents[2] / "docs"
 WORKFLOW_STEPS = (
     ("parse-messages", "parse_messages"),
     ("parse-fix", "parse_fix"),
+    ("parse-instruments", "parse_instruments"),
     ("parse-market", "parse_market"),
     ("flatten-orders", "flatten_orders"),
     ("flatten-executions", "flatten_executions"),
@@ -125,10 +126,22 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
 
     assert document.is_file()
     assert "## Run this step" in page
-    assert "uv run --project python --with papermill --with ipykernel rekep task run" in page
+    assert "uv run --project python --group runner rekep task run" in page
     assert f"tasks/{task_name}/{task_name}.yml" in page
     assert f"--output {task_name}.executed.ipynb" in page
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
+
+
+def test_deploying_the_tables_is_documented_where_a_deployment_is_read() -> None:
+    """The command, on the two pages a person creating a catalog is already on."""
+    bootstrap = (DOCS / "pipeline" / "operations" / "deploy.md").read_text(encoding="utf-8")
+    workflow = (DOCS / "pipeline" / "operations" / "run.md").read_text(encoding="utf-8")
+
+    for page in (bootstrap, workflow):
+        assert "rekep iceberg deploy tasks/parse_fix/parse_fix.yml" in page
+        assert "--dry-run" in page
+    assert "rekep.deploy.TABLES" in bootstrap
+    assert "rekep.deploy.TABLES" in workflow
 
 
 #: A fence that reaches a bucket, a network scrape, or a path this checkout has

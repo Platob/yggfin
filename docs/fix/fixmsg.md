@@ -8,7 +8,7 @@ reads it.
 ```python
 from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
+registry = FixRegistry(cache_dir="data/fix")
 source = TextFiles.from_folder(
     "s3://bucket/capture",
     pattern="*.log*",
@@ -32,8 +32,9 @@ than tokenizing the payload again. A batch arriving from Iceberg carries
 `parse_fix` projects `message` away and filling it back in would invent text
 the reader deliberately left behind.
 
-Classification uses the codec's rules; the stored `protocolcode` fills only
-the rows those rules call `OTHER`.
+Classification uses the codec's rules; the stored
+[`protocol`](../enums/protocol.md) fills only the rows those rules call
+`OTHER`.
 
 ```yaml
 # Discard operational traffic before argument tokenization; empty retains it.
@@ -78,11 +79,13 @@ print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 ```
 
 ```text
-[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3, 'buffer': None}]
+[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3}]
 ```
 
-`Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs` each
-carry their declared members plus a `buffer` for the rest.
+`Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs`
+each carry the members they declare and nothing else. What a component does
+not project stays in `entries`, under the key the wire carried — one residual
+for the row, not a second one on every entry.
 
 ## Ordered residue
 

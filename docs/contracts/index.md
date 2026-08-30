@@ -35,7 +35,11 @@ YAML and JSON use the same document model; the extension selects the codec.
 ## Metadata
 
 - `iceberg: { ... }` stores keys, partitions, sort order, and assigned field ids.
-- `fix: { ... }` stores canonical FIX name, tag, datatype, values, and version facts.
+- `fix: { ... }` says which FIX field a column reads: its tag, its canonical
+  name, its display and its FIX datatype. Not the rest of the record — the
+  versions that declare it, the messages that carry it, the sources that
+  answered and the values it enumerates stay in the registry, which is what
+  keeps a contract a contract rather than a second copy of the dictionary.
 - `enum: { ... }` stores code key/value types and members.
 - `metadata: { ... }` keeps protocol-neutral facts such as units and the schema namespace.
 
@@ -56,9 +60,10 @@ against the FIX registry rather than three.
 
 What the fold throws away is kept, not lost. Every column carries
 `fix: { display: ... }` — the name a reader is shown. A FIX column displays
-the dictionary's own spelling (`OrigClOrdID`); every other column displays
-title case with acronyms preserved (`sourceurl` → `Source URL`, `altids` →
-`Alt IDs`, `mic` → `MIC`).
+the dictionary's own spelling (`OrigClOrdID`); every other column displays the
+same shape, capitalised word by word and run together with acronyms preserved
+(`sourceurl` → `SourceURL`, `altids` → `AltIDs`, `mic` → `MIC`). No display
+carries a space, because no FIX field name does.
 
 ```python
 from rekep import Field
@@ -71,7 +76,7 @@ for name in ("clordid", "px", "unixpartition"):
 ```text
 clordid          ClOrdID
 px               Price
-unixpartition    Unix Partition
+unixpartition    UnixPartition
 ```
 
 A column that reads a FIX field is named after that field, so a reader who
@@ -105,7 +110,7 @@ The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is
 refused over it. What a reader actually depends on is the columns, and
 `parse_fix` says so directly -- it refuses a source missing `msgtype`,
-`entries` or `protocolcode` rather than reporting an empty successful run.
+`entries` or `protocol` rather than reporting an empty successful run.
 
 ## Publishing
 

@@ -14,34 +14,34 @@ fields:
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: Unix Partition}
+  fix: {display: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: Event Type}
+  fix: {display: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Crea Unix}
+  fix: {display: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Rec Unix}
+  fix: {display: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Exp Unix}
+  fix: {display: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Snap Unix}
+  fix: {display: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
@@ -50,7 +50,7 @@ fields:
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: Value Hash}
+  fix: {display: ValueHash}
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
@@ -58,7 +58,7 @@ fields:
 - name: linkedhashes
   type: list
   description: Related lifecycle identities, with the primary match first.
-  fix: {display: Linked Hashes}
+  fix: {display: LinkedHashes}
   item:
     type: int64
 - name: version
@@ -77,7 +77,7 @@ fields:
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: Alt IDs}
+  fix: {display: AltIDs}
   key:
     type: string
   value:
@@ -87,17 +87,17 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Prev Unix}
+  fix: {display: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: Prev Hash}
+  fix: {display: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: Parent Hash}
+  fix: {display: ParentHash}
   item:
     type: fixed_size_binary[16]
 - name: mic
@@ -105,7 +105,7 @@ fields:
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
   fix: {display: MIC}
-  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
+  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
@@ -114,11 +114,11 @@ fields:
 - name: instrumentxhash
   type: int64
   description: Canonical Instrument identity used to join market rows.
-  fix: {display: Instrument Xhash}
+  fix: {display: InstrumentXhash}
 - name: symbolticker
   type: string
   description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-  fix: {display: Symbol Ticker}
+  fix: {display: SymbolTicker}
 - name: kind
   type: int64
   description: Standard market semantic, independent of its protocol spelling.
@@ -127,27 +127,27 @@ fields:
 - name: side
   type: int32
   description: 'Side of order (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '54', type: char, values: '[{"value":"1","meaning":"Buy","aliases":["Buy"]},{"value":"2","meaning":"Sell","aliases":["Sell"]},{"value":"3","meaning":"Buy minus","aliases":["BuyMinus"]},{"value":"4","meaning":"Sell plus","aliases":["SellPlus"]},{"value":"5","meaning":"Sell short","aliases":["SellShort"]},{"value":"6","meaning":"Sell short exempt","aliases":["SellShortExempt"]},{"value":"7","meaning":"Undisclosed (valid for IOI and List Order messages only)","aliases":["Undisclosed"]},{"value":"8","meaning":"Cross (orders where counterparty is an exchange, valid for all messages except IOIs)","aliases":["Cross"]},{"value":"9","meaning":"Cross short","aliases":["CrossShort"]},{"value":"B","meaning":"\"As Defined\" (for use with multileg instruments)","aliases":["AsDefined"]},{"value":"C","meaning":"\"Opposite\" (for use with multileg instruments)","aliases":["Opposite"]},{"value":"A","meaning":"Cross short exempt","aliases":["CrossShortExempt"]},{"value":"D","meaning":"Subscribe (e.g. CIV)","aliases":["Subscribe"]},{"value":"E","meaning":"Redeem (e.g. CIV)","aliases":["Redeem"]},{"value":"F","meaning":"Lend (FINANCING - identifies direction of collateral)","aliases":["Lend"]},{"value":"G","meaning":"Borrow (FINANCING - identifies direction of collateral)","aliases":["Borrow"]},{"value":"H","meaning":"","aliases":["SELL_UNDISCLOSED"]}]', source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda","values":{"1":"nanoconda","2":"nanoconda","3":"nanoconda","4":"nanoconda","5":"nanoconda","6":"nanoconda","7":"nanoconda","8":"nanoconda","9":"nanoconda","B":"nanoconda","C":"nanoconda","A":"nanoconda","D":"nanoconda","E":"nanoconda","F":"nanoconda","G":"nanoconda"},"aliases":{"1":"nanoconda","2":"nanoconda","3":"nanoconda","4":"nanoconda","5":"nanoconda","6":"nanoconda","7":"nanoconda","8":"nanoconda","9":"nanoconda","B":"nanoconda","C":"nanoconda","A":"nanoconda","D":"nanoconda","E":"nanoconda","F":"nanoconda","G":"nanoconda","H":"quickfix"}}', added: '2.7', msgtypes: '["AllocationInstruction","AllocationInstructionAlert","AllocationReport","BidRequest","BidResponse","CollateralAssignment","CollateralInquiry","CollateralReport","CollateralRequest","CollateralResponse","Confirmation","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","DontKnowTrade","ExecutionAcknowledgement","ExecutionReport","IOI","ListStrikePrice","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReplaceRequest","OrderCancelRequest","OrderMassActionReport","OrderMassActionRequest","OrderMassCancelReport","OrderMassCancelRequest","OrderMassStatusRequest","OrderStatusRequest","Quote","QuoteRequest","QuoteRequestReject","QuoteResponse","QuoteStatusReport","SettlementInstructionRequest","SettlementInstructions","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","DontKnowTradeDK","ExecutionAck","PartyRiskLimitCheckRequest","PartyRiskLimitCheckRequestAck","TradeAggregationRequest","TradeAggregationReport","TradeMatchReport","MassOrder","MassOrderAck","MarketDataStatisticsRequest","MarketDataStatisticsReport","Allocation","MultilegOrderCancelReplaceRequest","IndicationsofInterest","OrderList","OrderSingle","QuoteStatusRequest","SecurityDefinition","SecurityDefinitionRequest","IndicationofInterest"]', components: '["BidCompReqGrp","BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SettlInstGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","MDStatisticParameters","TrdMatchSideGrp","OrderEntryGrp","OrderEntryAckGrp","InstrmtMatchSideGrp","MDStatisticReqGrp","MDStatisticRptGrp","UndInstrmtStrkPxGrp"]', name: Side, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: Side}
+  fix: {tag: '54', type: char, name: Side, display: Side}
   enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
 - name: px
   type: double
   nullable: true
   description: Price per unit of quantity (e.g. per share)
-  fix: {tag: '44', type: Price, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["Advertisement","BidResponse","CollateralAssignment","CollateralInquiry","CollateralReport","CollateralRequest","CollateralResponse","CrossOrderCancelReplaceRequest","ExecutionReport","IOI","ListStrikePrice","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReplaceRequest","QuoteRequest","QuoteRequestReject","QuoteResponse","QuoteStatusReport","TradeCaptureReport","TradeCaptureReportAck","OrderMassActionReport","OrderMassActionRequest","TradeMatchReport","MassOrder","MassOrderAck","MultilegOrderCancelReplaceRequest","IndicationsofInterest","OrderList","OrderSingle","IndicationofInterest"]', components: '["BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","OrderEntryGrp","OrderEntryAckGrp","TrdCapRptSideGrp","TrdCapRptAckSideGrp","InstrmtMatchSideGrp","TrdMatchSideGrp","UndInstrmtStrkPxGrp"]', name: Price, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: Price}
+  fix: {tag: '44', type: Price, name: Price, display: Price}
 - name: prevpx
   type: double
   nullable: true
   description: Price on the immediately preceding lifecycle version; null on the first.
-  fix: {display: Prev Px}
+  fix: {display: PrevPx}
 - name: pxunit
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-  fix: {display: Px Unit}
+  fix: {display: PxUnit}
 - name: currency
   type: int32
   nullable: true
   description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
-  fix: {tag: '15', type: Currency, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["Advertisement","AllocationInstruction","AllocationInstructionAlert","AllocationReport","AssignmentReport","BidRequest","CollateralAssignment","CollateralInquiry","CollateralInquiryAck","CollateralReport","CollateralRequest","CollateralResponse","Confirmation","CrossOrderCancelReplaceRequest","DerivativeSecurityList","DerivativeSecurityListRequest","DerivativeSecurityListUpdateReport","ExecutionReport","IOI","ListStrikePrice","MarketDataIncrementalRefresh","MarketDataRequest","MarketDataSnapshotFullRefresh","MarketDefinition","MarketDefinitionUpdateReport","MassQuote","MassQuoteAcknowledgement","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReplaceRequest","PositionMaintenanceReport","PositionMaintenanceRequest","PositionReport","Quote","QuoteRequest","QuoteRequestReject","QuoteResponse","QuoteStatusReport","RequestForPositions","RequestForPositionsAck","SecurityDefinition","SecurityDefinitionRequest","SecurityDefinitionUpdateReport","SecurityList","SecurityListRequest","SecurityListUpdateReport","SecurityStatus","SecurityStatusRequest","SettlementObligationReport","TradeCaptureReport","TradeCaptureReportAck","MarginRequirementReport","AccountSummaryReport","PartyRiskLimitCheckRequest","PartyRiskLimitCheckRequestAck","PositionTransferInstruction","PositionTransferReport","MarketDataStatisticsReport","TradeAggregationRequest","MassQuoteAck","TradeMatchReport","RequestforPositionsAck","Allocation","MultilegOrderCancelReplaceRequest","IndicationsofInterest","OrderList","OrderSingle","IndicationofInterest"]', components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","InstrmtMatchSideGrp","QuotSetAckGrp","QuotSetGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]', name: Currency, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: Currency}
+  fix: {tag: '15', type: Currency, name: Currency, display: Currency}
   enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
 - name: qty
   type: double
@@ -158,11 +158,11 @@ fields:
   type: double
   nullable: true
   description: Quantity before this transition, reconstructed when no prior Order was observed.
-  fix: {display: Prev Qty}
+  fix: {display: PrevQty}
 - name: qtyunit
   type: string
   description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-  fix: {display: Qty Unit}
+  fix: {display: QtyUnit}
 - name: notional
   type: double
   nullable: true
@@ -172,7 +172,7 @@ fields:
   type: double
   nullable: true
   description: Notional on the immediately preceding lifecycle version; null on the first.
-  fix: {display: Prev Notional}
+  fix: {display: PrevNotional}
 - name: metadata
   type: map
   nullable: true
@@ -186,18 +186,18 @@ fields:
 - name: timeinforce
   type: int32
   description: 'Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders. (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '59', type: char, values: '[{"value":"0","meaning":"Day (or session)","aliases":["Day"]},{"value":"1","meaning":"Good Till Cancel (GTC)","aliases":["GoodTillCancel"]},{"value":"2","meaning":"At the Opening (OPG)","aliases":["AtTheOpening"]},{"value":"3","meaning":"Immediate Or Cancel (IOC)","aliases":["ImmediateOrCancel"]},{"value":"4","meaning":"Fill Or Kill (FOK)","aliases":["FillOrKill"]},{"value":"5","meaning":"Good Till Crossing (GTX)","aliases":["GoodTillCrossing"]},{"value":"6","meaning":"Good Till Date (GTD)","aliases":["GoodTillDate"]},{"value":"7","meaning":"At the Close","aliases":["AtTheClose"]},{"value":"8","meaning":"Good Through Crossing","aliases":["GoodThroughCrossing"]},{"value":"9","meaning":"At Crossing","aliases":["AtCrossing"]},{"value":"A","meaning":"","aliases":["GOOD_FOR_TIME"]},{"value":"B","meaning":"","aliases":["GOOD_FOR_AUCTION"]},{"value":"C","meaning":"","aliases":["GOOD_FOR_MONTH"]}]', source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda","values":{"0":"nanoconda","1":"nanoconda","2":"nanoconda","3":"nanoconda","4":"nanoconda","5":"nanoconda","6":"nanoconda","7":"nanoconda","8":"nanoconda","9":"nanoconda"},"aliases":{"0":"nanoconda","1":"nanoconda","2":"nanoconda","3":"nanoconda","4":"nanoconda","5":"nanoconda","6":"nanoconda","7":"nanoconda","8":"nanoconda","9":"nanoconda","A":"quickfix","B":"quickfix","C":"quickfix"}}', added: '2.7', msgtypes: '["CrossOrderCancelReplaceRequest","DerivativeSecurityList","DerivativeSecurityListUpdateReport","ExecutionReport","MarketDataIncrementalRefresh","MarketDataSnapshotFullRefresh","MarketDefinition","MarketDefinitionUpdateReport","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReplaceRequest","SecurityDefinition","SecurityDefinitionUpdateReport","SecurityList","SecurityListUpdateReport","TradeCaptureReport","TradeCaptureReportAck","TradingSessionList","TradingSessionListUpdateReport","TradeMatchReport","MassOrder","MassOrderAck","MarketDataStatisticsRequest","MarketDataStatisticsReport","MultilegOrderCancelReplaceRequest","OrderList","OrderSingle"]', components: '["ListOrdGrp","MDFullGrp","MDIncGrp","TimeInForceRules","TradeReportOrderDetail","MDStatisticParameters","OrderEntryGrp","OrderEntryAckGrp","SecurityTradingRules","TradingSessionRules","DerivativeSecurityDefinition","SecListGrp","TrdCapRptSideGrp","SecLstUpdRelSymGrp","TrdCapRptAckSideGrp","TrdSessLstGrp","TradingSessionRulesGrp","MarketSegmentGrp","InstrmtMatchSideGrp","TrdMatchSideGrp","MDStatisticReqGrp","MDStatisticRptGrp"]', name: TimeInForce, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: TimeInForce}
+  fix: {tag: '59', type: char, name: TimeInForce, display: TimeInForce}
   enum: {name: TimeInForce, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1229802820":"IMMEDIATE","1229931264":"IOC","1179601664":"FOK","1397052243":"SESSION","1145133312":"DAY","1330660686":"AT_OPEN","1129074515":"AT_CLOSE","1196709888":"GTX","1196704594":"GOOD_THROUGH_CROSSING","1096041298":"AT_CROSSING","1195786496":"GFA","1380275028":"RESTING","1196704512":"GTC","1196704768":"GTD","1195791360":"GFT","1195789568":"GFM"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"AT_CLOSE":"CLOS","AT_CROSSING":"ATCR","AT_OPEN":"OPEN","AT_THE_CLOSE":"AT_CLOSE","AT_THE_OPENING":"AT_OPEN","FILL_OR_KILL":"FOK","GOOD_FOR_AUCTION":"GFA","GOOD_FOR_MONTH":"GFM","GOOD_FOR_TIME":"GFT","GOOD_THROUGH_CROSSING":"GTCR","GOOD_TILL_CANCELLED":"GTC","GOOD_TILL_DATE":"GTD","GOOD_TIL_CANCELLED":"GTC","GOOD_TIL_DATE":"GTD","IMMEDIATE":"IMMD","IMMEDIATE_OR_CANCEL":"IOC","RESTING":"REST","SESSION":"SESS"}', fix_aliases: '{"0":"DAY","1":"GTC","2":"OPEN","3":"IOC","4":"FOK","5":"GTX","6":"GTD","7":"CLOS","8":"GTCR","9":"ATCR","A":"GFT","B":"GFA","C":"GFM"}'}
 - name: stoppx
   type: double
   nullable: true
   description: Price per unit of quantity (e.g. per share)
-  fix: {tag: '99', type: Price, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["CrossOrderCancelReplaceRequest","ExecutionReport","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReplaceRequest","TradeCaptureReport","TradeCaptureReportAck","TradeMatchReport","MultilegOrderCancelReplaceRequest","OrderList","OrderSingle"]', components: '["ListOrdGrp","TradeReportOrderDetail","TrdCapRptSideGrp","TrdCapRptAckSideGrp","InstrmtMatchSideGrp","TrdMatchSideGrp"]', name: StopPx, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: StopPx}
+  fix: {tag: '99', type: Price, name: StopPx, display: StopPx}
 - name: hiddenqty
   type: double
   nullable: true
   description: Current quantity hidden from the displayed book; null when unstated.
-  fix: {display: Hidden Qty}
+  fix: {display: HiddenQty}
 - name: vwap
   type: double
   nullable: true
@@ -211,39 +211,39 @@ fields:
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-  fix: {tag: '37', type: String, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["AllocationInstruction","AllocationInstructionAlert","AllocationReport","CollateralAssignment","CollateralInquiry","CollateralInquiryAck","CollateralReport","CollateralRequest","CollateralResponse","Confirmation","ConfirmationRequest","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","DontKnowTrade","Email","ExecutionAcknowledgement","ExecutionReport","ListStatus","MarketDataIncrementalRefresh","MarketDataSnapshotFullRefresh","MultilegOrderCancelReplace","OrderCancelReject","OrderCancelReplaceRequest","OrderCancelRequest","OrderMassCancelReport","OrderStatusRequest","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","DontKnowTradeDK","ExecutionAck","TradeMatchReport","MassOrder","MassOrderAck","TradeAggregationRequest","Allocation","MultilegOrderCancelReplaceRequest"]', components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","OrderEntryGrp","OrderEntryAckGrp","OrderAggregationGrp","TrdCapRptSideGrp","TrdCapRptAckSideGrp","InstrmtMatchSideGrp","TrdMatchSideGrp"]', name: OrderID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: OrderID}
+  fix: {tag: '37', type: String, name: OrderID, display: OrderID}
 - name: clordid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID (49) or OnBehalfOfCompID (5) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID field.
-  fix: {tag: '11', type: String, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["AllocationInstruction","AllocationInstructionAlert","AllocationReport","CollateralAssignment","CollateralInquiry","CollateralInquiryAck","CollateralReport","CollateralRequest","CollateralResponse","Confirmation","ConfirmationRequest","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","Email","ExecutionAcknowledgement","ExecutionReport","ListStatus","ListStrikePrice","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReject","OrderCancelReplaceRequest","OrderCancelRequest","OrderMassActionReport","OrderMassActionRequest","OrderMassCancelReport","OrderMassCancelRequest","OrderStatusRequest","QuoteRequest","QuoteResponse","RegistrationInstructions","RegistrationInstructionsResponse","SettlementInstructions","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","ExecutionAck","TradeMatchReport","MassOrder","MassOrderAck","TradeAggregationRequest","Allocation","MultilegOrderCancelReplaceRequest","OrderList","OrderSingle"]', components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","OrderEntryGrp","OrderEntryAckGrp","OrderAggregationGrp","TrdCapRptSideGrp","TrdCapRptAckSideGrp","InstrmtMatchSideGrp","TrdMatchSideGrp","UndInstrmtStrkPxGrp"]', name: ClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: ClOrdID}
+  fix: {tag: '11', type: String, name: ClOrdID, display: ClOrdID}
 - name: origclordid
   type: string
   nullable: true
   description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-  fix: {tag: '41', type: String, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '2.7', msgtypes: '["CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","ExecutionReport","MultilegOrderCancelReplace","NewOrderCross","OrderCancelReject","OrderCancelReplaceRequest","OrderCancelRequest","OrderMassActionReport","OrderMassCancelReport","MassOrder","MassOrderAck","MultilegOrderCancelReplaceRequest"]', components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","OrderEntryGrp","OrderEntryAckGrp"]', name: OrigClOrdID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: OrigClOrdID}
+  fix: {tag: '41', type: String, name: OrigClOrdID, display: OrigClOrdID}
 - name: clordlinkid
   type: string
   nullable: true
   description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
-  fix: {tag: '583', type: String, source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda"}', added: '4.3', msgtypes: '["CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","ExecutionReport","MultilegOrderCancelReplace","NewOrderCross","NewOrderList","NewOrderMultileg","NewOrderSingle","OrderCancelReject","OrderCancelReplaceRequest","OrderCancelRequest","OrderStatusRequest","MultilegOrderCancelReplaceRequest"]', components: '["ListOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]', name: ClOrdLinkID, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]', version: 5.0.SP2, display: ClOrdLinkID}
+  fix: {tag: '583', type: String, name: ClOrdLinkID, display: ClOrdLinkID}
 - name: parentclordid
   type: string
   nullable: true
   description: Client order identity of the parent in a replace chain, as the bridge renders it.
-  fix: {type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', column: parentclordid, name: ParentClOrdID, version: 5.0.SP2, display: ParentClOrdID}
+  fix: {type: String, name: ParentClOrdID, display: ParentClOrdID}
 - name: parentorderid
   type: string
   nullable: true
   description: Venue order identity of the parent in a replace chain, as the bridge renders it.
-  fix: {type: String, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]', column: parentorderid, name: ParentOrderID, version: 5.0.SP2, display: ParentOrderID}
+  fix: {type: String, name: ParentOrderID, display: ParentOrderID}
 - name: cxlrejreason
   type: int32
   nullable: true
   description: Code to identify reason for cancel rejection.
-  fix: {tag: '102', type: int, values: '[{"value":"0","meaning":"Too late to cancel","aliases":["TooLateToCancel"]},{"value":"1","meaning":"Unknown order","aliases":["UnknownOrder"]},{"value":"2","meaning":"Broker / Exchange Option","aliases":["BrokerCredit"]},{"value":"3","meaning":"Order already in Pending Cancel or Pending Replace status","aliases":["OrderAlreadyInPendingStatus"]},{"value":"6","meaning":"Duplicate ClOrdID (11) received","aliases":["DuplicateClOrdID"]},{"value":"5","meaning":"OrigOrdModTime (586) did not match last TransactTime (60) of order","aliases":["OrigOrdModTime"]},{"value":"4","meaning":"Unable to process Order Mass Cancel Request","aliases":["UnableToProcessOrderMassCancelRequest"]},{"value":"99","meaning":"Other","aliases":["Other"]},{"value":"18","meaning":"Invalid price increment","aliases":["InvalidPriceIncrement"]},{"value":"7","meaning":"Price exceeds current price","aliases":["PriceExceedsCurrentPrice"]},{"value":"8","meaning":"Price exceeds current price band","aliases":["PriceExceedsCurrentPriceBand"]}]', source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda","values":{"0":"nanoconda","1":"nanoconda","2":"nanoconda","3":"nanoconda","6":"nanoconda","5":"nanoconda","4":"nanoconda","99":"nanoconda","18":"nanoconda","7":"nanoconda","8":"nanoconda"},"aliases":{"0":"nanoconda","1":"nanoconda","2":"nanoconda","3":"nanoconda","6":"nanoconda","5":"nanoconda","4":"nanoconda","99":"nanoconda","18":"nanoconda","7":"nanoconda","8":"nanoconda"}}', added: '2.7', msgtypes: '["OrderCancelReject"]', name: CxlRejReason, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]', version: 5.0.SP2, display: CxlRejReason}
+  fix: {tag: '102', type: int, name: CxlRejReason, display: CxlRejReason}
 - name: cxlrejresponseto
   type: string
   nullable: true
   description: Identifies the type of request that a Cancel Reject is in response to.
-  fix: {tag: '434', type: char, values: '[{"value":"1","meaning":"Order cancel request","aliases":["OrderCancelRequest"]},{"value":"2","meaning":"Order cancel/replace request","aliases":["OrderCancel","ORDER_CANCEL_REPLACE_REQUEST"]}]', source: nanoconda, sources: '["nanoconda","onixs","quickfix"]', origins: '{"name":"nanoconda","type":"nanoconda","description":"nanoconda","added":"nanoconda","values":{"1":"nanoconda","2":"nanoconda"},"aliases":{"1":"nanoconda","2":"nanoconda"}}', added: '4.2', msgtypes: '["OrderCancelReject"]', name: CxlRejResponseTo, versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]', version: 5.0.SP2, display: CxlRejResponseTo}
+  fix: {tag: '434', type: char, name: CxlRejResponseTo, display: CxlRejResponseTo}

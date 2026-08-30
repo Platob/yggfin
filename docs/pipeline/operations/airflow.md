@@ -27,10 +27,12 @@ flowchart TD
     PF --> XM[(fix.misc)]
     PF --> XU[(fix.unknown)]
     PF --> FM[(fix.market)]
-    PF --> IM[(market.instruments)]
     PF --> RF{route_fix}
+    RF -->|routed.market > 0| PI[parse_instruments]
     RF -->|routed.market > 0| PK[parse_market]
+    FM --> PI
     FM --> PK
+    PI --> IM[(market.instruments)]
     PK --> RK{route_market}
     RK -->|flatten.orders > 0| FO[flatten_orders]
     RK -->|flatten.executions > 0| FE[flatten_executions]
@@ -46,8 +48,11 @@ with its half-open data interval. The DAG's `branch` parameter replaces the
 YAML branch in every notebook, and `books` selects the parse-market path. All
 other job settings continue to come from the checked-in YAML files.
 
-Each notebook records a `result` scrap with non-negative counts. A route task
-reads that result and skips downstream work whose input count is zero. Routes
+Each notebook records a `result` scrap with non-negative counts, in the shape
+[every task returns](logs.md#what-one-task-returns). A route task reads that
+result and skips downstream work whose input count is zero: `read` for
+`parse_fix`, `routed.market` for both readers of `fix.market`, and
+`flatten.orders` / `flatten.executions` for the two flatteners. Routes
 use attempted or read counts rather than `written`, so an idempotent replay
 still reaches consumers even when the producer inserts no new rows.
 
@@ -115,7 +120,7 @@ Keep the table wiring aligned across the documents:
 | --- | --- | --- |
 | `parse_messages` | `logs.messages` | `parse_fix` |
 | `parse_fix` | `fix.market` | `parse_market` |
-| `parse_fix` | `market.instruments` | terminal reference table |
+| `parse_instruments` | `market.instruments` | terminal reference table |
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |
 
@@ -320,8 +325,9 @@ airflow dags trigger \
   rekep_iceberg_maintenance
 ```
 
-The executed notebook's `result` scrap reports table count plus rewritten,
-expired, deleted-file, and reclaimed-byte totals, with a per-table breakdown.
+The executed notebook's `result` scrap carries the keys every task returns,
+plus `tables`, `expired`, `deleted`, `byte_size` and a per-table `reports`
+breakdown. See [what one task returns](logs.md#what-one-task-returns).
 
 ## Backfill historical hours
 

@@ -13,7 +13,7 @@ parameters:
 Run the same task document locally that Airflow gives Papermill:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 ```
@@ -26,10 +26,10 @@ contains no prebuilt pipeline jobs or task reports.
 ```text
 Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
                                                    |        `-> fix.unknown
-                                                   +-> market.instruments
-                                                   `-> fix.market -> parse_market -+-> Book -+-> Order
-                                                                                   |         `-> Execution
-                                                                                   `---------> Order + Execution (books: false)
+                                                   `-> fix.market -+-> parse_instruments -> market.instruments
+                                                                   `-> parse_market -+-> Book -+-> Order
+                                                                                     |         `-> Execution
+                                                                                     `---------> Order + Execution (books: false)
 ```
 
 `parse_messages` tokenizes once and assigns `MsgType` and `eventtype`;
@@ -39,9 +39,11 @@ or protocol change rerun FIX resolution without reopening the source logs --
 only a MsgType event-metadata change rebuilds it, because that changes its
 stored `eventtype`.
 
-`parse_fix` derives flat Instrument records from the same captured market
-messages it writes to `fix.market`; `market.instruments` is the reference-data
-table keyed by `symbolticker`.
+`parse_instruments` reads the rows `parse_fix` wrote to `fix.market` and
+versions `market.instruments` from them, keyed by `symbolticker`. It is a
+second reader of that table rather than a second writer of it: the FIX stage
+owns translation, the clock and the ticker, and holds no rule about how
+reference data is versioned.
 
 `books: false` skips the fold and writes only the Order and Execution events
 each FIX message carries -- and so creates no snapshots, no synthetic

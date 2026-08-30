@@ -8,10 +8,12 @@ import importlib
 import json
 import pathlib
 import sys
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from rekep import __version__
 from rekep.console import Console
+from rekep.deploy import TABLES, deploy
 from rekep.fields import Field, StructField
 from rekep.filesystems import read_bytes
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files
@@ -182,7 +184,7 @@ def _format_of(target: str | None) -> str:
 
 def _registry(arguments: argparse.Namespace) -> FixRegistry:
     """The store a registry command edits, offline and never scraping."""
-    return FixRegistry(cache_dir=arguments.store, offline=True)
+    return FixRegistry(cache_dir=arguments.store)
 
 
 def _write_json(document: Any) -> None:
@@ -272,7 +274,9 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    CONSOLE.ok(f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(
+        f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+    )
     return 0
 
 
@@ -285,7 +289,9 @@ def update_field(arguments: argparse.Namespace) -> int:
         fresh = record_copy(fresh)
         fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
     entry = registry.update_field(fresh)
-    CONSOLE.ok(f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(
+        f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+    )
     return 0
 
 
@@ -440,7 +446,7 @@ def _field_entry(arguments: argparse.Namespace) -> Field:
 
 def classify_keys(arguments: argparse.Namespace) -> int:
     """Count every key name a capture spells, and say what each one is."""
-    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    registry = FixRegistry(cache_dir=arguments.store)
     counts = count_files(
         arguments.source,
         pattern=arguments.pattern,
@@ -458,7 +464,7 @@ def classify_keys(arguments: argparse.Namespace) -> int:
 
 def apply_keys(arguments: argparse.Namespace) -> int:
     """Register what a report found, through the registry's own verbs."""
-    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    registry = FixRegistry(cache_dir=arguments.store)
     report = KeyReport.from_json(arguments.report)
     applied = apply_report(
         registry,
@@ -486,7 +492,7 @@ def run_task(arguments: argparse.Namespace) -> int:
     except ImportError as error:  # pragma: no cover - papermill is a dev tool
         raise ImportError(
             "running a task needs papermill and a kernel to run the notebook under: "
-            "uv run --with papermill --with ipykernel rekep task run ..."
+            "uv run --project python --group runner rekep task run ..."
         ) from error
 
     document = pathlib.Path(arguments.document).resolve()
@@ -506,13 +512,80 @@ def run_task(arguments: argparse.Namespace) -> int:
         kernel_name=arguments.kernel,
         progress_bar=False,
     )
-    for cell in executed.get("cells", []):
-        for output in cell.get("outputs", []):
-            text = output.get("data", {}).get("text/plain")
-            if text and cell is executed["cells"][-1]:
-                print(text)
+    _replay(executed)
     CONSOLE.ok(task.name)
     return 0
+
+
+def _replay(executed: Mapping[str, Any]) -> None:
+    """What the notebook said, where the person who ran it is looking.
+
+    Papermill captures a kernel's `stderr` into the executed document and
+    nothing else surfaces it, so a run at a terminal used to print one dict
+    and none of the records that say how it was reached. The records go back
+    to `stderr` -- they are the library's, and `Console` owns this stream's
+    styling -- and the last cell's value to `stdout`, which is what a pipe
+    into `jq` wants.
+    """
+    cells = executed.get("cells", [])
+    for cell in cells:
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "stream":
+                sys.stderr.write("".join(output.get("text", ())))
+            text = output.get("data", {}).get("text/plain")
+            if text and cell is cells[-1]:
+                print(text)
+
+
+def deploy_tables(arguments: argparse.Namespace) -> int:
+    """Create the pipeline's Iceberg tables ahead of the jobs that fill them.
+
+    Settings come from a task document when one is named, because the catalog
+    a deployment should create tables in is the catalog the pipeline will
+    write to -- naming it twice is how the two drift.
+    """
+    settings = _catalog_settings(arguments)
+    done = deploy(
+        settings["catalog"],
+        properties=settings["properties"],
+        table_properties=settings["table_properties"],
+        branch=settings["branch"],
+        tables=arguments.table or None,
+        dry_run=arguments.dry_run,
+    )
+    for table, outcome in done.items():
+        line = f"{table} {CONSOLE.glyph('arrow')} {outcome}"
+        (CONSOLE.warn if outcome == "missing" else CONSOLE.ok)(line)
+    _write_json({"catalog": settings["catalog"], "tables": done})
+    return 0
+
+
+def _catalog_settings(arguments: argparse.Namespace) -> dict[str, Any]:
+    """Catalog, its properties, table properties and branch, flags last."""
+    parameters: dict[str, Any] = {}
+    if arguments.document:
+        document = pathlib.Path(arguments.document).resolve()
+        parameters = dict(Task.from_yaml(str(document)).parameters)
+    settings = {
+        "catalog": arguments.catalog or parameters.get("catalog") or "default",
+        "properties": dict(parameters.get("catalog_properties") or {}),
+        "table_properties": dict(parameters.get("table_properties") or {}),
+        "branch": arguments.branch or parameters.get("branch"),
+    }
+    settings["properties"].update(_settings(arguments.property))
+    settings["table_properties"].update(_settings(arguments.table_property))
+    return settings
+
+
+def _settings(spelled: Sequence[str] | None) -> dict[str, str]:
+    """Repeated `NAME=VALUE` options as the mapping they spell."""
+    settings = {}
+    for option in spelled or ():
+        name, separator, value = option.partition("=")
+        if not separator:
+            raise ValueError(f"a property is name=value, not {option!r}")
+        settings[name] = value
+    return settings
 
 
 def _parameter(value: str) -> Any:
@@ -535,6 +608,7 @@ def _parser() -> argparse.ArgumentParser:
         description=__doc__.splitlines()[0],
         epilog="""examples:
   rekep fields load --target schemas/rekep/fixmsg.yaml
+  rekep iceberg deploy tasks/parse_fix/parse_fix.yml
   rekep fix registry check --store data/fix
   rekep fix shell --store data/fix""",
     )
@@ -566,6 +640,51 @@ def _parser() -> argparse.ArgumentParser:
     running.add_argument("--output", default=None, help="where to write the executed notebook")
     running.add_argument("--kernel", default="python3", help="Jupyter kernel to execute under")
     running.set_defaults(run=run_task)
+
+    iceberg = commands.add_parser(
+        "iceberg",
+        help="deploy the pipeline's tables",
+        description="Create the Iceberg namespaces and tables the pipeline writes.",
+    )
+    deploying = iceberg.add_subparsers(
+        dest="action", required=True, title="commands", metavar="COMMAND"
+    ).add_parser("deploy", help="create every declared table that is not there yet")
+    deploying.add_argument(
+        "document",
+        nargs="?",
+        default=None,
+        help="task YAML to read catalog, properties and branch from",
+    )
+    deploying.add_argument("--catalog", default=None, help="catalog name; overrides the document")
+    deploying.add_argument(
+        "--property",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="one catalog property; repeatable, applied over the document's",
+    )
+    deploying.add_argument(
+        "--table-property",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="one property every created table gets; repeatable",
+    )
+    deploying.add_argument("--branch", default=None, help="branch tables are created on")
+    deploying.add_argument(
+        "--table",
+        action="append",
+        default=None,
+        choices=[shape.table for shape in TABLES],
+        metavar="NAME",
+        help=f"deploy only this table; repeatable, one of {', '.join(_.table for _ in TABLES)}",
+    )
+    deploying.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="report which tables are missing without creating any",
+    )
+    deploying.set_defaults(run=deploy_tables)
 
     fields = commands.add_parser(
         "fields",

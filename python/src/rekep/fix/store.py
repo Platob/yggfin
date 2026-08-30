@@ -5,7 +5,9 @@ by the shard index, so the file holding a tag is arithmetic -- no index, no
 lookup table, no scan -- and a single-tag lookup reads one document rather than
 the dictionary. The tag space is sparse, and an empty shard is simply absent:
 fifteen files hold 6,098 tagged fields. Fields FIX never numbered have no tag
-to shard on and share `fields/named.json`, which holds three records.
+to shard on: they key by their name and share `999999`, the one shard index the
+arithmetic never reaches, so every field document is named the same way and
+nothing has to ask what kind of record it is about to read.
 
 Components stay one document per identity under `components/`, because they are
 keyed by name and there is no arithmetic to do.
@@ -56,15 +58,18 @@ from rekep.urls import LOCAL, Url
 FIELDS = "fields"
 COMPONENTS = "components"
 
-#: What a stored document may be named, the one a store is written in first.
-#: JSON, and measured: the dictionary is nearly a thousand documents and every
+#: What a stored document is named, and so what a store is written in. JSON,
+#: and measured: the dictionary is nearly a thousand documents and every
 #: process that imports this package parses a projection of it, where
-#: pure-Python YAML costs 25 seconds against a tenth of one for JSON. A store
-#: somebody wrote in YAML still reads, and converts itself the first time
-#: anything rewrites it -- the sibling under the other suffix is dropped with
-#: that write, so one identity never sits in a store twice.
-DOCUMENT_SUFFIXES: tuple[str, ...] = (".json", ".yaml")
-DOCUMENT_SUFFIX = DOCUMENT_SUFFIXES[0]
+#: pure-Python YAML costs 25 seconds against a tenth of one for JSON. One
+#: spelling, so a read is one open and a name is one document.
+DOCUMENT_SUFFIX = ".json"
+
+#: What a declaration a *person* hands in may be written in -- a field record
+#: dropped on `rekep fix add-field`, not a document this store wrote. A store
+#: is the format above; this is the courtesy at the edge, and the two being
+#: one tuple is what made a store read every document name twice.
+DECLARATION_SUFFIXES: tuple[str, ...] = (".json", ".yaml")
 
 
 #: Where the layout keeps what belongs to no single identity: the version
@@ -75,12 +80,20 @@ SESSIONS = "sessions"
 STORED = "stored"
 DECLARED = "declared"
 
-#: How many tags one shard holds, and where the fields FIX never numbered go.
-#: Five hundred: wide enough that the populated ranges are fifteen files
-#: rather than a hundred, narrow enough that a single-tag lookup parses a few
-#: hundred records instead of all 6,101.
+#: How many tags one shard holds. Five hundred: wide enough that the populated
+#: ranges are fifteen files rather than a hundred, narrow enough that a
+#: single-tag lookup parses a few hundred records instead of all 6,101.
 SHARD_SPAN = 500
-NAMED_FILE = f"{FIELDS}/named{DOCUMENT_SUFFIX}"
+
+#: The shard the fields FIX never numbered share. An index, not a name, so
+#: every field document is `fields/NNNNNN.json` under one rule and there is no
+#: second kind of document for a reader or a writer to test for. It sorts
+#: after every populated range, which is where a nameless-tag record belongs.
+NAMED_SHARD = 999_999
+
+#: The largest tag the shard arithmetic can carry without colliding with
+#: `NAMED_SHARD`. FIX's own tags stop five orders of magnitude below it.
+MAX_TAG = NAMED_SHARD * SHARD_SPAN - 1
 
 
 class Documents(Protocol):
@@ -131,33 +144,27 @@ class Documents(Protocol):
 
 
 def is_document(name: str) -> bool:
-    """Whether `name` is a stored document, whichever format it is written in."""
-    return name.endswith(DOCUMENT_SUFFIXES)
+    """Whether `name` is a stored document."""
+    return name.endswith(DOCUMENT_SUFFIX)
+
+
+def is_declaration(name: str) -> bool:
+    """Whether `name` is a declaration this can read, in either format."""
+    return name.endswith(DECLARATION_SUFFIXES)
 
 
 def document_stem(name: str) -> str:
     """`fields/party_role.json` -> `fields/party_role`; the name without a format."""
-    for suffix in DOCUMENT_SUFFIXES:
-        if name.endswith(suffix):
-            return name[: -len(suffix)]
-    return name
+    return name[: -len(DOCUMENT_SUFFIX)] if name.endswith(DOCUMENT_SUFFIX) else name
 
 
-def document_names(name: str) -> tuple[str, ...]:
-    """`name`, then the same document under every other format, in read order."""
-    stem = document_stem(name)
-    return tuple(f"{stem}{suffix}" for suffix in DOCUMENT_SUFFIXES)
-
-
-def document_text(payload: Mapping[str, Any], name: str = DOCUMENT_SUFFIX) -> str:
+def document_text(payload: Mapping[str, Any]) -> str:
     """One stored document's text. The one place the on-disk spelling is decided."""
-    if name.endswith(".yaml"):
-        return _yaml().safe_dump(dict(payload), sort_keys=False, allow_unicode=True)
     return json.dumps(payload, indent=1)
 
 
 def document_of(payload: bytes, name: str) -> Any:
-    """One stored document's text read back, by the format its name names.
+    """One supplied document read back, by the format its name names.
 
     A torn document raises `ValueError` whichever format it is in, because
     that is the one thing every caller here already handles: a half-written
@@ -165,16 +172,11 @@ def document_of(payload: bytes, name: str) -> Any:
     """
     if not name.endswith(".yaml"):
         return json.loads(payload.decode("utf-8"))
-    yaml = _yaml()
+    yaml = require("yaml", "yaml")
     try:
         return yaml.safe_load(payload.decode("utf-8"))
     except yaml.YAMLError as error:
-        raise ValueError(f"{name} is not a document this store can read: {error}") from error
-
-
-def _yaml() -> Any:
-    """The YAML reader, which only a store somebody wrote in YAML needs."""
-    return require("yaml", "yaml")
+        raise ValueError(f"{name} is not a document this can read: {error}") from error
 
 
 # -- the two places ----------------------------------------------------------
@@ -189,13 +191,6 @@ class DirectoryDocuments:
 
     def read(self, name: str) -> dict[str, Any] | None:
         """One document, or None for anything that cannot be read as one."""
-        for spelling in document_names(name):
-            found = self._read_one(spelling)
-            if found is not None:
-                return found
-        return None
-
-    def _read_one(self, name: str) -> dict[str, Any] | None:
         try:
             with self.filesystem.open_input_stream(self._path(name)) as stream:
                 return document_of(stream.read(), name)
@@ -212,17 +207,11 @@ class DirectoryDocuments:
         self.filesystem.create_dir(posixpath.dirname(path), recursive=True)
         scratch = f"{path}.tmp"
         with self.filesystem.open_output_stream(scratch) as stream:
-            stream.write(document_text(payload, name).encode())
+            stream.write(document_text(payload).encode())
         self.filesystem.move(scratch, path)
-        for stale in document_names(name):
-            if stale != name:
-                self._remove_one(stale)
 
     def remove(self, name: str) -> bool:
-        """Delete one document, whichever format holds it; False when absent."""
-        return any(self._remove_one(spelling) for spelling in document_names(name))
-
-    def _remove_one(self, name: str) -> bool:
+        """Delete one document; False when it is not there."""
         try:
             self.filesystem.delete_file(self._path(name))
         except (FileNotFoundError, OSError):
@@ -242,16 +231,11 @@ class DirectoryDocuments:
         return tuple(sorted(found))
 
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
-        """Every document under `prefix`, one file open each.
-
-        `_read_one` and not `read`: these names came off the directory, so each
-        already spells the format it is in and probing the others is a failed
-        open per document.
-        """
+        """Every document under `prefix`, one file open each."""
         return {
             name: document
             for name in self.names()
-            if name.startswith(prefix) and (document := self._read_one(name)) is not None
+            if name.startswith(prefix) and (document := self.read(name)) is not None
         }
 
     def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
@@ -293,28 +277,24 @@ class ArchiveDocuments:
     def read(self, name: str) -> dict[str, Any] | None:
         """One member, as the document it holds; None when it is not there."""
         held = self._members()
-        spelling = next((one for one in document_names(name) if one in held), None)
-        if spelling is None:
+        if name not in held:
             return None
         try:
             with zipfile.ZipFile(self.archive) as opened:
-                return document_of(opened.read(held[spelling]), spelling)
+                return document_of(opened.read(held[name]), name)
         except (OSError, ValueError, zipfile.BadZipFile):
             # A torn archive is a cold cache, not a dead registry.
             return None
 
     def write(self, name: str, payload: Mapping[str, Any]) -> None:
-        """Put one member in, replacing what was there under any format."""
-        stale = tuple(one for one in document_names(name) if one != name)
-        self._rewrite({name: document_text(payload, name)}, drop=stale)
+        """Put one member in, replacing what was there under that name."""
+        self._rewrite({name: document_text(payload)})
 
     def remove(self, name: str) -> bool:
         """Drop one member; False when the archive did not hold it."""
-        held = self._members()
-        stale = tuple(one for one in document_names(name) if one in held)
-        if not stale:
+        if name not in self._members():
             return False
-        self._rewrite({}, drop=stale)
+        self._rewrite({}, drop=(name,))
         return True
 
     def names(self) -> tuple[str, ...]:
@@ -369,7 +349,7 @@ class ArchiveDocuments:
         output = io.BytesIO()
         with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as fresh:
             for name in sorted(documents):
-                fresh.writestr(archive_member(name), document_text(documents[name], name))
+                fresh.writestr(archive_member(name), document_text(documents[name]))
         write_bytes(output.getvalue(), self.archive)
         self._cached_members = None
         self._synchronise()
@@ -394,7 +374,7 @@ class ArchiveDocuments:
         self._cached_members = found
         return found
 
-    def _rewrite(self, put: Mapping[str, str], drop: Sequence[str]) -> None:
+    def _rewrite(self, put: Mapping[str, str], drop: Sequence[str] = ()) -> None:
         """Rebuild the archive with `put` written and `drop` gone.
 
         Rewritten whole rather than appended to: a zip will happily hold two
@@ -459,13 +439,22 @@ def _archive_prefix(members: Sequence[str]) -> str:
 # -- the layout ---------------------------------------------------------------
 
 
-def shard_name(tag: int) -> str:
-    """The document holding one tag: `fields/000000.json` for tags 0 to 499.
+def field_document(key: int | str) -> str:
+    """The document holding one field key: `fields/000000.json` for tags 0-499.
 
-    `tag // SHARD_SPAN`, zero-padded, and that is the whole mapping: no index
-    in `versions.json`, no lookup table, no scan.
+    `tag // SHARD_SPAN` zero-padded, and `NAMED_SHARD` for a field FIX never
+    numbered, which keys by its name instead. That is the whole mapping: no
+    index in `versions.json`, no lookup table, no scan -- and one kind of
+    document, so nothing downstream asks whether a record has a tag to decide
+    where it is written or read.
     """
-    return f"{FIELDS}/{int(tag) // SHARD_SPAN:06d}{DOCUMENT_SUFFIX}"
+    if isinstance(key, int):
+        if not 0 <= key <= MAX_TAG:
+            raise ValueError(f"a FIX tag outside 0..{MAX_TAG} has no shard: {key}")
+        index = key // SHARD_SPAN
+    else:
+        index = NAMED_SHARD
+    return f"{FIELDS}/{index:06d}{DOCUMENT_SUFFIX}"
 
 
 @dataclasses.dataclass(eq=False)
@@ -561,7 +550,7 @@ class ShardedLayout:
         The whole point of the arithmetic: asking what tag 54 is opens
         `fields/000000.json` and nothing else.
         """
-        return self._shard(shard_name(int(tag))).get(int(tag))
+        return self._shard(field_document(int(tag))).get(int(tag))
 
     def _shard(self, name: str) -> dict[int | str, Field]:
         """One shard's records, read once and held."""
@@ -693,7 +682,7 @@ class ShardedLayout:
 
     def store_field(self, record: Field) -> str:
         """Write one field record, and name the document it landed in."""
-        name = field_document(record)
+        name = field_document(record.fix.key)
         shard = self._shard(name)
         shard[record.fix.key] = record
         self.documents.write(name, _shard_document(shard))
@@ -702,7 +691,7 @@ class ShardedLayout:
 
     def remove_field(self, key: int | str) -> bool:
         """Delete one field record by tag or folded name; False when absent."""
-        name = shard_name(key) if isinstance(key, int) else NAMED_FILE
+        name = field_document(key)
         shard = self._shard(name)
         if key not in shard:
             return False
@@ -743,7 +732,7 @@ class ShardedLayout:
         held = dict(self.field_records)
         written: set[int | str] = set()
         for member in fields:
-            key = _field_key(member)
+            key = member.fix.key
             record = fold_field(held.get(key), member, version)
             self.store_field(record)
             held[key] = record
@@ -799,26 +788,9 @@ class ShardedLayout:
                 self.store_component(entry)
 
 
-def field_document(record: Field) -> str:
-    """The document one field record belongs in: its shard, or `named.json`."""
-    tag = record.fix.tag
-    return shard_name(tag) if tag is not None else NAMED_FILE
-
-
 def _record_key(stored: str) -> int | str:
     """One shard key read back: a tag where it is one, a folded name otherwise."""
     return int(stored) if str(stored).isdigit() else fold(stored)
-
-
-def _field_key(member: Field) -> int | str:
-    """What makes two readings of a field the same field: its tag, else its name.
-
-    Its tag, when it has one: a version may rename a tag -- 64 is
-    `FutSettDate` through 4.3 and `SettlDate` after -- and a store that keyed
-    on the name would hold two records for one field, each half its history.
-    """
-    tag = member.fix.get("tag")
-    return int(tag) if tag else fold(member.name)
 
 
 def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
@@ -1100,7 +1072,7 @@ def collapse(
     readings: dict[int | str, list[tuple[str, Field]]] = {}
     for version in order:
         for member in fields.get(version, ()):
-            readings.setdefault(_field_key(member), []).append((version, member))
+            readings.setdefault(member.fix.key, []).append((version, member))
 
     collapses: list[Collapse] = []
     collisions: list[Collision] = []
@@ -1405,16 +1377,12 @@ def documents_of(
     component_records: Mapping[str, ComponentRecord],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
-    suffix: str = DOCUMENT_SUFFIX,
 ) -> dict[str, dict[str, Any]]:
     """A whole store as `{document name: document}`, ready to write.
 
     `declared` names the versions whose components have been read, however few
     each has: a version missing from it answers "nobody asked" rather than
     "this version declares none".
-
-    `suffix` is what the documents are named -- and so what they are written
-    in, since `document_text` reads the name.
     """
     documents: dict[str, dict[str, Any]] = {}
     index: dict[str, Any] = {}
@@ -1432,17 +1400,15 @@ def documents_of(
     if declared:
         index[DECLARED] = sorted(declared)
     if index:
-        documents[f"{document_stem(VERSIONS_FILE)}{suffix}"] = {
-            key: index[key] for key in sorted(index)
-        }
+        documents[VERSIONS_FILE] = {key: index[key] for key in sorted(index)}
     shards: dict[str, dict[int | str, Field]] = {}
     for record in field_records.values():
-        name = document_stem(field_document(record)) + suffix
+        name = field_document(record.fix.key)
         shards.setdefault(name, {})[record.fix.key] = record
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
     for slug, entry in component_records.items():
-        documents[f"{COMPONENTS}/{slug}{suffix}"] = entry.into_dict()
+        documents[f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}"] = entry.into_dict()
     return documents
 
 
@@ -1458,7 +1424,7 @@ def write_archive(
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(documents):
-            archive.writestr(archive_member(name), document_text(documents[name], name))
+            archive.writestr(archive_member(name), document_text(documents[name]))
     write_bytes(output.getvalue(), target)
     parsed = Url.from_string(os.fspath(target))
     return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()

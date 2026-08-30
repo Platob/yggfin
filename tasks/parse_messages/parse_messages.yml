@@ -3,9 +3,14 @@ notebook: parse_messages.ipynb
 parameters:
   project_root: .
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
-  # `s3a://` and `s3n://` name the same object with the same settings.
+  # `s3a://` and `s3n://` name the same object with the same settings. This
+  # location is resolved on its own, not through `catalog_properties`, so an
+  # endpoint or region for it comes from the URL or from `S3_*` in the
+  # environment -- see docs/storage/iceberg.md#what-an-s3-netloc-names.
   source: data/capture
   # MsgType metadata maps values to EventType codes before protocol translation.
+  # The FIX dictionary. A directory, a zip, or either on a bucket:
+  # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
   fix_dictionary: data/fix
   # Protocol syntax classification. Null uses the shipped default rules; keep
   # custom rules aligned with parse_fix. Rules may add literal nested-group
@@ -33,15 +38,16 @@ parameters:
   end: null
   # Optional recording-time batch window in nanoseconds.
   duration_ns: null
-  # AWS Glue with an S3 warehouse (replace the active local block):
+  # AWS Glue with an S3 warehouse (replace the active local block). Needs the
+  # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
+  # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog: rekep-production
   # catalog_properties:
   #   type: glue
   #   warehouse: s3://example-bucket/rekep/warehouse
-  #   glue.region: eu-west-1
-  #   s3.region: eu-west-1
+  #   glue.region: eu-west-1   # where the catalog lives
+  #   s3.region: eu-west-1     # where the warehouse bucket lives
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # S3_* process defaults and the standard AWS credential chain are supported.
   # Encryption at rest is the bucket's own default; `s3.sse.*` is refused
   # rather than ignored, because nothing below here can send it.
   catalog: rekep

@@ -20,7 +20,7 @@ from typing import Any, Self
 import pyarrow
 import pyarrow.compute as compute
 
-from rekep.enums import MIC, AssetKind, Currency
+from rekep.enums import MIC, AssetKind, Currency, SecurityIDSource
 from rekep.fields import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.registry import FixRegistry
@@ -106,6 +106,37 @@ class SymbolTicker:
         return found if found.symbolticker else cls.from_str(read("SymbolTicker") or "")
 
     @classmethod
+    def from_values(
+        cls,
+        *,
+        symbol: Any = None,
+        securityid: Any = None,
+        securityidsource: Any = None,
+        securityexchange: Any = None,
+        symbolticker: Any = None,
+        registry: FixRegistry | None = None,
+        version: str | None = None,
+    ) -> Self:
+        """Build from parts the caller already holds, with nothing to look up.
+
+        `from_entries` is for what a wire carried, where *finding* the four
+        parts among the entries is the work. A shape whose own members are
+        those parts was paying that search to be handed back the values it had
+        just passed in -- six registry-backed readings over a synthetic entry
+        list, per record. Measured over 20,000 instruments, that search was
+        the construction: 337 us a record became 4.
+        """
+        found = cls._from_parts(
+            securityid=securityid,
+            securityidsource=securityidsource,
+            symbol=symbol,
+            securityexchange=securityexchange,
+            registry=registry if registry is not None else FixRegistry.from_builtin(),
+            version=version,
+        )
+        return found if found.symbolticker else cls.from_str(str(symbolticker or ""))
+
+    @classmethod
     def into_arrow_array(
         cls,
         columns: Mapping[str, Any],
@@ -119,28 +150,20 @@ class SymbolTicker:
         symbol = _text_array(columns.get("symbol"), rows)
         exchange = _text_array(columns.get("securityexchange"), rows)
 
-        scheme = _scheme_arrow(source, selected)
         venue = _mic_arrow(exchange)
-        identifier = compute.and_(_present(securityid), _present(scheme))
-        qualified = compute.binary_join_element_wise(scheme, securityid, ":")
+        scheme = _scheme_arrow(source, selected)
+        readable = _readable_symbol_arrow(symbol)
         qualified = compute.if_else(
-            _present(venue),
-            compute.binary_join_element_wise(venue, qualified, ":"),
-            qualified,
-        )
-
-        readable = compute.if_else(
-            compute.equal(compute.utf8_lower(symbol), "[n/a]"),
+            compute.and_(_present(securityid), _present(scheme)),
+            compute.binary_join_element_wise(scheme, securityid, ":"),
             pyarrow.scalar(""),
-            symbol,
         )
-        readable = _forex_symbol_arrow(readable)
-        readable = compute.if_else(
-            compute.and_(_present(venue), _present(readable)),
-            compute.binary_join_element_wise(venue, readable, ":"),
-            readable,
+        found = compute.if_else(_present(readable), readable, qualified)
+        found = compute.if_else(
+            compute.and_(_present(venue), _present(found)),
+            compute.binary_join_element_wise(venue, found, ":"),
+            found,
         )
-        found = compute.if_else(identifier, qualified, readable)
         stored = _canonical_arrow(_text_array(columns.get("symbolticker"), rows))
         return compute.if_else(_present(found), found, stored)
 
@@ -195,13 +218,17 @@ class SymbolTicker:
     ) -> Self:
         source = str(securityidsource or "").strip()
         scheme = _scheme_name(registry, version, source) or source
+        readable = _readable_symbol(str(symbol or ""))
         value = _format_symbolticker(
             str(securityexchange or ""),
             scheme,
             str(securityid or ""),
             str(symbol or ""),
         )
-        return cls.from_str(value)
+        # Not `from_str`: these parts are already the ones it would go looking
+        # for, and re-reading the spelling would let a symbol carrying a colon
+        # -- `4:X` -- come back as the scheme and identifier it looks like.
+        return cls._from_formatted(value, readable)
 
     @classmethod
     def _from_formatted(cls, value: str, symbol: str | None = None) -> Self:
@@ -225,20 +252,42 @@ class SymbolTicker:
 
 @functools.lru_cache(maxsize=_CACHE_SIZE)
 def _format_symbolticker(mic: str, scheme: str, securityid: str, symbol: str) -> str:
-    """Format one normalized FIX identity tuple."""
+    """The first rung a row can fill, under the venue that named it.
+
+    `Symbol <55>` leads: it is what the desk, the venue and a reader all call
+    the instrument, and a capture that carries one carries it on every line an
+    identifier appears on. The qualified identifier is the rung for the lines
+    that carry no symbol at all.
+    """
     venue = _mic_name(mic)
-    identifier = securityid.strip()
-    if identifier and scheme:
-        return ":".join(part for part in (venue, scheme, identifier) if part)
+    for rung in (_readable_symbol(symbol), _qualified_identifier(scheme, securityid)):
+        if rung:
+            return ":".join(part for part in (venue, rung) if part)
+    return ""
+
+
+def _readable_symbol(symbol: str) -> str:
+    """One `Symbol <55>` as a ticker spells it; empty where it names nothing.
+
+    `[N/A]` is a feed writing "no symbol" in the field rather than leaving it
+    out, so it is the same absence as an empty one.
+    """
     readable = symbol.strip()
-    if readable.casefold() == "[n/a]":
-        readable = ""
-    if not readable:
+    if not readable or readable.casefold() == "[n/a]":
         return ""
     pair = _forex_pair(readable)
-    if pair is not None:
-        readable = f"{pair[0].code}/{pair[1].code}"
-    return ":".join(part for part in (venue, readable) if part)
+    return f"{pair[0].code}/{pair[1].code}" if pair is not None else readable
+
+
+def _qualified_identifier(scheme: str, securityid: str) -> str:
+    """`SCHEME:SecurityID`, or empty without both.
+
+    An identifier alone is not one: `US0378331005` and `037833100` name the
+    same instrument under two schemes, and a ticker missing the scheme cannot
+    say which it holds.
+    """
+    identifier = securityid.strip()
+    return f"{scheme}:{identifier}" if identifier and scheme else ""
 
 
 def _mic_name(value: Any) -> str:
@@ -296,6 +345,14 @@ def _mic_arrow(values: pyarrow.Array) -> pyarrow.Array:
     return compute.if_else(valid, rendered, pyarrow.scalar(""))
 
 
+def _readable_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """`_readable_symbol` over a column: `[N/A]` blanked, FX settled."""
+    named = compute.if_else(
+        compute.equal(compute.utf8_lower(values), "[n/a]"), pyarrow.scalar(""), values
+    )
+    return _forex_symbol_arrow(named)
+
+
 def _forex_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:
     """Common FX symbol spellings settled to `BASE/QUOTE` with kernels."""
     upper = compute.utf8_upper(values)
@@ -315,8 +372,15 @@ def _forex_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _scheme_name(registry: FixRegistry, version: str | None, value: Any) -> str:
-    """Registry name for one `SecurityIDSource` spelling."""
-    source = str(value or "").strip()
+    """Registry name for one `SecurityIDSource` spelling.
+
+    Through the code first, so a member, a wire value and the dictionary's own
+    symbol all reach one name -- and a ticker keeps spelling the scheme the way
+    the dictionary does, whatever the column beside it stores.
+    """
+    scheme = SecurityIDSource.from_str(value)
+    source = scheme.into_fix() if scheme is not SecurityIDSource.UNKNOWN else str(value or "")
+    source = source.strip()
     if not source:
         return ""
     try:

@@ -104,7 +104,7 @@ def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
 def test_book_translation_uses_the_selected_fix_registry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     seen = []
 
     def translated(_message, **declared):
@@ -465,7 +465,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
     ]
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
         for event in message.into_market_events(registry=registry):
@@ -535,7 +535,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
     ]
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
         for event in message.into_market_events(registry=registry):
@@ -567,7 +567,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 
 
 def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     builtin = FixRegistry.from_builtin()
     msg_type = builtin.field("MsgType")
     ord_status = builtin.field("OrdStatus")
@@ -778,7 +778,10 @@ def test_book_iteration_reads_the_event_source_once() -> None:
     assert pulled == [event.unix for event in events]
 
 
-def test_security_ids_define_distinct_tickers_even_with_the_same_symbol() -> None:
+def test_one_symbol_on_one_venue_is_one_ticker_whatever_ids_it_carries() -> None:
+    """The other cost of leading with the symbol: two instruments a venue
+    happens to spell alike are one ticker, because the identifier that told
+    them apart is no longer what identity is taken over."""
     first = Instrument(
         symbol="ABC",
         securityexchange="XPAR",
@@ -792,25 +795,24 @@ def test_security_ids_define_distinct_tickers_even_with_the_same_symbol() -> Non
         securityidsource="1",
     )
 
-    assert [known.symbolticker for known in (first, second)] == [
-        "XPAR:CUSIP:111111111",
-        "XPAR:CUSIP:222222222",
-    ]
-    assert first.xhash != second.xhash
+    assert [known.symbolticker for known in (first, second)] == ["XPAR:ABC", "XPAR:ABC"]
+    assert first.xhash == second.xhash
 
 
-def test_a_security_id_earns_the_preferred_ticker_over_a_symbol() -> None:
-    weak = Instrument(symbol="ABC", securityexchange="XPAR")
-    strong = Instrument(
+def test_an_identifier_beside_a_symbol_changes_no_ticker() -> None:
+    """A line that carries more says the same thing: the symbol under its
+    venue, so a feed that starts sending `SecurityID` does not restate every
+    instrument it had already named."""
+    bare = Instrument(symbol="ABC", securityexchange="XPAR")
+    identified = Instrument(
         symbol="ABC",
         securityexchange="XPAR",
         securityid="111111111",
         securityidsource="1",
     )
 
-    assert weak.symbolticker == "XPAR:ABC"
-    assert strong.symbolticker == "XPAR:CUSIP:111111111"
-    assert strong.xhash != weak.xhash
+    assert bare.symbolticker == identified.symbolticker == "XPAR:ABC"
+    assert bare.xhash == identified.xhash
 
 
 def test_instrument_altids_hold_reference_schemes_and_lifecycle_fields() -> None:
@@ -841,7 +843,7 @@ def test_a_security_id_only_instrument_uses_its_scheme_ticker() -> None:
     assert identified.symbolticker == "ISINNumber:US1234567890"
 
 
-def test_a_shared_security_id_is_one_ticker_despite_symbol_spellings() -> None:
+def test_two_symbol_spellings_of_one_security_id_are_two_tickers() -> None:
     first = Instrument(
         symbol="BTC-USD",
         securityid="US1234567890",
@@ -862,7 +864,7 @@ def test_a_shared_security_id_is_one_ticker_despite_symbol_spellings() -> None:
         )
     )
 
-    assert [known.symbolticker for known in instruments] == ["ISINNumber:US1234567890"]
+    assert [known.symbolticker for known in instruments] == ["BTC-USD", "XBT-USD"]
     assert instruments[0].symbol == "BTC-USD"
 
 
@@ -1634,7 +1636,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 2.0
 
 
-def test_a_shared_security_id_reference_names_one_book() -> None:
+def test_two_symbol_spellings_of_one_security_id_name_two_books() -> None:
     first = Instrument(
         symbol="BTC-USD",
         securityexchange="XCME",
@@ -1654,12 +1656,12 @@ def test_a_shared_security_id_reference_names_one_book() -> None:
     folding = BookIterator.from_events(events, snapshot_every=0)
 
     books = list(folding.books)
-    assert len(folding.folding) == 1
-    assert {book.instrumentxhash for book in books} == {first.xhash}
-    assert first.xhash == second.xhash
+    assert len(folding.folding) == 2
+    assert {book.instrumentxhash for book in books} == {first.xhash, second.xhash}
+    assert first.xhash != second.xhash
 
 
-def test_a_security_id_ticker_supersedes_the_symbol_fallback() -> None:
+def test_an_identifier_beside_the_symbol_keeps_one_book() -> None:
     canonical = Instrument(symbol="BTC-USD", securityexchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
@@ -1667,7 +1669,7 @@ def test_a_security_id_ticker_supersedes_the_symbol_fallback() -> None:
         securityid="US1234567890",
         securityidsource="4",
     )
-    assert richer.xhash != canonical.xhash
+    assert richer.xhash == canonical.xhash
     folding = BookIterator.from_events(
         [order(BASE, richer, Side.BID, 100.0, 1.0, "B1")], snapshot_every=0
     )
@@ -1675,7 +1677,7 @@ def test_a_security_id_ticker_supersedes_the_symbol_fallback() -> None:
     (book,) = folding
     (nested,) = book.deltas
     assert book.instrumentxhash == nested.instrumentxhash == richer.xhash
-    assert book.instrumentxhash != canonical.xhash
+    assert book.instrumentxhash == canonical.xhash
     assert nested.xhash == Order.hash_of(hash_bytes_of(richer.xhash), nested.mic, "B1", nested.side)
 
 
@@ -2054,7 +2056,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
     from rekep.market.fix_arrow import flat_market_positions
 
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     plain = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",
@@ -2111,7 +2113,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     """A cancel-reject's OrdStatus, an intent link and settlement facts read
     identically flat and scalar -- and the batch is flat-eligible, so the
     equality is between two live paths and not one falling back."""
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     linked = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",

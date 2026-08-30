@@ -22,6 +22,8 @@ from rekep.enums import (
     EventType,
     MarketKind,
     OptionKind,
+    Protocol,
+    SecurityIDSource,
     Side,
     State,
     TimeInForce,
@@ -52,6 +54,8 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         EventType,
         MarketKind,
         OptionKind,
+        Protocol,
+        SecurityIDSource,
         Side,
         State,
         TimeInForce,
@@ -78,6 +82,33 @@ def test_a_valid_unlisted_mic_registers_once_and_round_trips_from_storage() -> N
     assert first is MIC.from_str("21XX")
     assert MIC.from_int(int(first)) is first
     assert first.code == "21XX", "digits are valid ISO 10383 code characters"
+
+
+def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
+    """The vocabulary belongs to the logs: the shipped names are compiled, and
+    a desk's own rule name registers on the same eight bytes every one uses."""
+    assert int(Protocol.FIX) == int.from_bytes(b"FIX".ljust(8, b"\0"), "big")
+    assert Protocol.FIX.code == Protocol.FIX.into_fix() == str(Protocol.FIX) == "FIX"
+    own = Protocol.from_str(" venue ")
+    assert own is Protocol.from_str("VENUE")
+    assert Protocol.from_int(int(own)) is own
+    assert int(Protocol.FIX) < int(Protocol.FIXML), "and the codes order as the names do"
+    assert Protocol.from_str("VENUEBRIDGE") is Protocol.UNKNOWN, "eight bytes is the ceiling"
+    assert Protocol.from_int(-1) is Protocol.UNKNOWN
+    # `_canonical` upper-cases, so a stored lower-case spelling must not read
+    # back as a second member beside the one `from_str` folds to.
+    assert Protocol.from_int(Protocol._pack("fix")) is Protocol.UNKNOWN
+    assert Protocol.from_str("FIX4.2").code == "FIX4.2", "a version in the name still packs"
+
+
+def test_a_compiled_venue_renders_in_a_column_where_a_learnt_one_cannot() -> None:
+    """Which is the whole reason the common venues are compiled: `from_int`
+    names any well-formed code, but the column renderer only knows the members
+    the class declares, and the two must not disagree on the same bytes."""
+    stored = pyarrow.array([int(MIC.XPAR), int(MIC.from_str("ABCD"))], pyarrow.int32())
+
+    assert [MIC.from_int(code).code for code in stored.to_pylist()] == ["XPAR", "ABCD"]
+    assert MIC.into_arrow_array(stored).to_pylist() == ["XPAR", None]
 
 
 def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
@@ -132,6 +163,12 @@ def test_a_vocabulary_that_does_not_band_is_its_own_band() -> None:
     assert Side.BUY.band is Side.BUY
     assert Currency.USD.band is Currency.USD
     assert MIC.XOFF.band is MIC.XOFF
+    # One compiled code lands on a hundred boundary by arithmetic accident, so
+    # `_bands` reads it as a floor. Pinned rather than avoided: `band` asks
+    # "what does this code broadly mean", which no venue vocabulary answers,
+    # and dropping a real exchange over a modulus would be the worse trade.
+    assert int(MIC.XCBT) % MIC.WIDTH == 0
+    assert MIC.from_str("XCBU").band is MIC.XCBT
     assert State.FILLED.band is State.DONE, "while a ranked one still bands"
     assert TimeInForce.IOC.band is TimeInForce.IMMEDIATE, "ranks are what band, not width"
 
@@ -233,10 +270,113 @@ SIDE_CODES = {
     "UNDISCLOSED": int.from_bytes(b"UNDS", "big"),
 }
 
+#: The same, for the venue a row belongs to: the operating MICs this package
+#: compiles. A registered code is the feed's own and is pinned by nothing
+#: here, because nothing here declares it.
+MIC_CODES = {
+    "UNKNOWN": 0,
+    "XOFF": int.from_bytes(b"XOFF", "big"),
+    "XXXX": int.from_bytes(b"XXXX", "big"),
+    "XPAR": int.from_bytes(b"XPAR", "big"),
+    "XAMS": int.from_bytes(b"XAMS", "big"),
+    "XBRU": int.from_bytes(b"XBRU", "big"),
+    "XLIS": int.from_bytes(b"XLIS", "big"),
+    "XMIL": int.from_bytes(b"XMIL", "big"),
+    "XDUB": int.from_bytes(b"XDUB", "big"),
+    "XOSL": int.from_bytes(b"XOSL", "big"),
+    "XETR": int.from_bytes(b"XETR", "big"),
+    "XFRA": int.from_bytes(b"XFRA", "big"),
+    "XLON": int.from_bytes(b"XLON", "big"),
+    "XSWX": int.from_bytes(b"XSWX", "big"),
+    "XMAD": int.from_bytes(b"XMAD", "big"),
+    "XSTO": int.from_bytes(b"XSTO", "big"),
+    "XCSE": int.from_bytes(b"XCSE", "big"),
+    "XHEL": int.from_bytes(b"XHEL", "big"),
+    "XWBO": int.from_bytes(b"XWBO", "big"),
+    "XEUR": int.from_bytes(b"XEUR", "big"),
+    "XLME": int.from_bytes(b"XLME", "big"),
+    "IFEU": int.from_bytes(b"IFEU", "big"),
+    "XNYS": int.from_bytes(b"XNYS", "big"),
+    "XNAS": int.from_bytes(b"XNAS", "big"),
+    "ARCX": int.from_bytes(b"ARCX", "big"),
+    "BATS": int.from_bytes(b"BATS", "big"),
+    "XCBO": int.from_bytes(b"XCBO", "big"),
+    "IEXG": int.from_bytes(b"IEXG", "big"),
+    "XCME": int.from_bytes(b"XCME", "big"),
+    "XCBT": int.from_bytes(b"XCBT", "big"),
+    "XNYM": int.from_bytes(b"XNYM", "big"),
+    "XCEC": int.from_bytes(b"XCEC", "big"),
+    "IFUS": int.from_bytes(b"IFUS", "big"),
+    "XTSE": int.from_bytes(b"XTSE", "big"),
+    "XTKS": int.from_bytes(b"XTKS", "big"),
+    "XHKG": int.from_bytes(b"XHKG", "big"),
+    "XSES": int.from_bytes(b"XSES", "big"),
+    "XASX": int.from_bytes(b"XASX", "big"),
+    "XSHG": int.from_bytes(b"XSHG", "big"),
+    "XSHE": int.from_bytes(b"XSHE", "big"),
+    "XKRX": int.from_bytes(b"XKRX", "big"),
+    "XNSE": int.from_bytes(b"XNSE", "big"),
+    "XBOM": int.from_bytes(b"XBOM", "big"),
+    "XJSE": int.from_bytes(b"XJSE", "big"),
+}
+
+#: The same, for the scheme an identifier is issued under. The codes are
+#: this package's -- four bytes cannot hold
+#: `FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER` -- while the wire values they
+#: answer to stay the dictionary's, which `FIX_CODED` below checks.
+SECURITY_ID_SOURCE_CODES = {
+    "UNKNOWN": 0,
+    "CUSIP": int.from_bytes(b"CUSP".ljust(4, b"\0"), "big"),
+    "SEDOL": int.from_bytes(b"SEDL".ljust(4, b"\0"), "big"),
+    "QUIK": int.from_bytes(b"QUIK".ljust(4, b"\0"), "big"),
+    "ISIN": int.from_bytes(b"ISIN".ljust(4, b"\0"), "big"),
+    "RIC": int.from_bytes(b"RIC".ljust(4, b"\0"), "big"),
+    "ISO_CURRENCY": int.from_bytes(b"CCY".ljust(4, b"\0"), "big"),
+    "ISO_COUNTRY": int.from_bytes(b"CTRY".ljust(4, b"\0"), "big"),
+    "EXCHANGE_SYMBOL": int.from_bytes(b"EXCH".ljust(4, b"\0"), "big"),
+    "CTA": int.from_bytes(b"CTA".ljust(4, b"\0"), "big"),
+    "BLOOMBERG": int.from_bytes(b"BBG".ljust(4, b"\0"), "big"),
+    "WERTPAPIER": int.from_bytes(b"WKN".ljust(4, b"\0"), "big"),
+    "DUTCH": int.from_bytes(b"DUTC".ljust(4, b"\0"), "big"),
+    "VALOREN": int.from_bytes(b"VALO".ljust(4, b"\0"), "big"),
+    "SICOVAM": int.from_bytes(b"SICO".ljust(4, b"\0"), "big"),
+    "BELGIAN": int.from_bytes(b"BELG".ljust(4, b"\0"), "big"),
+    "COMMON": int.from_bytes(b"COMN".ljust(4, b"\0"), "big"),
+    "CLEARING_HOUSE": int.from_bytes(b"CLRH".ljust(4, b"\0"), "big"),
+    "ISDA_FPML_SPEC": int.from_bytes(b"ISDA".ljust(4, b"\0"), "big"),
+    "OPRA": int.from_bytes(b"OPRA".ljust(4, b"\0"), "big"),
+    "ISDA_FPML_URL": int.from_bytes(b"FPML".ljust(4, b"\0"), "big"),
+    "LETTER_OF_CREDIT": int.from_bytes(b"LOC".ljust(4, b"\0"), "big"),
+    "MARKETPLACE": int.from_bytes(b"MKTP".ljust(4, b"\0"), "big"),
+    "MARKIT_RED_ENTITY": int.from_bytes(b"RDEC".ljust(4, b"\0"), "big"),
+    "MARKIT_RED_PAIR": int.from_bytes(b"RDPC".ljust(4, b"\0"), "big"),
+    "CFTC_COMMODITY": int.from_bytes(b"CFTC".ljust(4, b"\0"), "big"),
+    "ISDA_COMMODITY": int.from_bytes(b"ICRP".ljust(4, b"\0"), "big"),
+    "FIGI": int.from_bytes(b"FIGI".ljust(4, b"\0"), "big"),
+    "LEI": int.from_bytes(b"LEI".ljust(4, b"\0"), "big"),
+    "SYNTHETIC": int.from_bytes(b"SYNT".ljust(4, b"\0"), "big"),
+    "FIDESSA": int.from_bytes(b"FIDM".ljust(4, b"\0"), "big"),
+    "INDEX_NAME": int.from_bytes(b"INDX".ljust(4, b"\0"), "big"),
+    "UNIFORM_SYMBOL": int.from_bytes(b"UNIF".ljust(4, b"\0"), "big"),
+    "DIGITAL_TOKEN": int.from_bytes(b"DTI".ljust(4, b"\0"), "big"),
+}
+
 DIRECTION_CODES = {
     "UNKNOWN": 0,
     "SENT": 1_397_050_964,
     "RECV": 1_380_270_934,
+}
+
+#: The same, for the protocol a parsed line carries. Only the names this
+#: package ships: an open vocabulary's registered codes are the feed's, and a
+#: feed's own name is pinned by the rule document that declares it.
+PROTOCOL_CODES = {
+    "UNKNOWN": 0,
+    "FIX": int.from_bytes(b"FIX".ljust(8, b"\0"), "big"),
+    "FIXML": int.from_bytes(b"FIXML".ljust(8, b"\0"), "big"),
+    "UL": int.from_bytes(b"UL".ljust(8, b"\0"), "big"),
+    "MISC": int.from_bytes(b"MISC".ljust(8, b"\0"), "big"),
+    "OTHER": int.from_bytes(b"OTHER".ljust(8, b"\0"), "big"),
 }
 
 
@@ -250,6 +390,33 @@ def test_the_side_codes_are_the_ones_on_disk() -> None:
 
 def test_the_direction_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Direction} == DIRECTION_CODES
+
+
+def test_the_protocol_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in Protocol} == PROTOCOL_CODES
+
+
+def test_the_security_id_source_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in SecurityIDSource} == SECURITY_ID_SOURCE_CODES
+
+
+def test_a_scheme_the_dictionary_does_not_enumerate_registers_itself() -> None:
+    """A desk's own reference system is a scheme like any other, and the
+    dictionary cannot know it -- so the vocabulary is open, and the code it
+    stores is the one it was handed."""
+    own = SecurityIDSource.from_str("desk")
+
+    assert own.code == "DESK"
+    assert SecurityIDSource.from_int(int(own)) is own
+    assert own not in set(SecurityIDSource), "and it is not a compiled member"
+    assert SecurityIDSource.from_str("TOOLONG") is SecurityIDSource.UNKNOWN
+
+
+def test_the_mic_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in MIC} == MIC_CODES
+    assert all(member.name == member.code for member in MIC if member.code), (
+        "a MIC member is spelled by the code it is"
+    )
 
 
 def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
@@ -291,7 +458,12 @@ def test_no_two_members_share_a_fix_character(declared: type) -> None:
 #: FIX field says whether a row is an order or a book -- and the other two are
 #: read from several tags at once. `AssetKind` is not here either: its letters
 #: are ISO 10962's, and `CFICode <461>` enumerates nothing.
-FIX_CODED = ((Side, "Side"), (TimeInForce, "TimeInForce"), (OptionKind, "PutOrCall"))
+FIX_CODED = (
+    (Side, "Side"),
+    (TimeInForce, "TimeInForce"),
+    (OptionKind, "PutOrCall"),
+    (SecurityIDSource, "SecurityIDSource"),
+)
 
 
 @pytest.mark.parametrize(

@@ -451,10 +451,10 @@
       }
       const valueCodes = [...declared.values()];
       const encoded = encodings(field);
-      const source =
-        field.tag === undefined
-          ? "fields/named.json"
-          : `fields/${String(Math.floor(Number(field.tag) / 500)).padStart(6, "0")}.json`;
+      // `tag // 500`, and the shard no tag reaches for a field FIX never
+      // numbered -- the same arithmetic the store writes by.
+      const shard = field.tag === undefined ? 999999 : Math.floor(Number(field.tag) / 500);
+      const source = `fields/${String(shard).padStart(6, "0")}.json`;
       const componentReferences = list(field.components);
       const messageReferences = list(field.used_in);
       fieldDetail.innerHTML = `<header>
@@ -467,7 +467,6 @@
           <dt>Datatype</dt><dd><code>${escape(field.type || "—")}</code></dd>
           <dt>Versions</dt><dd>${chips(field.versions)}</dd>
           ${field.column ? `<dt>Column</dt><dd><code>${escape(field.column)}</code></dd>` : ""}
-          ${field.kind ? `<dt>Kind</dt><dd>${badge(field.kind)}</dd>` : ""}
           ${field.note ? `<dt>Note</dt><dd>${escape(field.note)}</dd>` : ""}
           ${aliasDefinition(field.aliases)}
         </dl>

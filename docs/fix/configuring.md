@@ -78,7 +78,9 @@ protocols:
 the keys each payload holds, then known operational traffic as `MISC`, then
 everything else as `OTHER`. `entry_separator` fixes one indexed-entry
 delimiter; `extra_entry_separators` extends literal auto-detection for that
-protocol.
+protocol. A rule's `protocol` is a [`Protocol`](../enums/protocol.md) code, so
+a name of its own is at most eight bytes of `[A-Z0-9._-]` and anything else is
+refused when the rule set is read.
 
 ## Which event a payload represents
 
@@ -181,7 +183,7 @@ midnight in the `timestamp[us, tz=UTC]` column the contract fixes.
 from rekep import FieldRules, FixCodec, FixRegistry
 
 codec = FixCodec(
-    registry=FixRegistry(cache_dir="data/fix", offline=True),
+    registry=FixRegistry(cache_dir="data/fix"),
     fields=FieldRules.from_dict({"rules": [{"field": "9999", "type": "timestamp[us, tz=UTC]"}]}),
 )
 ```
@@ -207,7 +209,7 @@ null_values: ["", "null", "<null>", "n/a"]
 | `technical_plugins` | parsed `plugincode` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
-| `protocols` | `Message.protocolcode`, then `FixCodec.rules` | both parse stages |
+| `protocols` | `Message.protocol`, then `FixCodec.rules` | both parse stages |
 | `null_values` | `FixCodec.null_values` | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |
 | `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |

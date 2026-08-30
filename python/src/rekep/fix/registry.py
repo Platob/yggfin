@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import dataclasses
 import hashlib
 import html
@@ -20,7 +21,7 @@ import urllib.request
 import warnings
 import zipfile
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from functools import cache, cached_property, lru_cache
+from functools import cached_property, lru_cache
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -30,7 +31,7 @@ from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field, column_name, newest_rank
 from rekep.fields.metadata import encoded_key, values_of
-from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
+from rekep.filesystems import local_path, read_bytes, resolve, spill_path, write_bytes
 from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
@@ -219,6 +220,64 @@ TIERS: tuple[str, ...] = (_CANONICAL, _ALIASED)
 #: Where a field FIX never numbered sorts among the ones it did: after all of
 #: them, in one place, rather than at tag zero beside `BeginString`.
 _NO_TAG = 1 << 31
+
+
+#: The dictionary every unconfigured lookup resolves through, and the one
+#: thing `set_builtin` moves. Held here rather than in a `functools.cache` on
+#: `from_builtin`, because a cache keyed on the arguments cannot be *replaced*
+#: -- only cleared -- and an installed default is a value, not a memo.
+_BUILTIN: Any = None
+
+
+#: What memoizes an answer derived from the default under a key that does not
+#: mention it, as `module, attribute path`. Everything else either keys on the
+#: registry object -- and so misses a new default by construction -- or
+#: resolves per call. Read out of `sys.modules` rather than imported: this
+#: runs while `rekep.fix.columns` is still executing its own module body the
+#: first time a default is installed, and a module nobody has imported yet has
+#: nothing cached to forget.
+_BUILTIN_VIEWS: tuple[tuple[str, str], ...] = (
+    ("rekep.text.fixmsg", "FixMsg.into_registry"),
+    ("rekep.fix.columns", "_schemes"),
+    ("rekep.market.fix", "_tag_of"),
+    ("rekep.market.fix", "MarketTags.standard"),
+    ("rekep.market.ticker", "SymbolTicker.from_str"),
+)
+
+
+def _forget_builtin_views() -> None:
+    """Drop what memoized the previous default without holding it in a key."""
+    for name, path in _BUILTIN_VIEWS:
+        module = sys.modules.get(name)
+        if module is None:
+            continue
+        held: Any = module
+        for step in path.split("."):
+            held = getattr(held, step, None)
+            if held is None:
+                break
+        clear = getattr(held, "cache_clear", None)
+        if clear is not None:
+            clear()
+    columns = sys.modules.get("rekep.fix.columns")
+    if columns is not None and hasattr(columns, "_REGISTRY"):
+        # Read by `_schemes`, which the loop above only emptied.
+        columns._REGISTRY = _BUILTIN
+
+
+def remote_cache() -> pathlib.Path:
+    """Where a store this machine cannot open a file on is kept once fetched.
+
+    Beside the default store rather than inside it: what lands here is a copy
+    of somebody else's dictionary, reused across processes by identity and
+    size. A `TemporaryDirectory` would make every process fetch it again --
+    the whole point of pointing `cache_dir` at a bucket is that the fetch
+    happens once.
+
+    A function and not a constant, so it follows `CACHE_DIRECTORY` wherever a
+    caller has moved it.
+    """
+    return CACHE_DIRECTORY.with_name(f"{CACHE_DIRECTORY.name}-remote")
 
 
 def builtin_projection() -> str:
@@ -534,18 +593,6 @@ class FixRegistry(Convertible):
     retries: int = 6
     backoff: float = 2.0
 
-    #: Whether this registry may reach the site at all. False is the default
-    #: and what a person at a prompt wants: ask for `4.4`, get `4.4`, paying
-    #: for one scrape at construction and never again.
-    #:
-    #: True is what a **pipeline** wants, and it is not the same wish. A parse
-    #: that meets its first bridge line must not answer it by starting a
-    #: fourteen-thousand-page scrape in the middle of a batch -- and because the
-    #: only scrape happens while this is being built, a pipeline that got past
-    #: construction never meets one. An offline registry with no store serves
-    #: the packaged projection and says so.
-    offline: bool = False
-
     #: How long a local store may go without being checked against upstream,
     #: in seconds. `0` -- the default -- never refetches: the local copy is
     #: what this registry serves, which is the whole of what "offline-first"
@@ -603,11 +650,54 @@ class FixRegistry(Convertible):
             if self.__dict__["_registry_token"] and source.scheme == "http":
                 raise ValueError("registry_token requires an HTTPS registry_url")
             self.registry_url = source.into_string()
+        named = self.cache_dir is not None
         if self.cache_dir is None:
             self.cache_dir = CACHE_DIRECTORY
         if self.cache_ttl < 0:
             raise ValueError(f"a FIX registry cache TTL cannot be negative: {self.cache_ttl}")
+        # Asked once, of the location it was pointed at, before anything here
+        # can write to it. Asked again later it would answer differently the
+        # moment a scrape wrote its first document, and stop the scrape it is
+        # inside.
+        self.__dict__["_found_a_store"] = named or bool(self._documents.names())
         self.__dict__["_installed"] = self.bootstrap()
+
+    @property
+    def offline(self) -> bool:
+        """Whether this registry answers from its store alone.
+
+        Inferred rather than declared, and inferred from the one thing that
+        says it: which store this registry was pointed at. Naming a
+        `cache_dir` *is* saying where the answers come from -- `data/fix.zip`,
+        a directory a worker mounts, a bucket -- so a registry that was given
+        one serves it, warm or cold, and never reaches a source. That is what
+        a pipeline needs and what every caller used to have to remember to
+        ask for.
+
+        The default store, `~/.config/fix`, is the only one nobody chose. Cold,
+        it may fill itself, and says what that will cost before it starts;
+        once it holds documents it answers from them like any other.
+
+        A fetch verb -- `scrape`, `rebuild`, `fields(refresh=True)`, a
+        `cache_ttl` that came due -- opens the door explicitly. Nothing else
+        does, so no read can turn into a fourteen-thousand-page scrape.
+        """
+        return self.__dict__.get("_found_a_store", False)
+
+    @property
+    def _serves_stored(self) -> bool:
+        """`offline`, unless a fetch verb has opened the door right now."""
+        return self.offline and not self.__dict__.get("_may_fetch")
+
+    @contextlib.contextmanager
+    def _fetching(self) -> Iterator[None]:
+        """The window in which this registry may reach its sources."""
+        held = self.__dict__.get("_may_fetch", 0)
+        self.__dict__["_may_fetch"] = held + 1
+        try:
+            yield
+        finally:
+            self.__dict__["_may_fetch"] = held
 
     @property
     def revision(self) -> int:
@@ -615,17 +705,59 @@ class FixRegistry(Convertible):
         return self.__dict__.get("_revision", 0)
 
     @classmethod
-    @cache
     def from_builtin(cls, cache_ttl: float = 0.0) -> Self:
-        """The packaged standard projection and rekep vocabulary.
+        """The default dictionary every unconfigured lookup resolves through.
 
-        `cache_ttl` above zero makes this registry check its age against the
-        configured sources before serving -- which needs the network, so it also lifts
-        `offline`. Zero, the default, is the packaged copy and nothing else.
+        The packaged standard projection and rekep vocabulary, unless
+        `set_builtin` installed another. `cache_ttl` above zero builds a fresh
+        registry that checks its age against the configured sources before
+        serving -- which reaches the network, so it is never the installed
+        default. Zero, the default, is the one held below.
+        """
+        held = _BUILTIN
+        if cache_ttl:
+            return cls._checked_builtin(cache_ttl)
+        if held is not None and isinstance(held, cls):
+            return held
+        return cls.set_builtin(cls._checked_builtin(0.0))
+
+    @classmethod
+    def set_builtin(cls, registry: Self | None = None) -> Self:
+        """Install the default `from_builtin` hands back, and return it.
+
+        None restores the packaged projection. The registry has to carry
+        rekep's own vocabulary -- the twenty-seven identities every product
+        contract is declared against -- so an installed one that does not is
+        refused here rather than reported as a missing field halfway through a
+        parse.
+
+        Its scope is what an *unconfigured* lookup resolves through:
+        `FixMsg().registry`, `FixMsg.into_codec()`, `MarketTags.of()`,
+        `FieldAccess.of()`, `Ascii32`'s declaration. It is deliberately not
+        the published Arrow contracts -- `rekep.fix.columns` reads the default
+        while its module body runs, and those declarations are what
+        `schemas/rekep/*.yaml` publishes. Call this at startup, before the
+        first parse; calling it mid-pipeline moves what later rows resolve
+        through and leaves the rows already parsed reading the old one.
         """
         from rekep.fix.rekep import rekep_is_registered
 
-        registry = cls(cache_dir=builtin_projection(), offline=not cache_ttl, cache_ttl=cache_ttl)
+        global _BUILTIN
+        installed = cls._checked_builtin(0.0) if registry is None else registry
+        if not rekep_is_registered(installed):
+            raise RuntimeError("the FIX registry lacks rekep's declared vocabulary")
+        held = _BUILTIN
+        _BUILTIN = installed
+        if held is not None and held is not installed:
+            _forget_builtin_views()
+        return installed
+
+    @classmethod
+    def _checked_builtin(cls, cache_ttl: float) -> Self:
+        """The packaged projection, refusing one that lost rekep's vocabulary."""
+        from rekep.fix.rekep import rekep_is_registered
+
+        registry = cls(cache_dir=builtin_projection(), cache_ttl=cache_ttl)
         if not rekep_is_registered(registry):
             raise RuntimeError("the packaged FIX registry lacks rekep's declared vocabulary")
         return registry
@@ -637,7 +769,7 @@ class FixRegistry(Convertible):
         **configuration: Any,
     ) -> Self:
         """Scrape a fresh registry, resuming pages, then replace one local directory."""
-        reserved = {"cache_dir", "filesystem", "offline"} & configuration.keys()
+        reserved = {"cache_dir", "filesystem"} & configuration.keys()
         if reserved:
             raise TypeError(f"scrape configures {sorted(reserved)} through dump_folder")
         location = Url.from_string(os.fspath(dump_folder or CACHE_DIRECTORY))
@@ -656,7 +788,7 @@ class FixRegistry(Convertible):
         with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
             root = pathlib.Path(scratch)
             staged = root / target.name
-            source = cls(cache_dir=staged, offline=False, **configuration)
+            source = cls(cache_dir=staged, **configuration)
             source._source_page_cache = page_cache
             report = source.rebuild()
             source._restore_local_declarations(local_fields, local_components, local_overlays)
@@ -671,7 +803,7 @@ class FixRegistry(Convertible):
                 if previous.exists() and not target.exists():
                     previous.replace(target)
                 raise
-        installed = cls(cache_dir=target, offline=True, **configuration)
+        installed = cls(cache_dir=target, **configuration)
         installed.__dict__["_conflicts"] = report
         if page_cache.exists():
             shutil.rmtree(page_cache)
@@ -685,7 +817,7 @@ class FixRegistry(Convertible):
         if not target.exists():
             return (), (), ()
         try:
-            held = cls(cache_dir=target, offline=True)
+            held = cls(cache_dir=target)
             declarations = held._preserved_declarations()
         except (OSError, TypeError, ValueError, pyarrow.ArrowException):
             return (), (), ()
@@ -786,14 +918,14 @@ class FixRegistry(Convertible):
                 )
                 return True
         if self.offline:
-            self._reduced("this registry is offline")
+            self._reduced("it serves a stored dictionary")
             return False
         self._say(
             f"no FIX registry at {self.cache_dir}; fetching the dictionary from "
             f"{', '.join(source.url for source in self.sources)} -- about {BOOTSTRAP_PAGES} "
             f"pages across every FIX version, {BOOTSTRAP_DURATION}. It installs to "
-            f"{self.cache_dir} and is never fetched again. To skip it, pass offline=True "
-            "or point cache_dir at a store you already have."
+            f"{self.cache_dir} and is never fetched again. To skip it, point "
+            "cache_dir at a store you already have."
         )
         started = time.monotonic()
         try:
@@ -994,7 +1126,7 @@ class FixRegistry(Convertible):
                     expected_key = (
                         str(declared_tag) if declared_tag is not None else entry.fix.canonical
                     )
-                    if str(stored) != expected_key or field_document(entry) != name:
+                    if str(stored) != expected_key or field_document(entry.fix.key) != name:
                         raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
                     if entry.fix.key in fields:
                         raise ValueError(f"FIX field {stored!r} is stored more than once")
@@ -1155,6 +1287,17 @@ class FixRegistry(Convertible):
         local_fields, local_components, local_overlays = self._preserved_declarations()
         self.__dict__.pop("_source_pages", None)
         self.__dict__.pop("_source_conflicts", None)
+        with self._fetching():
+            return self._rebuilt(versions, local_fields, local_components, local_overlays)
+
+    def _rebuilt(
+        self,
+        versions: Sequence[str],
+        local_fields: Sequence[Field],
+        local_components: Sequence[ComponentRecord],
+        local_overlays: Sequence[Field],
+    ) -> ConflictReport:
+        """`rebuild`'s body, inside the window that lets it reach a source."""
         try:
             order = tuple(self._spelling(version) for version in versions) or self.versions
             declarations: dict[str, list[Field]] = {}
@@ -1201,7 +1344,7 @@ class FixRegistry(Convertible):
         stored = self._stored_versions()
         if stored:
             return stored
-        if self.offline:
+        if self._serves_stored:
             return self._known_versions()
         try:
             versions = self._scrape_versions()
@@ -1266,6 +1409,11 @@ class FixRegistry(Convertible):
         if refresh:
             self.__dict__.pop("_source_pages", None)
         self.__dict__.pop("_source_conflicts", None)
+        with self._fetching() if refresh else contextlib.nullcontext():
+            return self._scraped_fields(version)
+
+    def _scraped_fields(self, version: str) -> list[Field]:
+        """`fields`'s scrape half, once the store had no answer."""
         try:
             document = self._spec_document(version)
             fields = self._scrape_version(version)
@@ -1290,12 +1438,13 @@ class FixRegistry(Convertible):
         for candidate in candidates:
             if self._stored_fields(candidate) is not None:
                 return True
-            if not self.offline:
-                try:
-                    self.fields(candidate)
-                except (OSError, ValueError):
-                    continue
-                return True
+            if self._serves_stored:
+                continue
+            try:
+                self.fields(candidate)
+            except (OSError, ValueError):
+                continue
+            return True
         return False
 
     def _spelling(self, version: str) -> str:
@@ -1338,7 +1487,7 @@ class FixRegistry(Convertible):
         stored = self._stored_components(version)
         if stored is not None and not refresh:
             return stored
-        if self.offline:
+        if self._serves_stored:
             return stored or []
         if self._stored_fields(version) is None:
             self.fields(version, refresh=refresh)
@@ -1824,20 +1973,20 @@ class FixRegistry(Convertible):
         held = self._entries[0].get(fix.key)
         if held is not None and held.fix.folded == fix.folded:
             raise KeyError(
-                f"FIX field {fix.canonical!r} is already stored in {field_document(entry)}"
+                f"FIX field {fix.canonical!r} is already stored in {field_document(entry.fix.key)}"
             )
         if held is not None:
             claimed = f"tag {fix.tag}" if fix.tag is not None else f"the name {fix.canonical!r}"
             raise KeyError(
                 f"FIX field {fix.canonical!r} cannot be added: {claimed} is already claimed by "
-                f"{held.fix.canonical!r}, in {field_document(entry)}"
+                f"{held.fix.canonical!r}, in {field_document(entry.fix.key)}"
             )
         return self._write_field(entry)
 
     def update_field(self, entry: Field) -> Field:
         """Replace one stored field identity; `KeyError` when there is none."""
         if entry.fix.key not in self._entries[0]:
-            raise KeyError(f"no FIX field stored in {field_document(entry)}")
+            raise KeyError(f"no FIX field stored in {field_document(entry.fix.key)}")
         return self._write_field(entry)
 
     def remove_field(self, name: str) -> bool:
@@ -2335,7 +2484,16 @@ class FixRegistry(Convertible):
 
     @cached_property
     def _cache(self) -> tuple[pyarrow.fs.FileSystem, str]:
-        """The filesystem and path used by cache operations, resolved once."""
+        """The filesystem and path used by cache operations, resolved once.
+
+        A directory is read where it is, local or not. An archive somewhere
+        this process cannot open a file on -- `s3://bucket/fix.zip`, a store
+        on a bucket a worker shares -- is copied down to `REMOTE_CACHE` once
+        and read from there: a zip is opened by seeking, and seeking over an
+        object store reads it whole for every lookup. Copied by identity and
+        size, so a second process reuses the first one's copy rather than
+        fetching it again.
+        """
         source = self._cache_source
         location = os.fspath(self.cache_dir)
         if source is None:
@@ -2344,9 +2502,28 @@ class FixRegistry(Convertible):
             return pyarrow.fs.LocalFileSystem(), local_path(location)
         filesystem, path = source
         if self.archived and not isinstance(filesystem, pyarrow.fs.LocalFileSystem):
-            path = local_path(path, filesystem, missing_ok=True)
-            return pyarrow.fs.LocalFileSystem(), path
+            return pyarrow.fs.LocalFileSystem(), self._localized(filesystem, path)
         return filesystem, path
+
+    def _localized(self, filesystem: pyarrow.fs.FileSystem, path: str) -> str:
+        """A remote archive's OS path, fetched into `remote_cache()` when it exists.
+
+        Keyed by the location, not by the filesystem handle that read it: two
+        registries over one bucket are two objects, and identifying the copy
+        by the handle would fetch the archive again for each of them -- which
+        is the cost this cache exists to pay once.
+
+        `spill_path` answers None for a remote that is not there, which is a
+        store about to be written rather than one that failed to read -- so
+        the local path it *would* have is what a cold remote store gets.
+        """
+        cache = remote_cache()
+        cache.mkdir(parents=True, exist_ok=True)
+        identity = Url.from_string(os.fspath(self.cache_dir)).into_string()
+        found = spill_path(path, filesystem, cache, identity=identity, temporary=False)
+        if found is not None:
+            return found
+        return local_path(path, filesystem, missing_ok=True)
 
     @property
     def _cache_path(self) -> str:
@@ -2543,9 +2720,17 @@ class FixRegistry(Convertible):
         return self._source_page_cache / digest[:2] / f"{digest[2:]}.page"
 
     def _fetch(self, url: str) -> str:
-        """One page, as text, retried while the site says "later"."""
-        if self.offline:
-            raise OSError(f"{url} was not fetched: this registry is offline")
+        """One page, as text, retried while the site says "later".
+
+        The one place the network is reached on a read, and so the one place
+        a registry that serves a store refuses to: `_fetching` is what the
+        verbs that mean to scrape open, and nothing else opens it.
+        """
+        if self._serves_stored:
+            raise OSError(
+                f"{url} was not fetched: {self.cache_dir} is the dictionary this "
+                "registry serves. Pass refresh=True, or call rebuild() or scrape()."
+            )
         request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
         pause = self.backoff
         for _ in range(self.retries):

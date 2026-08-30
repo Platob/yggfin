@@ -125,7 +125,7 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000060.json    tags 30000-30499, rekep package vocabulary
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
-fields/named.json     the fields FIX never numbered
+fields/999999.json    the fields FIX never numbered
 components/parties.json          one component
 components/new_order_single.json a message
 ```
@@ -133,13 +133,14 @@ components/new_order_single.json a message
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
 no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
 rather than the dictionary. The tag space is sparse, and an empty shard is
-simply absent: fifteen shards hold 6,098 tagged fields and `named.json` holds
-three rendered fields.
+simply absent: fifteen shards hold 6,098 tagged fields and `fields/999999.json`
+holds three rendered ones.
 
 JSON, and measured: every process importing this package parses a projection of
 the dictionary, where pure-Python YAML costs 25 seconds to read against a tenth
-of one for JSON. A store somebody wrote in YAML still reads, and converts
-itself the first time anything rewrites it.
+of one for JSON. One spelling, so a read is one open — a declaration a person
+hands to `rekep fix add-field` may still be YAML, which is a courtesy at the
+edge and not a second store format.
 
 A field's identity is its **tag**, never its name. Tag 64 is `FutSettDate`
 through 4.3 and `SettlDate` after, so one record is tag 64 named `SettlDate`
@@ -147,10 +148,12 @@ with `FutSettDate` recorded as an alias carrying the version that spelled it --
 rather than two half-histories nobody diffs.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions,
-and lives in `fields/named.json` because there is no tag to shard it on.
-Having no tag is the whole of being one, so no record states it twice. One
-naming `fix:column` is lifted into that column of the parsed log.
+`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions.
+It keys by its name rather than by a tag, so it lands in `999999`, the one
+shard index the arithmetic never reaches: the same naming rule as every other
+document, not a document of another kind. Having no tag is the whole of being
+one, so no record states it twice. One naming `fix:column` is lifted into that
+column of the parsed log.
 
 ### The collapse, and what it costs
 
@@ -246,6 +249,59 @@ Registry reads emit JSON to `stdout`; status and failures stay on `stderr`.
 The shell writes its interface to `stderr` and bounds long previews. Every
 proposed write is shown and requires confirmation.
 
+### Where a registry gets its dictionary
+
+Naming a `cache_dir` is the whole of saying where the answers come from, so a
+registry given one **serves that store and never reaches a source** — warm or
+cold, and whether the store is a directory, a zip, or a location on an object
+store. Nothing has to ask for that; it is what pointing at a store means.
+
+```python
+from rekep.fix import FixRegistry
+
+print(FixRegistry(cache_dir="data/fix.zip").offline)
+```
+
+```text
+True
+```
+
+The default store, `~/.config/fix`, is the one nobody chose, and the only one
+that fills itself. A **fetch verb** opens the door explicitly everywhere else:
+`FixRegistry.scrape()`, `rebuild()`, `fields(version, refresh=True)`, or a
+`cache_ttl` that has come due.
+
+`cache_dir` accepts any location `Url` resolves. A directory is read where it
+is, local or remote. An archive on a filesystem this process cannot open a
+file on — `s3://bucket/fix/fix.zip` — is copied down once into
+`~/.config/fix-remote` and read from there, because a zip is read by seeking
+and seeking over an object store reads it whole for every lookup. The copy is
+reused by identity and size, so the next process on the same machine does not
+fetch it again.
+
+```yaml
+# tasks/parse_fix/parse_fix.yml — every task takes the same value
+fix_dictionary: s3://example-bucket/rekep/fix.zip
+```
+
+### The default every unconfigured lookup resolves through
+
+`FixRegistry.from_builtin()` is what `FixMsg().registry`, `FixCodec()`,
+`MarketTags.of()` and `FieldAccess.of()` answer through when nothing named a
+dictionary. `set_builtin` moves it, once, at startup:
+
+```python
+from rekep.fix import FixRegistry
+
+FixRegistry.set_builtin(FixRegistry(cache_dir="data/fix.zip"))
+```
+
+It refuses a registry missing rekep's own twenty-seven identities, and it
+does **not** move the published Arrow contracts: `rekep.fix.columns` reads the
+default while its module body runs, and those declarations are what
+`schemas/rekep/*.yaml` publishes. `set_builtin(None)` restores the packaged
+projection.
+
 ### Bootstrapping the default store
 
 A registry resolves where its dictionary comes from **once, at construction**,
@@ -254,12 +310,11 @@ it by starting a fourteen-thousand-page scrape in the middle of a batch.
 
 | what it finds | what it does |
 | --- | --- |
-| a store at `cache_dir` | serves it, silently |
+| a store at `cache_dir` | serves it, silently, and never reaches a source |
 | configured registry URL | validates and atomically expands the full archive |
 | archive unavailable | fetches the configured sources in priority order |
-| no URL, `offline=False` | fetches the configured sources in priority order |
+| no URL, no store | fetches the configured sources in priority order |
 | no store, the fetch failed | serves the packaged projection and says the registry is reduced |
-| no store, `offline=True` | serves the packaged projection, naming the scrape command |
 
 Only the *default* store (`~/.config/fix`) is bootstrapped. A `cache_dir`
 somebody named is that store, cold or not: it is about to be written, or it is
@@ -491,8 +546,8 @@ Two readings the classification depends on:
 ## Groups and components
 
 Repeating groups remain ordered entries. Structured components are extracted
-into typed lists; each entry retains an ordered string buffer for members
-absent from the projected shape.
+into typed lists carrying the members they declare; anything absent from the
+projected shape stays in the row's residual `entries`, in wire order.
 
 The extraction is driven by the component declaration and by nothing else:
 which tag counts the entries, which tag opens one, which tags may belong to
@@ -544,7 +599,7 @@ nothing rather than a group the standard never gave it.
 
 The delimiter leads the projection because it is what opens an entry. Every
 member is lifted only where its value is one the column's type can hold, and
-falls to `buffer` where it is not -- so a malformed `UTCTimestamp` is kept as
+stays in `entries` where it is not — so a malformed `UTCTimestamp` is kept as
 the text that arrived rather than becoming a null nobody can explain.
 
 `NoSecurityAltID` and `NoTradingSessions` split exactly as `NoPartyIDs` does;

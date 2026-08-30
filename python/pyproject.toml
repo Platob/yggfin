@@ -26,8 +26,14 @@ yaml = ["pyyaml>=6.0"]
 # The Iceberg dataset, with the SQLite catalog that makes it fully local and
 # the Rust core every partition transform but `identity` is written through.
 iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
+# AWS Glue as the catalog. pyiceberg reaches Glue through boto3, which the
+# Iceberg extra does not pull, so `type: glue` raises `NotInstalledError`
+# without this -- and it is the one thing a full S3 run needs that the code
+# itself does not provide. Papermill writes an `s3://` notebook through the
+# same boto3.
+glue = ["pyiceberg[glue]>=0.11.1"]
 polars = ["polars>=1.36"]
-all = ["rekep[iceberg,polars,yaml]"]
+all = ["rekep[glue,iceberg,polars,yaml]"]
 
 [project.scripts]
 # Publishing a declaration and checking one loads are things CI and a
@@ -46,6 +52,15 @@ docs = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "rekep[iceberg,polars,yaml]",
+]
+# What `rekep task run` needs on the machine to execute a task document:
+# Papermill runs the notebook, and a notebook runs under a kernel. Nothing here
+# is imported by `src/` -- a task is a job, not a feature of the package -- so
+# it is a group rather than an extra, installed with `uv run --group runner`.
+runner = [
+    "papermill>=2.6",
+    "ipykernel>=6.29",
     "rekep[iceberg,polars,yaml]",
 ]
 # What the benchmarks race the shipped implementations against. `polars` is

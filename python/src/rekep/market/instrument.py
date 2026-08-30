@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Annotated, Any
 
 import pyarrow
@@ -16,10 +16,11 @@ from rekep.enums import (
     Currency,
     EventType,
     OptionKind,
+    SecurityIDSource,
     Side,
 )
 from rekep.fields import Field, scalar
-from rekep.fix.columns import ISIN_SCHEME, id_scheme
+from rekep.fix.columns import ISIN_SCHEME, isin_identity
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import UNIX, Event, _declared_value_parts
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -34,7 +35,7 @@ class Leg(MarketConvertible):
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """The instrument this leg is of, derived the same way any other one is."""
 
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical instrument spelling derived from the leg's FIX identifiers."""
 
     symbol: Annotated[str, fix_tag("LegSymbol")] = ""
@@ -84,14 +85,12 @@ class Leg(MarketConvertible):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        ticker = SymbolTicker.from_entries(
-            (
-                ("SymbolTicker", self.symbolticker),
-                ("Symbol", self.symbol),
-                ("SecurityID", self.securityid),
-                ("SecurityIDSource", self.securityidsource),
-                ("SecurityExchange", self.securityexchange),
-            )
+        ticker = SymbolTicker.from_values(
+            symbolticker=self.symbolticker,
+            symbol=self.symbol,
+            securityid=self.securityid,
+            securityidsource=self.securityidsource,
+            securityexchange=self.securityexchange,
         )
         self.symbolticker = ticker.into_str()
         if ticker.kind is AssetKind.CURRENCY:
@@ -123,7 +122,7 @@ class Instrument(Event):
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Digest of `symbolticker`; zero when the ticker is empty."""
 
-    symbolticker: Annotated[str, Field.primary_key(), Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.primary_key(), Field.column("SymbolTicker")] = ""
     """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -135,15 +134,15 @@ class Instrument(Event):
     securityid: Annotated[str | None, fix_tag("SecurityID")] = None
     """Identifier in the scheme `securityidsource` names -- an ISIN, a CUSIP, a FIGI."""
 
-    securityidsource: Annotated[str | None, fix_tag("SecurityIDSource")] = None
-    """Which scheme `securityid` is in, as FIX numbers them (`4` is ISIN)."""
+    securityidsource: Annotated[SecurityIDSource | None, fix_tag("SecurityIDSource")] = None
+    """Which scheme `securityid` is in, as its code; `ISIN` is FIX's `4`."""
 
     # Flat, and derived from whichever of the two places FIX carries it in --
     # `SecurityID <48>` under source `4`, or an entry of the `NoSecurityAltID
     # <454>` group. Flat because it is what a human looks an instrument up by
     # and what a reference-data join keys on, and neither can reach into a map
     # on any engine below Arrow.
-    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISIN Code")] = (
+    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISINCode")] = (
         None
     )
     """ISO 6166 identifier, wherever the message carried it; null when it did not."""
@@ -198,14 +197,20 @@ class Instrument(Event):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        ticker = SymbolTicker.from_entries(
-            (
-                ("SymbolTicker", self.symbolticker),
-                ("Symbol", self.symbol),
-                ("SecurityID", self.securityid),
-                ("SecurityIDSource", self.securityidsource),
-                ("SecurityExchange", self.securityexchange),
-            )
+        # Before the ticker, which is built from the pair. The group-carried
+        # ISIN follows it, because `altids` is filled by then and an identifier
+        # the message stated outright outranks one read out of a group.
+        self.securityid, self.securityidsource, self.isincode = isin_identity(
+            self.securityid, self.securityidsource, self.isincode
+        )
+        if self.isincode is None:
+            self.isincode = self.into_isin()
+        ticker = SymbolTicker.from_values(
+            symbolticker=self.symbolticker,
+            symbol=self.symbol,
+            securityid=self.securityid,
+            securityidsource=self.securityidsource,
+            securityexchange=self.securityexchange,
         )
         self.symbolticker = ticker.into_str()
         if ticker.kind is AssetKind.CURRENCY:
@@ -213,8 +218,7 @@ class Instrument(Event):
                 self.kind = ticker.kind
             if self.currency is None:
                 self.currency = ticker.currency
-        if self.isincode is None:
-            self.isincode = self.into_isin()
+
         self.xhash = self.into_xhash()
         self.code = self.symbolticker
         Event.__post_init__(self)
@@ -222,7 +226,7 @@ class Instrument(Event):
 
     def into_isin(self) -> str | None:
         """The ISO 6166 identifier this instrument carries, from either place."""
-        if self.securityid and id_scheme(self.securityidsource) == ISIN_SCHEME:
+        if self.securityid and self.securityidsource is SecurityIDSource.ISIN:
             return self.securityid
         return (self.altids or {}).get(ISIN_SCHEME)
 
@@ -303,6 +307,33 @@ class Instrument(Event):
         return _flat_instruments(observed())
 
 
+def versioned(
+    observed: Iterable[Instrument],
+    stored: Mapping[str, Instrument],
+) -> Iterator[Instrument]:
+    """Each observation that says something `stored` does not already say.
+
+    The whole versioning rule for reference data, in one place rather than in
+    whichever job happens to write the table. An observation whose `vhash`
+    matches the stored record states the same facts and is not a version;
+    anything else is the stored record *enriched* with what the observation
+    adds, which keeps the earlier facts and earns a new `hash` under the same
+    `symbolticker`. An observation that adds nothing to a record already
+    holding more than it is dropped rather than written back thinner.
+
+    `stored` is what the table holds for the tickers in this batch, keyed by
+    `symbolticker`: empty for a table that does not exist yet, which makes
+    every observation the first version of its ticker.
+    """
+    for row in observed:
+        known = stored.get(row.symbolticker)
+        if known is not None and known.vhash == row.vhash:
+            continue
+        enriched = row if known is None else known.enriched_with(row)
+        if enriched is not None:
+            yield enriched.identify()
+
+
 def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrument]:
     """One deterministically enriched record per canonical ticker."""
     # Input order owns conflicts; later observations fill gaps but never revise facts.
@@ -323,4 +354,6 @@ def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrum
         enriched = known.enriched_with(instrument)
         if enriched is not None:
             records[ticker] = enriched.identify()
-    yield from (records[ticker].identify() for ticker in order)
+    # Identified where it was stored, and nothing has touched it since, so
+    # there is nothing here to give an identity to.
+    yield from (records[ticker] for ticker in order)

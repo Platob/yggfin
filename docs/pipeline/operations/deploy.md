@@ -14,8 +14,9 @@ creates for itself.
 ## 1. Install
 
 ```bash
-pip install "rekep[iceberg]"            # persisted tables
+pip install "rekep[iceberg]"              # persisted tables
 pip install "rekep[iceberg,polars,yaml]"  # what the notebooks import
+pip install "rekep[all]"                  # plus Glue, for a catalog on AWS
 ```
 
 From a private index, use `--extra-index-url`. `--index-url` *replaces* PyPI,
@@ -48,7 +49,7 @@ print(len(FixRegistry.from_builtin().field_records()))
     ```python
     from rekep.fix import FixRegistry
 
-    absent = FixRegistry(cache_dir="/no/such/place", offline=True)
+    absent = FixRegistry(cache_dir="/no/such/place")
     print(len(absent.versions), len(absent.field_records()))
     ```
 
@@ -101,30 +102,152 @@ catalog_properties:
 
 Namespaces and tables are created on first commit; nothing else to bootstrap.
 
-### AWS S3
+### Creating the tables ahead of the jobs
 
-Create the bucket out of band — nothing in the pipeline creates one.
+Where the account that owns the catalog is not the account the jobs run under,
+create them separately. One command takes the catalog, its properties and the
+branch straight off a task document, so a deployment cannot land somewhere the
+pipeline will not read:
 
 ```bash
+rekep iceberg deploy tasks/parse_fix/parse_fix.yml
+```
+
+```text
+logs.messages -> created
+fix.market -> created
+fix.misc -> created
+fix.unknown -> created
+market.instruments -> created
+market.books -> created
+market.orders -> created
+market.executions -> created
+```
+
+`--catalog`, `--property NAME=VALUE`, `--table-property NAME=VALUE` and
+`--branch` override the document; `--table` restricts the run to one table and
+`--dry-run` reports what is missing without creating it. Running it again
+reports every table `present` and changes nothing — including properties,
+which [Iceberg maintenance](airflow.md#run-iceberg-maintenance) owns retrofitting.
+
+The layout it creates is `rekep.deploy.TABLES`: the table, the shape it holds
+and the columns it is laid out by, in the order a run fills them.
+
+```python
+from rekep.deploy import TABLES
+
+print([shape.table for shape in TABLES])
+```
+
+```text
+['logs.messages', 'fix.market', 'fix.misc', 'fix.unknown', 'market.instruments', 'market.books', 'market.orders', 'market.executions']
+```
+
+### AWS S3
+
+Every location a run touches takes an `s3://` URL: the raw capture, the FIX
+dictionary, the Iceberg warehouse, and the per-table data and metadata paths.
+Only the catalog needs anything extra — pyiceberg reaches Glue through boto3,
+which the `iceberg` extra does not pull:
+
+```bash
+pip install "rekep[glue,iceberg,polars,yaml]"   # or: rekep[all]
+```
+
+**1. Prove who you are, and make the buckets.** Nothing in the pipeline
+creates one.
+
+```bash
+aws sts get-caller-identity
 aws s3api create-bucket --bucket rekep-warehouse \
   --region eu-west-1 --create-bucket-configuration LocationConstraint=eu-west-1
 aws s3api put-bucket-encryption --bucket rekep-warehouse \
   --server-side-encryption-configuration \
   '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+aws s3api get-bucket-location --bucket rekep-warehouse
 ```
 
+Encryption is the bucket's own default; `s3.sse.*` is refused rather than
+ignored — see
+[Encryption at rest](../../storage/iceberg.md#encryption-at-rest).
+
+**2. Put the dictionary and the capture where the workers can read them.**
+
+```bash
+aws s3 cp data/fix.zip s3://rekep-warehouse/fix/fix.zip
+aws s3 sync ./capture s3://rekep-capture/2026-08-30/
+```
+
+**3. Point the task documents at them.** The same three keys in every YAML
+under `tasks/`:
+
 ```yaml
+# tasks/parse_messages/parse_messages.yml
+source: s3://rekep-capture/2026-08-30
+fix_dictionary: s3://rekep-warehouse/fix/fix.zip
 catalog: rekep-production
 catalog_properties:
   type: glue
   warehouse: s3://rekep-warehouse/rekep
-  glue.region: eu-west-1
-  s3.region: eu-west-1
+  glue.region: eu-west-1   # where the catalog lives
+  s3.region: eu-west-1     # where the warehouse bucket lives
 ```
 
-Credentials come from the standard AWS chain, or from `s3.role-arn`. Encryption
-is the bucket's own default; `s3.sse.*` is refused rather than ignored — see
-[Encryption at rest](../../storage/iceberg.md#encryption-at-rest).
+A registry on a bucket is fetched **once** and kept under
+`~/.config/fix-remote`, reused across processes by identity and size — a zip
+is read by seeking, and seeking over an object store reads it whole every
+lookup. A dictionary given as a *directory* is served in place.
+
+The capture `source` is resolved on its own rather than through
+`catalog_properties`, so an endpoint or region for that bucket comes from the
+URL or from the environment:
+
+```bash
+export AWS_PROFILE=rekep AWS_REGION=eu-west-1
+# or, for any S3-compatible store, the portable spelling:
+export S3_ENDPOINT_URL=https://minio.example:9000
+export S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=... S3_REGION=us-east-1
+```
+
+Mind what a netloc means before you name a bucket: `s3://store/bucket/key` is
+a store addressed path-style, and a bucket whose last label looks like a
+registered name is read as one —
+[what an `s3://` netloc names](../../storage/iceberg.md#what-an-s3-netloc-names)
+has the rule and the escape.
+
+**4. Check it end to end before scheduling anything.** One command proves the
+credentials, the region and the registry all resolve:
+
+```bash
+uv run --project python rekep fix registry check --store s3://rekep-warehouse/fix/fix.zip
+```
+
+**5. Deploy the tables, then run.**
+
+```bash
+uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml --dry-run
+uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml
+```
+
+The six task commands in [End-to-end run](run.md) are unchanged — only the
+values in the YAML moved.
+
+**6. Verify the warehouse filled.**
+
+```bash
+aws s3 ls --recursive --summarize s3://rekep-warehouse/rekep/
+aws glue get-tables --database-name market --query 'TableList[].Name'
+```
+
+A run of the shipped fixture against an S3 endpoint — capture, dictionary and
+warehouse all on the bucket — lands 51 objects across the seven tables: 11
+Parquet files, 22 Avro manifests and 18 metadata documents.
+
+Credentials come from the standard AWS chain, or from `s3.role-arn` — which
+reaches the data filesystem only, never the Glue client, so the Glue call
+itself is signed by the chain. `s3.profile-name` and `s3.signer.*` are read by
+nothing; see
+[Settings a location carries](../../storage/iceberg.md#settings-a-location-carries).
 
 ### MinIO and other S3-compatible stores
 
@@ -160,7 +283,7 @@ rekep fields load --target schemas/rekep/message.yaml | tail -2
 
 ## 4. Run
 
-[End-to-end run](run.md) has the six commands in dependency order.
+[End-to-end run](run.md) has the seven commands in dependency order.
 [Airflow](airflow.md) has the scheduled deployment.
 
 ## Build and publish

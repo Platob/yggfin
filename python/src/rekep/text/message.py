@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import Direction, EventType
+from rekep.enums import Direction, EventType, Protocol
 from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
@@ -33,7 +33,7 @@ from rekep.text.entries import ENTRIES, Entry
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _DIRECTION_CODE = Direction.into_arrow_type().index_type
 _EVENT_CODE = pyarrow.int64()
-_NO_PROTOCOL = "OTHER"
+_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 _WS = r"[ \t\r\n\f\x0b]"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
@@ -139,22 +139,22 @@ class Message(Event):
         """Contract metadata published with raw-message schemas."""
         return _CONTRACT_METADATA
 
-    sourceurl: Annotated[str, Field.column("Source URL")] = ""
+    sourceurl: Annotated[str, Field.column("SourceURL")] = ""
     """Path of the log the row came from, as its filesystem addresses it."""
 
-    sourcerownum: Annotated[int, Field.column("Source Rownum")] = 0
+    sourcerownum: Annotated[int, Field.column("SourceRownum")] = 0
     """1-based physical line number of the header; 0 when not read from a file."""
 
-    threadname: Annotated[str, Field.column("Thread Name")] = ""
+    threadname: Annotated[str, Field.column("ThreadName")] = ""
     """Contents of the first bracketed header field."""
 
-    plugincode: Annotated[str, Field.column("Plugin Code")] = ""
+    plugincode: Annotated[str, Field.column("PluginCode")] = ""
     """Contents of the second bracketed header field."""
 
     message: str = ""
     """Payload after the fixed log header, with continuation lines folded in."""
 
-    protocolcode: Annotated[str, Field.column("Protocol Code")] = _NO_PROTOCOL
+    protocol: Protocol = Protocol.OTHER
     """Protocol syntax detected without interpreting its fields."""
 
     # The whole standard header and trailer, in `SESSION_NAMES` order, which
@@ -271,18 +271,19 @@ class Message(Event):
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)
         self.direction = Direction.from_str(self.direction)
+        self.protocol = Protocol.from_str(self.protocol)
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
-        # `protocolcode` and `direction` are read off the raw *text*, so a row
+        # `protocol` and `direction` are read off the raw *text*, so a row
         # carrying one answers them whoever tokenized its arguments:
         # `from_text(line, message=line)` stored `OTHER` and UNKNOWN
         # because it had passed its own `entries` in. Everything else here is
         # read off the arguments, and an explicit list of them is the answer.
-        if self.message and (implicit_entries or self.protocolcode == _NO_PROTOCOL):
+        if self.message and (implicit_entries or self.protocol is Protocol.OTHER):
             parsed = self.parse_arrow(pyarrow.array([self.message]))
-            if self.protocolcode == _NO_PROTOCOL:
-                self.protocolcode = parsed["protocolcode"][0].as_py()
+            if self.protocol is Protocol.OTHER:
+                self.protocol = Protocol.from_int(parsed["protocol"][0].as_py())
             if self.direction is Direction.UNKNOWN:
                 self.direction = Direction.from_int(parsed["direction"][0].as_py())
         if implicit_entries and self.message:
@@ -322,7 +323,7 @@ class Message(Event):
 
         The raw text itself is retained only where a caller declares
         `message=` -- the pairs carry every field -- and the syntax columns
-        `protocolcode`, `eventtype` and `direction` are read off that text, so
+        `protocol`, `eventtype` and `direction` are read off that text, so
         direction stays UNKNOWN without it.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
@@ -358,8 +359,8 @@ class Message(Event):
                 "eventtype": pyarrow.chunked_array(
                     [part["eventtype"] for part in parts], _EVENT_CODE
                 ),
-                "protocolcode": pyarrow.chunked_array(
-                    [part["protocolcode"] for part in parts], pyarrow.string()
+                "protocol": pyarrow.chunked_array(
+                    [part["protocol"] for part in parts], _PROTOCOL_CODE
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
                 "direction": pyarrow.chunked_array(
@@ -372,7 +373,7 @@ class Message(Event):
             return {
                 **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
                 "eventtype": pyarrow.array([], _EVENT_CODE),
-                "protocolcode": pyarrow.array([], pyarrow.string()),
+                "protocol": pyarrow.array([], _PROTOCOL_CODE),
                 "entries": pyarrow.array([], type=ENTRIES),
                 "direction": pyarrow.array([], _DIRECTION_CODE),
             }
@@ -400,7 +401,7 @@ class Message(Event):
         return {
             **session,
             "eventtype": event_types,
-            "protocolcode": protocols,
+            "protocol": protocols,
             _MSG_TYPE: msg_types,
             "entries": entries,
             "direction": direction,

@@ -16,7 +16,7 @@ After `parse_messages` has populated `logs.messages`, run from the repository
 root:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 ```
@@ -38,7 +38,7 @@ batch it:
 4. lifts declared fields and structured components;
 5. derives the venue, transaction time and identities.
 
-`Message.eventtype`, `Message.msgtype`, and `Message.protocolcode` pass through
+`Message.eventtype`, `Message.msgtype`, and `Message.protocol` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
@@ -66,19 +66,24 @@ resulting `FixMsg.unix` may instead come from a regulatory timestamp,
 `TransactTime`, market-data entry time, sending time, or finally the recording
 clock. Output tables are sorted by `(unix, msgseqnum, hash)`.
 
-## Instruments
+## The base the next stages key on
 
-After routing, the notebook derives flat Instrument records from the sorted
-market stream and writes them directly to `market.instruments`. One canonical
-`symbolticker` identifies each record, and `fix.market` retains the captured
-rows.
+This stage owns two derivations everything downstream reads as given: the
+transaction clock, resolved to `unix`, and the canonical instrument spelling,
+mapped to `symbolticker`. It reports how well it managed both -- `unixsource`
+counts which rung answered per row, `tickered` counts the rows that carry a
+ticker at all -- so a run that hands on a weak base says so here rather than
+having it discovered two tables later.
+
+Reference data is *not* written here. [`parse_instruments`](parse-instruments.md)
+reads the rows this stage wrote and versions `market.instruments` from them, so
+no instrument-versioning rule lives in the FIX stage.
 
 ## Configuration
 
 The adjacent `parse_fix.yml` owns full-transcription settings:
 `fix_dictionary`, `null_values`, protocol rules, and declared `fields`. It
-also selects `instrument_target`, the catalog, branch, source interval and
-batch sizes. A
+also selects the catalog, branch, source interval and commit size. A
 dictionary, field, or protocol-rule change reruns this stage against retained
 `Message` rows, resolving the stored arguments without tokenizing the payload.
 
@@ -87,6 +92,6 @@ metadata is read by `parse_messages` because `eventtype` is part of `Message`, s
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
-The projected conversion requires the `msgtype`, `entries` and
-`protocolcode` columns of the [Message contract](../../contracts/index.md),
-and refuses a source without them rather than reporting an empty run.
+The projected conversion requires the `msgtype`, `entries` and `protocol`
+columns of the [Message contract](../../contracts/index.md), and refuses a
+source without them rather than reporting an empty run.

@@ -32,7 +32,7 @@ EXPECTED_QUOTE = 18
 
 @pytest.fixture(scope="module")
 def registry() -> FixRegistry:
-    return FixRegistry(cache_dir=DATA, offline=True)
+    return FixRegistry(cache_dir=DATA)
 
 
 def test_the_table_is_the_shape_the_schema_assumes() -> None:

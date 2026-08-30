@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, EventType
+from rekep.enums import MIC, Direction, EventType, Protocol, SecurityIDSource
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -32,6 +32,8 @@ from rekep.fix.columns import (
     ISIN_CODE,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
+    SECURITY_ID_SOURCE,
+    isin_identity,
 )
 from rekep.fix.components import (
     LEGS,
@@ -58,7 +60,6 @@ from rekep.fix.message import (
     render_fix_value,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
@@ -67,6 +68,32 @@ from rekep.market.ticker import SymbolTicker
 from rekep.text.message import SESSION_FIELDS, Message
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
+
+#: What `vhash` cannot be taken over. The clocks, because a version is what a
+#: row says and not when it was said. The identities, because they are what the
+#: digest and the folding produce from it. And `message`, because the parsed
+#: columns beside it hold the same content in a spelling a reformat cannot move
+#: -- which is the whole reason a digest exists rather than a hash of the line.
+_UNDIGESTED: frozenset[str] = frozenset(
+    {
+        "unix",
+        "unixpartition",
+        "creaunix",
+        "recunix",
+        "expunix",
+        "snapunix",
+        "prevunix",
+        "hash",
+        "vhash",
+        "xhash",
+        "prevhash",
+        "parenthash",
+        "linkedhashes",
+        "version",
+        "message",
+    }
+)
 
 
 @functools.cache
@@ -213,12 +240,22 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
+        # Both packed enums Message declares, because this reaches
+        # `Event.__post_init__` and not Message's, so nothing else reads them
+        # off a spelling. A column takes the code, never the word.
+        self.direction = Direction.from_str(self.direction)
+        self.protocol = Protocol.from_str(self.protocol)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if self.unmap:
             self.unmap = [Entry.from_stored(entry) for entry in self.unmap]
         else:
             self.unmap = None
+        # Before the ticker, which is built from the pair: an ISIN a bridge
+        # rendered as its own field is an identifier like any other.
+        self.securityid, self.securityidsource, self.isincode = isin_identity(
+            self.securityid, self.securityidsource, self.isincode
+        )
         self.symbolticker = (
             SymbolTicker.from_str(self.symbolticker)
             if self.symbolticker
@@ -226,7 +263,7 @@ class FixMsg(Message):
         ).into_str()
         if (
             self.protocolversion is None
-            and self.protocolcode == NO_PROTOCOL
+            and self.protocol is Protocol.OTHER
             and (self.beginstring or self.entries or self.unmap)
         ):
             evidence: list[tuple[str, Any]] = []
@@ -239,8 +276,8 @@ class FixMsg(Message):
             if version is not None:
                 self.protocolversion = version
                 self.protocolversionsource = source
-                if self.protocolcode == NO_PROTOCOL:
-                    self.protocolcode = "FIX"
+                if self.protocol is Protocol.OTHER:
+                    self.protocol = Protocol.FIX
 
     def identify(self) -> FixMsg:
         """Give the parsed event the identities its registry projection earns."""
@@ -290,26 +327,26 @@ class FixMsg(Message):
     message: str | None = None
     """Payload text; null where parsed columns retain every field."""
 
-    protocolcode: Annotated[str, Field.column("Protocol Code")] = NO_PROTOCOL
+    protocol: Protocol = Protocol.OTHER
     """Which protocol the line carries; OTHER is a line that carries none."""
 
     # Without it nothing downstream can tell a real transaction time from a
     # print time, and that distinction is the whole point of resolving one.
     # Empty means no clock answered at all, which is a row with no time.
-    unixsource: Annotated[str, Field.column("Unix Source")] = ""
+    unixsource: Annotated[str, Field.column("UnixSource")] = ""
     """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
 
     # One column, not a FIX-specific one: every protocol with versions has a
     # version, and a `fix_version` beside it would duplicate itself the first
     # time a second versioned protocol appeared. Resolved once, at the message
     # stage, so nothing downstream re-derives it.
-    protocolversion: Annotated[str | None, Field.column("Protocol Version")] = None
-    """Which version of `protocolcode` the line is read under; null when unresolved."""
+    protocolversion: Annotated[str | None, Field.column("ProtocolVersion")] = None
+    """Which version of `protocol` the line is read under; null when unresolved."""
 
     # Null because the message carried no version, or null because nothing
     # tried? A consumer cannot tell the two apart from the value, and they are
     # different facts about the row.
-    protocolversionsource: Annotated[str, Field.column("Protocol Version Source")] = NO_SOURCE
+    protocolversionsource: Annotated[str, Field.column("ProtocolVersionSource")] = NO_SOURCE
     """What resolved `protocolversion`: a BeginString, an application version, or nothing."""
 
     msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
@@ -350,7 +387,7 @@ class FixMsg(Message):
     ] = None
     """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
-    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISIN Code")] = None
+    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISINCode")] = None
     """ISIN carried by a rendered `ISINCODE` field."""
 
     parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
@@ -480,7 +517,7 @@ class FixMsg(Message):
 
     # What was traded.
 
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical spelling derived from the FIX instrument identifiers."""
 
     symbol: Annotated[str | None, DECLARED["Symbol"]] = None
@@ -489,8 +526,8 @@ class FixMsg(Message):
     securityid: Annotated[str | None, DECLARED["SecurityID"]] = None
     """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
 
-    securityidsource: Annotated[str | None, DECLARED["SecurityIDSource"]] = None
-    """`SecurityIDSource <22>`: which scheme `SecurityID` is in -- `4` is ISIN."""
+    securityidsource: Annotated[SecurityIDSource | None, SECURITY_ID_SOURCE] = None
+    """`SecurityIDSource <22>`: which scheme `SecurityID` is in, as its code."""
 
     securitytype: Annotated[str | None, DECLARED["SecurityType"]] = None
     """`SecurityType <167>`."""
@@ -946,38 +983,6 @@ class FixMsg(Message):
         """Whether a rendered group path survives only in source spelling."""
         return any(entry.comp or "[" in entry.key for entry in self._residual_entries())
 
-    def component_records(self, column: str) -> list[dict[str, str]] | None:
-        """One resolved component column, each entry first-value-by-name.
-
-        None when the parse stage did not resolve the column, which is what
-        sends a scalar-built message down the pair-walking fallback. A stored
-        row hands entries back as mappings and a constructed one as `@scalar`
-        rows; both answer here, typed members rendered back to the wire's
-        spelling so the same readers serve both paths, and `buffer` merged
-        after them because a member kept as text was one a column could not
-        hold.
-        """
-        entries = getattr(self, column, None)
-        if entries is None:
-            return None
-        found: list[dict[str, str]] = []
-        for entry in entries:
-            if isinstance(entry, Mapping):
-                values = dict(entry)
-            else:
-                values = {
-                    member.name: getattr(entry, member.name, None)
-                    for member in dataclasses.fields(entry)
-                }
-            resolved: dict[str, str] = {}
-            for name, value in values.items():
-                if name != "buffer" and value is not None:
-                    resolved.setdefault(name, render_fix_value(value))
-            for name, value in dict(values.get("buffer") or {}).items():
-                resolved.setdefault(name, value)
-            found.append(resolved)
-        return found
-
     def into_first_values(self, access: FieldAccess | None = None) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip.
 
@@ -1106,13 +1111,13 @@ class FixMsg(Message):
             )
             protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugincode"))
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
-            stored_protocols = columns.get("protocolcode")
+            stored_protocols = columns.get("protocol")
             if stored_protocols is not None:
                 protocols = pyarrow.compute.if_else(
                     carries_text,
                     protocols,
                     pyarrow.compute.fill_null(
-                        stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
+                        stored_protocols.cast(_PROTOCOL_CODE, safe=False), Protocol.OTHER
                     ),
                 )
             stored_direction = columns.get("direction")
@@ -1127,10 +1132,10 @@ class FixMsg(Message):
                     Message.into_field().into_arrow_schema().field("direction"), direction
                 )
         else:
-            protocols = columns.get("protocolcode")
+            protocols = columns.get("protocol")
             if protocols is None:
                 raise ValueError(
-                    "a projected Message batch needs protocolcode; reparse the "
+                    "a projected Message batch needs protocol; reparse the "
                     "messages before dropping message"
                 )
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
@@ -1214,7 +1219,7 @@ class FixMsg(Message):
         )
         columns.update(
             {
-                "protocolcode": protocols,
+                "protocol": protocols,
                 "protocolversion": protocolversion,
                 "protocolversionsource": protocolversionsource,
                 "entries": entries,
@@ -1448,6 +1453,7 @@ class FixMsg(Message):
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
+        columns.update(_identifier_arrow(columns, rows))
         columns["symbolticker"] = SymbolTicker.into_arrow_array(columns, rows, registry)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
@@ -1459,6 +1465,8 @@ class FixMsg(Message):
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
+        # After the ticker, which reads the scheme as the wire spelled it.
+        columns["securityidsource"] = _scheme_arrow(columns.get("securityidsource"), rows)
         linked = compute.not_equal(columns["code"], "")
         columns["xhash"] = compute.if_else(
             linked, cls.hash_arrow(columns["code"]), columns["vhash"]
@@ -1474,22 +1482,21 @@ class FixMsg(Message):
     @classmethod
     @functools.cache
     def into_digest_columns(cls) -> tuple[str, ...]:
-        """What a stored row's `vhash` is taken over, in this order.
+        """What a stored row's `vhash` is taken over: everything the row says.
 
         The **parsed** values and never the raw line, so a message reformatted
         but not changed hashes alike. Every clock is excluded; `unixsource`
-        remains because it states which field supplied the event time.
+        remains because it states which field supplied the event time, which is
+        a reading and not a clock.
+
+        Stated by exclusion rather than listed. A named list hashed the eight
+        columns it happened to name while the registry projection promoted a
+        hundred more *out* of `entries` -- so a fully lifted message reached the
+        digest with an empty `entries` and two orders differing in every field
+        shared one `hash`, which is the primary key. A column added to the shape
+        is a thing the row says, and it is in the digest the day it lands.
         """
-        return (
-            "unixsource",
-            "sourceurl",
-            "sourcerownum",
-            "protocolcode",
-            "protocolversion",
-            "msgtype",
-            "entries",
-            "unmap",
-        )
+        return tuple(name for name in cls.into_field().names if name not in _UNDIGESTED)
 
     @classmethod
     def version_vhash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -1891,6 +1898,62 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
     return compute.fill_null(found, "")
 
 
+def _identifier_arrow(columns: Mapping[str, Any], rows: int) -> dict[str, Any]:
+    """`isin_identity` over a batch: the pair and the flat ISIN, each filled.
+
+    Text on both sides, because the ticker built next reads the scheme as the
+    wire spelled it; `_scheme_arrow` packs the column afterwards.
+    """
+    compute = pyarrow.compute
+    identifier = _text_or_null(columns.get("securityid"), rows)
+    source = _text_or_null(columns.get("securityidsource"), rows)
+    isin = _text_or_null(columns.get("isincode"), rows)
+    if isin.null_count == rows and identifier.null_count == rows:
+        return {}
+    wire = pyarrow.repeat(pyarrow.scalar(SecurityIDSource.ISIN.into_fix()), rows)
+    from_isin = compute.and_(compute.is_valid(isin), compute.is_null(identifier))
+    stated = compute.fill_null(
+        compute.equal(_scheme_codes(source, rows), int(SecurityIDSource.ISIN)), False
+    )
+    return {
+        "securityid": compute.if_else(from_isin, isin, identifier),
+        "securityidsource": compute.if_else(from_isin, wire, source),
+        "isincode": compute.if_else(compute.and_(stated, compute.is_null(isin)), identifier, isin),
+    }
+
+
+def _text_or_null(column: Any, rows: int) -> pyarrow.Array:
+    """One column as trimmed text, with an absent one a column of nulls."""
+    if column is None:
+        return pyarrow.nulls(rows, pyarrow.string())
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    return pyarrow.compute.utf8_trim_whitespace(column.cast(pyarrow.string(), safe=False))
+
+
+def _scheme_codes(source: pyarrow.Array, rows: int) -> pyarrow.Array:
+    """Wire spellings as packed `SecurityIDSource` codes, one read per value."""
+    compute = pyarrow.compute
+    unique = compute.unique(source)
+    if not len(unique):
+        return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), rows)
+    codes = pyarrow.array(
+        # Null stays null: an absent tag 22 is a scheme the message did not
+        # state, which is not the same fact as one it stated and nothing names.
+        [
+            None if not value else int(SecurityIDSource.from_str(value))
+            for value in unique.to_pylist()
+        ],
+        pyarrow.int32(),
+    )
+    return compute.take(codes, compute.index_in(source, value_set=unique))
+
+
+def _scheme_arrow(column: Any, rows: int) -> pyarrow.Array:
+    """The stored `securityidsource` column: a code, never the wire spelling."""
+    return _scheme_codes(_text_or_null(column, rows), rows)
+
+
 def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     """ISO exchange fields, the stored venue, then FIX session endpoints."""
     compute = pyarrow.compute
@@ -1974,31 +2037,25 @@ def _component_fields(
 ) -> list[tuple[str, Entry]]:
     """One typed component restored as a valid count-led repeating group.
 
-    `(spelling, entry)` per field: a constructed member spells as its tag,
-    and a `buffer` key keeps its stored spelling byte for byte.
+    `(spelling, entry)` per field: a constructed member spells as its tag.
+    What the component did not project is not here at all -- it stayed in the
+    row's residual `entries`, which is where the round trip picks it up.
     """
     fields: list[tuple[str, Entry]] = [
         (str(count_tag), Entry.of(tag=count_tag, key=str(count_tag), value=len(entries)))
     ]
-    members = tuple(member for member in row_type.into_field().fields if member.name != "buffer")
+    members = tuple(row_type.into_field().fields)
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
-        buffered = dict(
-            (values.get("buffer") if values is not None else getattr(entry, "buffer", None)) or {}
-        )
         for index, member in enumerate(members):
             value = (
                 values.get(member.name) if values is not None else getattr(entry, member.name, None)
             )
-            if value is None and member.name in buffered:
-                value = buffered.pop(member.name)
             if index == 0 and value is None:
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
             if value is not None:
                 tag = int(member.fix["tag"])
                 fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
-        for key, value in buffered.items():
-            fields.append((str(key), Entry.from_pair(str(key), value)))
     return fields
 
 
@@ -2114,22 +2171,43 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
         return pyarrow.repeat("", rows)
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
-    if pyarrow.types.is_list(column.type):
+    if pyarrow.types.is_list(column.type) or pyarrow.types.is_map(column.type):
         return _stored_text(column, rows)
     return compute.fill_null(column.cast(pyarrow.string(), safe=False), "")
 
 
-def _stored_text(column: Any, rows: int) -> pyarrow.Array:
-    """A `ENTRIES` column as one string per row: every field, in wire order."""
+def _member_text(values: Any) -> pyarrow.Array:
+    """One flattened member as text, whatever shape it turned out to be.
+
+    Recursive because a component group is a list of structs: a struct
+    member may hold more structure, and all of it spells out here rather than
+    hashing as an address.
+    """
     compute = pyarrow.compute
+    kind = values.type
+    if pyarrow.types.is_struct(kind):
+        return compute.binary_join_element_wise(
+            *(_member_text(compute.struct_field(values, at)) for at in range(kind.num_fields)),
+            "\x1d",
+        )
+    if pyarrow.types.is_list(kind) or pyarrow.types.is_map(kind):
+        return _stored_text(values, len(values))
+    return compute.fill_null(values.cast(pyarrow.string(), safe=False), "")
+
+
+def _stored_text(column: Any, rows: int) -> pyarrow.Array:
+    """A nested column as one string per row: every member, in stored order."""
+    compute = pyarrow.compute
+    if pyarrow.types.is_map(column.type):
+        # A map is a list of pairs to Arrow's kernels only once it is spelled
+        # as one; `list_flatten` has no map kernel.
+        column = column.cast(
+            pyarrow.list_(
+                pyarrow.struct([("key", column.type.key_type), ("value", column.type.item_type)])
+            )
+        )
     entries = compute.list_flatten(column)
-    spelled = compute.binary_join_element_wise(
-        compute.fill_null(compute.struct_field(entries, "tag").cast(pyarrow.string()), ""),
-        compute.fill_null(compute.struct_field(entries, "comp"), ""),
-        compute.fill_null(compute.struct_field(entries, "key"), ""),
-        compute.fill_null(compute.struct_field(entries, "value"), ""),
-        "\x1f",
-    )
+    spelled = _member_text(entries)
     lengths = compute.fill_null(compute.list_value_length(column), 0).cast(pyarrow.int32())
     offsets = pyarrow.concat_arrays(
         [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]

@@ -15,8 +15,8 @@ import pytest
 
 import rekep
 from rekep.entries import ENTRIES, ENTRY_PARTS
+from rekep.enums import Protocol
 from rekep.fix import (
-    NO_PROTOCOL,
     FixCodec,
     FixRegistry,
     NanocondaSource,
@@ -110,7 +110,7 @@ def codec() -> FixCodec:
     every column it can lift and memoizes that on the codec -- two seconds,
     once, against two seconds per test.
     """
-    return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
+    return FixCodec(registry=FixRegistry(cache_dir=DATA))
 
 
 @pytest.fixture(scope="module")
@@ -666,7 +666,7 @@ def test_a_protocol_rule_does_not_supply_a_fix_version(codec: FixCodec) -> None:
 
 
 def test_nobody_saying_which_version_is_an_answer_too() -> None:
-    bare = FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
+    bare = FixCodec(registry=FixRegistry(cache_dir=DATA))
     assert bare.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
 
 
@@ -714,7 +714,7 @@ def test_a_registry_with_no_cached_version_resolves_nothing_and_raises_nothing(
     tmp_path: Path,
 ) -> None:
     """A cold cache loses the tags, never the capture."""
-    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
+    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path))
     pairs = parse_arrow_array(pyarrow.array([BRIDGE]))
     resolved = cold.into_entries(pairs)
     assert _tags(resolved) == [], "no dictionary, so nothing resolves"
@@ -733,7 +733,6 @@ def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
     registry = FixRegistry(
         sources=(NanocondaSource(url="http://127.0.0.1:9/nope"),),
         cache_dir=tmp_path,
-        offline=True,
     )
     assert registry.versions == (), "what it holds, rather than an error it never earned"
     assert registry.tags() == {}
@@ -742,7 +741,7 @@ def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
 
 def test_an_offline_registry_still_serves_what_it_stored() -> None:
     """Offline is "do not fetch", not "do not answer"."""
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     assert "4.4" in registry.versions
     assert registry.tags("4.4")["symbol"] == 55
 
@@ -908,17 +907,17 @@ def test_a_capture_carrying_no_absent_field_is_retyped_and_not_rebuilt(codec: Fi
 
 def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCodec) -> None:
     messages = pyarrow.array(["prose", "more prose"])
-    parsed = codec.into_pairs(messages, NO_PROTOCOL)
+    parsed = codec.into_pairs(messages, Protocol.OTHER)
     assert parsed.to_pylist() == [None, None]
     assert pyarrow.types.is_map(parsed.type)
 
 
 def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) -> None:
     """The name is the whole address: the batch carries it, the rule is ours."""
-    for line, expected in ((BRIDGE, "UL"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
+    for line, expected in ((BRIDGE, Protocol.UL), ("8=FIX.4.2|35=D|10=203|", Protocol.FIX)):
         assert Rules.into_default().into_arrow_protocol_array(
             pyarrow.array([line])
-        ).to_pylist() == [expected]
+        ).to_pylist() == [int(expected)]
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 
@@ -1295,16 +1294,7 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
         ("NOPARTYIDS[0].PARTYIDSOURCE", "proprietary/customcode"),
         ("NOPARTYIDS[0].PARTYROLE", "clientid"),
     ]
-    assert parties.to_pylist() == [
-        [
-            {
-                "partyid": "99106.003",
-                "partyidsource": "D",
-                "partyrole": 3,
-                "buffer": None,
-            }
-        ]
-    ]
+    assert parties.to_pylist() == [[{"partyid": "99106.003", "partyidsource": "D", "partyrole": 3}]]
     assert residual.to_pylist() == [[]]
 
 
@@ -1334,7 +1324,6 @@ def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec
         "partyid": "99106.003",
         "partyidsource": "D",
         "partyrole": 3,
-        "buffer": None,
     }
     assert residual.to_pylist() == [[]]
 
@@ -1369,12 +1358,10 @@ def test_the_packaged_registry_extracts_parties_from_a_wire_message(
     assert [party["partyid"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
     assert [party["partyrole"] for party in parties] == [1, 11]
     assert [party["partyidsource"] for party in parties] == ["D", "D"]
-    assert dict(parties[0]["buffer"]) == {
-        "NoPartySubIDs": "1",
-        "NoPartySubIDs[0].PartySubID": "SUB-TEST-A",
-        "NoPartySubIDs[0].PartySubIDType": "26",
-    }, "the sub-party group is read through the component tree, not guessed"
-    assert parties[1]["buffer"] is None
+    assert parties == [
+        {"partyid": "PARTY-TEST-A", "partyidsource": "D", "partyrole": 1},
+        {"partyid": "PARTY-TEST-B", "partyidsource": "D", "partyrole": 11},
+    ], "the group is read through the component tree, not guessed"
 
 
 def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
@@ -1383,7 +1370,21 @@ def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
     """Extraction removes the group and nothing beside it, in wire order."""
     tags = packaged.into_entries(packaged.into_pairs(pyarrow.array([PARTIES_WIRE]), "FIX"), "4.4")
     _, residual = packaged.into_component_columns(tags, "4.4")
-    assert [tag for tag, _ in _tags(residual)] == [8, 35, 49, 56, 34, 52, 11, 54, 38, 10]
+    assert [tag for tag, _ in _tags(residual)] == [
+        8,
+        35,
+        49,
+        56,
+        34,
+        52,
+        11,
+        802,
+        523,
+        803,
+        54,
+        38,
+        10,
+    ], "the sub-party group the component does not project keeps its place"
 
 
 def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
@@ -1408,7 +1409,7 @@ def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: 
     none -- and guessing the tags there would extract a group the standard
     never had.
     """
-    bare = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    bare = FixRegistry(cache_dir=tmp_path / "fix")
     bare._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
     codec = FixCodec(registry=bare)
     extractor = codec.component_of("parties", "4.4")

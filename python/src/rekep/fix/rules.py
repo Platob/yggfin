@@ -14,7 +14,7 @@ import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.entries import Entry
-from rekep.enums import Direction, EventType
+from rekep.enums import Direction, EventType, Protocol
 from rekep.fields import scalar
 from rekep.fields.arrays import sequence
 from rekep.fix.message import (
@@ -48,20 +48,28 @@ SHAPES: tuple[str, ...] = ("fix", "fixml", "ul")
 #: another.
 CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "ul": True, "none": None}
 
-#: Fall-through protocol for a line no configured rule recognizes.
-NO_PROTOCOL = "OTHER"
+#: What the `protocol` column stores, and so what every kernel here builds: a
+#: packed code and never the name it spells.
+_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 
 #: How a bridge says which way a payload moved -- `Receiving : 8=FIX...`,
-#: `Sending : ...`, `Message received:` -- counted only where the verb opens
-#: the line before the payload's own first token, so prose inside a FIX
-#: `Text <58>` or a bridge value never answers. Measured on real capture:
-#: every FIX row carries one of these; most FIXML re-log lines carry none, so
-#: direction is best-effort there. `incoming`/`outgoing`/`forward`, bare
-#: `IN`/`OUT` markers and the session-name fields were all investigated on
-#: the same capture and ruled out -- each mislabels enrichment snapshots,
-#: Jolokia metadata or the route's fixed endpoints as movement.
-INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b"
-OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b"
+#: `Sending : ...`, `Message received:`, `IN 8=FIX...`, `[OUT] ...` -- counted
+#: only where the verb opens the line before the payload's own first token, so
+#: prose inside a FIX `Text <58>` or a bridge value never answers. Measured on
+#: real capture: every FIX row carries one of these; most FIXML re-log lines
+#: carry none, so direction is best-effort there.
+#:
+#: `in`/`out` answer only where the line or a bracket opens on them and a
+#: delimiter closes them, which is the one shape a marker has and none of the
+#: shapes the same letters have otherwise: `sending in session 3` and
+#: `received out of order` are English, `direct:out` is a route endpoint and
+#: `MCFID-IN-XPAR` is a session name. A word boundary is not enough, because a
+#: hyphen is one -- and each of those standing in front of the opposite verb
+#: turns a right answer into UNKNOWN rather than merely adding a wrong one.
+#: `forward` and the session-name fields stay out: each mislabels enrichment
+#: snapshots, Jolokia metadata or the route's fixed endpoints as movement.
+INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b|(?:^|[\[({<|])in(?:bound|coming)?[ \t\])}>:|]"
+OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b|(?:^|[\[({<|])out(?:bound|going)?[ \t\])}>:|]"
 
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
@@ -122,7 +130,7 @@ CODEC_ANCHORS: Mapping[str, str] = MappingProxyType(
 class Rule(Convertible):
     """A protocol rule whose regex must work in Python `re` and Arrow RE2."""
 
-    protocol: str = NO_PROTOCOL
+    protocol: Protocol = Protocol.OTHER
     """What a line matching this rule carries, as the `protocol` column holds it."""
 
     pattern: str = ""
@@ -145,11 +153,28 @@ class Rule(Convertible):
     """How to read the line: one of `SHAPES`, or `none` for "do not"."""
 
     def __post_init__(self) -> None:
-        """Keep direct string input as one literal, never its characters."""
+        """Read the protocol as a code, and keep a direct separator one literal."""
+        # Strict here and tolerant at `Rules.rule`: a name the column cannot
+        # hold would register as `UNKNOWN`, and two over-long names would then
+        # be one protocol. A declaration is read once; a lookup runs per batch.
+        declared = Protocol.from_str(self.protocol)
+        if declared is Protocol.UNKNOWN:
+            raise ValueError(
+                f"{self.protocol!r} is no protocol name: at most eight bytes of [A-Z0-9._-]"
+            )
+        self.protocol = declared
         if isinstance(self.extra_entry_separators, str):
             self.extra_entry_separators = (self.extra_entry_separators,)
         else:
             self.extra_entry_separators = tuple(self.extra_entry_separators)
+
+    def into_dict(self) -> dict[str, Any]:
+        """The rule as a document holds it, with the protocol spelled by name.
+
+        A rule set is written and edited by hand, and a packed ASCII code is a
+        nineteen-digit integer that says nothing to whoever opens the file.
+        """
+        return {**Convertible.into_dict(self), "protocol": self.protocol.name}
 
     @property
     def named(self) -> bool | None:
@@ -161,17 +186,17 @@ class Rule(Convertible):
 #: They carry no pattern, so the keys of a parsed payload are what decides
 #: them; a rule that does carry one is decided by it instead, which is how a
 #: `35=0` session rule sits in front of the general one.
-FIX = Rule(protocol="FIX", codec="fix")
+FIX = Rule(protocol=Protocol.FIX, codec="fix")
 
-FIXML = Rule(protocol="FIXML", codec="fixml")
+FIXML = Rule(protocol=Protocol.FIXML, codec="fixml")
 
-UL = Rule(protocol="UL", codec="ul")
+UL = Rule(protocol=Protocol.UL, codec="ul")
 
 #: Operational lines whose vocabulary is understood but which carry no market
 #: message. Keeping these known lines out of `unknown` makes that table a
 #: useful signal that a genuinely new log format arrived.
 MISC = Rule(
-    protocol="MISC",
+    protocol=Protocol.MISC,
     pattern=joined_pattern(
         r"(?i)\bheartbeat\b",
         r"(?i)\b(?:connect(?:ed|ion)?|disconnect(?:ed|ion)?|reconnect(?:ed|ion)?)\b",
@@ -181,7 +206,7 @@ MISC = Rule(
 )
 
 #: An empty pattern makes this the final fall-through rule.
-OTHER = Rule(protocol=NO_PROTOCOL, pattern="", codec="none")
+OTHER = Rule(protocol=Protocol.OTHER, pattern="", codec="none")
 
 #: First match wins. The three shapes are mutually exclusive, so their order
 #: among themselves decides nothing; they lead the pattern rules because a FIX
@@ -219,38 +244,47 @@ class Rules(Convertible):
     #: Rules in the order they are tried.
     rules: list[Rule] = dataclasses.field(default_factory=_default_rules)
 
-    def rule(self, protocol: str) -> Rule:
+    def rule(self, protocol: Protocol | str | int) -> Rule:
         """The first rule for one protocol, or `OTHER` when this set has none.
 
         What the pipeline reads a *slice* of a batch back with: the batch
-        carries protocol names, and how to parse a slice is a property of the
-        rule that named it.
+        carries protocol codes, and how to parse a slice is a property of the
+        rule that named it. Tolerant, unlike `Rule`'s own reading: a stored
+        batch may carry a code this set no longer declares, and that is a
+        line nobody parses rather than a configuration error.
         """
+        wanted = Protocol.from_str(protocol)
         for rule in self.rules:
-            if rule.protocol == protocol:
+            # By value, not identity: an open vocabulary evicts a code it
+            # learnt at runtime, and the member a rule holds outlives that.
+            if rule.protocol == wanted:
                 return rule
         return OTHER
 
-    def category_of(self, protocol: str | None, eventtype: int | EventType | None) -> str:
+    def category_of(
+        self, protocol: Protocol | str | int | None, eventtype: int | EventType | None
+    ) -> str:
         """Target category for one parsed row."""
         kind = EventType.from_int(eventtype) if eventtype is not None else None
         if kind is not None and kind.rank >= EventType.INTENT.rank:
             return MARKET_CATEGORY
         if kind is EventType.MISC:
             return MISC_CATEGORY
-        if protocol in self.protocols:
+        if Protocol.from_str(protocol) in self.protocols:
             return MISC_CATEGORY
         return UNKNOWN_CATEGORY
 
     @property
-    def protocols(self) -> frozenset[str]:
-        """Recognised protocol names, excluding the fall-through value."""
-        return frozenset(rule.protocol for rule in self.rules if rule.protocol != NO_PROTOCOL)
+    def protocols(self) -> frozenset[Protocol]:
+        """Recognised protocol codes, excluding the fall-through value."""
+        return frozenset(
+            rule.protocol for rule in self.rules if rule.protocol is not Protocol.OTHER
+        )
 
     def into_arrow_protocol_array(
         self, messages: Any, plugins: Any = None, entries: Any = None
     ) -> pyarrow.Array:
-        """What each row carries, in kernels: one `protocol` name per line.
+        """What each row carries, in kernels: one packed `protocol` code per line.
 
         `entries` is the row's already-parsed key/value pairs, which is what a
         structured rule is decided by -- the message stage hands over the ones
@@ -258,7 +292,7 @@ class Rules(Convertible):
         """
         compute = pyarrow.compute
         rows = len(messages)
-        found: Any = pyarrow.repeat(pyarrow.scalar(OTHER.protocol, pyarrow.string()), rows)
+        found: Any = pyarrow.repeat(pyarrow.scalar(OTHER.protocol, _PROTOCOL_CODE), rows)
         if not rows:
             return found
         text = messages.cast(pyarrow.string(), safe=False)
@@ -270,8 +304,10 @@ class Rules(Convertible):
         )
         for rule in reversed(self.rules):
             hit = _hit(rule, text, plugin_text, shapes)
-            found = compute.if_else(hit, pyarrow.scalar(rule.protocol, pyarrow.string()), found)
-        return found.cast(pyarrow.string(), safe=False)
+            found = compute.if_else(hit, pyarrow.scalar(rule.protocol, _PROTOCOL_CODE), found)
+        # No cast: the seed above and every branch here are already the code the
+        # column stores, so there is no width for the loop to have widened.
+        return found
 
     def into_arrow_direction_array(self, messages: Any, protocols: Any) -> pyarrow.Array:
         """Packed transport direction read before the payload.
@@ -289,9 +325,9 @@ class Rules(Convertible):
         if not rows:
             return found
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-        names = protocols.cast(pyarrow.string(), safe=False)
+        codes = protocols.cast(_PROTOCOL_CODE, safe=False)
         for protocol, anchor in self._anchors().items():
-            selected = compute.fill_null(compute.equal(names, protocol), False)
+            selected = compute.fill_null(compute.equal(codes, protocol), False)
             if not compute.any(selected, min_count=0).as_py():
                 continue
             payload_at = compute.find_substring_regex(text, pattern=anchor)
@@ -311,14 +347,14 @@ class Rules(Convertible):
             found = compute.if_else(selected, direction, found)
         return found
 
-    def _anchors(self) -> dict[str, str]:
+    def _anchors(self) -> dict[Protocol, str]:
         """`{protocol: where its payload starts}` for every structured rule.
 
         Every rule the protocol answers to, not `rule(protocol)`'s first: two
         rules may share a protocol under different codecs, and a verb checked
         against the wrong vocabulary would answer from anywhere.
         """
-        found: dict[str, list[str]] = {}
+        found: dict[Protocol, list[str]] = {}
         for rule in self.rules:
             anchor = CODEC_ANCHORS.get(rule.codec)
             if anchor is not None and anchor not in found.setdefault(rule.protocol, []):
@@ -348,8 +384,8 @@ class Rules(Convertible):
         )
         known = compute.fill_null(
             compute.is_in(
-                protocols.cast(pyarrow.string(), safe=False),
-                value_set=pyarrow.array(sorted(self.protocols), pyarrow.string()),
+                protocols.cast(_PROTOCOL_CODE, safe=False),
+                value_set=pyarrow.array(sorted(self.protocols), _PROTOCOL_CODE),
             ),
             False,
         )

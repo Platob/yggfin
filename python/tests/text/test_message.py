@@ -7,7 +7,7 @@ import pytest
 
 import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile, txhash
-from rekep.enums import Direction, EventType
+from rekep.enums import Direction, EventType, Protocol
 from rekep.fields import DISPLAY
 from rekep.market import Event, hash_bytes
 
@@ -64,7 +64,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "threadname",
         "plugincode",
         "message",
-        "protocolcode",
+        "protocol",
         *LIFTED_HEADER,
         "entries",
         "direction",
@@ -722,7 +722,7 @@ def test_the_raw_stage_reads_every_separator_the_fix_parsers_declare() -> None:
 
     parsed = Message.parse_arrow(pyarrow.array([line]))
 
-    assert parsed["protocolcode"][0].as_py() == "FIX"
+    assert Protocol.from_int(parsed["protocol"][0].as_py()) is Protocol.FIX
     assert parsed["msgtype"][0].as_py() == "D"
     assert parsed["sendercompid"][0].as_py() == "SEND"
     assert Message.msg_types_arrow(pyarrow.array([line]))[0].as_py() == "D"
@@ -741,7 +741,7 @@ def test_a_begin_string_needs_no_dotted_version_to_be_fix() -> None:
     """
     parsed = Message.parse_arrow(pyarrow.array(["sending >> 8=FIX4|9=61|34=1|49=A|10=1"]))
 
-    assert parsed["protocolcode"][0].as_py() == "FIX"
+    assert Protocol.from_int(parsed["protocol"][0].as_py()) is Protocol.FIX
     assert parsed["direction"][0].as_py() == int(Direction.SENT)
     assert parsed["beginstring"][0].as_py() == "FIX4"
 
@@ -750,17 +750,21 @@ def test_prose_that_merely_contains_fix_is_not_a_message() -> None:
     """The BeginString value stops at a separator, and prose has none there."""
     parsed = Message.parse_arrow(pyarrow.array(["the 8=FIXTURE cost 12"]))
 
-    assert parsed["protocolcode"][0].as_py() == "OTHER"
+    assert Protocol.from_int(parsed["protocol"][0].as_py()) is Protocol.OTHER
 
 
 def test_a_row_carrying_its_text_answers_the_syntax_columns_either_way() -> None:
     """Whoever tokenized its arguments -- `from_text` passes its own in."""
     line = "8=FIX.4.2|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|11=ORD-1|10=203"
 
-    assert Message.from_text(line, message=line).protocolcode == "FIX"
-    assert Message(message=line).protocolcode == "FIX"
+    assert Message.from_text(line, message=line).protocol is Protocol.FIX
+    assert Message(message=line).protocol is Protocol.FIX
+    # The sentinel is the member, so a caller spelling the default still gets
+    # the reading rather than keeping the word it passed in.
+    assert Message(message=line, protocol="other").protocol is Protocol.FIX
+    assert Message(message=line, protocol="ul").protocol is Protocol.UL
     # Without the text there is nothing to read a syntax column off.
-    assert Message.from_text(line).protocolcode == "OTHER"
+    assert Message.from_text(line).protocol is Protocol.OTHER
 
 
 def test_the_discriminator_agrees_with_itself_before_it_is_lifted() -> None:

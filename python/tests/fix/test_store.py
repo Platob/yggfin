@@ -44,11 +44,10 @@ from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
 from rekep.fix.registry import FixRegistry, QuickFixSource, _problems
 from rekep.fix.store import (
-    NAMED_FILE,
     SHARD_SPAN,
     ConflictReport,
     collapse,
-    shard_name,
+    field_document,
 )
 from rekep.fix.transcribe import FixCodec
 
@@ -92,7 +91,7 @@ def _registry_documents() -> dict[str, dict[str, Any]]:
             "declared": ["9.1"],
             "sessions": {"9.1": [["FakeRole", True]]},
         },
-        shard_name(90001): {"90001": field.into_dict()},
+        field_document(90001): {"90001": field.into_dict()},
         "components/fake_parties.json": component.into_dict(),
     }
 
@@ -145,7 +144,7 @@ def _field(name: str, tag: int | None, version: str, datatype: str = "String") -
 @pytest.fixture
 def store(tmp_path: Path) -> Offline:
     """A store holding two synthetic versions of two synthetic fields."""
-    registry = Offline(cache_dir=tmp_path / "fix", offline=True)
+    registry = Offline(cache_dir=tmp_path / "fix")
     registry._store_versions(("9.1", "9.0"))
     registry._store_fields(
         "9.0",
@@ -189,7 +188,7 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
 
 
 def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> None:
-    registry = Offline(cache_dir=tmp_path / "fix", offline=True)
+    registry = Offline(cache_dir=tmp_path / "fix")
     older = fix_field(
         "Side",
         54,
@@ -242,11 +241,18 @@ def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> 
         (500, "fields/000001.json"),
         (40000, "fields/000080.json"),
         (50002, "fields/000100.json"),
+        ("isincode", "fields/999999.json"),
+        ("FAKE.VENDOR.CODE", "fields/999999.json"),
     ],
 )
-def test_which_document_holds_a_tag_is_arithmetic(tag: int, document: str) -> None:
-    """No index, no lookup table, no scan: `tag // 500`, zero-padded."""
-    assert shard_name(tag) == document
+def test_which_document_holds_a_field_is_arithmetic(tag: int | str, document: str) -> None:
+    """No index, no lookup table, no scan: `tag // 500`, zero-padded.
+
+    A field FIX never numbered keys by its name instead, and lands in the one
+    shard index no tag can reach -- so every field document is named the same
+    way and nothing asks whether a record has a tag to find it.
+    """
+    assert field_document(tag) == document
     assert SHARD_SPAN == 500
 
 
@@ -267,7 +273,7 @@ class Counting:
 
 def test_a_single_tag_lookup_deserializes_one_shard() -> None:
     """Over the published dictionary: fifteen shards, and a tag reads one."""
-    registry = FixRegistry(cache_dir=PUBLISHED, offline=True)
+    registry = FixRegistry(cache_dir=PUBLISHED)
     counted = Counting(registry._documents)
     registry.__dict__["_documents"] = counted
 
@@ -299,13 +305,12 @@ def test_one_layout_is_all_that_is_left_of_the_store() -> None:
 
 
 def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Offline) -> None:
-    """It has no tag to shard on, so it shares the one document those live in."""
+    """It has no tag to shard on, so it shares the one shard those live in."""
+    named = field_document("FAKE.VENDOR.CODE")
     store.add_field(_record("FAKE.VENDOR.CODE", column="fakevendorcode"))
-    assert (Path(store.cache_dir) / NAMED_FILE).exists()
-    assert list(json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())) == [
-        "FAKE.VENDOR.CODE"
-    ]
-    assert Offline(cache_dir=store.cache_dir, offline=True).resolve("fake.vendor.code") is not None
+    assert (Path(store.cache_dir) / named).exists()
+    assert list(json.loads((Path(store.cache_dir) / named).read_text())) == ["FAKE.VENDOR.CODE"]
+    assert Offline(cache_dir=store.cache_dir).resolve("fake.vendor.code") is not None
 
 
 # -- what a rename does ------------------------------------------------------
@@ -318,7 +323,7 @@ def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Of
     assert entry.fix.versions == ("9.0", "9.1")
     assert [alias.name for alias in entry.fix.named_aliases] == ["FakeRoleCode"]
     assert store.resolve("FakeRoleCode") is entry
-    stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
+    stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
     assert json.loads(stored["90001"]["fix"]["aliases"]) == [
         {"name": "FakeRoleCode", "source": "9.0", "occurrences": 0}
     ]
@@ -339,7 +344,7 @@ def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
     assert store.resolve("FakeRole").fix.versions == ("9.1",)
     store._store_fields("9.1", [_field("FakeCode", 90002, "9.1")])
     assert store.resolve("FakeRole") is None, "its last version went, and so did the record"
-    assert "90001" not in json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
+    assert "90001" not in json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
 
 
 # -- resolving a name --------------------------------------------------------
@@ -384,7 +389,7 @@ def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None
     """A near miss counted in a capture is evidence; a name typed in is not."""
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
     assert store.resolve("FakeRolle").fix.tag == 90001
-    stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
+    stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
     assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in json.loads(
         stored["90001"]["fix"]["aliases"]
     )
@@ -535,12 +540,12 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
     assert before == {"0": EventType.MISC, "D": EventType.MISC}
     assert store.msg_type_event_types() == {"0": EventType.MISC, "D": EventType.ORDER}
 
-    reopened = Offline(cache_dir=store.cache_dir, offline=True)
+    reopened = Offline(cache_dir=store.cache_dir)
     assert reopened.msg_type_event_types() == {
         "0": EventType.MISC,
         "D": EventType.ORDER,
     }
-    document = json.loads((Path(store.cache_dir) / shard_name(35)).read_text())
+    document = json.loads((Path(store.cache_dir) / field_document(35)).read_text())
     assert json.loads(document["35"]["fix"]["event_types"]) == {"D": "ORDER"}, (
         "by name, because this file is read and edited by hand and the packed "
         "code is a nineteen-digit integer"
@@ -578,7 +583,7 @@ def test_market_dispatch_states_and_codecs_are_cached_store_data(
     assert store.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert store.state_values("OrdStatus") is not cached
 
-    reopened = Offline(cache_dir=store.cache_dir, offline=True)
+    reopened = Offline(cache_dir=store.cache_dir)
     assert reopened.state_values("OrdStatus") == {"0": State.ACCEPTED}
     assert reopened.state_values("MsgType") == {"D": State.PENDING_NEW}
     assert reopened.field(35).fix.encode("NewOrderSingle") == "D"
@@ -604,7 +609,7 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
     with pytest.raises(ValueError, match="already FakeCode's"):
         store.add_field(clashing)
     assert store.resolve("FakeOther") is None, "refused whole, never written half"
-    assert "90004" not in json.loads((Path(store.cache_dir) / shard_name(90004)).read_text())
+    assert "90004" not in json.loads((Path(store.cache_dir) / field_document(90004)).read_text())
 
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
@@ -755,7 +760,7 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
                 )
             ]
 
-    registry = Building(cache_dir=tmp_path / "fix", offline=True)
+    registry = Building(cache_dir=tmp_path / "fix")
     registry.rebuild("9.1")
     mapping = State.fix_mapping()
 
@@ -768,9 +773,9 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
         "G": State.REPLACED,
         "H": State.CANCELLED,
     }
-    stored = json.loads((tmp_path / "fix" / shard_name(150)).read_text())
+    stored = json.loads((tmp_path / "fix" / field_document(150)).read_text())
     assert json.loads(stored["150"]["fix"]["states"])["G"] == "REPLACED"
-    assert Offline(cache_dir=registry.cache_dir, offline=True).state_values("ExecType") == (
+    assert Offline(cache_dir=registry.cache_dir).state_values("ExecType") == (
         registry.state_values("ExecType")
     )
 
@@ -843,18 +848,18 @@ def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(store: Of
 
 
 def test_a_store_travels_as_a_directory_or_as_a_zip(store: Offline, tmp_path: Path) -> None:
-    archived = FixRegistry(cache_dir=store.into_zip(tmp_path / "copy.zip"), offline=True)
+    archived = FixRegistry(cache_dir=store.into_zip(tmp_path / "copy.zip"))
     assert not store.verify(archived)
     with zipfile.ZipFile(tmp_path / "copy.zip") as opened:
         names = opened.namelist()
-    assert shard_name(90001) in names
+    assert field_document(90001) in names
     assert "components/fake_parties.json" in names
 
 
 def test_the_published_dictionary_answers_what_a_copy_of_it_answers(tmp_path: Path) -> None:
     """Zero regressions, checked rather than asserted: every version, every field."""
-    published = FixRegistry(cache_dir=PUBLISHED, offline=True)
-    copied = FixRegistry(cache_dir=published.into_zip(tmp_path / "copy.zip"), offline=True)
+    published = FixRegistry(cache_dir=PUBLISHED)
+    copied = FixRegistry(cache_dir=published.into_zip(tmp_path / "copy.zip"))
     assert published.verify(copied) == []
 
 
@@ -900,7 +905,9 @@ def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
     assert first.__dict__["fetched"] == ["rebuild"] and first.installed
     assert len(said) == 2, "one line before the fetch and one after it"
     assert "fetching the dictionary from" in said[0]
-    assert "offline=True" in said[0], "and how to avoid paying for it"
+    assert "point cache_dir at a store you already have" in said[0], (
+        "and how to avoid paying for it"
+    )
     assert "is installed at" in said[1]
     assert (default_store / "fields" / "000180.json").exists(), "the sharded layout, cold"
 
@@ -1057,7 +1064,6 @@ def test_an_undecodable_registry_member_falls_back_to_the_existing_scrape(
 def test_a_registry_archive_token_is_not_serialised(tmp_path: Path) -> None:
     registry = FixRegistry(
         cache_dir=tmp_path / "named",
-        offline=True,
         registry_url="https://artifactory.example/fix-registry.zip",
         registry_token="secret-token",
     )
@@ -1075,7 +1081,6 @@ def test_an_explicit_empty_registry_token_suppresses_the_environment(
     monkeypatch.setenv("REKEP_FIX_REGISTRY_TOKEN", "another-registry-token")
     registry = FixRegistry(
         cache_dir=tmp_path / "named",
-        offline=True,
         registry_url="http://artifactory.example/fix-registry.zip",
         registry_token="",
     )
@@ -1092,11 +1097,11 @@ def test_malformed_registry_documents_never_leave_the_staging_directory(
     if malformed == "index":
         documents["versions.json"]["sessions"] = {"9.1": [["FakeRole", "yes"]]}
     elif malformed == "field":
-        documents[shard_name(90001)]["90001"]["fix"]["versions"] = "9.1"
+        documents[field_document(90001)]["90001"]["fix"]["versions"] = "9.1"
     else:
         documents["components/fake_parties.json"]["declaration"] = "not-a-document"
     target = tmp_path / malformed
-    registry = FixRegistry(cache_dir=target, offline=True)
+    registry = FixRegistry(cache_dir=target)
 
     with pytest.raises(ValueError, match="FIX"):
         registry._install_registry_documents(documents)
@@ -1134,7 +1139,7 @@ def test_an_interrupted_registry_install_leaves_no_partial_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target = tmp_path / "fix"
-    registry = FixRegistry(cache_dir=target, offline=True)
+    registry = FixRegistry(cache_dir=target)
     documents = {
         "versions.json": {"versions": ["9.1"]},
         "fields/000000.json": {},
@@ -1156,12 +1161,15 @@ def test_an_interrupted_registry_install_leaves_no_partial_store(
     assert not target.exists()
 
 
-def test_a_whole_store_rebuild_replaces_yaml_with_json_by_identity(tmp_path: Path) -> None:
+def test_a_whole_store_rebuild_drops_the_documents_it_no_longer_declares(
+    tmp_path: Path,
+) -> None:
+    """A rebuild is a replacement: a shard that emptied is gone, not stale."""
     place = registry_module.DirectoryDocuments(
         pyarrow.fs.LocalFileSystem(), (tmp_path / "fix").as_posix()
     )
-    place.write("fields/000000.yaml", {"old": True})
-    place.write("fields/stale.yaml", {"stale": True})
+    place.write("fields/000000.json", {"old": True})
+    place.write("fields/000001.json", {"stale": True})
 
     place.write_all({"fields/000000.json": {"new": True}})
 
@@ -1194,28 +1202,42 @@ def test_a_bootstrap_the_network_refuses_serves_the_projection_and_says_it_is_re
     assert registry.field("Side").fix["tag"] == "54", "and the projection answers"
 
 
-def test_a_cold_offline_default_store_opens_no_socket(
-    default_store: Path, monkeypatch: pytest.MonkeyPatch
+def test_a_store_somebody_named_opens_no_socket(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Offline is offline: asserted at the socket, not inferred from a counter."""
+    """Naming a store is the whole of saying where the answers come from.
+
+    Asserted at the socket, not inferred from a counter: a registry pointed at
+    a store serves it, cold or warm, and nothing it is asked turns into a
+    fourteen-thousand-page scrape. This is the property `offline=True` used to
+    buy, and every caller had to remember to buy it.
+    """
 
     def refuse(*_: object, **__: object) -> None:
-        raise AssertionError("an offline registry opened a socket")
+        raise AssertionError("a registry serving a store opened a socket")
 
     monkeypatch.setattr(socket, "socket", refuse)
     monkeypatch.setattr(socket, "create_connection", refuse)
+    registry = FixRegistry(cache_dir=tmp_path / "named")
+
+    assert registry.offline, "it was pointed at a store"
+    assert registry.versions == () and registry._stored_versions() == ()
+    assert registry.lookup("Side") == [], "no packaged projection stood in for it"
+    assert not registry.fields_available("4.4")
+
+
+def test_a_cold_default_store_is_the_one_that_may_fill_itself(default_store: Path) -> None:
+    """Nobody chose `~/.config/fix`, so it is the only store that fetches.
+
+    Refused here, which is the same path a machine with no route out takes:
+    it serves the packaged projection and says the registry is reduced.
+    """
     said: list[str] = []
-    with pytest.warns(RuntimeWarning, match="this registry is offline"):
-        registry = FixRegistry(offline=True, announce=said.append)
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = Refused(announce=said.append)
+    assert not registry.offline, "nothing was found where it looked"
     assert "rekep fix registry scrape" in said[-1]
     assert registry.field("Side").fix["tag"] == "54", "served reduced, and never silently"
-
-
-def test_a_store_somebody_named_is_that_store_cold_or_not(tmp_path: Path) -> None:
-    """Only the default store is bootstrapped; a named one is about to be written."""
-    registry = Refused(cache_dir=tmp_path / "named", offline=True)
-    assert registry._stored_versions() == ()
-    assert registry.lookup("Side") == [], "no packaged projection stood in for it"
 
 
 def test_the_packaged_projection_is_bootstrapped_by_being_what_it_is() -> None:
@@ -1299,7 +1321,7 @@ def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> 
         "FIX90.xml",
         "FIX91.xml",
     ], "every version the store holds, so none of it goes stale behind the others"
-    reopened = Offline(cache_dir=store.cache_dir, offline=True)
+    reopened = Offline(cache_dir=store.cache_dir)
     assert reopened.field(90001, "9.1").fix.value_of("1").aliases == ("FAKE_ONE",)
     assert members_of(reopened.component("FakeParties", "9.1"))[0].name == "NoFakeParties"
 
@@ -1373,7 +1395,7 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     # Stored, in the one document the fields with no tag share, as the same
     # field document every other declaration in this repository is written in:
     # the Arrow reading at the top, the protocol's own keys under `fix`.
-    stored = json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())
+    stored = json.loads((Path(store.cache_dir) / field_document("FAKE.VENDOR.CODE")).read_text())
     assert stored == {
         "FAKE.VENDOR.CODE": {
             "name": "FAKE.VENDOR.CODE",
@@ -1398,7 +1420,6 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
         cache_dir=store.into_projection(
             tmp_path / "projected.zip", ["FakeRole", "FAKE.VENDOR.CODE"]
         ),
-        offline=True,
     )
     entry = projected.resolve("FAKE.VENDOR.CODE")
     assert entry.fix.versions == (ANY_VERSION,), "it holds for every version, not for 9.1"

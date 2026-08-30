@@ -1,6 +1,6 @@
 # End-to-end run
 
-A correctness run measured 2026-08-30 executes the five notebook tasks against
+A correctness run measured 2026-08-30 executes the six notebook tasks against
 the checked-in message fixture and a fresh local Iceberg warehouse, then
 replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).
@@ -8,35 +8,68 @@ replays the same input. Throughput measurements live on
 ![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
 ![End-to-end execution architecture](../../assets/workflow-run-light.svg#only-light)
 
-## Run the workflow locally
+## Deploy the tables
 
-From the repository root:
+Every task creates its own target on the first write, so a run against an
+empty catalog needs nothing done first. Where the catalog is not the runner's
+to write to -- a Glue catalog over an S3 warehouse, deployed once by whoever
+owns the account -- create them ahead of the jobs instead:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml
+```
+
+The task document supplies the catalog, its properties and the branch, so a
+deployment lands where the pipeline will write; `--catalog`, `--property
+NAME=VALUE`, `--table-property NAME=VALUE` and `--branch` override any of
+them, `--table` restricts the run to one table, and `--dry-run` reports which
+tables are missing without creating any. It is idempotent: a table already in
+the catalog is left as it is, properties included, and reported `present`.
+`rekep.deploy.TABLES` is the declared layout it reads.
+
+## Run the workflow locally
+
+From the repository root. The `runner` dependency group is Papermill and the
+kernel it executes a notebook under:
+
+```bash
+uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data/app_messages_sample.txt \
   --output parse_messages.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --output parse_fix.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
+  tasks/parse_instruments/parse_instruments.yml \
+  --output parse_instruments.executed.ipynb
+
+uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
   --output parse_market.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/flatten_orders/flatten_orders.yml \
   --output flatten_orders.executed.ipynb
 
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/flatten_executions/flatten_executions.yml \
   --output flatten_executions.executed.ipynb
 ```
 
 The YAML selects the catalog, branch, tables and commit sizes. Repeatable
-`--parameter NAME=VALUE` options override one run.
+`--parameter NAME=VALUE` options override one run. The same six commands run
+unchanged against S3 — only the `source`, `fix_dictionary` and
+`catalog_properties` values in the YAML move; see
+[AWS S3](deploy.md#aws-s3). Each command writes the
+run's records to `stderr` as they happen and the task's result to `stdout`;
+[Logs](logs.md) has the record a stage opens and closes with, and the keys
+every result carries. The shipped documents write
+a SQLite catalog to `data/catalog.db` and a file warehouse to `data/warehouse`,
+both ignored by git along with the executed notebooks -- delete them for a
+clean run.
 
 ## Pinned results
 
@@ -47,14 +80,17 @@ fields.
 | Notebook | First run | Replay writes |
 | --- | --- | ---: |
 | `parse_messages` | 11 read, 11 written | 0 |
-| `parse_fix` | 11 read; 11 FixMsg and 1 Instrument written | 0 |
+| `parse_fix` | 11 read, 11 FixMsg written | 0 |
+| `parse_instruments` | 1 observed, 1 written | 0 |
 | `parse_market` | 2 Books written; 2 Orders and 1 Execution nested | 0 |
 | `flatten_orders` | 2 projected, 2 written | 0 |
 | `flatten_executions` | 1 projected, 1 written | 0 |
 
 `parse_fix` routed 2 rows to `fix.market` and 9 to `fix.misc`; no
-`fix.unknown` table was needed. The replay reported 12 skips: the 11 FixMsg
-rows and the one canonical Instrument record.
+`fix.unknown` table was needed. It resolved `unix` from `SendingTime` on the 2
+market rows and fell back to the recording clock on the other 9, and 3 of the
+11 rows carried a `symbolticker`. The replay wrote nothing at any stage: 11
+FixMsg rows skipped, and the one canonical Instrument record unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
@@ -68,8 +104,9 @@ rows and the one canonical Instrument record.
 
 ## Sampled output
 
-The flat Instrument table holds one `TTF` record keyed by `symbolticker`, with
-`xhash = -5992726579138353958`. `fix.market` contains only captured rows.
+The flat Instrument table holds one `TTF` record keyed by `symbolticker`,
+versioned out of `fix.market` by `parse_instruments`. `fix.market` itself
+contains only captured rows.
 
 | Product | Selected rows |
 | --- | --- |

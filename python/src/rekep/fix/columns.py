@@ -13,6 +13,7 @@ import pyarrow.compute
 from rekep.entries import ENTRIES as ENTRIES
 from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
+from rekep.enums import SecurityIDSource
 from rekep.fields import Field, column_name
 from rekep.fix.fields import UTC_DATATYPES
 from rekep.fix.registry import FixRegistry
@@ -202,6 +203,33 @@ def _physical_type(member: Field) -> pyarrow.DataType:
     return pyarrow.timestamp("us", tz="UTC" if zoned else None)
 
 
+#: What a column lifted from a registry record carries, and nothing else.
+#:
+#: Which FIX field it is, what the dictionary calls it, and what type the
+#: protocol gives it. Deliberately not everything the registry knows: the
+#: versions a field was seen in, the messages that carry it, the sources that
+#: answered, the aliases a name goes by and the enumeration it declares are
+#: the *registry's* bookkeeping. Copied onto every column of every table they
+#: made a published contract a second, worse copy of the dictionary -- and
+#: made recording one newly observed spelling a change to a published schema.
+#:
+#: Measured on `FixMsg`: 307 KB of `fix:` metadata on its Arrow schema before
+#: this, 11 KB after, for the same columns -- and that schema is carried by
+#: every batch the pipeline moves, not only by the document on disk.
+_COLUMN_METADATA: tuple[str, ...] = (
+    "description",
+    "fix:tag",
+    "fix:name",
+    "fix:type",
+    "fix:display",
+)
+
+
+def column_metadata(source: Mapping[str, str]) -> dict[str, str]:
+    """`source` narrowed to what a column says about the field it reads."""
+    return {key: value for key, value in source.items() if key in _COLUMN_METADATA}
+
+
 def _declaration(member: Field) -> Field:
     """A registry field in the physical shape used by parsed logs.
 
@@ -209,7 +237,7 @@ def _declaration(member: Field) -> Field:
     kept as the display, because that is what a reader wants to see and what
     the fold throws away.
     """
-    metadata = dict(member.metadata)
+    metadata = column_metadata(member.metadata)
     metadata["fix:name"] = member.name
     metadata["fix:display"] = member.name
     return Field(
@@ -335,14 +363,6 @@ def _named(entry: Field) -> tuple[str, ...]:
     return tuple(dict.fromkeys(column_name(name) for name in spellings if name.strip()))
 
 
-#: What a lifted namespaced field carries into the log contract. Deliberately not
-#: everything the registry knows: the aliases a name answers to and the
-#: versions it was seen in are registry bookkeeping, and putting them here
-#: would make recording one newly observed spelling a change to a published
-#: schema.
-_NAMESPACE_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
-
-
 def _namespace_column(entry: Field) -> Field:
     """One namespaced field as the log column it is lifted into.
 
@@ -354,7 +374,7 @@ def _namespace_column(entry: Field) -> Field:
         name=entry.fix.column,
         dtype=entry.dtype,
         nullable=True,
-        metadata={key: entry.metadata[key] for key in _NAMESPACE_METADATA if key in entry.metadata},
+        metadata=column_metadata(entry.metadata),
     )
     built.fix.display = entry.fix.name
     return built
@@ -437,11 +457,41 @@ def id_scheme(value: Any) -> str:
     return declared.symbols.get(text) or declared.symbols.get(declared.encode(text), "")
 
 
+def isin_identity(
+    securityid: Any, securityidsource: Any, isincode: Any
+) -> tuple[Any, SecurityIDSource | None, Any]:
+    """The identifier pair and the flat ISIN, each filled from the other.
+
+    An ISIN reaches a row two ways -- `SecurityID <48>` under the source tag 22
+    calls ISIN, or a bridge's own rendered `ISINCODE` -- and which one a feed
+    wrote is not a reader's business. Filled here rather than at each reader
+    because the ticker is built from the pair: a row carrying only the second
+    had no identifier at all, and fell back to its symbol.
+    """
+    scheme = SecurityIDSource.from_str(securityidsource) if securityidsource else None
+    identifier = securityid or None
+    isin = isincode or None
+    if isin and (identifier is None or (scheme is None and identifier == isin)):
+        # Or where the two agree and nothing named a scheme: an identifier that
+        # *is* the row's ISIN is issued under ISIN, whichever field carried it.
+        return isin, SecurityIDSource.ISIN, isin
+    if identifier is not None and scheme is SecurityIDSource.ISIN:
+        return identifier, scheme, isin or identifier
+    return identifier, scheme, isin
+
+
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
 NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
 #: The ones the parsed log declares by name, kept as names so `FixMsg` can
 #: annotate its columns with them.
+#: `SecurityIDSource <22>` with the type left to the column that declares it.
+#: The standard types the field `String`; this package reads its thirty-three
+#: codes as one code, and `DECLARED` would hand back the standard's width.
+SECURITY_ID_SOURCE: Field = _REGISTRY.scalar("SecurityIDSource", dtype=None)
+SECURITY_ID_SOURCE.metadata = column_metadata(SECURITY_ID_SOURCE.metadata)
+SECURITY_ID_SOURCE.fix.display = SECURITY_ID_SOURCE.fix.canonical
+
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]
 PARENT_CL_ORD_ID: Field = NAMESPACE_FIELDS["ParentClOrdID"]
 PARENT_ORDER_ID: Field = NAMESPACE_FIELDS["ParentOrderID"]

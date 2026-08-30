@@ -268,6 +268,52 @@ class OptionKind(Ascii64):
     CALL = "CALL", 200
 
 
+class Protocol(Ascii64):
+    """Which protocol a line carries, as an eight-byte ASCII name.
+
+    Open, because the vocabulary belongs to the logs and not to this package:
+    `rekep.fix.rules` ships the five below, and a desk whose rule names its
+    own bridge stores that name as a code without a release here. Eight
+    upper-case bytes is the shape such a name has to fit.
+    """
+
+    #: The canonical shape, and so also what a stored code may read back as:
+    #: `_canonical` upper-cases, so admitting a lower-case spelling here would
+    #: let one name pack as two codes -- `from_str` folding to `FIX` while
+    #: `from_int` registered `fix` beside it.
+    _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9._-]{1,8}$"))
+
+    UNKNOWN = 0
+    """No name resolved; a rule declaring one is a configuration error."""
+
+    FIX = "FIX"
+    """Numbered FIX tags alone."""
+
+    FIXML = "FIXML"
+    """Numbered tags and named keys together."""
+
+    UL = "UL"
+    """Named keys alone."""
+
+    MISC = "MISC"
+    """Operational traffic whose vocabulary is known but carries no message."""
+
+    OTHER = "OTHER"
+    """The fall-through: a line no rule recognised."""
+
+    @classmethod
+    def _valid(cls, text: str) -> bool:
+        return bool(cls._PATTERN.fullmatch(text))
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
+
+    @classmethod
+    def schema_metadata(cls) -> dict[str, str]:
+        return {**super().schema_metadata(), "pattern": "[A-Z0-9._-]{1,8}"}
+
+
 class State(Ascii64):
     """Event lifecycle, ordered by completion.
 
@@ -470,6 +516,113 @@ class MIC(Ascii32):
     XXXX = "XXXX"
     """No market, including an unlisted instrument."""
 
+    # The venues a capture keeps meeting, compiled rather than left to
+    # registration. Which ones: the **operating** MIC of a primary listing
+    # book, plus the listed-derivatives complexes those books clear through.
+    # Operating and not segment, because `XPAR` is where a Euronext Paris
+    # trade belongs whichever book inside it printed, and a segment list is
+    # the half of ISO 10383 that churns.
+    #
+    # Compiling is not decoration. `into_arrow_array` renders the compiled
+    # members and nulls everything else, so before this every real venue in a
+    # `mic` column read back as null while `from_int` named it -- the scalar
+    # reader and the column renderer disagreeing on the same bytes. Only
+    # compiled codes reach the `enum:values` a contract publishes, and only
+    # they are safe from the eviction the learnt-code registry does.
+    #
+    # No stored value moves: a code packs from its own bytes, so a venue that
+    # registered yesterday is the same integer compiled today. A venue missing
+    # here costs one registration; a wrong code here is a stored value nobody
+    # can correct, which is what keeps this list to venues, not vendors.
+
+    # -- Europe
+    XPAR = "XPAR"
+    """Euronext Paris."""
+    XAMS = "XAMS"
+    """Euronext Amsterdam."""
+    XBRU = "XBRU"
+    """Euronext Brussels."""
+    XLIS = "XLIS"
+    """Euronext Lisbon."""
+    XMIL = "XMIL"
+    """Euronext Milan."""
+    XDUB = "XDUB"
+    """Euronext Dublin."""
+    XOSL = "XOSL"
+    """Euronext Oslo Bors."""
+    XETR = "XETR"
+    """Deutsche Boerse Xetra."""
+    XFRA = "XFRA"
+    """Frankfurt Stock Exchange."""
+    XLON = "XLON"
+    """London Stock Exchange."""
+    XSWX = "XSWX"
+    """SIX Swiss Exchange."""
+    XMAD = "XMAD"
+    """Bolsa de Madrid."""
+    XSTO = "XSTO"
+    """Nasdaq Stockholm."""
+    XCSE = "XCSE"
+    """Nasdaq Copenhagen."""
+    XHEL = "XHEL"
+    """Nasdaq Helsinki."""
+    XWBO = "XWBO"
+    """Wiener Boerse."""
+    XEUR = "XEUR"
+    """Eurex."""
+    XLME = "XLME"
+    """London Metal Exchange."""
+    IFEU = "IFEU"
+    """ICE Futures Europe."""
+
+    # -- The Americas
+    XNYS = "XNYS"
+    """New York Stock Exchange."""
+    XNAS = "XNAS"
+    """Nasdaq."""
+    ARCX = "ARCX"
+    """NYSE Arca."""
+    BATS = "BATS"
+    """Cboe BZX."""
+    XCBO = "XCBO"
+    """Cboe Options Exchange."""
+    IEXG = "IEXG"
+    """Investors Exchange."""
+    XCME = "XCME"
+    """Chicago Mercantile Exchange."""
+    XCBT = "XCBT"
+    """Chicago Board of Trade."""
+    XNYM = "XNYM"
+    """New York Mercantile Exchange."""
+    XCEC = "XCEC"
+    """Commodity Exchange."""
+    IFUS = "IFUS"
+    """ICE Futures U.S."""
+    XTSE = "XTSE"
+    """Toronto Stock Exchange."""
+
+    # -- Asia-Pacific, and the rest
+    XTKS = "XTKS"
+    """Tokyo Stock Exchange."""
+    XHKG = "XHKG"
+    """Hong Kong Exchanges."""
+    XSES = "XSES"
+    """Singapore Exchange."""
+    XASX = "XASX"
+    """Australian Securities Exchange."""
+    XSHG = "XSHG"
+    """Shanghai Stock Exchange."""
+    XSHE = "XSHE"
+    """Shenzhen Stock Exchange."""
+    XKRX = "XKRX"
+    """Korea Exchange."""
+    XNSE = "XNSE"
+    """National Stock Exchange of India."""
+    XBOM = "XBOM"
+    """BSE India."""
+    XJSE = "XJSE"
+    """Johannesburg Stock Exchange."""
+
     @classmethod
     def _valid(cls, text: str) -> bool:
         return bool(cls._PATTERN.fullmatch(text))
@@ -577,6 +730,103 @@ class Currency(Ascii32):
     XPD = "XPD"
     XTS = "XTS"
     XXX = "XXX"
+
+
+class SecurityIDSource(Ascii32):
+    """Which scheme a `SecurityID <48>` is issued under, as a four-byte code.
+
+    Open, because a desk's own reference system is a scheme like any other and
+    the dictionary cannot know it. The thirty-three the dictionary does
+    enumerate are compiled under short codes: their spellings run to
+    `FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER` and a stored code is four bytes,
+    so the name is the spelling and the code is what a column holds. The wire
+    values stay the dictionary's -- `FIX_FIELD` names the field they are read
+    from, so tag 22's codes are not written down a second time here.
+    """
+
+    FIX_FIELD = enum.nonmember("SecurityIDSource")
+
+    UNKNOWN = 0
+    """No scheme was stated, so the identifier beside it names its own."""
+
+    CUSIP = "CUSP"
+    SEDOL = "SEDL"
+    QUIK = "QUIK"
+    ISIN = "ISIN"
+    """ISO 6166, and the one scheme this package asks about by name."""
+    RIC = "RIC"
+    ISO_CURRENCY = "CCY"
+    ISO_COUNTRY = "CTRY"
+    EXCHANGE_SYMBOL = "EXCH"
+    CTA = "CTA"
+    BLOOMBERG = "BBG"
+    WERTPAPIER = "WKN"
+    DUTCH = "DUTC"
+    VALOREN = "VALO"
+    SICOVAM = "SICO"
+    BELGIAN = "BELG"
+    COMMON = "COMN"
+    CLEARING_HOUSE = "CLRH"
+    ISDA_FPML_SPEC = "ISDA"
+    OPRA = "OPRA"
+    ISDA_FPML_URL = "FPML"
+    LETTER_OF_CREDIT = "LOC"
+    MARKETPLACE = "MKTP"
+    MARKIT_RED_ENTITY = "RDEC"
+    MARKIT_RED_PAIR = "RDPC"
+    CFTC_COMMODITY = "CFTC"
+    ISDA_COMMODITY = "ICRP"
+    FIGI = "FIGI"
+    LEI = "LEI"
+    SYNTHETIC = "SYNT"
+    FIDESSA = "FIDM"
+    INDEX_NAME = "INDX"
+    UNIFORM_SYMBOL = "UNIF"
+    DIGITAL_TOKEN = "DTI"
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
+
+    @classmethod
+    def _built_in_aliases(cls) -> dict[str, str]:
+        """The dictionary's spelling for each scheme, so a value finds its member.
+
+        `from_fix` matches a dictionary value to a member by the spellings that
+        value declares, and those are the long names above the codes. Without
+        this bridge every wire code would answer `UNKNOWN` -- and these are the
+        only place the long spellings appear, because the codes are what a
+        column stores.
+        """
+        return {
+            "ISINNumber": "ISIN",
+            "RICCode": "RIC",
+            "ISOCurrencyCode": "ISO_CURRENCY",
+            "ISOCountryCode": "ISO_COUNTRY",
+            "ExchangeSymbol": "EXCHANGE_SYMBOL",
+            "ConsolidatedTapeAssociation": "CTA",
+            "BloombergSymbol": "BLOOMBERG",
+            "Wertpapier": "WERTPAPIER",
+            "Dutch": "DUTCH",
+            "Valoren": "VALOREN",
+            "Sicovam": "SICOVAM",
+            "Belgian": "BELGIAN",
+            "Common": "COMMON",
+            "ClearingHouse": "CLEARING_HOUSE",
+            "ISDAFpMLSpecification": "ISDA_FPML_SPEC",
+            "OptionPriceReportingAuthority": "OPRA",
+            "ISDAFpMLURL": "ISDA_FPML_URL",
+            "LetterOfCredit": "LETTER_OF_CREDIT",
+            "MarketplaceAssignedIdentifier": "MARKETPLACE",
+            "MARKIT_RED_ENTITY_CLIP": "MARKIT_RED_ENTITY",
+            "MARKIT_RED_PAIR_CLIP": "MARKIT_RED_PAIR",
+            "CFTC_COMMODITY_CODE": "CFTC_COMMODITY",
+            "ISDA_COMMODITY_REFERENCE_PRICE": "ISDA_COMMODITY",
+            "FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER": "FIGI",
+            "LEGAL_ENTITY_IDENTIFIER": "LEI",
+            "FIDESSA_INSTRUMENT_MNEMONIC": "FIDESSA",
+            "DIGITAL_TOKEN_IDENTIFIER": "DIGITAL_TOKEN",
+        }
 
 
 class Side(Ascii32):

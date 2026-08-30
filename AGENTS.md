@@ -111,9 +111,10 @@ The fold is also the match: a spelling resolves against the FIX registry by
 what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
 
 Every column carries `fix:display`, the name a reader is shown -- the
-dictionary's spelling for a FIX column, `display_name`'s title case for
-everything else. `tests/test_schemas.py` holds both halves for every published
-contract.
+dictionary's spelling for a FIX column, `display_name`'s capitalised run-on
+spelling for everything else. No display carries a space, because no FIX field
+name does: `SourceURL`, not `Source URL`. `tests/test_schemas.py` holds both
+halves for every published contract.
 
 A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
 `clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
@@ -204,8 +205,9 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
   decides whether orders still resting when the stream ends are expired.
 - A structured FIX component is a `ComponentGroup` subclass naming its
-  component, its group and the members that earn a column; everything else in
-  an entry lands in `buffer`. The spec's own `required` rules decide member
+  component, its group and the members that earn a column; everything else
+  stays in the row's residual `entries`, which is the one place a value
+  nothing lifted belongs. The spec's own `required` rules decide member
   nullability -- `FixRegistry.component_field` reads them.
 
 ## Workflow ownership
@@ -218,12 +220,17 @@ configuration. Airflow executes the notebooks through its Papermill provider.
 The supported graph is:
 
 ```text
-parse_messages -> parse_fix -> parse_market -> flatten_orders
-                      |             `-------> flatten_executions
-                      `------------> market.instruments
+parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
+                             `-> parse_market -+-> flatten_orders
+                                               `-> flatten_executions
 ```
 
-`parse_fix` writes flat Instrument records directly to `market.instruments`.
+`parse_fix` owns FIX translation, the resolved `unix` clock and the
+`symbolticker` mapping, and holds no rule about reference data.
+`parse_instruments` reads the rows it wrote and versions
+`market.instruments` from them; the versioning rule itself is
+`rekep.market.versioned`, in the package, because two jobs writing that
+table must not disagree about what a version is.
 
 With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten
@@ -232,6 +239,14 @@ tasks are skipped by the Airflow result route.
 Inputs are text files. Persisted outputs are `logs.messages`, the three
 `fix.*` tables, and the `market.*` instrument, book, order and execution
 tables.
+
+Every task returns the same result keys and brackets itself with the same two
+INFO records, both built by `rekep.logs.Stage`: `task`, `read`, `written`,
+`skipped`, `sources`, `targets`, `window`, `elapsed_ms`, and whatever else a
+task alone knows under its own name. The numbers in the closing record are the
+numbers in the returned dict or one of them is wrong. A notebook that hand-rolls
+its own result shape is a notebook the Airflow routes and the docs cannot both
+be right about.
 
 ## Tests and benchmarks
 

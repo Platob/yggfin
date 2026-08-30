@@ -23,7 +23,7 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import FIX_SCALARS, fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import DOCUMENT_SUFFIXES, document_of, field_document, is_document
+from rekep.fix.store import DECLARATION_SUFFIXES, document_of, field_document, is_declaration
 
 #: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
@@ -415,9 +415,8 @@ class Shell:
         if record is None:
             return
         self.registry.add_field(record)
-        self.console.ok(
-            f"added {record.fix.canonical} {self.console.glyph('arrow')} {field_document(record)}"
-        )
+        document = field_document(record.fix.key)
+        self.console.ok(f"added {record.fix.canonical} {self.console.glyph('arrow')} {document}")
 
     def _edit(self, rest: str) -> None:
         """Change one stored identity, keeping every part left unanswered."""
@@ -568,7 +567,7 @@ class Shell:
             return
         rest = _unquoted(rest)
         with self.console.spinner(f"opening {rest}"):
-            registry = FixRegistry(cache_dir=rest, offline=True)
+            registry = FixRegistry(cache_dir=rest)
             versions = registry.versions
         self.registry = registry
         self.console.ok(f"{rest} {self.console.glyph('arrow')} {len(versions)} versions")
@@ -671,9 +670,9 @@ def _declaration(path: str) -> Field:
     that says neither is refused before its bytes are read as either.
     """
     spelled = f"{path}.yaml" if path.endswith(".yml") else path
-    if not is_document(spelled):
+    if not is_declaration(spelled):
         raise ValueError(
-            f"{path} is not a document this can read: name it {' or '.join(DOCUMENT_SUFFIXES)}"
+            f"{path} is not a document this can read: name it {' or '.join(DECLARATION_SUFFIXES)}"
         )
     return refuse_record(Field.from_dict(document_of(read_bytes(path), spelled)))
 
@@ -698,7 +697,7 @@ def shell(
 ) -> int:
     """Open `store` and drive it from a prompt; the exit code the CLI returns."""
     return Shell(
-        registry=FixRegistry(cache_dir=store, offline=True),
+        registry=FixRegistry(cache_dir=store),
         console=console or Console(stream="stderr"),
         reader=reader,
     ).run()

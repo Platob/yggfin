@@ -44,6 +44,13 @@ NARROWED = {
     "localmktdate": (pyarrow.date32(),),
 }
 
+#: One field narrowed by name rather than by datatype. `SecurityIDSource <22>`
+#: is enumerated exactly like the `char` fields above -- thirty-three codes,
+#: every one a single character -- but the standard types it `String`, and
+#: admitting `String` to the table would let any text column narrow silently.
+#: Named here so the exception is the field's and not the datatype's.
+NARROWED_FIELDS = {"SecurityIDSource": (pyarrow.int32(),)}
+
 
 def dictionary() -> dict[str, dict[str, Any]]:
     """Every field record by every spelling it answers to, canonical names first.
@@ -173,7 +180,7 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     expected = arrow_type_of(datatype)
     if member.dtype == expected:
         return
-    narrowed = NARROWED.get(datatype.lower(), ())
+    narrowed = NARROWED_FIELDS.get(member.fix["name"]) or NARROWED.get(datatype.lower(), ())
     assert member.dtype in narrowed, (
         f"{path} is {member.dtype} where FIX {datatype!r} is {expected}"
     )
@@ -183,6 +190,8 @@ def test_an_int32_narrowing_is_explicit_for_its_fix_datatype() -> None:
     """Every narrowed protocol value must be named in the compatibility table."""
     for path, member in DECLARED:
         if member.dtype != pyarrow.int32():
+            continue
+        if member.fix["name"] in NARROWED_FIELDS:
             continue
         datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "").lower()
         assert datatype in NARROWED, f"{path} narrowed a FIX {datatype!r}"

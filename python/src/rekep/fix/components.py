@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.fields import Field, column_name, scalar
-from rekep.fields.arrays import build_list, build_map, dense_counts, sequence
+from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import DECLARED, ENTRIES
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.quickfix import entry_of, is_group, is_reference, members_of
@@ -31,9 +31,6 @@ class Party:
     partyrole: Annotated[int | None, DECLARED["PartyRole"]] = None
     """Role the party has in the transaction."""
 
-    buffer: dict[str, str] | None = None
-    """Unprojected party members under unique FIX names."""
-
 
 @scalar
 class TrdRegTimestamp:
@@ -47,9 +44,6 @@ class TrdRegTimestamp:
 
     trdregtimestamporigin: Annotated[str | None, DECLARED["TrdRegTimestampOrigin"]] = None
     """Who or what stamped it."""
-
-    buffer: dict[str, str] | None = None
-    """Unprojected members of this entry under unique FIX names."""
 
 
 @scalar
@@ -72,9 +66,6 @@ class SideTrdRegTimestamp:
     sidetrdregtimestampsrc: Annotated[str | None, DECLARED["SideTrdRegTimestampSrc"]] = None
     """Who or what stamped it."""
 
-    buffer: dict[str, str] | None = None
-    """Unprojected members of this entry under unique FIX names."""
-
 
 @scalar
 class SecurityAltID:
@@ -86,9 +77,6 @@ class SecurityAltID:
     securityaltidsource: Annotated[str | None, DECLARED["SecurityAltIDSource"]] = None
     """Scheme or class of `SecurityAltID`, in `SecurityIDSource`'s codes."""
 
-    buffer: dict[str, str] | None = None
-    """Unprojected members of this entry under unique FIX names."""
-
 
 @scalar
 class Leg:
@@ -98,8 +86,8 @@ class Leg:
     `LegSymbol <600>` is `Symbol <55>` for the leg -- and the column takes the
     generic spelling, because the nesting already says whose it is. That is
     also what makes these the names `rekep.market.instrument.Leg` carries.
-    Everything else a venue sends with a leg stays in `buffer` under its
-    unique FIX name.
+    Everything else a venue sends with a leg stays in the row's residual
+    `entries`, under the key the wire carried.
     """
 
     symbol: Annotated[str | None, DECLARED["LegSymbol"]] = None
@@ -144,9 +132,6 @@ class Leg:
     ratioqty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
     """How many of this leg one unit of the strategy is; the leg's weight."""
 
-    buffer: dict[str, str] | None = None
-    """Unprojected members of this entry under unique FIX names."""
-
 
 def _entries_type(row: type) -> pyarrow.DataType:
     """The list one component's entries land in: never a null entry, ever."""
@@ -179,7 +164,7 @@ class ComponentGroup:
     out of the component tree, and nothing in the state machine knows the word
     "party". What a subclass adds is the shape the group projects into --
     which component, which group inside it, and which members earn a column of
-    their own rather than a place in `buffer`.
+    their own rather than a place in a second residual.
     """
 
     components: Mapping[str, Field] | Sequence[Field] | None = None
@@ -219,7 +204,7 @@ class ComponentGroup:
 
         The delimiter leads because it is what opens an entry, so its column is
         the one every entry has. Every other member named here is lifted where
-        its value is one the column's type can hold, and falls to `buffer`
+        its value is one the column's type can hold, and stays residual
         where it is not -- so a malformed stamp is kept as the text that
         arrived rather than becoming a null nobody can explain.
         """
@@ -353,8 +338,6 @@ class ComponentGroup:
             party_rank,
         )
         party_groups = compute.filter(party_group, delimiters)
-        party_positions = compute.filter(positions, delimiters)
-        party_index = compute.index_in(party_group, value_set=party_groups)
         row_field = self.into_row().into_field()
         lifted: list[Any] = []
         # Nothing is projected until a column can hold it, the delimiter
@@ -378,33 +361,15 @@ class ComponentGroup:
                     target,
                 )
             )
-            # A value the column cannot hold stays a member, so it lands in
-            # `buffer` as the text that arrived rather than as a null nobody
-            # can explain. The delimiter still opens its entry either way.
+            # A value the column cannot hold is not projected, so it stays
+            # in the residual `entries` as the text that arrived rather than
+            # becoming a null nobody can explain. The delimiter still opens
+            # its entry either way.
             projected = compute.or_(
                 projected, _positions_are(positions, compute.filter(at, readable))
             )
 
-        buffered = compute.and_(members, compute.invert(projected))
-        buffer_keys, bufferable = self._buffer_keys(
-            keys, members, party_index, party_positions, buffered
-        )
-        buffered = compute.and_(buffered, bufferable)
-        buffered_party = compute.filter(party_index, buffered).cast(pyarrow.int64())
-        buffer_sizes = dense_counts(buffered_party, len(party_groups))
-        buffer_type = row_field.field("buffer").dtype
-        assert buffer_type is not None
-        buffers = build_map(
-            buffer_type,
-            buffer_sizes,
-            compute.filter(buffer_keys, buffered),
-            compute.filter(values, buffered),
-            mask=compute.equal(buffer_sizes, 0),
-        )
-
-        entry_struct = pyarrow.StructArray.from_arrays(
-            [*lifted, buffers], fields=row_field.arrow_fields
-        )
+        entry_struct = pyarrow.StructArray.from_arrays(lifted, fields=row_field.arrow_fields)
         extracted = build_list(
             entries_type,
             party_sizes,
@@ -412,8 +377,12 @@ class ComponentGroup:
             mask=compute.invert(valid_rows),
         )
 
+        # Only what a column now holds leaves the residual. A member this
+        # component does not project stays in `entries` under the key the wire
+        # carried, which is the one place a value nothing lifted belongs --
+        # there is no second residual beside it to look in as well.
         remove = compute.or_(
-            compute.or_(projected, buffered),
+            projected,
             compute.and_(count_match, compute.take(counted_valid, parents)),
         )
         keep = compute.invert(remove)
@@ -425,80 +394,6 @@ class ComponentGroup:
             mask=compute.is_null(tags) if tags.null_count else None,
         )
         return extracted, residual
-
-    def _buffer_keys(
-        self,
-        keys: Any,
-        members: Any,
-        party_index: Any,
-        party_positions: Any,
-        buffered: Any,
-    ) -> tuple[pyarrow.Array, pyarrow.Array]:
-        """Canonical, occurrence-qualified names for retained member values."""
-        compute = pyarrow.compute
-        found = pyarrow.nulls(len(keys), pyarrow.string())
-        bufferable = pyarrow.repeat(pyarrow.scalar(False), len(keys))
-        declarations = dict.fromkeys(
-            (name, self._member_paths.get(tag, ())) for tag, name in self._member_names.items()
-        )
-        for name, path in declarations:
-            tags = pyarrow.array(
-                sorted(
-                    tag
-                    for tag, found_name in self._member_names.items()
-                    if found_name == name and self._member_paths.get(tag, ()) == path
-                ),
-                pyarrow.int32(),
-            )
-            matches = compute.and_(members, compute.is_in(keys, value_set=tags))
-            if path:
-                delimiters = pyarrow.array(
-                    sorted(self._group_delimiters.get(path, ())), pyarrow.int32()
-                )
-                group_rank, occurrences = _nested_occurrences(
-                    matches,
-                    compute.and_(members, compute.is_in(keys, value_set=delimiters)),
-                    party_index,
-                    party_positions,
-                )
-                prefix = ".".join((*path[:-1], f"{path[-1]}["))
-                base = compute.binary_join_element_wise(
-                    pyarrow.scalar(prefix),
-                    compute.subtract(group_rank, 1).cast(pyarrow.string()),
-                    pyarrow.scalar(f"].{name}"),
-                    "",
-                )
-                rendered = compute.if_else(
-                    compute.equal(occurrences, 1),
-                    base,
-                    compute.binary_join_element_wise(
-                        base,
-                        pyarrow.scalar("["),
-                        compute.subtract(occurrences, 1).cast(pyarrow.string()),
-                        pyarrow.scalar("]"),
-                        "",
-                    ),
-                )
-                valid = compute.greater(group_rank, 0)
-            else:
-                occurrences = _occurrences(matches, party_index, party_positions)
-                rendered = compute.if_else(
-                    compute.equal(occurrences, 1),
-                    pyarrow.scalar(name),
-                    compute.binary_join_element_wise(
-                        pyarrow.scalar(f"{name}["),
-                        compute.subtract(occurrences, 1).cast(pyarrow.string()),
-                        pyarrow.scalar("]"),
-                        "",
-                    ),
-                )
-                valid = pyarrow.repeat(pyarrow.scalar(True), len(keys))
-            accepted = compute.and_(matches, compute.fill_null(valid, False))
-            found = compute.if_else(accepted, rendered, found)
-            bufferable = compute.or_(bufferable, accepted)
-        if compute.any(_all(buffered, bufferable, compute.is_null(found)), min_count=0).as_py():
-            raise ValueError(f"a declared {self.component} member has no stable FIX name")
-        return found, bufferable
 
     @cached_property
     def _declaration(
@@ -856,7 +751,7 @@ class Legs(ComponentGroup):
     strategy's pair. The declaration walk reads `NoLegs <555>` off *every*
     component that declares it -- the order, quote and trade-capture variants
     wrap the same `InstrumentLeg` and add members of their own -- so a leg's
-    contextual members are known member tags that land in `buffer` rather
+    contextual members are known member tags that stay residual rather
     than breaking the entry.
     """
 
@@ -988,34 +883,3 @@ def _positions_are(positions: Any, selected: Any) -> Any:
     if not len(valid):
         return pyarrow.repeat(pyarrow.scalar(False), len(positions))
     return pyarrow.compute.is_in(positions, value_set=valid)
-
-
-def _occurrences(matches: Any, party_index: Any, party_positions: Any) -> pyarrow.Array:
-    """One-based occurrence of a member tag inside each entry.
-
-    The baseline is taken *before* the delimiter's own position rather than
-    after it, so the member that opens an entry is its first occurrence and not
-    its zeroth: an unreadable delimiter buffered as `Name[-1]` is a key nothing
-    can look up.
-    """
-    compute = pyarrow.compute
-    counted = matches.cast(pyarrow.int64())
-    running = compute.cumulative_sum(counted)
-    before = compute.subtract(running, counted)
-    baseline = compute.take(before, party_positions)
-    return compute.subtract(running, compute.take(baseline, party_index))
-
-
-def _nested_occurrences(
-    matches: Any, delimiters: Any, party_index: Any, party_positions: Any
-) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Nested group rank and member occurrence within that group."""
-    compute = pyarrow.compute
-    rank = _occurrences(delimiters, party_index, party_positions)
-    running = compute.cumulative_sum(matches.cast(pyarrow.int64()))
-    before = compute.subtract(running, matches.cast(pyarrow.int64()))
-    group = compute.add(compute.multiply(party_index.cast(pyarrow.int64()), _GROUP_STRIDE), rank)
-    starts = compute.filter(group, delimiters)
-    baselines = compute.filter(before, delimiters)
-    baseline = compute.take(baselines, compute.index_in(group, value_set=starts))
-    return rank, compute.subtract(running, baseline)

@@ -8,7 +8,9 @@ a table of respellings, and there is no snake-casing rule to keep two
 generators in step with.
 
 Its **display** is what the name is written as for a reader: the dictionary's
-own spelling where FIX has one, and title case where it does not. That is the
+own spelling where FIX has one, and the same shape where it does not -- words
+capitalised and run together, `SourceURL` rather than `Source URL`, because a
+display is a FIX field name and no FIX field name carries a space. That is the
 half the fold throws away, so it is recorded rather than recomputed.
 """
 
@@ -30,10 +32,10 @@ _DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
 _ARROW_DROP = r"[^a-z0-9]+"
 _ARROW_ASCII = r"^[\x00-\x7f]*$"
 
-#: Words a display does not title-case, and what it writes instead. Title case
-#: reads them as words -- `Isin Code`, `Settl Curr Fx Rate Calc` -- and they
-#: are not words. Spelled out rather than upper-cased, because `IDs` is not
-#: `IDS`.
+#: Words a display does not capitalise word-wise, and what it writes instead.
+#: Capitalising reads them as words -- `IsinCode`, `SettlCurrFxRateCalc` -- and
+#: they are not words. Spelled out rather than upper-cased, because `IDs` is
+#: not `IDS`.
 ACRONYMS: Mapping[str, str] = MappingProxyType(
     {
         "ccy": "CCY",
@@ -96,8 +98,12 @@ def display_name(name: str) -> str:
     A name that already carries capitals is already a display and is returned
     as it is: `SecurityID` and `NoPartyIDs` are what FIX calls those fields,
     and no rule this file could hold would improve them. Anything else is a
-    lower-case identifier, title-cased word by word, with this domain's
-    abbreviations left in capitals.
+    lower-case identifier, capitalised word by word and run together, with
+    this domain's abbreviations left in capitals.
+
+    Run together, not spaced: a display is the spelling of a FIX field, and
+    no FIX field name carries a space. `SourceURL` reads as one name the way
+    `SecurityID` does, and `Source URL` reads as two.
     """
     text = str(name).strip()
     if not text:
@@ -105,4 +111,4 @@ def display_name(name: str) -> str:
     if "_" not in text and any(letter.isupper() for letter in text):
         return text
     words = [word for word in text.replace("_", " ").split(" ") if word]
-    return " ".join(ACRONYMS.get(word.casefold(), word[:1].upper() + word[1:]) for word in words)
+    return "".join(ACRONYMS.get(word.casefold(), word[:1].upper() + word[1:]) for word in words)

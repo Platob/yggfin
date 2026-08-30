@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 import weakref
 
 import pyarrow
@@ -190,7 +189,7 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
     assert ccy.nullable and ccy.dtype == pyarrow.int32()
     assert ccy.fix["name"] == "Currency" and ccy.fix["tag"] == "15"
     assert ccy.fix["type"] == "Currency", "the newest reading, and 4.0's char is collapsed"
-    assert json.loads(ccy.fix["versions"])[0] == "5.0.SP2"
+    assert "fix:versions" not in ccy.metadata, "the registry keeps the version list"
     assert MarketEvent.into_field().field("pxunit").dtype == pyarrow.string()
 
 

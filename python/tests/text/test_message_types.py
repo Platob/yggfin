@@ -6,8 +6,14 @@ import pyarrow
 import pytest
 
 import rekep.text.entries as entries
-from rekep.enums import EventType
+from rekep.enums import EventType, Protocol
 from rekep.text import Entry, Message
+
+
+def _protocols(found: dict) -> list[str]:
+    """The parsed `protocol` column spelled out, registered names included."""
+    return [Protocol.from_int(code).code for code in found["protocol"].to_pylist()]
+
 
 EVENT_TYPES = {
     "8": EventType.EXECUTION,
@@ -87,7 +93,7 @@ def test_a_wire_discriminator_without_begin_string_is_fix() -> None:
     found = parsed("35=D|11=one|")
 
     assert found["msgtype"].to_pylist() == ["D"]
-    assert found["protocolcode"].to_pylist() == ["FIX"]
+    assert _protocols(found) == ["FIX"]
 
 
 def test_no_message_type_is_misc_and_keeps_no_incidental_assignments() -> None:
@@ -117,7 +123,7 @@ def test_named_message_types_use_the_same_registry_mapping() -> None:
     found = parsed("MsgType=8|Text=rendered|", "#MSGTYPE=W|#Text=marked|")
 
     assert found["msgtype"].to_pylist() == ["8", "W"]
-    assert found["protocolcode"].to_pylist() == ["UL", "UL"]
+    assert _protocols(found) == ["UL", "UL"]
     assert found["eventtype"].to_pylist() == [
         int(EventType.EXECUTION),
         int(EventType.BOOK),
@@ -128,7 +134,7 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["msgtype"].to_pylist() == ["D"]
-    assert found["protocolcode"].to_pylist() == ["FIXML"], "tags and names together"
+    assert _protocols(found) == ["FIXML"], "tags and names together"
     assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
     assert [entry["key"] for entry in residual] == ["SIDE"]
@@ -292,7 +298,7 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
             self.seen.extend(messages.to_pylist())
             assert plugins.to_pylist() == ["bridge", "fix"]
             assert len(entries) == len(messages)
-            return pyarrow.array(["FIX"] * len(messages))
+            return pyarrow.array([int(Protocol.FIX)] * len(messages), pyarrow.int64())
 
         def into_arrow_direction_array(self, messages, protocols):
             return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(messages))
@@ -306,13 +312,13 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
     )
 
     assert classifier.seen == [heartbeat, market]
-    assert found["protocolcode"].to_pylist() == ["FIX", "FIX"]
+    assert _protocols(found) == ["FIX", "FIX"]
 
 
 def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
     stored = Message(
         message="8=FIX.4.4|35=0|58=" + "A=1|" * 1000,
-        protocolcode="MISC",
+        protocol=Protocol.MISC,
         msgtype="0",
         eventtype=EventType.MISC,
         entries=[],
@@ -326,7 +332,7 @@ def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
 
     assert restored.msgtype == "0"
     assert restored.beginstring is None, "a stored row's header is what it stored"
-    assert restored.protocolcode == "MISC"
+    assert restored.protocol is Protocol.MISC
     assert restored.eventtype == EventType.MISC
     assert restored.entries == []
 
@@ -335,6 +341,7 @@ def test_empty_input_keeps_the_declared_column_types() -> None:
     found = Message.parse_arrow(pyarrow.array([], pyarrow.string()), EVENT_TYPES)
 
     assert found["eventtype"].type == pyarrow.int64()
+    assert found["protocol"].type == Protocol.into_arrow_type().index_type
     for name in SESSION_COLUMNS:
         assert found[name].type == pyarrow.string(), name
     assert found["entries"].type == Message.into_field().field("entries").dtype

@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FixRegistry
-from rekep.market import AssetKind, Currency, Instrument, Leg
+from rekep.market import AssetKind, Currency, Instrument, Leg, versioned
 from rekep.market.identity import NIL, hash_of
 from rekep.text import FixMsg
 
@@ -25,7 +25,7 @@ def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
     assert [(built.symbolticker, built.code) for built in variants] == [
         ("AAPL", "AAPL"),
         ("XNAS:AAPL", "XNAS:AAPL"),
-        ("ISINNumber:US0378331005", "ISINNumber:US0378331005"),
+        ("AAPL", "AAPL"),
         ("AAPL", "AAPL"),
     ]
     assert [built.xhash for built in variants] == [
@@ -34,22 +34,27 @@ def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
 
 
 def test_two_venues_using_the_same_symbol_are_distinct() -> None:
+    """The venue, not the identifier, is what keeps them apart now."""
     one = Instrument(
         symbol="AAPL", securityexchange="XNAS", securityid="US0378331005", securityidsource="4"
     )
     other = Instrument(
         symbol="AAPL", securityexchange="XPAR", securityid="FR0000000001", securityidsource="4"
     )
-    assert one.symbolticker == "XNAS:ISINNumber:US0378331005"
-    assert other.symbolticker == "XPAR:ISINNumber:FR0000000001"
+    assert one.symbolticker == "XNAS:AAPL"
+    assert other.symbolticker == "XPAR:AAPL"
     assert one.xhash != other.xhash
 
 
-def test_a_registered_identifier_precedes_two_readable_symbols() -> None:
+def test_two_readable_symbols_for_one_identifier_are_two_instruments() -> None:
+    """The cost of leading with the symbol, stated: an ISIN no longer gathers
+    the spellings a feed writes it under, so a venue that renames its symbol
+    starts a second instrument. The identifier is still on the row, but it is
+    not what identity is taken over."""
     one = Instrument(symbol="AAPL", securityid="US0378331005", securityidsource="4")
     other = Instrument(symbol="AAPL.OQ", securityid="US0378331005", securityidsource="4")
-    assert one.symbolticker == other.symbolticker == "ISINNumber:US0378331005"
-    assert one.xhash == other.xhash
+    assert (one.symbolticker, other.symbolticker) == ("AAPL", "AAPL.OQ")
+    assert one.xhash != other.xhash
 
 
 def test_a_feed_that_names_no_venue_still_gets_one_stable_identity() -> None:
@@ -159,7 +164,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         (561, "100"),
         (107, "FAKE-DESC"),
     ], "an Arrow round trip keeps every stored field, in wire order"
-    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    registry = FixRegistry(cache_dir=FIX_DATA)
     transcription = {}
     into_instruments = FixMsg.into_instruments
 
@@ -200,7 +205,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     )
     other = Instrument(symbol="MSFT")
     later = Instrument(
-        symbol="AAPL.OQ",
+        symbol="AAPL",
         securityid="US0378331005",
         securityidsource="4",
         altids={"RICCode": "other", "CUSIP": "037833100"},
@@ -212,7 +217,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     found = list(Instrument.from_fixmsgs([Source(first, other), Source(later)]))
 
     assert [row.symbolticker for row in found] == [
-        "ISINNumber:US0378331005",
+        "AAPL",
         "MSFT",
     ]
     merged = found[0]
@@ -257,3 +262,39 @@ def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
         securitydesc="Apple Inc",
     )
     assert bare.xhash == enriched.xhash
+
+
+def test_a_stored_record_only_gains_a_version_when_a_fact_is_added() -> None:
+    """The versioning rule, whichever job writes the table.
+
+    Restating a record writes nothing; adding a fact writes a new version of
+    the same ticker; observing *less* than is stored writes nothing either --
+    a thinner observation must not overwrite a fuller record.
+    """
+    stored = Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD", unix=10).identify()
+    by_ticker = {stored.symbolticker: stored}
+
+    restated = Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD", unix=20)
+    thinner = Instrument(symbol="AAPL", securityexchange="XNAS", unix=20)
+    fuller = Instrument(
+        symbol="AAPL", securityexchange="XNAS", currency="USD", roundlot=100.0, unix=20
+    )
+
+    assert list(versioned([restated.identify()], by_ticker)) == []
+    assert list(versioned([thinner.identify()], by_ticker)) == []
+
+    (written,) = versioned([fuller.identify()], by_ticker)
+    assert written.symbolticker == stored.symbolticker
+    assert written.xhash == stored.xhash, "a version does not move the lifecycle"
+    assert written.roundlot == 100.0 and written.currency is Currency.USD
+    assert written.vhash != stored.vhash and written.hash != stored.hash
+
+
+def test_an_unknown_ticker_is_its_own_first_version() -> None:
+    """An empty lookup is a table that holds nothing yet, not a refusal."""
+    observed = [
+        Instrument(symbol="AAPL", securityexchange="XNAS").identify(),
+        Instrument(symbol="MSFT", securityexchange="XNAS").identify(),
+    ]
+
+    assert [row.symbolticker for row in versioned(observed, {})] == ["XNAS:AAPL", "XNAS:MSFT"]

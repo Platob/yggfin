@@ -1,12 +1,16 @@
-name: flatten_executions
-notebook: flatten_executions.ipynb
+name: parse_instruments
+notebook: parse_instruments.ipynb
 parameters:
-  # Iceberg sources and targets are catalog table identifiers; their S3 file
-  # locations come from the catalog warehouse below.
-  source: market.books
-  target: market.executions
+  project_root: .
+  # Checked FIX market messages, as `parse_fix` wrote them. Reference data is
+  # read back out of the stored table rather than off the parse, so a rule
+  # change here reruns against captures already parsed.
+  source: fix.market
   start: null
   end: null
+  # The FIX dictionary. A directory, a zip, or either on a bucket:
+  # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
+  fix_dictionary: data/fix
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
@@ -35,7 +39,10 @@ parameters:
     write.metadata.delete-after-commit.enabled: "true"
   # root, main, and master name the same Iceberg root branch.
   branch: root
-  merge_by: true
+  target: market.instruments
+  # How many observations one stored-record lookup covers. The lookup is an
+  # `IN` over the batch's tickers, so this bounds the predicate as well.
+  batch_row_size: 65536
   commit_row_size: 250000
   # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
   log_level: INFO

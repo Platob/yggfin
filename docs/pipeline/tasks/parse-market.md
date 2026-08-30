@@ -12,7 +12,7 @@ After `parse_fix` has populated `fix.market`, run the configured book mode from
 the repository root:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
   --output parse_market.executed.ipynb
 ```
@@ -23,7 +23,7 @@ The package, a FIX registry and a catalog have to exist first:
 Bypass Books and write FIX-carried Orders and Executions directly with:
 
 ```bash
-uv run --project python --with papermill --with ipykernel rekep task run \
+uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
   --parameter books=false \
   --output parse_market.direct.executed.ipynb
@@ -66,7 +66,8 @@ targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
 commit size. The same dictionary controls both direct and book translation.
 Switching only `books` to `false` selects the configured direct targets.
 
-The result's `read` mapping reports every attempted Book, Order, and Execution.
+The result's `products` mapping reports every attempted Book, Order and
+Execution; `read` and `written` are what this stage itself produced.
 In book mode the Order and Execution counts come from the selected Books'
 nested deltas; in direct mode they are the translated rows written here.
 
