@@ -40,7 +40,7 @@ from rekep.fix.rekep import (
     REKEP_TAGS,
     rekep_is_registered,
 )
-from rekep.fix.store import NAMED_FILE, SHARD_SPAN, ConflictReport, shard_name
+from rekep.fix.store import NAMED_SHARD, SHARD_SPAN, ConflictReport, field_document
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
@@ -118,8 +118,10 @@ VERSIONS: list[str] = INDEX["versions"]
 #: zero", so a rebuild that lost half the dictionary and still produced a
 #: readable store fails here.
 #:
-#: Fifteen tag shards and `named.json`: the standard occupies fourteen sparse
-#: shards and rekep's frozen 30000 range occupies one more.
+#: Sixteen shards under one naming rule: the standard occupies fourteen
+#: sparse ranges, rekep's frozen 30000 range occupies one more, and the fields
+#: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
+#: rather than a document of another kind.
 EXPECTED_FIELD_DOCUMENTS = 16
 EXPECTED_FIELD_RECORDS = 6101
 EXPECTED_COMPONENT_FILES = 907
@@ -170,20 +172,27 @@ def test_the_archive_holds_tag_shards_and_one_file_per_component() -> None:
     assert set(INDEX["declared"]) == set(VERSIONS), "every version's spec was read"
 
 
-def test_every_tag_is_in_the_shard_the_arithmetic_names() -> None:
-    """`tag // 500`: no index in `versions.json`, no lookup table, no scan."""
+def test_every_field_is_in_the_document_the_arithmetic_names() -> None:
+    """`tag // 500`: no index in `versions.json`, no lookup table, no scan.
+
+    And one rule for every document, including the one the fields FIX never
+    numbered share: they key by name, so they land in `NAMED_SHARD` rather
+    than in a document with a different kind of name.
+    """
     with zipfile.ZipFile(DATA) as archive:
         shards = {
             name: json.loads(archive.read(name).decode("utf-8"))
             for name in sorted(archive.namelist())
-            if name.startswith("fields/") and name != NAMED_FILE
+            if name.startswith("fields/")
         }
     for name, shard in shards.items():
         for key in shard:
-            assert shard_name(int(key)) == name, key
+            assert field_document(int(key) if key.isdigit() else key) == name, key
     populated = {int(name[len("fields/") : -len(".json")]) for name in shards}
-    assert len(populated) == EXPECTED_FIELD_DOCUMENTS - 1
-    assert max(populated) * SHARD_SPAN >= 50000, "the extension packs, up at 50002"
+    assert len(populated) == EXPECTED_FIELD_DOCUMENTS
+    assert NAMED_SHARD in populated, "the fields with no tag are one shard among them"
+    tagged = populated - {NAMED_SHARD}
+    assert max(tagged) * SHARD_SPAN >= 50000, "the extension packs, up at 50002"
 
 
 def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> None:

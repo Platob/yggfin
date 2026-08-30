@@ -23,7 +23,7 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import FIX_SCALARS, fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import DOCUMENT_SUFFIXES, document_of, field_document, is_document
+from rekep.fix.store import DECLARATION_SUFFIXES, document_of, field_document, is_declaration
 
 #: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
@@ -415,9 +415,8 @@ class Shell:
         if record is None:
             return
         self.registry.add_field(record)
-        self.console.ok(
-            f"added {record.fix.canonical} {self.console.glyph('arrow')} {field_document(record)}"
-        )
+        document = field_document(record.fix.key)
+        self.console.ok(f"added {record.fix.canonical} {self.console.glyph('arrow')} {document}")
 
     def _edit(self, rest: str) -> None:
         """Change one stored identity, keeping every part left unanswered."""
@@ -671,9 +670,9 @@ def _declaration(path: str) -> Field:
     that says neither is refused before its bytes are read as either.
     """
     spelled = f"{path}.yaml" if path.endswith(".yml") else path
-    if not is_document(spelled):
+    if not is_declaration(spelled):
         raise ValueError(
-            f"{path} is not a document this can read: name it {' or '.join(DOCUMENT_SUFFIXES)}"
+            f"{path} is not a document this can read: name it {' or '.join(DECLARATION_SUFFIXES)}"
         )
     return refuse_record(Field.from_dict(document_of(read_bytes(path), spelled)))
 

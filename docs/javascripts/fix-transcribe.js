@@ -1427,7 +1427,7 @@
     if (!record.resolved) return '<span class="fix-registry__muted">—</span>';
     const key = record.tag ?? record.name;
     const href = `${app.dataset.registry}#field=${encodeURIComponent(key)}`;
-    const tag = record.tag === null ? "namespace" : `&lt;${escape(record.tag)}&gt;`;
+    const tag = record.tag == null ? "namespace" : `&lt;${escape(record.tag)}&gt;`;
     return `<a class="fix-registry__name" href="${escape(href)}">${escape(record.name)} ${tag}</a>`;
   }
 
@@ -1564,7 +1564,7 @@
   function structureMemberHtml(record) {
     const name = record.name || record.input_key;
     const value = record.output_value ?? record.input_value;
-    const tag = record.tag === null || record.tag === undefined ? "namespace" : `<${record.tag}>`;
+    const tag = record.tag == null ? "namespace" : `<${record.tag}>`;
     return `<div class="fix-transcribe__member">
       <span><strong>${escape(name)}</strong><small>${escape(tag)}</small></span>
       <code>${escape(displayValue(value))}</code>

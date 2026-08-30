@@ -29,7 +29,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import Alias, fold
+from rekep.fix.entries import NAMESPACE, Alias, fold
 from rekep.fix.fields import namespaced_field
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
@@ -37,11 +37,12 @@ from rekep.fix.rules import Rules
 from rekep.urls import Url
 
 #: What a counted name turned out to be. Ordered by how much work it implies,
-#: which is also the order a backlog reads best in.
+#: which is also the order a backlog reads best in. `NAMESPACE` is the record
+#: kind `entries` already owns -- a name FIX never numbered is one thing, not
+#: one thing here and another there.
 EXACT = "exact"
 ALIASED = "aliased"
 NEAR = "near"
-NAMESPACE = "namespace"
 KINDS: tuple[str, ...] = (NAMESPACE, NEAR, ALIASED, EXACT)
 
 #: How far a name may be from a known one and still be called a near miss.

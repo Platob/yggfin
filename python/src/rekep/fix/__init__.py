@@ -100,9 +100,10 @@ from rekep.fix.rules import (
 from rekep.fix.store import (
     COMPONENTS,
     FIELDS,
+    NAMED_SHARD,
     SHARD_SPAN,
     ConflictReport,
-    shard_name,
+    field_document,
 )
 from rekep.fix.transcribe import (
     FixCodec,
@@ -158,6 +159,7 @@ __all__ = [
     "Rules",
     "RegistrySource",
     "SESSION",
+    "NAMED_SHARD",
     "SHARD_SPAN",
     "SOH",
     "SPEC_VERSIONS",
@@ -180,6 +182,7 @@ __all__ = [
     "detect_separator",
     "encoded_key",
     "values_of",
+    "field_document",
     "fix_field",
     "infer_version_from_pairs",
     "merged_record",
@@ -195,7 +198,6 @@ __all__ = [
     "refuse_record",
     "records_for",
     "rendered_keys",
-    "shard_name",
     "slug_of",
     "spec_name",
     "tag_arrow_array",

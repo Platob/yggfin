@@ -994,7 +994,7 @@ class FixRegistry(Convertible):
                     expected_key = (
                         str(declared_tag) if declared_tag is not None else entry.fix.canonical
                     )
-                    if str(stored) != expected_key or field_document(entry) != name:
+                    if str(stored) != expected_key or field_document(entry.fix.key) != name:
                         raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
                     if entry.fix.key in fields:
                         raise ValueError(f"FIX field {stored!r} is stored more than once")
@@ -1824,20 +1824,20 @@ class FixRegistry(Convertible):
         held = self._entries[0].get(fix.key)
         if held is not None and held.fix.folded == fix.folded:
             raise KeyError(
-                f"FIX field {fix.canonical!r} is already stored in {field_document(entry)}"
+                f"FIX field {fix.canonical!r} is already stored in {field_document(entry.fix.key)}"
             )
         if held is not None:
             claimed = f"tag {fix.tag}" if fix.tag is not None else f"the name {fix.canonical!r}"
             raise KeyError(
                 f"FIX field {fix.canonical!r} cannot be added: {claimed} is already claimed by "
-                f"{held.fix.canonical!r}, in {field_document(entry)}"
+                f"{held.fix.canonical!r}, in {field_document(entry.fix.key)}"
             )
         return self._write_field(entry)
 
     def update_field(self, entry: Field) -> Field:
         """Replace one stored field identity; `KeyError` when there is none."""
         if entry.fix.key not in self._entries[0]:
-            raise KeyError(f"no FIX field stored in {field_document(entry)}")
+            raise KeyError(f"no FIX field stored in {field_document(entry.fix.key)}")
         return self._write_field(entry)
 
     def remove_field(self, name: str) -> bool:

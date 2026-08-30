@@ -125,7 +125,7 @@ versions.json         the version list, each version's session layer,
 fields/000000.json    tags 0-499
 fields/000060.json    tags 30000-30499, rekep package vocabulary
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
-fields/named.json     the fields FIX never numbered
+fields/999999.json    the fields FIX never numbered
 components/parties.json          one component
 components/new_order_single.json a message
 ```
@@ -133,13 +133,14 @@ components/new_order_single.json a message
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
 no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
 rather than the dictionary. The tag space is sparse, and an empty shard is
-simply absent: fifteen shards hold 6,098 tagged fields and `named.json` holds
-three rendered fields.
+simply absent: fifteen shards hold 6,098 tagged fields and `fields/999999.json`
+holds three rendered ones.
 
 JSON, and measured: every process importing this package parses a projection of
 the dictionary, where pure-Python YAML costs 25 seconds to read against a tenth
-of one for JSON. A store somebody wrote in YAML still reads, and converts
-itself the first time anything rewrites it.
+of one for JSON. One spelling, so a read is one open — a declaration a person
+hands to `rekep fix add-field` may still be YAML, which is a courtesy at the
+edge and not a second store format.
 
 A field's identity is its **tag**, never its name. Tag 64 is `FutSettDate`
 through 4.3 and `SettlDate` after, so one record is tag 64 named `SettlDate`
@@ -147,10 +148,12 @@ with `FutSettDate` recorded as an alias carrying the version that spelled it --
 rather than two half-histories nobody diffs.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions,
-and lives in `fields/named.json` because there is no tag to shard it on.
-Having no tag is the whole of being one, so no record states it twice. One
-naming `fix:column` is lifted into that column of the parsed log.
+`TECH.CLIENTID` -- is the same record with no tag and `*` for its versions.
+It keys by its name rather than by a tag, so it lands in `999999`, the one
+shard index the arithmetic never reaches: the same naming rule as every other
+document, not a document of another kind. Having no tag is the whole of being
+one, so no record states it twice. One naming `fix:column` is lifted into that
+column of the parsed log.
 
 ### The collapse, and what it costs
 

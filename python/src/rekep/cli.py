@@ -274,7 +274,9 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    CONSOLE.ok(f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(
+        f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+    )
     return 0
 
 
@@ -287,7 +289,9 @@ def update_field(arguments: argparse.Namespace) -> int:
         fresh = record_copy(fresh)
         fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
     entry = registry.update_field(fresh)
-    CONSOLE.ok(f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry)}")
+    CONSOLE.ok(
+        f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+    )
     return 0
 
 
