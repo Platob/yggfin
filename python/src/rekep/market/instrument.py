@@ -85,14 +85,12 @@ class Leg(MarketConvertible):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        ticker = SymbolTicker.from_entries(
-            (
-                ("SymbolTicker", self.symbolticker),
-                ("Symbol", self.symbol),
-                ("SecurityID", self.securityid),
-                ("SecurityIDSource", self.securityidsource),
-                ("SecurityExchange", self.securityexchange),
-            )
+        ticker = SymbolTicker.from_values(
+            symbolticker=self.symbolticker,
+            symbol=self.symbol,
+            securityid=self.securityid,
+            securityidsource=self.securityidsource,
+            securityexchange=self.securityexchange,
         )
         self.symbolticker = ticker.into_str()
         if ticker.kind is AssetKind.CURRENCY:
@@ -207,14 +205,12 @@ class Instrument(Event):
         )
         if self.isincode is None:
             self.isincode = self.into_isin()
-        ticker = SymbolTicker.from_entries(
-            (
-                ("SymbolTicker", self.symbolticker),
-                ("Symbol", self.symbol),
-                ("SecurityID", self.securityid),
-                ("SecurityIDSource", self.securityidsource),
-                ("SecurityExchange", self.securityexchange),
-            )
+        ticker = SymbolTicker.from_values(
+            symbolticker=self.symbolticker,
+            symbol=self.symbol,
+            securityid=self.securityid,
+            securityidsource=self.securityidsource,
+            securityexchange=self.securityexchange,
         )
         self.symbolticker = ticker.into_str()
         if ticker.kind is AssetKind.CURRENCY:
@@ -331,4 +327,6 @@ def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrum
         enriched = known.enriched_with(instrument)
         if enriched is not None:
             records[ticker] = enriched.identify()
-    yield from (records[ticker].identify() for ticker in order)
+    # Identified where it was stored, and nothing has touched it since, so
+    # there is nothing here to give an identity to.
+    yield from (records[ticker] for ticker in order)

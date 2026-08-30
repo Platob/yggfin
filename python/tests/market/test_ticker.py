@@ -204,3 +204,47 @@ def test_arrow_tickers_follow_the_scalar_canonical_spelling() -> None:
         "ABC/XYZ",
     ]
     assert SymbolTicker.currency_arrow(found).to_pylist() == [None, int(Currency.NOK), None]
+
+
+def test_parts_a_caller_already_holds_need_no_search_among_entries() -> None:
+    """`from_values` and `from_entries` answer alike on the same four parts.
+
+    A shape whose members *are* the parts -- `Instrument`, `Leg` -- was
+    building a synthetic entry list so a registry-backed reader could find
+    them again and hand back what it was given. Same ticker, without the
+    search.
+    """
+    parts = {
+        "securityexchange": "xnas",
+        "securityidsource": "4",
+        "securityid": "US0378331005",
+        "symbol": "AAPL",
+    }
+    searched = SymbolTicker.from_entries(
+        [Entry(key=key.capitalize(), value=value) for key, value in parts.items()],
+        version="4.2",
+    )
+
+    assert SymbolTicker.from_values(**parts, version="4.2") == searched
+    assert str(searched) == "XNAS:AAPL"
+
+
+def test_a_stored_ticker_is_the_fallback_when_no_part_names_one() -> None:
+    """The rung below the ladder: what a row already carries, kept as it is."""
+    ticker = SymbolTicker.from_values(symbolticker="XPAR:TTF")
+
+    assert str(ticker) == "XPAR:TTF"
+    assert str(SymbolTicker.from_values(symbol="TTF", symbolticker="XPAR:OTHER")) == "TTF"
+    assert str(SymbolTicker.from_values()) == ""
+
+
+def test_a_scheme_a_member_spells_reaches_the_same_name_as_its_wire_code() -> None:
+    """`SecurityIDSource.ISIN`, `"4"` and `"ISIN"` are one scheme in a ticker."""
+    spellings = (SecurityIDSource.ISIN, "4", "ISIN", "ISINNumber")
+
+    built = {
+        str(SymbolTicker.from_values(securityid="XX0000084733", securityidsource=spelled))
+        for spelled in spellings
+    }
+
+    assert built == {"ISINNumber:XX0000084733"}
