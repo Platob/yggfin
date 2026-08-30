@@ -907,6 +907,51 @@ def test_an_instrument_s_book_never_sees_another_s_liquidity() -> None:
     assert books["XCME:ETH-USD"].bidpx == 999.0
 
 
+def test_one_ticker_coalesces_even_when_supplied_instrument_hashes_disagree() -> None:
+    first = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
+    second = order(BASE + 1, BTC, Side.BID, 99.0, 2.0, "B2")
+    first.instrumentxhash = 11
+    second.instrumentxhash = 22
+    folding = BookIterator.from_events([first, second], snapshot_every=0)
+
+    books = list(folding)
+
+    assert list(folding.folding) == [BTC.symbolticker]
+    assert books[-1].biddepth == 2
+    assert {book.instrumentxhash for book in books} == {BTC.xhash}
+    assert {delta.instrumentxhash for book in books for delta in book.deltas} == {BTC.xhash}
+
+
+def test_distinct_tickers_stay_isolated_when_supplied_instrument_hashes_match() -> None:
+    btc = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
+    eth = order(BASE + 1, ETH, Side.BID, 10.0, 3.0, "E1")
+    btc.instrumentxhash = eth.instrumentxhash = 11
+    folding = BookIterator.from_events([btc, eth], snapshot_every=0)
+
+    books = list(folding)
+
+    assert set(folding.folding) == {BTC.symbolticker, ETH.symbolticker}
+    assert {book.symbolticker: book.instrumentxhash for book in books} == {
+        BTC.symbolticker: BTC.xhash,
+        ETH.symbolticker: ETH.xhash,
+    }
+
+
+def test_a_blank_ticker_is_not_replaced_by_an_instrument_hash() -> None:
+    event = Order(
+        unix=BASE,
+        instrumentxhash=BTC.xhash,
+        side=Side.BID,
+        px=100.0,
+        qty=5.0,
+        orderid="B1",
+        state=State.NEW,
+    )
+
+    with pytest.raises(ValueError, match="nonblank `symbolticker`"):
+        list(BookIterator.from_events([event], snapshot_every=0))
+
+
 def test_a_stream_out_of_order_is_refused() -> None:
     """A fold asks the book to un-happen something, and there is no honest answer."""
     events = [
@@ -1060,7 +1105,7 @@ def test_an_exact_boundary_keeps_one_book_identity() -> None:
     ]
     books = list(BookIterator.from_events(events).books)
 
-    assert len({(book.unix, book.instrumentxhash) for book in books}) == len(books)
+    assert len({(book.unix, book.symbolticker) for book in books}) == len(books)
     assert [book.vhash for book in books] == [Book.hash_of(*book.version_parts()) for book in books]
     assert [book.hash for book in books] == [
         txhash.couple128(book.unix // 1_000, book.vhash) for book in books
@@ -1291,10 +1336,10 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
     assert resumed.biddepth == 2
     assert resumed.bidpx == 100.0 and resumed.askpx is None
     assert [one.orderid for one in resumed.deltas] == ["B2"]
-    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 8.0
+    assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 8.0
 
 
-def test_book_recovery_normalizes_candidates_by_unix_version_and_hash() -> None:
+def test_book_recovery_deduplicates_each_ticker_by_unix_version_and_hash() -> None:
     def seeds(named: str) -> list[Book]:
         books = BookIterator.from_events(
             [
@@ -1308,11 +1353,14 @@ def test_book_recovery_normalizes_candidates_by_unix_version_and_hash() -> None:
     old = first[0]
     low, high = sorted((first[-1], second[-1]), key=lambda row: row.hash)
     assert (low.unix, low.version) == (high.unix, high.version)
+    low = dataclasses.replace(low, instrumentxhash=11)
+    high = dataclasses.replace(high, instrumentxhash=22)
 
     restored = BookIterator(snapshots=[high, old, low], snapshot_every=0)
 
     assert restored.snapshots == (high,)
-    assert restored.folding[BTC.xhash].previous is high
+    assert restored.folding[BTC.symbolticker].previous is high
+    assert high.instrumentxhash == BTC.xhash
 
 
 def test_recovery_rebuilds_the_same_order_framed_vhash_as_an_uninterrupted_fold() -> None:
@@ -1460,7 +1508,7 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
     )
 
     restored = BookIterator(snapshots=[seed])
-    side = restored.folding[BTC.xhash].bid
+    side = restored.folding[BTC.symbolticker].bid
     lifecycle = next(iter(side.orders))
 
     for name, code in (
@@ -1583,7 +1631,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     expired = [one for one in bounded.deltas if one.state is State.INTERNAL_EXPIRED]
     assert [one.orderid for one in expired] == ["B3"]
     assert bounded.biddepth == 2
-    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
+    assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 2.0
 
 
 def test_a_shared_security_id_reference_names_one_book() -> None:
@@ -1714,7 +1762,7 @@ def test_an_inactive_book_snapshots_before_its_expiry_is_applied() -> None:
     assert expired.unix == eth_clock.unix and expired.biddepth == 0
     assert expired.deltas[-1].state is State.INTERNAL_EXPIRED
     assert recovered is expired and recovered.snapunix is None
-    assert len({(book.unix, book.instrumentxhash) for book in btc_books}) == len(btc_books)
+    assert len({(book.unix, book.symbolticker) for book in btc_books}) == len(btc_books)
 
 
 @pytest.mark.parametrize(

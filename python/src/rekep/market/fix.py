@@ -13,16 +13,14 @@ from rekep.convert import Convertible
 from rekep.enums import (
     MIC,
     AssetKind,
-    Currency,
     EventType,
     MarketKind,
-    OptionKind,
     Side,
     State,
     TimeInForce,
 )
 from rekep.fields import StructField, encoded_key
-from rekep.fix.access import FieldAccess
+from rekep.fix.access import Entry, FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
@@ -30,7 +28,6 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg, _flat_instruments
 from rekep.market.orders import Execution, Order, _quantity_transition
-from rekep.market.ticker import SymbolTicker
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
 from rekep.text.fixmsg import FixMsg
 
@@ -180,46 +177,6 @@ _TRADE_EVIDENCE_FIELDS: tuple[str, ...] = (
     "TrdMatchID",
     "ExecID",
     "ExecRefID",
-)
-
-#: Every field `FixEvents.instrument` reads, the two repeating groups included.
-#: An entry of a refresh that names none of them is not describing another
-#: instrument -- it is describing a level of the one the header named -- so it
-#: takes the header's instrument whole rather than building a poorer copy.
-INSTRUMENT_FIELDS: frozenset[str] = frozenset(
-    {
-        "Currency",
-        "SecurityIDSource",
-        "SecurityID",
-        "Symbol",
-        "ExDestination",
-        "SecurityDesc",
-        "SecurityType",
-        "MaturityMonthYear",
-        "PutOrCall",
-        "StrikePrice",
-        "SecurityExchange",
-        "ContractMultiplier",
-        "NoSecurityAltID",
-        "CFICode",
-        "MaturityDate",
-        "NoLegs",
-        "RoundLot",
-        "MinPriceIncrement",
-    }
-)
-
-INSTRUMENT_MESSAGE_FIELDS: frozenset[str] = INSTRUMENT_FIELDS | frozenset(
-    {
-        "BeginString",
-        "MsgType",
-        "NoMDEntries",
-        "NoQuoteSets",
-        "NoQuoteEntries",
-        "QuoteSetID",
-        "QuoteEntryID",
-        *(field for rung in TRANSACTED for field in rung.fields),
-    }
 )
 
 #: The MDEntryType <269> that is a trade rather than a resting interest.
@@ -762,13 +719,13 @@ class FixEvents(Convertible):
             seeded = self.dictionary.ordered[kind]
             if handler == CANCEL_REJECT_HANDLER:
                 seeded = self.state_of("OrdStatus", seeded)
-            yield self.into_order(seeded)
+            yield self._order(seeded)
 
     def into_instruments(self) -> Iterator[Instrument]:
         """One flat record per canonical ticker in the message."""
         if self.version is None:
             return
-        yield from _flat_instruments(reader.instrument for reader in self._instrument_readers())
+        yield from _flat_instruments(reader._reference for reader in self._instrument_readers())
 
     def _instrument_readers(self) -> Iterator[FixEvents]:
         """Entry projections when present, otherwise the message header."""
@@ -805,7 +762,7 @@ class FixEvents(Convertible):
 
     def _reported(self) -> Iterator[MarketEvent]:
         """An ExecutionReport <8>: the order's new state, and the fill if there was one."""
-        order = self.into_order(self.state_of("OrdStatus"))
+        order = self._order(self.state_of("OrdStatus"))
         yield order
         if self.execution_state() is not State.UNKNOWN:
             # Completed *from the order*, not from a previous report: the
@@ -813,7 +770,7 @@ class FixEvents(Convertible):
             # now, how much is left, what the average is -- are all statements
             # about the order this report is on, and the order row is the one
             # thing here that already holds them.
-            yield self.into_execution(order)
+            yield self._execution(order)
 
     def _entries(self, kind: str) -> Iterator[MarketEvent]:
         """One market-data refresh, entry by entry."""
@@ -821,9 +778,9 @@ class FixEvents(Convertible):
             inside = self._inside(entry)
             entry_type = inside.get("MDEntryType")
             if entry_type in ENTRY_SIDES:
-                yield inside.into_entry_order(ENTRY_SIDES[entry_type], snapshot=kind == "W")
+                yield inside._entry_order(ENTRY_SIDES[entry_type], snapshot=kind == "W")
             elif entry_type == ENTRY_TRADE:
-                yield inside.into_entry_execution()
+                yield inside._entry_execution()
 
     def _sides(self, requested: bool = False) -> Iterator[Execution]:
         """A TradeCaptureReport, one Execution per `NoSides <552>` entry.
@@ -845,7 +802,7 @@ class FixEvents(Convertible):
             # query, and a query fabricates no execution.
             if requested and not any(self.get(name) for name in _TRADE_EVIDENCE_FIELDS):
                 return
-            yield self.into_execution()
+            yield self._execution()
             return
         level: dict[str, Any] = {}
         for key, value in report:
@@ -855,7 +812,7 @@ class FixEvents(Convertible):
             inside = self._inside(entry, base=level)
             if not any(key in clocks for key, _ in inside.pairs):
                 inside.__dict__["transacted"] = self.transacted
-            yield inside.into_execution()
+            yield inside._execution()
 
     def _side_entries(self) -> tuple[list[list[tuple[str, str]]], list[tuple[str, str]]]:
         """`(side entries, report-level pairs)`, split without collapsing repeats.
@@ -922,8 +879,7 @@ class FixEvents(Convertible):
         inside.__dict__["tags"] = self.tags
         inside.__dict__["access"] = self.access
         own = inside.by_tag
-        if all(inside.get(field) is None for field in INSTRUMENT_FIELDS):
-            inside.__dict__["instrument"] = self.instrument
+        inside.__dict__["_parent_reference"] = self._reference
         inside.__dict__["by_tag"] = {**(self.by_tag if base is None else base), **own}
         return inside
 
@@ -990,7 +946,7 @@ class FixEvents(Convertible):
             named_side = Side.from_fix(get("Side"), Side.UNKNOWN)
             populated = [side for side in sides if side[0] is named_side] or list(sides)
         for side, px, qty, default_qty in populated:
-            yield self.into_quote_order(
+            yield self._quote_order(
                 side,
                 state,
                 px=_number(get(px)),
@@ -1009,10 +965,9 @@ class FixEvents(Convertible):
 
     # -- converting ---------------------------------------------------------
 
-    def into_order(self, state: State = State.UNKNOWN) -> Order:
-        """The order this message is about, in the state the message puts it in."""
+    def _order(self, state: State = State.UNKNOWN) -> Order:
+        """Apply order transition semantics to the declared FIX fields."""
         get = self.get
-        unix = self.unix
         timeinforce = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
         duration = _integer(get("ExposureDuration"))
         exec_type = get("ExecType")
@@ -1038,34 +993,18 @@ class FixEvents(Convertible):
             last_qty=_number(get("LastQty")),
             cancel_qty=_number(get("CxlQty")),
         )
-        return self._finish(
-            Order(
-                unix=unix,
-                creaunix=unix,
-                recunix=self.recunix or unix,
-                expunix=self._expires(timeinforce, unix, duration),
-                state=transition.state,
-                side=Side.from_fix(get("Side"), Side.UNKNOWN),
-                px=_number(get("Price")),
-                qty=transition.current_qty,
-                prevqty=transition.previous_qty,
-                kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
-                timeinforce=timeinforce,
-                stoppx=_number(get("StopPx")),
-                hiddenqty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
-                orderid=get("OrderID"),
-                clordid=get("ClOrdID"),
-                origclordid=get("OrigClOrdID"),
-                clordlinkid=get("ClOrdLinkID"),
-                parentclordid=get("ParentClOrdID"),
-                parentorderid=get("ParentOrderID"),
-                cxlrejreason=_integer(get("CxlRejReason")),
-                cxlrejresponseto=get("CxlRejResponseTo"),
-                **self._shared(),
-            )
+        return self._event(
+            Order,
+            expunix=self._expires(timeinforce, self.unix, duration),
+            state=transition.state,
+            qty=transition.current_qty,
+            prevqty=transition.previous_qty,
+            kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
+            timeinforce=timeinforce,
+            hiddenqty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
         )
 
-    def into_quote_order(
+    def _quote_order(
         self,
         side: Side,
         state: State,
@@ -1073,62 +1012,35 @@ class FixEvents(Convertible):
         px: float | None,
         qty: float | None,
     ) -> Order:
-        """One side of a FIX quote as an indicative limit order."""
+        """Map one quote side onto the generic Order declaration."""
         get = self.get
-        unix = self.unix
-        return self._finish(
-            Order(
-                unix=unix,
-                creaunix=unix,
-                recunix=self.recunix or unix,
-                expunix=unix_value(get("ValidUntilTime")),
-                state=state,
-                side=side,
-                px=px,
-                qty=qty,
-                kind=MarketKind.LIMIT_ORDER,
-                indicative=True,
-                orderid=get("QuoteEntryID") or get("QuoteID"),
-                clordid=get("QuoteReqID"),
-                **self._shared(),
-            )
+        return self._event(
+            Order,
+            expunix=unix_value(get("ValidUntilTime")),
+            state=state,
+            side=side,
+            px=px,
+            qty=qty,
+            kind=MarketKind.LIMIT_ORDER,
+            indicative=True,
+            orderid=get("QuoteEntryID") or get("QuoteID"),
+            clordid=get("QuoteReqID"),
         )
 
-    def into_execution(self, order: Order | None = None) -> Execution:
-        """What traded, as the report says it. `px` is `LastPx <31>`, not `Price <44>`."""
+    def _execution(self, order: Order | None = None) -> Execution:
+        """Apply execution semantics and links to the declared FIX fields."""
         get = self.get
-        unix = self.unix
-        return self._finish(
-            Execution(
-                unix=unix,
-                creaunix=unix,
-                recunix=self.recunix or unix,
-                state=self.execution_state(),
-                kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
-                side=Side.from_fix(get("Side"), Side.UNKNOWN),
-                px=_number(get("LastPx")),
-                qty=_number(get("LastQty")),
-                execid=get("ExecID"),
-                execrefid=get("ExecRefID"),
-                tradeid=get("TradeID") or get("TrdMatchID"),
-                linkedhashes=[order.xhash] if order is not None and order.xhash else [],
-                parenthash=[order.hash] if order is not None and order.hash else [],
-                orderid=get("OrderID"),
-                clordid=get("ClOrdID"),
-                origclordid=get("OrigClOrdID"),
-                cumqty=_number(get("CumQty")),
-                leavesqty=_number(get("LeavesQty")),
-                aggressorindicator=_flag(get("AggressorIndicator")),
-                settldate=_date(get("SettlDate")),
-                settltype=get("SettlType"),
-                settlcurrency=get("SettlCurrency"),
-                settlcurrfxratecalc=get("SettlCurrFxRateCalc"),
-                **self._shared(),
-            ),
+        return self._event(
+            Execution,
             order,
+            state=self.execution_state(),
+            kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
+            tradeid=get("TradeID") or get("TrdMatchID"),
+            linkedhashes=[order.xhash] if order is not None and order.xhash else [],
+            parenthash=[order.hash] if order is not None and order.hash else [],
         )
 
-    def into_entry_order(self, side: Side, snapshot: bool = False) -> Order:
+    def _entry_order(self, side: Side, snapshot: bool = False) -> Order:
         """One market-data entry as the resting interest it describes.
 
         A price level with a size *is* an order, aggregated or not, and reading
@@ -1137,100 +1049,116 @@ class FixEvents(Convertible):
         that interest, so it is the lifecycle identity when there is one.
         """
         get = self.get
-        unix = self.unix
-        return self._finish(
-            Order(
-                unix=unix,
-                creaunix=unix,
-                recunix=self.recunix or unix,
-                state=self.state_of("MDUpdateAction", State.NEW if snapshot else State.OPEN),
-                side=side,
-                px=_number(get("MDEntryPx")),
-                qty=_number(get("MDEntrySize")),
-                kind=MarketKind.LIMIT_ORDER,
-                indicative=True,
-                # An entry with no id of its own is a *level*, not an order, so
-                # the price is what persists across its updates: that is what
-                # `MDUpdateAction <279>` addresses when it says Change or Delete,
-                # and it is what makes a level's own lifecycle findable.
-                orderid=get("MDEntryID")
-                or (f"{side.name}@{get('MDEntryPx')}" if get("MDEntryPx") else None),
-                **self._shared(),
-            )
+        return self._event(
+            Order,
+            state=self.state_of("MDUpdateAction", State.NEW if snapshot else State.OPEN),
+            side=side,
+            px=_number(get("MDEntryPx")),
+            qty=_number(get("MDEntrySize")),
+            kind=MarketKind.LIMIT_ORDER,
+            indicative=True,
+            # An entry with no id of its own is a *level*, not an order, so
+            # the price is what persists across its updates: that is what
+            # `MDUpdateAction <279>` addresses when it says Change or Delete,
+            # and it is what makes a level's own lifecycle findable.
+            orderid=get("MDEntryID")
+            or (f"{side.name}@{get('MDEntryPx')}" if get("MDEntryPx") else None),
         )
 
-    def into_entry_execution(self) -> Execution:
+    def _entry_execution(self) -> Execution:
         """One market-data entry of type Trade <2> as the execution it reports."""
         get = self.get
-        unix = self.unix
-        return self._finish(
-            Execution(
-                unix=unix,
-                creaunix=unix,
-                recunix=self.recunix or unix,
-                state=State.FILLED,
-                kind=MarketKind.TRADE,
-                side=Side.from_fix(get("Side"), Side.UNKNOWN),
-                px=_number(get("MDEntryPx")),
-                qty=_number(get("MDEntrySize")),
-                execid=get("MDEntryID"),
-                tradeid=get("TradeID") or get("TrdMatchID"),
-                **self._shared(),
-            )
+        return self._event(
+            Execution,
+            state=State.FILLED,
+            kind=MarketKind.TRADE,
+            px=_number(get("MDEntryPx")),
+            qty=_number(get("MDEntrySize")),
+            execid=get("MDEntryID"),
+            tradeid=get("TradeID") or get("TrdMatchID"),
         )
+
+    @functools.cached_property
+    def _event_entries(self) -> tuple[Entry, ...]:
+        """The entry-over-header view consumed by every event declaration."""
+        return tuple(Entry.from_pair(key, value) for key, value in self.by_tag.items())
+
+    def _event(
+        self,
+        event_type: type[TMarketEvent],
+        previous: MarketEvent | None = None,
+        **overrides: Any,
+    ) -> TMarketEvent:
+        """Build one declared market shape, then apply its lifecycle context."""
+        event = event_type.from_entries(
+            self._event_entries,
+            registry=self.registry,
+            version=self.version,
+            unix=self.unix,
+            creaunix=self.unix,
+            recunix=self.recunix or self.unix,
+            **self._shared(),
+            **overrides,
+        )
+        return self._finish(event, previous)
 
     def _finish(self, event: TMarketEvent, previous: MarketEvent | None = None) -> TMarketEvent:
         """Attach transient reference data before deriving and identifying."""
-        event.attach_instrument(self.instrument)
+        event.attach_instrument(self._reference)
         finished = event.with_previous(previous)
         if finished is None:
             raise AssertionError("a newly translated event cannot be unchanged")
         return finished
 
     @functools.cached_property
-    def instrument(self) -> Instrument:
-        """What the message says is being traded, groups and all.
-
-        Cached like `by_tag`, and for the same reason: a message is *one*
-        instrument, and an `ExecutionReport` yields two events off it while a
-        refresh yields one per entry. Reading eighteen tags and two repeating
-        groups once per event was that work N times -- a fifth of the cost of
-        reading a five-entry refresh.
-        """
+    def _reference(self) -> Instrument:
+        """The generic Instrument projection with market-only normalizations."""
         get = self.get
         cfi = get("CFICode")
         securitytype = get("SecurityType")
-        altids = {**self._identifier_altids, **self.into_alt_ids()}
-        ticker = SymbolTicker.from_fixmsg(self.message)
-        return Instrument(
+        altids = {
+            **self._versioned_message.altids,
+            **self._identifier_altids,
+            **self._security_altids,
+        }
+        built = Instrument.from_(
+            self._versioned_message,
+            registry=self.registry,
             unix=self.unix,
-            symbolticker=ticker.symbolticker,
-            symbol=get("Symbol") or "",
             kind=_classified(cfi, securitytype),
-            securityid=get("SecurityID"),
-            securityidsource=get("SecurityIDSource"),
-            altids=altids or None,
-            securitytype=securitytype,
-            cficode=cfi,
-            securityexchange=get("SecurityExchange"),
-            currency=_currency(get("Currency")),
-            contractmultiplier=_number(get("ContractMultiplier")),
-            minpriceincrement=_number(get("MinPriceIncrement")),
-            roundlot=_number(get("RoundLot")),
+            altids=altids,
             maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
-            strikeprice=_number(get("StrikePrice")),
-            putorcall=OptionKind.from_fix(get("PutOrCall"), OptionKind.UNKNOWN),
-            securitydesc=get("SecurityDesc"),
-            legs=self.into_legs() or None,
         )
+        built.legs = self._normalized_legs(built.legs or self._declared_legs())
+        parent = self.__dict__.get("_parent_reference")
+        if parent is None:
+            return built
+        if not built.symbolticker:
+            return parent
+        fallback = dataclasses.replace(parent, altids={}, legs=None)
+        enriched = built.enriched_with(fallback)
+        if enriched is None:
+            return built
+        # Header identifiers participate in canonical ticker selection. Clear
+        # the child-only result so the combined declared facts choose once.
+        return dataclasses.replace(enriched, symbolticker="")
 
-    def into_alt_ids(self) -> dict[str, str]:
-        """Every alternative identifier the message carried, by the scheme's name."""
-        entries = self.message.component_records("SecurityAltID")
-        if entries is None:
-            entries = self._group("NoSecurityAltID")
+    @functools.cached_property
+    def _versioned_message(self) -> FixMsg:
+        """The source row carrying an explicitly selected fragment version."""
+        selected = self.version
+        if selected is None or self.message.protocolversion == selected:
+            return self.message
+        copied = dataclasses.replace(self.message, protocolversion=selected)
+        return copied.link_registry(self.registry)
+
+    @functools.cached_property
+    def _security_altids(self) -> dict[str, str]:
+        """Reference identifiers whose repeating group becomes the alt-id map."""
+        if self._is_nested_group("NoSecurityAltID"):
+            return {}
         found: dict[str, str] = {}
-        for entry in entries:
+        for entry in self._group("NoSecurityAltID"):
             named = entry.get("SecurityAltID")
             if not named:
                 continue
@@ -1241,43 +1169,63 @@ class FixEvents(Convertible):
             found.setdefault(key or UNKNOWN_SCHEME, named)
         return found
 
-    def into_legs(self) -> list[Leg]:
-        """The legs of a multileg instrument, from the `NoLegs <555>` group.
+    def _declared_legs(self) -> list[Leg] | None:
+        """Build count-delimited legs through their own generic declaration."""
+        if self._is_nested_group("NoLegs"):
+            return None
+        groups = self._group_entries("NoLegs")
+        if not groups:
+            return None
+        return [
+            Leg.from_entries(
+                (Entry.from_pair(key, value) for key, value in group),
+                registry=self.registry,
+                version=self.version,
+            )
+            for group in groups
+        ]
 
-        Every member is the instrument field with a `Leg` in front of it --
-        `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
-        same one, against a different set of tags.
-        """
-        entries = self.message.component_records("Legs")
-        if entries is None:
-            entries = self._group("NoLegs")
-        built = []
-        for entry in entries:
-            cfi, securitytype = entry.get("LegCFICode"), entry.get("LegSecurityType")
-            ticker = SymbolTicker.from_entries(
-                entry.items(), registry=self.message.registry, version=self.version
-            )
-            built.append(
-                Leg(
-                    symbolticker=ticker.symbolticker,
-                    symbol=entry.get("LegSymbol") or "",
-                    side=Side.from_fix(entry.get("LegSide"), Side.UNKNOWN),
-                    ratio=_number(entry.get("LegRatioQty")),
-                    kind=_classified(cfi, securitytype),
-                    securityid=entry.get("LegSecurityID"),
-                    securityidsource=entry.get("LegSecurityIDSource"),
-                    cficode=cfi,
-                    securitytype=securitytype,
-                    securityexchange=entry.get("LegSecurityExchange"),
-                    currency=_currency(entry.get("LegCurrency")),
-                    contractmultiplier=_number(entry.get("LegContractMultiplier")),
-                    maturitydate=_date(entry.get("LegMaturityDate"))
-                    or _month_year(entry.get("LegMaturityMonthYear")),
-                    strikeprice=_number(entry.get("LegStrikePrice")),
-                    putorcall=OptionKind.from_fix(entry.get("LegPutOrCall"), OptionKind.UNKNOWN),
-                )
-            )
-        return built
+    def _is_nested_group(self, name: str) -> bool:
+        """Whether a component begins inside the message's outer entry group."""
+        if "_parent_reference" in self.__dict__:
+            return False
+        handler = self.dictionary.handlers.get(self._message_kind)
+        if handler in ENTRY_HANDLERS:
+            outer = ("NoMDEntries",)
+        elif handler in MASS_QUOTE_HANDLERS:
+            outer = ("NoQuoteSets", "NoQuoteEntries")
+        else:
+            return False
+        keys = [str(key) for key, _ in self.pairs]
+        group_key = self.access.tag_text(name)
+        try:
+            group_at = keys.index(group_key)
+        except ValueError:
+            return False
+        outer_at = [
+            keys.index(self.access.tag_text(group))
+            for group in outer
+            if self.access.tag_text(group) in keys
+        ]
+        return bool(outer_at) and min(outer_at) < group_at
+
+    def _normalized_legs(self, legs: list[Leg] | None) -> list[Leg] | None:
+        """Apply CFI classification and month-year fallback to generic legs."""
+        if not legs:
+            return legs
+        entries = self._group("NoLegs")
+        normalized: list[Leg] = []
+        for index, leg in enumerate(legs):
+            entry = entries[index] if index < len(entries) else {}
+            changes: dict[str, Any] = {}
+            if leg.kind is AssetKind.UNKNOWN:
+                changes["kind"] = _classified(entry.get("LegCFICode"), entry.get("LegSecurityType"))
+            if leg.maturitydate is None:
+                maturity = _month_year(entry.get("LegMaturityMonthYear"))
+                if maturity is not None:
+                    changes["maturitydate"] = maturity
+            normalized.append(dataclasses.replace(leg, **changes) if changes else leg)
+        return normalized
 
     def _group_entries(self, name: str) -> list[list[tuple[str, str]]]:
         """One repeating group under its configured count tag or rendered name."""
@@ -1380,7 +1328,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _shared_values(self) -> dict[str, Any]:
         """Shared envelope values that are immutable during translation."""
-        instrument = self.instrument
+        instrument = self._reference
         mic = self._mic()
         return {
             "altids": self._identifier_altids,
@@ -1587,11 +1535,6 @@ def unix_value(value: Any, day: int | None = None) -> int | None:
     return unix_of(value, day=day)
 
 
-def _currency(text: str | None) -> Currency | None:
-    """A present FIX currency as its packed code; absence stays null."""
-    return None if text is None else Currency.from_fix(text)
-
-
 def _number(text: str | None) -> float | None:
     """A FIX `Price`, `Qty` or `float` as a float; None for anything that is not.
 
@@ -1622,14 +1565,6 @@ def _integer(text: Any) -> int | None:
         return int(text)
     except ValueError:
         return None
-
-
-def _flag(text: str | None) -> bool | None:
-    """A FIX `Boolean`: `Y` or `N`, and None for a venue that sent neither."""
-    if not text:
-        return None
-    first = text.strip()[:1].upper()
-    return True if first == "Y" else False if first == "N" else None
 
 
 def _date(text: str | None) -> datetime.date | None:

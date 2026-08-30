@@ -660,6 +660,22 @@ def test_flat_instrument_keeps_lifecycle_altids() -> None:
     assert instrument.altids == {"clordid": "C1"}
 
 
+def test_instrument_projection_prefers_promoted_values_and_fills_from_entries() -> None:
+    instrument = FixMsg(
+        unix=23,
+        protocolversion="4.4",
+        symbol="PROMOTED",
+        entries=[(55, "RESIDUAL"), (107, "reference facts")],
+    ).into_instrument()
+
+    assert instrument is not None
+    assert (instrument.unix, instrument.symbol, instrument.securitydesc) == (
+        23,
+        "PROMOTED",
+        "reference facts",
+    )
+
+
 def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     registry: FixRegistry,
 ) -> None:

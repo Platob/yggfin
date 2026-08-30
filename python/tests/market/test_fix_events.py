@@ -589,7 +589,7 @@ def test_instrument_altids_hold_lifecycle_and_reference_identifiers() -> None:
         "8=FIX.4.4|35=8|37=ORD-9|11=CL-7|55=AAPL|"
         "454=1|455=US0378331005|456=4|60=20260821-10:00:00|10=000"
     )
-    scalar = reader(line).instrument
+    scalar = next(reader(line).into_instruments())
     assert scalar.altids == {
         "orderid": "ORD-9",
         "clordid": "CL-7",
@@ -1084,10 +1084,11 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     which are read off the pairs and never reached an entry before."""
     reader = FixEvents.from_text(IDENTIFIED, venue="XCME")
     found = list(reader)
+    header = next(reader.into_instruments())
     assert len(found) == 2
     for one in found:
         instrument = one.into_instrument()
-        assert instrument is reader.instrument, "one message, one instrument"
+        assert instrument is header, "one message, one instrument"
         assert instrument.altids == {
             "mdentryid": "L1",
             "ISINNumber": "US0378331005",
@@ -1121,25 +1122,11 @@ def test_instrument_projection_reads_every_md_entry_without_building_events(
     def refused(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("reference extraction must not construct market events")
 
-    monkeypatch.setattr(FixEvents, "into_entry_order", refused)
+    monkeypatch.setattr(FixEvents, "_event", refused)
     found = list(FixEvents.from_text(line, venue="XCME").into_instruments())
 
     assert [instrument.symbol for instrument in found] == ["BTC-USD", "ETH-USD"]
     assert len({instrument.xhash for instrument in found}) == 2
-
-
-def test_every_tag_the_instrument_reads_is_declared() -> None:
-    """The inheritance guard covers every named instrument field it reads."""
-    import inspect
-    import re
-
-    from rekep.market.fix import INSTRUMENT_FIELDS
-
-    source = inspect.getsource(FixEvents.instrument.func)
-    read = set(re.findall(r'\bget\("([A-Za-z0-9]+)"\)', source))
-    assert read, "the reading is there to be read"
-    assert read <= INSTRUMENT_FIELDS, f"undeclared: {sorted(read - INSTRUMENT_FIELDS)}"
-    assert {"NoSecurityAltID", "NoLegs"} <= INSTRUMENT_FIELDS
 
 
 def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
@@ -1174,7 +1161,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         ],
     )
     reader = FixEvents(message=stored)
-    instrument = reader.instrument
+    instrument = next(reader.into_instruments())
 
     assert instrument.altids == {"ISINNumber": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isincode == "US0378331005"
@@ -1191,7 +1178,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
         "600=MSFT|624=2|623=2|556=USD"
     )
-    assert instrument == FixEvents.from_text(wire).instrument
+    assert instrument == next(FixEvents.from_text(wire).into_instruments())
 
 
 def test_a_two_sided_trade_capture_report_is_one_execution_per_side() -> None:

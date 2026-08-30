@@ -1711,43 +1711,20 @@ class FixMsg(Message):
                 yield event_type, combined(event_type)
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
-        """Yield native instrument facts, or one flat promoted fallback."""
+        """Yield grouped instrument facts, or one declared row projection."""
         translated = tuple(self.into_fix_events(**declared).into_instruments())
         if translated:
             yield from translated
             return
-        instrument = self._flat_instrument()
-        if instrument is not None:
+        from rekep.market.instrument import Instrument
+
+        instrument = Instrument.from_(self, **declared)
+        if instrument.symbolticker:
             yield instrument
 
     def into_instrument(self, **declared: Any) -> Any | None:
         """Build the first instrument carried by this row, when any."""
         return next(self.into_instruments(**declared), None)
-
-    def _flat_instrument(self) -> Any | None:
-        """Build only the instrument facts already promoted on this row."""
-        from rekep.market.instrument import Instrument
-
-        ticker = (
-            SymbolTicker.from_str(self.symbolticker)
-            if self.symbolticker
-            else SymbolTicker.from_fixmsg(self)
-        )
-        if not ticker.symbolticker:
-            return None
-        return Instrument(
-            unix=self.unix,
-            symbolticker=ticker.symbolticker,
-            symbol=self.symbol or "",
-            altids=dict(self.altids),
-            securityid=self.securityid,
-            securityidsource=self.securityidsource,
-            isincode=self.isincode,
-            securitytype=self.securitytype,
-            cficode=self.cficode,
-            securityexchange=self.securityexchange,
-            currency=self.currency,
-        )
 
 
 def _take_record_batch(batch: pyarrow.RecordBatch, where: pyarrow.Array) -> pyarrow.RecordBatch:

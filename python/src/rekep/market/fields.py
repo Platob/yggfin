@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any, Self
 
 import pyarrow
@@ -82,6 +82,27 @@ class MarketConvertible(Convertible):
         return Convertible.from_dict.__func__(
             cls, {name: read_member(name, value) for name, value in mapping.items()}
         )
+
+    @classmethod
+    def from_entries(
+        cls,
+        entries: Iterable[Any],
+        *,
+        registry: FixRegistry | None = None,
+        version: str | None = None,
+        **overrides: Any,
+    ) -> Self:
+        """Build from raw entries read through one registry version."""
+        from rekep.entries import Entry
+        from rekep.fix.access import FieldAccess
+        from rekep.market.event import _entry_values
+
+        source = (entries,) if isinstance(entries, Entry) else entries
+        selected = registry or FixRegistry.from_builtin()
+        access = FieldAccess.of(selected, version)
+        values = _entry_values(cls, tuple(access.entries_of(source)), access)
+        values.update(overrides)
+        return cls.from_dict(values)
 
     #: One member as its column holds it, for the builder that assembles a
     #: batch member by member. Only the spelling is asked here: `stored_member`

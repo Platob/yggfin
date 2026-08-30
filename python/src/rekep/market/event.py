@@ -5,15 +5,17 @@ from __future__ import annotations
 import copy
 import dataclasses
 import datetime
+import enum
 import functools
 from collections.abc import Iterable, Iterator, Mapping
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Annotated, Any, Self
+from typing import TYPE_CHECKING, Annotated, Any, Self, get_type_hints
 
 import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
+from rekep.annotations import SEQUENCE_ORIGINS, item_annotation, unwrap_annotated, unwrap_optional
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -27,6 +29,7 @@ from rekep.market.identity import (
 from rekep.market.ticker import SymbolTicker
 
 if TYPE_CHECKING:
+    from rekep.fix.registry import FixRegistry
     from rekep.market.instrument import Instrument
 
 #: What a `*unix` column holds, said once. Whole nanoseconds since the epoch,
@@ -54,6 +57,28 @@ HOUR = 3_600_000_000_000
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
+# A parsed row's identity belongs to that row, not to any market event built
+# from it. Explicit overrides may still supply these values for a native row.
+_SOURCE_IDENTITY_MEMBERS = frozenset(
+    (
+        "unixpartition",
+        "eventtype",
+        "snapunix",
+        "hash",
+        "vhash",
+        "xhash",
+        "linkedhashes",
+        "version",
+        "state",
+        "code",
+        "prevunix",
+        "prevhash",
+        "parenthash",
+    )
+)
+
+_MISSING = object()
+
 #: What `altids` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
 #: and `execid`. Instrument identity has `instrumentxhash` and
 #: `symbolticker`; mixing it into this map lets unrelated events match.
@@ -71,6 +96,23 @@ _PARENT_HASH_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 @scalar(slots=True, weakref_slot=True)
 class Event(MarketConvertible):
     """One immutable version of one thing that happened, and its place in a life."""
+
+    @classmethod
+    @functools.cache
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Generic conversions plus parsed FIX rows and raw entries."""
+        from rekep.entries import Entry
+        from rekep.text.fixmsg import FixMsg
+
+        return MappingProxyType(
+            {
+                **MarketConvertible.into_redirects(),
+                FixMsg: "fixmsg",
+                Entry: "entries",
+                list: "entries",
+                tuple: "entries",
+            }
+        )
 
     @classmethod
     @functools.cache
@@ -200,6 +242,28 @@ class Event(MarketConvertible):
             self.eventtype = type(self).into_event_type()
         self.unixpartition = _unix_partition_of(self.unix)
         self._drop_self_link()
+
+    @classmethod
+    def from_fixmsg(
+        cls,
+        source: Any,
+        *,
+        registry: FixRegistry | None = None,
+        **overrides: Any,
+    ) -> Self:
+        """Build from promoted FIX columns, then residual entries."""
+        from rekep.fix.access import FieldAccess
+        from rekep.text.fixmsg import FixMsg
+
+        if not isinstance(source, FixMsg):
+            raise TypeError(f"source must be FixMsg, got {type(source).__name__}")
+        selected = registry or source.registry
+        access = FieldAccess.of(selected, source.protocolversion)
+        values = _promoted_values(cls, source, access)
+        for name, value in _entry_values(cls, source.entries or (), access).items():
+            values.setdefault(name, value)
+        values.update(overrides)
+        return cls.from_dict(values)
 
     @classmethod
     def from_arrow_reader(
@@ -848,6 +912,173 @@ def _mapping_parts(values: Mapping[str, Any] | None) -> tuple[Any, ...]:
         return (False, 0)
     ordered = sorted(values.items(), key=lambda item: item[0].encode("utf-8"))
     return (True, len(ordered), *(part for pair in ordered for part in pair))
+
+
+@functools.cache
+def _declared_members(cls: type[MarketConvertible]) -> tuple[tuple[Field, Any], ...]:
+    """Arrow members paired with their resolved Python declarations."""
+    hints = get_type_hints(cls, include_extras=True)
+    return tuple((member, hints[member.name]) for member in cls.into_field().fields)
+
+
+def _promoted_values(cls: type[MarketConvertible], source: Any, access: Any) -> dict[str, Any]:
+    """Declaration-matched promoted values carried by one source row."""
+    source_fields = _source_fields(source)
+    values: dict[str, Any] = {}
+    for member, annotation in _declared_members(cls):
+        if issubclass(cls, Event) and member.name in _SOURCE_IDENTITY_MEMBERS:
+            continue
+        value = _promoted_value(member, source, source_fields, access)
+        if value is _MISSING:
+            continue
+        values[member.name] = _projected_value(member, annotation, value, access)
+    return values
+
+
+def _source_fields(source: Any) -> tuple[Field, ...]:
+    """The Arrow declaration a promoted source carries, when it has one."""
+    into_field = getattr(type(source), "into_field", None)
+    if into_field is None:
+        return ()
+    try:
+        return tuple(into_field().fields)
+    except (AttributeError, TypeError):
+        return ()
+
+
+def _promoted_value(
+    member: Field,
+    source: Any,
+    source_fields: tuple[Field, ...],
+    access: Any,
+) -> Any:
+    """First non-empty source member declaring the same field."""
+    if isinstance(source, Mapping):
+        exact = source.get(member.name, _MISSING)
+    else:
+        exact = getattr(source, member.name, _MISSING)
+    if exact is not _MISSING and _has_value(exact):
+        return exact
+    for candidate in source_fields:
+        if not _same_field(member, candidate, access):
+            continue
+        value = getattr(source, candidate.name, _MISSING)
+        if value is not _MISSING and _has_value(value):
+            return value
+    if isinstance(source, Mapping):
+        from rekep.entries import Entry
+
+        pairs = (Entry.of(key=str(key), value=value) for key, value in source.items())
+        reading = _reading(member, pairs, access)
+        if reading:
+            return reading.value
+    return _MISSING
+
+
+def _same_field(target: Field, source: Field, access: Any) -> bool:
+    """Whether two declarations name one registry field."""
+    if target.name == source.name:
+        return True
+    if not (_fix_backed(target) and _fix_backed(source)):
+        return False
+    left = access.resolve(target.fix.canonical)
+    right = access.resolve(source.fix.canonical)
+    if left.tag is not None and left.tag == right.tag:
+        return True
+    return bool(left.names & right.names)
+
+
+def _fix_backed(member: Field) -> bool:
+    """Whether a declaration names a registry-owned field."""
+    return member.fix.tag is not None or "fix:name" in member.metadata
+
+
+def _has_value(value: Any) -> bool:
+    """Whether a promoted value says more than its missing sentinel."""
+    if value is None or value == "":
+        return False
+    if isinstance(value, enum.Enum) and not int(value):
+        return False
+    if isinstance(value, Mapping | list | tuple | set | frozenset) and not value:
+        return False
+    return True
+
+
+def _entry_values(
+    cls: type[MarketConvertible], entries: Iterable[Any], access: Any
+) -> dict[str, Any]:
+    """Declared values resolved from one materialized entry sequence."""
+    materialized = tuple(access.entries_of(entries))
+    groups: dict[str, list[Any]] = {}
+    for entry in materialized:
+        if entry.comp:
+            # The full indexed lead is the occurrence identity: nested paths
+            # may reuse the same terminal group name and must remain separate.
+            groups.setdefault(entry.comp, []).append(entry)
+    values: dict[str, Any] = {}
+    for member, annotation in _declared_members(cls):
+        nested = _nested_type(annotation)
+        if nested is not None:
+            items = []
+            for group in groups.values():
+                projected = _entry_values(nested, group, access)
+                if projected:
+                    items.append(nested.from_dict(projected))
+            if items:
+                values[member.name] = items
+            continue
+        reading = _reading(member, materialized, access)
+        if reading:
+            values[member.name] = _projected_value(member, annotation, reading.value, access)
+    return values
+
+
+def _reading(member: Field, entries: Iterable[Any], access: Any) -> Any:
+    """One declared member read by its registry identity."""
+    return access.reading(entries, member.fix.canonical if _fix_backed(member) else member.name)
+
+
+def _projected_value(member: Field, annotation: Any, value: Any, access: Any) -> Any:
+    """One source value converted through its target declaration."""
+    _, inner = unwrap_annotated(annotation)
+    _, inner = unwrap_optional(inner)
+    if getattr(inner, "__origin__", None) in SEQUENCE_ORIGINS:
+        item = item_annotation(inner)
+        _, item = unwrap_annotated(item)
+        _, item = unwrap_optional(item)
+        if isinstance(item, type) and issubclass(item, MarketConvertible):
+            return [
+                one
+                if isinstance(one, item)
+                else item.from_dict(_promoted_values(item, one, access))
+                for one in value
+            ]
+    if isinstance(inner, type) and issubclass(inner, MarketConvertible):
+        if isinstance(value, inner):
+            return value
+        return inner.from_dict(_promoted_values(inner, value, access))
+    if isinstance(inner, type) and issubclass(inner, enum.Enum):
+        if isinstance(value, inner):
+            return value
+        parser = getattr(inner, "from_fix" if _fix_backed(member) else "from_str", None)
+        return parser(value) if parser is not None else inner(value)
+    if inner is datetime.date and isinstance(value, datetime.datetime):
+        return value.date()
+    return value
+
+
+def _nested_type(annotation: Any) -> type[MarketConvertible] | None:
+    """The declared market row inside one optional sequence."""
+    _, inner = unwrap_annotated(annotation)
+    _, inner = unwrap_optional(inner)
+    if getattr(inner, "__origin__", None) not in SEQUENCE_ORIGINS:
+        return None
+    item = item_annotation(inner)
+    _, item = unwrap_annotated(item)
+    _, item = unwrap_optional(item)
+    if isinstance(item, type) and issubclass(item, MarketConvertible):
+        return item
+    return None
 
 
 def _declared_value_parts(value: Any) -> tuple[Any, ...]:

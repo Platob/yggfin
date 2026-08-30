@@ -1416,8 +1416,8 @@ class _Folding:
     book.
     """
 
-    instrumentxhash: int
-    """Which instrument this is the state of."""
+    symbolticker: str
+    """Canonical nonblank ticker that owns this state."""
 
     bid: _Side
     """The bid side's live orders, best first."""
@@ -1484,7 +1484,7 @@ class BookIterator:
     """Fold one sorted parsed-log stream into books."""
 
     logs: Iterable[FixMsg] = ()
-    """Parsed logs sorted by event time, `MsgSeqNum`, and hash; read once."""
+    """Parsed logs sorted by event time, `msgseqnum`, and hash; read once."""
 
     registry: FixRegistry | None = None
     """FIX dictionary that owns dispatch and lifecycle value mappings."""
@@ -1513,8 +1513,8 @@ class BookIterator:
     purge_alive: bool = False
     """Expire whatever is still resting when the stream ends, as auditable versions."""
 
-    folding: dict[int, _Folding] = dataclasses.field(default_factory=dict)
-    """Mutable fold state keyed by the instrument's canonical ticker identity."""
+    folding: dict[str, _Folding] = dataclasses.field(default_factory=dict)
+    """Mutable fold state keyed by canonical nonblank `symbolticker`."""
 
     def __post_init__(self) -> None:
         if self.snapshot_every < 0:
@@ -1529,17 +1529,20 @@ class BookIterator:
         self._books: deque[Book] = deque()
         self._unix: int | None = None
         self._swept: int | None = None
-        latest: dict[int, Book] = {}
+        latest: dict[str, Book] = {}
         for snapshot in self.snapshots:
-            current = latest.get(snapshot.instrumentxhash)
+            ticker = snapshot.symbolticker
+            if not ticker:
+                raise ValueError("a recovery snapshot requires a nonblank `symbolticker`")
+            current = latest.get(ticker)
             if current is None or (snapshot.unix, snapshot.version, snapshot.hash) > (
                 current.unix,
                 current.version,
                 current.hash,
             ):
-                latest[snapshot.instrumentxhash] = snapshot
+                latest[ticker] = snapshot
         self.snapshots = tuple(
-            sorted(latest.values(), key=lambda row: (row.unix, row.instrumentxhash))
+            sorted(latest.values(), key=lambda row: (row.unix, row.symbolticker))
         )
         for snapshot in self.snapshots:
             self._restore(snapshot)
@@ -1863,31 +1866,38 @@ class BookIterator:
 
     def _state_of(self, event: MarketEvent) -> _Folding:
         """The fold this event belongs to, by its canonical ticker identity."""
-        known = self.folding.get(event.instrumentxhash)
+        ticker = event.symbolticker
+        if not ticker:
+            raise ValueError("a book event requires a nonblank `symbolticker`")
+        known = self.folding.get(ticker)
         if known is not None:
+            event.instrumentxhash = known.instrument.xhash
             return known
         state = self._started(event)
-        self.folding[event.instrumentxhash] = state
+        event.instrumentxhash = state.instrument.xhash
+        self.folding[ticker] = state
         return state
 
     def _started(self, event: MarketEvent) -> _Folding:
         """The state one instrument's fold starts from, identities and all."""
+        ticker = event.symbolticker
+        parsed = event.into_instrument()
+        instrument = (
+            parsed
+            if parsed is not None and parsed.symbolticker == ticker
+            else Instrument(symbolticker=ticker, currency=event.currency)
+        )
         lifecycle = Book(
             unix=event.unix,
-            instrumentxhash=event.instrumentxhash,
+            instrumentxhash=instrument.xhash,
+            symbolticker=ticker,
             altids=dict(event.altids),
-            currency=event.currency,
-        )
-        parsed = event.into_instrument()
-        instrument = parsed or Instrument(
-            xhash=event.instrumentxhash,
-            symbolticker=event.symbolticker,
             currency=event.currency,
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
         state = _Folding(
-            instrumentxhash=event.instrumentxhash,
+            symbolticker=ticker,
             bid=_Side(side=Side.BID, max_order_age_ns=self.max_order_age_ns),
             ask=_Side(side=Side.ASK, max_order_age_ns=self.max_order_age_ns),
             xhash=xhash,
@@ -1906,15 +1916,19 @@ class BookIterator:
             raise ValueError("recovery snapshot biddepth does not match bidlevels")
         if snapshot.askdepth != len(snapshot.asklevels):
             raise ValueError("recovery snapshot askdepth does not match asklevels")
-        canonical = snapshot.instrumentxhash
-        instrument = snapshot.into_instrument() or Instrument(
-            xhash=canonical,
-            symbolticker=snapshot.symbolticker,
-            currency=snapshot.currency,
+        ticker = snapshot.symbolticker
+        if not ticker:
+            raise ValueError("a recovery snapshot requires a nonblank `symbolticker`")
+        parsed = snapshot.into_instrument()
+        instrument = (
+            parsed
+            if parsed is not None and parsed.symbolticker == ticker
+            else Instrument(symbolticker=ticker, currency=snapshot.currency)
         )
+        snapshot.instrumentxhash = instrument.xhash
         snapshot.attach_instrument(instrument)
         state = _Folding(
-            instrumentxhash=canonical,
+            symbolticker=ticker,
             bid=_Side.from_snapshot(
                 Side.BID,
                 snapshot.bidlevels,
@@ -1936,7 +1950,7 @@ class BookIterator:
             emitted=snapshot.unix,
         )
         state.moved = self._bound(state, snapshot.unix)
-        self.folding[canonical] = state
+        self.folding[ticker] = state
         self._unix = max(self._unix or snapshot.unix, snapshot.unix)
         self._swept = max(self._swept or snapshot.unix, snapshot.unix)
 
@@ -2015,7 +2029,7 @@ class BookIterator:
     def _refresh_instrument(self, state: _Folding, event: MarketEvent) -> None:
         """Keep transient instrument facts when this event carries them."""
         parsed = event.into_instrument()
-        if parsed is not None:
+        if parsed is not None and parsed.symbolticker == state.symbolticker:
             state.instrument = parsed
 
     # -- emitting -------------------------------------------------------------
@@ -2182,7 +2196,8 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     asklevels = state.ask.into_changed_levels() if state.ask.changed else []
     book = Book(
         unix=unix,
-        instrumentxhash=state.instrumentxhash,
+        instrumentxhash=state.instrument.xhash,
+        symbolticker=state.symbolticker,
         code=state.code,
         altids=dict(about.altids),
         pxunit=about.pxunit,

@@ -1262,8 +1262,8 @@ def test_bounded_evictions_are_auditable_and_never_enter_the_book_again() -> Non
 
     assert [one.orderid for one in expired] == ["B2"]
     assert found[-1].biddepth == 2
-    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
-    assert {one.orderid for one in iterator.folding[BTC.xhash].bid.orders.values()} == {
+    assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 2.0
+    assert {one.orderid for one in iterator.folding[BTC.symbolticker].bid.orders.values()} == {
         "B1",
         "B3",
     }
@@ -1295,7 +1295,7 @@ def test_a_zero_side_bound_keeps_only_the_audit() -> None:
     (book,) = iterator
 
     assert [one.state for one in book.deltas] == [State.NEW, State.INTERNAL_EXPIRED]
-    assert book.askdepth == 0 and iterator.folding[BTC.xhash].ask.orders == {}
+    assert book.askdepth == 0 and iterator.folding[BTC.symbolticker].ask.orders == {}
 
 
 @pytest.mark.parametrize("timeinforce", [TimeInForce.IOC, TimeInForce.FOK])
