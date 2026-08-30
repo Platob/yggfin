@@ -1618,6 +1618,13 @@ class FixRegistry(Convertible):
         """Every field identity this registry holds, keyed by canonical name."""
         return MappingProxyType({entry.fix.canonical: entry for entry in self._entries[0].values()})
 
+    def tag_numbers(self) -> frozenset[int]:
+        """Every numeric identity present in any locally stored version."""
+        records = list(self.field_records().values())
+        for version in self._stored_spellings():
+            records.extend(self._stored_fields(version) or ())
+        return frozenset(int(field.fix.tag) for field in records if field.fix.tag)
+
     def source_coverage(self) -> Mapping[str, Mapping[str, int]]:
         """Field counts each source led and answered for."""
         counted: dict[str, dict[str, int]] = {}

@@ -1035,6 +1035,15 @@ class FixCodec(Convertible):
             )
         return self._indexes[version]
 
+    @cached_property
+    def known_tags(self) -> pyarrow.Array:
+        """Numeric identities present anywhere in the stored registry."""
+        try:
+            tags = self.registry.tag_numbers()
+        except (OSError, ValueError):
+            tags = frozenset()
+        return pyarrow.array(sorted(tags), TAG)
+
     def tag_field(self, tag: int, version: str | None = None) -> Field | None:
         """One tag's declaration: the job's own where it has one, else the dictionary's."""
         declared = None

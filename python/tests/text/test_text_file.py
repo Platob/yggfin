@@ -11,7 +11,7 @@ import pytest
 from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 
 import rekep.text.text_file as text_file_module
-from rekep import Dataset, Entry, Field, FixRegistry, Message, txhash
+from rekep import Dataset, Entry, Field, FixCodec, FixMsg, FixRegistry, Message, txhash
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
@@ -37,6 +37,24 @@ FIRST_UNIX = 1_786_665_901_147_250_000  # 2026-08-14 00:05:01.147_250 as ns
 def test_sample_shape_is_what_the_tests_assume() -> None:
     assert len(RECORDS) == EXPECTED_RECORDS
     assert len(CONTINUATIONS) == EXPECTED_CONTINUATIONS
+
+
+def test_sample_has_no_retained_fix_payload_fields() -> None:
+    registry = FixRegistry.from_builtin()
+    codec = FixCodec(registry=registry)
+    with TextFile.from_path(
+        SAMPLE,
+        msg_type_event_types=registry.msg_type_event_types(),
+        protocol_rules=codec.rules,
+    ) as log:
+        messages = log.read_arrow_table()
+    parsed = pyarrow.Table.from_batches(
+        [FixMsg.from_message_batch(batch, codec) for batch in messages.to_batches()]
+    )
+
+    assert parsed.num_rows == EXPECTED_RECORDS
+    assert parsed.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
+    assert parsed.column("unmap").to_pylist() == [None] * EXPECTED_RECORDS
 
 
 @pytest.fixture

@@ -90,7 +90,7 @@ def test_a_numeric_terminal_component_key_keeps_its_location_and_identity() -> N
 def test_an_unknown_name_is_kept_exactly_as_it_arrived() -> None:
     """Every venue sends fields no dictionary has, and dropping them loses data."""
     built = FixMsg.from_pairs([("VenueOwnThing", "x"), ("Side", "1")], TAGS)
-    assert built.pairs == [("VenueOwnThing", "x"), ("54", "1")]
+    assert built.pairs == [("54", "1"), ("VenueOwnThing", "x")]
     assert _raw(built, "VenueOwnThing") == "x"
 
 

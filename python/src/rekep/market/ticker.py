@@ -21,6 +21,7 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep.enums import MIC, AssetKind, Currency
+from rekep.fields import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.registry import FixRegistry
 
@@ -55,9 +56,14 @@ class SymbolTicker:
         """Build from one parsed FIX row through its registry-backed accessor."""
         registry = message.registry
         version = message.resolved_version(registry)
+        access = FieldAccess.of(registry, version)
+        entries = (*(message.entries or ()), *(message.unmap or ()))
 
         def read(name: str) -> Any:
-            reading = message.get(name)
+            value = getattr(message, column_name(name), None)
+            if value not in (None, ""):
+                return value
+            reading = access.reading(entries, name)
             return reading.raw if reading else None
 
         found = cls._from_parts(

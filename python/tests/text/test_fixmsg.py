@@ -11,6 +11,7 @@ from rekep.enums import Direction
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
+from rekep.fix.fields import fix_field
 from rekep.market import HASH, MIC, BookIterator, Event, EventType
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
@@ -87,6 +88,7 @@ MESSAGE = [
     "unixsource",
     "protocolversion",
     "protocolversionsource",
+    "unmap",
     "parties",
     "trdregtimestamps",
     "sidetrdregts",
@@ -181,7 +183,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 117
+EXPECTED_LOG_COLUMNS = 118
 
 
 @pytest.fixture(scope="module")
@@ -269,6 +271,8 @@ def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
     trace that never was a message have to stay tellable apart."""
     assert FixMsg.into_field().field("entries").nullable
     assert FixMsg().entries is None
+    assert FixMsg.into_field().field("unmap").nullable
+    assert FixMsg().unmap is None
 
 
 def test_an_explicit_empty_parsed_argument_list_is_not_reparsed() -> None:
@@ -278,16 +282,17 @@ def test_an_explicit_empty_parsed_argument_list_is_not_reparsed() -> None:
 
 
 def test_a_stored_field_always_says_what_it_is() -> None:
-    """`tag` and `key` are how a consumer addresses a field, so neither is null:
-    a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
-    member = FixMsg.into_field().field("entries")
-    assert pyarrow.types.is_list(member.dtype)
-    assert member.item.nullable is False
-    assert member.item.field("tag").nullable is False
-    assert member.item.field("key").nullable is False
-    assert member.item.field("value").nullable is False
-    assert member.item.field("comp").nullable is True
-    assert member.item.field("comp").dtype == pyarrow.string()
+    """`tag` and `key` remain non-null even when the registry knows no identity."""
+    entries = FixMsg.into_field().field("entries")
+    unmap = FixMsg.into_field().field("unmap")
+    assert entries.dtype == unmap.dtype == ENTRIES
+    assert pyarrow.types.is_list(entries.dtype)
+    assert entries.item.nullable is False
+    assert entries.item.field("tag").nullable is False
+    assert entries.item.field("key").nullable is False
+    assert entries.item.field("value").nullable is False
+    assert entries.item.field("comp").nullable is True
+    assert entries.item.field("comp").dtype == pyarrow.string()
     assert all(isinstance(entry, Entry) for entry in FixMsg(entries=[(55, "IBM")]).entries or ())
 
 
@@ -1136,7 +1141,9 @@ def test_wire_discriminator_without_begin_string_survives_projection(
     assert [(entry["key"], entry["value"]) for entry in whole.column("entries")[0].as_py()] == [
         ("11", "A")
     ]
+    assert whole.column("unmap")[0].as_py() is None
     assert projected.column("entries").equals(whole.column("entries"))
+    assert projected.column("unmap").equals(whole.column("unmap"))
     assert projected.column("hash").equals(whole.column("hash"))
 
 
@@ -1209,6 +1216,56 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
     assert translated.equals(reference, check_metadata=True)
     assert translated.column("side").to_pylist()[0] == "1"
     assert translated.column("mic").null_count == 5
+    assert translated.column("unmap")[0].as_py() == [
+        {"tag": 9998, "key": "9998", "value": "audit", "comp": None}
+    ]
+
+
+def test_unknown_numeric_fields_follow_the_linked_registry(
+    tmp_path: Path, registry: FixRegistry
+) -> None:
+    line = "8=FIX.4.4|35=D|11=C1|9998=audit|10=000|"
+    arrow = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line), Message(message=line.replace("audit", "changed"))),
+        FixCodec(registry=registry),
+    )
+    scalar = FixMsg.from_text(line, registry=registry)
+
+    assert arrow.column("unmap")[0].as_py() == [
+        {"tag": 9998, "key": "9998", "value": "audit", "comp": None}
+    ]
+    assert [(entry.tag, entry.value) for entry in scalar.unmap or ()] == [(9998, "audit")]
+    assert scalar.get(9998).raw == "audit"
+    assert [reading.raw for reading in scalar.readings(9998)] == ["audit"]
+    assert ("9998", "audit") in scalar.pairs
+    assert "9998=audit" in scalar.into_text("|")
+    assert FixMsg.from_dict(scalar.into_dict()).unmap == scalar.unmap
+    assert FixMsg.from_dict(scalar.into_row()).unmap == scalar.unmap
+    assert scalar.identify().vhash == arrow.column("vhash")[0].as_py()
+    assert arrow.column("vhash")[0].as_py() != arrow.column("vhash")[1].as_py()
+
+    custom = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    venue_audit = fix_field("VenueAudit", 9998, "String", values={"A": "Audit"})
+    venue_audit.fix.versions = ("4.4",)
+    custom.add_field(venue_audit)
+    linked = FixMsg.from_text(line, registry=custom)
+    assert [(entry.tag, entry.key, entry.value) for entry in linked.entries or ()] == [
+        (9998, "9998", "audit")
+    ]
+    assert [(entry.tag, entry.value) for entry in linked.unmap or ()] == [
+        (11, "C1"),
+        (10, "000"),
+    ]
+
+    relinked = FixMsg(
+        protocolversion="4.4",
+        entries=[],
+        unmap=[{"tag": 0, "key": "VenueAudit", "value": "Audit"}],
+    ).link_registry(custom)
+    assert [(entry.tag, entry.key, entry.value) for entry in relinked.entries or ()] == [
+        (0, "VenueAudit", "Audit")
+    ]
+    assert relinked.unmap is None
 
 
 def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
@@ -1258,6 +1315,7 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
     assert translated.column("clordid").to_pylist() == ["A", None]
     assert translated.column("symbol").to_pylist() == ["IBM", None]
     assert [entry["tag"] for entry in translated.column("entries")[1].as_py()] == [11, 55, 10]
+    assert translated.column("unmap")[1].as_py() is None
 
 
 def test_mixed_fixmsg_batch_keeps_flat_rows_fast_and_scatters_exactly(
@@ -1512,10 +1570,11 @@ def test_hybrid_named_fields_shadow_numeric_copies(registry: FixRegistry) -> Non
     )
 
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
-    residual = parsed.column("entries")[0].as_py()
+    residual = parsed.column("unmap")[0].as_py()
 
     assert parsed.column("msgtype").to_pylist() == ["D"]
     assert parsed.column("symbol").to_pylist() == ["named"]
+    assert parsed.column("entries")[0].as_py() == []
     assert [entry["value"] for entry in residual if entry["tag"] in {9998, 9999}] == [
         "before",
         "after",
@@ -1825,12 +1884,13 @@ def test_the_stored_protocol_fills_what_the_rules_cannot_name(registry: FixRegis
     assert bare.protocolcode == "FIXML"
     lone = FixMsg.from_message_batch(_raw_batch(bare), FixCodec(registry=registry))
     assert lone.column("protocolcode").to_pylist() == ["FIXML"]
-    assert [(entry["key"], entry["value"]) for entry in lone.column("entries").to_pylist()[0]] == [
+    assert lone.column("entries").to_pylist() == [[]]
+    assert [(entry["key"], entry["value"]) for entry in lone.column("unmap").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
         ("CLORDID", "PL9"),
         ("SIDE", "2"),
     ]
-    assert ("clordid", "PL9") in lone.column("altids").to_pylist()[0]
+    assert lone.column("altids").to_pylist() == [[]]
 
 
 def test_direction_reads_the_verb_before_the_payload(registry: FixRegistry) -> None:

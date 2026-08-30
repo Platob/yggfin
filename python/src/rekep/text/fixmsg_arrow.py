@@ -91,6 +91,7 @@ def into_flat_fixmsg_batch(
     if lifted is None:
         return None
     promoted, residual = lifted
+    residual, unmap = shape._partition_entries(residual, codec, version)
     schema = shape._message_schema(batch.schema)
     output = dict(columns)
     output.update(
@@ -99,6 +100,7 @@ def into_flat_fixmsg_batch(
             "protocolversion": protocolversion,
             "protocolversionsource": protocolversionsource,
             "entries": residual,
+            "unmap": unmap,
             **promoted,
         }
     )

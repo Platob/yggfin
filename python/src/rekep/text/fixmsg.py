@@ -134,7 +134,25 @@ class FixMsg(Message):
     def link_registry(self, registry: FixRegistry | None) -> FixMsg:
         """Privately link the dictionary every read on this row resolves through."""
         self.__registry = registry
+        self._partition_scalar_entries()
         return self
+
+    def _residual_entries(self) -> list[Entry]:
+        """Retained payload fields, whichever side of registry resolution holds them."""
+        return [*(self.entries or ()), *(self.unmap or ())]
+
+    def _partition_scalar_entries(self) -> None:
+        """Partition one retained payload under this row's linked dictionary."""
+        if self.entries is None and self.unmap is None:
+            return
+        codec = type(self).into_codec(self.registry)
+        stored = pyarrow.array([_stored_entries(self._residual_entries())], type=ENTRIES)
+        entries, unmap = type(self)._partition_entries(stored, codec, self.protocolversion)
+        self.entries = [Entry.from_stored(entry) for entry in entries[0].as_py() or ()]
+        unresolved = unmap[0].as_py()
+        self.unmap = (
+            None if unresolved is None else [Entry.from_stored(entry) for entry in unresolved]
+        )
 
     def _row_access(self) -> FieldAccess:
         """The accessor this row reads through: its dictionary, cross-version."""
@@ -205,6 +223,10 @@ class FixMsg(Message):
         Event.__post_init__(self)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
+        if self.unmap:
+            self.unmap = [Entry.from_stored(entry) for entry in self.unmap]
+        else:
+            self.unmap = None
         self.symbolticker = (
             SymbolTicker.from_str(self.symbolticker)
             if self.symbolticker
@@ -213,14 +235,14 @@ class FixMsg(Message):
         if (
             self.protocolversion is None
             and self.protocolcode == NO_PROTOCOL
-            and (self.beginstring or self.entries)
+            and (self.beginstring or self.entries or self.unmap)
         ):
             evidence: list[tuple[str, Any]] = []
             if self.beginstring:
                 evidence.append(("8", self.beginstring))
             if self.applverid:
                 evidence.append(("1128", self.applverid))
-            evidence.extend(_stored_pairs(self.entries))
+            evidence.extend(_stored_pairs(self._residual_entries()))
             version, source = infer_version_from_pairs(evidence)
             if version is not None:
                 self.protocolversion = version
@@ -236,6 +258,17 @@ class FixMsg(Message):
             member.name: getattr(self, member.name) for member in dataclasses.fields(Message)
         }
         staged_values["message"] = self.message or ""
+        if self.entries is not None or self.unmap is not None:
+            retained = list(_stored_pairs(self._residual_entries()))
+            checksum = str(_tag_of("CheckSum"))
+            # Partitioning separates fields that preceded the trailer; restore
+            # its framing position before the raw transcription reads it again.
+            staged_values["entries"] = [
+                *[pair for pair in retained if str(pair[0]) != checksum],
+                *[pair for pair in retained if str(pair[0]) == checksum],
+            ]
+        else:
+            staged_values["entries"] = None
         parsed = type(self).from_message_batch(
             [Message(**staged_values)], type(self).into_codec(self.registry)
         )
@@ -256,8 +289,8 @@ class FixMsg(Message):
         self.xhash = value("xhash")
         return self
 
-    # Nullable, and null on `fix.market`: typed columns plus `entries` carry
-    # every field the line held, so keeping the raw string beside them would
+    # Nullable, and null on `fix.market`: typed columns plus the two residual
+    # lists carry every field the line held, so keeping the raw string beside them would
     # store the same content twice. An all-null column run-length and dictionary encodes
     # to nothing on disk, which is what makes one stored shape across the
     # three tables affordable -- the same reasoning `_zeros` applies to the
@@ -294,6 +327,9 @@ class FixMsg(Message):
     # message; an empty list means no residual or raw audit sidecar remains.
     entries: list[Entry] | None = None
     """Unlifted fields and lossless raw audit sidecars for typed columns."""
+
+    unmap: Annotated[list[Entry] | None, Field(dtype=ENTRIES), Field.column("Unmapped")] = None
+    """Registry-unresolved entries partition payload with `entries`; null means all resolved."""
 
     parties: Annotated[
         list[Party] | None,
@@ -708,19 +744,21 @@ class FixMsg(Message):
         """Plain values with the stored fields in Arrow's list-struct spelling."""
         encoded = Event.into_dict(self)
         encoded["entries"] = _stored_entries(self.entries)
+        encoded["unmap"] = _stored_entries(self.unmap)
         return encoded
 
     def into_row(self) -> dict[str, Any]:
-        """The stored row, with the same list-struct spelling for `entries`."""
+        """The stored row, with Arrow's list-struct spelling for retained fields."""
         encoded = MarketConvertible.into_row(self)
         encoded["entries"] = _stored_entries(self.entries)
+        encoded["unmap"] = _stored_entries(self.unmap)
         return encoded
 
     def get(self, field: int | str) -> Reading:
         """One field off this row, whichever of the four ways it is named.
 
         The one accessor (fix/access.py) reads the promoted columns first and
-        the stored `entries` after them, so a lifted fact and a residual one
+        the stored residual lists after them, so a lifted fact and a residual one
         answer through one call. The `Reading` carries the stored value and
         the typed reading together.
         """
@@ -731,7 +769,7 @@ class FixMsg(Message):
         return self._row_access().readings(self._field_entries(), field)
 
     def into_fix_pairs(self, access: FieldAccess | None = None) -> list[tuple[str, str]]:
-        """Ordered FIX fields projected once from columns, components, and `entries`.
+        """Ordered FIX fields projected once from columns, components, and retained entries.
 
         When an accessor resolves both a numeric field and a rendered field to
         one registry identity, the rendered occurrence is authoritative. Its
@@ -757,7 +795,7 @@ class FixMsg(Message):
         `Entry` -- so a field read never re-splits a spelling the stored
         shape already holds apart.
         """
-        stored_entries = [Entry.from_stored(entry) for entry in self.entries or ()]
+        stored_entries = self._residual_entries()
         stored = [(entry.spelling, entry.value) for entry in stored_entries]
         stored_resolved = access.tagged_pairs(stored)
         stored_identities = {
@@ -798,8 +836,8 @@ class FixMsg(Message):
         components = [(key, entry.value) for key, entry in component_fields]
 
         # The promoted discriminator re-enters at its wire-legal position:
-        # after the leading BeginString/BodyLength run the raw stage left in
-        # `entries`. The projection then keeps the wire's own order, and a
+        # after the leading BeginString/BodyLength run the raw stage retained.
+        # The projection then keeps the wire's own order, and a
         # rendered row re-parses whole -- a `35=` in front of the `8=` anchor
         # would be shed as log noise.
         head = 0
@@ -890,7 +928,7 @@ class FixMsg(Message):
     @property
     def has_indexed_entries(self) -> bool:
         """Whether a rendered group path survives only in source spelling."""
-        return any(entry.comp or "[" in entry.key for entry in self.entries or ())
+        return any(entry.comp or "[" in entry.key for entry in self._residual_entries())
 
     def component_records(self, column: str) -> list[dict[str, str]] | None:
         """One resolved component column, each entry first-value-by-name.
@@ -932,6 +970,8 @@ class FixMsg(Message):
         this row, which is what sends a reader down the canonical projection.
         """
         if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
+            return None
+        if self.unmap is not None:
             return None
         entries = self.entries or ()
         if any(entry.comp or not entry.tag for entry in entries):
@@ -1230,15 +1270,66 @@ class FixMsg(Message):
         )
         components, entries = codec.into_component_columns(entries, version)
         lifted, entries = codec.into_lifted_columns(entries, version)
-        found: dict[str, Any] = {"entries": entries, **components, **lifted}
+        entries, unmap = cls._partition_entries(entries, codec, version)
+        found: dict[str, Any] = {
+            **components,
+            **lifted,
+            "entries": entries,
+            "unmap": unmap,
+        }
         # A lifted value only fills a column already read directly where it is empty:
         # `MsgType` is read off the front of the message before any of this,
         # and the wire is the authority on what it says.
         for name, column in found.items():
             stored = columns.get(name)
-            if name != "entries" and stored is not None and stored.null_count < rows:
+            if name not in {"entries", "unmap"} and stored is not None and stored.null_count < rows:
                 found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
         return found
+
+    @staticmethod
+    def _partition_entries(
+        entries: Any, codec: Any, version: str | None
+    ) -> tuple[pyarrow.Array, pyarrow.Array]:
+        """Retained fields split by identity in the selected version's registry index."""
+        if isinstance(entries, pyarrow.ChunkedArray):
+            entries = entries.combine_chunks()
+        rows = len(entries)
+        compute = pyarrow.compute
+        items = compute.list_flatten(entries)
+        parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
+        tags = compute.struct_field(items, "tag")
+        keys = compute.struct_field(items, "key")
+        comp = compute.struct_field(items, "comp")
+        whole = compute.if_else(
+            compute.is_valid(comp),
+            compute.binary_join_element_wise(compute.fill_null(comp, ""), keys, "."),
+            keys,
+        )
+        index = codec.index_of(version)
+        _, named_hit, _, _ = index.resolve_with_match(whole)
+        known = compute.if_else(
+            compute.not_equal(tags, 0),
+            compute.fill_null(compute.is_in(tags, value_set=codec.known_tags), False),
+            compute.fill_null(named_hit, False),
+        )
+        mapped = _entry_subset(
+            parents,
+            items,
+            known,
+            rows,
+            compute.is_null(entries) if entries.null_count else None,
+        )
+        unknown = compute.invert(known)
+        unknown_sizes = dense_counts(compute.filter(parents, unknown), rows)
+        unmap = _entry_subset(
+            parents,
+            items,
+            unknown,
+            rows,
+            compute.equal(unknown_sizes, 0),
+            unknown_sizes,
+        )
+        return mapped, unmap
 
     @staticmethod
     def _prefer_named_entries(
@@ -1371,6 +1462,7 @@ class FixMsg(Message):
             "protocolversion",
             "msgtype",
             "entries",
+            "unmap",
         )
 
     @classmethod
@@ -1385,9 +1477,13 @@ class FixMsg(Message):
         parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
         digests = cls.hash_arrow(*parsed)
         stored = columns.get("entries")
-        if stored is None:
+        unmapped = columns.get("unmap")
+        if stored is None and unmapped is None:
             return digests
-        unread = compute.is_null(stored)
+        unread = compute.and_(
+            compute.is_null(stored) if stored is not None else pyarrow.repeat(True, rows),
+            compute.is_null(unmapped) if unmapped is not None else pyarrow.repeat(True, rows),
+        )
         if not compute.any(unread, min_count=0).as_py():
             return digests
         recomputed = hash_bytes_arrow(_digest_text(columns.get("message"), rows))
@@ -1811,6 +1907,27 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
     """Stored fields in the spelling Arrow accepts without a shape pass."""
     return None if entries is None else [Entry.from_stored(entry).into_dict() for entry in entries]
+
+
+def _entry_subset(
+    parents: pyarrow.Array,
+    items: pyarrow.Array,
+    keep: pyarrow.Array,
+    rows: int,
+    mask: pyarrow.Array | None,
+    sizes: pyarrow.Array | None = None,
+) -> pyarrow.Array:
+    """One filtered side of an `ENTRIES` column, preserving child order."""
+    selected = pyarrow.StructArray.from_arrays(
+        [
+            pyarrow.compute.filter(pyarrow.compute.struct_field(items, field.name), keep)
+            for field in items.type
+        ],
+        fields=list(items.type),
+    )
+    if sizes is None:
+        sizes = dense_counts(pyarrow.compute.filter(parents, keep), rows)
+    return build_list(ENTRIES, sizes, selected, mask)
 
 
 @functools.cache

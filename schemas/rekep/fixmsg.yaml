@@ -330,6 +330,31 @@ fields:
   type: string
   description: 'What resolved `protocolversion`: a BeginString, an application version, or nothing.'
   fix: {display: Protocol Version Source}
+- name: unmap
+  type: list
+  nullable: true
+  description: Registry-unresolved entries partition payload with `entries`; null means all resolved.
+  fix: {display: Unmapped}
+  item:
+    type: struct
+    fields:
+    - name: tag
+      type: int32
+      description: Numeric identity written or resolved; zero while unresolved.
+      fix: {display: Tag}
+    - name: key
+      type: string
+      description: Whole field spelling outside an indexed container.
+      fix: {display: Key}
+    - name: value
+      type: string
+      description: Text after the first equals sign; an empty value is empty text.
+      fix: {display: Value}
+    - name: comp
+      type: string
+      nullable: true
+      description: Indexed container prefix.
+      fix: {display: Comp}
 - name: parties
   type: list
   nullable: true

@@ -91,7 +91,7 @@ def test_published_contracts_have_no_nested_table_keys() -> None:
 _CONTAINER_PARTS = frozenset({"item", "key", "value"})
 
 #: Reader-facing names whose words are intentionally fuller than the folded column.
-_COLUMN_DISPLAYS = {"vhash": "Value Hash"}
+_COLUMN_DISPLAYS = {"unmap": "Unmapped", "vhash": "Value Hash"}
 
 
 def _columns(field: Field) -> list[Field]:
